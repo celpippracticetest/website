@@ -1,0 +1,246 @@
+{
+  "name": "Test1",
+  "title": "Test 1",
+  "description": "A conversation between Sophia and Ethan about visiting a local art exhibition",
+  "instructions": [
+    "You will hear three conversations.",
+    "Each conversation is followed by a set of multiple-choice questions.",
+    "Choose the best answer for each question."
+  ],
+  "type": "LISTENING",
+  "isFree": true,
+  "duration": "1:15",
+  "difficulty": "advanced",
+  "totalQuestion": 6, 
+  "totalPassages": 3,
+  "taskId": "67ebf003187829d27daac3c9",
+  "passages": [
+    {
+      "id": "1",
+      "audioUrl": "https://fmrxubhfxyhtrpmmnyso.supabase.co/storage/v1/object/public/Celpip//19%20Art%20Exhibition%20Discussion.mp3",
+      "title": "Should Public Parks Allow Food Trucks",
+      "setting": "",
+      "conversation": [
+        {
+          "name": "Speaker A",
+          "text": "I think allowing food trucks in parks would make them more lively. People could grab a snack while spending time outdoors."
+        },
+        {
+          "name": "Speaker B",
+          "text": "Maybe, but wouldn’t it create more litter? Not everyone cleans up after themselves."
+        },
+        {
+          "name": "Speaker A",
+          "text": "True, but the city could install more trash bins and hire cleaners. The added convenience could bring more people to the parks."
+        },
+        {
+          "name": "Speaker B",
+          "text": "I still think it could spoil the natural atmosphere. Parks are meant to be green spaces, not outdoor food courts."
+        }
+      ],
+      "questions": [
+        {
+          "id": "1",
+          "question": "What is one benefit mentioned about allowing food trucks in parks?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "They will reduce noise in the park"
+            },
+            {
+              "id": "b",
+              "text": "They will make parks more lively"
+            },
+            {
+              "id": "c",
+              "text": "They will attract professional chefs"
+            },
+            {
+              "id": "d",
+              "text": "They will reduce traffic around parks"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "b"
+        },
+        {
+          "id": "2",
+          "question": "What is one concern raised about this idea?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "It will be too expensive for food vendorsy"
+            },
+            {
+              "id": "b",
+              "text": "It may increase litter"
+            },
+            {
+              "id": "c",
+              "text": "It could attract too many tourists"
+            },
+            {
+              "id": "d",
+              "text": "It will require closing parts of the park"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "b"
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "audioUrl": "https://fmrxubhfxyhtrpmmnyso.supabase.co/storage/v1/object/public/Celpip//19%20Art%20Exhibition%20Discussion.mp3",
+      "title": "Should Schools Start Later in the Morning?",
+      "setting": "",
+      "conversation": [
+        {
+          "name": "Speaker A",
+          "text": "I believe schools should start later. Teenagers need more sleep, and studies show it helps them perform better."
+        },
+        {
+          "name": "Speaker B",
+          "text": "That sounds good in theory, but it could cause issues for working parents. They rely on early school hours to get to work on time."
+        },
+        {
+          "name": "Speaker A",
+          "text": "Still, if students are healthier and more focused, isn’t it worth it?"
+        },
+        {
+          "name": "Speaker B",
+          "text": "It’s hard to say. It might just shift the problem elsewhere, like after-school care."
+        }
+      ],
+      "questions": [
+        {
+          "id": "3",
+          "question": "What benefit is mentioned for starting school later?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "It allows teachers more time to prepare"
+            },
+            {
+              "id": "b",
+              "text": "It helps students get more sleep"
+            },
+            {
+              "id": "c",
+              "text": "It reduces transportation costs"
+            },
+            {
+              "id": "d",
+              "text": "It shortens the school day"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "b"
+        },
+        {
+          "id": "4",
+          "question": "What is one concern about starting school later?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "It might reduce the quality of lessons"
+            },
+            {
+              "id": "b",
+              "text": "It could cause scheduling problems for parents"
+            },
+            {
+              "id": "c",
+              "text": "It will reduce student enrollment"
+            },
+            {
+              "id": "d",
+              "text": "It could increase transportation accidents"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "b"
+        }
+      ]
+    },{
+      "id": "3",
+      "audioUrl": "https://fmrxubhfxyhtrpmmnyso.supabase.co/storage/v1/object/public/Celpip//19%20Art%20Exhibition%20Discussion.mp3",
+      "title": "Should Single-Use Plastics Be Banned?",
+      "setting": "",
+      "conversation": [
+        {
+          "name": "Speaker A",
+          "text": "SI fully support banning single-use plastics. They’re terrible for the environment and clog up our oceans."
+        },
+        {
+          "name": "Speaker B",
+          "text": "I agree they’re a problem, but banning them could hurt small businesses that rely on cheap packaging."
+        },
+        {
+          "name": "Speaker A",
+          "text": "There are affordable alternatives now, like paper or compostable materials."
+        },
+        {
+          "name": "Speaker B",
+          "text": "Yes, but switching takes time and money. Some businesses might struggle during the transition."
+        }
+      ],
+      "questions": [
+        {
+          "id": "5",
+          "question": "What is a reason given to support the ban on single-use plastics?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "It will improve traffic safety"
+            },
+            {
+              "id": "b",
+              "text": "It will protect marine life and reduce pollution"
+            },
+            {
+              "id": "c",
+              "text": "It will create more jobs in the recycling industry"
+            },
+            {
+              "id": "d",
+              "text": "It will lower food prices"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "b"
+        },
+        {
+          "id": "6",
+          "question": "What is one concern about banning single-use plastics?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "It could lead to higher parking fees"
+            },
+            {
+              "id": "b",
+              "text": "It could affect the quality of plastic products"
+            },
+            {
+              "id": "c",
+              "text": "It could financially burden small businesses"
+            },
+            {
+              "id": "d",
+              "text": "It could increase plastic exports"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "c"
+        }
+      ]
+    }
+  ]
+}

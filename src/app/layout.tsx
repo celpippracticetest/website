@@ -1,0 +1,195 @@
+import PremiumPlanDrawer from "./premiumPlanDrawer";
+import NextTopLoader from "nextjs-toploader";
+import { Analytics } from "@vercel/analytics/react";
+import { ClerkProvider } from "@clerk/nextjs";
+import { Plus_Jakarta_Sans } from "next/font/google";
+import Script from "next/script";
+import ReactQueryProvider from "@/components/ReactQueryProvider";
+import IntercomLoader from "@/components/IntercomLoader";
+const jakarta = Plus_Jakarta_Sans({
+  display: "swap",
+  subsets: ["latin"],
+  variable: "--font-jakarta",
+  weight: ["300", "400", "500", "600", "700", "800"],
+  style: ["normal"],
+});
+
+// export const metadata = {
+//   title:
+//     "CELPIPPRACTICETEST.com | Practice CELPIP Online – Mock Exams, AI Scoring, Real Feedback",
+//   description:
+//     "Prepare for the CELPIP test online with CELPIPPRACTICETEST.com. Access free and premium CELPIP practice questions, mock exams, instant AI scoring, and real test feedback. Trusted by 20,000+ graduates in Canada.",
+//   alternates: {
+//     canonical: "https://celpippracticetest.com/",
+//   },
+// };
+
+export const metadata = {
+  title: "CELPIP Practice Test Online | Instant Scoring, Expert Tips",
+  description:
+    "Sharpen your CELPIP Skills, with realistic online practice tests, instant scoring, and pro-level tips for Listening, Reading, Writing & Speaking. Start Preparing today.",
+  keywords: [
+    "CellTest",
+    "AI",
+    "cell analysis",
+    "biology",
+    "research",
+    "microscopy",
+    "machine learning",
+  ],
+  authors: [{ name: "CellTest Team", url: "https://celpippracticetest.com" }],
+  icons: {
+    icon: "/favicon/favicon.ico",
+    apple: "/favicon/apple-touch-icon.png",
+  },
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  const jsonLdData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Product",
+        name: "Free Plan",
+        image: "https://celpippracticetest.com/images/free_plan.png",
+        description:
+          "Access limited CELPIP practice with AI feedback for free.",
+        brand: { "@type": "Brand", name: "CELPIPPRACTICETEST.com" },
+        offers: {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: "CAD",
+          availability: "https://schema.org/InStock",
+        },
+      },
+      {
+        "@type": "Product",
+        name: "Premium Monthly",
+        image: "https://celpippracticetest.com/images/premium_monthly.png",
+        description:
+          "Full access to all CELPIP mock exams and AI feedback, billed monthly.",
+        brand: { "@type": "Brand", name: "CELPIPPRACTICETEST.com" },
+        offers: {
+          "@type": "Offer",
+          price: "24.99",
+          priceCurrency: "CAD",
+          availability: "https://schema.org/InStock",
+        },
+      },
+      {
+        "@type": "Product",
+        name: "Premium 3-Month",
+        image: "https://celpippracticetest.com/images/premium_3month.png",
+        description:
+          "3-month access to full CELPIP preparation tools and mock exams.",
+        brand: { "@type": "Brand", name: "CELPIPPRACTICETEST.com" },
+        offers: {
+          "@type": "Offer",
+          price: "59.99",
+          priceCurrency: "CAD",
+          availability: "https://schema.org/InStock",
+        },
+      },
+    ],
+  };
+  return (
+    <ClerkProvider>
+      <html
+        suppressHydrationWarning={true}
+        className={` ${jakarta.variable} `}
+        lang="en"
+      >
+        <head>
+          <Analytics />
+
+          {/* Google Tag Manager */}
+          <Script
+            id="gtm"
+            strategy="beforeInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+      new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+      j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+      'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+      })(window,document,'script','dataLayer','GTM-M24FJ7JC');`,
+            }}
+          />
+          {/* End Google Tag Manager */}
+
+          <Script
+            id="cello"
+            src="https://assets.sandbox.cello.so/app/latest/cello.js"
+            type="module"
+            async
+            strategy="afterInteractive"
+          />
+          <Script
+            id="json-ld"
+            type="application/ld+json"
+            strategy="beforeInteractive"
+            suppressHydrationWarning
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdData) }}
+          />
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link
+            rel="preconnect"
+            href="https://fonts.gstatic.com"
+            crossOrigin={"anonymous"}
+          />
+          <link
+            href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap"
+            rel="stylesheet"
+          />
+          <link rel="icon" href="/favicon/favicon.ico" sizes="any" />
+          <link
+            rel="apple-touch-icon"
+            href="/favicon/apple-touch-icon.png"
+            sizes="any"
+          />
+          {/* Review Snippet structured data */}
+          <Script
+            id="review-snippet"
+            type="application/ld+json"
+            strategy="beforeInteractive"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "Product",
+                name: "CELPIP Practice Test Online",
+                description:
+                  "High-quality online service offering CELPIP mock exams with AI scoring, expert feedback, and realistic test experience.",
+                aggregateRating: {
+                  "@type": "AggregateRating",
+                  ratingValue: "4.8",
+                  reviewCount: "3132",
+                },
+              }),
+            }}
+          />
+          {/* End Review Snippet structured data */}
+        </head>
+        <body className={`bg-[#F4F7FF]`}>
+          {/* Google Tag Manager (noscript) */}
+          <noscript>
+            <iframe
+              src="https://www.googletagmanager.com/ns.html?id=GTM-M24FJ7JC"
+              height="0"
+              width="0"
+              style={{ display: "none", visibility: "hidden" }}
+            ></iframe>
+          </noscript>
+          {/* End Google Tag Manager (noscript) */}
+
+          <NextTopLoader />
+          <ReactQueryProvider>{children}</ReactQueryProvider>
+          <PremiumPlanDrawer />
+          <IntercomLoader />
+        </body>
+      </html>
+    </ClerkProvider>
+  );
+}

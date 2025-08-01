@@ -1,0 +1,218 @@
+{
+  "name": "Test1",
+  "title": "Test 1",
+  "description": "A conversation between Sophia and Ethan about visiting a local art exhibition",
+  "instructions": [
+    "You will hear two conversations with following context.",
+    "Passage1 Context: A student is speaking with a library staff member about an overdue book.",
+    "Passage2 Context: A part-time employee is asking their manager to change their work hours",
+    "Each conversation is followed by a set of multiple-choice questions.",
+    "Choose the best answer for each question."
+  ],
+  "type": "LISTENING",
+  "isFree": true,
+  "duration": "1:15",
+  "difficulty": "intermediate",
+  "totalQuestion": 5, 
+  "totalPassages": 2,
+  "taskId": "67ebefe2187829d27daac3c5",
+  "passages": [
+    {
+      "id": "1",
+      "audioUrl": "https://fmrxubhfxyhtrpmmnyso.supabase.co/storage/v1/object/public/Celpip//19%20Art%20Exhibition%20Discussion.mp3",
+      "title": "Library Late Fee and Renewal Discussion",
+      "setting": "Two friends are deciding how to celebrate a birthday on a limited budget",
+      "conversation": [
+        {
+          "name": "Library Staff",
+          "text": "Hi there. Are you here to return a book?"
+        },
+        {
+          "name": "Student",
+          "text": "Yes. I just realized it’s overdue by a few days."
+        },
+        {
+          "name": "Library Staff",
+          "text": "Let me check… Okay, it’s 3 days late, so that’s a $1.50 fine."
+        },
+        {
+          "name": "Student",
+          "text": "No problem. Can I still renew it for another two weeks?"
+        },
+        {
+          "name": "Library Staff",
+          "text": "Actually, someone else has placed a hold on it, so it needs to be returned today."
+        },
+        {
+          "name": "Student",
+          "text": "Got it. I’ll just pay the fine and return it."
+        },
+        {
+          "name": "Library Staff",
+          "text": "Thanks! You’re all set."
+        }
+      ],
+      "questions": [
+        {
+          "id": "1",
+          "question": "Why did the student approach the library staff?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "To complain about a lost book"
+            },
+            {
+              "id": "b",
+              "text": "To pay a late return fine"
+            },
+            {
+              "id": "c",
+              "text": "To cancel a library account"
+            },
+            {
+              "id": "d",
+              "text": "To apply for a study room"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "b"
+        },
+        {
+          "id": "2",
+          "question": "Why can’t the student renew the book?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "The library system is offline"
+            },
+            {
+              "id": "b",
+              "text": "The student reached the limit of renewals"
+            },
+            {
+              "id": "c",
+              "text": "Someone else has requested the book"
+            },
+            {
+              "id": "d",
+              "text": "The book was damaged"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "c"
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "audioUrl": "https://fmrxubhfxyhtrpmmnyso.supabase.co/storage/v1/object/public/Celpip//19%20Art%20Exhibition%20Discussion.mp3",
+      "title": "Workplace Schedule Adjustment Request",
+      "setting": "A part-time employee is asking their manager to change their work hours.",
+      "conversation": [
+        {
+          "name": "Employee",
+          "text": "Hi, I was wondering if I could switch my shift this Thursday."
+        },
+        {
+          "name": "Manager",
+          "text": "What’s going on?"
+        },
+        {
+          "name": "Employee",
+          "text": "I have an exam in the evening, and my shift is from 5 to 9."
+        },
+        {
+          "name": "Manager",
+          "text": "Hmm. Let me check… We could move you to the afternoon shift—1 to 5."
+        },
+        {
+          "name": "Employee",
+          "text": "That would be perfect. Thank you!"
+        },
+        {
+          "name": "Manager",
+          "text": "No problem. I’ll update the schedule."
+        }
+      ],
+      "questions": [
+        {
+          "id": "3",
+          "question": "Why does the employee want to change their shift?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "They are feeling unwell"
+            },
+            {
+              "id": "b",
+              "text": "They have an evening exam"
+            },
+            {
+              "id": "c",
+              "text": "They need to travel"
+            },
+            {
+              "id": "d",
+              "text": "They are working a second job"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "b"
+        },
+        {
+          "id": "4",
+          "question": "What time is the new shift scheduled for?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "9 a.m. to 1 p.m."
+            },
+            {
+              "id": "b",
+              "text": "2 p.m. to 6 p.m."
+            },
+            {
+              "id": "c",
+              "text": "1 p.m. to 5 p.m."
+            },
+            {
+              "id": "d",
+              "text": "10 a.m. to 2 p.m"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "c"
+        },
+        {
+          "id": "5",
+          "question": "What is the manager’s final response?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "The shift cannot be changed"
+            },
+            {
+              "id": "b",
+              "text": "They’ll approve it for next week"
+            },
+            {
+              "id": "c",
+              "text": "The employee must find a replacement."
+            },
+            {
+              "id": "d",
+              "text": "The change will be made to the schedule"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "d"
+        }
+      ]
+    }
+  ]
+}

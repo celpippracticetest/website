@@ -1,0 +1,42 @@
+{
+    "name": "Listening to Problem solving",
+    "type": "practice",
+    "isFree": true,
+    "category": "listening",
+    "taskNumber": "Task #1"
+},
+{
+    "name": "Listening to a daily life conversation",
+    "type": "practice",
+    "isFree": true,
+    "category": "listening",
+    "taskNumber": "Task #2"
+},
+{
+    "name": "Listening to information",
+    "type": "practice",
+    "isFree": true,
+    "category": "listening",
+    "taskNumber": "Task #3"
+},
+{
+    "name": "Listening to news item",
+    "type": "practice",
+    "isFree": true,
+    "category": "listening",
+    "taskNumber": "Task #4"
+},
+{
+    "name": "Listening to discussion",
+    "type": "practice",
+    "isFree": true,
+    "category": "listening",
+    "taskNumber": "Task #5"
+},
+{
+    "name": "Listening to view port",
+    "type": "practice",
+    "isFree": true,
+    "category": "listening",
+    "taskNumber": "Task #6"
+}

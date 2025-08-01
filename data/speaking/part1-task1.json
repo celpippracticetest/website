@@ -1,0 +1,32 @@
+{
+  "name": "Test1",
+  "title": "First Time Zero-Waste Shopping",
+  "description": "",
+  "instructions": [
+  ],
+  "type": "SPEAKING",
+  "isFree": true,
+  "difficulty": "beginner",
+  "taskId": "67f454ba16846d97ecbde9f0",
+  "passages": [
+    {
+      "id": "1",
+      "title": "First Time Zero-Waste Shopping",
+      "setting": "",
+      "body": "Your friend wants to start living a zero-waste lifestyle but doesn’t know where to begin. He is confused about what products to buy and how to reduce waste while shopping. Give him some advice on how to get started.",
+      "sampleResponse": [{
+        "id": "1",
+        "title": "Level 4-5",
+        "body":"Hey, I think you should start small. Bring your own bags when shopping. Try to buy things with less plastic. Also, you can use glass jars for food like rice or beans. Maybe visit a zero-waste store if there is one. Don’t worry too much—just do your best!"
+      },{
+        "id": "2",
+        "title": "Level 7-8",
+        "body":"Hi! It’s great that you want to start zero-waste shopping. First, bring your own reusable bags and containers when you go shopping. Second, try to buy items in bulk instead of packaged products. Also, look for farmers’ markets where you can buy fresh produce without plastic. Finally, choose products made from natural or recyclable materials. It takes time to adjust, but small changes make a big difference!"
+      },{
+        "id": "3",
+        "title": "Level 10-12",
+        "body":"That’s a great decision! The best way to start is by assessing your current shopping habits and identifying areas where you can reduce waste. I recommend investing in reusable bags, glass jars, and cloth produce bags. When shopping, prioritize bulk food stores and farmer’s markets to avoid unnecessary packaging. Additionally, switch to sustainable alternatives like bamboo toothbrushes and refillable cleaning supplies. Remember, zero-waste living is a journey, so take one step at a time and celebrate your progress!"
+      }]
+    }
+  ]
+}

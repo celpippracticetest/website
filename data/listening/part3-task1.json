@@ -1,0 +1,251 @@
+{
+  "name": "Test1",
+  "title": "Test 1",
+  "description": "A conversation between Sophia and Ethan about visiting a local art exhibition",
+  "instructions": [
+    "You will hear two conversations with following context.",
+    "Passage1 Context: A woman is asking a gym staff member about fitness class options.",
+    "Passage2 Context: A man is speaking with a gallery staff member about a new exhibit.",
+    "Each conversation is followed by a set of multiple-choice questions.",
+    "Choose the best answer for each question."
+  ],
+  "type": "LISTENING",
+  "isFree": true,
+  "duration": "1:15",
+  "difficulty": "beginning",
+  "totalQuestion": 6, 
+  "totalPassages": 2,
+  "taskId": "67ebefe7187829d27daac3c6",
+  "passages": [
+    {
+      "id": "1",
+      "audioUrl": "https://fmrxubhfxyhtrpmmnyso.supabase.co/storage/v1/object/public/Celpip//19%20Art%20Exhibition%20Discussion.mp3",
+      "title": "Inquiring About Fitness Class Options at a Gym",
+      "setting": "A woman is asking a gym staff member about fitness class options.",
+      "conversation": [
+        {
+          "name": "Person 1",
+          "text": "Hi, I recently joined your gym and was wondering what kinds of fitness classes you offer."
+        },
+        {
+          "name": "Person 2",
+          "text": "Sure! We run yoga, HIIT, spin, and pilates classes throughout the week."
+        },
+        {
+          "name": "Person 1",
+          "text": "Do you have early morning classes?"
+        },
+        {
+          "name": "Person 2",
+          "text": "Yes. Yoga starts at 6:30 a.m. on weekdays, and there’s a HIIT class at 7."
+        },
+        {
+          "name": "Person 1",
+          "text": "How long is each class?"
+        },
+        {
+          "name": "Person 2",
+          "text": "Most are 45 minutes, but yoga is an hour."
+        },
+        {
+          "name": "Person 1",
+          "text": "And do I need to register?"
+        },
+        {
+          "name": "Person 2",
+          "text": "Only for spin classes—others are drop-in."
+        }
+      ],
+      "questions": [
+        {
+          "id": "1",
+          "question": "What is the woman asking about?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "Training equipment availability"
+            },
+            {
+              "id": "b",
+              "text": "Gym membership fees"
+            },
+            {
+              "id": "c",
+              "text": "Fitness class options and times"
+            },
+            {
+              "id": "d",
+              "text": "Locker room rules"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "c"
+        },
+        {
+          "id": "2",
+          "question": "Which class starts at 6:30 a.m.?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "Spin"
+            },
+            {
+              "id": "b",
+              "text": "HIIT"
+            },
+            {
+              "id": "c",
+              "text": "Pilates"
+            },
+            {
+              "id": "d",
+              "text": "Yoga"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "d"
+        },
+        {
+          "id": "3",
+          "question": "Which class requires registration in advance?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "Yoga"
+            },
+            {
+              "id": "b",
+              "text": "Spin"
+            },
+            {
+              "id": "c",
+              "text": "HIIT"
+            },
+            {
+              "id": "d",
+              "text": "Pilates"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "b"
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "audioUrl": "https://fmrxubhfxyhtrpmmnyso.supabase.co/storage/v1/object/public/Celpip//19%20Art%20Exhibition%20Discussion.mp3",
+      "title": "Asking About an Art Exhibit at a Local Gallery",
+      "setting": "A man is speaking with a gallery staff member about a new exhibit.",
+      "conversation": [
+        {
+          "name": "Person 1",
+          "text": "Hi, I heard you have a new photography exhibit. Can you tell me more about it?"
+        },
+        {
+          "name": "Person 2",
+          "text": "Yes! It just opened yesterday. It features landscape photography by Canadian artists."
+        },
+        {
+          "name": "Person 1",
+          "text": "Sounds great. How long will it be on display?"
+        },
+        {
+          "name": "Person 2",
+          "text": "Until the end of next month—so, about six weeks."
+        },
+        {
+          "name": "Person 1",
+          "text": "Is there an entrance fee?"
+        },
+        {
+          "name": "Person 2",
+          "text": "Admission is by donation on weekdays and $5 on weekends."
+        },
+        {
+          "name": "Person 1",
+          "text": "Thanks. I’ll drop by next week."
+        }
+      ],
+      "questions": [
+        {
+          "id": "4",
+          "question": "What kind of exhibit is being discussed?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "Sculpture"
+            },
+            {
+              "id": "b",
+              "text": "Modern abstract art"
+            },
+            {
+              "id": "c",
+              "text": "Landscape photography"
+            },
+            {
+              "id": "d",
+              "text": "Mixed media installations"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "c"
+        },
+        {
+          "id": "5",
+          "question": "How long will the exhibit be available?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "Two weeks"
+            },
+            {
+              "id": "b",
+              "text": "One month"
+            },
+            {
+              "id": "c",
+              "text": "Six weeks"
+            },
+            {
+              "id": "d",
+              "text": "All year"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "c"
+        },
+        {
+          "id": "6",
+          "question": "When is the exhibit free to visit?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "Weekends"
+            },
+            {
+              "id": "b",
+              "text": "Mornings only"
+            },
+            {
+              "id": "c",
+              "text": "TWeekdays (by donation)"
+            },
+            {
+              "id": "d",
+              "text": "Only on holidays"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "c"
+        }
+      ]
+    }
+  ]
+}

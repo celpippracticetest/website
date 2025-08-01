@@ -1,0 +1,36 @@
+{
+    "name": "Test1",
+    "title": "Writing an Email",
+    "description": "",
+    "instructions": [
+    ],
+    "type": "WRITING",
+    "isFree": true,
+    "difficulty": "beginner",
+    "taskId": "67f203dfa44a7cf5683b80cd",
+    "passages": [
+      {
+        "id": "1",
+        "title": "Planning a Small Birthday Celebration ",
+        "setting": "You recently signed up for a home internet service with a one-year contract. However, you have experienced several issues, including frequent connection drops, slow speeds, and poor customer service.",
+        "body": "Write an email to the internet provider’s customer service department in about 150-200 words. Your email should do the following:${NL}${BP}Explain the problems you've experienced with the internet connection.${NL}${BP}Describe the impact of slow speeds and connection drops on your daily activities.${NL}${BP}Express your dissatisfaction with customer service.${NL}${BP}Request specific actions to address these concerns or ask for a refund.",
+        "sampleResponse": [{
+          "id": "1",
+          "title": "Sample Response (Level 7-8)",
+          "subject": "Internet Connection Issues",
+          "body":"Dear Customer Service,${NL}I am writing to complain about the issues I have been facing with my internet service. The connection frequently drops, and the speed is much slower than what was promised. This has made it very difficult for me to complete my work and use the internet properly.${NL}Also, I have called customer service many times, but I have not received any real help. The representatives do not seem to care about solving the problem.${NL}I hope you can fix these issues soon. If not, I would like to discuss a refund for my subscription.${NL}Thank you for your attention.${NL}Best regards,${NL} [Your Name]"
+        },{
+          "id": "2",
+          "title": "Sample Response (Level 8-9)",
+          "subject": "Ongoing Issues with Internet Service",
+          "body":"Dear [Customer Service Representative],${NL}I hope you are doing well. I am writing to express my frustration with the internet service I have received since signing up for a one-year plan.${NL}First, I have been experiencing frequent connection drops, making it difficult to attend online meetings and complete work on time. The slow internet speed is also affecting my ability to stream videos and browse the web smoothly.${NL}Moreover, I have contacted customer support multiple times, but the responses have been unhelpful. The representatives have not provided a clear solution, and I am still facing the same issues.${NL}I would appreciate it if these problems could be addressed immediately. Otherwise, I will have to consider requesting a partial refund.${NL}Looking forward to your response.${NL}Best regards,${NL}[Your Full Name]${NL}[Your Account Number]"
+        },{
+          "id": "3",
+          "title": "Sample Response (Level 10-12)",
+          "subject": "Urgent Complaint – Unreliable Internet Service",
+          "body":"Dear [Customer Service Representative],${NL}I hope this email finds you well. I am reaching out to formally raise concerns regarding my home internet service, which has been consistently unreliable since I signed up for a one-year contract.${NL}${BP}** Frequent Disruptions **: My connection drops multiple times a day, making it impossible to work efficiently or attend important online meetings.${NL}${BP} ** Slow Speeds **: Despite subscribing to a high-speed plan, my internet is much slower than advertised, affecting my ability to stream, download, and browse.${NL}${BP} **Customer Service Issues: Each time I have contacted customer support, I have received vague responses with no effective solutions. The lack of urgency and accountability is extremely disappointing.${NL}I kindly request immediate action to resolve these problems, including a thorough inspection of my connection and a speed test to ensure I am receiving the service I paid for. If these issues persist, I will have no choice but to request a full refund or terminate my contract without penalty.${NL}I appreciate your prompt attention to this matter and look forward to a resolution.${NL}Best regards,${NL}[Your Full Name]${NL}[Your Account Number]"
+        }]
+      }
+    ]
+  }
+  

@@ -1,0 +1,332 @@
+{
+  "name": "Test1",
+  "title": "Test 1",
+  "description": "A conversation between Sophia and Ethan about visiting a local art exhibition",
+  "instructions": [
+    "You will hear three conversations.",
+    "Each conversation is followed by a set of multiple-choice questions.",
+    "Choose the best answer for each question."
+  ],
+  "type": "LISTENING",
+  "isFree": true,
+  "duration": "1:15",
+  "difficulty": "beginner",
+  "totalQuestion": 8, 
+  "totalPassages": 3,
+  "taskId": "67ebeffe187829d27daac3c8",
+  "passages": [
+    {
+      "id": "1",
+      "audioUrl": "https://fmrxubhfxyhtrpmmnyso.supabase.co/storage/v1/object/public/Celpip//19%20Art%20Exhibition%20Discussion.mp3",
+      "title": "Choosing a Guest Speaker for a Business Seminar",
+      "setting": "A woman is asking a gym staff member about fitness class options.",
+      "conversation": [
+        {
+          "name": "Speaker 1",
+          "text": "So, we need to decide who we want as our keynote speaker for the seminar next month."
+        },
+        {
+          "name": "Speaker 2",
+          "text": "I’d suggest Susan Lee. She spoke at last year’s event and got great feedback."
+        },
+        {
+          "name": "Speaker 3",
+          "text": "She was excellent, but maybe we should bring in someone new this time? What about Daniel Reaves?"
+        },
+        {
+          "name": "Speaker 1",
+          "text": "He’s the marketing strategist, right? He’s good, but I’m not sure if students will find his talk engaging."
+        },
+        {
+          "name": "Speaker 2",
+          "text": "Actually, I’ve heard he includes interactive activities. That might be more appealing this year."
+        },
+        {
+          "name": "Speaker 3",
+          "text": "That’s a good point. We also haven’t had a speaker from the tech sector in a while. He could bring a fresh angle."
+        },
+        {
+          "name": "Speaker 1",
+          "text": "Okay, let’s go with Daniel, then. I’ll reach out to confirm his availability."
+        }
+      ],
+      "questions": [
+        {
+          "id": "1",
+          "question": "What is the group trying to decide?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "Whether to cancel the seminar"
+            },
+            {
+              "id": "b",
+              "text": "What the seminar topic should be"
+            },
+            {
+              "id": "c",
+              "text": "Who the guest speaker should be"
+            },
+            {
+              "id": "d",
+              "text": "Where to host the event"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "c"
+        },
+        {
+          "id": "2",
+          "question": "What is one reason they choose Daniel Reaves?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "He’s from the university"
+            },
+            {
+              "id": "b",
+              "text": "He gave a great speech last year"
+            },
+            {
+              "id": "c",
+              "text": "He includes interactive activities"
+            },
+            {
+              "id": "d",
+              "text": "He’s available this week"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "c"
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "audioUrl": "https://fmrxubhfxyhtrpmmnyso.supabase.co/storage/v1/object/public/Celpip//19%20Art%20Exhibition%20Discussion.mp3",
+      "title": "Deciding on a Team Building Activity",
+      "setting": "A man is speaking with a gallery staff member about a new exhibit.",
+      "conversation": [
+        {
+          "name": "Speaker 1",
+          "text": "Alright, team. We have the afternoon off next Friday for a team-building activity. What are our options?"
+        },
+        {
+          "name": "Speaker 2",
+          "text": "Escape room, hiking, or maybe a pottery class?"
+        },
+        {
+          "name": "Speaker 3",
+          "text": "Escape room sounds fun, but not everyone enjoys puzzles."
+        },
+        {
+          "name": "Speaker 2",
+          "text": "True. Hiking might be more relaxed, and it’s free."
+        },
+        {
+          "name": "Speaker 1",
+          "text": "What about pottery? It’s indoors, good for any weather, and a new experience for most of us."
+        },
+        {
+          "name": "Speaker 3",
+          "text": "I actually love that idea. Plus, we can take something home."
+        },
+        {
+          "name": "Speaker 1",
+          "text": "Pottery it is, then. I’ll book the studio."
+        }
+      ],
+      "questions": [
+        {
+          "id": "3",
+          "question": "What activity do they agree on?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "Hiking"
+            },
+            {
+              "id": "b",
+              "text": "Pottery class"
+            },
+            {
+              "id": "c",
+              "text": "Escape room"
+            },
+            {
+              "id": "d",
+              "text": "Cooking class"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "b"
+        },
+        {
+          "id": "4",
+          "question": "What is one reason they choose pottery?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "It’s outdoors"
+            },
+            {
+              "id": "b",
+              "text": "It’s cheaper than hiking"
+            },
+            {
+              "id": "c",
+              "text": "It works in any weather"
+            },
+            {
+              "id": "d",
+              "text": "It requires no equipment"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "c"
+        }
+      ]
+    },{
+      "id": "3",
+      "audioUrl": "https://fmrxubhfxyhtrpmmnyso.supabase.co/storage/v1/object/public/Celpip//19%20Art%20Exhibition%20Discussion.mp3",
+      "title": "Organizing a Class Group Project",
+      "setting": "A man is speaking with a gallery staff member about a new exhibit.",
+      "conversation": [
+        {
+          "name": "Speaker 1",
+          "text": "So, we need to divide the tasks for our group presentation. I can handle the visuals and PowerPoint slides."
+        },
+        {
+          "name": "Speaker 2",
+          "text": "Great. I’ll take care of the research section. I’ve already gathered some articles."
+        },
+        {
+          "name": "Speaker 3",
+          "text": "I’m happy to present the final part and do the speaking."
+        },
+        {
+          "name": "Speaker 1",
+          "text": "Awesome. That leaves the introduction."
+        },
+        {
+          "name": "Speaker 2",
+          "text": "I can do that too, since I’m already deep into the research."
+        },
+        {
+          "name": "Speaker 3",
+          "text": "That works. When should we rehearse?"
+        },
+        {
+          "name": "Speaker 1",
+          "text": "How about Wednesday evening?"
+        }
+      ],
+      "questions": [
+        {
+          "id": "5",
+          "question": "What role does Speaker 1 take?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "Research and writing"
+            },
+            {
+              "id": "b",
+              "text": "Speaking and editing"
+            },
+            {
+              "id": "c",
+              "text": "Creating the slides"
+            },
+            {
+              "id": "d",
+              "text": "Doing the introduction"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "c"
+        },
+        {
+          "id": "6",
+          "question": "Who volunteers to present during the final part?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "Speaker 2"
+            },
+            {
+              "id": "b",
+              "text": "Speaker 3"
+            },
+            {
+              "id": "c",
+              "text": "Speaker 1"
+            },
+            {
+              "id": "d",
+              "text": "No one"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "b"
+        },
+        {
+          "id": "7",
+          "question": "What task does Speaker 2 agree to take on in addition to research?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "Designing visuals"
+            },
+            {
+              "id": "b",
+              "text": "Handling the conclusion"
+            },
+            {
+              "id": "c",
+              "text": "Giving the introduction"
+            },
+            {
+              "id": "d",
+              "text": "Managing the schedule"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "c"
+        },
+        {
+          "id": "8",
+          "question": "When does the group plan to rehearse?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "Monday morning"
+            },
+            {
+              "id": "b",
+              "text": "Tuesday evening"
+            },
+            {
+              "id": "c",
+              "text": "Wednesday evening"
+            },
+            {
+              "id": "d",
+              "text": "Friday afternoon"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "c"
+        }
+      ]
+    }
+  ]
+}

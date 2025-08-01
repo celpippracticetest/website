@@ -1,0 +1,289 @@
+{
+    "name": "Test1",
+    "title": "Community Garden Proposal",
+    "description": "",
+    "instructions": [
+    ],
+    "type": "READING",
+    "isFree": true,
+    "difficulty": "beginner",
+    "totalQuestion": 11, 
+    "totalPassages": 2,
+    "taskId": "67ebefda187829d27daac3c4",
+    "passages": [
+      {
+        "id": "1",
+        "title": "Planning a Small Birthday Celebration ",
+        "body": "Dear Neighbors,${NL}I’m excited to propose a community garden project for our block and would love your feedback! After months of research, I’ve secured a vacant lot on Elm Street, available starting June 1st, for us to transform into a shared green space. The goal is to grow fresh produce—like tomatoes, herbs, and squash—while fostering a sense of community. The city has agreed to waive the permit fees if we commit to maintaining it, but we’ll need to fund tools, seeds, and irrigation ourselves. I estimate $800 to start—would a crowdfunding campaign work, or should we seek a local sponsor?${NL}I envision raised garden beds to accommodate all skill levels, plus a compost system to keep it sustainable. Should we limit plots to one per household, or allow multiple based on interest? I’d also like to host a kickoff event—perhaps a planting day with refreshments. Would you prefer mid-June or early July, considering summer schedules? Finally, I could use volunteers to clear weeds and prep the soil on May 25th from 9 a.m. to noon. Please reply by May 15th with your thoughts—I’d hate to move forward without everyone’s input!${NL}Best regards,${NL}Lila (Unit 12B)${NL}",
+        "questions": [
+          {
+            "id": "1",
+            "question": "Lila is emailing to…",
+            "choices": [
+              {
+                "id": "a",
+                "text": "propose a garden and gather opinions."
+              },
+              {
+                "id": "b",
+                "text": "announce a finished project."
+              },
+              {
+                "id": "c",
+                "text": "request city funding."
+              },
+              {
+                "id": "d",
+                "text": "assign gardening tasks"
+              }
+            ],
+            "type": "MULTIPLE_CHOICE_QUESTION",
+            "answer": "b"
+          },
+          {
+            "id": "2",
+            "question": "The garden will be on…",
+            "choices": [
+              {
+                "id": "a",
+                "text": "Elm Street."
+              },
+              {
+                "id": "b",
+                "text": "Lila’s property."
+              },
+              {
+                "id": "c",
+                "text": "a city park."
+              },
+              {
+                "id": "d",
+                "text": "an unnamed lot."
+              }
+            ],
+            "type": "MULTIPLE_CHOICE_QUESTION",
+            "answer": "c"
+          },
+          {
+            "id": "3",
+            "question": "The produce might include…",
+            
+            "choices": [
+              {
+                "id": "a",
+                "text": "squash"
+              },
+              {
+                "id": "b",
+                "text": "apples only."
+              },
+              {
+                "id": "c",
+                "text": "flowers."
+              },
+              {
+                "id": "d",
+                "text": "wheat"
+              }
+            ],
+            "type": "MULTIPLE_CHOICE_QUESTION",
+            "answer": "b"
+          },
+          {
+            "id": "4",
+            "question": "Lila suggests raised beds to…",
+            
+            "choices": [
+              {
+                "id": "a",
+                "text": "suit all gardeners."
+              },
+              {
+                "id": "b",
+                "text": "save money."
+              },
+              {
+                "id": "c",
+                "text": "grow trees."
+              },
+              {
+                "id": "d",
+                "text": "replace compost."
+              }
+            ],
+            "type": "MULTIPLE_CHOICE_QUESTION",
+            "answer": "b"
+          },{
+            "id": "5",
+            "question": "Volunteers are needed on…",
+            
+            "choices": [
+              {
+                "id": "a",
+                "text": "May 25th."
+              },
+              {
+                "id": "b",
+                "text": "June 1st."
+              },
+              {
+                "id": "c",
+                "text": "all summer."
+              },
+              {
+                "id": "d",
+                "text": "May 15th."
+              }
+            ],
+            "type": "MULTIPLE_CHOICE_QUESTION",
+            "answer": "b"
+          },{
+            "id": "5",
+            "question": "The kickoff event could be in…",
+            
+            "choices": [
+              {
+                "id": "a",
+                "text": "early July."
+              },
+              {
+                "id": "b",
+                "text": "late May."
+              },
+              {
+                "id": "c",
+                "text": "winter."
+              },
+              {
+                "id": "d",
+                "text": "next year."
+              }
+            ],
+            "type": "MULTIPLE_CHOICE_QUESTION",
+            "answer": "b"
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "title": "Response",
+        "body": "Dear Lila,${NL}Love the garden idea—I’ve been hoping for something like this on our block! The thought of fresh ${Q7} sounds delicious, and I think it’ll bring us all closer together. I’d go with crowdfunding—Q{8} seems practical since it spreads the cost evenly and gets everyone invested. One plot per household is fine—${Q9} keeps it fair, especially with limited space. I’d pick mid-June for the event—${Q10} works better for me because July’s already packed with travel plans. I can volunteer on the 25th—11 ${Q11} is doable, and I’m happy to pitch in with the weeding crew! Looking forward to seeing this take root.${NL}Cheers,${NL}Sam",
+        "questions": [
+          {
+            "id": "7",
+            "choices": [
+              {
+                "id": "a",
+                "text": "squash"
+              },
+              {
+                "id": "b",
+                "text": "flowers"
+              },
+              {
+                "id": "c",
+                "text": "nothing"
+              },
+              {
+                "id": "d",
+                "text": "more"
+              }
+            ],
+            "type": "FILL_THE_GAP",
+            "answer": "c"
+          },
+          {
+            "id": "8",
+            "choices": [
+              {
+                "id": "a",
+                "text": "that"
+              },
+              {
+                "id": "b",
+                "text": "sponsors"
+              },
+              {
+                "id": "c",
+                "text": "both"
+              },
+              {
+                "id": "d",
+                "text": "neither"
+              }
+            ],
+            "type": "FILL_THE_GAP",
+            "answer": "b"
+          },{
+            "id": "9",
+            "choices": [
+              {
+                "id": "a",
+                "text": "that"
+              },
+              {
+                "id": "b",
+                "text": "multiple"
+              },
+              {
+                "id": "c",
+                "text": "fewer"
+              },
+              {
+                "id": "d",
+                "text": "everyone"
+              }
+            ],
+            "type": "FILL_THE_GAP",
+            "answer": "b"
+          },
+          {
+            "id": "10",
+            "choices": [
+              {
+                "id": "a",
+                "text": "that"
+              },
+              {
+                "id": "b",
+                "text": "July"
+              },
+              {
+                "id": "c",
+                "text": "later"
+              },
+              {
+                "id": "d",
+                "text": " no event"
+              }
+            ],
+            "type": "FILL_THE_GAP",
+            "answer": "b"
+          },{
+            "id": "11",
+            "choices": [
+              {
+                "id": "a",
+                "text": "that"
+              },
+              {
+                "id": "b",
+                "text": "noon"
+              },
+              {
+                "id": "c",
+                "text": "earlier"
+              },
+              {
+                "id": "d",
+                "text": "weeds"
+              }
+            ],
+            "type": "FILL_THE_GAP",
+            "answer": "b"
+          }
+        ]
+      }
+    ]
+  }
+  

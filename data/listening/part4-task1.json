@@ -1,0 +1,159 @@
+{
+  "name": "Test1",
+  "title": "Test 1",
+  "description": "A conversation between Sophia and Ethan about visiting a local art exhibition",
+  "instructions": [
+    "You will hear two conversations with following context.",
+    "Passage1 Context: A woman is asking a gym staff member about fitness class options.",
+    "Passage2 Context: A man is speaking with a gallery staff member about a new exhibit.",
+    "Each conversation is followed by a set of multiple-choice questions.",
+    "Choose the best answer for each question."
+  ],
+  "type": "LISTENING",
+  "isFree": true,
+  "duration": "1:15",
+  "difficulty": "beginning",
+  "totalQuestion": 5, 
+  "totalPassages": 1,
+  "taskId": "67ebefec187829d27daac3c7",
+  "passages": [
+    {
+      "id": "1",
+      "audioUrl": "https://fmrxubhfxyhtrpmmnyso.supabase.co/storage/v1/object/public/Celpip//19%20Art%20Exhibition%20Discussion.mp3",
+      "title": "City Introduces New Downtown Traffic Plan",
+      "setting": "A woman is asking a gym staff member about fitness class options.",
+      "conversation": [
+        {
+          "name": "News Anchor",
+          "text": "The City of Brooksville has announced a new traffic management plan aimed at reducing congestion in the downtown core. Starting next Monday, several main streets will become one-way routes during rush hours, and additional bike lanes will be added along 4th Avenue and Wellington Street.\nMayor Angela Dawson explained that the changes are based on a recent traffic study that showed a 35% increase in vehicle volume over the past two years. She emphasized that the plan will also improve pedestrian safety, with longer crossing times at key intersections.\nWhile some business owners have expressed concern about reduced parking, the city has promised to add two new public parking lots on the edges of the downtown zone.\nThe full plan will be tested for three months before being made permanent."
+        }
+      ],
+      "questions": [
+        {
+          "id": "1",
+          "question": "What is the purpose of the city’s new plan?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "To widen sidewalks"
+            },
+            {
+              "id": "b",
+              "text": "To reduce downtown traffic congestion"
+            },
+            {
+              "id": "c",
+              "text": "To close streets for construction"
+            },
+            {
+              "id": "d",
+              "text": "To replace public transit with bike lanes"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "b"
+        },
+        {
+          "id": "2",
+          "question": "When will the changes take effect?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "Tomorrow morning"
+            },
+            {
+              "id": "b",
+              "text": "At the end of the year"
+            },
+            {
+              "id": "c",
+              "text": "Next Monday"
+            },
+            {
+              "id": "d",
+              "text": "In three months"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "c"
+        },
+        {
+          "id": "3",
+          "question": "What change will be made to 4th Avenue?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "It will be closed to traffic"
+            },
+            {
+              "id": "b",
+              "text": "A new bus lane will be added"
+            },
+            {
+              "id": "c",
+              "text": "It will become a two-way street"
+            },
+            {
+              "id": "d",
+              "text": "A bike lane will be added"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "d"
+        },
+        {
+          "id": "4",
+          "question": "How long will the plan be tested before it becomes permanent?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "One month"
+            },
+            {
+              "id": "b",
+              "text": "Two months"
+            },
+            {
+              "id": "c",
+              "text": "Three months"
+            },
+            {
+              "id": "d",
+              "text": "Six months"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "c"
+        },{
+          "id": "5",
+          "question": "What concern did some business owners raise?",
+          "audioUrl":"https://u108saydmkdhqew3.public.blob.vercel-storage.com/practices/cm3pgvwdm006f9meuogd20v6v/questions/cm3pgvwih006v9meuistyj3p7_audio-y9CRYQV7j9j1pgt1FLuDP4AW7askGC.mp3",
+          "choices": [
+            {
+              "id": "a",
+              "text": "Loss of sidewalk access"
+            },
+            {
+              "id": "b",
+              "text": "Decreased pedestrian safety"
+            },
+            {
+              "id": "c",
+              "text": "Less available parking"
+            },
+            {
+              "id": "d",
+              "text": "No space for delivery trucks"
+            }
+          ],
+          "type": "MULTIPLE_CHOICE_QUESTION",
+          "answer": "c"
+        }
+      ]
+    }
+  ]
+}

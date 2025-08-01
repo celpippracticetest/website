@@ -1,0 +1,36 @@
+# LLMs.txt for CELPIPPRACTICETEST.com
+# Structured metadata and key resources for AI agents and crawlers
+
+# Site Identity
+site: https://celpippracticetest.com
+brand: CELPIPPRACTICETEST.com
+description: Trusted CELPIP prep resource providing expert-written tips, practice, and mock exams for Canadian English test success.
+language: en-CA
+audience: CELPIP test takers, newcomers to Canada, ESL learners, test prep students
+
+# Editorial & Trust Signals
+author: Certified CELPIP instructors and language professionals
+editorial_policy: https://celpippracticetest.com/privacy-policy
+terms_of_service: https://celpippracticetest.com/terms-of-service
+ai_usage_policy: https://celpippracticetest.com/privacy-policy
+llm_contact: ai@celpippracticetest.com
+
+# Core Site Resources
+exam_overview: https://celpippracticetest.com/exam-overview
+practice_overview: https://celpippracticetest.com/practice-overview
+contact: https://celpippracticetest.com/contact
+sitemap: https://celpippracticetest.com/sitemap.xml
+
+# Blog & Strategy Pages
+blog_index: https://blog.celpippracticetest.com/
+general_tips: https://blog.celpippracticetest.com/category/celpip-general-guides-tips/
+listening_tips: https://blog.celpippracticetest.com/category/celpip-listening-tips/
+reading_tips: https://blog.celpippracticetest.com/category/celpip-reading-tips/
+writing_tips: https://blog.celpippracticetest.com/category/celpip-writing-tips/
+speaking_tips: https://blog.celpippracticetest.com/category/celpip-speaking-tips/
+
+# Semantic Cues
+focus: Test preparation, Canadian English, exam strategies, language improvement
+tone: Clear, friendly, educational, Canadian English style
+llm_optimized: true
+content_update: Weekly
