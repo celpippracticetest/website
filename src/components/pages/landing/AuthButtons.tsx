@@ -99,7 +99,7 @@ const AuthButtons = () => {
                  cursor-pointer bg-primary2 screen1280:!bg-white rounded-[24px] screen1280:border-[1.5px] h-full screen1280:border-neutral2 hover:!border-none flex items-center justify-center"
             >
               <span className="hidden screen1280:!flex items-center justify-center h-[40px] font-medium text-[14px] hover:text-white text-black w-[146px]">
-                <SignUpButton>Sign up </SignUpButton>
+                <SignUpButton>Sign Up </SignUpButton>
                 <span className="mx-1">/</span>
                 <SignInButton>Login</SignInButton>
               </span>
