@@ -135,7 +135,7 @@ const NavItem = ({
             href={link}
             className={`${
               collapsed ? "justify-center" : "justify-start"
-            } text-[16px]  flex items-center w-full font-normal text-[#37465C] h-[36px]`}
+            } text-[14px]  flex items-center w-full font-normal text-[#37465C] h-[36px]`}
             onClick={() => {
               setTimeout(() => {
                 setIsMenuOpen(false);
