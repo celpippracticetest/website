@@ -188,7 +188,7 @@ const NavItem = ({
         )}
       </div>
       {!collapsed && open && subItems?.length ? (
-        <div className="ml-[16px] mt-[8px] flex flex-col gap-[6px]">
+        <div className="pl-[16px] ml-[8px] border-l-[1px] border-[#E6E6E6] mt-[8px] flex flex-col gap-[6px]">
           {subItems.map((subItem, index) => (
             <Link
               key={index}
