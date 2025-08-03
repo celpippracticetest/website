@@ -11,23 +11,37 @@ export async function POST(req: NextRequest) {
     const wh = new Webhook(CLERK_SECRET);
     const payload = await req.text();
     const headers = Object.fromEntries(req.headers.entries());
-    // Throws on error, returns the verified content on success
-    wh.verify(payload, headers);
 
-    const body = JSON.parse(payload);
+    let body;
+    try {
+      wh.verify(payload, headers);
+      body = JSON.parse(payload);
+    } catch (verifyError) {
+      console.error("Verification or JSON parsing failed:", verifyError);
+      return NextResponse.json(
+        { error: "Invalid webhook signature or payload" },
+        { status: 400 }
+      );
+    }
+
     const cioanalytics = new Analytics({
       writeKey: "d1d97f495f9f326a8163", // TODO fix it to read form ENV
       host: "https://cdp.customer.io",
     });
-    await cioanalytics.identify({
-      userId: body.data?.id,
-      traits: {
-        email: body.data.email_addresses[0].email_address,
-        created_at: Math.floor(
-          parseInt(body.data.created_at.toString()) / 1000
-        ),
-      },
-    });
+
+    try {
+      await cioanalytics.identify({
+        userId: body.data?.id,
+        traits: {
+          email: body.data.email_addresses?.[0]?.email_address,
+          created_at: Math.floor(
+            parseInt(body.data.created_at.toString()) / 1000
+          ),
+        },
+      });
+    } catch (cioError) {
+      console.error("Customer.io identify error:", cioError);
+    }
 
     // Check for Clerk user.created event
     if (body.type === "user.created" && body.data?.id) {
