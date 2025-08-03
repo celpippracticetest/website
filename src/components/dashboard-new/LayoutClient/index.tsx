@@ -105,7 +105,7 @@ const NavItem = ({
         onClick={handleClick}
       >
         {isPractice ? (
-          <div className="text-[16px] font-normal">
+          <div className="text-[14px] font-normal">
             <div
               className={clsx(
                 `flex shrink-0 ${
