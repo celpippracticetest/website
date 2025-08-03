@@ -3298,6 +3298,11 @@ csstype@3.1.3, csstype@^3.0.2:
   resolved "https://registry.yarnpkg.com/csstype/-/csstype-3.1.3.tgz#d80ff294d114fb0e6ac500fbf85b60137d7eff81"
   integrity sha512-M1uQkMl8rQK/szD0LNhtqxIPLpimGm8sOBwU7lLnCpSbTyY3yeU1Vc7l4KT5zT4s/yOxHH5O7tIuuLOCnLADRw==
 
+customerio-node@^4.2.0:
+  version "4.2.0"
+  resolved "https://registry.yarnpkg.com/customerio-node/-/customerio-node-4.2.0.tgz#a5ff4bb8dcf4f417c41fd950138cd0009309ca83"
+  integrity sha512-QEBD6zSDvYgX3e7fhblEpolSbygSVt0OKLS+el5v0EsfkL7ugW+qtiST0Y6alPDq6i4cuEGKEIZHrADmu1rW6A==
+
 damerau-levenshtein@^1.0.8:
   version "1.0.8"
   resolved "https://registry.yarnpkg.com/damerau-levenshtein/-/damerau-levenshtein-1.0.8.tgz#b43d286ccbd36bc5b2f7ed41caf2d0aba1f8a6e7"

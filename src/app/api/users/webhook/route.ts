@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Webhook } from "svix";
-import { Analytics } from "@customerio/cdp-analytics-node";
-// Replace with your Google Analytics Measurement ID and API Secret
+import { TrackClient, RegionUS } from "customerio-node";
+
 const GA_MEASUREMENT_ID = process.env.GA_MEASUREMENT_ID!;
 const GA_API_SECRET = process.env.GA_API_SECRET!;
 const CLERK_SECRET = process.env.CLERK_WEBHOOK_SECRET!;
@@ -24,20 +24,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const cioanalytics = new Analytics({
-      writeKey: "d1d97f495f9f326a8163", // TODO fix it to read form ENV
-      host: "https://cdp.customer.io",
-    });
+    const cio = new TrackClient(
+      "05f16cff56799907a78d",
+      "d1d97f495f9f326a8163",
+      { region: RegionUS }
+    );
 
     try {
-      await cioanalytics.identify({
-        userId: body.data?.id,
-        traits: {
-          email: body.data.email_addresses?.[0]?.email_address,
-          created_at: Math.floor(
-            parseInt(body.data.created_at.toString()) / 1000
-          ),
-        },
+      await cio.identify(body.data?.id, {
+        email: body.data.email_addresses?.[0]?.email_address,
+        created_at: Math.floor(
+          parseInt(body.data.created_at.toString()) / 1000
+        ),
       });
     } catch (cioError) {
       console.error("Customer.io identify error:", cioError);
