@@ -201,7 +201,7 @@ const NavItem = ({
                 }, 500);
               }}
               className={clsx(
-                " gap-[8px] text-[16px] h-[36px] text-[#76808F] hover:!text-[#212E42] px-[8px] flex items-center",
+                " gap-[8px] text-[14px] h-[36px] text-[#76808F] hover:!text-[#212E42] px-[8px] flex items-center",
                 subItem.label === submenuActive &&
                   "bg-[#D1DEFF] !text-[#212E42] rounded-[8px]"
               )}
