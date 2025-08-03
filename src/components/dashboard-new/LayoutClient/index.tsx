@@ -688,7 +688,7 @@ const LayoutClient = ({ children }: any) => {
                   logoClasses,
                   !collapsed ? "opacity-100 delay-300" : "opacity-0"
                 )}
-                src="/images/logo.png"
+                src="/images/logo-dashboard.png"
               />
             </Link>
           </div>
@@ -852,7 +852,7 @@ const LayoutClient = ({ children }: any) => {
                   logoClasses,
                   !collapsed ? "opacity-100 delay-300" : "opacity-0"
                 )}
-                src="/images/logo.png"
+                src="/images/logo-dashboard.png"
               />
             </Link>
             <div
