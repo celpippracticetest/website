@@ -8,7 +8,6 @@ const CLERK_SECRET = process.env.CLERK_WEBHOOK_SECRET!;
 // Clerk webhook handler
 export async function POST(req: NextRequest) {
   try {
-    
     const wh = new Webhook(CLERK_SECRET);
     const payload = await req.text();
     const headers = Object.fromEntries(req.headers.entries());
@@ -17,15 +16,19 @@ export async function POST(req: NextRequest) {
 
     const body = JSON.parse(payload);
     const cioanalytics = new Analytics({
-      writeKey: "9c3070e20a6782f0f20d", // TODO fix it to read form ENV
+      writeKey: "d1d97f495f9f326a8163", // TODO fix it to read form ENV
       host: "https://cdp.customer.io",
     });
     await cioanalytics.identify({
       userId: body.data?.id,
-      traits: {email: body.data.email_addresses[0].email_address, created_at: Math.floor(parseInt(body.data.created_at.toString())/1000) },
-      
+      traits: {
+        email: body.data.email_addresses[0].email_address,
+        created_at: Math.floor(
+          parseInt(body.data.created_at.toString()) / 1000
+        ),
+      },
     });
-    
+
     // Check for Clerk user.created event
     if (body.type === "user.created" && body.data?.id) {
       const userId = body.data.id;
@@ -56,6 +59,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Webhook error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
