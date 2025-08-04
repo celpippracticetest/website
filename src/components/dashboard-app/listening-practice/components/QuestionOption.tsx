@@ -37,7 +37,7 @@ const QuestionOption = ({
         )}
         onClick={onClick}
       >
-        <div className="flex h-[36px] items-center  gap-[8px] pl-[4px] cursor-pointer ">
+        <div className="flex min-h-[36px] pb-[10px] items-center  gap-[8px] pl-[4px] cursor-pointer ">
           {!showResults && isSelected && (
             <SvgCheckCircle className=" shrink-0 " />
           )}
