@@ -291,7 +291,7 @@ export async function POST(req: Request) {
 
       // Final check before bail-out
       console.log("🔍 Final metadata →", { user_id, checkout_id });
-      if (!user_id || !checkout_id) {
+      if (!user_id || !checkout_id || checkout_id === "{CHECKOUT_SESSION_ID}") {
         console.warn("❌ Still missing metadata for", subscription.id);
         return NextResponse.json({ received: true });
       }

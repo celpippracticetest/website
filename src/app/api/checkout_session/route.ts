@@ -53,22 +53,21 @@ export async function POST(req: NextRequest) {
       allow_promotion_codes: true,
       metadata: {
         user_id: user.id,
-        checkout_id: "{CHECKOUT_SESSION_ID}",
       },
       ...(mode === "subscription" && {
         subscription_data: {
           metadata: {
             user_id: user.id,
-            checkout_id: "{CHECKOUT_SESSION_ID}",
           },
         },
       }),
     });
+
     if (mode === "subscription" && session?.subscription) {
-      await stripe.subscriptions.update(session?.subscription as string, {
+      await stripe.subscriptions.update(session.subscription, {
         metadata: {
-          user_id: user?.id,
-          checkout_id: session?.id,
+          user_id: user.id,
+          checkout_id: session.id,
         },
       });
     }

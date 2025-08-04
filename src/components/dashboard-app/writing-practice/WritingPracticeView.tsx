@@ -437,7 +437,7 @@ const WritingPracticeView = ({
                       <h3 className="text-[14px] text-[#212E42] font-semibold mb-2">
                         Write to See your Score
                       </h3>
-                      <div className="text-[14px] flex items-center rounded-[28px] h-[36px] bg-[#E6E6E6] px-[16px]">
+                      <div className="text-[14px] flex items-center rounded-[28px] min-h-[36px] pb-[10px] bg-[#E6E6E6] px-[16px]">
                         Words: {wordCount}
                       </div>
                     </div>
