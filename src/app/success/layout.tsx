@@ -1,21 +1,20 @@
-"use client";
+import { Metadata } from "next";
 
-const appBaseUrl = process.env.APP_BASE_URL || "";
-const isPreview = appBaseUrl.includes("vercel.app");
+export async function generateMetadata(): Promise<Metadata> {
+  const appBaseUrl = process.env.APP_BASE_URL || "";
+  const isPreview = appBaseUrl.includes("vercel.app");
+  return {
+    robots: {
+      index: !isPreview,
+      follow: !isPreview,
+    },
+  };
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <>
-      {isPreview && (
-        <head>
-          <meta name="robots" content="noindex, nofollow" />
-        </head>
-      )}
-      <div className="w-full bg-[#F4F7FF]">{children}</div>
-    </>
-  );
+  return <div className="w-full bg-[#F4F7FF]">{children}</div>;
 }
