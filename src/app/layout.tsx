@@ -44,11 +44,16 @@ export const metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const appBaseUrl = process.env.APP_BASE_URL || "";
+  const vercelEnv = appBaseUrl.includes("vercel.app")
+    ? "preview"
+    : "production";
+
   const jsonLdData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -105,6 +110,9 @@ export default function RootLayout({
       >
         <head>
           <Analytics />
+          {vercelEnv === "preview" && (
+            <meta name="robots" content="noindex, nofollow" />
+          )}
 
           {/* Google Tag Manager */}
           <Script
