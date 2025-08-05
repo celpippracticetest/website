@@ -16,9 +16,18 @@ const PrivacyPolicyComponent = dynamic(
     ssr: true,
   }
 );
+
+const appBaseUrl = process.env.APP_BASE_URL || "";
+const isPreview = appBaseUrl.includes("vercel.app");
+
 const PrivacyPolicy = () => {
   return (
     <>
+      {isPreview && (
+        <head>
+          <meta name="robots" content="noindex, nofollow" />
+        </head>
+      )}
       <PrivacyPolicyComponent />
     </>
   );

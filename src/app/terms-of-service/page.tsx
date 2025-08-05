@@ -16,8 +16,20 @@ const TermsOfServiceComponent = dynamic(
   }
 );
 
+const appBaseUrl = process.env.APP_BASE_URL || "";
+const isPreview = appBaseUrl.includes("vercel.app");
+
 const TermsOfService = () => {
-  return <TermsOfServiceComponent />;
+  return (
+    <>
+      {isPreview && (
+        <head>
+          <meta name="robots" content="noindex, nofollow" />
+        </head>
+      )}
+      <TermsOfServiceComponent />
+    </>
+  );
 };
 
 export default TermsOfService;
