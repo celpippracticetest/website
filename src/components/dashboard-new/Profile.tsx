@@ -1,5 +1,4 @@
 "use client";
-// Password Modal with styled inputs
 import React from "react";
 import SvgCloseEye from "@/components/icons/CloseEye";
 import SvgOpenEye from "@/components/icons/OpenEye";
