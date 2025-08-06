@@ -49,15 +49,25 @@ export async function POST(req: Request) {
       }
 
       if (session.subscription && metadata?.user_id) {
-        await stripe.subscriptions.update(session.subscription as string, {
-          metadata: {
-            user_id: metadata.user_id,
-            checkout_id: session.id,
-          },
-        });
-        console.log(
-          `Backfilled subscription metadata for ${session.subscription}`
+        const subscription = await stripe.subscriptions.retrieve(
+          session.subscription as string
         );
+
+        if (subscription.status !== "canceled") {
+          await stripe.subscriptions.update(session.subscription as string, {
+            metadata: {
+              user_id: metadata.user_id,
+              checkout_id: session.id,
+            },
+          });
+          console.log(
+            `Backfilled subscription metadata for ${session.subscription}`
+          );
+        } else {
+          console.warn(
+            `Cannot update metadata: subscription ${subscription.id} is canceled.`
+          );
+        }
       }
 
       return NextResponse.json({ received: true });
@@ -401,15 +411,24 @@ export async function POST(req: Request) {
           const subscriptionId = inv.subscription as string | null;
           if (subscriptionId) {
             // Retrieve subscription metadata and cancel
-            const subRecord = await stripe.subscriptions.retrieve(
-              subscriptionId
-            );
+            let subRecord: Stripe.Subscription | null = null;
+            try {
+              subRecord = await stripe.subscriptions.retrieve(subscriptionId);
+            } catch (err: any) {
+              if (err?.code === "resource_missing") {
+                console.warn(
+                  `❌ Subscription not found in fallback: ${subscriptionId}`
+                );
+              } else {
+                throw err;
+              }
+            }
             await stripe.subscriptions.cancel(subscriptionId);
             console.log(
               `🚫 Subscription ${subscriptionId} canceled due to refund.`
             );
-            const userId = subRecord.metadata.user_id ?? null;
-            const checkoutId = subRecord.metadata.checkout_id ?? null;
+            const userId = subRecord?.metadata.user_id ?? null;
+            const checkoutId = subRecord?.metadata.checkout_id ?? null;
             if (checkoutId) {
               await checkoutRepo.updateStatus(checkoutId, "refunded");
               console.log(`📝 Checkout ${checkoutId} marked refunded.`);
@@ -492,13 +511,21 @@ export async function POST(req: Request) {
       const sess = await stripe.checkout.sessions.retrieve(sessionId);
 
       if (sess.subscription) {
-        const sub = await stripe.subscriptions.retrieve(
-          sess.subscription as string
-        );
-        userId = sub.metadata.user_id ?? null;
+        try {
+          const sub = await stripe.subscriptions.retrieve(
+            sess.subscription as string
+          );
+          userId = sub.metadata.user_id ?? null;
 
-        await stripe.subscriptions.cancel(sub.id);
-        console.log(`🚫 Subscription ${sub.id} canceled due to refund.`);
+          await stripe.subscriptions.cancel(sub.id);
+          console.log(`🚫 Subscription ${sub.id} canceled due to refund.`);
+        } catch (err: any) {
+          if (err?.code === "resource_missing") {
+            console.warn(`❌ Subscription not found: ${sess.subscription}`);
+          } else {
+            throw err;
+          }
+        }
       }
 
       if (!userId) {
