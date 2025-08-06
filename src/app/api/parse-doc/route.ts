@@ -31,7 +31,6 @@ async function refreshAccessToken(): Promise<string> {
 
   access_token = data.access_token;
   expires_at = Date.now() + data.expires_in * 1000;
-  console.log(access_token, "accesstoken");
 
   return access_token;
 }

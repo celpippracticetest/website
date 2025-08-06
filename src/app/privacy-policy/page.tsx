@@ -1,14 +1,23 @@
 import dynamic from "next/dynamic";
 import React from "react";
+import { Metadata } from "next";
 
-export const metadata = {
-  title: "Privacy Policy | CELPIPPRACTICETEST.com",
-  description:
-    "Read CELPIPPRACTICETEST.com's Privacy Policy to understand how we collect, use, and protect your personal data when preparing for CELPIP tests online.",
-  alternates: {
-    canonical: "https://celpippracticetest.com/privacy-policy",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const appBaseUrl = process.env.APP_BASE_URL || "";
+  const isPreview = appBaseUrl.includes("vercel.app");
+  return {
+    title: "Privacy Policy | CELPIPPRACTICETEST.com",
+    description:
+      "Read CELPIPPRACTICETEST.com's Privacy Policy to understand how we collect, use, and protect your personal data when preparing for CELPIP tests online.",
+    alternates: {
+      canonical: "https://celpippracticetest.com/privacy-policy",
+    },
+    robots: {
+      index: !isPreview,
+      follow: !isPreview,
+    },
+  };
+}
 
 const PrivacyPolicyComponent = dynamic(
   () => import("@/components/pages/landing/PrivacyPolicy"),
@@ -16,12 +25,7 @@ const PrivacyPolicyComponent = dynamic(
     ssr: true,
   }
 );
-const PrivacyPolicy = () => {
-  return (
-    <>
-      <PrivacyPolicyComponent />
-    </>
-  );
-};
+
+const PrivacyPolicy = () => <PrivacyPolicyComponent />;
 
 export default PrivacyPolicy;

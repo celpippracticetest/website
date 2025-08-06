@@ -6,6 +6,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import ReactQueryProvider from "@/components/ReactQueryProvider";
 import IntercomLoader from "@/components/IntercomLoader";
+import { Metadata } from "next";
 const jakarta = Plus_Jakarta_Sans({
   display: "swap",
   subsets: ["latin"],
@@ -14,37 +15,35 @@ const jakarta = Plus_Jakarta_Sans({
   style: ["normal"],
 });
 
-// export const metadata = {
-//   title:
-//     "CELPIPPRACTICETEST.com | Practice CELPIP Online – Mock Exams, AI Scoring, Real Feedback",
-//   description:
-//     "Prepare for the CELPIP test online with CELPIPPRACTICETEST.com. Access free and premium CELPIP practice questions, mock exams, instant AI scoring, and real test feedback. Trusted by 20,000+ graduates in Canada.",
-//   alternates: {
-//     canonical: "https://celpippracticetest.com/",
-//   },
-// };
+export async function generateMetadata(): Promise<Metadata> {
+  const appBaseUrl = process.env.APP_BASE_URL || "";
+  const isPreview = appBaseUrl.includes("vercel.app");
+  return {
+    title: "CELPIP Practice Test Online | Instant Scoring, Expert Tips",
+    description:
+      "Sharpen your CELPIP Skills, with realistic online practice tests, instant scoring, and pro-level tips for Listening, Reading, Writing & Speaking. Start Preparing today.",
+    keywords: [
+      "CellTest",
+      "AI",
+      "cell analysis",
+      "biology",
+      "research",
+      "microscopy",
+      "machine learning",
+    ],
+    authors: [{ name: "CellTest Team", url: "https://celpippracticetest.com" }],
+    icons: {
+      icon: "/favicon/favicon.ico",
+      apple: "/favicon/apple-touch-icon.png",
+    },
+    robots: {
+      index: !isPreview,
+      follow: !isPreview,
+    },
+  };
+}
 
-export const metadata = {
-  title: "CELPIP Practice Test Online | Instant Scoring, Expert Tips",
-  description:
-    "Sharpen your CELPIP Skills, with realistic online practice tests, instant scoring, and pro-level tips for Listening, Reading, Writing & Speaking. Start Preparing today.",
-  keywords: [
-    "CellTest",
-    "AI",
-    "cell analysis",
-    "biology",
-    "research",
-    "microscopy",
-    "machine learning",
-  ],
-  authors: [{ name: "CellTest Team", url: "https://celpippracticetest.com" }],
-  icons: {
-    icon: "/favicon/favicon.ico",
-    apple: "/favicon/apple-touch-icon.png",
-  },
-};
-
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
