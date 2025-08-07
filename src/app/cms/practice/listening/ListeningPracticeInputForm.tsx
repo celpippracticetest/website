@@ -650,10 +650,13 @@ export default function ListeningPracticeInputForm() {
                             .filter(Boolean);
 
                           const dropdownIndex = lines.findIndex((l) =>
-                            /drop[-\s]?down questions/i.test(l)
+                            /drop[-\s]?down\s+questions?/i.test(l)
                           );
                           const multipleChoiceIndex = lines.findIndex((l) =>
-                            /multiple[-\s]?choice questions/i.test(l)
+                            /multiple[-\s]?choice\s+questions?/i.test(l)
+                          );
+                          const genericQuestionsIndex = lines.findIndex((l) =>
+                            /^questions?:/i.test(l)
                           );
 
                           let dropdownLines: string[] = [];
@@ -668,6 +671,8 @@ export default function ListeningPracticeInputForm() {
                           }
                           if (multipleChoiceIndex >= 0) {
                             mcLines = lines.slice(multipleChoiceIndex + 1);
+                          } else if (genericQuestionsIndex >= 0) {
+                            mcLines = lines.slice(genericQuestionsIndex + 1);
                           }
 
                           const questions: any[] = [];
@@ -683,15 +688,17 @@ export default function ListeningPracticeInputForm() {
 
                             questionLines.forEach((line) => {
                               if (/^[a-d]\)/i.test(line)) {
-                                const id = line.charAt(0).toUpperCase();
+                                const id = line.charAt(0).toLowerCase();
                                 const text = line.slice(2).trim();
                                 current.choices.push({ id, text });
-                              } else if (/^correct answer:/i.test(line)) {
+                              } else if (
+                                /^(answer:|correct answer:)/i.test(line)
+                              ) {
                                 const match = line.match(
-                                  /^correct answer:\s*([a-d])/i
+                                  /^(?:answer:|correct answer:)\s*([a-d])/i
                                 );
                                 if (match) {
-                                  current.answer = match[1].toUpperCase();
+                                  current.answer = match[1].toLowerCase();
                                 }
                                 questionCount++;
                                 current.id = questionCount.toString();
