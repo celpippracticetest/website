@@ -75,6 +75,8 @@ export default function WritingPracticeInputForm() {
   const searchParams = useSearchParams();
   const selectedPracticeId = searchParams.get("id");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+
   const [pictureUploads, setPictureUploads] = useState<{
     [key: string]: {
       file: File;
@@ -83,6 +85,11 @@ export default function WritingPracticeInputForm() {
       url: string;
     };
   }>({});
+
+  // State for raw sample response input per passage
+  const [sampleResponseRawInputs, setSampleResponseRawInputs] = useState<
+    string[]
+  >([]);
 
   // Initialize form with default values
   const form = useForm<z.infer<typeof formSchema>>({
@@ -256,6 +263,11 @@ export default function WritingPracticeInputForm() {
 
     return (
       <div className="space-y-2">
+        {showAlert && (
+          <div className="fixed top-10 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded shadow-lg z-50 text-sm">
+            Successfully Received
+          </div>
+        )}
         <div className="flex items-center gap-2">
           <label
             htmlFor={inputId}
@@ -668,6 +680,109 @@ export default function WritingPracticeInputForm() {
                         >
                           <PlusCircle className="h-4 w-4 mr-2" />
                           Add Sample response
+                        </Button>
+                      </div>
+
+                      <div className="mt-2">
+                        <FormLabel>
+                          Paste Sample Responses (auto-parse)
+                        </FormLabel>
+                        <Textarea
+                          className="min-h-[80px] mb-2"
+                          placeholder={`Sample Response 1 (Basic):\nBody...\nSample Response 2 (Good):\nBody...`}
+                          value={sampleResponseRawInputs[passageIndex] || ""}
+                          onChange={(e) => {
+                            const newInputs = [...sampleResponseRawInputs];
+                            newInputs[passageIndex] = e.target.value;
+                            setSampleResponseRawInputs(newInputs);
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          className="mt-1"
+                          onClick={() => {
+                            const rawSampleResponse =
+                              sampleResponseRawInputs[passageIndex] || "";
+                            const lines = rawSampleResponse
+                              .split("\n")
+                              .map((line) => line.trim())
+                              .filter(Boolean);
+                            const responses: {
+                              id: string;
+                              title: string;
+                              subject: string;
+                              body: string;
+                            }[] = [];
+                            let current = {
+                              id: "",
+                              title: "",
+                              subject: "",
+                              body: "",
+                            };
+                            let sampleIndex = 0;
+                            lines.forEach((line) => {
+                              if (
+                                /^Sample Response \d+ \((Basic|Good|Excellent)\):/i.test(
+                                  line
+                                )
+                              ) {
+                                if (sampleIndex > 0) {
+                                  responses.push({ ...current });
+                                }
+                                current = {
+                                  id: (sampleIndex + 1).toString(),
+                                  title: line,
+                                  subject:
+                                    line.match(
+                                      /\((Basic|Good|Excellent)\)/i
+                                    )?.[1] || "",
+                                  body: "",
+                                };
+                                sampleIndex++;
+                              } else {
+                                current.body +=
+                                  (current.body ? "\n" : "") + line;
+                              }
+                            });
+                            if (sampleIndex > 0) {
+                              responses.push({ ...current });
+                            }
+                            form.setValue(
+                              `passages.${passageIndex}.sampleResponse`,
+                              Array.from({ length: responses.length }).map(
+                                (_, i) => ({
+                                  id: "",
+                                  title: "",
+                                  subject: "",
+                                  body: "",
+                                })
+                              )
+                            );
+                            responses.forEach((r, i) => {
+                              form.setValue(
+                                `passages.${passageIndex}.sampleResponse.${i}.id`,
+                                r.id
+                              );
+                              form.setValue(
+                                `passages.${passageIndex}.sampleResponse.${i}.title`,
+                                r.title
+                              );
+                              form.setValue(
+                                `passages.${passageIndex}.sampleResponse.${i}.subject`,
+                                r.subject
+                              );
+                              form.setValue(
+                                `passages.${passageIndex}.sampleResponse.${i}.body`,
+                                r.body
+                              );
+                              setShowAlert(true);
+                              setTimeout(() => setShowAlert(false), 3000);
+                            });
+                          }}
+                        >
+                          Parse & Fill Sample Responses
                         </Button>
                       </div>
 

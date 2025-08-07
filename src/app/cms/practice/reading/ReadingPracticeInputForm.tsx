@@ -572,7 +572,6 @@ export default function ReadingPracticeInputForm() {
                   </div>
 
                   <AccordionContent className="space-y-6 pt-4">
-                    {/* Per-passage raw questions input and Parse Questions button */}
                     <div className="mb-4">
                       <Textarea
                         placeholder="Paste raw questions string here"
@@ -626,7 +625,7 @@ export default function ReadingPracticeInputForm() {
 
                             questionLines.forEach((line) => {
                               if (/^[a-d]\)/i.test(line)) {
-                                const id = line.charAt(0).toUpperCase(); // ← تبدیل به uppercase
+                                const id = line.charAt(0).toUpperCase();
                                 const text = line.slice(2).trim();
                                 current.choices.push({ id, text });
                               } else if (/^correct answer:/i.test(line)) {
@@ -634,7 +633,7 @@ export default function ReadingPracticeInputForm() {
                                   /^correct answer:\s*([a-d])/i
                                 );
                                 if (match) {
-                                  current.answer = match[1].toUpperCase(); // ← تبدیل به uppercase
+                                  current.answer = match[1].toUpperCase();
                                 }
                                 questionCount++;
                                 current.id = questionCount.toString();

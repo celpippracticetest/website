@@ -87,9 +87,11 @@ const formSchema = z.object({
 });
 
 export default function SpeakingPracticeInputForm() {
+  const [rawQuestionsArray, setRawQuestionsArray] = useState<string[]>([]);
   const searchParams = useSearchParams();
   const selectedPracticeId = searchParams.get("id");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
   const [pictureUploads, setPictureUploads] = useState<{
     [key: string]: {
       file: File;
@@ -309,6 +311,11 @@ export default function SpeakingPracticeInputForm() {
 
   return (
     <div className="space-y-6">
+      {showAlert && (
+        <div className="fixed top-10 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded shadow-lg z-50 text-sm">
+          Successfully Received
+        </div>
+      )}
       <div className="space-y-2">
         <h1 className="text-2xl font-bold">Create Speaking Practice</h1>
         <p className="text-muted-foreground">
@@ -651,6 +658,160 @@ export default function SpeakingPracticeInputForm() {
                         </FormItem>
                       )}
                     />
+                    <div className="mb-4">
+                      <FormLabel>Paste Sample Responses (auto-parse)</FormLabel>
+                      <Textarea
+                        placeholder={`Sample Response 1 (Basic):\nBody...\nSample Response 2 (Good):\nBody...`}
+                        value={rawQuestionsArray[passageIndex] || ""}
+                        onChange={(e) => {
+                          const newArr = [...rawQuestionsArray];
+                          newArr[passageIndex] = e.target.value;
+                          setRawQuestionsArray(newArr);
+                        }}
+                        className="w-full mb-2"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            const lines = (
+                              rawQuestionsArray[passageIndex] || ""
+                            )
+                              .split("\n")
+                              .map((l) => l.trim())
+                              .filter(Boolean);
+
+                            const dropdownIndex = lines.findIndex((l) =>
+                              /drop[-\s]?down questions/i.test(l)
+                            );
+                            const multipleChoiceIndex = lines.findIndex((l) =>
+                              /multiple[-\s]?choice questions/i.test(l)
+                            );
+
+                            let dropdownLines: string[] = [];
+                            let mcLines: string[] = [];
+                            if (dropdownIndex >= 0) {
+                              const start = dropdownIndex + 1;
+                              const end =
+                                multipleChoiceIndex >= 0
+                                  ? multipleChoiceIndex
+                                  : lines.length;
+                              dropdownLines = lines.slice(start, end);
+                            }
+                            if (multipleChoiceIndex >= 0) {
+                              mcLines = lines.slice(multipleChoiceIndex + 1);
+                            }
+
+                            const questions: any[] = [];
+
+                            const parseLines = (questionLines: string[]) => {
+                              let questionCount = 0;
+                              let current = {
+                                id: "",
+                                question: "",
+                                choices: [] as { id: string; text: string }[],
+                                answer: "",
+                              };
+
+                              questionLines.forEach((line) => {
+                                if (/^[a-d]\)/i.test(line)) {
+                                  const id = line.charAt(0).toUpperCase();
+                                  const text = line.slice(2).trim();
+                                  current.choices.push({ id, text });
+                                } else if (/^correct answer:/i.test(line)) {
+                                  const match = line.match(
+                                    /^correct answer:\s*([a-d])/i
+                                  );
+                                  if (match) {
+                                    current.answer = match[1].toUpperCase();
+                                  }
+                                  questionCount++;
+                                  current.id = questionCount.toString();
+                                  questions.push({ ...current });
+                                  current = {
+                                    id: "",
+                                    question: "",
+                                    choices: [],
+                                    answer: "",
+                                  };
+                                } else {
+                                  current.question = line;
+                                }
+                              });
+                            };
+
+                            if (dropdownLines.length > 0) {
+                              parseLines(dropdownLines);
+                            } else if (mcLines.length > 0) {
+                              parseLines(mcLines);
+                            }
+
+                            form.setValue(
+                              `passages.${passageIndex}.questions`,
+                              questions
+                            );
+                            // --- BEGIN: Parse Sample Responses ---
+                            let sharedTitle = "";
+                            const sampleResponses: any[] = [];
+                            let currentSample = {
+                              id: "",
+                              title: "",
+                              subject: "",
+                              body: "",
+                            };
+                            let sampleIndex = 0;
+                            lines.forEach((line) => {
+                              if (
+                                /^Sample Response \d+ \((Basic|Good|Excellent)\):/i.test(
+                                  line
+                                )
+                              ) {
+                                if (sampleIndex > 0) {
+                                  sampleResponses.push({ ...currentSample });
+                                }
+                                currentSample = {
+                                  id: (sampleIndex + 1).toString(),
+                                  title: line,
+                                  subject: "",
+                                  body: "",
+                                };
+                                sampleIndex++;
+                              } else {
+                                currentSample.body +=
+                                  (currentSample.body ? "\n" : "") + line;
+                              }
+                            });
+                            if (sampleIndex > 0) {
+                              sampleResponses.push({ ...currentSample });
+                            }
+                            // Fill existing sampleResponse fields only, do not create new ones
+                            sampleResponses.forEach((sample, i) => {
+                              form.setValue(
+                                `passages.${passageIndex}.sampleResponse.${i}.id`,
+                                sample.id
+                              );
+                              form.setValue(
+                                `passages.${passageIndex}.sampleResponse.${i}.title`,
+                                sample.title || sharedTitle
+                              );
+                              form.setValue(
+                                `passages.${passageIndex}.sampleResponse.${i}.subject`,
+                                sample.subject
+                              );
+                              form.setValue(
+                                `passages.${passageIndex}.sampleResponse.${i}.body`,
+                                sample.body
+                              );
+                            });
+                            // --- END: Parse Sample Responses ---
+                            setShowAlert(true);
+                            setTimeout(() => setShowAlert(false), 3000);
+                          }}
+                        >
+                          Parse & Fill Sample Responses
+                        </Button>
+                      </div>
+                    </div>
 
                     {/* Questions */}
                     <div className="space-y-4">

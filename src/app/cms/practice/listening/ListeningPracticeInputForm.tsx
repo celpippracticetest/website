@@ -93,6 +93,8 @@ const formSchema = z.object({
 });
 
 export default function ListeningPracticeInputForm() {
+  const [rawQuestionsArray, setRawQuestionsArray] = useState<string[]>([]);
+  const [showAlert, setShowAlert] = useState(false);
   const searchParams = useSearchParams();
   const selectedPracticeId = searchParams.get("id");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -344,6 +346,11 @@ export default function ListeningPracticeInputForm() {
 
   return (
     <div className="space-y-6">
+      {showAlert && (
+        <div className="fixed top-10 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded shadow-lg z-50 text-sm">
+          Successfully Received
+        </div>
+      )}
       <div className="space-y-2">
         <h1 className="text-2xl font-bold">Create Listening Practice</h1>
         <p className="text-muted-foreground">
@@ -565,7 +572,7 @@ export default function ListeningPracticeInputForm() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() =>
+                onClick={() => {
                   appendPassage({
                     id: (passageFields.length + 1).toString(),
                     audioUrl: "",
@@ -586,8 +593,9 @@ export default function ListeningPracticeInputForm() {
                         answer: "a",
                       },
                     ],
-                  })
-                }
+                  });
+                  setRawQuestionsArray((prev) => [...prev, ""]);
+                }}
               >
                 <PlusCircle className="h-4 w-4 mr-2" />
                 Add Passage
@@ -622,6 +630,101 @@ export default function ListeningPracticeInputForm() {
                   </div>
 
                   <AccordionContent className="space-y-6 pt-4">
+                    <div className="mb-4">
+                      <Textarea
+                        placeholder="Paste raw questions string here"
+                        value={rawQuestionsArray[passageIndex] || ""}
+                        onChange={(e) => {
+                          const newArr = [...rawQuestionsArray];
+                          newArr[passageIndex] = e.target.value;
+                          setRawQuestionsArray(newArr);
+                        }}
+                        className="w-full mb-2"
+                      />
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          const lines = (rawQuestionsArray[passageIndex] || "")
+                            .split("\n")
+                            .map((l) => l.trim())
+                            .filter(Boolean);
+
+                          const dropdownIndex = lines.findIndex((l) =>
+                            /drop[-\s]?down questions/i.test(l)
+                          );
+                          const multipleChoiceIndex = lines.findIndex((l) =>
+                            /multiple[-\s]?choice questions/i.test(l)
+                          );
+
+                          let dropdownLines: string[] = [];
+                          let mcLines: string[] = [];
+                          if (dropdownIndex >= 0) {
+                            const start = dropdownIndex + 1;
+                            const end =
+                              multipleChoiceIndex >= 0
+                                ? multipleChoiceIndex
+                                : lines.length;
+                            dropdownLines = lines.slice(start, end);
+                          }
+                          if (multipleChoiceIndex >= 0) {
+                            mcLines = lines.slice(multipleChoiceIndex + 1);
+                          }
+
+                          const questions: any[] = [];
+
+                          const parseLines = (questionLines: string[]) => {
+                            let questionCount = 0;
+                            let current = {
+                              id: "",
+                              question: "",
+                              choices: [] as { id: string; text: string }[],
+                              answer: "",
+                            };
+
+                            questionLines.forEach((line) => {
+                              if (/^[a-d]\)/i.test(line)) {
+                                const id = line.charAt(0).toUpperCase();
+                                const text = line.slice(2).trim();
+                                current.choices.push({ id, text });
+                              } else if (/^correct answer:/i.test(line)) {
+                                const match = line.match(
+                                  /^correct answer:\s*([a-d])/i
+                                );
+                                if (match) {
+                                  current.answer = match[1].toUpperCase();
+                                }
+                                questionCount++;
+                                current.id = questionCount.toString();
+                                questions.push({ ...current });
+                                current = {
+                                  id: "",
+                                  question: "",
+                                  choices: [],
+                                  answer: "",
+                                };
+                              } else {
+                                current.question = line;
+                              }
+                            });
+                          };
+
+                          if (dropdownLines.length > 0) {
+                            parseLines(dropdownLines);
+                          } else if (mcLines.length > 0) {
+                            parseLines(mcLines);
+                          }
+
+                          form.setValue(
+                            `passages.${passageIndex}.questions`,
+                            questions
+                          );
+                          setShowAlert(true);
+                          setTimeout(() => setShowAlert(false), 3000);
+                        }}
+                      >
+                        Parse Questions
+                      </Button>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <FormField
                         control={form.control}
