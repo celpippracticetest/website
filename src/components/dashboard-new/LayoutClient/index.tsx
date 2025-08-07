@@ -1136,7 +1136,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
             </div>
           </div>
           {surveyVisible && (
-            <div className="fixed inset-0 z-50 flex pt-[101px] justify-center bg-[#F4F7FF]">
+            <div className="fixed inset-0 z-50 flex screen1280:!pt-[101px] justify-center bg-[#F4F7FF]">
               <OnboardingSurvey onComplete={() => setSurveyVisible(false)} />
             </div>
           )}

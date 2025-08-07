@@ -60,15 +60,15 @@ export default function OnboardingSurvey({
   };
 
   return (
-    <div className="flex px-[24px] flex-wrap screen1280:!flex-nowrap pb-[111px] screen1280:!pb-0 w-full overflow-auto gap-[92px] justify-center">
-      <div className="flex flex-col">
+    <div className="flex px-[16px] screen744:!px-[24px] screen1280:!px-[80px] flex-wrap screen1280:!flex-nowrap pb-[111px] screen1280:!pb-0 w-full overflow-auto gap-[24px] screen1280:!gap-[92px] justify-center">
+      <div className="flex  screen744:!shrink-0 mt-[40px] screen1280:!mt-0 items-center screen744:!gap-[40px] gap-[20px] screen1280:!gap-[16px] flex-col screen744:!flex-row screen1280:!flex-col">
         {step === 1 ? (
           <>
             <Image
               alt="plan sale modal"
               width={288}
               height={432}
-              className={`shrink-0 mt-[-10px] w-[288px] h-[432px]`}
+              className={`screen744:!shrink-0  screen1280:!mt-[-10px] w-[54px] h-[81px] screen744:!w-[121px] screen744:!h-[181px] screen1280:!w-[288px] screen1280:!h-[432px]`}
               src="/images/question-after-sign-up-logo-step-one.png"
             />
           </>
@@ -78,21 +78,26 @@ export default function OnboardingSurvey({
               alt="plan sale modal"
               width={324}
               height={290}
-              className={`shrink-0 mt-[126px] w-[324px] h-[290px]`}
+              className={`shrink-0 screen1280!mt-[126px] screen744:!w-[202px] w-[89px] h-[80px] screen744:!h-[180px] screen1280:!w-[324px] screen1280:!h-[290px]`}
               src="/images/question-after-sign-up-logo-step-two.png"
             />
           </>
         )}
 
-        <div className="max-w-[394px] text-[24px] font-medium w-full mt-[16px]">
-          Answer Two Quick Questions & Get{" "}
-          <span className="text-[#EE4266] font-semibold text-[26px]">10%</span>
-          Extra Discount!
+        <div className="max-w-[394px] flex items-center text-[18px] screen744:!text-[24px] font-medium w-full ">
+          <span>
+            {" "}
+            Answer Two Quick Questions & Get{" "}
+            <span className="text-[#EE4266] font-semibold text-[20px] screen744:!text-[26px]">
+              10%
+            </span>
+            Extra Discount!
+          </span>
         </div>
       </div>
 
-      <div className="w-full max-w-[900px] max-h-fit shrink-1  border border-[#D5D6D8] rounded-[12px] p-[40px] ">
-        <div className="h-[4px] flex w-full rounded-[10px] bg-[#E6E6E6]">
+      <div className="w-full max-w-[900px] max-h-fit shrink-1  border border-[#D5D6D8] rounded-[12px] p-[16px] screen744:!p-[40px] ">
+        <div className="h-[4px] flex w-full mt-[40px] rounded-[10px] bg-[#E6E6E6]">
           <div
             className={cn(
               "rounded-[10px] w-full transition-colors duration-500",
@@ -107,10 +112,10 @@ export default function OnboardingSurvey({
           ></div>
         </div>
 
-        <p className="font-normal  mt-[32px] text-[16px] text-[#37465C] mb-[16px]">
+        <p className="font-normal mt-[24px]  screen744:!mt-[32px] text-[16px] text-[#37465C] mb-[16px]">
           Help us improve your experience.
         </p>
-        <p className="text-[16px] font-normal text-[#316BFF] mb-[32px]">
+        <p className="text-[16px] font-normal text-[#316BFF] mb-[24px] screen744:!mb-[32px]">
           {step === 1 ? "Question 1 of 2" : "Question 2 of 2"}
         </p>
 
@@ -126,12 +131,12 @@ export default function OnboardingSurvey({
               Why are you taking the CELPIP test?
             </h2>
 
-            <div className="flex flex-col mb-[32px] gap-[16px] data-[state=checked]:!bg-[#F27059]">
+            <div className="flex flex-col mb-[24px] screen744:!mb-[32px] gap-[16px] data-[state=checked]:!bg-[#F27059]">
               {REASONS.map((reason) => (
                 <div className="flex" key={reason}>
                   <label
                     className={cn(
-                      "flex items-center h-[52px] px-[32px] rounded-[40px] transition-all cursor-pointer text-[16px] font-normal w-fit",
+                      "flex items-center h-[48px] screen744:!h-[52px] px-[16px] screen744:!px-[32px] rounded-[40px] transition-all cursor-pointer text-[12px] screen744:!text-[16px] font-normal w-fit",
                       reasons.includes(reason)
                         ? " bg-[#F27059] text-white "
                         : "bg-white text-[#212E42]"
@@ -239,7 +244,7 @@ export default function OnboardingSurvey({
                 <div className="flex items-center" key={reason}>
                   <label
                     className={cn(
-                      "flex items-center h-[52px] px-[32px] rounded-[40px] transition-all cursor-pointer text-[16px] font-normal w-fit",
+                      "flex items-center h-[48px]  screen744:!h-[52px] px-[32px] rounded-[40px] transition-all cursor-pointer text-[12px] screen744:!text-[16px] font-normal w-fit",
                       stepTwoReasons.includes(reason)
                         ? " bg-[#F27059] text-white "
                         : "bg-white text-[#212E42]"
