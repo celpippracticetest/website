@@ -44,6 +44,7 @@ export async function POST(req: Request) {
 
     await clerkClient.users.updateUser(userId, {
       publicMetadata: {
+        ...user.publicMetadata,
         couponId: coupon.id,
         couponCode: visibleCode,
         promotionCodeId: promotionCode.id,

@@ -41,6 +41,7 @@ export async function POST(req: Request) {
       ...user.privateMetadata,
       onboarding: meta,
     },
+    publicMetadata: user.publicMetadata,
   });
 
   return NextResponse.json({ ok: true });

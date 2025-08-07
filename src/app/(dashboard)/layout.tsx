@@ -29,9 +29,8 @@ export default async function RootLayout({
   let user = null;
   try {
     user = await currentUser();
-  } catch (error) {
-    console.error("Error fetching current user:", error);
-  }
+  } catch (error) {}
+
   const publicMetadata = user?.publicMetadata || {};
   const privateMetadata = user?.privateMetadata || {};
 

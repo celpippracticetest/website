@@ -37,6 +37,7 @@ export default function OnboardingSurvey({
   const [customReason, setCustomReason] = useState("");
   const [customStepTwoReason, setCustomStepTwoReason] = useState("");
   const { user } = useUser();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const toggleReason = (reason: string) => {
     setReasons((prev) =>
@@ -198,7 +199,10 @@ export default function OnboardingSurvey({
                       },
                     });
 
-                    onComplete();
+                    user?.reload();
+                    setTimeout(() => {
+                      onComplete();
+                    }, 1000);
                   }}
                 >
                   Ask later
@@ -313,13 +317,17 @@ export default function OnboardingSurvey({
                       },
                     });
 
-                    onComplete();
+                    user?.reload();
+                    setTimeout(() => {
+                      onComplete();
+                    }, 1000);
                   }}
                 >
                   Ask later
                 </button>
                 <Button
                   disabled={
+                    isSubmitting ||
                     stepTwoReasons.length === 0 ||
                     (stepTwoReasons.includes("Other (please specify)") &&
                       !customStepTwoReason.trim())
@@ -328,11 +336,13 @@ export default function OnboardingSurvey({
                     "rounded-[24px] font-normal h-[40px] text-[14px]",
                     stepTwoReasons.length === 0 ||
                       (stepTwoReasons.includes("Other (please specify)") &&
-                        !customStepTwoReason.trim())
+                        !customStepTwoReason.trim()) ||
+                      isSubmitting
                       ? "bg-gray-300 text-white cursor-not-allowed"
                       : "cursor-pointer"
                   )}
                   onClick={async () => {
+                    setIsSubmitting(true);
                     await fetch("/api/onboarding", {
                       method: "POST",
                       body: JSON.stringify({
@@ -348,10 +358,14 @@ export default function OnboardingSurvey({
                         "Content-Type": "application/json",
                       },
                     });
-                    onComplete();
+                    user?.reload();
+                    setTimeout(() => {
+                      setIsSubmitting(false);
+                      onComplete();
+                    }, 1000);
                   }}
                 >
-                  Submit
+                  {isSubmitting ? "Submitting..." : "Submit"}
                 </Button>
               </div>
             </div>
