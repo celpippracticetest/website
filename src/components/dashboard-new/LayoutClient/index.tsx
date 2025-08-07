@@ -39,6 +39,7 @@ import SvgClose from "@/components/icons/Close";
 import { useMenuCollapsedStore } from "@/store/menuCollapsed.store";
 import SvgArrowLeft from "@/components/icons/ArrowLeft";
 import CountdownTimer from "@/components/dashboard-app/CounterDownTimer";
+import OnboardingSurvey from "@/components/onboardingSurvey";
 
 const NavItem = ({
   icon,
@@ -232,11 +233,13 @@ const NavItem = ({
   );
 };
 
-const LayoutClient = ({ children }: any) => {
+const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
   const sidebarMenuRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const couponId = useExtraDiscountStore((state) => state.couponId);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [surveyVisible, setSurveyVisible] = useState(showSurvey);
+
   const setShowExtraDiscount = useExtraDiscountStore(
     (state) => state.setShowExtraDiscount
   );
@@ -622,7 +625,7 @@ const LayoutClient = ({ children }: any) => {
       {freeUser ? (
         <>
           {showUpgradeModal && <UpgradeModal />}
-          {showExtraDiscount && <ExtraDiscountModal />}
+          {!surveyVisible && showExtraDiscount && <ExtraDiscountModal />}
         </>
       ) : noUser ? (
         showLoginModal && <LoginModal />
@@ -1132,6 +1135,12 @@ const LayoutClient = ({ children }: any) => {
               </div>
             </div>
           </div>
+          {surveyVisible && (
+            <div className="fixed inset-0 z-50 flex pt-[101px] justify-center bg-[#F4F7FF]">
+              <OnboardingSurvey onComplete={() => setSurveyVisible(false)} />
+            </div>
+          )}
+
           {children}
           {copied && (
             <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-[#37465C] text-white px-4 py-2 rounded-[8px] text-[14px] shadow-lg z-[9999] transition-opacity duration-300">

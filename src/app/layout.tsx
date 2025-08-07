@@ -2,11 +2,13 @@ import PremiumPlanDrawer from "./premiumPlanDrawer";
 import NextTopLoader from "nextjs-toploader";
 import { Analytics } from "@vercel/analytics/react";
 import { ClerkProvider } from "@clerk/nextjs";
+import { currentUser } from "@clerk/nextjs/server";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import ReactQueryProvider from "@/components/ReactQueryProvider";
 import IntercomLoader from "@/components/IntercomLoader";
 import { Metadata } from "next";
+
 const jakarta = Plus_Jakarta_Sans({
   display: "swap",
   subsets: ["latin"],
@@ -48,6 +50,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await currentUser();
   const jsonLdData = {
     "@context": "https://schema.org",
     "@graph": [
