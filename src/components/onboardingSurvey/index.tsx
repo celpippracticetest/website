@@ -197,7 +197,6 @@ export default function OnboardingSurvey({
                         "Content-Type": "application/json",
                       },
                     });
-                    user?.reload();
 
                     onComplete();
                   }}
@@ -313,7 +312,6 @@ export default function OnboardingSurvey({
                         "Content-Type": "application/json",
                       },
                     });
-                    user?.reload();
 
                     onComplete();
                   }}
@@ -341,7 +339,7 @@ export default function OnboardingSurvey({
                         action: "submit",
                         answers: {
                           stepOneReasons: reasons,
-                          customReason,
+                          customStepOneReason: customReason,
                           stepTwoReasons,
                           customStepTwoReason,
                         },
@@ -350,7 +348,6 @@ export default function OnboardingSurvey({
                         "Content-Type": "application/json",
                       },
                     });
-                    user?.reload();
                     onComplete();
                   }}
                 >

@@ -10,7 +10,7 @@ const Hero = () => {
   const fullText = "Ace Your CELPIP Test with Confidence!";
   const [isTypingComplete, setIsTypingComplete] = useState(false);
   const router = useRouter();
-  const setCurrentPage = useStore((state) => state.dashboard.setCurrentPage)
+  const setCurrentPage = useStore((state) => state.dashboard.setCurrentPage);
   useEffect(() => {
     if (displayText.length >= fullText.length) {
       setIsTypingComplete(true);
@@ -53,9 +53,9 @@ const Hero = () => {
                   className="w-8 h-8 rounded-full border-2 border-white"
                 />
               </div>
-              <span className="text-gray-800 font-medium">
+              <h2 className="text-gray-800 font-medium">
                 Trusted by <span className="font-bold">10k+ test-takers</span>
-              </span>
+              </h2>
             </div>
 
             {/* Main heading with character-by-character streaming effect */}
@@ -79,7 +79,11 @@ const Hero = () => {
                   </span>
                 );
               })}
-              {!isTypingComplete && <span className="inline-block w-0.5 h-12 bg-gray-900 ml-1 animate-pulse">|</span>}
+              {!isTypingComplete && (
+                <span className="inline-block w-0.5 h-12 bg-gray-900 ml-1 animate-pulse">
+                  |
+                </span>
+              )}
             </h1>
 
             <div className="flex flex-wrap items-center gap-4">
