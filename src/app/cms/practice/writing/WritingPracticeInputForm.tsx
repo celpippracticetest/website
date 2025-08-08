@@ -703,83 +703,39 @@ export default function WritingPracticeInputForm() {
                           size="sm"
                           className="mt-1"
                           onClick={() => {
-                            const rawSampleResponse =
+                            // New parsing logic: expects 3 paragraphs separated by empty lines, optional "Sample Responses:" heading
+                            const raw =
                               sampleResponseRawInputs[passageIndex] || "";
-                            const lines = rawSampleResponse
-                              .split("\n")
-                              .map((line) => line.trim())
-                              .filter(Boolean);
-                            const responses: {
-                              id: string;
-                              title: string;
-                              subject: string;
-                              body: string;
-                            }[] = [];
-                            let current = {
-                              id: "",
-                              title: "",
-                              subject: "",
-                              body: "",
-                            };
-                            let sampleIndex = 0;
-                            lines.forEach((line) => {
-                              if (
-                                /^Sample Response \d+ \((Basic|Good|Excellent)\):/i.test(
-                                  line
-                                )
-                              ) {
-                                if (sampleIndex > 0) {
-                                  responses.push({ ...current });
-                                }
-                                current = {
-                                  id: (sampleIndex + 1).toString(),
-                                  title: line,
-                                  subject:
-                                    line.match(
-                                      /\((Basic|Good|Excellent)\)/i
-                                    )?.[1] || "",
-                                  body: "",
-                                };
-                                sampleIndex++;
-                              } else {
-                                current.body +=
-                                  (current.body ? "\n" : "") + line;
-                              }
-                            });
-                            if (sampleIndex > 0) {
-                              responses.push({ ...current });
-                            }
+                            const cleaned = raw
+                              .trim()
+                              .startsWith("Sample Responses:")
+                              ? raw.trim().split(/\n/).slice(1).join("\n")
+                              : raw;
+
+                            const responseParts = cleaned
+                              .split(/\n\s*\n/)
+                              .map((p) => p.trim());
+
+                            const labels = [
+                              "Sample Response (Basic):",
+                              "Sample Response (Good):",
+                              "Sample Response (Excellent):",
+                            ];
+
                             form.setValue(
                               `passages.${passageIndex}.sampleResponse`,
-                              Array.from({ length: responses.length }).map(
+                              Array.from({ length: responseParts.length }).map(
                                 (_, i) => ({
-                                  id: "",
-                                  title: "",
+                                  id: (i + 1).toString(),
+                                  title: labels[i] || "",
                                   subject: "",
-                                  body: "",
+                                  body: responseParts[i] || "",
                                 })
                               )
                             );
-                            responses.forEach((r, i) => {
-                              form.setValue(
-                                `passages.${passageIndex}.sampleResponse.${i}.id`,
-                                r.id
-                              );
-                              form.setValue(
-                                `passages.${passageIndex}.sampleResponse.${i}.title`,
-                                r.title
-                              );
-                              form.setValue(
-                                `passages.${passageIndex}.sampleResponse.${i}.subject`,
-                                r.subject
-                              );
-                              form.setValue(
-                                `passages.${passageIndex}.sampleResponse.${i}.body`,
-                                r.body
-                              );
-                              setShowAlert(true);
-                              setTimeout(() => setShowAlert(false), 3000);
-                            });
+
+                            setShowAlert(true);
+                            setTimeout(() => setShowAlert(false), 3000);
                           }}
                         >
                           Parse & Fill Sample Responses
@@ -797,10 +753,9 @@ export default function WritingPracticeInputForm() {
                             >
                               <div className="flex justify-between items-center">
                                 <AccordionTrigger>
-                                  Sample response {sampleResponseIndex + 1}:{" "}
                                   {form.watch(
                                     `passages.${passageIndex}.sampleResponse.${sampleResponseIndex}.title`
-                                  ) || "Untitled"}
+                                  ) || "Sample Response"}
                                 </AccordionTrigger>
                                 {form.watch(
                                   `passages.${passageIndex}.sampleResponse`

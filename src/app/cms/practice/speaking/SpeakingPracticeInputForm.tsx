@@ -673,6 +673,9 @@ export default function SpeakingPracticeInputForm() {
                       <div className="flex gap-2">
                         <Button
                           type="button"
+                          variant="secondary"
+                          size="sm"
+                          className="mt-1"
                           onClick={() => {
                             const lines = (
                               rawQuestionsArray[passageIndex] || ""
@@ -751,56 +754,38 @@ export default function SpeakingPracticeInputForm() {
                               questions
                             );
                             // --- BEGIN: Parse Sample Responses ---
-                            let sharedTitle = "";
-                            const sampleResponses: any[] = [];
-                            let currentSample = {
-                              id: "",
-                              title: "",
-                              subject: "",
-                              body: "",
-                            };
-                            let sampleIndex = 0;
-                            lines.forEach((line) => {
-                              if (
-                                /^Sample Response \d+ \((Basic|Good|Excellent)\):/i.test(
-                                  line
-                                )
-                              ) {
-                                if (sampleIndex > 0) {
-                                  sampleResponses.push({ ...currentSample });
-                                }
-                                currentSample = {
-                                  id: (sampleIndex + 1).toString(),
-                                  title: line,
-                                  subject: "",
-                                  body: "",
-                                };
-                                sampleIndex++;
-                              } else {
-                                currentSample.body +=
-                                  (currentSample.body ? "\n" : "") + line;
-                              }
-                            });
-                            if (sampleIndex > 0) {
-                              sampleResponses.push({ ...currentSample });
-                            }
-                            // Fill existing sampleResponse fields only, do not create new ones
-                            sampleResponses.forEach((sample, i) => {
+                            const raw = rawQuestionsArray[passageIndex] || "";
+                            // Remove leading label if present
+                            const cleaned = raw
+                              .trim()
+                              .toLowerCase()
+                              .startsWith("sample responses:")
+                              ? raw.trim().split(/\n/).slice(1).join("\n")
+                              : raw;
+                            const responseParts = cleaned
+                              .split(/\n\s*\n/)
+                              .map((p) => p.trim());
+                            const labels = [
+                              "Sample Response (Basic):",
+                              "Sample Response (Good):",
+                              "Sample Response (Excellent):",
+                            ];
+                            labels.forEach((label, i) => {
                               form.setValue(
                                 `passages.${passageIndex}.sampleResponse.${i}.id`,
-                                sample.id
+                                (i + 1).toString()
                               );
                               form.setValue(
                                 `passages.${passageIndex}.sampleResponse.${i}.title`,
-                                sample.title || sharedTitle
+                                label
                               );
                               form.setValue(
                                 `passages.${passageIndex}.sampleResponse.${i}.subject`,
-                                sample.subject
+                                ""
                               );
                               form.setValue(
                                 `passages.${passageIndex}.sampleResponse.${i}.body`,
-                                sample.body
+                                responseParts[i] || ""
                               );
                             });
                             // --- END: Parse Sample Responses ---
@@ -856,10 +841,9 @@ export default function SpeakingPracticeInputForm() {
                             >
                               <div className="flex justify-between items-center">
                                 <AccordionTrigger>
-                                  Sample response {sampleResponseIndex + 1}:{" "}
                                   {form.watch(
                                     `passages.${passageIndex}.sampleResponse.${sampleResponseIndex}.title`
-                                  ) || "Untitled"}
+                                  ) || "Sample Response"}
                                 </AccordionTrigger>
                                 {form.watch(
                                   `passages.${passageIndex}.sampleResponse`
