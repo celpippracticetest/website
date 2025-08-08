@@ -246,7 +246,7 @@ export default function OnboardingSurvey({
             transition={{ duration: 0.4, ease: "easeInOut" }}
           >
             <h2 className="text-[20px] text-[#212E42] font-semibold mb-[28px]">
-              What brings you to CELPIP.com today?
+              What brings you here today?
             </h2>
 
             <div className="flex flex-col mb-[32px] gap-[16px] data-[state=checked]:!bg-[#F27059]">
