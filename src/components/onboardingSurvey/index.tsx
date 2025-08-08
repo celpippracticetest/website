@@ -136,7 +136,9 @@ export default function OnboardingSurvey({
               {REASONS.map((reason, index) => (
                 <div
                   className={`flex ${
-                    index === 6 ? "flex-col gap-[24px]" : "flex-row"
+                    index === 6
+                      ? "flex-col gap-[24px] screen744:!flex-row screen744:!gap-1"
+                      : "flex-row"
                   }`}
                   key={reason}
                 >
@@ -251,7 +253,9 @@ export default function OnboardingSurvey({
               {STEP_TWO_REASONS.map((reason, index) => (
                 <div
                   className={`flex items-center ${
-                    index === 4 ? "flex-col gap-[24px]" : "flex-row"
+                    index === 4
+                      ? "flex-col gap-[24px] screen744:!flex-row screen744:!gap-1"
+                      : "flex-row"
                   }`}
                   key={reason}
                 >
