@@ -661,7 +661,7 @@ export default function SpeakingPracticeInputForm() {
                     <div className="mb-4">
                       <FormLabel>Paste Sample Responses (auto-parse)</FormLabel>
                       <Textarea
-                        placeholder={`Sample Response 1 (Basic):\nBody...\nSample Response 2 (Good):\nBody...`}
+                        placeholder={`Sample Response 1 (Basic)\nBody...\nSample Response 2 (Good)\nBody...`}
                         value={rawQuestionsArray[passageIndex] || ""}
                         onChange={(e) => {
                           const newArr = [...rawQuestionsArray];
@@ -766,9 +766,9 @@ export default function SpeakingPracticeInputForm() {
                               .split(/\n\s*\n/)
                               .map((p) => p.trim());
                             const labels = [
-                              "Sample Response (Basic):",
-                              "Sample Response (Good):",
-                              "Sample Response (Excellent):",
+                              "Sample Response (Basic)",
+                              "Sample Response (Good)",
+                              "Sample Response (Excellent)",
                             ];
                             labels.forEach((label, i) => {
                               form.setValue(

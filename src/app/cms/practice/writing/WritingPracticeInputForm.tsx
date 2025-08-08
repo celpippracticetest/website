@@ -689,7 +689,7 @@ export default function WritingPracticeInputForm() {
                         </FormLabel>
                         <Textarea
                           className="min-h-[80px] mb-2"
-                          placeholder={`Sample Response 1 (Basic):\nBody...\nSample Response 2 (Good):\nBody...`}
+                          placeholder={`Sample Response  (Basic)\nBody...\nSample Response  (Good)\nBody...`}
                           value={sampleResponseRawInputs[passageIndex] || ""}
                           onChange={(e) => {
                             const newInputs = [...sampleResponseRawInputs];
@@ -717,9 +717,9 @@ export default function WritingPracticeInputForm() {
                               .map((p) => p.trim());
 
                             const labels = [
-                              "Sample Response (Basic):",
-                              "Sample Response (Good):",
-                              "Sample Response (Excellent):",
+                              "Sample Response (Basic)",
+                              "Sample Response (Good)",
+                              "Sample Response (Excellent)",
                             ];
 
                             form.setValue(
