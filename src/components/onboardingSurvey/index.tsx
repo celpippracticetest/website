@@ -252,7 +252,7 @@ export default function OnboardingSurvey({
             <div className="flex flex-col mb-[32px] gap-[16px] data-[state=checked]:!bg-[#F27059]">
               {STEP_TWO_REASONS.map((reason, index) => (
                 <div
-                  className={`flex items-center ${
+                  className={`flex ${
                     index === 4
                       ? "flex-col gap-[24px] screen744:!flex-row screen744:!gap-1"
                       : "flex-row"
