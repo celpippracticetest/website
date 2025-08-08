@@ -118,17 +118,16 @@ const ListeningExamView = ({
     router.push("exam-overview");
   }
   //   const practiceIndex = allPractices.findIndex((p) => p.id == selectedPracticeId);
+
   return (
     <div className=" mx-auto w-full p-2 h-auto transition-all duration-300 flex gap-5">
       <Card className="bg-white/90 flex-col  border border-[#D5D6D8] h-full w-full">
-        <div className="flex justify-between rounded-lg lg:items-center gap-2 lg:gap-0 pb-[10px]  px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full min-h-[72px] h-auto bg-[#FFEBD6]">
+        <div className="flex justify-between rounded-lg lg:items-center gap-2 lg:gap-0 pb-[10px]  px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
           <div className="flex flex-col-reverse  screen744:!flex-row flex-wrap gap-[16px] max-w-[635px] w-full">
             <div className="text-[14px] flex flex-col font-semibold shrink sm:!shrink-0">
-              <span>
-                {partId} - {practice.passages[passageIndex].title}
-              </span>
+              <span>{practice.passages[passageIndex].title}</span>
               <span className="font-normal text-[14px] text-[#37465C]">
-                Listening Part
+                Listening Part {partId}
               </span>
             </div>
             <a
@@ -235,7 +234,7 @@ const ListeningExamView = ({
                 );
               }}
               className={
-                "cursor-pointer flex items-center gap-[8px] justify-center h-[40] font-normal text-[#212E42] text-[14px] w-[96px] bg-white rounded-[24px]"
+                "cursor-pointer flex items-center gap-[8px] justify-center h-[40px] font-normal text-[#212E42] text-[14px] w-[96px] bg-white rounded-[24px]"
               }
             >
               Next

@@ -341,8 +341,8 @@ const SpeakingPracticeView = ({
         completedPractice={completedPractice}
       />
       <div className="bg-white rounded-xl flex flex-col screen1280:!h-[920px] overflow-scroll border border-[#D5D6D8] w-full">
-        <div className="flex justify-between lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b pb-[10px]  border-[#D5D6D8] lg:flex-row flex-col w-full min-h-[72px] h-auto bg-[#FFEBD6]">
-          <div className="flex gap-2 flex-col">
+        <div className="flex justify-between lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b pb-[10px]  border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
+          <div className="flex gap-2 flex-col screen744:!shrink-0">
             <h1 className="text-[18px] font-bold text-[#212E42]">
               {practice.passages[passageIndex].title}
             </h1>

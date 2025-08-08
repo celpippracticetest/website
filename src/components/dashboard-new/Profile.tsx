@@ -482,7 +482,7 @@ export default function Profile({ prevCheckout }: any) {
             </div>
           </div>
         </div>
-        <div className="flex flex-col h-auto min-h-[72px] mt-[16px] rounded-[8px] bg-white p-[16px]">
+        <div className="flex flex-col h-auto  mt-[16px] rounded-[8px] bg-white p-[16px]">
           <div className="flex justify-between  items-center flex-wrap">
             <div className="flex flex-col justify-center gap-[12px]">
               <span className="text-[#212E42] text-[16px] font-medium">
@@ -499,7 +499,7 @@ export default function Profile({ prevCheckout }: any) {
             </div>
           </div>
         </div>
-        <div className="flex flex-col h-auto min-h-[72px] mt-[16px] rounded-[8px] bg-white p-[24px]">
+        <div className="flex flex-col h-auto  mt-[16px] rounded-[8px] bg-white p-[24px]">
           <div className="flex justify-between items-center flex-wrap">
             <div className="flex flex-col justify-center gap-[12px]">
               <span className="text-[#212E42] text-[16px] font-medium">
@@ -560,7 +560,7 @@ export default function Profile({ prevCheckout }: any) {
             </div>
           ))}
         </div>
-        <div className="flex flex-col h-auto min-h-[72px] mt-[16px] rounded-[8px] bg-white p-[16px]">
+        <div className="flex flex-col h-auto  mt-[16px] rounded-[8px] bg-white p-[16px]">
           <div className="flex justify-between  items-center flex-wrap">
             <div className="flex flex-col justify-center gap-[12px]">
               <span className="text-[#212E42] text-[16px] font-medium">

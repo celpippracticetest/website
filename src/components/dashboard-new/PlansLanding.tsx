@@ -12,23 +12,6 @@ const SvgFreePlan = dynamic(() => import("../icons/FreePlan"), {
 
 export const planDetailsLanding = [
   {
-    title: "12 Months",
-    type: "Best Value",
-    planTitle: "12Month",
-    oldPrice: "960.00 ",
-    price: "199.00",
-    discount: "80",
-    buttonTitle: "Go Premium",
-    features: [
-      "Full access to all premium features",
-      "Valid for 12 months",
-      "Ideal for test-takers with a set deadline",
-      "Includes all mock exams and practice",
-    ],
-    icon: <SvgFreePlan />,
-    iconWrapperColor: "bg-primary5",
-  },
-  {
     title: "Premium 3-Month",
     type: "Best Seller",
     planTitle: "3 Months",

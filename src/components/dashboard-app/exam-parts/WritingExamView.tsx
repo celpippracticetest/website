@@ -142,14 +142,12 @@ const WritingExamView = ({ practice, partId }: WritingExamViewProps) => {
         <></>
       )}
       <div className="bg-white rounded-xl flex flex-col screen1280:!h-[920px] overflow-scroll border border-[#D5D6D8] w-full">
-        <div className="flex justify-between pb-[21px]  lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full min-h-[72px] h-auto bg-[#FFEBD6]">
+        <div className="flex justify-between pb-[21px]  lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
           <div className="flex screen744:!items-center flex-col-reverse screen744:!flex-row gap-[16px]">
-            <div className="flex gap-2 flex-col">
-              <span>
-                {partId - 6} - {practice.passages[passageIndex].title}
-              </span>
+            <div className="flex gap-2 flex-col screen744:!shrink-0">
+              <span>{practice.passages[passageIndex].title}</span>
               <span className="font-normal text-[14px] text-[#37465C]">
-                Writing Part{" "}
+                Writing Part {partId - 6}
               </span>
             </div>
             <a
@@ -219,7 +217,7 @@ const WritingExamView = ({ practice, partId }: WritingExamViewProps) => {
                   setTime(1620);
                 }}
                 className={
-                  "cursor-pointer flex items-center gap-[8px] justify-center h-[40] font-normal text-[#212E42] text-[14px] w-[96px] bg-white rounded-[24px]"
+                  "cursor-pointer flex items-center gap-[8px] justify-center h-[40px] font-normal text-[#212E42] text-[14px] w-[96px] bg-white rounded-[24px]"
                 }
               >
                 Next
