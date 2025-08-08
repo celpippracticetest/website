@@ -159,7 +159,7 @@ const ReadingPracticeView = ({
         completedPractice={completedPractice}
       />
       <div className="bg-white rounded-xl flex flex-col screen1280:!h-[920px] overflow-scroll border border-[#D5D6D8] w-full">
-        <div className="flex justify-between  gap-2 p-[16px] border-b border-[#D5D6D8]  flex-col screen1280:!flex-row w-full min-h-[72px] h-auto bg-[#FFEBD6]">
+        <div className="flex justify-between  gap-2 p-[16px] border-b border-[#D5D6D8]  flex-col screen1280:!flex-row w-full  h-auto bg-[#FFEBD6]">
           <div className="flex flex-col-reverse screen744:!flex-row items-start screen744:!items-center gap-[16px] flex-wrap screen744:!flex-nowrap">
             <h1 className="w-full max-w-[330px] text-[18px] font-bold text-[#212E42]">
               {practice.passages[passageIndex].title}

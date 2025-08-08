@@ -182,7 +182,7 @@ const ListeningPracticeView = ({
           completedPractice={completedPractice}
         />
         <Card className="bg-white/90 flex flex-col overflow-scroll border border-[#D5D6D8] w-full">
-          <div className="flex justify-between lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row  w-full min-h-[72px] h-auto bg-[#FFEBD6]">
+          <div className="flex justify-between lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row  w-full  h-auto bg-[#FFEBD6]">
             <div className="flex gap-2 w-full  items-center justify-between">
               <h1 className="text-[18px] font-bold text-[#212E42]">
                 {page === "instructions"
