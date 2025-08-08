@@ -15,7 +15,8 @@ import { useState, useEffect, useRef } from "react";
 const AuthButtons = () => {
   const { isSignedIn } = useUser();
   const [isUserDropDownOpen, setUserDropDownOpen] = useState(false);
-  const { user, signOut } = useClerk();
+  const { user }: any = useUser();
+  const { signOut } = useClerk();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -57,6 +58,46 @@ const AuthButtons = () => {
           {isUserDropDownOpen && (
             <div className="absolute right-0 z-10 mt-2 w-56 top-[48px] rounded-md bg-white ring-1 shadow-lg ring-black/5">
               <div className="py-1">
+                {user &&
+                  user.publicMetadata.roles &&
+                  user.publicMetadata.roles.includes("admin") && (
+                    <a
+                      href="/cms/dashboard"
+                      className="block px-4 py-2 text-[14px] text-gray-700 w-full text-left"
+                      role="menuitem"
+                      tabIndex={-1}
+                      id="menu-item-0"
+                    >
+                      CMS Dashboard
+                    </a>
+                  )}
+                {user &&
+                  user.publicMetadata.roles &&
+                  user.publicMetadata.roles.includes("admin") && (
+                    <a
+                      href="/cms/practice"
+                      className="block px-4 py-2 text-[14px] text-gray-700 w-full text-left"
+                      role="menuitem"
+                      tabIndex={-1}
+                      id="menu-item-0"
+                    >
+                      CMS Practices
+                    </a>
+                  )}
+
+                {user &&
+                  user.publicMetadata.roles &&
+                  user.publicMetadata.roles.includes("admin") && (
+                    <a
+                      href="/cms/exam"
+                      className="block px-4 py-2 text-[14px] text-gray-700 w-full text-left"
+                      role="menuitem"
+                      tabIndex={-1}
+                      id="menu-item-0"
+                    >
+                      CMS Exam
+                    </a>
+                  )}
                 <Link
                   href="/profile"
                   className="block text-left px-4 py-2 text-[14px] text-gray-700"
@@ -77,6 +118,7 @@ const AuthButtons = () => {
                 >
                   Support
                 </button>
+
                 <button
                   onClick={() => {
                     localStorage.removeItem("hasClosedExtraDiscountModal");
