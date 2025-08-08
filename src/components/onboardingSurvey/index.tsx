@@ -133,8 +133,13 @@ export default function OnboardingSurvey({
             </h2>
 
             <div className="flex flex-col mb-[24px] screen744:!mb-[32px] gap-[16px] data-[state=checked]:!bg-[#F27059]">
-              {REASONS.map((reason) => (
-                <div className="flex" key={reason}>
+              {REASONS.map((reason, index) => (
+                <div
+                  className={`flex ${
+                    index === 6 ? "flex-col gap-[24px]" : "flex-row"
+                  }`}
+                  key={reason}
+                >
                   <label
                     className={cn(
                       "flex items-center h-[48px] screen744:!h-[52px] px-[16px] screen744:!px-[32px] rounded-[40px] transition-all cursor-pointer text-[12px] screen744:!text-[16px] font-normal w-fit",
@@ -157,7 +162,7 @@ export default function OnboardingSurvey({
                   </label>
                   {reason === "Other (please specify)" &&
                     reasons.includes(reason) && (
-                      <div className="relative w-[300px]  ml-8">
+                      <div className="relative w-[300px]  screen744:!ml-8">
                         <input
                           type="text"
                           id="customReason"
@@ -243,8 +248,13 @@ export default function OnboardingSurvey({
             </h2>
 
             <div className="flex flex-col mb-[32px] gap-[16px] data-[state=checked]:!bg-[#F27059]">
-              {STEP_TWO_REASONS.map((reason) => (
-                <div className="flex items-center" key={reason}>
+              {STEP_TWO_REASONS.map((reason, index) => (
+                <div
+                  className={`flex items-center ${
+                    index === 4 ? "flex-col gap-[24px]" : "flex-row"
+                  }`}
+                  key={reason}
+                >
                   <label
                     className={cn(
                       "flex items-center h-[48px]  screen744:!h-[52px] px-[32px] rounded-[40px] transition-all cursor-pointer text-[12px] screen744:!text-[16px] font-normal w-fit",
@@ -267,7 +277,7 @@ export default function OnboardingSurvey({
                   </label>
                   {reason === "Other (please specify)" &&
                     stepTwoReasons.includes(reason) && (
-                      <div className="relative w-[300px]  ml-8">
+                      <div className="relative w-[300px]  screen744:!ml-8">
                         <input
                           type="text"
                           id="customStepTwoReason"
