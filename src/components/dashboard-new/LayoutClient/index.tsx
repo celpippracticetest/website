@@ -1066,31 +1066,20 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                 tabIndex={-1}
               >
                 <div className="py-1" role="none">
-                  <a
-                    href="/profile"
-                    className="block px-4 py-2 text-[14px] text-gray-700"
-                    role="menuitem"
-                    tabIndex={-1}
-                    id="menu-item-0"
-                  >
-                    Profile
-                  </a>
-                  <button
-                    onClick={() => {
-                      if (
-                        typeof window !== "undefined" &&
-                        (window as any).Intercom
-                      ) {
-                        (window as any).Intercom("show");
-                      }
-                    }}
-                    className="block px-4 py-2 text-[14px] text-gray-700 w-full text-left cursor-pointer"
-                    role="menuitem"
-                    tabIndex={-1}
-                    id="support-button"
-                  >
-                    Support
-                  </button>
+                  {user &&
+                    user.publicMetadata.roles &&
+                    user.publicMetadata.roles.includes("admin") && (
+                      <a
+                        href="/cms/dashboard"
+                        className="block px-4 py-2 text-[14px] text-gray-700 w-full text-left"
+                        role="menuitem"
+                        tabIndex={-1}
+                        id="menu-item-0"
+                      >
+                        CMS Dashboard
+                      </a>
+                    )}
+
                   {user &&
                     user.publicMetadata.roles &&
                     user.publicMetadata.roles.includes("admin") && (
@@ -1118,6 +1107,32 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                         CMS Exam
                       </a>
                     )}
+                  <a
+                    href="/profile"
+                    className="block px-4 py-2 text-[14px] text-gray-700"
+                    role="menuitem"
+                    tabIndex={-1}
+                    id="menu-item-0"
+                  >
+                    Profile
+                  </a>
+                  <button
+                    onClick={() => {
+                      if (
+                        typeof window !== "undefined" &&
+                        (window as any).Intercom
+                      ) {
+                        (window as any).Intercom("show");
+                      }
+                    }}
+                    className="block px-4 py-2 text-[14px] text-gray-700 w-full text-left cursor-pointer"
+                    role="menuitem"
+                    tabIndex={-1}
+                    id="support-button"
+                  >
+                    Support
+                  </button>
+
                   <button
                     onClick={() => {
                       localStorage.removeItem("hasClosedExtraDiscountModal");

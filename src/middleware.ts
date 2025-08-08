@@ -63,6 +63,7 @@ export default clerkMiddleware(async (auth, req) => {
     "GET:/api/answers/writing",
     "POST:/api/answers/speaking",
     "POST:/api/checkout_session",
+    "GET:/api/onboarding",
   ];
 
   const requestedPath = `${req.method}:${req.nextUrl.pathname}`;
