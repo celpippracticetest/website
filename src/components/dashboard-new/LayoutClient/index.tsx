@@ -1080,33 +1080,6 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                       </a>
                     )}
 
-                  {user &&
-                    user.publicMetadata.roles &&
-                    user.publicMetadata.roles.includes("admin") && (
-                      <a
-                        href="/cms/practice"
-                        className="block px-4 py-2 text-[14px] text-gray-700"
-                        role="menuitem"
-                        tabIndex={-1}
-                        id="menu-item-0"
-                      >
-                        CMS Practices
-                      </a>
-                    )}
-
-                  {user &&
-                    user.publicMetadata.roles &&
-                    user.publicMetadata.roles.includes("admin") && (
-                      <a
-                        href="/cms/exam"
-                        className="block px-4 py-2 text-[14px] text-gray-700"
-                        role="menuitem"
-                        tabIndex={-1}
-                        id="menu-item-0"
-                      >
-                        CMS Exam
-                      </a>
-                    )}
                   <a
                     href="/profile"
                     className="block px-4 py-2 text-[14px] text-gray-700"

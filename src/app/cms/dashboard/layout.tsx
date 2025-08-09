@@ -1,9 +1,288 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+
+const tabs = [
+  { key: "overview", label: "Overview", icon: "🏠" },
+  { key: "exams", label: "Exams", icon: "📝" },
+  { key: "onboarding", label: "Onboarding", icon: "🧭" },
+  { key: "settings", label: "Settings", icon: "⚙️" },
+] as const;
+
+const examItems = [
+  {
+    key: "create",
+    label: "Create",
+    icon: "➕",
+    href: "/cms/dashboard/exam/create",
+  },
+  {
+    key: "reading",
+    label: "Reading",
+    icon: "📖",
+    href: "/cms/dashboard/exam/reading",
+  },
+  {
+    key: "listening",
+    label: "Listening",
+    icon: "🎧",
+    href: "/cms/dashboard/exam/listening",
+  },
+  {
+    key: "writing",
+    label: "Writing",
+    icon: "✍️",
+    href: "/cms/dashboard/exam/writing",
+  },
+  {
+    key: "speaking",
+    label: "Speaking",
+    icon: "🗣️",
+    href: "/cms/dashboard/exam/speaking",
+  },
+] as const;
+
+const practiceItems = [
+  {
+    key: "reading",
+    label: "Reading",
+    icon: "📖",
+    href: "/cms/dashboard/practice/reading",
+  },
+  {
+    key: "listening",
+    label: "Listening",
+    icon: "🎧",
+    href: "/cms/dashboard/practice/listening",
+  },
+  {
+    key: "writing",
+    label: "Writing",
+    icon: "✍️",
+    href: "/cms/dashboard/practice/writing",
+  },
+  {
+    key: "speaking",
+    label: "Speaking",
+    icon: "🗣️",
+    href: "/cms/dashboard/practice/speaking",
+  },
+] as const;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <div className="min-h-screen flex flex-col">{children}</div>;
+  const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const hrefFor = (key: string) => {
+    if (key === "overview") return "/cms/dashboard";
+    if (key === "onboarding") return "/cms/dashboard?tab=onboarding"; // until /cms/onboarding page exists
+    return `/cms/${key}`;
+  };
+  const isActive = (key: string) => {
+    const href = hrefFor(key);
+    // Match exact path for clean active state (ignores query for onboarding)
+    if (key === "onboarding")
+      return (
+        pathname?.startsWith("/cms/dashboard") &&
+        pathname?.includes("/cms/dashboard")
+      );
+    if (key === "overview")
+      return pathname === "/cms" || pathname === "/cms/dashboard";
+    return pathname === `/cms/${key}`;
+  };
+  return (
+    <div className="min-h-screen w-full md:flex md:flex-row">
+      <div className="flex items-center justify-between p-3 border-b md:hidden bg-white sticky top-0 z-40">
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen(true)}
+          className="p-2 text-gray-700 rounded-md border border-gray-300"
+        >
+          ☰
+        </button>
+        <div className="text-lg font-semibold">Dashboard</div>
+      </div>
+      {/* Sidebar */}
+      <aside
+        className={`fixed inset-y-0 left-0 transform ${
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        } transition-transform duration-200 ease-in-out z-50 w-64 md:sticky md:top-0 md:z-30 md:translate-x-0 md:w-auto h-[100dvh] shrink-0 border-b md:border-b-0 md:border-r bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50 ${
+          collapsed ? "md:w-16" : "md:w-64"
+        }`}
+      >
+        <div className="px-3 py-3 md:py-6">
+          <div className="mb-3 flex items-center justify-end md:justify-between">
+            {!collapsed && (
+              <div className="hidden md:block text-sm font-semibold text-gray-700">
+                Menu
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setCollapsed((v) => !v)}
+              className="cursor-pointer inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-expanded={!collapsed}
+              title={collapsed ? "Expand" : "Collapse"}
+            >
+              <span aria-hidden>{collapsed ? "»" : "«"}</span>
+            </button>
+          </div>
+          <nav
+            className={`flex md:block overflow-x-auto md:overflow-visible [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+              collapsed ? "md:text-center" : ""
+            }`}
+          >
+            {/* Top-level items */}
+            <ul
+              className={`flex md:block gap-2 md:gap-1 ${
+                collapsed ? "md:space-y-1" : ""
+              }`}
+            >
+              {/* Overview */}
+              <li>
+                <Link
+                  href={hrefFor("overview")}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center ${
+                    collapsed ? "justify-center" : "justify-start"
+                  } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive("overview")
+                      ? "bg-gray-100 text-gray-900"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                  aria-current={isActive("overview") ? "page" : undefined}
+                  title="Overview"
+                >
+                  <span aria-hidden>🏠</span>
+                  {!collapsed && <span>Overview</span>}
+                </Link>
+              </li>
+
+              {/* Exams group header */}
+              <li className="mt-1 md:mt-3">
+                {!collapsed && (
+                  <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Exams
+                  </div>
+                )}
+                <ul className={`${collapsed ? "ml-0" : "ml-2"} space-y-1`}>
+                  {examItems.map((item) => {
+                    const active = pathname === item.href;
+                    return (
+                      <li key={item.key}>
+                        <Link
+                          href={item.href}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={`flex items-center ${
+                            collapsed ? "justify-center" : "justify-start"
+                          } gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
+                            active
+                              ? "bg-gray-100 text-gray-900"
+                              : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                          }`}
+                          aria-current={active ? "page" : undefined}
+                          title={item.label}
+                        >
+                          <span aria-hidden>{item.icon}</span>
+                          {!collapsed && <span>{item.label}</span>}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </li>
+              <li className="mt-1 md:mt-3">
+                {!collapsed && (
+                  <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Practices
+                  </div>
+                )}
+                <ul className={`${collapsed ? "ml-0" : "ml-2"} space-y-1`}>
+                  {practiceItems.map((item) => {
+                    const active = pathname === item.href;
+                    return (
+                      <li key={item.key}>
+                        <Link
+                          href={item.href}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={`flex items-center ${
+                            collapsed ? "justify-center" : "justify-start"
+                          } gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
+                            active
+                              ? "bg-gray-100 text-gray-900"
+                              : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                          }`}
+                          aria-current={active ? "page" : undefined}
+                          title={item.label}
+                        >
+                          <span aria-hidden>{item.icon}</span>
+                          {!collapsed && <span>{item.label}</span>}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </li>
+
+              {/* Onboarding */}
+              <li className="mt-3">
+                <Link
+                  href={hrefFor("onboarding")}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center ${
+                    collapsed ? "justify-center" : "justify-start"
+                  } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive("onboarding")
+                      ? "bg-gray-100 text-gray-900"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                  aria-current={isActive("onboarding") ? "page" : undefined}
+                  title="Onboarding"
+                >
+                  <span aria-hidden>🧭</span>
+                  {!collapsed && <span>Onboarding</span>}
+                </Link>
+              </li>
+
+              {/* Settings */}
+              <li className="mt-1">
+                <Link
+                  href={hrefFor("settings")}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center ${
+                    collapsed ? "justify-center" : "justify-start"
+                  } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive("settings")
+                      ? "bg-gray-100 text-gray-900"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                  aria-current={isActive("settings") ? "page" : undefined}
+                  title="Settings"
+                >
+                  <span aria-hidden>⚙️</span>
+                  {!collapsed && <span>Settings</span>}
+                </Link>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </aside>
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-25 z-40 md:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Content */}
+      <main className="flex-1 p-3 md:p-6">{children}</main>
+    </div>
+  );
 }
