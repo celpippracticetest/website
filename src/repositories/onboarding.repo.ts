@@ -30,6 +30,10 @@ export class OnboardingRepository {
     );
   }
 
+  async getAllOnboardingResults(): Promise<TOnboardingResult[]> {
+    return this.getCollection().find({}).toArray();
+  }
+
   async findByUserId(userId: string): Promise<TOnboardingResult | null> {
     return this.getCollection().findOne({ userId });
   }
