@@ -17,8 +17,8 @@ type OnboardingRecord = {
 };
 
 async function fetchOnboardingData() {
-  // const baseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
-  const baseUrl = "http://localhost:3000";
+  const baseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
+  // const baseUrl = "http://localhost:3000";
 
   const res = await fetch(`${baseUrl}/api/onboarding`, {
     cache: "no-cache",
