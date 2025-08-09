@@ -5,6 +5,8 @@ import { NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { clerkClient } from "@clerk/express";
 
+export const runtime = "nodejs";
+
 export async function POST(req: Request) {
   // Get the current authenticated user
   const user = await currentUser();
