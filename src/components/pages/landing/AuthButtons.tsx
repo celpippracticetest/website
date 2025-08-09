@@ -71,33 +71,7 @@ const AuthButtons = () => {
                       CMS Dashboard
                     </a>
                   )}
-                {user &&
-                  user.publicMetadata.roles &&
-                  user.publicMetadata.roles.includes("admin") && (
-                    <a
-                      href="/cms/practice"
-                      className="block px-4 py-2 text-[14px] text-gray-700 w-full text-left"
-                      role="menuitem"
-                      tabIndex={-1}
-                      id="menu-item-0"
-                    >
-                      CMS Practices
-                    </a>
-                  )}
 
-                {user &&
-                  user.publicMetadata.roles &&
-                  user.publicMetadata.roles.includes("admin") && (
-                    <a
-                      href="/cms/exam"
-                      className="block px-4 py-2 text-[14px] text-gray-700 w-full text-left"
-                      role="menuitem"
-                      tabIndex={-1}
-                      id="menu-item-0"
-                    >
-                      CMS Exam
-                    </a>
-                  )}
                 <Link
                   href="/profile"
                   className="block text-left px-4 py-2 text-[14px] text-gray-700"

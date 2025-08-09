@@ -1,57 +1,35 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import CmsPracticesTable from "../../../components/dashboard-app/cms/CmsPracticesTable";
-import CmsPracticesHeader from "../../../components/dashboard-app/cms/CmsPracticesHeader";
+import CmsPracticesTable from "../../../../components/dashboard-app/cms/CmsPracticesTable";
+import CmsPracticesHeader from "../../../../components/dashboard-app/cms/CmsPracticesHeader";
 import {
   PracticeApiResponse,
   Practice,
-  ExamPartApiResponse,
-} from "../../../components/dashboard-app/cms/types/practiceTypes";
-import { ExamIdFilter, ExamPartIdFilter, PracticeTypeFilter } from "@/components/dashboard-app/cms/PracticeTypeFilter";
+} from "../../../../components/dashboard-app/cms/types/practiceTypes";
+import { PracticeTypeFilter } from "@/components/dashboard-app/cms/PracticeTypeFilter";
 import { useRouter } from "nextjs-toploader/app";
-import { TExamPartSchemaDto } from "@/models/examParts.model";
-import { TExamSchemaDto } from "@/models/exam.model";
-import CmsExamPartsTable from "@/components/dashboard-app/cms/CmsExamPartsTable";
 
 const CmsPractices = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const router = useRouter();
-  const [examId, setExamId] = useState<string | null>(null);
-  const [partId, setPartId] = useState<string | null>(null);
+  const [practiceType, setPracticeType] = useState<string | null>(null);
 
   // Query to fetch practices with pagination from the API
-  const [data, setData] = useState<{ exams: TExamPartSchemaDto[]; total: number; totalPages: number } | null>(null);
+  const [data, setData] = useState<{
+    practices: Practice[];
+    total: number;
+    totalPages: number;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
-  const [exams, setExams] = useState<TExamSchemaDto[]>([]);
 
   useEffect(() => {
-    fetchExams();
-  },[]);
-  useEffect(() => {
-    fetchExamsParts();
-  }, [page, pageSize, examId, partId]);
+    fetchPractices();
+  }, [page, pageSize, practiceType]);
 
-  const fetchExams = async () => {
-    try {
-      const params = new URLSearchParams();
-      params.set("page", "0");
-      params.set("limit", "100");
-      const response = await fetch(`/api/exams?${params.toString()}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch practices");
-      }
-
-      const result = await response.json();
-      setExams(result.items);
-    } catch (error) {
-      console.error("Error fetching practices:", error);
-    } finally {
-    }
-  };
-  const fetchExamsParts = async () => {
+  const fetchPractices = async () => {
     // Convert to zero-based page index for the API
     const apiPage = page - 1;
 
@@ -62,20 +40,15 @@ const CmsPractices = () => {
       const params = new URLSearchParams();
       params.set("page", apiPage.toString());
       params.set("limit", pageSize.toString());
-      if (examId) {
-        params.set("examId", examId);
-      }
-      if (partId) {
-        params.set("partId", partId);
-      }
-      const response = await fetch(`/api/examParts?${params.toString()}`);
+      if (practiceType) params.set("type", practiceType);
+      const response = await fetch(`/api/practices?${params.toString()}`);
       if (!response.ok) {
         throw new Error("Failed to fetch practices");
       }
 
-      const result: ExamPartApiResponse = await response.json();
+      const result: PracticeApiResponse = await response.json();
       setData({
-        exams: result.items,
+        practices: result.items,
         total: result.totalItems,
         totalPages: result.totalPages,
       });
@@ -87,24 +60,24 @@ const CmsPractices = () => {
     }
   };
 
-  const refetch = fetchExamsParts;
+  const refetch = fetchPractices;
 
   const handleCreatePractice = (type: string) => {
     switch (type) {
       case "listening":
-        router.push("/cms/exam/listening");
+        router.push("/cms/practice/listening");
         break;
       case "reading":
         // Navigate to reading practice creation
-        router.push("/cms/exam/reading");
+        router.push("/cms/practice/reading");
         break;
       case "writing":
         // Navigate to writing practice creation
-        router.push("/cms/exam/writing");
+        router.push("/cms/practice/writing");
         break;
       case "speaking":
         // Navigate to speaking practice creation
-        router.push("/cms/exam/speaking");
+        router.push("/cms/practice/speaking");
         break;
       default:
         break;
@@ -114,16 +87,16 @@ const CmsPractices = () => {
   const handleEditPractice = (id: string, type: string) => {
     switch (type.toLowerCase()) {
       case "listening":
-        router.push(`/cms/exam/listening?id=${id}`);
+        router.push(`/cms/practice/listening?id=${id}`);
         break;
       case "reading":
-        router.push(`/cms/exam/reading?id=${id}`);
+        router.push(`/cms/practice/reading?id=${id}`);
         break;
       case "writing":
-        router.push(`/cms/exam/writing?id=${id}`);
+        router.push(`/cms/practice/writing?id=${id}`);
         break;
       case "speaking":
-        router.push(`/cms/exam/speaking?id=${id}`);
+        router.push(`/cms/practice/speaking?id=${id}`);
         break;
       default:
         break;
@@ -134,7 +107,7 @@ const CmsPractices = () => {
     try {
       // For now, we'll just show a toast and simulate deletion
       // In a real implementation, you would make an API call to delete the practice
-      await fetch(`/api/examParts/${id}`, {
+      await fetch(`/api/practices/${id}`, {
         method: "DELETE",
       });
       // Refetch the data after successful deletion
@@ -148,21 +121,20 @@ const CmsPractices = () => {
     setPage(newPage);
   };
   const handleTypeFilterChange = (type: string | null) => {
-    setExamId(type);
-  };
-  const handlePartIdChange = (type: string | null) => {
-    setPartId(type);
+    setPracticeType(type);
   };
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <CmsPracticesHeader onCreatePractice={handleCreatePractice} />
         <div className="mb-6">
-          <ExamIdFilter selectedType={examId} onTypeChange={handleTypeFilterChange} exams={exams} />
-          <ExamPartIdFilter selectedType={partId} onTypeChange={handlePartIdChange} />
+          <PracticeTypeFilter
+            selectedType={practiceType}
+            onTypeChange={handleTypeFilterChange}
+          />
         </div>
-         <CmsExamPartsTable
-          examParts={data?.exams || []}
+        <CmsPracticesTable
+          practices={data?.practices || []}
           isLoading={isLoading}
           isError={isError}
           page={page}
@@ -171,7 +143,7 @@ const CmsPractices = () => {
           onPageChange={handlePageChange}
           onEdit={handleEditPractice}
           onDelete={handleDeletePractice}
-        /> 
+        />
       </div>
     </div>
   );
