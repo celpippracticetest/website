@@ -1,17 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import CmsPracticesTable from "../../../../components/dashboard-app/cms/CmsPracticesTable";
 import CmsPracticesHeader from "../../../../components/dashboard-app/cms/CmsPracticesHeader";
-import {
-  PracticeApiResponse,
-  Practice,
-  ExamPartApiResponse,
-} from "../../../../components/dashboard-app/cms/types/practiceTypes";
+import { ExamPartApiResponse } from "../../../../components/dashboard-app/cms/types/practiceTypes";
 import {
   ExamIdFilter,
   ExamPartIdFilter,
-  PracticeTypeFilter,
 } from "@/components/dashboard-app/cms/PracticeTypeFilter";
 import { useRouter } from "nextjs-toploader/app";
 import { TExamPartSchemaDto } from "@/models/examParts.model";
