@@ -6,8 +6,8 @@ import { useEffect, useState } from "react";
 
 const tabs = [
   { key: "overview", label: "Overview", icon: "🏠" },
-  { key: "exams", label: "Exams", icon: "📝" },
   { key: "onboarding", label: "Onboarding", icon: "🧭" },
+  { key: "exams", label: "Exams", icon: "📝" },
   { key: "settings", label: "Settings", icon: "⚙️" },
 ] as const;
 
@@ -19,55 +19,19 @@ const examItems = [
     href: "/cms/dashboard/exam/create",
   },
   {
-    key: "reading",
-    label: "Reading",
-    icon: "📖",
-    href: "/cms/dashboard/exam/reading",
-  },
-  {
-    key: "listening",
-    label: "Listening",
-    icon: "🎧",
-    href: "/cms/dashboard/exam/listening",
-  },
-  {
-    key: "writing",
-    label: "Writing",
-    icon: "✍️",
-    href: "/cms/dashboard/exam/writing",
-  },
-  {
-    key: "speaking",
-    label: "Speaking",
-    icon: "🗣️",
-    href: "/cms/dashboard/exam/speaking",
+    key: "list",
+    label: "List",
+    icon: "📋",
+    href: "/cms/dashboard/exam",
   },
 ] as const;
 
 const practiceItems = [
   {
-    key: "reading",
-    label: "Reading",
-    icon: "📖",
-    href: "/cms/dashboard/practice/reading",
-  },
-  {
-    key: "listening",
-    label: "Listening",
-    icon: "🎧",
-    href: "/cms/dashboard/practice/listening",
-  },
-  {
-    key: "writing",
-    label: "Writing",
-    icon: "✍️",
-    href: "/cms/dashboard/practice/writing",
-  },
-  {
-    key: "speaking",
-    label: "Speaking",
-    icon: "🗣️",
-    href: "/cms/dashboard/practice/speaking",
+    key: "list",
+    label: "List",
+    icon: "📋",
+    href: "/cms/dashboard/practice",
   },
 ] as const;
 
@@ -164,6 +128,25 @@ export default function RootLayout({
                   {!collapsed && <span>Overview</span>}
                 </Link>
               </li>
+              {/* Onboarding */}
+              <li className="mt-3">
+                <Link
+                  href={hrefFor("onboarding")}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center ${
+                    collapsed ? "justify-center" : "justify-start"
+                  } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive("onboarding")
+                      ? "bg-gray-100 text-gray-900"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                  aria-current={isActive("onboarding") ? "page" : undefined}
+                  title="Onboarding"
+                >
+                  <span aria-hidden>🧭</span>
+                  {!collapsed && <span>Onboarding</span>}
+                </Link>
+              </li>
 
               {/* Exams group header */}
               <li className="mt-1 md:mt-3">
@@ -229,26 +212,6 @@ export default function RootLayout({
                     );
                   })}
                 </ul>
-              </li>
-
-              {/* Onboarding */}
-              <li className="mt-3">
-                <Link
-                  href={hrefFor("onboarding")}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center ${
-                    collapsed ? "justify-center" : "justify-start"
-                  } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    isActive("onboarding")
-                      ? "bg-gray-100 text-gray-900"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  }`}
-                  aria-current={isActive("onboarding") ? "page" : undefined}
-                  title="Onboarding"
-                >
-                  <span aria-hidden>🧭</span>
-                  {!collapsed && <span>Onboarding</span>}
-                </Link>
               </li>
 
               {/* Settings */}

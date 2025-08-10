@@ -65,19 +65,19 @@ const CmsPractices = () => {
   const handleCreatePractice = (type: string) => {
     switch (type) {
       case "listening":
-        router.push("/cms/practice/listening");
+        router.push("/cms/dashboard/practice/listening");
         break;
       case "reading":
         // Navigate to reading practice creation
-        router.push("/cms/practice/reading");
+        router.push("/cms/dashboard/practice/reading");
         break;
       case "writing":
         // Navigate to writing practice creation
-        router.push("/cms/practice/writing");
+        router.push("/cms/dashboard/practice/writing");
         break;
       case "speaking":
         // Navigate to speaking practice creation
-        router.push("/cms/practice/speaking");
+        router.push("/cms/dashboard/practice/speaking");
         break;
       default:
         break;
@@ -87,16 +87,16 @@ const CmsPractices = () => {
   const handleEditPractice = (id: string, type: string) => {
     switch (type.toLowerCase()) {
       case "listening":
-        router.push(`/cms/practice/listening?id=${id}`);
+        router.push(`/cms/dashboard/practice/listening?id=${id}`);
         break;
       case "reading":
-        router.push(`/cms/practice/reading?id=${id}`);
+        router.push(`/cms/dashboard/practice/reading?id=${id}`);
         break;
       case "writing":
-        router.push(`/cms/practice/writing?id=${id}`);
+        router.push(`/cms/dashboard/practice/writing?id=${id}`);
         break;
       case "speaking":
-        router.push(`/cms/practice/speaking?id=${id}`);
+        router.push(`/cms/dashboard/practice/speaking?id=${id}`);
         break;
       default:
         break;
