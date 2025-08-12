@@ -11,7 +11,7 @@ module.exports = {
       "https://blog.celpippracticetest.com/sitemap_index.xml",
     ],
   },
-  additionalPaths: async (config) => {
+  additionalPaths: async () => {
     return [
       {
         loc: "/reading",
