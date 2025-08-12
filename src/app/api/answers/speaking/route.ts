@@ -33,20 +33,15 @@ async function uploadAudioBuffer(
 
   try {
     const result = await upload.done();
-    return result.Location ?? ""; // Replace with your bucket's URL format
+    return result.Location ?? "";
   } catch (error) {
     console.error("Upload failed", error);
     return null;
   }
 }
 const transcribeUrl = async (fileUrl: string) => {
-  // The API key we created in step 3
   const deepgramApiKey = process.env.DEEPGRAM_API_KEY;
-
-  // Hosted sample file
   const url = fileUrl;
-
-  // Initializes the Deepgram SDK
   const deepgram = createClient(deepgramApiKey);
 
   const { result, error } = await deepgram.listen.prerecorded.transcribeUrl(
@@ -58,6 +53,7 @@ const transcribeUrl = async (fileUrl: string) => {
   if (!error) console.dir(result, { depth: null });
   return result;
 };
+
 export const POST = async function (req: Request) {
   try {
     const user = await currentUser();
@@ -83,7 +79,9 @@ export const POST = async function (req: Request) {
         { status: 400 }
       );
     }
+
     const transcribeResult = await transcribeUrl(location);
+
     const practiceRepo = new PracticeRepository(mongoClient);
     const practiceId = formData.get("practiceId") as string;
     const practice: TPracticeDto | null = await practiceRepo.findPractice(
@@ -95,6 +93,7 @@ export const POST = async function (req: Request) {
         { status: 404 }
       );
     }
+
     const taskRepo = new TaskRepository(mongoClient);
     const task: TTaskSchemaDto | null = await taskRepo.findTaskById(
       practice?.taskId ?? ""
@@ -104,14 +103,16 @@ export const POST = async function (req: Request) {
     }
 
     const anthropic = new Anthropic({
-      // defaults to process.env["ANTHROPIC_API_KEY"]
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
-    const commandTemplate = task.antropicCommand?.userPrompt;
 
+    const commandTemplate = task.antropicCommand?.userPrompt;
     let command: any = commandTemplate;
+
     const userAnswer =
       transcribeResult.results.channels[0].alternatives[0].transcript;
+
+    // Inject user answer
     if (command.includes("{{USER_RESPONSE}}")) {
       command = command.replace("{{USER_RESPONSE}}", userAnswer);
     } else if (command.includes("{{SPOKEN_RESPONSE}}")) {
@@ -120,6 +121,7 @@ export const POST = async function (req: Request) {
       command = command.replace("{{SPOKEN_RESPONSE}}", userAnswer);
     }
 
+    // Inject speaking prompt / scene
     if (command.includes("{{SPEAKING_PROMPT}}")) {
       command = command.replace(
         "{{SPEAKING_PROMPT}}",
@@ -134,20 +136,48 @@ export const POST = async function (req: Request) {
       );
     }
 
+    // Inject duration
     if (command.includes("{{SPEAKING_DURATION}}")) {
       command = command.replace(
         "{{SPEAKING_DURATION}}",
         transcribeResult.metadata.duration
       );
     }
-    // SPEAKING_PROMPT
-    // SPEAKING_DURATION
+
+    const taskTopic = task.description ?? "";
+    if (taskTopic) {
+      if (command.includes("{{TASK_DESCRIPTION}}")) {
+        command = command.replace("{{TASK_DESCRIPTION}}", taskTopic);
+      } else if (command.includes("{{TOPIC}}")) {
+        command = command.replace("{{TOPIC}}", taskTopic);
+      } else {
+        command += `
+
+---
+TASK_TOPIC:
+${taskTopic}
+
+SCORING_RULES_FOR_TASK_FULFILLMENT:
+- Heavily penalize off-topic responses.
+- If the response does not meaningfully address TASK_TOPIC, set "taskFulfillment" very low (e.g., 0–3/12) and reflect this in "overall".
+- Do NOT reward fluency or grammar with high "overall" if the response is off-topic.`;
+      }
+    }
 
     const msg: any = await anthropic.messages.create({
       model: "claude-3-7-sonnet-20250219",
       max_tokens: 20000,
       temperature: 1,
-      system: task.antropicCommand?.systemPrompt ?? "",
+      system:
+        (task.antropicCommand?.systemPrompt ?? "") +
+        (taskTopic
+          ? `
+
+The user must address the following topic:
+"${taskTopic}"
+
+If the response is off-topic, sharply reduce "taskFulfillment" and lower "overall" accordingly.`
+          : ""),
       tools: [
         {
           name: "CELPIPWritingEvaluation",
@@ -174,9 +204,9 @@ export const POST = async function (req: Request) {
               },
               taskFulfillment: {
                 type: "number",
-                description: "Task Fulfillment: (out of 12)",
+                description:
+                  "Task Fulfillment: (out of 12). Strictly tied to TASK_TOPIC; off-topic => low score.",
               },
-
               feedback: {
                 type: "string",
                 description: task.antropicCommand?.systemPrompt ?? "",
@@ -203,20 +233,6 @@ export const POST = async function (req: Request) {
             ],
           },
         },
-        // {
-        //     name: "CELPIPWritingEvaluation",
-        //     description: "evaluating and providing feedback on a speaking sample",
-        //     input_schema: {
-        //       type: "object",
-        //       properties: {
-        //         feedback: {
-        //           type: "string",
-        //           description: "the full feedback on writng sample",
-        //         },
-        //       },
-
-        //     },
-        //   },
       ],
       messages: [
         {
@@ -260,6 +276,7 @@ export const POST = async function (req: Request) {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+
     return NextResponse.json(answer);
   } catch (error) {
     console.error("Error uploading file:", error);
