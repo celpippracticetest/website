@@ -1,6 +1,5 @@
 import LayoutClient from "@/components/dashboard-new/LayoutClient";
 import IntercomLoader from "@/components/IntercomLoader";
-import OnboardingSurvey from "@/components/onboardingSurvey";
 import { daysSince } from "@/lib/utils";
 import { currentUser } from "@clerk/nextjs/server";
 import { Metadata } from "next";
