@@ -69,6 +69,7 @@ const formSchema = z.object({
   type: z.literal("SPEAKING"),
   examId: z.string().min(1, "Exam ID is required"),
   partId: z.string().min(1, "Part ID is required"),
+  description: z.string().optional(),
   passages: z.array(
     z.object({
       id: z.string().min(1, "Passage ID is required"),
@@ -99,6 +100,7 @@ export default function SpeakingPracticeInputForm() {
       type: "SPEAKING",
       examId: "",
       partId: "1",
+      description: "",
       instructions: [],
       passages: [
         {
