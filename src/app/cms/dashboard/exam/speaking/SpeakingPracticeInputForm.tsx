@@ -36,7 +36,6 @@ import { useSearchParams } from "next/navigation";
 import RichTextEditor from "@/components/dashboard-app/cms/RichTextEditor";
 import { useRouter } from "nextjs-toploader/app";
 import { TExamSchemaDto } from "@/models/exam.model";
-import { Textarea } from "@/components/ui/textarea";
 
 const parts = [
   "Problem Solving",
@@ -69,7 +68,6 @@ const formSchema = z.object({
   type: z.literal("SPEAKING"),
   examId: z.string().min(1, "Exam ID is required"),
   partId: z.string().min(1, "Part ID is required"),
-  description: z.string().optional(),
   passages: z.array(
     z.object({
       id: z.string().min(1, "Passage ID is required"),
@@ -100,7 +98,6 @@ export default function SpeakingPracticeInputForm() {
       type: "SPEAKING",
       examId: "",
       partId: "1",
-      description: "",
       instructions: [],
       passages: [
         {
@@ -481,26 +478,20 @@ export default function SpeakingPracticeInputForm() {
               /> */}
             </div>
 
-            <FormField
+            {/* <FormField
               control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="Describe this speaking practice"
-                      className="min-h-[100px]"
-                      {...field}
-                    />
+                    <Textarea placeholder="Describe this speaking practice" className="min-h-[100px]" {...field} />
                   </FormControl>
-                  <FormDescription>
-                    A brief description of what the practice contains (optional)
-                  </FormDescription>
+                  <FormDescription>A brief description of what the practice contains (optional)</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
-            />
+            /> */}
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
