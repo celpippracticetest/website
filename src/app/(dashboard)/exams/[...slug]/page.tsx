@@ -13,7 +13,6 @@ import ResultExamView from "@/components/dashboard-app/exam-parts/ResultExamView
 import { ObjectId } from "mongodb";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
 import { currentUser } from "@clerk/nextjs/server";
-import { SpeakingAnswerRepository } from "@/repositories/speakingAnswers";
 
 const Exam = async ({ params }: { params: Promise<{ slug: string }> }) => {
   const examId: string | undefined = (await params).slug[0].split("exam_")[1];

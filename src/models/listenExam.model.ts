@@ -14,7 +14,9 @@ const PassageSchema = z.object({
   audioUrl: z.string().optional(),
   pictureUrl: z.string().optional(),
   setting: z.string().optional(),
-  conversation: z.array(z.object({ name: z.string(), text: z.string() })).optional(),
+  conversation: z
+    .array(z.object({ name: z.string(), text: z.string() }))
+    .optional(),
   body: z.string().optional(),
   questions: z.array(QuestionSchema).optional(),
   sampleResponse: z.array(SampleResponseSchema).optional(),
@@ -23,7 +25,7 @@ const ListeningExamEntitySchema = z.object({
   _id: z.instanceof(ObjectId),
   title: z.string(),
   name: z.string(), //Listening to Problem Solving
-  description: z.union([z.string(), z.array(z.string())]).optional(),
+  description: z.string().optional(), //You will hear three conversations where one person is seeking advice or help with a problem.
   instructions: z.array(z.string()).optional(), //You will hear three conversations where one person is seeking advice or help with a problem.
   passages: z.array(PassageSchema),
   type: ExamType.default("LISTENING"),
@@ -45,4 +47,9 @@ type TListeningExamEntitySchema = z.infer<typeof ListeningExamEntitySchema>;
 type TListeningExamDto = z.infer<typeof ListeningExamDto>;
 type TSampleResponseSchema = z.infer<typeof SampleResponseSchema>;
 export { ListeningExamEntitySchema, ListeningExamDto, SampleResponseSchema };
-export type { TListeningExamEntitySchema, TListeningExamDto, TPassage, TSampleResponseSchema };
+export type {
+  TListeningExamEntitySchema,
+  TListeningExamDto,
+  TPassage,
+  TSampleResponseSchema,
+};

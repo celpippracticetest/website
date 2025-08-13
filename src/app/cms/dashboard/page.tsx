@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { currentUser } from "@clerk/nextjs/server";
 
 import "chart.js/auto";
 import * as XLSX from "xlsx";

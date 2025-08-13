@@ -1,10 +1,5 @@
-import AWS from 'aws-sdk'
 import { SpeakingPassage } from "./SpeakingPractice";
-import { S3Client } from "@aws-sdk/client-s3";
-import { Upload } from "@aws-sdk/lib-storage";
-import { createReadStream } from "fs";
-import axios from 'axios';
-import { redirect, RedirectType } from 'next/navigation';
+import axios from "axios";
 
 export interface SpeakingQuestion {
   id: string;
@@ -62,24 +57,26 @@ export const transformSpeakingPracticeData = (input: any) => {
 /**
  * Save speaking practice data (this would typically integrate with a backend)
  */
-export const saveSpeakingPractice = async (data: any,selectedExamId: string | null) => {
+export const saveSpeakingPractice = async (
+  data: any,
+  selectedExamId: string | null
+) => {
   // In a real application, this would make an API call to save the data
   // For now, we'll just log it and simulate a successful save
 
-  let config = {
-    method: selectedExamId ? 'put' : 'post',
+  const config = {
+    method: selectedExamId ? "put" : "post",
     maxBodyLength: Infinity,
-    url: '/api/examParts'+ (selectedExamId ? `/${selectedExamId}` : ''),
-    headers: { 
-      'Content-Type': 'application/json'
+    url: "/api/examParts" + (selectedExamId ? `/${selectedExamId}` : ""),
+    headers: {
+      "Content-Type": "application/json",
     },
-    data: data
+    data: data,
   };
 
   try {
     await axios.request(config);
     alert(`OK`);
-    
   } catch (error) {
     console.error("Error uploading data:", error);
   }
@@ -89,5 +86,3 @@ export const saveSpeakingPractice = async (data: any,selectedExamId: string | nu
     data: transformSpeakingPracticeData(data),
   };
 };
-
-

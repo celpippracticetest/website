@@ -14,7 +14,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -31,12 +30,13 @@ import {
 import { Card } from "@/components/ui/card";
 import { PlusCircle, Trash2, Upload as UploadIcon, Check } from "lucide-react";
 import { saveSpeakingPractice } from "./cmsSpeakingService";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { redirect } from "next/dist/server/api-utils";
+import { S3Client } from "@aws-sdk/client-s3";
 import { SpeakingPracticeInput } from "./SpeakingPractice";
 import { useSearchParams } from "next/navigation";
 import RichTextEditor from "@/components/dashboard-app/cms/RichTextEditor";
 import { useRouter } from "nextjs-toploader/app";
+import { TExamSchemaDto } from "@/models/exam.model";
+import { Textarea } from "@/components/ui/textarea";
 
 const parts = [
   "Problem Solving",
@@ -80,7 +80,6 @@ const formSchema = z.object({
 });
 
 export default function SpeakingPracticeInputForm() {
-  const route = useRouter();
   const searchParams = useSearchParams();
   const selectedExamId = searchParams.get("id");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -118,7 +117,7 @@ export default function SpeakingPracticeInputForm() {
             throw new Error("Failed to fetch practice");
           }
           const practiceData = await response.json();
-          form.reset(practiceData.item); // Populate the form with fetched data
+          form.reset(practiceData.item);
         } catch (error) {
           console.error("Error fetching practice:", error);
         }
@@ -480,20 +479,26 @@ export default function SpeakingPracticeInputForm() {
               /> */}
             </div>
 
-            {/* <FormField
+            <FormField
               control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Describe this speaking practice" className="min-h-[100px]" {...field} />
+                    <Textarea
+                      placeholder="Describe this speaking practice"
+                      className="min-h-[100px]"
+                      {...field}
+                    />
                   </FormControl>
-                  <FormDescription>A brief description of what the practice contains (optional)</FormDescription>
+                  <FormDescription>
+                    A brief description of what the practice contains (optional)
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
-            /> */}
+            />
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">

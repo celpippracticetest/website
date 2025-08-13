@@ -33,11 +33,9 @@ import { PlusCircle, Trash2, Upload as UploadIcon, Check } from "lucide-react";
 import { saveListeningPractice } from "./cmsListeningService";
 import { ListeningPracticeInput } from "./ListeningPractice";
 
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { redirect } from "next/dist/server/api-utils";
+import { S3Client } from "@aws-sdk/client-s3";
 import { useSearchParams } from "next/navigation";
 import { TExamSchemaDto } from "@/models/exam.model";
-import { useRouter } from "nextjs-toploader/app";
 
 const parts = [
   "Problem Solving",
@@ -101,7 +99,6 @@ const formSchema = z.object({
 });
 
 export default function ListeningPracticeInputForm() {
-  const route = useRouter();
   const searchParams = useSearchParams();
   const selectedExamId = searchParams.get("id");
   const [isSubmitting, setIsSubmitting] = useState(false);
