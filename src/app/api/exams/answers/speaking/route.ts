@@ -1,36 +1,130 @@
 import { NextRequest, NextResponse } from "next/server";
-import { promises as fs } from "fs";
 import mongoClient from "@/lib/mongodb";
-import { S3Client } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  type CompleteMultipartUploadOutput,
+} from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import { createClient } from "@deepgram/sdk";
 import Anthropic from "@anthropic-ai/sdk";
+import { PracticeRepository } from "@/repositories/practice.repo";
 import { WritingAnswerRepository } from "@/repositories/writingAnswers";
+import { TPracticeDto } from "@/models/practice.model";
+import { TaskRepository } from "@/repositories/tasks.repo";
+import { TTaskSchemaDto } from "@/models/tasks.model";
 import { currentUser } from "@clerk/nextjs/server";
-import { ExamPartsRepository } from "@/repositories/examParts.repo";
-import { USER_PROMPTS } from "./userPrompts";
-import { SYSTEM_PROPMTS } from "./systemPrompts";
-/**
- * Wraps a promise with a timeout.
- * @throws Error('Operation timed out') if the promise does not resolve in time.
- */
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(
-      () => reject(new Error("Operation timed out")),
-      ms
-    );
-    promise
-      .then((value) => {
-        clearTimeout(timer);
-        resolve(value);
-      })
-      .catch((err) => {
-        clearTimeout(timer);
-        reject(err);
-      });
-  });
+
+// (اختیاری، اگر روی Next Edge مشکل دارید این را فعال کنید)
+// export const runtime = "nodejs";
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
 }
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  config?: {
+    retries?: number;
+    baseDelayMs?: number;
+    shouldRetry?: (e: Error) => boolean;
+  }
+): Promise<T> {
+  const retries = config?.retries ?? 3;
+  const baseDelayMs = config?.baseDelayMs ?? 300;
+  const shouldRetry = config?.shouldRetry ?? (() => true);
+
+  let lastErr: Error | null = null;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      lastErr = error;
+      if (attempt === retries || !shouldRetry(error)) break;
+      const jitter = Math.random() * 100;
+      const delay = baseDelayMs * Math.pow(2, attempt) + jitter;
+      await sleep(delay);
+    }
+  }
+  throw lastErr ?? new Error("Operation failed");
+}
+
+interface DeepgramAlternative {
+  transcript: string;
+}
+interface DeepgramChannel {
+  alternatives: DeepgramAlternative[];
+}
+interface DeepgramResults {
+  channels: DeepgramChannel[];
+}
+interface DeepgramMetadata {
+  duration: number;
+}
+interface DeepgramResponse {
+  results: DeepgramResults;
+  metadata: DeepgramMetadata;
+}
+
+// =============== Anthropic tool-use response types (subset used) ===============
+interface AnthropicTextBlock {
+  type: "text";
+  text: string;
+}
+interface EvaluationInput {
+  overall: number;
+  contentAndCoherence: number;
+  vocabulary: number;
+  readabilityAndGrammar: number;
+  taskFulfillment: number;
+  feedback: string;
+  betterVersion?: string;
+  grammarMistakes: { original: string; improvement: string | null }[] | [];
+}
+interface AnthropicToolUseBlock {
+  type: "tool_use";
+  name: "CELPIPWritingEvaluation";
+  input: EvaluationInput;
+}
+type AnthropicContentBlock = AnthropicTextBlock | AnthropicToolUseBlock;
+interface AnthropicResponse {
+  content: AnthropicContentBlock[];
+}
+
+// =============== Stored evaluation type  ===============
+interface StoredEvaluation {
+  overall: number;
+  contentAndCoherence: number;
+  vocabulary: number;
+  readabilityAndGrammar: number;
+  taskFulfillment: number;
+  feedback: string;
+  grammarMistakes: { original: string; improvement: string | null }[];
+  betterVersion: string;
+}
+function toStoredEvaluation(e: EvaluationInput | null): StoredEvaluation {
+  return {
+    overall: e?.overall ?? 0,
+    contentAndCoherence: e?.contentAndCoherence ?? 0,
+    vocabulary: e?.vocabulary ?? 0,
+    readabilityAndGrammar: e?.readabilityAndGrammar ?? 0,
+    taskFulfillment: e?.taskFulfillment ?? 0,
+    feedback: e?.feedback ?? "",
+    betterVersion: e?.betterVersion ?? "",
+    grammarMistakes: Array.isArray(e?.grammarMistakes)
+      ? (
+          e!.grammarMistakes as {
+            original?: string;
+            improvement?: string | null;
+          }[]
+        ).map((m) => ({
+          original: m.original ?? "",
+          improvement: m.improvement ?? null,
+        }))
+      : [],
+  };
+}
+
+// =============== S3 upload ===============
 async function uploadAudioBuffer(
   buffer: Buffer,
   fileName: string
@@ -38,47 +132,68 @@ async function uploadAudioBuffer(
   const client = new S3Client({
     region: "eu-north-1",
     credentials: {
-      accessKeyId: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID ?? "", // Replace with your AWS Access Key ID
-      secretAccessKey: process.env.NEXT_PUBLIC_AWS_SECRETE_ACCESS_KEY ?? "", // Replace with your AWS Secret Access Key
+      accessKeyId:
+        process.env.AWS_ACCESS_KEY_ID ??
+        process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID ??
+        "",
+      secretAccessKey:
+        process.env.AWS_SECRET_ACCESS_KEY ??
+        process.env.NEXT_PUBLIC_AWS_SECRETE_ACCESS_KEY ??
+        "",
     },
   });
 
   const upload = new Upload({
     client,
     params: {
-      Bucket: "celtest-audio", // Your bucket name
-      Key: `RecordedSpeaking/${Date.now()}_${fileName}`, // Unique key for the file
+      Bucket: "celtest-audio",
+      Key: `RecordedSpeaking/${Date.now()}_${fileName}`,
       Body: buffer,
+      ContentType: "audio/m4a",
+      ContentLength: buffer.length,
     },
   });
 
   try {
-    const result = await upload.done();
-    return result.Location ?? ""; // Replace with your bucket's URL format
+    const result = (await upload.done()) as CompleteMultipartUploadOutput;
+    // بعضی regionها Location خالی میدن؛ اگر لازم بود خودتون URL بسازید
+    return result.Location ?? null;
   } catch (error) {
     console.error("Upload failed", error);
     return null;
   }
 }
-const transcribeUrl = async (fileUrl: string) => {
-  // The API key we created in step 3
-  const deepgramApiKey = process.env.DEEPGRAM_API_KEY;
 
-  // Hosted sample file
-  const url = fileUrl;
-
-  // Initializes the Deepgram SDK
+// =============== Deepgram ===============
+async function transcribeUrl(fileUrl: string): Promise<DeepgramResponse> {
+  const deepgramApiKey = process.env.DEEPGRAM_API_KEY ?? "";
   const deepgram = createClient(deepgramApiKey);
-
   const { result, error } = await deepgram.listen.prerecorded.transcribeUrl(
-    { url },
+    { url: fileUrl },
     { smart_format: true, model: "nova-3", language: "en-US" }
   );
-
   if (error) throw error;
-  if (!error) console.dir(result, { depth: null });
-  return result;
+  return result as DeepgramResponse;
+}
+
+// =============== Topic Utils ===============
+const stripHtml = (s: string) =>
+  s
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const uniqLower = (arr: string[]) => {
+  const seen = new Set<string>();
+  return arr.filter((t) => {
+    const k = t.toLowerCase();
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
 };
+
+// =============== Route: POST ===============
 export const POST = async function (req: Request) {
   try {
     const user = await currentUser();
@@ -87,9 +202,8 @@ export const POST = async function (req: Request) {
     }
 
     const formData = await req.formData();
-    const audioFile = formData.get("audio") as File;
-
-    if (!audioFile) {
+    const audioFile = formData.get("audio");
+    if (!(audioFile instanceof File)) {
       return NextResponse.json(
         { error: "Audio file is required" },
         { status: 400 }
@@ -97,210 +211,257 @@ export const POST = async function (req: Request) {
     }
 
     const buffer = Buffer.from(await audioFile.arrayBuffer());
-    const location = await uploadAudioBuffer(buffer, "recording.m4a");
+
+    // Retry: S3
+    const location = await withRetry(
+      () => uploadAudioBuffer(buffer, "recording.m4a"),
+      {
+        retries: 3,
+        shouldRetry: (e) =>
+          /ECONNRESET|ETIMEDOUT|Throttling|5\d\d/i.test(e.message),
+      }
+    );
     if (!location) {
       return NextResponse.json(
         { error: "Failed to upload file" },
         { status: 400 }
       );
     }
-    const transcribeResult: any = await withTimeout(
-      transcribeUrl(location),
-      30000
+
+    // Retry: Deepgram
+    const transcribeResult = await withRetry(() => transcribeUrl(location), {
+      retries: 3,
+      shouldRetry: (e) => /ECONNRESET|ETIMEDOUT/i.test(e.message),
+    });
+
+    const practiceRepo = new PracticeRepository(mongoClient);
+    const practiceIdRaw = formData.get("practiceId");
+    if (typeof practiceIdRaw !== "string" || practiceIdRaw.length === 0) {
+      return NextResponse.json(
+        { message: "Practice ID is required" },
+        { status: 400 }
+      );
+    }
+    const practiceId = practiceIdRaw;
+
+    const practice: TPracticeDto | null = await practiceRepo.findPractice(
+      practiceId
     );
-    const examPartRepo = new ExamPartsRepository(mongoClient);
-    const examId = formData.get("examId") as string;
-    const partId = formData.get("partId") as string;
-    const examPart = await examPartRepo.findExamPartByExamIdAndPartId(
-      examId,
-      parseInt(partId)
-    );
-    if (!examPart || examPart.examId === undefined) {
-      return NextResponse.json({ message: "exam not found" }, { status: 404 });
+    if (!practice || practice.taskId === undefined) {
+      return NextResponse.json(
+        { message: "Practice not found" },
+        { status: 404 }
+      );
     }
 
-    const anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    });
-    const commandTemplate = USER_PROMPTS[parseInt(partId)];
+    const taskRepo = new TaskRepository(mongoClient);
+    const task: TTaskSchemaDto | null = await taskRepo.findTaskById(
+      practice.taskId ?? ""
+    );
+    if (!task) {
+      return NextResponse.json({ message: "Task not found" }, { status: 404 });
+    }
+
+    const commandTemplate = task.antropicCommand?.userPrompt ?? "";
+    if (commandTemplate.length === 0) {
+      return NextResponse.json(
+        { error: "Missing userPrompt" },
+        { status: 400 }
+      );
+    }
+    const speakingPrompt = practice.passages?.[0]?.body ?? "";
+    if (speakingPrompt.length === 0) {
+      return NextResponse.json(
+        { error: "Missing speaking prompt" },
+        { status: 400 }
+      );
+    }
+
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+    const alt = transcribeResult.results.channels[0]?.alternatives[0];
+    const userAnswer = alt ? alt.transcript : "";
 
     let command = commandTemplate;
-    const userAnswer =
-      transcribeResult.results.channels[0].alternatives[0].transcript;
 
+    // Inject user answer
     if (command.includes("{{USER_RESPONSE}}")) {
-      command = command.replace("{{USER_RESPONSE}}", userAnswer);
+      command = command.replaceAll("{{USER_RESPONSE}}", userAnswer);
+    } else if (command.includes("{{SPOKEN_RESPONSE}}")) {
+      command = command.replaceAll("{{SPOKEN_RESPONSE}}", userAnswer);
     }
-    if (command.includes("{{SPEAKING_RESPONSE}}")) {
-      command = command.replace("{{SPEAKING_RESPONSE}}", userAnswer);
-    }
-    if (command.includes("{{SPOKEN_RESPONSE}}")) {
-      command = command.replace("{{SPOKEN_RESPONSE}}", userAnswer);
-    }
+
+    // Inject speaking prompt / scene
     if (command.includes("{{SPEAKING_PROMPT}}")) {
-      command = command.replace(
-        "{{SPEAKING_PROMPT}}",
-        examPart.passages[0]?.body ?? ""
-      );
-    }
-    if (command.includes("{{PROMPT}}")) {
-      command = command.replace("{{PROMPT}}", examPart.passages[0]?.body ?? "");
-    }
-    if (command.includes("{{SCENE_DESCRIPTION}}")) {
-      command = command.replace(
-        "{{SCENE_DESCRIPTION}}",
-        examPart.passages[1]?.body ?? ""
-      );
+      command = command.replaceAll("{{SPEAKING_PROMPT}}", speakingPrompt);
+    } else if (command.includes("{{PROMPT}}")) {
+      command = command.replaceAll("{{PROMPT}}", speakingPrompt);
+    } else if (command.includes("{{SCENE_DESCRIPTION}}")) {
+      const scene = practice.passages?.[1]?.body ?? "";
+      command = command.replaceAll("{{SCENE_DESCRIPTION}}", scene);
     }
 
+    // Inject duration
+    const durationStr = String(transcribeResult.metadata.duration);
     if (command.includes("{{SPEAKING_DURATION}}")) {
-      command = command.replace(
-        "{{SPEAKING_DURATION}}",
-        transcribeResult.metadata.duration ?? "60"
-      );
+      command = command.replaceAll("{{SPEAKING_DURATION}}", durationStr);
     }
 
-    const msg: any = await withTimeout(
-      anthropic.messages.create({
-        model: "claude-3-7-sonnet-20250219",
-        max_tokens: 20000,
-        temperature: 1,
-        system: SYSTEM_PROPMTS[parseInt(partId)],
-        tools: [
-          {
-            name: "CELPIPWritingEvaluation",
-            description:
-              "evaluating and providing feedback on a speaking sample and content analysis scores",
-            input_schema: {
-              type: "object",
-              properties: {
-                overall: {
-                  type: "number",
-                  description: "Overall Score: (out of 12)",
-                },
-                contentAndCoherence: {
-                  type: "number",
-                  description: "Content & Coherence: (out of 12)",
-                },
-                vocabulary: {
-                  type: "number",
-                  description: "Vocabulary: (out of 12)",
-                },
-                readabilityAndGrammar: {
-                  type: "number",
-                  description: "Vocabulary: (out of 12)",
-                },
-                taskFulfillment: {
-                  type: "number",
-                  description: "Task Fulfillment: (out of 12)",
-                },
-
-                feedback: {
-                  type: "string",
-                  description:
-                    "Provide structured feedback exactly in these five sections with the exact headings and format:\n1. Enhance Professional Vocabulary\n2. Add Specific Details\n3. Formal Tone\n4. Proper Structure\n5. Transitional Phrases\nFor each section, briefly describe mistakes and improvement areas, provide specific suggestions, and offer an improved version of the user's text incorporating these enhancements.",
-                },
-                grammarMistakes: {
-                  type: "array",
-                  description:
-                    "a list of grammar or vocabulary mistakes and the correct way for that mistake, build an array that consist all part of provided text, each part should consist original and improve part and if that part doesnt need improvement it should set null for improvement but original part should has value.",
-                },
-                betterVersion: {
-                  type: "string",
-                  description:
-                    "write a better version of this answer with all suggestion and improvement",
-                },
-              },
-              required: [
-                "overall",
-                "contentAndCoherence",
-                "vocabulary",
-                "readabilityAndGrammar",
-                "taskFulfillment",
-                "feedback",
-                "grammarMistakes",
-              ],
-            },
-          },
-          // {
-          //     name: "CELPIPWritingEvaluation",
-          //     description: "evaluating and providing feedback on a speaking sample",
-          //     input_schema: {
-          //       type: "object",
-          //       properties: {
-          //         feedback: {
-          //           type: "string",
-          //           description: "the full feedback on writng sample",
-          //         },
-          //       },
-
-          //     },
-          //   },
-        ],
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: command,
-              },
-            ],
-          },
-        ],
-      }),
-      60000
+    // ===== Off-topic rules (topics from ALL passages[].description)
+    const topics = uniqLower(
+      (practice.passages ?? [])
+        .map((p) => stripHtml((p?.description ?? "").toString()))
+        .filter(Boolean)
     );
 
+    // Base system prompt
+    let finalSystemPrompt = (task.antropicCommand?.systemPrompt ?? "").trim();
+
+    if (topics.length) {
+      const inlineTopics = topics.join(" | ");
+      const hasTD = command.includes("{{TASK_DESCRIPTION}}");
+      const hasTOPIC = command.includes("{{TOPIC}}");
+
+      if (hasTD || hasTOPIC) {
+        command = command
+          .replaceAll("{{TASK_DESCRIPTION}}", inlineTopics)
+          .replaceAll("{{TOPIC}}", inlineTopics);
+      } else {
+        const marker = "\n---\nTASK_TOPICS:";
+        if (!command.includes(marker)) {
+          const bulletTopics = topics.map((t) => `- ${t}`).join("\n");
+          command += `
+
+---
+TASK_TOPICS:
+${bulletTopics}
+
+SCORING_RULES_FOR_TASK_FULFILLMENT:
+- Heavily penalize off-topic responses.
+- The response must meaningfully address at least ONE of the TASK_TOPICS above.
+- If it doesn't address any, set "taskFulfillment" very low (e.g., 0–3/12) and reflect this in "overall".
+- Do NOT reward fluency or grammar with high "overall" if the response is off-topic.`;
+        }
+      }
+
+      const bulletForSystem = topics.map((t) => `- ${t}`).join("\n");
+      finalSystemPrompt += `
+
+The user must address at least ONE of the following TASK_TOPICS:
+${bulletForSystem}
+
+If the response is off-topic (i.e., does not address any topic above), sharply reduce "taskFulfillment" and lower "overall" accordingly.`;
+    }
+
+    // Retry: Anthropic
+    const msg: AnthropicResponse = await withRetry(
+      () =>
+        anthropic.messages.create({
+          model: "claude-3-7-sonnet-20250219",
+          max_tokens: 20000,
+          temperature: 1,
+          system: finalSystemPrompt,
+          tools: [
+            {
+              name: "CELPIPWritingEvaluation",
+              description:
+                "evaluating and providing feedback on a speaking sample and content analysis scores",
+              input_schema: {
+                type: "object",
+                properties: {
+                  overall: {
+                    type: "number",
+                    description: "Overall Score: (out of 12)",
+                  },
+                  contentAndCoherence: {
+                    type: "number",
+                    description: "Content & Coherence: (out of 12)",
+                  },
+                  vocabulary: {
+                    type: "number",
+                    description: "Vocabulary: (out of 12)",
+                  },
+                  readabilityAndGrammar: {
+                    type: "number",
+                    description: "Vocabulary: (out of 12)",
+                  },
+                  taskFulfillment: {
+                    type: "number",
+                    description:
+                      "Task Fulfillment: (out of 12). Strictly tied to TASK_TOPICS; off-topic => low score.",
+                  },
+                  feedback: {
+                    type: "string",
+                    description: task.antropicCommand?.systemPrompt ?? "",
+                  },
+                  grammarMistakes: {
+                    type: "array",
+                    description:
+                      "a list of grammar or vocabulary mistakes and the correct way for that mistake, build an array that consist all part of provided text, each part should consist original and improve part and if that part doesnt need improvement it should set null for improvement but original part should has value.",
+                  },
+                  betterVersion: {
+                    type: "string",
+                    description:
+                      "write a better version of this answer with all suggestion and improvement",
+                  },
+                },
+                required: [
+                  "overall",
+                  "contentAndCoherence",
+                  "vocabulary",
+                  "readabilityAndGrammar",
+                  "taskFulfillment",
+                  "feedback",
+                  "grammarMistakes",
+                ],
+              },
+            },
+          ],
+          messages: [
+            {
+              role: "user",
+              content: [{ type: "text", text: command }],
+            },
+          ],
+        }) as Promise<AnthropicResponse>,
+      {
+        retries: 3,
+        shouldRetry: (e) => /429|5\d\d|ETIMEDOUT|ECONNRESET/i.test(e.message),
+      }
+    );
+
+    const evaluation = extractEvaluation(msg.content);
+    const stored = toStoredEvaluation(evaluation);
+
     const answerRepo = new WritingAnswerRepository(mongoClient);
-
-    const contentInput =
-      msg.content.find(
-        (item: any) => item.input && typeof item.input === "object"
-      )?.input ?? null;
-
     const answer = await answerRepo.createOrUpdateAnswer({
       audioUrl: location,
-      userId: user?.id,
-      examId: examPart.examId,
-      partId: examPart.partId,
-      overalScore: contentInput?.overall ?? 0,
+      userId: user.id,
+      practiceId,
+      overalScore: stored.overall,
       type: "SPEAKING",
-      result: contentInput ?? {
-        overall: 0,
-        contentAndCoherence: 0,
-        vocabulary: 0,
-        readabilityAndGrammar: 0,
-        taskFulfillment: 0,
-        feedback: "",
-        betterVersion: "",
-        grammarMistakes: [],
-      },
+      result: stored,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+
     return NextResponse.json(answer);
   } catch (error) {
-    console.error("Error uploading file:", error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error("Error uploading/transcribing/evaluating:", err);
     return NextResponse.json(
-      { error: "Failed to upload file" },
+      { error: "Failed to process request" },
       { status: 500 }
     );
   }
 };
 
+// =============== Route: GET ===============
 export const GET = async function (req: NextRequest) {
-  const examId = req.nextUrl.searchParams.get("examId");
-  const partId = req.nextUrl.searchParams.get("partId");
-  if (!examId) {
+  const practiceId = req.nextUrl.searchParams.get("practiceId");
+  if (!practiceId) {
     return NextResponse.json(
-      { message: "exam ID is required" },
-      { status: 400 }
-    );
-  }
-  if (!partId) {
-    return NextResponse.json(
-      { message: "part ID is required" },
+      { message: "Practice ID is required" },
       { status: 400 }
     );
   }
@@ -310,7 +471,7 @@ export const GET = async function (req: NextRequest) {
   }
   const answerRepo = new WritingAnswerRepository(mongoClient);
   const answers = await answerRepo.getAllWritingAnswers(
-    { userId: user.id, examId, partId: parseInt(partId), type: "SPEAKING" },
+    { userId: user.id, practiceId, type: "SPEAKING" },
     0,
     100
   );
