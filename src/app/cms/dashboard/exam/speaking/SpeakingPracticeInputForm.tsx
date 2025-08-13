@@ -668,7 +668,7 @@ export default function SpeakingPracticeInputForm() {
                       name={`passages.${passageIndex}.description`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Title</FormLabel>
+                          <FormLabel>Description</FormLabel>
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
