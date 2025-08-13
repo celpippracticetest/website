@@ -74,6 +74,7 @@ const formSchema = z.object({
       pictureUrl: z.string().optional(),
       title: z.string().min(1, "Passage title is required"),
       body: z.string().optional(),
+      description: z.string().optional(),
     })
   ),
 });
@@ -478,21 +479,6 @@ export default function SpeakingPracticeInputForm() {
               /> */}
             </div>
 
-            {/* <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Describe this speaking practice" className="min-h-[100px]" {...field} />
-                  </FormControl>
-                  <FormDescription>A brief description of what the practice contains (optional)</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            /> */}
-
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium">Instructions</h3>
@@ -551,6 +537,7 @@ export default function SpeakingPracticeInputForm() {
                     pictureUrl: "",
                     title: "",
                     body: "",
+                    description: "",
                   })
                 }
               >
@@ -671,6 +658,20 @@ export default function SpeakingPracticeInputForm() {
                               ? "Add the main speaking passage. Use formatting as needed."
                               : "Use the 'Insert Q#' button to insert question markers where gaps should appear. Questions will be automatically added."}
                           </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={`passages.${passageIndex}.description`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Title</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}

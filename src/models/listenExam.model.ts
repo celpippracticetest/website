@@ -25,7 +25,7 @@ const ListeningExamEntitySchema = z.object({
   _id: z.instanceof(ObjectId),
   title: z.string(),
   name: z.string(), //Listening to Problem Solving
-  description: z.string().optional(), //You will hear three conversations where one person is seeking advice or help with a problem.
+  description: z.union([z.string(), z.array(z.string())]).optional(),
   instructions: z.array(z.string()).optional(), //You will hear three conversations where one person is seeking advice or help with a problem.
   passages: z.array(PassageSchema),
   type: ExamType.default("LISTENING"),
