@@ -34,7 +34,6 @@ import { S3Client } from "@aws-sdk/client-s3";
 import { SpeakingPracticeInput } from "./SpeakingPractice";
 import { useSearchParams } from "next/navigation";
 import RichTextEditor from "@/components/dashboard-app/cms/RichTextEditor";
-import { useRouter } from "nextjs-toploader/app";
 import { TExamSchemaDto } from "@/models/exam.model";
 
 const parts = [
@@ -108,6 +107,17 @@ export default function SpeakingPracticeInputForm() {
       ],
     },
   });
+
+  const { errors } = form.formState;
+
+  useEffect(() => {
+    if (Object.keys(errors).length) {
+      console.group("RHF Errors (live)");
+      console.dir(errors, { depth: null });
+      console.groupEnd();
+    }
+  }, [errors]);
+
   React.useEffect(() => {
     const fetchPractice = async () => {
       if (selectedExamId) {

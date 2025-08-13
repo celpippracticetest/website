@@ -19,6 +19,7 @@ const PassageSchema = z.object({
     .optional(),
   body: z.string().optional(),
   questions: z.array(QuestionSchema).optional(),
+  description: z.string().optional(),
   sampleResponse: z.array(SampleResponseSchema).optional(),
 });
 const ListeningExamEntitySchema = z.object({

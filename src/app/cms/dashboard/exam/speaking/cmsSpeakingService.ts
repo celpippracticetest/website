@@ -21,7 +21,7 @@ export const transformSpeakingPracticeData = (input: any) => {
   const allQuestions: SpeakingQuestion[] = [];
 
   input.passages.forEach(async (passage: SpeakingPassage) => {
-    passage.questions.forEach((q) => {
+    passage?.questions?.forEach((q) => {
       allQuestions.push({
         id: q.id,
         question: q.question,

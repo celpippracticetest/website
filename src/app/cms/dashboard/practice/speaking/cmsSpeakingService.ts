@@ -1,10 +1,10 @@
-import AWS from 'aws-sdk'
+import AWS from "aws-sdk";
 import { SpeakingPassage } from "./SpeakingPractice";
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import { createReadStream } from "fs";
-import axios from 'axios';
-import { redirect, RedirectType } from 'next/navigation';
+import axios from "axios";
+import { redirect, RedirectType } from "next/navigation";
 
 export interface SpeakingQuestion {
   id: string;
@@ -26,7 +26,7 @@ export const transformSpeakingPracticeData = (input: any) => {
   const allQuestions: SpeakingQuestion[] = [];
 
   input.passages.forEach(async (passage: SpeakingPassage) => {
-    passage.questions.forEach((q) => {
+    passage?.questions?.forEach((q) => {
       allQuestions.push({
         id: q.id,
         question: q.question,
@@ -62,24 +62,30 @@ export const transformSpeakingPracticeData = (input: any) => {
 /**
  * Save speaking practice data (this would typically integrate with a backend)
  */
-export const saveSpeakingPractice = async (data: any,selectedPracticeId: string | null) => {
+export const saveSpeakingPractice = async (
+  data: any,
+  selectedPracticeId: string | null
+) => {
   // In a real application, this would make an API call to save the data
   // For now, we'll just log it and simulate a successful save
 
   let config = {
-    method: selectedPracticeId ? 'put' : 'post',
+    method: selectedPracticeId ? "put" : "post",
     maxBodyLength: Infinity,
-    url: '/api/practices'+ (selectedPracticeId ? `/${selectedPracticeId}` : ''),
-    headers: { 
-      'Content-Type': 'application/json'
+    url:
+      "/api/practices" + (selectedPracticeId ? `/${selectedPracticeId}` : ""),
+    headers: {
+      "Content-Type": "application/json",
     },
-    data: data
+    data: data,
   };
 
   try {
     const response = await axios.request(config);
-    alert(`http://localhost:3000/speaking?selectedPracticeId=${response.data.id}`);
-    redirect('/cms/practice', RedirectType.push);
+    alert(
+      `http://localhost:3000/speaking?selectedPracticeId=${response.data.id}`
+    );
+    redirect("/cms/practice", RedirectType.push);
   } catch (error) {
     console.error("Error uploading data:", error);
   }
@@ -89,5 +95,3 @@ export const saveSpeakingPractice = async (data: any,selectedPracticeId: string 
     data: transformSpeakingPracticeData(data),
   };
 };
-
-

@@ -94,6 +94,13 @@ async function transcribeUrl(fileUrl: string): Promise<any> {
   return result;
 }
 
+// =============== Utils ===============
+const stripHtml = (s: string) =>
+  s
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
 // =============== POST Route ===============
 export const POST = async function (req: Request) {
   try {
@@ -149,11 +156,17 @@ export const POST = async function (req: Request) {
 
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-    let command = USER_PROMPTS[parseInt(partId)];
+    // 1) تشخیص passage فعال از روی Template
+    const template = USER_PROMPTS[parseInt(partId)];
+    let command = template;
+
+    const usesScene = template.includes("{{SCENE_DESCRIPTION}}");
+    const activeIdx = usesScene ? 1 : 0; // اگر SCENE_DESCRIPTION بود، passage[1] فعال
+
+    // 2) جایگزینی placeholderها
     const userAnswer =
       transcribeResult.results.channels[0]?.alternatives[0]?.transcript ?? "";
 
-    // Replace placeholders
     command = command
       .replace("{{USER_RESPONSE}}", userAnswer)
       .replace("{{SPEAKING_RESPONSE}}", userAnswer)
@@ -166,20 +179,32 @@ export const POST = async function (req: Request) {
         String(transcribeResult.metadata?.duration ?? "60")
       );
 
-    // Off-topic rules (exam?.description)
-    const taskTopic = (examPart.exam?.description ?? "").trim();
+    // 3) موضوع off-topic فقط از passage فعال (با fallback به دیگری اگر خالی بود)
+    const primaryDesc = stripHtml(
+      (examPart.passages?.[activeIdx]?.description ?? "").toString()
+    );
+    const fallbackDesc = stripHtml(
+      (
+        examPart.passages?.[activeIdx === 0 ? 1 : 0]?.description ?? ""
+      ).toString()
+    );
+    const taskTopic = (primaryDesc || fallbackDesc || "").trim();
+
+    // 4) ساخت system prompt پایه
+    let finalSystemPrompt = SYSTEM_PROPMTS[parseInt(partId)] ?? "";
+
+    // 5) تزریق topic به command و system
     if (taskTopic) {
       const hasTD = command.includes("{{TASK_DESCRIPTION}}");
       const hasTOPIC = command.includes("{{TOPIC}}");
+      const marker = "\n---\nTASK_TOPIC:";
 
       if (hasTD || hasTOPIC) {
         command = command
           .replaceAll("{{TASK_DESCRIPTION}}", taskTopic)
           .replaceAll("{{TOPIC}}", taskTopic);
-      } else {
-        const marker = "\n---\nTASK_TOPIC:";
-        if (!command.includes(marker)) {
-          const appendix = `
+      } else if (!command.includes(marker)) {
+        command += `
 
 ---
 TASK_TOPIC:
@@ -189,21 +214,15 @@ SCORING_RULES_FOR_TASK_FULFILLMENT:
 - Heavily penalize off-topic responses.
 - If the response does not meaningfully address TASK_TOPIC, set "taskFulfillment" very low (e.g., 0–3/12) and reflect this in "overall".
 - Do NOT reward fluency or grammar with high "overall" if the response is off-topic.`;
-          command += appendix;
-        }
       }
+
+      finalSystemPrompt += `
+
+The user must address the following TASK_TOPIC:
+- ${taskTopic}
+
+If the response is off-topic, sharply reduce "taskFulfillment" and lower "overall" accordingly.`;
     }
-
-    const finalSystemPrompt =
-      SYSTEM_PROPMTS[parseInt(partId)] +
-      (taskTopic
-        ? `
-
-The user must address the following topic:
-"${taskTopic}"
-
-If the response is off-topic, sharply reduce "taskFulfillment" and lower "overall" accordingly.`
-        : "");
 
     // Retry: Anthropic
     const msg: any = await withRetry(
