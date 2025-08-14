@@ -207,14 +207,14 @@ export default function Referral() {
         <div className="flex flex-wrap justify-center screen1280:!flex-nowrap gap-[40px] mt-[32px] bg-white px-[16px] py-[24px] screen744:!p-[24px] border border-[#D5D6D8] rounded-[16px]">
           <div className="flex max-w-[606px] flex-col w-full">
             <div className="px-[16px] flex rounded-[12px] gap-[16px] py-[18px] h-[60px] w-full bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] ">
-              <div className="flex gap-[16px] text-white w-full">
+              <div className="flex gap-[16px] text-white w-full items-center">
                 <span className="text-[14px] screen744:!text-[16px]">
                   They get
                 </span>
                 <span className="text-[20px]">%20</span>
               </div>
               <div className="w-[1px] bg-[#E6E6E6]"></div>
-              <div className="flex gap-[16px] text-[14px] screen744:!text-[16px] text-white w-full">
+              <div className="flex gap-[16px] text-[14px] screen744:!text-[16px] text-white w-full items-center">
                 <span className="text-[14px] screen744:!text-[16px]">
                   You get
                 </span>
@@ -232,18 +232,6 @@ export default function Referral() {
               <div className="relative px-[16px] h-[56px] w-full rounded-[12px] max-w-full screen744:!max-w-[420px]  border border-[#D5D6D8]">
                 <div className="absolute right-[16px]  top-[16px] group">
                   <SvgCopy />
-                  {/* Tooltip */}
-                  <div className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+8px)] z-20 hidden group-hover:block">
-                    <div className="relative">
-                      <div className="w-full max-w-[351px] rounded-[10px] bg-[#2F3C50] text-white text-[12px] leading-[18px] px-[12px] py-[8px] shadow-lg">
-                        You earn 20% of successful payments made through your
-                        referral link. If your reward isn’t visible yet, the
-                        referred account’s payment may still be pending.
-                      </div>
-                      {/* Upward arrow */}
-                      <div className="absolute -top-[8px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-r-[8px] border-b-[8px] border-l-transparent border-r-transparent border-b-[#2F3C50]"></div>
-                    </div>
-                  </div>
                 </div>
               </div>
               <div className="flex gap-[8px] h-[40px] max-w-full screen744:!max-w-[96px] screen1280:!max-w-[170px] rounded-[24px] items-center justify-center w-full bg-[#4A7DFF] text-white text-[14px] font-normal">
