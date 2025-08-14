@@ -136,7 +136,6 @@ export const POST = async function (req: NextRequest) {
 export const PUT = async function (req: NextRequest) {
   try {
     const body = await req.json();
-    console.log(body, "body");
 
     if (!body._id || typeof body._id !== "string") {
       return NextResponse.json({ error: "_id is required" }, { status: 400 });
