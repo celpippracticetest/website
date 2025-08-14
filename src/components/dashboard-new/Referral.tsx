@@ -97,16 +97,43 @@ const ReferralProgress = ({ earned }: { earned: number }) => {
   );
 };
 
-const generateInfoBox = (message: string, value: number) => {
+type InfoBoxProps = {
+  message: string;
+  value: number;
+};
+
+const InfoBox: React.FC<InfoBoxProps> = ({ message, value }) => {
+  const [isOpen, setIsOpen] = useState(false);
   return (
     <div className="w-full rounded-[12px] justify-between flex-col  h-[96px] flex p-[16px] bg-[#F2F6FF]">
       <div className="flex justify-between w-full">
         <span className="text-[16px] text-[#37465C]">{message}</span>
         <div className="group relative">
-          <SvgInfo />
-          <div className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+8px)] z-20 hidden group-hover:block">
+          <button
+            type="button"
+            aria-label="Show info"
+            onClick={() => setIsOpen((o) => !o)}
+            className="cursor-pointer"
+          >
+            <SvgInfo />
+          </button>
+          <div
+            className={`absolute ${
+              message === "Reward Level"
+                ? "-left-[310px] translate-x-0 w-[351px] screen744:-left-[120px] screen744:-translate-x-1/2 screen744:w-[351px]"
+                : "-left-[135px] screen744:!left-1/2 -translate-x-1/2 w-[351px]"
+            } top-[calc(100%+8px)] z-20 ${
+              isOpen ? "block" : "hidden"
+            } group-hover:block`}
+          >
             <div className="relative">
-              <div className="w-[351px] rounded-[10px] bg-[#2F3C50] text-white text-[12px] leading-[18px] px-[12px] py-[8px] shadow-lg">
+              <div
+                className={`${
+                  message === "Reward Level"
+                    ? "w-full screen744:w-[351px]"
+                    : "w-[351px]"
+                } rounded-[10px] bg-[#2F3C50] text-white text-[12px] leading-[18px] px-[12px] py-[8px] shadow-lg`}
+              >
                 {message === "Total Invitees" &&
                   "The number of users who have signed up using your referral link, regardless of whether they have completed a purchase."}
                 {message === "Total Reward" &&
@@ -137,6 +164,39 @@ export default function Referral() {
   const [email, setEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
 
+  const [referralLink, setReferralLink] = useState<string>("");
+  const [toast, setToast] = useState<null | {
+    msg: string;
+    kind: "success" | "error" | "info";
+  }>(null);
+  const showToast = (
+    msg: string,
+    kind: "success" | "error" | "info" = "info"
+  ) => {
+    setToast({ msg, kind });
+    window.clearTimeout((showToast as any)._t);
+    (showToast as any)._t = window.setTimeout(() => setToast(null), 2500);
+  };
+
+  useEffect(() => {
+    const loadLink = async () => {
+      try {
+        const res = await fetch("/api/referrals", {
+          cache: "no-store",
+        });
+        if (!res.ok) {
+          throw new Error("Failed to load referral link");
+        }
+        const data = await res.json();
+        // Expected: { link: string }
+        setReferralLink(data?.link || "");
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    loadLink();
+  }, []);
+
   useEffect(() => {
     if (user === null) {
       router.push("/practice-overview");
@@ -147,11 +207,41 @@ export default function Referral() {
 
   const earned = 60;
 
-  const referralLink = "https://example.com/referral"; // Assuming a referral link
+  const canEmail = isValidEmail(email) && !!referralLink;
+
+  const handleCopy = async () => {
+    if (!referralLink) return;
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      showToast("Link copied", "success");
+    } catch (e) {
+      console.error(e);
+      showToast("Failed to copy link", "error");
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      if (navigator.share && referralLink) {
+        await navigator.share({
+          title: "Join me on CELPIP Practice Test",
+          text: "Use my referral link to get a discount!",
+          url: referralLink,
+        });
+        showToast("Share dialog opened", "success");
+      } else if (referralLink) {
+        await navigator.clipboard.writeText(referralLink);
+        showToast("Link copied", "success");
+      }
+    } catch (e) {
+      console.error(e);
+      showToast("Could not share the link", "error");
+    }
+  };
 
   const handleSendInvite = async () => {
     if (!isValidEmail(email)) {
-      alert("Please enter a valid email address.");
+      showToast("Please enter a valid email address.", "error");
       return;
     }
     try {
@@ -162,14 +252,16 @@ export default function Referral() {
         body: JSON.stringify({ to: email, link: referralLink }),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error((data && data.error) || "Failed to send email");
+        const data = await res.json().catch(() => ({} as any));
+        throw new Error(
+          (data && (data as any).error) || "Failed to send email"
+        );
       }
-      alert("Invite email sent successfully.");
+      showToast("Invite email sent successfully.", "success");
       setEmail("");
     } catch (err) {
       console.error(err);
-      alert("Couldn't send from server. Please try again later.");
+      showToast("Couldn't send from server. Please try again later.", "error");
     } finally {
       setIsSending(false);
     }
@@ -211,14 +303,14 @@ export default function Referral() {
                 <span className="text-[14px] screen744:!text-[16px]">
                   They get
                 </span>
-                <span className="text-[20px]">%20</span>
+                <span className="text-[20px]">20%</span>
               </div>
               <div className="w-[1px] bg-[#E6E6E6]"></div>
               <div className="flex gap-[16px] text-[14px] screen744:!text-[16px] text-white w-full items-center">
                 <span className="text-[14px] screen744:!text-[16px]">
                   You get
                 </span>
-                <span className="text-[20px]">%20</span>
+                <span className="text-[20px]">20%</span>
               </div>
             </div>
 
@@ -230,14 +322,42 @@ export default function Referral() {
 
             <div className="flex gap-[16px] flex-wrap screen744:!flex-nowrap  items-center mt-[16px]">
               <div className="relative px-[16px] h-[56px] w-full rounded-[12px] max-w-full screen744:!max-w-[420px]  border border-[#D5D6D8]">
-                <div className="absolute right-[16px]  top-[16px] group">
-                  <SvgCopy />
+                <input
+                  type="text"
+                  readOnly
+                  value={referralLink || "Loading..."}
+                  className="pr-[44px] outline-none bg-transparent text-[#212E42] placeholder:text-[#76808F] text-[14px] h-full w-full"
+                  aria-label="Your referral link"
+                />
+                <div className="absolute right-[16px] top-[16px] group">
+                  <button
+                    type="button"
+                    onClick={handleCopy}
+                    aria-label="Copy referral link"
+                    className={`cursor-pointer disabled:cursor-not-allowed disabled:opacity-60`}
+                    disabled={!referralLink}
+                  >
+                    <SvgCopy />
+                  </button>
+                  <div className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+8px)] z-20 hidden group-hover:block">
+                    <div className="relative">
+                      <div className="w-[351px] rounded-[10px] bg-[#2F3C50] text-white text-[12px] leading-[18px] px-[12px] py-[8px] shadow-lg">
+                        Copy your unique referral link.
+                      </div>
+                      <div className="absolute -top-[8px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-r-[8px] border-b-[8px] border-l-transparent border-r-transparent border-b-[#2F3C50]"></div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="flex gap-[8px] h-[40px] max-w-full screen744:!max-w-[96px] screen1280:!max-w-[170px] rounded-[24px] items-center justify-center w-full bg-[#4A7DFF] text-white text-[14px] font-normal">
+              <button
+                type="button"
+                onClick={handleShare}
+                disabled={!referralLink}
+                className="flex gap-[8px] h-[40px] max-w-full screen744:!max-w-[96px] screen1280:!max-w-[170px] rounded-[24px] items-center justify-center w-full bg-[#4A7DFF] text-white text-[14px] font-normal hover:opacity-90 active:opacity-80 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
                 <SvgShare />
                 <span>Share</span>
-              </div>
+              </button>
             </div>
 
             <div className="mt-[24px]">
@@ -256,10 +376,14 @@ export default function Referral() {
               <button
                 type="button"
                 onClick={handleSendInvite}
-                disabled={isSending}
+                disabled={isSending || !canEmail}
                 className="flex h-[40px] max-w-full screen744:!max-w-[96px] screen1280:!max-w-[170px] rounded-[24px] items-center justify-center w-full bg-[#4A7DFF] text-white text-[14px] font-medium hover:opacity-90 active:opacity-80 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {isSending ? "Sending..." : "Send Invite"}
+                {isSending
+                  ? "Sending..."
+                  : !referralLink
+                  ? "No Link"
+                  : "Send Invite"}
               </button>
             </div>
           </div>
@@ -268,27 +392,7 @@ export default function Referral() {
 
           <div className="flex flex-col items-center max-w-[533px] w-full justify-center">
             <ReferralProgress earned={earned} />
-            <div className=" group mt-[26px] items-center flex gap-[24px]">
-              <div className="flex items-center gap-[8px]">
-                <div className="w-[16px] h-[16px] bg-[#0DAA94] rounded-full"></div>
-                <span className="text-[14px] text-[#37465C]">
-                  Successful purchase
-                </span>
-              </div>
-              <div className="group relative">
-                <SvgInfo />
-                <div className="absolute w left-1/2 -translate-x-1/2 top-[calc(100%+8px)] z-20 hidden group-hover:block">
-                  <div className="relative">
-                    <div className="w-[351px] rounded-[10px] bg-[#2F3C50] text-white text-[12px] leading-[18px] px-[12px] py-[8px] shadow-lg">
-                      You earn {earned} of successful payments made through your
-                      referral link. If your reward isn’t visible yet, the
-                      referred account’s payment may still be pending.
-                    </div>
-                    <div className="absolute -top-[8px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-r-[8px] border-b-[8px] border-l-transparent border-r-transparent border-b-[#2F3C50]"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ReferralSuccessfulPurchaseTooltip earned={earned} />
             <div className="flex justify-center items-center mt-[24px] max-w-[188px] w-full h-[40px] border border-[#F27059] rounded-[24px]">
               <span className="text-[14px] font-normal text-[#F27059]">
                 Transfer to my paypal
@@ -297,9 +401,9 @@ export default function Referral() {
           </div>
         </div>
         <div className="flex gap-[12px] flex-wrap screen744:!flex-nowrap  mt-[32px]">
-          {generateInfoBox("Total Invitees", 10)}
-          {generateInfoBox("Total Reward", 125)}
-          {generateInfoBox("Reward Level", 3)}
+          <InfoBox message="Total Invitees" value={10} />
+          <InfoBox message="Total Reward" value={125} />
+          <InfoBox message="Reward Level" value={3} />
         </div>
         <div className="flex flex-col rounded-[8px] mt-[32px] border border-[#E4E7EC]">
           <div className="h-[69px] py-[20px] px-[16px] screen744:!px-[24px]">
@@ -331,6 +435,61 @@ export default function Referral() {
           </div>
         </div>
       </div>
+      {toast && (
+        <div
+          role="alert"
+          className={`fixed top-[16px] left-0 mx-auto ${
+            toast.kind === "error" ? "max-w-[190px] " : "max-w-[105px] "
+          }right-0 z-50 rounded-[10px] px-[14px] py-[10px] text-[14px] shadow-lg text-white ${
+            toast.kind === "success"
+              ? "bg-[#10B981]"
+              : toast.kind === "error"
+              ? "bg-[#EF4444]"
+              : "bg-[#37465C]"
+          }`}
+        >
+          {toast.msg}
+        </div>
+      )}
     </div>
   );
 }
+
+// Tooltip for "Successful purchase" row, with click-to-toggle
+const ReferralSuccessfulPurchaseTooltip: React.FC<{ earned: number }> = ({
+  earned,
+}) => {
+  const [isPurchaseOpen, setIsPurchaseOpen] = useState(false);
+  return (
+    <div className=" group mt-[26px] items-center flex gap-[24px]">
+      <div className="flex items-center gap-[8px]">
+        <div className="w-[16px] h-[16px] bg-[#0DAA94] rounded-full"></div>
+        <span className="text-[14px] text-[#37465C]">Successful purchase</span>
+      </div>
+      <div className="group relative">
+        <button
+          type="button"
+          aria-label="Show info"
+          onClick={() => setIsPurchaseOpen((o) => !o)}
+          className="cursor-pointer"
+        >
+          <SvgInfo />
+        </button>
+        <div
+          className={`absolute -left-[80px] screen744:!left-1/2 -translate-x-1/2 top-[calc(100%+8px)] z-20 ${
+            isPurchaseOpen ? "block" : "hidden"
+          } group-hover:block`}
+        >
+          <div className="relative">
+            <div className="w-[351px] rounded-[10px] bg-[#2F3C50] text-white text-[12px] leading-[18px] px-[12px] py-[8px] shadow-lg">
+              You earn {earned} of successful payments made through your
+              referral link. If your reward isn’t visible yet, the referred
+              account’s payment may still be pending.
+            </div>
+            <div className="absolute -top-[8px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-r-[8px] border-b-[8px] border-l-transparent border-r-transparent border-b-[#2F3C50]"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
