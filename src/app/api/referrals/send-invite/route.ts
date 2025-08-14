@@ -61,10 +61,10 @@ function assertEnv(name: string, allowEmpty = false) {
 }
 
 async function getTransporter(): Promise<Transporter> {
-  const host = assertEnv("SMTP_HOST");
-  const port = Number(assertEnv("SMTP_PORT"));
-  const user = assertEnv("SMTP_USER");
-  const pass = assertEnv("SMTP_PASS");
+  const host = assertEnv("SMTP_HOST").trim();
+  const port = Number(assertEnv("SMTP_PORT").trim());
+  const user = assertEnv("SMTP_USER").trim();
+  const pass = assertEnv("SMTP_PASS").trim();
   const authMethodEnv = (process.env.SMTP_AUTH_METHOD || "").toUpperCase();
   const authMethod = ["PLAIN", "LOGIN", "CRAM-MD5"].includes(authMethodEnv)
     ? (authMethodEnv as "PLAIN" | "LOGIN" | "CRAM-MD5")
@@ -79,6 +79,7 @@ async function getTransporter(): Promise<Transporter> {
     hasPass: !!pass,
     passLen: String(pass || "").length,
     authMethod: authMethod || "auto",
+    trimmed: true,
   });
 
   const useSecure = port === 465; // SSL
