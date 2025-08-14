@@ -17,8 +17,6 @@
     APP_BASE_URL (e.g. https://celpippracticetest.com)
     UPSTASH_REDIS_REST_URL
     UPSTASH_REDIS_REST_TOKEN
-    RESEND_API_KEY (optional: use Resend HTTP API if set)
-    SENDGRID_API_KEY (optional: use SendGrid HTTP API if set)
 */
 
 import { NextResponse } from "next/server";
@@ -137,84 +135,6 @@ function emailHtml({
   </div>`;
 }
 
-// ---------- Email senders (Resend / SendGrid / SMTP fallback) ----------
-function parseFromAddress(from: string): { email: string; name?: string } {
-  // Accept formats like "Name <email@domain>" or plain email
-  const m = from.match(/^(.*)<([^>]+)>\s*$/);
-  if (m) {
-    const name = m[1].trim().replace(/^["']|["']$/g, "");
-    const email = m[2].trim();
-    return name ? { email, name } : { email };
-  }
-  return { email: from };
-}
-
-async function sendViaResend({
-  from,
-  to,
-  subject,
-  html,
-}: {
-  from: string;
-  to: string;
-  subject: string;
-  html: string;
-}) {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return false;
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ from, to: [to], subject, html }),
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      console.warn("[send-invite] Resend failed:", res.status, text);
-      return false;
-    }
-    return true;
-  } catch (e) {
-    console.warn("[send-invite] Resend threw:", e);
-    return false;
-  }
-}
-
-async function sendViaSMTP({
-  from,
-  to,
-  subject,
-  html,
-}: {
-  from: string;
-  to: string;
-  subject: string;
-  html: string;
-}) {
-  const transporter = await getTransporter();
-  await transporter.sendMail({ from, to, subject, html });
-  return true;
-}
-
-async function sendEmail({
-  from,
-  to,
-  subject,
-  html,
-}: {
-  from: string;
-  to: string;
-  subject: string;
-  html: string;
-}) {
-  // Priority: Resend -> SendGrid -> SMTP
-  if (await sendViaResend({ from, to, subject, html })) return;
-  await sendViaSMTP({ from, to, subject, html });
-}
-
 // ---------- Route ----------
 export async function POST(req: Request) {
   try {
@@ -261,19 +181,22 @@ export async function POST(req: Request) {
     // 6) Prepare email
     const from =
       process.env.FROM_EMAIL || `Celpip Practice <${process.env.SMTP_USER}>`;
+    const transporter = await getTransporter();
 
-    // 7) Send via Resend / SendGrid / SMTP fallback
-    const subject = "You're invited to CELPIP Practice Test";
-    const html = emailHtml({
-      toName: name,
-      inviterName: inviter.firstName
-        ? `${inviter.firstName} ${inviter.lastName ?? ""}`.trim()
-        : "A friend",
-      link,
-      personalMessage,
+    // 7) Send
+    await transporter.sendMail({
+      from,
+      to: email,
+      subject: "You're invited to CELPIP Practice Test",
+      html: emailHtml({
+        toName: name,
+        inviterName: inviter.firstName
+          ? `${inviter.firstName} ${inviter.lastName ?? ""}`.trim()
+          : "A friend",
+        link,
+        personalMessage,
+      }),
     });
-
-    await sendEmail({ from, to: email, subject, html });
 
     return NextResponse.json({
       ok: true,
