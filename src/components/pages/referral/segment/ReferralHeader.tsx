@@ -26,10 +26,10 @@ const PracticeAndSubmit = dynamic(
 );
 const Improve = dynamic(() => import("../segment/Improve"), { ssr: false });
 const MockTest = dynamic(() => import("../segment/MockTest"), { ssr: false });
-const searchParams = useSearchParams();
-const firstName = searchParams.get("inviter");
 
 const ReferralHeader = () => {
+  const searchParams = useSearchParams();
+  const firstName = searchParams.get("inviter");
   return (
     <div className="px-[16px] screen744:!px-[16px] screen1280:!px-[40px] ">
       <div className="pt-[24px]">
