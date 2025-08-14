@@ -1061,6 +1061,8 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                     ? "Mock Test"
                     : active === "profile"
                     ? "Account Settings"
+                    : active === "referral"
+                    ? "Referral"
                     : active === selectedExam
                     ? selectedExam
                     : ""}
