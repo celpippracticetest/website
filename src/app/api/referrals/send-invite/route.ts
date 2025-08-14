@@ -75,11 +75,6 @@ async function getTransporter(): Promise<Transporter> {
   try {
     await transporter.verify();
   } catch (e) {
-    console.log(process.env.SMTP_PORT);
-    console.log(process.env.SMTP_USER);
-    console.log(process.env.SMTP_HOST);
-    console.log(process.env.SMTP_PASS);
-
     console.warn("[send-invite] SMTP verify failed (continuing):", e);
   }
 
@@ -257,6 +252,10 @@ export async function POST(req: Request) {
         issues: err.issues,
       });
     }
+    console.log(process.env.SMTP_PORT);
+    console.log(process.env.SMTP_USER);
+    console.log(process.env.SMTP_HOST);
+    console.log(process.env.SMTP_PASS);
     return jsonError(
       500,
       "INTERNAL_ERROR",
