@@ -7,6 +7,7 @@ import {
 
 const isAdminRoute = createRouteMatcher(["/cms(.*)"]);
 const isProfileRoute = createRouteMatcher(["/profile(.*)"]);
+const isReferralRoute = createRouteMatcher(["/referral(.*)"]);
 const isPlansRoute = createRouteMatcher(["/plans(.*)"]);
 
 export default clerkMiddleware(async (auth, req) => {
@@ -23,6 +24,18 @@ export default clerkMiddleware(async (auth, req) => {
     }
   }
   if (isPlansRoute(req)) {
+    if (!authenticate.userId) {
+      const dashboard = new URL("/practice-overview", req.url);
+      return NextResponse.redirect(dashboard);
+    }
+    const plan = authenticate.sessionClaims?.metadata.plan;
+    if (plan !== "premium") {
+      const homeUrl = new URL("/", req.url);
+      return NextResponse.redirect(homeUrl);
+    }
+  }
+
+  if (isReferralRoute(req)) {
     if (!authenticate.userId) {
       const dashboard = new URL("/practice-overview", req.url);
       return NextResponse.redirect(dashboard);
