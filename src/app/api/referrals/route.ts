@@ -18,9 +18,19 @@ function generateReferralCode(): string {
 
 function getBaseUrl(h: Headers) {
   const envUrl = process.env.APP_BASE_URL;
-  if (envUrl) return envUrl.replace(/\/$/, "");
+  if (envUrl) {
+    try {
+      const url = new URL(envUrl);
+      url.hostname = url.hostname.replace(/^www\./, "");
+      return url.toString().replace(/\/$/, "");
+    } catch {
+      // fallback if envUrl is not a valid URL
+      return envUrl.replace(/^www\./, "").replace(/\/$/, "");
+    }
+  }
   const proto = h.get("x-forwarded-proto") || "https";
-  const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
+  let host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
+  host = host.replace(/^www\./, "");
   return `${proto}://${host}`;
 }
 
