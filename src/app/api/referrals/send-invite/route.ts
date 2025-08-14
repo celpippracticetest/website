@@ -189,7 +189,7 @@ export async function POST(req: Request) {
       to: email,
       subject: "You're invited to CELPIP Practice Test",
       html: emailHtml({
-        toName: name,
+        toName: email,
         inviterName: inviter.firstName
           ? `${inviter.firstName} ${inviter.lastName ?? ""}`.trim()
           : "A friend",
