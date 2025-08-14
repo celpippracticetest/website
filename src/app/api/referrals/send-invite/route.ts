@@ -19,6 +19,8 @@
     UPSTASH_REDIS_REST_TOKEN
     SMTP_AUTH_METHOD (optional: PLAIN | LOGIN | CRAM-MD5)
     EMAIL_DEBUG (optional: set to 1 to enable nodemailer logger)
+    RESEND_API_KEY (optional: if set, use Resend HTTP API instead of SMTP)
+    SENDGRID_API_KEY (optional: if set, use SendGrid HTTP API instead of SMTP)
 */
 
 import { NextResponse } from "next/server";
@@ -168,6 +170,124 @@ function emailHtml({
   </div>`;
 }
 
+// ---------- Email senders (Resend / SendGrid / SMTP fallback) ----------
+async function sendViaResend({
+  from,
+  to,
+  subject,
+  html,
+}: {
+  from: string;
+  to: string;
+  subject: string;
+  html: string;
+}) {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return false;
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ from, to: [to], subject, html }),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      console.warn("[send-invite] Resend failed:", res.status, text);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.warn("[send-invite] Resend threw:", e);
+    return false;
+  }
+}
+
+async function sendViaSendGrid({
+  from,
+  to,
+  subject,
+  html,
+}: {
+  from: string;
+  to: string;
+  subject: string;
+  html: string;
+}) {
+  const key = process.env.SENDGRID_API_KEY;
+  if (!key) return false;
+  try {
+    const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        personalizations: [{ to: [{ email: to }] }],
+        from: parseFromAddress(from),
+        subject,
+        content: [{ type: "text/html", value: html }],
+      }),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      console.warn("[send-invite] SendGrid failed:", res.status, text);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.warn("[send-invite] SendGrid threw:", e);
+    return false;
+  }
+}
+
+function parseFromAddress(from: string): { email: string; name?: string } {
+  // Accept formats like "Name <email@domain>" or plain email
+  const m = from.match(/^(.*)<([^>]+)>\s*$/);
+  if (m) {
+    const name = m[1].trim().replace(/^["']|["']$/g, "");
+    const email = m[2].trim();
+    return name ? { email, name } : { email };
+  }
+  return { email: from };
+}
+
+async function sendViaSMTP({
+  from,
+  to,
+  subject,
+  html,
+}: {
+  from: string;
+  to: string;
+  subject: string;
+  html: string;
+}) {
+  const transporter = await getTransporter();
+  await transporter.sendMail({ from, to, subject, html });
+  return true;
+}
+
+async function sendEmail({
+  from,
+  to,
+  subject,
+  html,
+}: {
+  from: string;
+  to: string;
+  subject: string;
+  html: string;
+}) {
+  // Priority: Resend -> SendGrid -> SMTP
+  if (await sendViaResend({ from, to, subject, html })) return;
+  if (await sendViaSendGrid({ from, to, subject, html })) return;
+  await sendViaSMTP({ from, to, subject, html });
+}
+
 // Optional: simple Upstash REST client for rate limit (per-user per minute)
 async function rateLimitOrNull(userId: string) {
   const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -256,22 +376,19 @@ export async function POST(req: Request) {
     // 6) Prepare email
     const from =
       process.env.FROM_EMAIL || `Celpip Practice <${process.env.SMTP_USER}>`;
-    const transporter = await getTransporter();
 
-    // 7) Send
-    await transporter.sendMail({
-      from,
-      to: email,
-      subject: "You're invited to CELPIP Practice Test",
-      html: emailHtml({
-        toName: name,
-        inviterName: inviter.firstName
-          ? `${inviter.firstName} ${inviter.lastName ?? ""}`.trim()
-          : "A friend",
-        link,
-        personalMessage,
-      }),
+    // 7) Send via Resend / SendGrid / SMTP fallback
+    const subject = "You're invited to CELPIP Practice Test";
+    const html = emailHtml({
+      toName: name,
+      inviterName: inviter.firstName
+        ? `${inviter.firstName} ${inviter.lastName ?? ""}`.trim()
+        : "A friend",
+      link,
+      personalMessage,
     });
+
+    await sendEmail({ from, to: email, subject, html });
 
     return NextResponse.json({
       ok: true,
