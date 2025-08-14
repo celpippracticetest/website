@@ -43,7 +43,15 @@ async function ensureUserReferral(userId: string, baseUrl: string) {
 
   const existing = await repo.findOneByUserId(userId);
   if (existing) {
-    const link = `${baseUrl}/?ref=${existing.code}`;
+    const inviterNameOrEmail =
+      (user.firstName && user.lastName
+        ? `${user.firstName} ${user.lastName}`
+        : user.firstName
+        ? user.firstName
+        : user.emailAddresses?.[0]?.emailAddress) || userId;
+    const link = `${baseUrl}/referral/?ref=${
+      existing.code
+    }&inviter=${encodeURIComponent(inviterNameOrEmail)}`;
     await cc.users.updateUser(userId, {
       publicMetadata: {
         ...pm,
@@ -69,7 +77,15 @@ async function ensureUserReferral(userId: string, baseUrl: string) {
   }
   if (!code) throw new Error("Could not generate unique referral code");
 
-  const link = `${baseUrl}/?ref=${code}`;
+  const inviterNameOrEmail =
+    (user.firstName && user.lastName
+      ? `${user.firstName} ${user.lastName}`
+      : user.firstName
+      ? user.firstName
+      : user.emailAddresses?.[0]?.emailAddress) || userId;
+  const link = `${baseUrl}/referral/?ref=${code}&inviter=${encodeURIComponent(
+    inviterNameOrEmail
+  )}`;
 
   await cc.users.updateUser(userId, {
     publicMetadata: {

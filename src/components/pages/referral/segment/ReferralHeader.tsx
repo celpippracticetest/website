@@ -2,6 +2,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import React from "react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 
 const SvgDiamond = dynamic(() => import("@/components/icons/Diamond"), {
   ssr: false,
@@ -25,6 +26,8 @@ const PracticeAndSubmit = dynamic(
 );
 const Improve = dynamic(() => import("../segment/Improve"), { ssr: false });
 const MockTest = dynamic(() => import("../segment/MockTest"), { ssr: false });
+const searchParams = useSearchParams();
+const firstName = searchParams.get("inviter");
 
 const ReferralHeader = () => {
   return (
@@ -36,7 +39,8 @@ const ReferralHeader = () => {
       </div>
       <div className="flex flex-col mt-[40px] screen1280:!mt-[64px] items-center  max-w-[692px] h-full min-h-[151px] mx-auto">
         <span className="font-semibold text-[32px] screen744:!text-[41px] screen1280:!text-[50px] ">
-          Your friend gave you <span className="text-error1"> 30% </span> Off!
+          Your friend {firstName} gave you{" "}
+          <span className="text-error1"> 10% </span> Off!
         </span>
 
         <div className="flex mt-[24px] screen744:!mt-[32px] flex-col font-normal text-text2 text-left screen744:!text-center ">
@@ -96,8 +100,7 @@ const ReferralHeader = () => {
       </div>
       <div className="text-center mt-[40px] ">
         <span className=" font-normal text-[16px]  screen744:!text-[20px] text-text2">
-          Practice screen744arter, not harder—with everything you need to
-          succeed.{" "}
+          Practice smarter, not harder—with everything you need to succeed.
         </span>
       </div>
 
