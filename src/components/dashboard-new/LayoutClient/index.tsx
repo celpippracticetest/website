@@ -811,7 +811,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
 
           {user && proUser && (
             <NavItem
-              link="/referral"
+              link="/earn100"
               icon={<SvgReferral />}
               label="Referral"
               primary={"referral"}
