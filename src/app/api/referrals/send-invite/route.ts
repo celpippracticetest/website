@@ -17,10 +17,8 @@
     APP_BASE_URL (e.g. https://celpippracticetest.com)
     UPSTASH_REDIS_REST_URL
     UPSTASH_REDIS_REST_TOKEN
-    SMTP_AUTH_METHOD (optional: PLAIN | LOGIN | CRAM-MD5)
-    EMAIL_DEBUG (optional: set to 1 to enable nodemailer logger)
-    RESEND_API_KEY (optional: if set, use Resend HTTP API instead of SMTP)
-    SENDGRID_API_KEY (optional: if set, use SendGrid HTTP API instead of SMTP)
+    RESEND_API_KEY (optional: use Resend HTTP API if set)
+    SENDGRID_API_KEY (optional: use SendGrid HTTP API if set)
 */
 
 import { NextResponse } from "next/server";
@@ -63,47 +61,16 @@ function assertEnv(name: string, allowEmpty = false) {
 }
 
 async function getTransporter(): Promise<Transporter> {
-  const host = assertEnv("SMTP_HOST").trim();
-  const port = Number(assertEnv("SMTP_PORT").trim());
-  const user = assertEnv("SMTP_USER").trim();
-  const pass = assertEnv("SMTP_PASS").trim();
-  const authMethodEnv = (process.env.SMTP_AUTH_METHOD || "").toUpperCase();
-  const authMethod = ["PLAIN", "LOGIN", "CRAM-MD5"].includes(authMethodEnv)
-    ? (authMethodEnv as "PLAIN" | "LOGIN" | "CRAM-MD5")
-    : undefined;
-
-  // Non-sensitive sanity log (helps verify env presence on Vercel Preview)
-  console.log("[send-invite] SMTP sanity", {
-    host,
-    port,
-    hasUser: !!user,
-    userLen: user?.length,
-    hasPass: !!pass,
-    passLen: String(pass || "").length,
-    authMethod: authMethod || "auto",
-    trimmed: true,
-  });
-
-  const useSecure = port === 465; // SSL
+  const host = assertEnv("SMTP_HOST");
+  const port = Number(assertEnv("SMTP_PORT"));
+  const user = assertEnv("SMTP_USER");
+  const pass = assertEnv("SMTP_PASS");
 
   const transporter = nodemailer.createTransport({
     host,
     port,
-    secure: useSecure,
+    secure: port === 465,
     auth: { user, pass },
-    // Some providers (e.g., Hostinger) prefer LOGIN over PLAIN
-    // Allow overriding via SMTP_AUTH_METHOD, otherwise let Nodemailer auto-negotiate
-    authMethod,
-    // Improve compatibility for STARTTLS on 587
-    requireTLS: !useSecure,
-    tls: !useSecure
-      ? {
-          minVersion: "TLSv1.2",
-        }
-      : undefined,
-    // Optional debug toggles (set EMAIL_DEBUG=1 temporarily if needed)
-    logger: !!process.env.EMAIL_DEBUG,
-    debug: !!process.env.EMAIL_DEBUG,
   });
 
   // Verify only once at cold start; ignore failures in prod but log
@@ -171,6 +138,17 @@ function emailHtml({
 }
 
 // ---------- Email senders (Resend / SendGrid / SMTP fallback) ----------
+function parseFromAddress(from: string): { email: string; name?: string } {
+  // Accept formats like "Name <email@domain>" or plain email
+  const m = from.match(/^(.*)<([^>]+)>\s*$/);
+  if (m) {
+    const name = m[1].trim().replace(/^["']|["']$/g, "");
+    const email = m[2].trim();
+    return name ? { email, name } : { email };
+  }
+  return { email: from };
+}
+
 async function sendViaResend({
   from,
   to,
@@ -244,17 +222,6 @@ async function sendViaSendGrid({
   }
 }
 
-function parseFromAddress(from: string): { email: string; name?: string } {
-  // Accept formats like "Name <email@domain>" or plain email
-  const m = from.match(/^(.*)<([^>]+)>\s*$/);
-  if (m) {
-    const name = m[1].trim().replace(/^["']|["']$/g, "");
-    const email = m[2].trim();
-    return name ? { email, name } : { email };
-  }
-  return { email: from };
-}
-
 async function sendViaSMTP({
   from,
   to,
@@ -288,37 +255,6 @@ async function sendEmail({
   await sendViaSMTP({ from, to, subject, html });
 }
 
-// Optional: simple Upstash REST client for rate limit (per-user per minute)
-async function rateLimitOrNull(userId: string) {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token) return null; // not configured
-
-  const key = `rl:send-invite:${userId}`;
-  const body = {
-    // Lua-less simple INCR + EXPIRE if new
-    pipeline: [
-      ["INCR", key],
-      ["EXPIRE", key, 60],
-    ],
-  } as const;
-
-  const res = await fetch(`${url}/pipeline`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-    cache: "no-store",
-  });
-
-  if (!res.ok) return null; // fail-open
-  const data = (await res.json()) as [number, number][];
-  const count = data?.[0]?.[1];
-  return typeof count === "number" ? count : null;
-}
-
 // ---------- Route ----------
 export async function POST(req: Request) {
   try {
@@ -326,17 +262,6 @@ export async function POST(req: Request) {
     const user = await currentUser();
     if (!user)
       return jsonError(401, "UNAUTHENTICATED", "You must be signed in.");
-
-    // 2) Rate limit (optional)
-    const rl = await rateLimitOrNull(user.id);
-    if (rl !== null && rl > 10) {
-      return jsonError(
-        429,
-        "RATE_LIMITED",
-        "Too many invites. Try again in a minute.",
-        { count: rl }
-      );
-    }
 
     // 3) Parse & validate body
     const raw = await req.json().catch(() => ({}));
