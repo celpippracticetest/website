@@ -147,7 +147,7 @@ const WritingExamView = ({ practice, partId }: WritingExamViewProps) => {
             <div className="flex gap-2 flex-col screen744:!shrink-0">
               <span>{practice.passages[passageIndex].title}</span>
               <span className="font-normal text-[14px] text-[#37465C]">
-                Writing Part {partId - 6}
+                Writing Part {partId - 10}
               </span>
             </div>
             <a

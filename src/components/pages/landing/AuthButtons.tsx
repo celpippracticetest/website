@@ -88,7 +88,7 @@ const AuthButtons = () => {
                     }
                   }}
                   id="support-button"
-                  className="block px-4 py-2 text-[14px] text-gray-700 w-full text-left"
+                  className="cursor-pointer block px-4 py-2 text-[14px] text-gray-700 w-full text-left"
                 >
                   Support
                 </button>
@@ -98,7 +98,7 @@ const AuthButtons = () => {
                     localStorage.removeItem("hasClosedExtraDiscountModal");
                     signOut();
                   }}
-                  className="block px-4 py-2 text-[14px] text-gray-700 w-full text-left"
+                  className="cursor-pointer block px-4 py-2 text-[14px] text-gray-700 w-full text-left"
                 >
                   Sign out
                 </button>

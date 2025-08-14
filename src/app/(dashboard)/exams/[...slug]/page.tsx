@@ -80,6 +80,7 @@ const Exam = async ({ params }: { params: Promise<{ slug: string }> }) => {
     ...part,
     taskId: part.examId.toString(),
   });
+
   return (
     <main className="max-w-[995px] w-full h-full mx-auto">
       <div className=" w-full p-[24px] flex h-full flex-col rounded-lg">

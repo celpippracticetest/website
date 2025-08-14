@@ -1098,7 +1098,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                         (window as any).Intercom("show");
                       }
                     }}
-                    className="block px-4 py-2 text-[14px] text-gray-700 w-full text-left cursor-pointer"
+                    className=" block px-4 py-2 text-[14px] text-gray-700 w-full text-left cursor-pointer"
                     role="menuitem"
                     tabIndex={-1}
                     id="support-button"

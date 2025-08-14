@@ -223,7 +223,7 @@ const SpeakingExamView = ({ practice, partId }: SpeakingExamViewProps) => {
             <div className="flex gap-2 flex-col screen744:!shrink-0">
               <span>{practice.passages[passageIndex].title}</span>
               <span className="font-normal text-[14px] text-[#37465C]">
-                Speaking Part {partId - 6}
+                Speaking Part {partId - 12}
               </span>
             </div>
             <a
