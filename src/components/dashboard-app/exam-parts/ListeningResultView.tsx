@@ -6,6 +6,29 @@ import { TQuestion } from "@/models/question.model";
 import { Accordion } from "radix-ui";
 import * as React from "react";
 
+const parts = [
+  "Problem Solving",
+  "A Daily life conversation",
+  "Information",
+  "News Item",
+  "Discussion",
+  "Viewpoints",
+  "Correspondence",
+  "Apply a Diagram",
+  "Information",
+  "Viewpoints",
+  "Writing an Email",
+  "Survey Questions",
+  "Giving Advice",
+  "Talking about personal experience",
+  "Describing a Scene",
+  "Making predictions",
+  "Comparing and Persuading",
+  "Dealing with a difficult situation",
+  "Expressing opinions",
+  "Describing an unusual situation",
+];
+
 const ListeningResultView = ({
   examPart,
   answer: userAnswer,
@@ -24,6 +47,7 @@ const ListeningResultView = ({
     (q: any, index: number) =>
       userAnswer?.answers[index] && q.answer === userAnswer?.answers[index]
   ).length;
+
   return (
     <Accordion.Root
       className="border  border-[#D5D6D8] rounded-[8px] bg-white overflow-hidden"
@@ -34,7 +58,9 @@ const ListeningResultView = ({
         <Accordion.Header className="flex">
           <Accordion.Trigger className="group flex  text-[14px] font-medium cursor-pointer bg-[#F6F7F9] px-[24px] flex-1 h-[88px] [&[data-state=open]]:h-[144px] screen744:!h-[54px] screen744:[&[data-state=open]]:h-[72px] items-center justify-between  [&[data-state=open]>div>svg]:rotate-180 ">
             <div className="flex gap-[10px] flex-col-reverse screen744:!flex-row items-start group">
-              <span className="font-semibold text-left">{examPart?.title}</span>
+              <span className="font-semibold text-left">
+                {examPart?.partId && parts[examPart?.partId - 1]}
+              </span>
               <span className="text-[#212E42] px-[12px] rounded-[24px] flex items-center text-[11px] font-medium  h-[24px] border border-[#D5D6D8]">
                 {numberOfCorrect}/{allQuestions ? allQuestions.length : "0"}{" "}
                 correct
