@@ -102,7 +102,22 @@ const generateInfoBox = (message: string, value: number) => {
     <div className="w-full rounded-[12px] justify-between flex-col  h-[96px] flex p-[16px] bg-[#F2F6FF]">
       <div className="flex justify-between w-full">
         <span className="text-[16px] text-[#37465C]">{message}</span>
-        <SvgInfo />
+        <div className="group relative">
+          <SvgInfo />
+          <div className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+8px)] z-20 hidden group-hover:block">
+            <div className="relative">
+              <div className="w-[351px] rounded-[10px] bg-[#2F3C50] text-white text-[12px] leading-[18px] px-[12px] py-[8px] shadow-lg">
+                {message === "Total Invitees" &&
+                  "The number of users who have signed up using your referral link, regardless of whether they have completed a purchase."}
+                {message === "Total Reward" &&
+                  "The total confirmed reward amount you’ve earned from successful payments made by your invitees. Pending or refunded transactions are not included."}
+                {message === "Reward Level" &&
+                  "Your current referral tier, determined by the total number of successful purchases or total purchase value from your invitees. Higher levels may increase your reward percentage."}
+              </div>
+              <div className="absolute -top-[8px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-r-[8px] border-b-[8px] border-l-transparent border-r-transparent border-b-[#2F3C50]"></div>
+            </div>
+          </div>
+        </div>
       </div>
       <div className="text-[#212E42] text-[18px]">{value}</div>
     </div>
@@ -164,12 +179,13 @@ export default function Referral() {
     <div className="flex flex-col p-[16px] bg-[#F2F6FF] w-full">
       <div className="relative bg-white px-[24px] py-[40px]">
         <div className=" flex-wrap flex rounded-[16px] justify-between w-full h-[123px] bg-[#FDF4FF] px-[40px] py-[28px]">
-          <div className="flex flex-col gap-[12px]">
-            <span className="text-[#212E42] text-[29px] font-semibold">
+          <div className="flex max-w-[338px] w-full screen1280:!max-w-full flex-col gap-[12px]">
+            <span className="text-[#212E42] text-[22px] screen1280:!text-[29px] font-semibold">
               Refer your friend and get money
             </span>
             <span className="text-[14px] font-normal text-[#76808F]">
-              Refer your friend and get money
+              Every time your friend makes a purchase, a reward will be credited
+              to your account{" "}
             </span>
           </div>
           <Image
@@ -181,7 +197,7 @@ export default function Referral() {
           />
         </div>
 
-        <div className="flex gap-[40px] mt-[32px] bg-white p-[24px] border border-[#D5D6D8] rounded-[16px]">
+        <div className="flex flex-wrap screen1280:!flex-nowrap gap-[40px] mt-[32px] bg-white p-[24px] border border-[#D5D6D8] rounded-[16px]">
           <div className="flex max-w-[606px] flex-col w-full">
             <div className="px-[16px] flex rounded-[12px] gap-[16px] py-[18px] h-[60px] w-full bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] ">
               <div className="flex gap-[16px] text-white w-full">
@@ -218,7 +234,7 @@ export default function Referral() {
                   </div>
                 </div>
               </div>
-              <div className="flex gap-[8px] h-[40px] max-w-[170px] rounded-[24px] items-center justify-center w-full bg-[#4A7DFF] text-white text-[14px] font-normal">
+              <div className="flex gap-[8px] h-[40px] max-w-[96px] screen1280:!max-w-[170px] rounded-[24px] items-center justify-center w-full bg-[#4A7DFF] text-white text-[14px] font-normal">
                 <SvgShare />
                 <span>Share</span>
               </div>
@@ -241,14 +257,14 @@ export default function Referral() {
                 type="button"
                 onClick={handleSendInvite}
                 disabled={isSending}
-                className="flex h-[40px] max-w-[170px] rounded-[24px] items-center justify-center w-full bg-[#4A7DFF] text-white text-[14px] font-medium hover:opacity-90 active:opacity-80 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex h-[40px] max-w-[96px] screen1280:!max-w-[170px] rounded-[24px] items-center justify-center w-full bg-[#4A7DFF] text-white text-[14px] font-medium hover:opacity-90 active:opacity-80 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isSending ? "Sending..." : "Send Invite"}
               </button>
             </div>
           </div>
 
-          <div className="w-[1px] bg-[#E6E6E6]"></div>
+          <div className="h-[1px] w-full screen1280:!w-[1px] screen1280:!h-full bg-[#E6E6E6]"></div>
 
           <div className="flex flex-col items-center max-w-[533px] w-full justify-center">
             <ReferralProgress earned={earned} />
@@ -282,8 +298,8 @@ export default function Referral() {
         </div>
         <div className="flex gap-[12px]  mt-[32px]">
           {generateInfoBox("Total Invitees", 10)}
-          {generateInfoBox("Total Invitees", 10)}
-          {generateInfoBox("Total Invitees", 10)}
+          {generateInfoBox("Total Reward", 125)}
+          {generateInfoBox("Reward Level", 3)}
         </div>
         <div className="flex flex-col rounded-[8px] mt-[32px] border border-[#E4E7EC]">
           <div className="h-[69px] py-[20px] px-[24px]">
