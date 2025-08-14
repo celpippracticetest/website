@@ -156,6 +156,19 @@ function isValidEmail(email: string) {
   return /\S+@\S+\.\S+/.test(email);
 }
 
+function extractReferralCode(link: string): string {
+  try {
+    const url = new URL(link);
+    const qp = url.searchParams;
+    const byParam = qp.get("ref") || qp.get("code") || qp.get("referral");
+    if (byParam) return byParam;
+    const segments = url.pathname.split("/").filter(Boolean);
+    return segments[segments.length - 1] || "";
+  } catch {
+    return "";
+  }
+}
+
 export default function Referral() {
   const { user } = useUser();
 
@@ -249,7 +262,17 @@ export default function Referral() {
       const res = await fetch("/api/referrals/send-invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to: email, link: referralLink }),
+        body: JSON.stringify({
+          email,
+          name:
+            (user?.fullName as string) ||
+            (user?.username as string) ||
+            (user?.primaryEmailAddress as any)?.emailAddress ||
+            "",
+          personalMessage: "",
+          inviteLink: referralLink,
+          referralCode: extractReferralCode(referralLink),
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({} as any));

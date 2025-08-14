@@ -17,7 +17,7 @@ function generateReferralCode(): string {
 }
 
 function getBaseUrl(h: Headers) {
-  const envUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL;
+  const envUrl = process.env.APP_BASE_URL;
   if (envUrl) return envUrl.replace(/\/$/, "");
   const proto = h.get("x-forwarded-proto") || "https";
   const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
