@@ -1,12 +1,14 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import SvgInfo from "../icons/Info";
+import SvgCopy from "../icons/Copy";
+import SvgShare from "../icons/Share";
 
-function ReferralProgress({ earned }: { earned: number }) {
+const ReferralProgress = ({ earned }: { earned: number }) => {
   const total = 100;
   const sections = 5;
   const sectionValue = total / sections;
@@ -93,12 +95,32 @@ function ReferralProgress({ earned }: { earned: number }) {
       </svg>
     </div>
   );
+};
+
+const generateInfoBox = (message: string, value: number) => {
+  return (
+    <div className="w-full rounded-[12px] justify-between flex-col  h-[96px] flex p-[16px] bg-[#F2F6FF]">
+      <div className="flex justify-between w-full">
+        <span className="text-[16px] text-[#37465C]">{message}</span>
+        <SvgInfo />
+      </div>
+      <div className="text-[#212E42] text-[18px]">{value}</div>
+    </div>
+  );
+};
+
+function isValidEmail(email: string) {
+  // Basic email validation regex
+  return /\S+@\S+\.\S+/.test(email);
 }
 
 export default function Referral() {
   const { user } = useUser();
 
   const router = useRouter();
+
+  const [email, setEmail] = useState("");
+  const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
     if (user === null) {
@@ -109,6 +131,34 @@ export default function Referral() {
   if (!user) return null;
 
   const earned = 60;
+
+  const referralLink = "https://example.com/referral"; // Assuming a referral link
+
+  const handleSendInvite = async () => {
+    if (!isValidEmail(email)) {
+      alert("Please enter a valid email address.");
+      return;
+    }
+    try {
+      setIsSending(true);
+      const res = await fetch("/api/referrals/send-invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: email, link: referralLink }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data && data.error) || "Failed to send email");
+      }
+      alert("Invite email sent successfully.");
+      setEmail("");
+    } catch (err) {
+      console.error(err);
+      alert("Couldn't send from server. Please try again later.");
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   return (
     <div className="flex flex-col p-[16px] bg-[#F2F6FF] w-full">
@@ -151,8 +201,25 @@ export default function Referral() {
               </span>
             </div>
             <div className="flex gap-[16px]  items-center mt-[16px]">
-              <div className="px-[16px] h-[56px] w-full rounded-[12px] max-w-[420px]  border border-[#D5D6D8]"></div>
-              <div className="flex h-[40px] max-w-[170px] rounded-[24px] items-center justify-center w-full bg-[#4A7DFF] text-white text-[14px] font-normal">
+              <div className="relative px-[16px] h-[56px] w-full rounded-[12px] max-w-[420px]  border border-[#D5D6D8]">
+                <div className="absolute right-[16px] top-[16px] group">
+                  <SvgCopy />
+                  {/* Tooltip */}
+                  <div className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+8px)] z-20 hidden group-hover:block">
+                    <div className="relative">
+                      <div className="w-full max-w-[351px] rounded-[10px] bg-[#2F3C50] text-white text-[12px] leading-[18px] px-[12px] py-[8px] shadow-lg">
+                        You earn 20% of successful payments made through your
+                        referral link. If your reward isn’t visible yet, the
+                        referred account’s payment may still be pending.
+                      </div>
+                      {/* Upward arrow */}
+                      <div className="absolute -top-[8px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-r-[8px] border-b-[8px] border-l-transparent border-r-transparent border-b-[#2F3C50]"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-[8px] h-[40px] max-w-[170px] rounded-[24px] items-center justify-center w-full bg-[#4A7DFF] text-white text-[14px] font-normal">
+                <SvgShare />
                 <span>Share</span>
               </div>
             </div>
@@ -163,10 +230,21 @@ export default function Referral() {
               </span>
             </div>
             <div className="flex gap-[16px]  items-center mt-[16px]">
-              <div className="px-[16px] h-[56px] w-full rounded-[12px] max-w-[420px]  border border-[#D5D6D8]"></div>
-              <div className="flex h-[40px] max-w-[170px] rounded-[24px] items-center justify-center w-full bg-[#4A7DFF] text-white text-[14px] font-normal">
-                <span>Send Invite</span>
-              </div>
+              <input
+                type="email"
+                className="px-[16px] h-[56px] w-full rounded-[12px] max-w-[420px] border border-[#D5D6D8]"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Your friend's email"
+              />
+              <button
+                type="button"
+                onClick={handleSendInvite}
+                disabled={isSending}
+                className="flex h-[40px] max-w-[170px] rounded-[24px] items-center justify-center w-full bg-[#4A7DFF] text-white text-[14px] font-medium hover:opacity-90 active:opacity-80 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isSending ? "Sending..." : "Send Invite"}
+              </button>
             </div>
           </div>
 
@@ -174,15 +252,66 @@ export default function Referral() {
 
           <div className="flex flex-col items-center max-w-[533px] w-full justify-center">
             <ReferralProgress earned={earned} />
-            <div className="mt-[26px] items-center flex gap-[24px]">
+            <div className=" group mt-[26px] items-center flex gap-[24px]">
               <div className="flex items-center gap-[8px]">
                 <div className="w-[16px] h-[16px] bg-[#0DAA94] rounded-full"></div>
                 <span className="text-[14px] text-[#37465C]">
                   Successful purchase
                 </span>
               </div>
-              <SvgInfo />
+              <div className="group relative">
+                <SvgInfo />
+                <div className="absolute w left-1/2 -translate-x-1/2 top-[calc(100%+8px)] z-20 hidden group-hover:block">
+                  <div className="relative">
+                    <div className="w-[351px] rounded-[10px] bg-[#2F3C50] text-white text-[12px] leading-[18px] px-[12px] py-[8px] shadow-lg">
+                      You earn {earned} of successful payments made through your
+                      referral link. If your reward isn’t visible yet, the
+                      referred account’s payment may still be pending.
+                    </div>
+                    <div className="absolute -top-[8px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-r-[8px] border-b-[8px] border-l-transparent border-r-transparent border-b-[#2F3C50]"></div>
+                  </div>
+                </div>
+              </div>
             </div>
+            <div className="flex justify-center items-center mt-[24px] max-w-[188px] w-full h-[40px] border border-[#F27059] rounded-[24px]">
+              <span className="text-[14px] font-normal text-[#F27059]">
+                Transfer to my paypal
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-[12px]  mt-[32px]">
+          {generateInfoBox("Total Invitees", 10)}
+          {generateInfoBox("Total Invitees", 10)}
+          {generateInfoBox("Total Invitees", 10)}
+        </div>
+        <div className="flex flex-col rounded-[8px] mt-[32px] border border-[#E4E7EC]">
+          <div className="h-[69px] py-[20px] px-[24px]">
+            <span className="text-[#101828] font-semibold text-[18px]">
+              Transactions
+            </span>
+          </div>
+          <div className="flex w-full border-t  border-[#E4E7EC] h-[44px] py-[13px] px-[24px]">
+            <span className=" w-full  text-[#37465C] font-medium text-[12px]">
+              Date
+            </span>
+            <span className="  w-full  text-[#37465C] font-medium text-[12px]">
+              Description
+            </span>
+            <span className="  w-full  text-[#37465C] font-medium text-[12px]">
+              Amount
+            </span>
+          </div>
+          <div className="flex w-full border-t  border-[#E4E7EC] h-[44px] py-[13px] px-[24px]">
+            <span className=" w-full  text-[#37465C] font-medium text-[12px]">
+              Aug 4, 2025
+            </span>
+            <span className="  w-full  text-[#37465C] font-medium text-[12px]">
+              Translate to paypal{" "}
+            </span>
+            <span className="  w-full  text-[#37465C] font-medium text-[12px]">
+              $ 125{" "}
+            </span>
           </div>
         </div>
       </div>
