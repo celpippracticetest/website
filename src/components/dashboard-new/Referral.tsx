@@ -176,14 +176,14 @@ export default function Referral() {
   };
 
   return (
-    <div className="flex flex-col p-[16px] bg-[#F2F6FF] w-full">
-      <div className="relative bg-white px-[24px] py-[40px]">
-        <div className=" flex-wrap flex rounded-[16px] justify-between w-full h-[123px] bg-[#FDF4FF] px-[40px] py-[28px]">
-          <div className="flex max-w-[338px] w-full screen1280:!max-w-full flex-col gap-[12px]">
-            <span className="text-[#212E42] text-[22px] screen1280:!text-[29px] font-semibold">
+    <div className="flex flex-col p-0 screen744:!p-[16px] bg-[#F2F6FF] w-full">
+      <div className="relative bg-white px-[16px] screen744:!px-[24px] py-[40px]">
+        <div className=" flex-wrap flex rounded-[16px] justify-between w-full h-[123px] bg-[#FDF4FF] px-[16px] screen744:!px-[40px] py-[14px] screen744:!py-[24px] screen1280:!py-[28px]">
+          <div className="flex max-w-[184px]  screen744:!max-w-[338px] w-full screen1280:!max-w-full flex-col gap-[12px]">
+            <span className="text-[#212E42] leading-[18px] text-[16px] screen744:!text-[22px] screen1280:!text-[29px] font-semibold">
               Refer your friend and get money
             </span>
-            <span className="text-[14px] font-normal text-[#76808F]">
+            <span className="text-[11px] screen744:!text-[14px] leading-[18px] font-normal text-[#76808F]">
               Every time your friend makes a purchase, a reward will be credited
               to your account{" "}
             </span>
@@ -192,22 +192,33 @@ export default function Referral() {
             alt="present"
             width={165}
             height={195}
-            className={`absolute top-0 right-[40px] w-[165px] h-[195px]`}
+            className={`hidden screen744:!flex absolute top-0 right-[40px] w-[165px] h-[195px]`}
             src="/images/present.png"
+          />
+          <Image
+            alt="present"
+            width={102}
+            height={120}
+            className={`absolute flex screen744:!hidden top-[38px] right-[40px] w-[102px] h-[120px]`}
+            src="/images/present-mobile.png"
           />
         </div>
 
-        <div className="flex flex-wrap screen1280:!flex-nowrap gap-[40px] mt-[32px] bg-white p-[24px] border border-[#D5D6D8] rounded-[16px]">
+        <div className="flex flex-wrap justify-center screen1280:!flex-nowrap gap-[40px] mt-[32px] bg-white px-[16px] py-[24px] screen744:!p-[24px] border border-[#D5D6D8] rounded-[16px]">
           <div className="flex max-w-[606px] flex-col w-full">
             <div className="px-[16px] flex rounded-[12px] gap-[16px] py-[18px] h-[60px] w-full bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] ">
               <div className="flex gap-[16px] text-white w-full">
-                <span>They get</span>
-                <span>%20</span>
+                <span className="text-[14px] screen744:!text-[16px]">
+                  They get
+                </span>
+                <span className="text-[20px]">%20</span>
               </div>
               <div className="w-[1px] bg-[#E6E6E6]"></div>
-              <div className="flex gap-[16px] text-white w-full">
-                <span>You get</span>
-                <span>%20</span>
+              <div className="flex gap-[16px] text-[14px] screen744:!text-[16px] text-white w-full">
+                <span className="text-[14px] screen744:!text-[16px]">
+                  You get
+                </span>
+                <span className="text-[20px]">%20</span>
               </div>
             </div>
 
@@ -216,9 +227,10 @@ export default function Referral() {
                 Invitation link
               </span>
             </div>
-            <div className="flex gap-[16px]  items-center mt-[16px]">
-              <div className="relative px-[16px] h-[56px] w-full rounded-[12px] max-w-[420px]  border border-[#D5D6D8]">
-                <div className="absolute right-[16px] top-[16px] group">
+
+            <div className="flex gap-[16px] flex-wrap screen744:!flex-nowrap  items-center mt-[16px]">
+              <div className="relative px-[16px] h-[56px] w-full rounded-[12px] max-w-full screen744:!max-w-[420px]  border border-[#D5D6D8]">
+                <div className="absolute right-[16px]  top-[16px] group">
                   <SvgCopy />
                   {/* Tooltip */}
                   <div className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+8px)] z-20 hidden group-hover:block">
@@ -234,7 +246,7 @@ export default function Referral() {
                   </div>
                 </div>
               </div>
-              <div className="flex gap-[8px] h-[40px] max-w-[96px] screen1280:!max-w-[170px] rounded-[24px] items-center justify-center w-full bg-[#4A7DFF] text-white text-[14px] font-normal">
+              <div className="flex gap-[8px] h-[40px] max-w-full screen744:!max-w-[96px] screen1280:!max-w-[170px] rounded-[24px] items-center justify-center w-full bg-[#4A7DFF] text-white text-[14px] font-normal">
                 <SvgShare />
                 <span>Share</span>
               </div>
@@ -245,10 +257,10 @@ export default function Referral() {
                 Send via email
               </span>
             </div>
-            <div className="flex gap-[16px]  items-center mt-[16px]">
+            <div className="flex gap-[16px] flex-wrap screen744:!flex-nowrap   items-center mt-[16px]">
               <input
                 type="email"
-                className="px-[16px] h-[56px] w-full rounded-[12px] max-w-[420px] border border-[#D5D6D8]"
+                className="px-[16px] h-[56px] w-full rounded-[12px] max-w-full screen744:!max-w-[420px] border border-[#D5D6D8]"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Your friend's email"
@@ -257,14 +269,14 @@ export default function Referral() {
                 type="button"
                 onClick={handleSendInvite}
                 disabled={isSending}
-                className="flex h-[40px] max-w-[96px] screen1280:!max-w-[170px] rounded-[24px] items-center justify-center w-full bg-[#4A7DFF] text-white text-[14px] font-medium hover:opacity-90 active:opacity-80 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex h-[40px] max-w-full screen744:!max-w-[96px] screen1280:!max-w-[170px] rounded-[24px] items-center justify-center w-full bg-[#4A7DFF] text-white text-[14px] font-medium hover:opacity-90 active:opacity-80 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isSending ? "Sending..." : "Send Invite"}
               </button>
             </div>
           </div>
 
-          <div className="h-[1px] w-full screen1280:!w-[1px] screen1280:!h-full bg-[#E6E6E6]"></div>
+          <div className="h-[1px] w-full screen1280:!w-[1px] screen1280:!h-auto bg-[#E6E6E6]"></div>
 
           <div className="flex flex-col items-center max-w-[533px] w-full justify-center">
             <ReferralProgress earned={earned} />
@@ -296,18 +308,18 @@ export default function Referral() {
             </div>
           </div>
         </div>
-        <div className="flex gap-[12px]  mt-[32px]">
+        <div className="flex gap-[12px] flex-wrap screen744:!flex-nowrap  mt-[32px]">
           {generateInfoBox("Total Invitees", 10)}
           {generateInfoBox("Total Reward", 125)}
           {generateInfoBox("Reward Level", 3)}
         </div>
         <div className="flex flex-col rounded-[8px] mt-[32px] border border-[#E4E7EC]">
-          <div className="h-[69px] py-[20px] px-[24px]">
+          <div className="h-[69px] py-[20px] px-[16px] screen744:!px-[24px]">
             <span className="text-[#101828] font-semibold text-[18px]">
               Transactions
             </span>
           </div>
-          <div className="flex w-full border-t  border-[#E4E7EC] h-[44px] py-[13px] px-[24px]">
+          <div className="flex w-full border-t  border-[#E4E7EC] h-auto min-h-[44px] py-[13px] px-[16px] screen744:!px-[24px]">
             <span className=" w-full  text-[#37465C] font-medium text-[12px]">
               Date
             </span>
@@ -318,7 +330,7 @@ export default function Referral() {
               Amount
             </span>
           </div>
-          <div className="flex w-full border-t  border-[#E4E7EC] h-[44px] py-[13px] px-[24px]">
+          <div className="flex w-full border-t  border-[#E4E7EC] h-auto min-h-[44px] py-[13px] px-[16px] screen744:!px-[24px]">
             <span className=" w-full  text-[#37465C] font-medium text-[12px]">
               Aug 4, 2025
             </span>
