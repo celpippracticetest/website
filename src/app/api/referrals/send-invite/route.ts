@@ -17,6 +17,8 @@
     APP_BASE_URL (e.g. https://celpippracticetest.com)
     UPSTASH_REDIS_REST_URL
     UPSTASH_REDIS_REST_TOKEN
+    SMTP_AUTH_METHOD (optional: PLAIN | LOGIN | CRAM-MD5)
+    EMAIL_DEBUG (optional: set to 1 to enable nodemailer logger)
 */
 
 import { NextResponse } from "next/server";
@@ -63,12 +65,42 @@ async function getTransporter(): Promise<Transporter> {
   const port = Number(assertEnv("SMTP_PORT"));
   const user = assertEnv("SMTP_USER");
   const pass = assertEnv("SMTP_PASS");
+  const authMethodEnv = (process.env.SMTP_AUTH_METHOD || "").toUpperCase();
+  const authMethod = ["PLAIN", "LOGIN", "CRAM-MD5"].includes(authMethodEnv)
+    ? (authMethodEnv as "PLAIN" | "LOGIN" | "CRAM-MD5")
+    : undefined;
+
+  // Non-sensitive sanity log (helps verify env presence on Vercel Preview)
+  console.log("[send-invite] SMTP sanity", {
+    host,
+    port,
+    hasUser: !!user,
+    userLen: user?.length,
+    hasPass: !!pass,
+    passLen: String(pass || "").length,
+    authMethod: authMethod || "auto",
+  });
+
+  const useSecure = port === 465; // SSL
 
   const transporter = nodemailer.createTransport({
     host,
     port,
-    secure: port === 465,
+    secure: useSecure,
     auth: { user, pass },
+    // Some providers (e.g., Hostinger) prefer LOGIN over PLAIN
+    // Allow overriding via SMTP_AUTH_METHOD, otherwise let Nodemailer auto-negotiate
+    authMethod,
+    // Improve compatibility for STARTTLS on 587
+    requireTLS: !useSecure,
+    tls: !useSecure
+      ? {
+          minVersion: "TLSv1.2",
+        }
+      : undefined,
+    // Optional debug toggles (set EMAIL_DEBUG=1 temporarily if needed)
+    logger: !!process.env.EMAIL_DEBUG,
+    debug: !!process.env.EMAIL_DEBUG,
   });
 
   // Verify only once at cold start; ignore failures in prod but log
@@ -252,10 +284,7 @@ export async function POST(req: Request) {
         issues: err.issues,
       });
     }
-    console.log(process.env.SMTP_PORT);
-    console.log(process.env.SMTP_USER);
-    console.log(process.env.SMTP_HOST);
-    console.log(process.env.SMTP_PASS);
+
     return jsonError(
       500,
       "INTERNAL_ERROR",
