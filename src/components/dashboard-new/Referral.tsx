@@ -99,7 +99,7 @@ const ReferralProgress = ({ earned }: { earned: number }) => {
 
 type InfoBoxProps = {
   message: string;
-  value: number;
+  value: string | number;
 };
 
 const InfoBox: React.FC<InfoBoxProps> = ({ message, value }) => {
@@ -171,17 +171,23 @@ function extractReferralCode(link: string): string {
 
 export default function Referral() {
   const { user } = useUser();
-
   const router = useRouter();
 
+  // All useState hooks must be at the top level
   const [email, setEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
-
   const [referralLink, setReferralLink] = useState<string>("");
+  const [referralStats, setReferralStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [withdrawalAmount, setWithdrawalAmount] = useState("");
+  const [paypalEmail, setPaypalEmail] = useState("");
+  const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
+  const [withdrawalLoading, setWithdrawalLoading] = useState(false);
   const [toast, setToast] = useState<null | {
     msg: string;
     kind: "success" | "error" | "info";
   }>(null);
+
   const showToast = (
     msg: string,
     kind: "success" | "error" | "info" = "info"
@@ -192,22 +198,30 @@ export default function Referral() {
   };
 
   useEffect(() => {
-    const loadLink = async () => {
+    const loadData = async () => {
       try {
-        const res = await fetch("/api/referrals", {
-          cache: "no-store",
-        });
-        if (!res.ok) {
-          throw new Error("Failed to load referral link");
+        setLoading(true);
+        const [linkRes, statsRes] = await Promise.all([
+          fetch("/api/referrals", { cache: "no-store" }),
+          fetch("/api/referrals/stats", { cache: "no-store" }),
+        ]);
+
+        if (linkRes.ok) {
+          const linkData = await linkRes.json();
+          setReferralLink(linkData?.link || "");
         }
-        const data = await res.json();
-        // Expected: { link: string }
-        setReferralLink(data?.link || "");
+
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          setReferralStats(statsData.data);
+        }
       } catch (e) {
         console.error(e);
+      } finally {
+        setLoading(false);
       }
     };
-    loadLink();
+    loadData();
   }, []);
 
   useEffect(() => {
@@ -217,8 +231,6 @@ export default function Referral() {
   }, [user]);
 
   if (!user) return null;
-
-  const earned = 60;
 
   const canEmail = isValidEmail(email) && !!referralLink;
 
@@ -287,6 +299,63 @@ export default function Referral() {
       showToast("Couldn't send from server. Please try again later.", "error");
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleWithdrawalRequest = async () => {
+    if (!withdrawalAmount || !paypalEmail) {
+      showToast("Please fill in all fields.", "error");
+      return;
+    }
+
+    const amount = parseFloat(withdrawalAmount);
+    if (isNaN(amount) || amount < 5) {
+      showToast("Minimum withdrawal amount is $5.", "error");
+      return;
+    }
+
+    if (!referralStats?.canWithdraw) {
+      showToast(
+        "You need at least $5 in confirmed rewards to withdraw.",
+        "error"
+      );
+      return;
+    }
+
+    try {
+      setWithdrawalLoading(true);
+      const res = await fetch("/api/referrals/withdrawal-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount,
+          paypalEmail,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({} as any));
+        throw new Error(data?.error || "Failed to submit withdrawal request");
+      }
+
+      showToast("Withdrawal request submitted successfully!", "success");
+      setShowWithdrawalModal(false);
+      setWithdrawalAmount("");
+      setPaypalEmail("");
+
+      // Reload stats to reflect the pending withdrawal
+      const statsRes = await fetch("/api/referrals/stats", {
+        cache: "no-store",
+      });
+      if (statsRes.ok) {
+        const statsData = await statsRes.json();
+        setReferralStats(statsData.data);
+      }
+    } catch (err: any) {
+      console.error(err);
+      showToast(err.message || "Failed to submit withdrawal request.", "error");
+    } finally {
+      setWithdrawalLoading(false);
     }
   };
 
@@ -414,19 +483,56 @@ export default function Referral() {
           <div className="h-[1px] w-full screen1280:!w-[1px] screen1280:!h-auto bg-[#E6E6E6]"></div>
 
           <div className="flex flex-col items-center max-w-[533px] w-full justify-center">
-            <ReferralProgress earned={earned} />
-            <ReferralSuccessfulPurchaseTooltip earned={earned} />
-            <div className="flex justify-center items-center mt-[24px] max-w-[188px] w-full h-[40px] border border-[#F27059] rounded-[24px]">
+            <ReferralProgress earned={referralStats?.availableBalance || 0} />
+            <ReferralSuccessfulPurchaseTooltip
+              earned={referralStats?.availableBalance || 0}
+            />
+            <div
+              onClick={() => {
+                if (referralStats?.canWithdraw) {
+                  setShowWithdrawalModal(true);
+                } else {
+                  showToast(
+                    referralStats?.availableBalance >= 5
+                      ? "You need at least $5 in confirmed rewards to withdraw."
+                      : "Insufficient funds for withdrawal.",
+                    "info"
+                  );
+                }
+              }}
+              className={`flex justify-center items-center mt-[24px] max-w-[188px] w-full h-[40px] border border-[#F27059] rounded-[24px] cursor-pointer transition-all ${
+                referralStats?.canWithdraw
+                  ? "hover:bg-[#F27059] hover:text-white"
+                  : "opacity-50 cursor-not-allowed"
+              }`}
+            >
               <span className="text-[14px] font-normal text-[#F27059]">
-                Transfer to my paypal
+                {referralStats?.canWithdraw
+                  ? "Transfer to my PayPal"
+                  : "Insufficient Funds"}
               </span>
             </div>
           </div>
         </div>
         <div className="flex gap-[12px] flex-wrap screen744:!flex-nowrap  mt-[32px]">
-          <InfoBox message="Total Invitees" value={10} />
-          <InfoBox message="Total Reward" value={125} />
-          <InfoBox message="Reward Level" value={3} />
+          <InfoBox
+            message="Total Invitees"
+            value={loading ? "..." : referralStats?.totalInvitees || 0}
+          />
+          <InfoBox
+            message="Total Reward"
+            value={
+              loading
+                ? "..."
+                : `$${
+                    referralStats?.totalConfirmedRewards?.toFixed(2) || "0.00"
+                  }`
+            }
+          />
+          <InfoBox
+            message="Reward Level"
+            value={loading ? "..." : referralStats?.rewardLevel || 1}
+          />
         </div>
         <div className="flex flex-col rounded-[8px] mt-[32px] border border-[#E4E7EC]">
           <div className="h-[69px] py-[20px] px-[16px] screen744:!px-[24px]">
@@ -472,6 +578,70 @@ export default function Referral() {
           }`}
         >
           {toast.msg}
+        </div>
+      )}
+
+      {/* Withdrawal Modal */}
+      {showWithdrawalModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold mb-4">Withdrawal Request</h3>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Available Balance: $
+                {referralStats?.availableBalance?.toFixed(2) || "0.00"}
+              </label>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Amount (USD)
+              </label>
+              <input
+                type="number"
+                min="5"
+                max={referralStats?.availableBalance || 0}
+                step="0.01"
+                value={withdrawalAmount}
+                onChange={(e) => setWithdrawalAmount(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter amount (min $5)"
+              />
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                PayPal Email
+              </label>
+              <input
+                type="email"
+                value={paypalEmail}
+                onChange={(e) => setPaypalEmail(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter your PayPal email"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowWithdrawalModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                disabled={withdrawalLoading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleWithdrawalRequest}
+                disabled={
+                  withdrawalLoading || !withdrawalAmount || !paypalEmail
+                }
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {withdrawalLoading ? "Submitting..." : "Submit Request"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -54,8 +54,9 @@ const ReferralHeader = () => {
         </div>
 
         <a
-          href={`https://accounts.celpippracticetest.com/sign-up`}
-          target="_blank"
+          href={`/sign-up?ref=${searchParams.get(
+            "ref"
+          )}&inviter=${searchParams.get("inviter")}`}
           className="cursor-pointer screen1280:!mt-[50px] screen744:!mt-[40px] mt-[32px]  flex text-[14px] screen744:!text-[18px] font-semibold items-center justify-center   w-[231px] h-[40px] screen744:!h-[56px] bg-primary1 rounded-[24px] text-white"
         >
           Create Account

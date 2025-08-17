@@ -12,6 +12,38 @@ const isPlansRoute = createRouteMatcher(["/plans(.*)"]);
 
 export default clerkMiddleware(async (auth, req) => {
   const authenticate = await auth();
+
+  if (
+    req.nextUrl.pathname.startsWith("/sign-up") ||
+    req.nextUrl.pathname.startsWith("/sign-in")
+  ) {
+    const url = req.nextUrl.clone();
+    const ref = url.searchParams.get("ref");
+    const inviter = url.searchParams.get("inviter");
+
+    if (ref || inviter) {
+      const response = NextResponse.next();
+
+      if (ref) {
+        response.cookies.set("pendingReferralCode", ref, {
+          maxAge: 60 * 60,
+          httpOnly: false,
+          path: "/",
+        });
+      }
+
+      if (inviter) {
+        response.cookies.set("pendingInviterName", inviter, {
+          maxAge: 60 * 60,
+          httpOnly: false,
+          path: "/",
+        });
+      }
+
+      return response;
+    }
+  }
+
   if (isProfileRoute(req)) {
     if (!authenticate.userId) {
       const dashboard = new URL("/practice-overview", req.url);
@@ -36,10 +68,14 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   if (isReferralRoute(req)) {
+    // Allow public access to referral page for non-authenticated users
+    // They need to see the referral page to sign up
     if (!authenticate.userId) {
-      const dashboard = new URL("/practice-overview", req.url);
-      return NextResponse.redirect(dashboard);
+      // Don't redirect, allow access to referral page
+      return NextResponse.next();
     }
+
+    // For authenticated users, check plan
     const plan = authenticate.sessionClaims?.metadata.plan;
     if (plan !== "premium") {
       const homeUrl = new URL("/", req.url);
@@ -55,6 +91,40 @@ export default clerkMiddleware(async (auth, req) => {
         plan: "free",
       },
     });
+  }
+
+  // Update onboarding status when user visits practice-overview
+  if (authenticate.userId && req.nextUrl.pathname === "/practice-overview") {
+    const hasCompletedOnboarding = (authenticate.sessionClaims?.metadata as any)
+      ?.onboardingCompleted;
+    if (!hasCompletedOnboarding) {
+      const client = await clerkClient();
+
+      // Check if user has referral code in cookies
+      const referralCode = req.cookies.get("pendingReferralCode")?.value;
+      const inviterName = req.cookies.get("pendingInviterName")?.value;
+
+      if (referralCode) {
+        // Store referral code in user metadata for later processing
+        console.log("Referral code found:", referralCode);
+        await client.users.updateUserMetadata(authenticate.userId, {
+          publicMetadata: {
+            ...authenticate.sessionClaims?.metadata,
+            onboardingCompleted: true,
+            referralCode: referralCode,
+            referralActive: true,
+          },
+        });
+      } else {
+        // Just update onboarding status
+        await client.users.updateUserMetadata(authenticate.userId, {
+          publicMetadata: {
+            ...authenticate.sessionClaims?.metadata,
+            onboardingCompleted: true,
+          },
+        });
+      }
+    }
   }
 
   if (
@@ -76,6 +146,7 @@ export default clerkMiddleware(async (auth, req) => {
     "GET:/api/answers/writing",
     "POST:/api/answers/speaking",
     "POST:/api/checkout_session",
+    "POST:/api/referrals/process-signup",
   ];
 
   const requestedPath = `${req.method}:${req.nextUrl.pathname}`;

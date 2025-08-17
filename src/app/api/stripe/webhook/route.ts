@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import mongoClient from "@/lib/mongodb";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
+import { ReferralRewardRepository } from "@/repositories/referral-reward.repo";
+import { ReferralRepository } from "@/repositories/referral.repo";
 import { clerkClient } from "@clerk/express";
 export const runtime = "nodejs";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -16,6 +18,83 @@ async function updateUserPublicMetadata(
   await clerkClient.users.updateUserMetadata(userId, {
     publicMetadata: { ...currentMetadata, ...newFields },
   });
+}
+
+// Handle referral rewards when a payment is completed
+async function handleReferralRewards(
+  session: Stripe.Checkout.Session,
+  metadata: any
+) {
+  try {
+    // Get user ID from metadata
+    const userId = metadata?.user_id;
+    if (!userId) {
+      console.log("No user ID found in session metadata");
+      return;
+    }
+
+    // Get user from Clerk to check if they were referred
+    const user = await clerkClient.users.getUser(userId);
+    const userMetadata = user.publicMetadata as any;
+    const referralCode = userMetadata?.referralCode;
+
+    if (!referralCode) {
+      console.log("No referral code found in user metadata");
+      return;
+    }
+
+    // Find the referrer
+    const referralRepo = new ReferralRepository(mongoClient);
+    const referrer = await referralRepo.findOneByCode(referralCode);
+
+    if (!referrer) {
+      console.log(`Referral code ${referralCode} not found`);
+      return;
+    }
+
+    // Calculate reward amount (20% of purchase)
+    const amountTotal = session.amount_total || 0;
+    const rewardAmount = (amountTotal / 100) * 0.2; // Convert from cents and apply 20%
+
+    if (rewardAmount < 0.01) {
+      console.log("Reward amount too small to process");
+      return;
+    }
+
+    // Create referral reward record
+    const rewardRepo = new ReferralRewardRepository(mongoClient);
+    await rewardRepo.ensureIndexes();
+
+    const reward = await rewardRepo.createReward({
+      inviterId: referrer.userId,
+      inviteeId: metadata.user_id,
+      referralCode,
+      amount: rewardAmount,
+      status: "pending",
+      checkoutId: session.id,
+      planPurchased: metadata.plan_name || "premium",
+      purchaseAmount: amountTotal / 100,
+      purchaseDate: new Date(),
+    });
+
+    console.log(
+      `Referral reward created: $${rewardAmount} for user ${referrer.userId}`
+    );
+
+    // Update referrer's metadata to show they have pending rewards
+    const referrerUser = await clerkClient.users.getUser(referrer.userId);
+    const currentMetadata = referrerUser.publicMetadata || {};
+
+    await clerkClient.users.updateUserMetadata(referrer.userId, {
+      publicMetadata: {
+        ...currentMetadata,
+        hasPendingRewards: true,
+        lastRewardDate: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    console.error("Error handling referral rewards:", error);
+  }
 }
 
 export async function POST(req: Request) {
@@ -69,6 +148,9 @@ export async function POST(req: Request) {
           );
         }
       }
+
+      // Handle referral rewards
+      await handleReferralRewards(session, metadata);
 
       return NextResponse.json({ received: true });
     }

@@ -1,0 +1,206 @@
+import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+
+import { z } from "zod";
+import mongoClient from "@/lib/mongodb";
+import { ReferralRewardRepository } from "@/repositories/referral-reward.repo";
+import { WithdrawalRequestRepository } from "@/repositories/withdrawal-request.repo";
+import nodemailer from "nodemailer";
+import { clerkClient } from "@clerk/express";
+
+const WithdrawalRequestSchema = z.object({
+  amount: z.number().min(5, "Minimum withdrawal amount is $5"),
+  paypalEmail: z.string().email("Valid PayPal email is required"),
+});
+
+export async function POST(req: Request) {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const parsed = WithdrawalRequestSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid request data", details: parsed.error.issues },
+        { status: 400 }
+      );
+    }
+
+    const { amount, paypalEmail } = parsed.data;
+
+    // Get user information
+    const user = await clerkClient.users.getUser(userId);
+    const userEmail = user.emailAddresses[0]?.emailAddress;
+
+    if (!userEmail) {
+      return NextResponse.json(
+        { error: "User email not found" },
+        { status: 400 }
+      );
+    }
+
+    // Initialize repositories
+    const rewardRepo = new ReferralRewardRepository(mongoClient);
+    const withdrawalRepo = new WithdrawalRequestRepository(mongoClient);
+
+    await rewardRepo.ensureIndexes();
+    await withdrawalRepo.ensureIndexes();
+
+    // Check if user has enough confirmed rewards
+    const totalConfirmedRewards = await rewardRepo.getTotalConfirmedRewards(
+      userId
+    );
+    const totalPendingWithdrawals =
+      await withdrawalRepo.getPendingWithdrawalAmount(userId);
+    const availableAmount = totalConfirmedRewards - totalPendingWithdrawals;
+
+    if (amount > availableAmount) {
+      return NextResponse.json(
+        {
+          error: `Insufficient funds. Available: $${availableAmount.toFixed(
+            2
+          )}`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Get referral statistics
+    const totalInvitees = await rewardRepo.getInviteeCount(userId);
+    const referralCode = (user.publicMetadata as any)?.referralCode || "N/A";
+
+    // Get user's plan and purchase info from metadata
+    const planPurchased = (user.publicMetadata as any)?.plan || "free";
+    const purchaseDate = user.createdAt || new Date();
+
+    // Create withdrawal request
+    const withdrawalRequest = await withdrawalRepo.createWithdrawalRequest({
+      userId,
+      amount,
+      paypalEmail,
+      status: "pending",
+      userEmail,
+      referralStats: {
+        totalInvitees,
+        totalReward: totalConfirmedRewards,
+        referralCode,
+      },
+      planPurchased,
+      purchaseDate: new Date(purchaseDate),
+    });
+
+    // Send email notification to admin
+    await sendWithdrawalNotificationEmail({
+      withdrawalRequest,
+      user,
+      referralStats: {
+        totalInvitees,
+        totalReward: totalConfirmedRewards,
+        referralCode,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "Withdrawal request submitted successfully",
+      data: withdrawalRequest,
+    });
+  } catch (error: any) {
+    console.error("Withdrawal request error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+async function sendWithdrawalNotificationEmail({
+  withdrawalRequest,
+  user,
+  referralStats,
+}: {
+  withdrawalRequest: any;
+  user: any;
+  referralStats: any;
+}) {
+  try {
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT),
+      secure: Number(process.env.SMTP_PORT) === 465,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+
+    const adminEmail =
+      process.env.ADMIN_EMAIL ||
+      process.env.FROM_EMAIL ||
+      process.env.SMTP_USER;
+
+    if (!adminEmail) {
+      console.warn("No admin email configured for withdrawal notifications");
+      return;
+    }
+
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">New Withdrawal Request</h2>
+        
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">Request Details</h3>
+          <p><strong>Amount:</strong> $${withdrawalRequest.amount}</p>
+          <p><strong>PayPal Email:</strong> ${withdrawalRequest.paypalEmail}</p>
+          <p><strong>Request Date:</strong> ${new Date(
+            withdrawalRequest.createdAt
+          ).toLocaleString()}</p>
+        </div>
+
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">User Information</h3>
+          <p><strong>User ID:</strong> ${user.id}</p>
+          <p><strong>User Email:</strong> ${
+            user.emailAddresses[0]?.emailAddress
+          }</p>
+          <p><strong>Name:</strong> ${user.firstName || ""} ${
+      user.lastName || ""
+    }</p>
+          <p><strong>Plan:</strong> ${withdrawalRequest.planPurchased}</p>
+          <p><strong>Purchase Date:</strong> ${new Date(
+            withdrawalRequest.purchaseDate
+          ).toLocaleDateString()}</p>
+        </div>
+
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">Referral Statistics</h3>
+          <p><strong>Referral Code:</strong> ${referralStats.referralCode}</p>
+          <p><strong>Total Invitees:</strong> ${referralStats.totalInvitees}</p>
+          <p><strong>Total Reward Earned:</strong> $${referralStats.totalReward.toFixed(
+            2
+          )}</p>
+        </div>
+
+        <div style="background: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 0; color: #2d5a2d;">
+            <strong>Action Required:</strong> Please process this withdrawal request manually and update the status in the admin panel.
+          </p>
+        </div>
+      </div>
+    `;
+
+    await transporter.sendMail({
+      from:
+        process.env.FROM_EMAIL || `Celpip Practice <${process.env.SMTP_USER}>`,
+      to: adminEmail,
+      subject: `Withdrawal Request - $${withdrawalRequest.amount} - ${user.emailAddresses[0]?.emailAddress}`,
+      html: emailHtml,
+    });
+  } catch (error) {
+    console.error("Failed to send withdrawal notification email:", error);
+  }
+}
