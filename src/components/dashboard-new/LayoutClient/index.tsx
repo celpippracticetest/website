@@ -554,16 +554,12 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
 
   useEffect(() => {
     // Only show extra discount if the user does not have an active referral
-    const timer = setTimeout(() => {
-      const referralActive = (user as any)?.publicMetadata?.referralActive;
-      if (!referralActive) {
-        setShowExtraDiscount(true);
-      } else {
-        setShowExtraDiscount(false);
-      }
-    }, 3000);
-
-    return () => clearTimeout(timer);
+    const referralActive = (user as any)?.publicMetadata?.referralActive;
+    if (!referralActive) {
+      setShowExtraDiscount(true);
+    } else {
+      setShowExtraDiscount(false);
+    }
   }, [user, setShowExtraDiscount]);
 
   const { signOut } = useClerk();
