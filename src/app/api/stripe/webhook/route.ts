@@ -95,32 +95,45 @@ async function handleReferralRewards(
       },
     });
 
-    // Deactivate the referral discount code after successful purchase
-    const promotionCodeId =
-      userMetadata?.referralPromotionId || userMetadata?.promotionCodeId;
-    if (promotionCodeId) {
-      try {
-        // Deactivate the promotion code in Stripe
-        await stripe.promotionCodes.update(promotionCodeId, {
-          active: false,
-        });
-        console.log(` Deactivated promotion code: ${promotionCodeId}`);
+    // Deactivate the referral discount code after successful purchase.
+    // Re-fetch invitee metadata to avoid stale values and ensure we pick up
+    // the stored promotion code id (legacy or new key).
+    try {
+      const freshUser = await clerkClient.users.getUser(userId);
+      const freshMeta = freshUser.publicMetadata as any;
+      const promotionCodeId =
+        freshMeta?.referralPromotionId || freshMeta?.promotionCodeId;
 
-        // Update user metadata to mark discount as used
-        await clerkClient.users.updateUserMetadata(userId, {
-          publicMetadata: {
-            ...userMetadata,
-            referralDiscountUsed: true,
-            referralDiscountUsedAt: new Date().toISOString(),
-            referralDiscountActive: false,
-            referralActive: false,
-          },
-        });
-        console.log(`✅ Marked referral discount as used for user: ${userId}`);
-        console.log(`✅ Set referralActive to false for invitee: ${userId}`);
-      } catch (error) {
-        console.error("Error deactivating referral discount:", error);
+      console.log("Referral handling: promotionCodeId resolved ->", promotionCodeId);
+
+      if (promotionCodeId) {
+        try {
+          // Deactivate the promotion code in Stripe
+          await stripe.promotionCodes.update(promotionCodeId, {
+            active: false,
+          });
+          console.log(` Deactivated promotion code: ${promotionCodeId}`);
+
+          // Update invitee metadata to mark discount as used and clear referralActive
+          await clerkClient.users.updateUserMetadata(userId, {
+            publicMetadata: {
+              ...freshMeta,
+              referralDiscountUsed: true,
+              referralDiscountUsedAt: new Date().toISOString(),
+              referralDiscountActive: false,
+              referralActive: false,
+            },
+          });
+          console.log(`✅ Marked referral discount as used for user: ${userId}`);
+          console.log(`✅ Set referralActive to false for invitee: ${userId}`);
+        } catch (error) {
+          console.error("Error deactivating promotion code:", promotionCodeId, error);
+        }
+      } else {
+        console.log("No promotionCodeId found on invitee metadata; skipping deactivation.");
       }
+    } catch (err) {
+      console.error("Failed to refresh invitee metadata before deactivating promotion code:", err);
     }
   } catch (error) {
     console.error("Error handling referral rewards:", error);
