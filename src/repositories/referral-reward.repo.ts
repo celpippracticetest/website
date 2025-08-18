@@ -124,8 +124,21 @@ export class ReferralRewardRepository {
   }
 
   async getInviteeCount(inviterId: string): Promise<number> {
+    // Count only successful (confirmed) referrals
     return await this.getReferralRewardCollection().countDocuments({
       inviterId,
+      status: "confirmed",
     });
+  }
+
+  async getTotalEarnings(inviterId: string): Promise<number> {
+    return this.getTotalConfirmedRewards(inviterId);
+  }
+
+  async getRewardLevel(inviterId: string): Promise<number> {
+    const totalInvitees = await this.getInviteeCount(inviterId);
+    if (totalInvitees >= 10) return 3;
+    if (totalInvitees >= 5) return 2;
+    return 1;
   }
 }

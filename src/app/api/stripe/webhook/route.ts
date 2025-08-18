@@ -70,7 +70,7 @@ async function handleReferralRewards(
       inviteeId: metadata.user_id,
       referralCode,
       amount: rewardAmount,
-      status: "pending",
+      status: "confirmed",
       checkoutId: session.id,
       planPurchased: metadata.plan_name || "premium",
       purchaseAmount: amountTotal / 100,
@@ -78,7 +78,7 @@ async function handleReferralRewards(
     });
 
     console.log(
-      `Referral reward created: $${rewardAmount} for user ${referrer.userId}`
+      `✅ Referral reward created: $${rewardAmount} for user ${referrer.userId} (status: confirmed)`
     );
 
     // Update referrer's metadata to show they have pending rewards
@@ -89,7 +89,9 @@ async function handleReferralRewards(
       publicMetadata: {
         ...currentMetadata,
         hasPendingRewards: true,
-        lastRewardDate: new Date().toISOString(),
+        lastReferralDate: new Date().toISOString(),
+        // Set referralActive to false to prevent reuse of the same referral code
+        referralActive: false,
       },
     });
 

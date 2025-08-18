@@ -27,24 +27,21 @@ export async function GET() {
       pendingWithdrawals,
       recentRewards,
       recentWithdrawals,
+      rewardLevel,
     ] = await Promise.all([
       rewardRepo.getInviteeCount(userId),
-      rewardRepo.getTotalConfirmedRewards(userId),
+      rewardRepo.getTotalEarnings(userId),
       rewardRepo.getTotalPendingRewards(userId),
       withdrawalRepo.getTotalWithdrawnAmount(userId),
       withdrawalRepo.getPendingWithdrawalAmount(userId),
       rewardRepo.findRewardsByInviterId(userId),
       withdrawalRepo.findWithdrawalRequestsByUserId(userId),
+      rewardRepo.getRewardLevel(userId),
     ]);
 
     // Calculate available balance
     const availableBalance =
       totalConfirmedRewards - totalWithdrawn - pendingWithdrawals;
-
-    // Determine reward level based on total invitees
-    let rewardLevel = 1;
-    if (totalInvitees >= 10) rewardLevel = 3;
-    else if (totalInvitees >= 5) rewardLevel = 2;
 
     return NextResponse.json({
       success: true,

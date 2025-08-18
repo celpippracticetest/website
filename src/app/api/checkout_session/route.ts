@@ -42,12 +42,15 @@ export async function POST(req: NextRequest) {
     if (
       promotionCodeId &&
       !userMetadata?.referralDiscountUsed &&
-      userMetadata?.referralDiscountActive !== false
+      userMetadata?.referralDiscountActive !== false &&
+      userMetadata?.referralActive !== false // Also check referralActive status
     ) {
       let isExpired = false;
       if (userMetadata?.referralDiscountExpiry) {
         const expiryDate = new Date(userMetadata.referralDiscountExpiry);
-        isExpired = expiryDate <= new Date();
+        if (expiryDate <= new Date()) {
+          isExpired = true;
+        }
       }
       if (!isExpired) {
         promotionCode = promotionCodeId;
@@ -62,6 +65,8 @@ export async function POST(req: NextRequest) {
       console.log("❌ Referral discount already used by this user");
     } else if (userMetadata?.referralDiscountActive === false) {
       console.log("❌ Referral discount is not active for this user");
+    } else if (userMetadata?.referralActive === false) {
+      console.log("❌ Referral code is not active (already used)");
     } else {
       console.log("❌ No usable referral promotion code found in metadata");
     }

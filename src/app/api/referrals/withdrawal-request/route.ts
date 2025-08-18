@@ -139,9 +139,7 @@ async function sendWithdrawalNotificationEmail({
     });
 
     const adminEmail =
-      process.env.ADMIN_EMAIL ||
-      process.env.FROM_EMAIL ||
-      process.env.SMTP_USER;
+      process.env.ADMIN_EMAIL || process.env.FROM_EMAIL || process.env.SMTP_USER;
 
     if (!adminEmail) {
       console.warn("No admin email configured for withdrawal notifications");
@@ -179,8 +177,10 @@ async function sendWithdrawalNotificationEmail({
         <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0;">Referral Statistics</h3>
           <p><strong>Referral Code:</strong> ${referralStats.referralCode}</p>
-          <p><strong>Total Invitees:</strong> ${referralStats.totalInvitees}</p>
-          <p><strong>Total Reward Earned:</strong> $${referralStats.totalReward.toFixed(
+          <p><strong>Total Invitees (confirmed):</strong> ${
+            referralStats.totalInvitees
+          }</p>
+          <p><strong>Total Reward Earned (confirmed):</strong> $${referralStats.totalReward.toFixed(
             2
           )}</p>
         </div>
@@ -194,10 +194,11 @@ async function sendWithdrawalNotificationEmail({
     `;
 
     await transporter.sendMail({
-      from:
-        process.env.FROM_EMAIL || `Celpip Practice <${process.env.SMTP_USER}>`,
+      from: process.env.FROM_EMAIL || `Celpip Practice <${process.env.SMTP_USER}>`,
       to: adminEmail,
-      subject: `Withdrawal Request - $${withdrawalRequest.amount} - ${user.emailAddresses[0]?.emailAddress}`,
+      subject: `Withdrawal Request - $${withdrawalRequest.amount} - ${
+        user.emailAddresses[0]?.emailAddress
+      }`,
       html: emailHtml,
     });
   } catch (error) {
