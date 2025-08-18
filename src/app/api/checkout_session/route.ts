@@ -131,6 +131,12 @@ export async function POST(req: NextRequest) {
     console.log("✅ Checkout session created successfully");
     console.log("✅ Session ID:", session.id);
     console.log("✅ Session URL:", session.url);
+    console.log(
+      "🔍 Final session metadata:",
+      JSON.stringify(session.metadata, null, 2)
+    );
+    console.log("🔍 User ID being used:", user.id);
+    console.log("🔍 Referral code:", userMetadata?.referralCode);
 
     if (mode === "subscription" && session?.subscription) {
       await stripe.subscriptions.update(session.subscription, {

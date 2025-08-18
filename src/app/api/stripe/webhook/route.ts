@@ -19,8 +19,13 @@ async function updateUserPublicMetadata(
     await clerkClient.users.updateUserMetadata(userId, {
       publicMetadata: { ...currentMetadata, ...newFields },
     });
+    console.log(`✅ Successfully updated metadata for user: ${userId}`);
   } catch (error) {
-    console.error(`Error updating metadata for user ${userId}:`, error);
+    console.log(
+      `⚠️ Could not update user ${userId} metadata: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
     // Continue processing even if this fails
   }
 }
@@ -132,16 +137,25 @@ async function handleReferralRewards(
           console.log(` Deactivated promotion code: ${promotionCodeId}`);
 
           // Update invitee metadata to mark discount as used and clear referralActive
-          await clerkClient.users.updateUserMetadata(userId, {
-            publicMetadata: {
-              ...freshMeta,
-              referralDiscountUsed: true,
-              referralDiscountUsedAt: new Date().toISOString(),
-              referralDiscountActive: false,
-              referralActive: false, // This prevents future discounts for this user
-              referralCodeUsed: true, // Mark that referral code was used
-            },
-          });
+          try {
+            await clerkClient.users.updateUserMetadata(userId, {
+              publicMetadata: {
+                ...freshMeta,
+                referralDiscountUsed: true,
+                referralDiscountUsedAt: new Date().toISOString(),
+                referralDiscountActive: false,
+                referralActive: false, // This prevents future discounts for this user
+                referralCodeUsed: true, // Mark that referral code was used
+              },
+            });
+            console.log(
+              `✅ Successfully set referralActive to false for user: ${userId}`
+            );
+          } catch (error) {
+            console.log(
+              `⚠️ Could not update user ${userId} metadata, but referral processing completed`
+            );
+          }
           console.log(
             `✅ Marked referral discount as used for user: ${userId}`
           );
