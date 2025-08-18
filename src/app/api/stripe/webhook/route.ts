@@ -113,9 +113,11 @@ async function handleReferralRewards(
             referralDiscountUsed: true,
             referralDiscountUsedAt: new Date().toISOString(),
             referralDiscountActive: false,
+            referralActive: false,
           },
         });
         console.log(`✅ Marked referral discount as used for user: ${userId}`);
+        console.log(`✅ Set referralActive to false for invitee: ${userId}`);
       } catch (error) {
         console.error("Error deactivating referral discount:", error);
       }
@@ -198,10 +200,14 @@ export async function POST(req: Request) {
                 referralDiscountUsed: true,
                 referralDiscountUsedAt: new Date().toISOString(),
                 referralDiscountActive: false,
+                referralActive: false,
               },
             });
             console.log(
-              ` Marked referral discount as used for user: ${metadata.user_id}`
+              `✅ Marked referral discount as used for user: ${metadata.user_id}`
+            );
+            console.log(
+              `✅ Set referralActive to false for invitee: ${metadata.user_id}`
             );
           }
         } catch (error) {
