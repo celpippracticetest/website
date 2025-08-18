@@ -315,6 +315,22 @@ export async function POST(req: Request) {
                   lastCheckout.checkoutId,
                   "complete"
                 );
+
+                // Try to handle referral rewards using the checkout session if possible
+                try {
+                  const session = await stripe.checkout.sessions.retrieve(
+                    lastCheckout.checkoutId
+                  );
+                  if (session) {
+                    await handleReferralRewards(session, session.metadata);
+                  }
+                } catch (err) {
+                  console.error(
+                    "Failed to process referral rewards from invoice branch:",
+                    err
+                  );
+                }
+
                 return NextResponse.json({ received: true });
               }
             }
@@ -335,11 +351,27 @@ export async function POST(req: Request) {
         new Date((invoice?.lines?.data[0]?.period?.start as number) * 1000)
       );
 
+      // If we were able to find a sessionId earlier in this handler, fetch it and handle referral rewards
+      try {
+        const session = await stripe.checkout.sessions.retrieve(
+          sessionId as string
+        );
+        if (session) {
+          await handleReferralRewards(session, session.metadata);
+        }
+      } catch (err) {
+        console.error(
+          "Failed to process referral rewards for resolved sessionId:",
+          err
+        );
+      }
+
       return NextResponse.json({ received: true });
     }
 
     if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object as Stripe.Subscription;
+      // subscription.deleted branch doesn't have access to earlier handler's sessionId
       let { user_id, checkout_id } = subscription.metadata;
 
       console.log(

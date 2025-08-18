@@ -39,13 +39,13 @@ export async function POST(req: Request) {
     const suffix = Math.random().toString(36).substring(2, 6).toUpperCase();
     const visibleCode = `NEW-${suffix}`;
 
-      const coupon = await stripe.coupons.create({
-        name: visibleCode,
-        percent_off: 20,
-        duration: "once",
-        metadata: { userId, visibleCode },
-        redeem_by: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
-      });
+    const coupon = await stripe.coupons.create({
+      name: visibleCode,
+      percent_off: 20,
+      duration: "once",
+      metadata: { userId, visibleCode },
+      redeem_by: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
+    });
 
     const promotionCode = await stripe.promotionCodes.create({
       coupon: coupon.id,
