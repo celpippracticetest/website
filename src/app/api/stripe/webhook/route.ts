@@ -94,13 +94,15 @@ async function handleReferralRewards(
     });
 
     // Deactivate the referral discount code after successful purchase
-    if (userMetadata?.referralPromotionId) {
+    const promotionCodeId =
+      userMetadata?.referralPromotionId || userMetadata?.promotionCodeId;
+    if (promotionCodeId) {
       try {
         // Deactivate the promotion code in Stripe
-        await stripe.promotionCodes.update(userMetadata.referralPromotionId, {
+        await stripe.promotionCodes.update(promotionCodeId, {
           active: false,
         });
-        console.log(`Deactivated promotion code: ${userMetadata.referralPromotionId}`);
+        console.log(` Deactivated promotion code: ${promotionCodeId}`);
 
         // Update user metadata to mark discount as used
         await clerkClient.users.updateUserMetadata(userId, {
@@ -111,7 +113,7 @@ async function handleReferralRewards(
             referralDiscountActive: false,
           },
         });
-        console.log(`Marked referral discount as used for user: ${userId}`);
+        console.log(`✅ Marked referral discount as used for user: ${userId}`);
       } catch (error) {
         console.error("Error deactivating referral discount:", error);
       }
@@ -173,8 +175,37 @@ export async function POST(req: Request) {
         }
       }
 
-      // Handle referral rewards
+      // Handle referral rewards and mark discount as used
       await handleReferralRewards(session, metadata);
+
+      // Mark referral discount as used if it was applied
+      if (metadata?.referral_discount_applied && metadata?.user_id) {
+        try {
+          const { clerkClient } = await import("@clerk/express");
+          const user = await clerkClient.users.getUser(metadata.user_id);
+          const userMetadata = user.publicMetadata as any;
+
+          // Check if user has referral discount that needs to be marked as used
+          if (
+            userMetadata?.referralPromotionId ||
+            userMetadata?.promotionCodeId
+          ) {
+            await clerkClient.users.updateUserMetadata(metadata.user_id, {
+              publicMetadata: {
+                ...userMetadata,
+                referralDiscountUsed: true,
+                referralDiscountUsedAt: new Date().toISOString(),
+                referralDiscountActive: false,
+              },
+            });
+            console.log(
+              ` Marked referral discount as used for user: ${metadata.user_id}`
+            );
+          }
+        } catch (error) {
+          console.error("Error marking referral discount as used:", error);
+        }
+      }
 
       return NextResponse.json({ received: true });
     }
