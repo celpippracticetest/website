@@ -104,7 +104,10 @@ async function handleReferralRewards(
       const promotionCodeId =
         freshMeta?.referralPromotionId || freshMeta?.promotionCodeId;
 
-      console.log("Referral handling: promotionCodeId resolved ->", promotionCodeId);
+      console.log(
+        "Referral handling: promotionCodeId resolved ->",
+        promotionCodeId
+      );
 
       if (promotionCodeId) {
         try {
@@ -121,19 +124,32 @@ async function handleReferralRewards(
               referralDiscountUsed: true,
               referralDiscountUsedAt: new Date().toISOString(),
               referralDiscountActive: false,
-              referralActive: false,
+              referralActive: false, // This prevents future discounts for this user
             },
           });
-          console.log(`✅ Marked referral discount as used for user: ${userId}`);
-          console.log(`✅ Set referralActive to false for invitee: ${userId}`);
+          console.log(
+            `✅ Marked referral discount as used for user: ${userId}`
+          );
+          console.log(
+            `✅ Set referralActive to false for invitee: ${userId} - no more discounts`
+          );
         } catch (error) {
-          console.error("Error deactivating promotion code:", promotionCodeId, error);
+          console.error(
+            "Error deactivating promotion code:",
+            promotionCodeId,
+            error
+          );
         }
       } else {
-        console.log("No promotionCodeId found on invitee metadata; skipping deactivation.");
+        console.log(
+          "No promotionCodeId found on invitee metadata; skipping deactivation."
+        );
       }
     } catch (err) {
-      console.error("Failed to refresh invitee metadata before deactivating promotion code:", err);
+      console.error(
+        "Failed to refresh invitee metadata before deactivating promotion code:",
+        err
+      );
     }
   } catch (error) {
     console.error("Error handling referral rewards:", error);

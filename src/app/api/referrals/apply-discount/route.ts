@@ -29,6 +29,20 @@ export async function POST(req: Request) {
 
     const { referralCode, userId, userEmail } = parsed.data;
 
+    // Check if user has already used a referral discount
+    const user = await clerkClient.users.getUser(userId);
+    const userMetadata = user.publicMetadata as any;
+
+    if (
+      userMetadata?.referralDiscountUsed ||
+      userMetadata?.referralActive === false
+    ) {
+      return NextResponse.json(
+        { error: "User has already used a referral discount" },
+        { status: 400 }
+      );
+    }
+
     // Find the referrer
     const referralRepo = new ReferralRepository(mongoClient);
     const referrer = await referralRepo.findOneByCode(referralCode);
