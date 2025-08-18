@@ -29,6 +29,10 @@ export default function OnboardingPage() {
     if (pendingReferralCode) {
       // Store referral code for middleware to process
       console.log("Referral code found:", pendingReferralCode);
+      
+      // Apply the referral discount
+      applyReferralDiscount(pendingReferralCode);
+      
       // Clear localStorage
       localStorage.removeItem("pendingReferralCode");
       localStorage.removeItem("pendingInviterName");
@@ -36,6 +40,28 @@ export default function OnboardingPage() {
 
     setLoading(false);
   }, [isSignedIn, user, router]);
+
+  const applyReferralDiscount = async (referralCode: string) => {
+    try {
+      const response = await fetch("/api/referrals/apply-discount", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          referralCode,
+          userId: user?.id,
+          userEmail: user?.primaryEmailAddress?.emailAddress,
+        }),
+      });
+      
+      if (response.ok) {
+        console.log("Referral discount applied successfully");
+      } else {
+        console.error("Failed to apply referral discount");
+      }
+    } catch (error) {
+      console.error("Failed to apply referral discount:", error);
+    }
+  };
 
   const completeOnboarding = async () => {
     try {
@@ -45,7 +71,7 @@ export default function OnboardingPage() {
         window.location.href = "/practice-overview";
       }
     } catch (error) {
-      console.error("Failed to complete onboarding:", error);
+      console.error("Failed to complete onboarding", error);
     }
   };
 
@@ -76,6 +102,37 @@ export default function OnboardingPage() {
               <strong>🎁 Referral Bonus Applied!</strong>
               <br />
               You've been referred by a friend and will get special benefits!
+            </div>
+          </div>
+        )}
+
+        {/* Referral Discount Applied Message */}
+        {(user?.publicMetadata as any)?.referralDiscount && 
+         !(user?.publicMetadata as any)?.referralDiscountUsed && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="text-sm text-blue-800">
+              <strong>💰 10% Discount Applied!</strong>
+              <br />
+              Your referral discount code: {(user?.publicMetadata as any)?.referralDiscount}
+              <br />
+              <span className="text-xs text-blue-600">
+                This discount will be automatically applied at checkout!
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Referral Discount Used Message */}
+        {(user?.publicMetadata as any)?.referralDiscountUsed && (
+          <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <div className="text-sm text-gray-800">
+              <strong>✅ Referral Discount Used</strong>
+              <br />
+              You've already used your referral discount on a previous purchase.
+              <br />
+              <span className="text-xs text-gray-600">
+                Thank you for using our referral program!
+              </span>
             </div>
           </div>
         )}

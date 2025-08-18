@@ -92,6 +92,30 @@ async function handleReferralRewards(
         lastRewardDate: new Date().toISOString(),
       },
     });
+
+    // Deactivate the referral discount code after successful purchase
+    if (userMetadata?.referralPromotionId) {
+      try {
+        // Deactivate the promotion code in Stripe
+        await stripe.promotionCodes.update(userMetadata.referralPromotionId, {
+          active: false,
+        });
+        console.log(`Deactivated promotion code: ${userMetadata.referralPromotionId}`);
+
+        // Update user metadata to mark discount as used
+        await clerkClient.users.updateUserMetadata(userId, {
+          publicMetadata: {
+            ...userMetadata,
+            referralDiscountUsed: true,
+            referralDiscountUsedAt: new Date().toISOString(),
+            referralDiscountActive: false,
+          },
+        });
+        console.log(`Marked referral discount as used for user: ${userId}`);
+      } catch (error) {
+        console.error("Error deactivating referral discount:", error);
+      }
+    }
   } catch (error) {
     console.error("Error handling referral rewards:", error);
   }

@@ -24,6 +24,33 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Check if user has referral discount
+    const userMetadata = user.publicMetadata as any;
+    let promotionCode = null;
+    let referralDiscountApplied = false;
+    
+    if (userMetadata?.referralDiscount && 
+        userMetadata?.referralPromotionId && 
+        !userMetadata?.referralDiscountUsed && 
+        userMetadata?.referralDiscountActive !== false) {
+      // Check if discount is still valid
+      const expiryDate = new Date(userMetadata.referralDiscountExpiry);
+      if (expiryDate > new Date()) {
+        promotionCode = userMetadata.referralPromotionId;
+        referralDiscountApplied = true;
+        console.log(
+          `Applying referral discount: ${userMetadata.referralDiscount}`
+        );
+      } else {
+        console.log("Referral discount has expired");
+      }
+    } else if (userMetadata?.referralDiscountUsed) {
+      console.log("Referral discount already used by this user");
+    } else if (userMetadata?.referralDiscountActive === false) {
+      console.log("Referral discount is not active for this user");
+    }
+
     // Create Checkout Sessions from body params.
     // Retrieve the product details using the product ID
     const productDetails = await stripe.products.retrieve(product);
@@ -51,13 +78,23 @@ export async function POST(req: NextRequest) {
       cancel_url: `${origin}/failed?canceled=true`,
       automatic_tax: { enabled: true },
       allow_promotion_codes: true,
+      // Apply referral discount automatically if available
+      ...(promotionCode && { promotion_code: promotionCode }),
       metadata: {
         user_id: user.id,
+        ...(referralDiscountApplied && {
+          referral_discount_applied: userMetadata.referralDiscount,
+          referral_code: userMetadata.referralCode,
+        }),
       },
       ...(mode === "subscription" && {
         subscription_data: {
           metadata: {
             user_id: user.id,
+            ...(referralDiscountApplied && {
+              referral_discount_applied: userMetadata.referralDiscount,
+              referral_code: userMetadata.referralCode,
+            }),
           },
         },
       }),
@@ -68,6 +105,10 @@ export async function POST(req: NextRequest) {
         metadata: {
           user_id: user.id,
           checkout_id: session.id,
+          ...(referralDiscountApplied && {
+            referral_discount_applied: userMetadata.referralDiscount,
+            referral_code: userMetadata.referralCode,
+          }),
         },
       });
     }
