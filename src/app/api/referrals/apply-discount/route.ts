@@ -51,13 +51,15 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check if referrer is eligible (has made a purchase)
+    // Check referrer metadata for eligibility flag. If it's explicitly false,
+    // we will not block the discount creation here — just log the state.
     const referrerMetadata = referrerUser.publicMetadata as any;
-    if (!referrerMetadata?.referralActive) {
-      return NextResponse.json(
-        { error: "Referrer is not eligible for rewards" },
-        { status: 400 }
+    if (referrerMetadata?.referralActive === false) {
+      console.warn(
+        `Referrer ${referrer.userId} has referralActive=false; continuing to apply discount for invitee ${userId}`
       );
+      // previously we returned 400 here; allow the invitee to receive the discount
+      // because referral eligibility may be managed elsewhere (webhooks, limits, etc.)
     }
 
     // Create a 10% discount coupon for the new user

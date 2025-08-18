@@ -17,12 +17,12 @@ export async function POST(req: Request) {
 
     const user = await clerkClient.users.getUser(userId);
 
-    if (user?.publicMetadata?.referralActive) {
+    // If referralActive is explicitly false, the user should not receive a discount
+    // (e.g. referral already used). If it's true (pending referral) or undefined,
+    // allow coupon creation.
+    if (user?.publicMetadata?.referralActive === false) {
       return NextResponse.json(
-        {
-          error:
-            "User already has an active referral and cannot receive a discount.",
-        },
+        { error: "User referral is inactive and cannot receive a discount." },
         { status: 400 }
       );
     }
