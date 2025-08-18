@@ -38,11 +38,38 @@ export default function SignUpPage() {
     }
   }, [searchParams]);
 
-  // Don't process referral code here - do it in onboarding page after user is fully authenticated
+  const applyReferralDiscount = async (referralCode: string) => {
+    try {
+      const response = await fetch("/api/referrals/apply-discount", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          referralCode,
+          userId: user?.id,
+          userEmail: user?.primaryEmailAddress?.emailAddress,
+        }),
+      });
+
+      if (response.ok) {
+        console.log("Referral discount applied successfully");
+      } else {
+        console.error("Failed to apply referral discount");
+      }
+    } catch (error) {
+      console.error("Failed to apply referral discount:", error);
+    }
+  };
+
   useEffect(() => {
     if (isSignedIn && user) {
-      // Just redirect to onboarding, referral will be processed there
-      router.push("/onboarding");
+      const pendingReferralCode = localStorage.getItem("pendingReferralCode");
+      if (pendingReferralCode) {
+        console.log("Referral code found:", pendingReferralCode);
+        applyReferralDiscount(pendingReferralCode);
+        localStorage.removeItem("pendingReferralCode");
+        localStorage.removeItem("pendingInviterName");
+      }
+      router.push("/practice-overview");
     }
   }, [isSignedIn, user, router]);
 
@@ -72,8 +99,8 @@ export default function SignUpPage() {
               card: "shadow-lg",
             },
           }}
-          afterSignUpUrl="/onboarding"
-          redirectUrl="/onboarding"
+          afterSignUpUrl="/practice-overview"
+          redirectUrl="/practice-overview"
           signUpMode="modal"
           onError={(error) => {
             console.error("SignUp error:", error);

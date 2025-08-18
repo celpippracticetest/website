@@ -17,6 +17,16 @@ export async function POST(req: Request) {
 
     const user = await clerkClient.users.getUser(userId);
 
+    if (user?.publicMetadata?.referralActive) {
+      return NextResponse.json(
+        {
+          error:
+            "User already has an active referral and cannot receive a discount.",
+        },
+        { status: 400 }
+      );
+    }
+
     const couponId = user?.publicMetadata.couponId;
     const couponCode = user?.publicMetadata.couponCode;
     if (couponId && couponCode) {
@@ -29,13 +39,13 @@ export async function POST(req: Request) {
     const suffix = Math.random().toString(36).substring(2, 6).toUpperCase();
     const visibleCode = `NEW-${suffix}`;
 
-    const coupon = await stripe.coupons.create({
-      name: visibleCode,
-      percent_off: 10,
-      duration: "once",
-      metadata: { userId, visibleCode },
-      redeem_by: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
-    });
+      const coupon = await stripe.coupons.create({
+        name: visibleCode,
+        percent_off: 20,
+        duration: "once",
+        metadata: { userId, visibleCode },
+        redeem_by: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
+      });
 
     const promotionCode = await stripe.promotionCodes.create({
       coupon: coupon.id,

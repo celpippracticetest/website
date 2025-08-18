@@ -66,7 +66,7 @@ export async function POST(req: Request) {
 
     const coupon = await stripe.coupons.create({
       name: `Referral Discount - ${referralCode}`,
-      percent_off: 10,
+      percent_off: 20,
       duration: "once",
       metadata: {
         userId,
@@ -116,7 +116,7 @@ export async function POST(req: Request) {
       message: "Referral discount applied successfully",
       data: {
         discountCode: visibleCode,
-        discountPercent: 10,
+        discountPercent: 20,
         expiryDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       },
     });
