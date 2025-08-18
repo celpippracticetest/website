@@ -35,9 +35,15 @@ export async function POST(req: NextRequest) {
 
     // New key: referralPromotionId; Legacy key: promotionCodeId
     const promotionCodeId =
-      userMetadata?.referralPromotionId || userMetadata?.promotionCodeId || null;
+      userMetadata?.referralPromotionId ||
+      userMetadata?.promotionCodeId ||
+      null;
 
-    if (promotionCodeId && !userMetadata?.referralDiscountUsed && userMetadata?.referralDiscountActive !== false) {
+    if (
+      promotionCodeId &&
+      !userMetadata?.referralDiscountUsed &&
+      userMetadata?.referralDiscountActive !== false
+    ) {
       let isExpired = false;
       if (userMetadata?.referralDiscountExpiry) {
         const expiryDate = new Date(userMetadata.referralDiscountExpiry);
@@ -46,7 +52,9 @@ export async function POST(req: NextRequest) {
       if (!isExpired) {
         promotionCode = promotionCodeId;
         referralDiscountApplied = true;
-        console.log(`✅ Applying referral promotion_code id: ${promotionCodeId}`);
+        console.log(
+          `✅ Applying referral promotion_code id: ${promotionCodeId}`
+        );
       } else {
         console.log("❌ Referral discount has expired");
       }
@@ -72,7 +80,10 @@ export async function POST(req: NextRequest) {
     const priceObject = await stripe.prices.retrieve(priceId);
     const mode = priceObject.recurring ? "subscription" : "payment";
 
-    console.log("🔍 Creating checkout session with promotion code:", promotionCode);
+    console.log(
+      "🔍 Creating checkout session with promotion code:",
+      promotionCode
+    );
     console.log("🔍 Referral discount applied:", referralDiscountApplied);
 
     const session: any = await stripe.checkout.sessions.create({
@@ -87,13 +98,14 @@ export async function POST(req: NextRequest) {
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/failed?canceled=true`,
       automatic_tax: { enabled: true },
-      allow_promotion_codes: true,
+      ...(promotionCode ? {} : { allow_promotion_codes: true }),
       // Correct way to pre-apply a promotion code on Checkout
       ...(promotionCode && { discounts: [{ promotion_code: promotionCode }] }),
       metadata: {
         user_id: user.id,
         ...(referralDiscountApplied && {
-          referral_discount_applied: userMetadata?.referralDiscount || "referral",
+          referral_discount_applied:
+            userMetadata?.referralDiscount || "referral",
           referral_code: userMetadata?.referralCode,
         }),
       },
@@ -102,7 +114,8 @@ export async function POST(req: NextRequest) {
           metadata: {
             user_id: user.id,
             ...(referralDiscountApplied && {
-              referral_discount_applied: userMetadata?.referralDiscount || "referral",
+              referral_discount_applied:
+                userMetadata?.referralDiscount || "referral",
               referral_code: userMetadata?.referralCode,
             }),
           },
@@ -120,7 +133,8 @@ export async function POST(req: NextRequest) {
           user_id: user.id,
           checkout_id: session.id,
           ...(referralDiscountApplied && {
-            referral_discount_applied: userMetadata?.referralDiscount || "referral",
+            referral_discount_applied:
+              userMetadata?.referralDiscount || "referral",
             referral_code: userMetadata?.referralCode,
           }),
         },
