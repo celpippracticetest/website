@@ -115,7 +115,7 @@ async function handleReferralRewards(
 
     const reward = await rewardRepo.createReward({
       inviterId: referrer.userId,
-      inviteeId: metadata.user_id,
+      inviteeId: userIdToUse as string,
       referralCode,
       amount: rewardAmount,
       status: "confirmed",
@@ -138,8 +138,6 @@ async function handleReferralRewards(
         ...currentMetadata,
         hasPendingRewards: true,
         lastReferralDate: new Date().toISOString(),
-        // Set referralActive to false to prevent reuse of the same referral code
-        referralActive: false,
       },
     });
 
@@ -157,40 +155,34 @@ async function handleReferralRewards(
         promotionCodeId
       );
 
+      // Always mark discount as used and disable future referral discounts for the invitee
+      try {
+        await clerkClient.users.updateUserMetadata(userIdToUse as string, {
+          publicMetadata: {
+            ...freshMeta,
+            referralDiscountUsed: true,
+            referralDiscountUsedAt: new Date().toISOString(),
+            referralDiscountActive: false,
+            referralActive: false,
+            referralCodeUsed: true,
+          },
+        });
+        console.log(
+          `✅ Set referralActive=false and marked referral used for invitee: ${userIdToUse}`
+        );
+      } catch (error) {
+        console.log(
+          `⚠️ Could not update invitee ${userIdToUse} metadata; continuing`
+        );
+      }
+
+      // If we have a promotion code recorded, deactivate it in Stripe
       if (promotionCodeId) {
         try {
-          // Deactivate the promotion code in Stripe
           await stripe.promotionCodes.update(promotionCodeId, {
             active: false,
           });
           console.log(` Deactivated promotion code: ${promotionCodeId}`);
-
-          // Update invitee metadata to mark discount as used and clear referralActive
-          try {
-            await clerkClient.users.updateUserMetadata(userIdToUse as string, {
-              publicMetadata: {
-                ...freshMeta,
-                referralDiscountUsed: true,
-                referralDiscountUsedAt: new Date().toISOString(),
-                referralDiscountActive: false,
-                referralActive: false, // This prevents future discounts for this user
-                referralCodeUsed: true, // Mark that referral code was used
-              },
-            });
-            console.log(
-              `✅ Successfully set referralActive to false for user: ${userIdToUse}`
-            );
-          } catch (error) {
-            console.log(
-              `⚠️ Could not update user ${userIdToUse} metadata, but referral processing completed`
-            );
-          }
-          console.log(
-            `✅ Marked referral discount as used for user: ${userIdToUse}`
-          );
-          console.log(
-            `✅ Set referralActive to false for invitee: ${userIdToUse} - no more discounts`
-          );
         } catch (error) {
           console.error(
             "Error deactivating promotion code:",
@@ -302,40 +294,7 @@ export async function POST(req: Request) {
         console.error("Error handling referral rewards:", error);
       }
 
-      // Always check and mark referral discount as used for any user with referral metadata
-      if (metadata?.user_id) {
-        try {
-          const { clerkClient } = await import("@clerk/express");
-          const user = await clerkClient.users.getUser(metadata.user_id);
-          const userMetadata = user.publicMetadata as any;
-
-          // Check if user has referral discount that needs to be marked as used
-          if (
-            userMetadata?.referralPromotionId ||
-            userMetadata?.promotionCodeId ||
-            userMetadata?.referralCode // Also check if user was referred
-          ) {
-            await clerkClient.users.updateUserMetadata(metadata.user_id, {
-              publicMetadata: {
-                ...userMetadata,
-                referralDiscountUsed: true,
-                referralDiscountUsedAt: new Date().toISOString(),
-                referralDiscountActive: false,
-                referralActive: false, // Always set to false after purchase
-              },
-            });
-            console.log(
-              `✅ Marked referral discount as used for user: ${metadata.user_id}`
-            );
-            console.log(
-              `✅ Set referralActive to false for invitee: ${metadata.user_id}`
-            );
-          }
-        } catch (error) {
-          console.error("Error marking referral discount as used:", error);
-          // Continue processing even if this fails
-        }
-      }
+      // Note: Invitee metadata updates (including referralActive=false) are handled in handleReferralRewards
 
       return NextResponse.json({ received: true });
     }

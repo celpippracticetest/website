@@ -65,6 +65,11 @@ export default async function Success({ searchParams }: any) {
       publicMetadata: {
         ...publicMetadata,
         plan: "premium",
+        // Ensure referral is disabled immediately after a successful purchase
+        referralActive: false,
+        referralDiscountUsed: true,
+        referralDiscountUsedAt: new Date().toISOString(),
+        referralDiscountActive: false,
       },
     });
     const cioanalytics = new Analytics({
