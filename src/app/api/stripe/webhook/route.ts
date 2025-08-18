@@ -36,23 +36,52 @@ async function handleReferralRewards(
   metadata: any
 ) {
   try {
-    // Get user ID from metadata
-    const userId = metadata?.user_id;
-    if (!userId) {
-      console.log("No user ID found in session metadata");
-      return;
-    }
+    // Get user ID from metadata or resolve via email fallback
+    const metaUserId = metadata?.user_id as string | undefined;
+    let userIdToUse: string | undefined = metaUserId;
 
     // Get user from Clerk to check if they were referred
     let user;
     let userMetadata: any = {};
 
     try {
-      user = await clerkClient.users.getUser(userId);
+      if (userIdToUse) {
+        user = await clerkClient.users.getUser(userIdToUse);
+      } else {
+        throw new Error("No user_id in metadata");
+      }
       userMetadata = user.publicMetadata as any;
     } catch (error) {
-      console.error(`Error getting user ${userId} from Clerk:`, error);
-      return;
+      // Fallback: resolve user by email from the session
+      const inviteeEmail =
+        (session as any)?.customer_details?.email ||
+        (session as any)?.customer_email;
+      if (inviteeEmail) {
+        try {
+          const users = await clerkClient.users.getUserList({
+            emailAddress: [String(inviteeEmail).trim().toLowerCase()],
+          });
+          if (users?.data?.length) {
+            user = users.data[0];
+            userIdToUse = user.id;
+            userMetadata = user.publicMetadata as any;
+            console.log(
+              `✅ Resolved Clerk user by email (${inviteeEmail}) → ${userIdToUse}`
+            );
+          } else {
+            console.warn(`❌ No Clerk user found by email ${inviteeEmail}`);
+            return;
+          }
+        } catch (err) {
+          console.error("Error resolving user by email:", err);
+          return;
+        }
+      } else {
+        console.log(
+          "No user ID and no email found on session; cannot process referral"
+        );
+        return;
+      }
     }
 
     const referralCode = userMetadata?.referralCode;
@@ -118,7 +147,7 @@ async function handleReferralRewards(
     // Re-fetch invitee metadata to avoid stale values and ensure we pick up
     // the stored promotion code id (legacy or new key).
     try {
-      const freshUser = await clerkClient.users.getUser(userId);
+      const freshUser = await clerkClient.users.getUser(userIdToUse as string);
       const freshMeta = freshUser.publicMetadata as any;
       const promotionCodeId =
         freshMeta?.referralPromotionId || freshMeta?.promotionCodeId;
@@ -138,7 +167,7 @@ async function handleReferralRewards(
 
           // Update invitee metadata to mark discount as used and clear referralActive
           try {
-            await clerkClient.users.updateUserMetadata(userId, {
+            await clerkClient.users.updateUserMetadata(userIdToUse as string, {
               publicMetadata: {
                 ...freshMeta,
                 referralDiscountUsed: true,
@@ -149,18 +178,18 @@ async function handleReferralRewards(
               },
             });
             console.log(
-              `✅ Successfully set referralActive to false for user: ${userId}`
+              `✅ Successfully set referralActive to false for user: ${userIdToUse}`
             );
           } catch (error) {
             console.log(
-              `⚠️ Could not update user ${userId} metadata, but referral processing completed`
+              `⚠️ Could not update user ${userIdToUse} metadata, but referral processing completed`
             );
           }
           console.log(
-            `✅ Marked referral discount as used for user: ${userId}`
+            `✅ Marked referral discount as used for user: ${userIdToUse}`
           );
           console.log(
-            `✅ Set referralActive to false for invitee: ${userId} - no more discounts`
+            `✅ Set referralActive to false for invitee: ${userIdToUse} - no more discounts`
           );
         } catch (error) {
           console.error(
