@@ -13,11 +13,16 @@ async function updateUserPublicMetadata(
   userId: string,
   newFields: Record<string, any>
 ) {
-  const user = await clerkClient.users.getUser(userId);
-  const currentMetadata = user.publicMetadata || {};
-  await clerkClient.users.updateUserMetadata(userId, {
-    publicMetadata: { ...currentMetadata, ...newFields },
-  });
+  try {
+    const user = await clerkClient.users.getUser(userId);
+    const currentMetadata = user.publicMetadata || {};
+    await clerkClient.users.updateUserMetadata(userId, {
+      publicMetadata: { ...currentMetadata, ...newFields },
+    });
+  } catch (error) {
+    console.error(`Error updating metadata for user ${userId}:`, error);
+    // Continue processing even if this fails
+  }
 }
 
 // Handle referral rewards when a payment is completed
@@ -34,8 +39,17 @@ async function handleReferralRewards(
     }
 
     // Get user from Clerk to check if they were referred
-    const user = await clerkClient.users.getUser(userId);
-    const userMetadata = user.publicMetadata as any;
+    let user;
+    let userMetadata: any = {};
+
+    try {
+      user = await clerkClient.users.getUser(userId);
+      userMetadata = user.publicMetadata as any;
+    } catch (error) {
+      console.error(`Error getting user ${userId} from Clerk:`, error);
+      return;
+    }
+
     const referralCode = userMetadata?.referralCode;
 
     if (!referralCode) {
@@ -166,7 +180,6 @@ export async function POST(req: Request) {
     try {
       // Use the webhook secret from Stripe CLI for testing
       const webhookSecret =
-        process.env.STRIPE_WEBHOOK_SECRET ||
         "whsec_d86d4a30c760f5269bf65452dcd49bdfa2ab6468f62814eeba72ba45813b5f6c";
 
       // In development, allow bypassing signature verification for testing
@@ -204,6 +217,10 @@ export async function POST(req: Request) {
       const session = event.data.object as Stripe.Checkout.Session;
       const metadata = session.metadata;
 
+      console.log("🔍 Processing checkout.session.completed event");
+      console.log("🔍 Session ID:", session.id);
+      console.log("🔍 Metadata:", JSON.stringify(metadata, null, 2));
+
       if (metadata?.user_id) {
         await updateUserPublicMetadata(metadata.user_id, {
           planCancelled: false,
@@ -236,7 +253,11 @@ export async function POST(req: Request) {
       }
 
       // Handle referral rewards and mark discount as used
-      await handleReferralRewards(session, metadata);
+      try {
+        await handleReferralRewards(session, metadata);
+      } catch (error) {
+        console.error("Error handling referral rewards:", error);
+      }
 
       // Always check and mark referral discount as used for any user with referral metadata
       if (metadata?.user_id) {
@@ -269,6 +290,7 @@ export async function POST(req: Request) {
           }
         } catch (error) {
           console.error("Error marking referral discount as used:", error);
+          // Continue processing even if this fails
         }
       }
 

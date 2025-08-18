@@ -108,20 +108,20 @@ export async function POST(req: NextRequest) {
       ...(promotionCode && { discounts: [{ promotion_code: promotionCode }] }),
       metadata: {
         user_id: user.id,
+        referral_code: userMetadata?.referralCode || null,
         ...(referralDiscountApplied && {
           referral_discount_applied:
             userMetadata?.referralDiscount || "referral",
-          referral_code: userMetadata?.referralCode,
         }),
       },
       ...(mode === "subscription" && {
         subscription_data: {
           metadata: {
             user_id: user.id,
+            referral_code: userMetadata?.referralCode || null,
             ...(referralDiscountApplied && {
               referral_discount_applied:
                 userMetadata?.referralDiscount || "referral",
-              referral_code: userMetadata?.referralCode,
             }),
           },
         },
@@ -137,10 +137,10 @@ export async function POST(req: NextRequest) {
         metadata: {
           user_id: user.id,
           checkout_id: session.id,
+          referral_code: userMetadata?.referralCode || null,
           ...(referralDiscountApplied && {
             referral_discount_applied:
               userMetadata?.referralDiscount || "referral",
-            referral_code: userMetadata?.referralCode,
           }),
         },
       });
