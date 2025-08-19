@@ -319,7 +319,7 @@ const ReferralHeader = () => {
           },
           {
             title: "Purchase a Plan",
-            description: "Choose any paid plan and get 30% off instantly.",
+            description: "Choose any paid plan and get 20% off instantly.",
             icon: <SvgOffer />,
             bgColor: "bg-[#D1DEFF]",
           },
