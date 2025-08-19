@@ -132,14 +132,19 @@ async function handleReferralRewards(
     // Update referrer's metadata to show they have pending rewards
     const referrerUser = await clerkClient.users.getUser(referrer.userId);
     const currentMetadata = referrerUser.publicMetadata || {};
+    const currentTotalReferrals = (currentMetadata as any)?.totalReferrals || 0;
+    const newTotalReferrals = currentTotalReferrals + 1;
 
     await clerkClient.users.updateUserMetadata(referrer.userId, {
       publicMetadata: {
         ...currentMetadata,
         hasPendingRewards: true,
         lastReferralDate: new Date().toISOString(),
+        totalReferrals: newTotalReferrals,
       },
     });
+
+    console.log(`✅ Updated referrer metadata - Total referrals: ${newTotalReferrals}`);
 
     // Deactivate the referral discount code after successful purchase.
     // Re-fetch invitee metadata to avoid stale values and ensure we pick up
