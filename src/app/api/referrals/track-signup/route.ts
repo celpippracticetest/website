@@ -36,8 +36,11 @@ export async function POST(req: Request) {
     // Update referrer's metadata to increment total invitees
     const referrerUser = await clerkClient.users.getUser(referrer.userId);
     const currentMetadata = referrerUser.publicMetadata || {};
-    const currentTotalInvitees = (currentMetadata as any)?.totalInvitees || 0;
-    const newTotalInvitees = currentTotalInvitees + 1;
+
+    // Calculate total invitees from DB (distinct invitees)
+    const newTotalInvitees = await referralRepo.getInviteeCount(
+      referrer.userId
+    );
 
     // Calculate new reward level
     let rewardLevel = 1;

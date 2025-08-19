@@ -64,6 +64,26 @@ export async function POST(req: NextRequest) {
           }),
         }
       );
+
+      // --- Referral signup tracking (only if the user came via a referral) ---
+      try {
+        const meta =
+          (body?.data?.unsafe_metadata as any) ||
+          (body?.data?.public_metadata as any) ||
+          {};
+        const referralCode =
+          meta.ref || meta.referral || meta.code || meta.referralCode;
+
+        if (referralCode) {
+          await fetch(`${req.nextUrl.origin}/api/referrals/track-signup`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ referralCode, inviteeId: userId }),
+          });
+        }
+      } catch (refErr) {
+        console.error("Referral signup tracking failed:", refErr);
+      }
     }
 
     await new Promise((resolve) => setTimeout(resolve, 100));

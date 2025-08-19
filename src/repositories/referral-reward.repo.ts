@@ -124,11 +124,11 @@ export class ReferralRewardRepository {
   }
 
   async getInviteeCount(inviterId: string): Promise<number> {
-    // Count only successful (confirmed) referrals
-    return await this.getReferralRewardCollection().countDocuments({
+    // Count distinct inviteeIds for this inviter, regardless of reward status
+    const ids = await this.getReferralRewardCollection().distinct("inviteeId", {
       inviterId,
-      status: "confirmed",
     });
+    return ids.length;
   }
 
   async getTotalEarnings(inviterId: string): Promise<number> {

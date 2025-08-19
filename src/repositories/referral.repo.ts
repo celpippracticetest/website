@@ -31,4 +31,10 @@ export class ReferralRepository {
   async deleteByUserId(userId: string) {
     return this.col.deleteOne({ userId });
   }
+
+  async getInviteeCount(inviterId: string): Promise<number> {
+    const referralSignupsCol = this.db.collection("referralSignups");
+    const ids = await referralSignupsCol.distinct("inviteeId", { inviterId });
+    return ids.length;
+  }
 }

@@ -173,9 +173,10 @@ async function handleReferralRewards(
       const currentTotalRewards = (currentMetadata as any)?.totalRewards || 0;
       const newTotalRewards = currentTotalRewards + rewardAmount;
 
-      // Calculate reward level based on total invitees
-      const totalInvitees = (currentMetadata as any)?.totalInvitees || 0;
-      const newTotalInvitees = totalInvitees + 1;
+      // Calculate reward level based on total invitees (distinct invitees from DB)
+      const newTotalInvitees = await rewardRepo.getInviteeCount(
+        referrer.userId
+      );
       let rewardLevel = 1;
       if (newTotalInvitees >= 10) rewardLevel = 3;
       else if (newTotalInvitees >= 5) rewardLevel = 2;
