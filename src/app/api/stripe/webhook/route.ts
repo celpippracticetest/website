@@ -84,21 +84,33 @@ async function handleReferralRewards(
       }
     }
 
-    const referralCode = userMetadata?.referralCode;
+    const referralCode = userMetadata?.referralCode || metadata?.referral_code;
 
     if (!referralCode) {
-      console.log("No referral code found in user metadata");
+      console.log("❌ No referral code found in user metadata or session metadata");
+      console.log("🔍 User metadata keys:", Object.keys(userMetadata || {}));
+      console.log("🔍 Session metadata keys:", Object.keys(metadata || {}));
+      console.log("🔍 User metadata referralCode:", userMetadata?.referralCode);
+      console.log("🔍 Session metadata referral_code:", metadata?.referral_code);
       return;
     }
+
+    console.log(`🔍 Found referral code: ${referralCode}`);
+    console.log(`🔍 Source: ${userMetadata?.referralCode ? 'user metadata' : 'session metadata'}`);
 
     // Find the referrer
     const referralRepo = new ReferralRepository(mongoClient);
+    await referralRepo.ensureIndexes();
+    
+    console.log(`🔍 Searching for referrer with code: ${referralCode}`);
     const referrer = await referralRepo.findOneByCode(referralCode);
 
     if (!referrer) {
-      console.log(`Referral code ${referralCode} not found`);
+      console.log(`❌ Referral code ${referralCode} not found in database`);
       return;
     }
+
+    console.log(`✅ Found referrer: ${referrer.userId}`);
 
     // Calculate reward amount (20% of purchase)
     const amountTotal = session.amount_total || 0;
@@ -113,9 +125,9 @@ async function handleReferralRewards(
     const rewardRepo = new ReferralRewardRepository(mongoClient);
     await rewardRepo.ensureIndexes();
 
-    const reward = await rewardRepo.createReward({
+    console.log(`🔍 Creating referral reward with data:`, {
       inviterId: referrer.userId,
-      inviteeId: userIdToUse as string,
+      inviteeId: userIdToUse,
       referralCode,
       amount: rewardAmount,
       status: "confirmed",
@@ -125,9 +137,30 @@ async function handleReferralRewards(
       purchaseDate: new Date(),
     });
 
-    console.log(
-      `✅ Referral reward created: $${rewardAmount} for user ${referrer.userId} (status: confirmed)`
-    );
+    try {
+      const reward = await rewardRepo.createReward({
+        inviterId: referrer.userId,
+        inviteeId: userIdToUse as string,
+        referralCode,
+        amount: rewardAmount,
+        status: "confirmed",
+        checkoutId: session.id,
+        planPurchased: metadata.plan_name || "premium",
+        purchaseAmount: amountTotal / 100,
+        purchaseDate: new Date(),
+      });
+
+      console.log(`✅ Referral reward created successfully:`, {
+        rewardId: reward.id,
+        amount: reward.amount,
+        inviterId: reward.inviterId,
+        inviteeId: reward.inviteeId,
+        status: reward.status
+      });
+    } catch (dbError) {
+      console.error(`❌ Failed to create referral reward:`, dbError);
+      throw dbError; // Re-throw to be caught by outer try-catch
+    }
 
     // Update referrer's metadata to show they have pending rewards
     const referrerUser = await clerkClient.users.getUser(referrer.userId);
