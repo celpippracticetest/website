@@ -218,9 +218,13 @@ export async function POST(req: Request) {
     let event: Stripe.Event;
 
     try {
-      // Use the webhook secret from Stripe CLI for testing
-      const webhookSecret =
-        "whsec_d86d4a30c760f5269bf65452dcd49bdfa2ab6468f62814eeba72ba45813b5f6c";
+      // Use the webhook secret from environment variable
+      const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+      if (!webhookSecret) {
+        console.error("❌ STRIPE_WEBHOOK_SECRET not found in environment");
+        return NextResponse.json({ error: "Webhook secret not configured" }, { status: 500 });
+      }
 
       // In development, allow bypassing signature verification for testing
       if (process.env.NODE_ENV === "development" && sig === "test") {
@@ -294,9 +298,13 @@ export async function POST(req: Request) {
 
       // Handle referral rewards and mark discount as used
       try {
+        console.log("🔍 Starting referral rewards processing...");
+        console.log("🔍 Session metadata:", JSON.stringify(metadata, null, 2));
         await handleReferralRewards(session, metadata);
+        console.log("✅ Referral rewards processing completed successfully");
       } catch (error) {
-        console.error("Error handling referral rewards:", error);
+        console.error("❌ Error handling referral rewards:", error);
+        // Continue processing other webhook events even if referral fails
       }
 
       // Note: Invitee metadata updates (including referralActive=false) are handled in handleReferralRewards
