@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Webhook } from "svix";
 import { TrackClient, RegionUS } from "customerio-node";
+import { ensureUserReferral } from "@/app/api/referrals/route";
 
 const GA_MEASUREMENT_ID = process.env.GA_MEASUREMENT_ID!;
 const GA_API_SECRET = process.env.GA_API_SECRET!;
@@ -45,25 +46,13 @@ export async function POST(req: NextRequest) {
     if (body.type === "user.created" && body.data?.id) {
       const userId = body.data.id;
 
-      // Send event to Google Analytics
-      await fetch(
-        `https://www.google-analytics.com/mp/collect?measurement_id=${GA_MEASUREMENT_ID}&api_secret=${GA_API_SECRET}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            client_id: userId, // Use Clerk user ID as client_id
-            events: [
-              {
-                name: "user_created",
-                params: {
-                  user_id: userId,
-                },
-              },
-            ],
-          }),
-        }
-      );
+      try {
+        // Ensure the newly created user immediately gets their own referral code
+        const baseUrl = req.nextUrl.origin;
+        await ensureUserReferral(userId, baseUrl);
+      } catch (ensureErr) {
+        console.error("ensureUserReferral failed:", ensureErr);
+      }
 
       // --- Referral signup tracking (only if the user came via a referral) ---
       try {

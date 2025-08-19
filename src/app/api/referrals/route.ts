@@ -7,16 +7,18 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
 import mongoClient from "@/lib/mongodb";
 import { ReferralRepository } from "@/repositories/referral.repo";
+import { randomInt } from "crypto";
 
 function generateReferralCode(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let part = "";
-  for (let i = 0; i < 6; i++)
-    part += alphabet[Math.floor(Math.random() * alphabet.length)];
+  for (let i = 0; i < 6; i++) {
+    part += alphabet[randomInt(alphabet.length)];
+  }
   return `REF-${part}`;
 }
 
-function getBaseUrl(h: Headers) {
+function getBaseUrl(h: { get(name: string): string | null }) {
   const envUrl = process.env.APP_BASE_URL;
   if (envUrl) {
     try {
@@ -40,7 +42,7 @@ async function getDb() {
   return repo;
 }
 
-async function ensureUserReferral(userId: string, baseUrl: string) {
+export async function ensureUserReferral(userId: string, baseUrl: string) {
   const cc = await clerkClient();
   const user = await cc.users.getUser(userId);
   const pm = (user.publicMetadata || {}) as Record<string, any>;
@@ -115,11 +117,14 @@ export async function GET() {
     if (!userId)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const h = headers();
-    const base = getBaseUrl(h as unknown as Headers);
+    const h = await headers();
+    const base = getBaseUrl(h);
     const { code, link } = await ensureUserReferral(userId, base);
 
-    return NextResponse.json({ code, link });
+    return NextResponse.json(
+      { code, link },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch (err: any) {
     console.error("[GET /api/referrals]", err);
     return NextResponse.json(
