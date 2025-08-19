@@ -128,16 +128,34 @@ export default clerkMiddleware(async (auth, req) => {
             }
           );
 
-          if (response.ok) {
-            console.log(
-              "✅ Successfully tracked signup for referral code:",
-              referralCode
+          if (!response.ok) {
+            // Read response body safely to aid debugging
+            const errorText = await response
+              .text()
+              .catch(() => "❌ No error body");
+            console.error(
+              "❌ Failed to track signup:",
+              response.status,
+              response.statusText,
+              errorText
             );
           } else {
-            console.error("❌ Failed to track signup:", response.status);
+            // Try to parse JSON but don't fail if it's empty
+            let data: unknown = null;
+            try {
+              data = await response.json();
+            } catch {}
+            console.log(
+              "✅ Successfully tracked signup for referral code:",
+              referralCode,
+              data ? data : ""
+            );
           }
         } catch (error) {
-          console.error("❌ Error tracking signup:", error);
+          console.error(
+            "❌ Network or runtime error while tracking signup:",
+            error
+          );
         }
       } else {
         // Just update onboarding status
