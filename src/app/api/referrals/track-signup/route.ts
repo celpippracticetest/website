@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import { clerkClient } from "@clerk/express";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import mongoClient from "@/lib/mongodb";
 import { ReferralRepository } from "@/repositories/referral.repo";
 
@@ -26,6 +25,8 @@ export async function POST(req: Request) {
 
     const referrer = await referralRepo.findOneByCode(referralCode);
 
+    const clerk = await clerkClient();
+
     if (!referrer) {
       return NextResponse.json(
         { error: "Invalid referral code" },
@@ -33,8 +34,16 @@ export async function POST(req: Request) {
       );
     }
 
+    // Prevent self-referral
+    if (userId === referrer.userId) {
+      return NextResponse.json(
+        { error: "Self-referral is not allowed" },
+        { status: 400 }
+      );
+    }
+
     // Update referrer's metadata to increment total invitees
-    const referrerUser = await clerkClient.users.getUser(referrer.userId);
+    const referrerUser = await clerk.users.getUser(referrer.userId);
     const currentMetadata = referrerUser.publicMetadata || {};
 
     // Calculate total invitees from DB (distinct invitees)
@@ -47,7 +56,7 @@ export async function POST(req: Request) {
     if (newTotalInvitees >= 10) rewardLevel = 3;
     else if (newTotalInvitees >= 5) rewardLevel = 2;
 
-    await clerkClient.users.updateUserMetadata(referrer.userId, {
+    await clerk.users.updateUser(referrer.userId, {
       publicMetadata: {
         ...currentMetadata,
         totalInvitees: newTotalInvitees,
@@ -56,9 +65,11 @@ export async function POST(req: Request) {
       },
     });
 
-    console.log(`✅ Tracked new signup for referrer ${referrer.userId}:`, {
+    console.log(`✅ Tracked new signup`, {
+      referralCode,
+      referrerId: referrer.userId,
       totalInvitees: newTotalInvitees,
-      rewardLevel: rewardLevel,
+      rewardLevel,
     });
 
     return NextResponse.json({

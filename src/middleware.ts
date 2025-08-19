@@ -117,13 +117,24 @@ export default clerkMiddleware(async (auth, req) => {
 
         // Track the signup for the referrer
         try {
+          const headers: Record<string, string> = {
+            "Content-Type": "application/json",
+          };
+
+          // Forward cookies (can help when APIs depend on session cookies)
+          const incomingCookie = req.headers.get("cookie");
+          if (incomingCookie) headers["cookie"] = incomingCookie;
+
+          // If Vercel Protection is enabled (Preview/Dev), use bypass token
+          const vercelBypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+          if (vercelBypass)
+            headers["x-vercel-protection-bypass"] = vercelBypass as string;
+
           const response = await fetch(
             `${req.nextUrl.origin}/api/referrals/track-signup`,
             {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
+              headers,
               body: JSON.stringify({ referralCode }),
             }
           );
