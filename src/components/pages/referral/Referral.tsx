@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
-import Script from "next/script";
 import dynamic from "next/dynamic";
 // import { useRouter, useSearchParams } from "next/navigation";
 

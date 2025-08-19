@@ -40,7 +40,7 @@ const ReferralHeader = () => {
       <div className="flex flex-col mt-[40px] screen1280:!mt-[64px] items-center  max-w-[692px] h-full min-h-[151px] mx-auto">
         <span className="font-semibold text-[32px] screen744:!text-[41px] screen1280:!text-[50px] ">
           Your friend {firstName} gave you{" "}
-          <span className="text-error1"> 10% </span> Off!
+          <span className="text-error1"> 20% </span> Off!
         </span>
 
         <div className="flex mt-[24px] screen744:!mt-[32px] flex-col font-normal text-text2 text-left screen744:!text-center ">
