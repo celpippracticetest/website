@@ -117,14 +117,12 @@ export default clerkMiddleware(async (auth, req) => {
 
         // Track the signup for the referrer
         try {
-          const token = await authenticate.getToken();
           const response = await fetch(
             `${req.nextUrl.origin}/api/referrals/track-signup`,
             {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
               },
               body: JSON.stringify({ referralCode }),
             }
