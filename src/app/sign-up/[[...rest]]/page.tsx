@@ -87,7 +87,7 @@ export default function SignUpPage() {
               </div>
             )}
             <div className="text-xs text-blue-600 mt-2">
-              You'll automatically get 10% off your first purchase!
+              You'll automatically get 20% off your first purchase!
             </div>
           </div>
         )}
