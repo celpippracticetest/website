@@ -102,7 +102,6 @@ export default clerkMiddleware(async (auth, req) => {
 
       // Check if user has referral code in cookies
       const referralCode = req.cookies.get("pendingReferralCode")?.value;
-      const inviterName = req.cookies.get("pendingInviterName")?.value;
 
       if (referralCode) {
         // Store referral code in user metadata for later processing
@@ -115,6 +114,32 @@ export default clerkMiddleware(async (auth, req) => {
             referralActive: true,
           },
         });
+
+        // Track the signup for the referrer
+        try {
+          const response = await fetch(
+            `${req.nextUrl.origin}/api/referrals/track-signup`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${authenticate.getToken()}`,
+              },
+              body: JSON.stringify({ referralCode }),
+            }
+          );
+
+          if (response.ok) {
+            console.log(
+              "✅ Successfully tracked signup for referral code:",
+              referralCode
+            );
+          } else {
+            console.error("❌ Failed to track signup:", response.status);
+          }
+        } catch (error) {
+          console.error("❌ Error tracking signup:", error);
+        }
       } else {
         // Just update onboarding status
         await client.users.updateUserMetadata(authenticate.userId, {
@@ -147,6 +172,7 @@ export default clerkMiddleware(async (auth, req) => {
     "POST:/api/answers/speaking",
     "POST:/api/checkout_session",
     "POST:/api/referrals/process-signup",
+    "POST:/api/referrals/track-signup",
   ];
 
   const requestedPath = `${req.method}:${req.nextUrl.pathname}`;

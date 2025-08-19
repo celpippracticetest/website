@@ -87,21 +87,30 @@ async function handleReferralRewards(
     const referralCode = userMetadata?.referralCode || metadata?.referral_code;
 
     if (!referralCode) {
-      console.log("❌ No referral code found in user metadata or session metadata");
+      console.log(
+        "❌ No referral code found in user metadata or session metadata"
+      );
       console.log("🔍 User metadata keys:", Object.keys(userMetadata || {}));
       console.log("🔍 Session metadata keys:", Object.keys(metadata || {}));
       console.log("🔍 User metadata referralCode:", userMetadata?.referralCode);
-      console.log("🔍 Session metadata referral_code:", metadata?.referral_code);
+      console.log(
+        "🔍 Session metadata referral_code:",
+        metadata?.referral_code
+      );
       return;
     }
 
     console.log(`🔍 Found referral code: ${referralCode}`);
-    console.log(`🔍 Source: ${userMetadata?.referralCode ? 'user metadata' : 'session metadata'}`);
+    console.log(
+      `🔍 Source: ${
+        userMetadata?.referralCode ? "user metadata" : "session metadata"
+      }`
+    );
 
     // Find the referrer
     const referralRepo = new ReferralRepository(mongoClient);
     await referralRepo.ensureIndexes();
-    
+
     console.log(`🔍 Searching for referrer with code: ${referralCode}`);
     const referrer = await referralRepo.findOneByCode(referralCode);
 
@@ -155,7 +164,7 @@ async function handleReferralRewards(
         amount: reward.amount,
         inviterId: reward.inviterId,
         inviteeId: reward.inviteeId,
-        status: reward.status
+        status: reward.status,
       });
 
       // Update referrer's metadata with reward information
@@ -163,12 +172,13 @@ async function handleReferralRewards(
       const currentMetadata = referrerUser.publicMetadata || {};
       const currentTotalRewards = (currentMetadata as any)?.totalRewards || 0;
       const newTotalRewards = currentTotalRewards + rewardAmount;
-      
+
       // Calculate reward level based on total invitees
       const totalInvitees = (currentMetadata as any)?.totalInvitees || 0;
+      const newTotalInvitees = totalInvitees + 1;
       let rewardLevel = 1;
-      if (totalInvitees >= 10) rewardLevel = 3;
-      else if (totalInvitees >= 5) rewardLevel = 2;
+      if (newTotalInvitees >= 10) rewardLevel = 3;
+      else if (newTotalInvitees >= 5) rewardLevel = 2;
 
       await clerkClient.users.updateUserMetadata(referrer.userId, {
         publicMetadata: {
@@ -176,6 +186,7 @@ async function handleReferralRewards(
           hasPendingRewards: true,
           lastReferralDate: new Date().toISOString(),
           totalRewards: newTotalRewards,
+          totalInvitees: newTotalInvitees,
           rewardLevel: rewardLevel,
           lastRewardAmount: rewardAmount,
           lastRewardDate: new Date().toISOString(),
@@ -183,11 +194,11 @@ async function handleReferralRewards(
       });
 
       console.log(`✅ Updated referrer metadata:`, {
+        totalInvitees: newTotalInvitees,
         totalRewards: newTotalRewards,
         rewardLevel: rewardLevel,
-        lastRewardAmount: rewardAmount
+        lastRewardAmount: rewardAmount,
       });
-
     } catch (dbError) {
       console.error(`❌ Failed to create referral reward:`, dbError);
       throw dbError; // Re-throw to be caught by outer try-catch
@@ -270,7 +281,10 @@ export async function POST(req: Request) {
 
       if (!webhookSecret) {
         console.error("❌ STRIPE_WEBHOOK_SECRET not found in environment");
-        return NextResponse.json({ error: "Webhook secret not configured" }, { status: 500 });
+        return NextResponse.json(
+          { error: "Webhook secret not configured" },
+          { status: 500 }
+        );
       }
 
       // In development, allow bypassing signature verification for testing
