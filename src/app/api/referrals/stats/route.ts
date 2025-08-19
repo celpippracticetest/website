@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import mongoClient from "@/lib/mongodb";
 import { ReferralRewardRepository } from "@/repositories/referral-reward.repo";
 import { WithdrawalRequestRepository } from "@/repositories/withdrawal-request.repo";
+import { clerkClient } from "@clerk/express";
 
 export async function GET() {
   try {
@@ -11,6 +12,10 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Get user metadata from Clerk
+    const user = await clerkClient.users.getUser(userId);
+    const userMetadata = user.publicMetadata as any;
+
     // Initialize repositories
     const rewardRepo = new ReferralRewardRepository(mongoClient);
     const withdrawalRepo = new WithdrawalRequestRepository(mongoClient);
@@ -18,36 +23,35 @@ export async function GET() {
     await rewardRepo.ensureIndexes();
     await withdrawalRepo.ensureIndexes();
 
-    // Get referral statistics
+    // Get referral statistics from metadata and database
     const [
-      totalInvitees,
-      totalConfirmedRewards,
-      totalPendingRewards,
-      totalWithdrawn,
-      pendingWithdrawals,
-      recentRewards,
-      recentWithdrawals,
-      rewardLevel,
+      totalInvitees, // From metadata
+      totalRewards, // From metadata
+      totalPendingRewards, // From database
+      totalWithdrawn, // From database
+      pendingWithdrawals, // From database
+      recentRewards, // From database
+      recentWithdrawals, // From database
+      rewardLevel, // From metadata
     ] = await Promise.all([
-      rewardRepo.getInviteeCount(userId),
-      rewardRepo.getTotalEarnings(userId),
+      Promise.resolve(userMetadata?.totalInvitees || 0), // Read from metadata
+      Promise.resolve(userMetadata?.totalRewards || 0), // Read from metadata
       rewardRepo.getTotalPendingRewards(userId),
       withdrawalRepo.getTotalWithdrawnAmount(userId),
       withdrawalRepo.getPendingWithdrawalAmount(userId),
       rewardRepo.findRewardsByInviterId(userId),
       withdrawalRepo.findWithdrawalRequestsByUserId(userId),
-      rewardRepo.getRewardLevel(userId),
+      Promise.resolve(userMetadata?.rewardLevel || 1), // Read from metadata
     ]);
 
     // Calculate available balance
-    const availableBalance =
-      totalConfirmedRewards - totalWithdrawn - pendingWithdrawals;
+    const availableBalance = totalRewards - totalWithdrawn - pendingWithdrawals;
 
     return NextResponse.json({
       success: true,
       data: {
         totalInvitees,
-        totalConfirmedRewards: parseFloat(totalConfirmedRewards.toFixed(2)),
+        totalConfirmedRewards: parseFloat(totalRewards.toFixed(2)),
         totalPendingRewards: parseFloat(totalPendingRewards.toFixed(2)),
         totalWithdrawn: parseFloat(totalWithdrawn.toFixed(2)),
         pendingWithdrawals: parseFloat(pendingWithdrawals.toFixed(2)),

@@ -157,27 +157,41 @@ async function handleReferralRewards(
         inviteeId: reward.inviteeId,
         status: reward.status
       });
+
+      // Update referrer's metadata with reward information
+      const referrerUser = await clerkClient.users.getUser(referrer.userId);
+      const currentMetadata = referrerUser.publicMetadata || {};
+      const currentTotalRewards = (currentMetadata as any)?.totalRewards || 0;
+      const newTotalRewards = currentTotalRewards + rewardAmount;
+      
+      // Calculate reward level based on total invitees
+      const totalInvitees = (currentMetadata as any)?.totalInvitees || 0;
+      let rewardLevel = 1;
+      if (totalInvitees >= 10) rewardLevel = 3;
+      else if (totalInvitees >= 5) rewardLevel = 2;
+
+      await clerkClient.users.updateUserMetadata(referrer.userId, {
+        publicMetadata: {
+          ...currentMetadata,
+          hasPendingRewards: true,
+          lastReferralDate: new Date().toISOString(),
+          totalRewards: newTotalRewards,
+          rewardLevel: rewardLevel,
+          lastRewardAmount: rewardAmount,
+          lastRewardDate: new Date().toISOString(),
+        },
+      });
+
+      console.log(`✅ Updated referrer metadata:`, {
+        totalRewards: newTotalRewards,
+        rewardLevel: rewardLevel,
+        lastRewardAmount: rewardAmount
+      });
+
     } catch (dbError) {
       console.error(`❌ Failed to create referral reward:`, dbError);
       throw dbError; // Re-throw to be caught by outer try-catch
     }
-
-    // Update referrer's metadata to show they have pending rewards
-    const referrerUser = await clerkClient.users.getUser(referrer.userId);
-    const currentMetadata = referrerUser.publicMetadata || {};
-    const currentTotalReferrals = (currentMetadata as any)?.totalReferrals || 0;
-    const newTotalReferrals = currentTotalReferrals + 1;
-
-    await clerkClient.users.updateUserMetadata(referrer.userId, {
-      publicMetadata: {
-        ...currentMetadata,
-        hasPendingRewards: true,
-        lastReferralDate: new Date().toISOString(),
-        totalReferrals: newTotalReferrals,
-      },
-    });
-
-    console.log(`✅ Updated referrer metadata - Total referrals: ${newTotalReferrals}`);
 
     // Deactivate the referral discount code after successful purchase.
     // Re-fetch invitee metadata to avoid stale values and ensure we pick up

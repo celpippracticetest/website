@@ -83,13 +83,21 @@ export async function POST(req: Request) {
 
     // Update referrer's metadata to show they have a successful referral
     const currentMetadata = referrerUser.publicMetadata || {};
+    const currentTotalInvitees = (currentMetadata as any)?.totalInvitees || 0;
+    const newTotalInvitees = currentTotalInvitees + 1;
+
     await clerkClient.users.updateUserMetadata(referrer.userId, {
       publicMetadata: {
         ...currentMetadata,
         hasSuccessfulReferral: true,
         lastReferralDate: new Date().toISOString(),
+        totalInvitees: newTotalInvitees,
+        lastInviteeId: userId,
+        lastInviteeEmail: userEmail,
       },
     });
+
+    console.log(`✅ Updated referrer metadata - Total invitees: ${newTotalInvitees}`);
 
     return NextResponse.json({
       success: true,
