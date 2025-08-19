@@ -70,7 +70,7 @@ const ReferralHeader = () => {
               You’ve Been Invited to CELPIPPRACTICETEST.com
             </div>
             <div className=" text-white text-[16px] screen1280:!text-[20px]  leading-[24px] screen1280:!leading-[100%]">
-              Get <span className="text-[24px]">30% </span> off your first
+              Get <span className="text-[24px]">20% </span> off your first
               subscription and start your journey to CELPIP success.
             </div>
           </div>
@@ -307,7 +307,7 @@ const ReferralHeader = () => {
           {
             title: "Accept the Offer",
             description:
-              "Click the link and land here with your 30% discount auto-applied.",
+              "Click the link and land here with your 20% discount auto-applied.",
             icon: <SvgDiamond />,
             bgColor: "bg-[#FAE0FF]",
           },
