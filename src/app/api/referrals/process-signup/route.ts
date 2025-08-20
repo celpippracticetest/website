@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import mongoClient from "@/lib/mongodb";
 import { ReferralRepository } from "@/repositories/referral.repo";
+import { ReferralInvitationRepository } from "@/repositories/referral-invitation.repo";
 import { clerkClient } from "@clerk/express";
 
 export async function POST(req: Request) {
@@ -81,23 +82,47 @@ export async function POST(req: Request) {
       },
     });
 
-    // Update referrer's metadata to show they have a successful referral
+    const invitationRepo = new ReferralInvitationRepository(mongoClient);
+    await invitationRepo.ensureIndexes();
+
+    const invitation = await invitationRepo.createInvitation({
+      inviterId: referrer.userId,
+      inviteeId: userId,
+      referralCode: referralCode,
+      status: "pending",
+      invitedAt: new Date(),
+    });
+
+    console.log(`✅ Created referral invitation: ${invitation._id}`);
+
+    // Update referrer's metadata
     const currentMetadata = referrerUser.publicMetadata || {};
-    const currentTotalInvitees = (currentMetadata as any)?.totalInvitees || 0;
-    const newTotalInvitees = currentTotalInvitees + 1;
+
+    const totalInvitees = await invitationRepo.getTotalInvitations(
+      referrer.userId
+    );
+    const newTotalInvitees = totalInvitees + 1;
+
+    let rewardLevel = 1;
+    if (newTotalInvitees >= 10) rewardLevel = 3;
+    else if (newTotalInvitees >= 5) rewardLevel = 2;
 
     await clerkClient.users.updateUserMetadata(referrer.userId, {
       publicMetadata: {
         ...currentMetadata,
         hasSuccessfulReferral: true,
         lastReferralDate: new Date().toISOString(),
+        totalInvitations: newTotalInvitees,
         totalInvitees: newTotalInvitees,
+        rewardLevel: rewardLevel,
         lastInviteeId: userId,
         lastInviteeEmail: userEmail,
       },
     });
 
-    console.log(`✅ Updated referrer metadata - Total invitees: ${newTotalInvitees}`);
+    console.log(
+      `✅ Updated referrer metadata - Total invitations: ${newTotalInvitees}, Reward level: ${rewardLevel}`
+    );
 
     return NextResponse.json({
       success: true,
@@ -106,6 +131,7 @@ export async function POST(req: Request) {
         referrerId: referrer.userId,
         referrerEmail: referrerEmail,
         referralCode: referralCode,
+        invitationId: invitation._id,
       },
     });
   } catch (error: any) {

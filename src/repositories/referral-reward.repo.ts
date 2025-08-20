@@ -123,22 +123,7 @@ export class ReferralRewardRepository {
     return result.length > 0 ? result[0].total : 0;
   }
 
-  async getInviteeCount(inviterId: string): Promise<number> {
-    // Count distinct inviteeIds for this inviter, regardless of reward status
-    const ids = await this.getReferralRewardCollection().distinct("inviteeId", {
-      inviterId,
-    });
-    return ids.length;
-  }
-
   async getTotalEarnings(inviterId: string): Promise<number> {
     return this.getTotalConfirmedRewards(inviterId);
-  }
-
-  async getRewardLevel(inviterId: string): Promise<number> {
-    const totalInvitees = await this.getInviteeCount(inviterId);
-    if (totalInvitees >= 10) return 3;
-    if (totalInvitees >= 5) return 2;
-    return 1;
   }
 }

@@ -4,11 +4,11 @@ import mongoClient from "@/lib/mongodb";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
 import { ReferralRewardRepository } from "@/repositories/referral-reward.repo";
 import { ReferralRepository } from "@/repositories/referral.repo";
+import { ReferralInvitationRepository } from "@/repositories/referral-invitation.repo";
 import { clerkClient } from "@clerk/express";
 export const runtime = "nodejs";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
-// Helper to merge new fields into existing publicMetadata
 async function updateUserPublicMetadata(
   userId: string,
   newFields: Record<string, any>
@@ -26,21 +26,17 @@ async function updateUserPublicMetadata(
         error instanceof Error ? error.message : "Unknown error"
       }`
     );
-    // Continue processing even if this fails
   }
 }
 
-// Handle referral rewards when a payment is completed
 async function handleReferralRewards(
   session: Stripe.Checkout.Session,
   metadata: any
 ) {
   try {
-    // Get user ID from metadata or resolve via email fallback
     const metaUserId = metadata?.user_id as string | undefined;
     let userIdToUse: string | undefined = metaUserId;
 
-    // Get user from Clerk to check if they were referred
     let user;
     let userMetadata: any = {};
 
@@ -52,7 +48,6 @@ async function handleReferralRewards(
       }
       userMetadata = user.publicMetadata as any;
     } catch (error) {
-      // Fallback: resolve user by email from the session
       const inviteeEmail =
         (session as any)?.customer_details?.email ||
         (session as any)?.customer_email;
@@ -90,28 +85,15 @@ async function handleReferralRewards(
       console.log(
         "❌ No referral code found in user metadata or session metadata"
       );
-      console.log("🔍 User metadata keys:", Object.keys(userMetadata || {}));
-      console.log("🔍 Session metadata keys:", Object.keys(metadata || {}));
-      console.log("🔍 User metadata referralCode:", userMetadata?.referralCode);
-      console.log(
-        "🔍 Session metadata referral_code:",
-        metadata?.referral_code
-      );
       return;
     }
 
-    console.log(`🔍 Found referral code: ${referralCode}`);
-    console.log(
-      `🔍 Source: ${
-        userMetadata?.referralCode ? "user metadata" : "session metadata"
-      }`
-    );
+    console.log(`🔍 Processing referral: ${referralCode}`);
 
     // Find the referrer
     const referralRepo = new ReferralRepository(mongoClient);
     await referralRepo.ensureIndexes();
 
-    console.log(`🔍 Searching for referrer with code: ${referralCode}`);
     const referrer = await referralRepo.findOneByCode(referralCode);
 
     if (!referrer) {
@@ -134,18 +116,6 @@ async function handleReferralRewards(
     const rewardRepo = new ReferralRewardRepository(mongoClient);
     await rewardRepo.ensureIndexes();
 
-    console.log(`🔍 Creating referral reward with data:`, {
-      inviterId: referrer.userId,
-      inviteeId: userIdToUse,
-      referralCode,
-      amount: rewardAmount,
-      status: "confirmed",
-      checkoutId: session.id,
-      planPurchased: metadata.plan_name || "premium",
-      purchaseAmount: amountTotal / 100,
-      purchaseDate: new Date(),
-    });
-
     try {
       const reward = await rewardRepo.createReward({
         inviterId: referrer.userId,
@@ -159,13 +129,9 @@ async function handleReferralRewards(
         purchaseDate: new Date(),
       });
 
-      console.log(`✅ Referral reward created successfully:`, {
-        rewardId: reward.id,
-        amount: reward.amount,
-        inviterId: reward.inviterId,
-        inviteeId: reward.inviteeId,
-        status: reward.status,
-      });
+      console.log(
+        `✅ Referral reward created: $${rewardAmount} for user ${referrer.userId}`
+      );
 
       // Update referrer's metadata with reward information
       const referrerUser = await clerkClient.users.getUser(referrer.userId);
@@ -173,13 +139,31 @@ async function handleReferralRewards(
       const currentTotalRewards = (currentMetadata as any)?.totalRewards || 0;
       const newTotalRewards = currentTotalRewards + rewardAmount;
 
-      // Calculate reward level based on total invitees (distinct invitees from DB)
-      const newTotalInvitees = await rewardRepo.getInviteeCount(
+      // Mark referral invitation as completed
+      const invitationRepo = new ReferralInvitationRepository(mongoClient);
+      await invitationRepo.ensureIndexes();
+
+      const invitation = await invitationRepo.findInvitationByCodeAndInvitee(
+        referralCode,
+        userIdToUse as string
+      );
+      if (invitation) {
+        await invitationRepo.updateInvitationStatus(
+          invitation._id!.toString(),
+          "completed"
+        );
+        console.log(
+          `✅ Marked referral invitation as completed: ${invitation._id}`
+        );
+      }
+
+      // Calculate statistics from invitation database
+      const totalInvitees = await invitationRepo.getTotalInvitations(
         referrer.userId
       );
       let rewardLevel = 1;
-      if (newTotalInvitees >= 10) rewardLevel = 3;
-      else if (newTotalInvitees >= 5) rewardLevel = 2;
+      if (totalInvitees >= 10) rewardLevel = 3;
+      else if (totalInvitees >= 5) rewardLevel = 2;
 
       await clerkClient.users.updateUserMetadata(referrer.userId, {
         publicMetadata: {
@@ -187,19 +171,16 @@ async function handleReferralRewards(
           hasPendingRewards: true,
           lastReferralDate: new Date().toISOString(),
           totalRewards: newTotalRewards,
-          totalInvitees: newTotalInvitees,
+          totalInvitees: totalInvitees,
           rewardLevel: rewardLevel,
           lastRewardAmount: rewardAmount,
           lastRewardDate: new Date().toISOString(),
         },
       });
 
-      console.log(`✅ Updated referrer metadata:`, {
-        totalInvitees: newTotalInvitees,
-        totalRewards: newTotalRewards,
-        rewardLevel: rewardLevel,
-        lastRewardAmount: rewardAmount,
-      });
+      console.log(
+        `✅ Updated referrer metadata - Total: ${totalInvitees} invitees, $${newTotalRewards} rewards, Level: ${rewardLevel}`
+      );
     } catch (dbError) {
       console.error(`❌ Failed to create referral reward:`, dbError);
       throw dbError; // Re-throw to be caught by outer try-catch

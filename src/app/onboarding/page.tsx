@@ -15,7 +15,6 @@ export default function OnboardingPage() {
       return;
     }
 
-    // Check if user has completed onboarding
     const hasCompletedOnboarding = (user?.publicMetadata as any)
       ?.onboardingCompleted;
 
@@ -24,16 +23,12 @@ export default function OnboardingPage() {
       return;
     }
 
-    // Process referral code if exists
     const pendingReferralCode = localStorage.getItem("pendingReferralCode");
     if (pendingReferralCode) {
-      // Store referral code for middleware to process
       console.log("Referral code found:", pendingReferralCode);
-      
-      // Apply the referral discount
+
       applyReferralDiscount(pendingReferralCode);
-      
-      // Clear localStorage
+
       localStorage.removeItem("pendingReferralCode");
       localStorage.removeItem("pendingInviterName");
     }
@@ -43,30 +38,43 @@ export default function OnboardingPage() {
 
   const applyReferralDiscount = async (referralCode: string) => {
     try {
-      const response = await fetch("/api/referrals/apply-discount", {
+      const processResponse = await fetch("/api/referrals/process-signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           referralCode,
-          userId: user?.id,
-          userEmail: user?.primaryEmailAddress?.emailAddress,
         }),
       });
-      
-      if (response.ok) {
-        console.log("Referral discount applied successfully");
+
+      if (processResponse.ok) {
+        console.log("Referral relationship established successfully");
+
+        const discountResponse = await fetch("/api/referrals/apply-discount", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            referralCode,
+            userId: user?.id,
+            userEmail: user?.primaryEmailAddress?.emailAddress,
+          }),
+        });
+
+        if (discountResponse.ok) {
+          console.log("Referral discount applied successfully");
+        } else {
+          console.error("Failed to apply referral discount");
+        }
       } else {
-        console.error("Failed to apply referral discount");
+        console.error("Failed to establish referral relationship");
       }
     } catch (error) {
-      console.error("Failed to apply referral discount:", error);
+      console.error("Failed to process referral:", error);
     }
   };
 
   const completeOnboarding = async () => {
     try {
       if (user) {
-        // Simply redirect to dashboard - middleware will handle metadata update
         console.log("Onboarding completed successfully");
         window.location.href = "/practice-overview";
       }
@@ -107,20 +115,21 @@ export default function OnboardingPage() {
         )}
 
         {/* Referral Discount Applied Message */}
-        {(user?.publicMetadata as any)?.referralDiscount && 
-         !(user?.publicMetadata as any)?.referralDiscountUsed && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="text-sm text-blue-800">
-              <strong>💰 10% Discount Applied!</strong>
-              <br />
-              Your referral discount code: {(user?.publicMetadata as any)?.referralDiscount}
-              <br />
-              <span className="text-xs text-blue-600">
-                This discount will be automatically applied at checkout!
-              </span>
+        {(user?.publicMetadata as any)?.referralDiscount &&
+          !(user?.publicMetadata as any)?.referralDiscountUsed && (
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="text-sm text-blue-800">
+                <strong>💰 10% Discount Applied!</strong>
+                <br />
+                Your referral discount code:{" "}
+                {(user?.publicMetadata as any)?.referralDiscount}
+                <br />
+                <span className="text-xs text-blue-600">
+                  This discount will be automatically applied at checkout!
+                </span>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Referral Discount Used Message */}
         {(user?.publicMetadata as any)?.referralDiscountUsed && (
