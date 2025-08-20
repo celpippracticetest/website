@@ -43,19 +43,41 @@ export async function POST(req: Request) {
       );
     }
 
-    // Update referrer's metadata to increment total invitees
+    const invitationRepo = new ReferralInvitationRepository(mongoClient);
+    await invitationRepo.ensureIndexes();
+
+    // Check if invitation already exists
+    const existingInvitation =
+      await invitationRepo.findInvitationByCodeAndInvitee(referralCode, userId);
+
+    if (existingInvitation) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "User already tracked with this referral code",
+          referrerId: referrer.userId,
+        },
+        { status: 400 }
+      );
+    }
+
+    const invitation = await invitationRepo.createInvitation({
+      inviterId: referrer.userId,
+      inviteeId: userId,
+      referralCode: referralCode,
+      status: "pending",
+      invitedAt: new Date(),
+    });
+
+    console.log(`✅ Created referral invitation: ${invitation._id}`);
+
     const referrerUser = await clerk.users.getUser(referrer.userId);
     const currentMetadata = referrerUser.publicMetadata || {};
 
-    // Calculate total invitees from DB (distinct invitees)
-    const invitationRepo = new ReferralInvitationRepository(mongoClient);
-    await invitationRepo.ensureIndexes();
-    
     const newTotalInvitees = await invitationRepo.getTotalInvitations(
       referrer.userId
     );
 
-    // Calculate new reward level
     let rewardLevel = 1;
     if (newTotalInvitees >= 10) rewardLevel = 3;
     else if (newTotalInvitees >= 5) rewardLevel = 2;
