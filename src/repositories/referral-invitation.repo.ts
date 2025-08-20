@@ -20,7 +20,7 @@ export class ReferralInvitationRepository {
   }
 
   private getCollection() {
-    return this.db.collection<ReferralInvitation>("referralInvitations");
+    return this.db.collection("referralInvitations");
   }
 
   async ensureIndexes() {
