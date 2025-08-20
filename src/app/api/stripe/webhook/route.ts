@@ -7,6 +7,7 @@ import { ReferralRepository } from "@/repositories/referral.repo";
 import { ReferralInvitationRepository } from "@/repositories/referral-invitation.repo";
 import { clerkClient } from "@clerk/express";
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 async function updateUserPublicMetadata(
@@ -248,8 +249,10 @@ async function handleReferralRewards(
 
 export async function POST(req: Request) {
   try {
-    const rawBody = await req.text();
-    const sig = req.headers.get("stripe-signature")!;
+    // Read the raw request body as bytes (do NOT use req.json() / req.text() here)
+    const rawBody = await req.arrayBuffer();
+    const payload = Buffer.from(rawBody);
+    const sig = req.headers.get("stripe-signature");
     let event: Stripe.Event;
 
     try {
@@ -263,9 +266,21 @@ export async function POST(req: Request) {
         );
       }
 
-      event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+      if (!sig) {
+        console.error("❌ Missing stripe-signature header");
+        return NextResponse.json(
+          { error: "Missing signature" },
+          { status: 400 }
+        );
+      }
+
+      event = stripe.webhooks.constructEvent(payload, sig, webhookSecret);
     } catch (err) {
-      console.error("Webhook signature verification failed:", err);
+      console.error(
+        "Webhook signature verification failed:" +
+          process.env.STRIPE_WEBHOOK_SECRET,
+        err
+      );
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
