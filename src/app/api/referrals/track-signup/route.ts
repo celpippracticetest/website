@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import mongoClient from "@/lib/mongodb";
 import { ReferralRepository } from "@/repositories/referral.repo";
+import { ReferralInvitationRepository } from "@/repositories/referral-invitation.repo";
 
 export async function POST(req: Request) {
   try {
@@ -47,7 +48,10 @@ export async function POST(req: Request) {
     const currentMetadata = referrerUser.publicMetadata || {};
 
     // Calculate total invitees from DB (distinct invitees)
-    const newTotalInvitees = await referralRepo.getInviteeCount(
+    const invitationRepo = new ReferralInvitationRepository(mongoClient);
+    await invitationRepo.ensureIndexes();
+    
+    const newTotalInvitees = await invitationRepo.getTotalInvitations(
       referrer.userId
     );
 

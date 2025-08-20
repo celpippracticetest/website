@@ -5,8 +5,9 @@ import { z } from "zod";
 import mongoClient from "@/lib/mongodb";
 import { ReferralRewardRepository } from "@/repositories/referral-reward.repo";
 import { WithdrawalRequestRepository } from "@/repositories/withdrawal-request.repo";
+import { ReferralInvitationRepository } from "@/repositories/referral-invitation.repo";
 import nodemailer from "nodemailer";
-import { clerkClient } from "@clerk/express";
+import { clerkClient } from "@clerk/nextjs/server";
 
 const WithdrawalRequestSchema = z.object({
   amount: z.number().min(5, "Minimum withdrawal amount is $5"),
@@ -33,7 +34,8 @@ export async function POST(req: Request) {
     const { amount, paypalEmail } = parsed.data;
 
     // Get user information
-    const user = await clerkClient.users.getUser(userId);
+    const cc = await clerkClient();
+    const user = await cc.users.getUser(userId);
     const userEmail = user.emailAddresses[0]?.emailAddress;
 
     if (!userEmail) {
@@ -70,7 +72,10 @@ export async function POST(req: Request) {
     }
 
     // Get referral statistics
-    const totalInvitees = await rewardRepo.getInviteeCount(userId);
+    const invitationRepo = new ReferralInvitationRepository(mongoClient);
+    await invitationRepo.ensureIndexes();
+    
+    const totalInvitees = await invitationRepo.getTotalInvitations(userId);
     const referralCode = (user.publicMetadata as any)?.referralCode || "N/A";
 
     // Get user's plan and purchase info from metadata
