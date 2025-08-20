@@ -263,57 +263,7 @@ export async function POST(req: Request) {
         );
       }
 
-      if (process.env.NODE_ENV === "development" && sig === "test") {
-        console.log("⚠️ Development mode: Bypassing signature verification");
-        event = JSON.parse(rawBody) as Stripe.Event;
-
-        if (event.type === "checkout.session.completed") {
-          console.log("✅ Test webhook received checkout.session.completed");
-          console.log("✅ Event data:", JSON.stringify(event.data, null, 2));
-
-          // Process the event normally instead of just returning test response
-          const session = event.data.object as Stripe.Checkout.Session;
-          const metadata = session.metadata;
-
-          console.log("🔍 Processing checkout.session.completed event");
-          console.log("🔍 Session ID:", session.id);
-          console.log("🔍 Metadata:", JSON.stringify(metadata, null, 2));
-
-          if (metadata?.user_id) {
-            await updateUserPublicMetadata(metadata.user_id, {
-              planCancelled: false,
-            });
-            console.log(
-              `Cleared planCancelled for user ${metadata.user_id} on new purchase.`
-            );
-          }
-
-          try {
-            console.log("🔍 Starting referral rewards processing...");
-            console.log(
-              "🔍 Session metadata:",
-              JSON.stringify(metadata, null, 2)
-            );
-            await handleReferralRewards(session, metadata);
-            console.log(
-              "✅ Referral rewards processing completed successfully"
-            );
-          } catch (error) {
-            console.error("❌ Error handling referral rewards:", error);
-          }
-
-          return NextResponse.json({
-            received: true,
-            message:
-              "Test webhook processed successfully with referral rewards",
-            event_type: event.type,
-            user_id: event.data.object.metadata?.user_id,
-            referral_processed: true,
-          });
-        }
-      } else {
-        event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
-      }
+      event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
     } catch (err) {
       console.error("Webhook signature verification failed:", err);
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
