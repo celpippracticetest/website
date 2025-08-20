@@ -31,4 +31,8 @@ export class ReferralRepository {
   async deleteByUserId(userId: string) {
     return this.col.deleteOne({ userId });
   }
+
+  getCollection() {
+    return this.col;
+  }
 }

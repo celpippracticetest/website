@@ -7,16 +7,6 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
 import mongoClient from "@/lib/mongodb";
 import { ReferralRepository } from "@/repositories/referral.repo";
-import { randomInt } from "crypto";
-
-function generateReferralCode(): string {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let part = "";
-  for (let i = 0; i < 6; i++) {
-    part += alphabet[randomInt(alphabet.length)];
-  }
-  return `REF-${part}`;
-}
 
 function getBaseUrl(h: { get(name: string): string | null }) {
   const envUrl = process.env.APP_BASE_URL;
@@ -47,23 +37,28 @@ export async function ensureUserReferral(userId: string, baseUrl: string) {
   const user = await cc.users.getUser(userId);
   const pm = (user.publicMetadata || {}) as Record<string, any>;
 
+  // If user has referral code in metadata, return it
   if (pm.referralCode && pm.referralLink) {
     return { code: String(pm.referralCode), link: String(pm.referralLink) };
   }
 
+  // Check if referral code exists in database
   const repo = await getDb();
-
   const existing = await repo.findOneByUserId(userId);
+
   if (existing) {
+    // Update Clerk metadata with existing code
     const inviterNameOrEmail =
       (user.firstName && user.lastName
         ? `${user.firstName} ${user.lastName}`
         : user.firstName
         ? user.firstName
         : user.emailAddresses?.[0]?.emailAddress) || userId;
+
     const link = `${baseUrl}/referral/?ref=${
       existing.code
     }&inviter=${encodeURIComponent(inviterNameOrEmail)}`;
+
     await cc.users.updateUser(userId, {
       publicMetadata: {
         ...pm,
@@ -72,43 +67,14 @@ export async function ensureUserReferral(userId: string, baseUrl: string) {
         referralActive: true,
       },
     });
+
     return { code: existing.code, link };
   }
 
-  let code = "";
-  for (let i = 0; i < 5; i++) {
-    const candidate = generateReferralCode();
-    try {
-      await repo.insert({ code: candidate, userId, createdAt: new Date() });
-      code = candidate;
-      break;
-    } catch (e: any) {
-      if (e?.code === 11000) continue;
-      throw e;
-    }
-  }
-  if (!code) throw new Error("Could not generate unique referral code");
-
-  const inviterNameOrEmail =
-    (user.firstName && user.lastName
-      ? `${user.firstName} ${user.lastName}`
-      : user.firstName
-      ? user.firstName
-      : user.emailAddresses?.[0]?.emailAddress) || userId;
-  const link = `${baseUrl}/referral/?ref=${code}&inviter=${encodeURIComponent(
-    inviterNameOrEmail
-  )}`;
-
-  await cc.users.updateUser(userId, {
-    publicMetadata: {
-      ...pm,
-      referralCode: code,
-      referralLink: link,
-      referralActive: true,
-    },
-  });
-
-  return { code, link };
+  // If no referral code exists, redirect to create one
+  throw new Error(
+    "No referral code found. Please contact support to create one."
+  );
 }
 
 export async function GET() {

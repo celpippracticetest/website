@@ -93,6 +93,42 @@ export default clerkMiddleware(async (auth, req) => {
     });
   }
 
+  // Create referral code when user becomes premium
+  if (authenticate.userId && authenticate.sessionClaims?.metadata.plan === "premium") {
+    const hasReferralCode = (authenticate.sessionClaims?.metadata as any)?.referralCode;
+    
+    if (!hasReferralCode) {
+      console.log("🔄 User is premium but has no referral code, creating one...");
+      
+      try {
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+
+        // Forward cookies
+        const incomingCookie = req.headers.get("cookie");
+        if (incomingCookie) headers["cookie"] = incomingCookie;
+
+        const response = await fetch(
+          `${req.nextUrl.origin}/api/users/create-referral-code`,
+          {
+            method: "POST",
+            headers,
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("✅ Referral code created:", data.code);
+        } else {
+          console.error("❌ Failed to create referral code:", response.status);
+        }
+      } catch (error) {
+        console.error("❌ Error creating referral code:", error);
+      }
+    }
+  }
+
   // Update onboarding status when user visits practice-overview
   if (authenticate.userId && req.nextUrl.pathname === "/practice-overview") {
     const hasCompletedOnboarding = (authenticate.sessionClaims?.metadata as any)

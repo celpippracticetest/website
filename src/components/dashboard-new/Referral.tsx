@@ -209,6 +209,25 @@ export default function Referral() {
         if (linkRes.ok) {
           const linkData = await linkRes.json();
           setReferralLink(linkData?.link || "");
+        } else if (linkRes.status === 500) {
+          // If no referral code exists, try to create one
+          console.log("🔄 No referral code found, creating one...");
+          try {
+            const createRes = await fetch("/api/users/create-referral-code", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+            });
+            
+            if (createRes.ok) {
+              const createData = await createRes.json();
+              setReferralLink(createData?.link || "");
+              console.log("✅ Referral code created:", createData?.code);
+            } else {
+              console.error("❌ Failed to create referral code");
+            }
+          } catch (createError) {
+            console.error("❌ Error creating referral code:", createError);
+          }
         }
 
         if (statsRes.ok) {
