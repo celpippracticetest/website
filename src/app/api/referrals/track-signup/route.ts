@@ -20,7 +20,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Find the referrer
     const referralRepo = new ReferralRepository(mongoClient);
     await referralRepo.ensureIndexes();
 
@@ -46,7 +45,6 @@ export async function POST(req: Request) {
     const invitationRepo = new ReferralInvitationRepository(mongoClient);
     await invitationRepo.ensureIndexes();
 
-    // Check if invitation already exists
     const existingInvitation =
       await invitationRepo.findInvitationByCodeAndInvitee(referralCode, userId);
 
@@ -73,29 +71,20 @@ export async function POST(req: Request) {
 
     const referrerUser = await clerk.users.getUser(referrer.userId);
     const currentMetadata = referrerUser.publicMetadata || {};
+    const currentTotalInvitees = (currentMetadata as any)?.totalInvitees || 0;
+    const newTotalInvitees = currentTotalInvitees + 1;
 
-    const newTotalInvitees = await invitationRepo.getTotalInvitations(
-      referrer.userId
-    );
-
-    let rewardLevel = 1;
-    if (newTotalInvitees >= 10) rewardLevel = 3;
-    else if (newTotalInvitees >= 5) rewardLevel = 2;
-
-    await clerk.users.updateUser(referrer.userId, {
+    await clerk.users.updateUserMetadata(referrer.userId, {
       publicMetadata: {
         ...currentMetadata,
         totalInvitees: newTotalInvitees,
-        rewardLevel: rewardLevel,
         lastInviteeDate: new Date().toISOString(),
       },
     });
 
-    console.log(`✅ Tracked new signup`, {
-      referralCode,
-      referrerId: referrer.userId,
+    console.log(`✅ Tracked new signup for referrer ${referrer.userId}:`, {
       totalInvitees: newTotalInvitees,
-      rewardLevel,
+      message: "Reward level will be calculated after successful purchase",
     });
 
     return NextResponse.json({
@@ -103,7 +92,6 @@ export async function POST(req: Request) {
       message: "Signup tracked successfully",
       referrerId: referrer.userId,
       totalInvitees: newTotalInvitees,
-      rewardLevel: rewardLevel,
     });
   } catch (error: any) {
     console.error("Track signup error:", error);

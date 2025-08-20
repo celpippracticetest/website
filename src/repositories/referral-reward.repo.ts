@@ -126,4 +126,24 @@ export class ReferralRewardRepository {
   async getTotalEarnings(inviterId: string): Promise<number> {
     return this.getTotalConfirmedRewards(inviterId);
   }
+
+  async getInviteeCount(inviterId: string): Promise<number> {
+    // Count only distinct invitees with confirmed rewards
+    const result = await this.getReferralRewardCollection()
+      .aggregate([
+        { $match: { inviterId, status: "confirmed" } },
+        { $group: { _id: "$inviteeId" } },
+        { $count: "total" }
+      ])
+      .toArray();
+
+    return result.length > 0 ? result[0].total : 0;
+  }
+
+  async getRewardLevel(inviterId: string): Promise<number> {
+    const totalInvitees = await this.getInviteeCount(inviterId);
+    if (totalInvitees >= 10) return 3;
+    if (totalInvitees >= 5) return 2;
+    return 1;
+  }
 }

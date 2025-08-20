@@ -112,12 +112,11 @@ async function handleReferralRewards(
       return;
     }
 
-    // Create referral reward record
     const rewardRepo = new ReferralRewardRepository(mongoClient);
     await rewardRepo.ensureIndexes();
 
     try {
-      const reward = await rewardRepo.createReward({
+      await rewardRepo.createReward({
         inviterId: referrer.userId,
         inviteeId: userIdToUse as string,
         referralCode,
@@ -139,7 +138,6 @@ async function handleReferralRewards(
       const currentTotalRewards = (currentMetadata as any)?.totalRewards || 0;
       const newTotalRewards = currentTotalRewards + rewardAmount;
 
-      // Mark referral invitation as completed
       const invitationRepo = new ReferralInvitationRepository(mongoClient);
       await invitationRepo.ensureIndexes();
 
@@ -157,13 +155,15 @@ async function handleReferralRewards(
         );
       }
 
-      // Calculate statistics from invitation database
       const totalInvitees = await invitationRepo.getTotalInvitations(
         referrer.userId
       );
+      const totalSuccessfulPurchases = await rewardRepo.getInviteeCount(
+        referrer.userId
+      );
       let rewardLevel = 1;
-      if (totalInvitees >= 10) rewardLevel = 3;
-      else if (totalInvitees >= 5) rewardLevel = 2;
+      if (totalSuccessfulPurchases >= 10) rewardLevel = 3;
+      else if (totalSuccessfulPurchases >= 5) rewardLevel = 2;
 
       await clerkClient.users.updateUserMetadata(referrer.userId, {
         publicMetadata: {
@@ -179,16 +179,13 @@ async function handleReferralRewards(
       });
 
       console.log(
-        `✅ Updated referrer metadata - Total: ${totalInvitees} invitees, $${newTotalRewards} rewards, Level: ${rewardLevel}`
+        `✅ Updated referrer metadata - Total: ${totalInvitees} invitees, $${newTotalRewards} rewards, Successful Purchases: ${totalSuccessfulPurchases}, Level: ${rewardLevel}`
       );
     } catch (dbError) {
       console.error(`❌ Failed to create referral reward:`, dbError);
       throw dbError; // Re-throw to be caught by outer try-catch
     }
 
-    // Deactivate the referral discount code after successful purchase.
-    // Re-fetch invitee metadata to avoid stale values and ensure we pick up
-    // the stored promotion code id (legacy or new key).
     try {
       const freshUser = await clerkClient.users.getUser(userIdToUse as string);
       const freshMeta = freshUser.publicMetadata as any;
@@ -200,7 +197,6 @@ async function handleReferralRewards(
         promotionCodeId
       );
 
-      // Always mark discount as used and disable future referral discounts for the invitee
       try {
         await clerkClient.users.updateUserMetadata(userIdToUse as string, {
           publicMetadata: {
@@ -221,7 +217,6 @@ async function handleReferralRewards(
         );
       }
 
-      // If we have a promotion code recorded, deactivate it in Stripe
       if (promotionCodeId) {
         try {
           await stripe.promotionCodes.update(promotionCodeId, {
@@ -258,7 +253,6 @@ export async function POST(req: Request) {
     let event: Stripe.Event;
 
     try {
-      // Use the webhook secret from environment variable
       const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
       if (!webhookSecret) {
@@ -269,17 +263,14 @@ export async function POST(req: Request) {
         );
       }
 
-      // In development, allow bypassing signature verification for testing
       if (process.env.NODE_ENV === "development" && sig === "test") {
         console.log("⚠️ Development mode: Bypassing signature verification");
         event = JSON.parse(rawBody) as Stripe.Event;
 
-        // For testing, just return success without processing
         if (event.type === "checkout.session.completed") {
           console.log("✅ Test webhook received checkout.session.completed");
           console.log("✅ Event data:", JSON.stringify(event.data, null, 2));
 
-          // Simulate the referralActive change for testing
           console.log(
             "✅ Would set referralActive to false for user: test-user-123"
           );
@@ -339,7 +330,6 @@ export async function POST(req: Request) {
         }
       }
 
-      // Handle referral rewards and mark discount as used
       try {
         console.log("🔍 Starting referral rewards processing...");
         console.log("🔍 Session metadata:", JSON.stringify(metadata, null, 2));
@@ -347,10 +337,7 @@ export async function POST(req: Request) {
         console.log("✅ Referral rewards processing completed successfully");
       } catch (error) {
         console.error("❌ Error handling referral rewards:", error);
-        // Continue processing other webhook events even if referral fails
       }
-
-      // Note: Invitee metadata updates (including referralActive=false) are handled in handleReferralRewards
 
       return NextResponse.json({ received: true });
     }
@@ -453,7 +440,6 @@ export async function POST(req: Request) {
                   "complete"
                 );
 
-                // Try to handle referral rewards using the checkout session if possible
                 try {
                   const session = await stripe.checkout.sessions.retrieve(
                     lastCheckout.checkoutId
@@ -488,7 +474,6 @@ export async function POST(req: Request) {
         new Date((invoice?.lines?.data[0]?.period?.start as number) * 1000)
       );
 
-      // If we were able to find a sessionId earlier in this handler, fetch it and handle referral rewards
       try {
         const session = await stripe.checkout.sessions.retrieve(
           sessionId as string
@@ -508,7 +493,6 @@ export async function POST(req: Request) {
 
     if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object as Stripe.Subscription;
-      // subscription.deleted branch doesn't have access to earlier handler's sessionId
       let { user_id, checkout_id } = subscription.metadata;
 
       console.log(
@@ -517,7 +501,6 @@ export async function POST(req: Request) {
         { user_id, checkout_id }
       );
 
-      // 1. Fallback: metadata from subscription.latest_invoice → session
       console.log(
         "➡️ Fallback #1: latest_invoice =",
         subscription.latest_invoice
@@ -554,7 +537,6 @@ export async function POST(req: Request) {
         }
       }
 
-      // 2. Fallback: metadata from listing sessions by subscription ID
       console.log("➡️ Fallback #2: list sessions by subscription ID");
       if (!user_id || !checkout_id) {
         try {
@@ -573,7 +555,6 @@ export async function POST(req: Request) {
         }
       }
 
-      // 3. Fallback: find user_id via invoice.customer_email
       console.log("➡️ Fallback #3: invoice customer_email");
       if (!user_id && subscription.latest_invoice) {
         try {
@@ -598,7 +579,6 @@ export async function POST(req: Request) {
         }
       }
 
-      // 4. Fallback: retrieve checkout_id from database using found user_id
       console.log("➡️ Fallback #4: DB lookup for last checkout");
       if (user_id && !checkout_id) {
         try {
@@ -613,14 +593,12 @@ export async function POST(req: Request) {
         }
       }
 
-      // Final check before bail-out
       console.log("🔍 Final metadata →", { user_id, checkout_id });
       if (!user_id || !checkout_id || checkout_id === "{CHECKOUT_SESSION_ID}") {
         console.warn("❌ Still missing metadata for", subscription.id);
         return NextResponse.json({ received: true });
       }
 
-      // Cancel and downgrade
       await Promise.all([
         checkoutRepo.updateStatus(checkout_id, "cancelled"),
         updateUserPublicMetadata(user_id, { plan: "free" }),
