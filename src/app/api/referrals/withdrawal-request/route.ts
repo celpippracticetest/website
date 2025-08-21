@@ -118,7 +118,10 @@ export async function POST(req: Request) {
       data: withdrawalRequest,
     });
   } catch (error: any) {
-    console.error("Withdrawal request error:", error);
+    console.error("Withdrawal request error:", {
+      message: (error as any)?.message,
+      stack: (error as any)?.stack,
+    });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -153,6 +156,11 @@ async function sendWithdrawalNotificationEmail({
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
+      pool: true,
+      maxConnections: 1,
+      maxMessages: 50,
+      logger: true,
+      debug: true,
     });
 
     try {
@@ -218,12 +226,27 @@ async function sendWithdrawalNotificationEmail({
       </div>
     `;
 
-    await transporter.sendMail({
+    console.log("[withdrawal-request] sending email", {
+      from: process.env.FROM_EMAIL || process.env.SMTP_USER,
+      to: adminEmail,
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      secure: Number(process.env.SMTP_PORT) === 465,
+    });
+
+    const info = await transporter.sendMail({
       from:
         process.env.FROM_EMAIL || `Celpip Practice <${process.env.SMTP_USER}>`,
       to: adminEmail,
       subject: `Withdrawal Request - $${withdrawalRequest.amount} - ${user.emailAddresses[0]?.emailAddress}`,
       html: emailHtml,
+    });
+    console.log("[withdrawal-request] sendMail result:", {
+      messageId: info?.messageId,
+      accepted: info?.accepted,
+      rejected: info?.rejected,
+      response: info?.response,
+      envelope: info?.envelope,
     });
   } catch (error) {
     console.error("Failed to send withdrawal notification email:", error);

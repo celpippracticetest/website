@@ -525,7 +525,7 @@ export default function Referral() {
                   : "opacity-50 cursor-not-allowed"
               }`}
             >
-              <span className="text-[14px] font-normal text-[#F27059] group-hover:!text-white">
+              <span className="text-[14px] font-normal  group-hover:!bg-[#F27059] text-[#F27059] group-hover:!text-white">
                 {referralStats?.canWithdraw
                   ? "Transfer to my PayPal"
                   : "Insufficient Funds"}
@@ -653,9 +653,12 @@ export default function Referral() {
               <button
                 onClick={handleWithdrawalRequest}
                 disabled={
-                  withdrawalLoading || !withdrawalAmount || !paypalEmail
+                  withdrawalLoading ||
+                  !withdrawalAmount ||
+                  parseFloat(withdrawalAmount) < 5 ||
+                  !paypalEmail
                 }
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 cursor-pointer py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {withdrawalLoading ? "Submitting..." : "Submit Request"}
               </button>
