@@ -9,6 +9,9 @@ import { ReferralInvitationRepository } from "@/repositories/referral-invitation
 import nodemailer from "nodemailer";
 import { clerkClient } from "@clerk/nextjs/server";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const WithdrawalRequestSchema = z.object({
   amount: z.number().min(5, "Minimum withdrawal amount is $5"),
   paypalEmail: z.string().email("Valid PayPal email is required"),
@@ -74,7 +77,7 @@ export async function POST(req: Request) {
     // Get referral statistics
     const invitationRepo = new ReferralInvitationRepository(mongoClient);
     await invitationRepo.ensureIndexes();
-    
+
     const totalInvitees = await invitationRepo.getTotalInvitations(userId);
     const referralCode = (user.publicMetadata as any)?.referralCode || "N/A";
 
@@ -132,6 +135,15 @@ async function sendWithdrawalNotificationEmail({
   user: any;
   referralStats: any;
 }) {
+  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env as Record<
+    string,
+    string | undefined
+  >;
+  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
+    throw new Error(
+      "Missing required SMTP envs (SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS)"
+    );
+  }
   try {
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
@@ -143,12 +155,20 @@ async function sendWithdrawalNotificationEmail({
       },
     });
 
-    const adminEmail =
-      process.env.ADMIN_EMAIL || process.env.FROM_EMAIL || process.env.SMTP_USER;
+    try {
+      await transporter.verify();
+    } catch (e) {
+      console.warn("[withdrawal-request] SMTP verify failed (continuing):", e);
+    }
 
+    const adminEmail =
+      process.env.ADMIN_EMAIL ||
+      process.env.FROM_EMAIL ||
+      process.env.SMTP_USER;
     if (!adminEmail) {
-      console.warn("No admin email configured for withdrawal notifications");
-      return;
+      throw new Error(
+        "No admin email configured (ADMIN_EMAIL/FROM_EMAIL/SMTP_USER)"
+      );
     }
 
     const emailHtml = `
@@ -199,14 +219,14 @@ async function sendWithdrawalNotificationEmail({
     `;
 
     await transporter.sendMail({
-      from: process.env.FROM_EMAIL || `Celpip Practice <${process.env.SMTP_USER}>`,
+      from:
+        process.env.FROM_EMAIL || `Celpip Practice <${process.env.SMTP_USER}>`,
       to: adminEmail,
-      subject: `Withdrawal Request - $${withdrawalRequest.amount} - ${
-        user.emailAddresses[0]?.emailAddress
-      }`,
+      subject: `Withdrawal Request - $${withdrawalRequest.amount} - ${user.emailAddresses[0]?.emailAddress}`,
       html: emailHtml,
     });
   } catch (error) {
     console.error("Failed to send withdrawal notification email:", error);
+    throw error;
   }
 }
