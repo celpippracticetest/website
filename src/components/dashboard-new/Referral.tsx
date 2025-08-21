@@ -521,7 +521,7 @@ export default function Referral() {
               }}
               className={`flex justify-center items-center mt-[24px] max-w-[188px] w-full h-[40px] border border-[#F27059] rounded-[24px] cursor-pointer transition-all group ${
                 referralStats?.canWithdraw
-                  ? "hover:bg-[#F27059] hover:!text-white"
+                  ? "hover:!bg-[#F27059] hover:!text-white"
                   : "opacity-50 cursor-not-allowed"
               }`}
             >
