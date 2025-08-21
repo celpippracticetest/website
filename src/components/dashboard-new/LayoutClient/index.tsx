@@ -1049,7 +1049,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
               collapsed
                 ? "screen744:!w-[calc(100%-0)]"
                 : "screen744:!w-[calc(100%-96px)] screen1280:!w-[calc(100%-250px)]",
-              "screen1280:!w-full flex h-[64px] items-center justify-center pl-[24px] relative w-full border border-[#D5D6D8] bg-white",
+              "screen1280:!w-full flex h-[64px] items-center justify-center pl-[24px] relative w-full border-b border-[#D5D6D8] bg-white",
               submenuActive && active === "practice"
                 ? "flex-col "
                 : "flex-row items-center"
