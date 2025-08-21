@@ -217,7 +217,7 @@ export default function Referral() {
               method: "POST",
               headers: { "Content-Type": "application/json" },
             });
-            
+
             if (createRes.ok) {
               const createData = await createRes.json();
               setReferralLink(createData?.link || "");
@@ -602,7 +602,7 @@ export default function Referral() {
 
       {/* Withdrawal Modal */}
       {showWithdrawalModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-[#17161680]bg-opacity-50 flex items-center justify-center z-[999]">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <h3 className="text-lg font-semibold mb-4">Withdrawal Request</h3>
 
