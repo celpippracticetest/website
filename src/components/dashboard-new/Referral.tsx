@@ -251,6 +251,131 @@ export default function Referral() {
 
   if (!user) return null;
 
+  type ActivityItem = {
+    id?: string;
+    date: string | number | Date;
+    email?: string;
+    name?: string;
+    action:
+      | "signup"
+      | "purchase"
+      | "withdrawal-request"
+      | "withdrawal-paid"
+      | "adjustment"
+      | string;
+    amount?: number; // USD
+    status?:
+      | "paid"
+      | "processing"
+      | "requested"
+      | "refunded"
+      | "failed"
+      | "pending"
+      | "completed"
+      | string;
+    referralCode?: string;
+    meta?: Record<string, any>;
+  };
+
+  const activities: ActivityItem[] = Array.isArray(referralStats?.activity)
+    ? referralStats?.activity
+    : Array.isArray(referralStats?.transactions)
+    ? referralStats?.transactions
+    : [];
+
+  const formatDate = (d: string | number | Date) => {
+    try {
+      const dt = new Date(d);
+      if (isNaN(dt.getTime())) return String(d);
+      return dt.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    } catch {
+      return String(d);
+    }
+  };
+
+  const formatAmount = (v?: number) => {
+    if (typeof v !== "number" || isNaN(v)) return "—";
+    return `$ ${v % 1 === 0 ? v.toFixed(0) : v.toFixed(2)}`;
+  };
+
+  const statusBadge = (status?: string) => {
+    const s = (status || "").toLowerCase();
+    let bg = "#E4E7EC",
+      fg = "#37465C",
+      label = status || "—";
+    if (s === "paid" || s === "completed") {
+      bg = "#E8F5E8";
+      fg = "#2d5a2d";
+      label = s === "paid" ? "Paid" : "Completed";
+    } else if (
+      s === "processing" ||
+      s === "in-review" ||
+      s === "under-review"
+    ) {
+      bg = "#FFF7E6";
+      fg = "#8D5A00";
+      label = "Processing";
+    } else if (s === "requested") {
+      bg = "#E6F0FF";
+      fg = "#1E40AF";
+      label = "Requested";
+    } else if (s === "pending") {
+      bg = "#F2F6FF";
+      fg = "#37465C";
+      label = "Pending";
+    } else if (s === "failed" || s === "refunded") {
+      bg = "#FEE2E2";
+      fg = "#991B1B";
+      label = s === "failed" ? "Failed" : "Refunded";
+    }
+    return (
+      <span
+        className="px-[10px] py-[4px] rounded-[999px] text-[12px] font-medium"
+        style={{ backgroundColor: bg, color: fg }}
+      >
+        {label}
+      </span>
+    );
+  };
+
+  const actionLabel = (a: string) => {
+    const t = (a || "").toLowerCase();
+    if (t === "signup") return "Signed up via your link";
+    if (t === "purchase") return "Paid via your link";
+    if (t === "withdrawal-request") return "Withdrawal requested";
+    if (t === "withdrawal-paid") return "Withdrawal paid";
+    if (t === "adjustment") return "Adjustment";
+    return a;
+  };
+
+  const sortedActivities = [...activities].sort(
+    (a, b) =>
+      new Date(b.date as any).getTime() - new Date(a.date as any).getTime()
+  );
+
+  // --- Activity summary numbers ---
+  const paidToDate =
+    typeof referralStats?.totalWithdrawn === "number"
+      ? referralStats.totalWithdrawn
+      : 0;
+  const requestedSoFar =
+    typeof referralStats?.pendingWithdrawals === "number"
+      ? referralStats.pendingWithdrawals
+      : 0;
+  const remainingToPay =
+    typeof referralStats?.availableBalance === "number"
+      ? referralStats.availableBalance
+      : Math.max(
+          0,
+          (referralStats?.totalConfirmedRewards || 0) -
+            paidToDate -
+            requestedSoFar
+        );
+
   const canEmail = isValidEmail(email) && !!referralLink;
 
   const handleCopy = async () => {
@@ -556,31 +681,86 @@ export default function Referral() {
         <div className="flex flex-col rounded-[8px] mt-[32px] border border-[#E4E7EC]">
           <div className="h-[69px] py-[20px] px-[16px] screen744:!px-[24px]">
             <span className="text-[#101828] font-semibold text-[18px]">
-              Transactions
+              Activity
             </span>
           </div>
-          <div className="flex w-full border-t  border-[#E4E7EC] h-auto min-h-[44px] py-[13px] px-[16px] screen744:!px-[24px]">
-            <span className=" w-full  text-[#37465C] font-medium text-[12px]">
+
+          {/* Activity summary strip */}
+          <div className="grid grid-cols-1 screen744:!grid-cols-3 gap-[12px] border-t border-[#E4E7EC] p-[16px] screen744:!p-[24px] bg-[#FAFAFB]">
+            <div className="flex items-center justify-between rounded-[8px] border border-[#E4E7EC] p-[12px]">
+              <div className="text-[12px] text-[#37465C]">Paid to date</div>
+              <div className="text-[14px] font-semibold text-[#101828]">
+                {formatAmount(paidToDate)}
+              </div>
+            </div>
+            <div className="flex items-center justify-between rounded-[8px] border border-[#E4E7EC] p-[12px]">
+              <div className="text-[12px] text-[#37465C]">Requested so far</div>
+              <div className="text-[14px] font-semibold text-[#101828]">
+                {formatAmount(requestedSoFar)}
+              </div>
+            </div>
+            <div className="flex items-center justify-between rounded-[8px] border border-[#E4E7EC] p-[12px]">
+              <div className="text-[12px] text-[#37465C]">Remaining to pay</div>
+              <div className="text-[14px] font-semibold text-[#101828]">
+                {formatAmount(remainingToPay)}
+              </div>
+            </div>
+          </div>
+
+          {/* Header row */}
+          <div className="hidden screen744:!flex w-full border-t border-[#E4E7EC] h-auto min-h-[44px] py-[13px] px-[16px] screen744:!px-[24px]">
+            <span className="w-[20%] text-[#37465C] font-medium text-[12px]">
               Date
             </span>
-            <span className="  w-full  text-[#37465C] font-medium text-[12px]">
-              Description
+            <span className="w-[30%] text-[#37465C] font-medium text-[12px]">
+              User
             </span>
-            <span className="  w-full  text-[#37465C] font-medium text-[12px]">
+            <span className="w-[25%] text-[#37465C] font-medium text-[12px]">
+              Action
+            </span>
+            <span className="w-[15%] text-[#37465C] font-medium text-[12px]">
               Amount
             </span>
-          </div>
-          <div className="flex w-full border-t  border-[#E4E7EC] h-auto min-h-[44px] py-[13px] px-[16px] screen744:!px-[24px]">
-            <span className=" w-full  text-[#37465C] font-medium text-[12px]">
-              Aug 4, 2025
-            </span>
-            <span className="  w-full  text-[#37465C] font-medium text-[12px]">
-              Translate to paypal{" "}
-            </span>
-            <span className="  w-full  text-[#37465C] font-medium text-[12px]">
-              $ 125{" "}
+            <span className="w-[10%] text-[#37465C] font-medium text-[12px] text-right">
+              Status
             </span>
           </div>
+
+          {/* Rows */}
+          {sortedActivities.length === 0 ? (
+            <div className="flex w-full border-t border-[#E4E7EC] h-auto min-h-[64px] py-[16px] px-[16px] screen744:!px-[24px]">
+              <span className="text-[#37465C] text-[13px]">
+                No activity yet.
+              </span>
+            </div>
+          ) : (
+            sortedActivities.map((it, idx) => {
+              console.log(it, "it ");
+
+              return (
+                <div
+                  key={it.id || idx}
+                  className="flex w-full border-t border-[#E4E7EC] h-auto min-h-[56px] py-[12px] px-[16px] screen744:!px-[24px] items-center"
+                >
+                  <div className="w-full screen744:!w-[20%] text-[13px] text-[#37465C]">
+                    {formatDate(it.date)}
+                  </div>
+                  <div className="w-full screen744:!w-[30%] text-[13px] text-[#37465C] truncate">
+                    {it.name || it.email || "—"}
+                  </div>
+                  <div className="w-full screen744:!w-[25%] text-[13px] text-[#37465C]">
+                    {actionLabel(it.action)}
+                  </div>
+                  <div className="w-full screen744:!w-[15%] text-[13px] text-[#37465C]">
+                    {formatAmount(it.amount)}
+                  </div>
+                  <div className="w-full screen744:!w-[10%] flex justify-end">
+                    {statusBadge(it.status)}
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
       {toast && (
