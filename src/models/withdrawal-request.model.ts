@@ -14,6 +14,7 @@ const WithdrawalRequestSchema = z.object({
     totalInvitees: z.number(),
     totalReward: z.number(),
     referralCode: z.string(),
+    inviteeEmails: z.array(z.string()).default([]),
   }),
   planPurchased: z.string(),
   purchaseDate: z.date(),

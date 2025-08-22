@@ -188,12 +188,30 @@ export class ReferralInvitationRepository {
   }
 
   async getInviteeEmailsByInviterId(inviterId: string): Promise<string[]> {
-    const docs = await this.getCollection()
-      .find({ inviterId })
-      .project({ inviteeEmail: 1 })
-      .toArray();
-    return docs
-      .map((d: any) => d.inviteeEmail)
-      .filter((email: any) => typeof email === "string" && email.length > 0);
+    const inviteeIds = (await this.getCollection().distinct("inviteeId", {
+      inviterId,
+    })) as string[];
+
+    if (inviteeIds.length === 0) return [];
+
+    const emails: string[] = [];
+    try {
+      const { clerkClient } = await import("@clerk/express");
+      const results = await Promise.all(
+        inviteeIds.map((id) =>
+          clerkClient.users
+            .getUser(id)
+            .then((u) => u?.emailAddresses?.[0]?.emailAddress)
+            .catch(() => undefined)
+        )
+      );
+      for (const e of results) {
+        if (typeof e === "string" && e.trim().length > 0) emails.push(e.trim());
+      }
+    } catch {
+      return [];
+    }
+
+    return Array.from(new Set(emails));
   }
 }
