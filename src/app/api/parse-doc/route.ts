@@ -158,8 +158,8 @@ export async function POST(req: NextRequest) {
             .trim();
 
           if (currentPassage) {
-            currentPassage.questions.push({
-              id: (currentPassage.questions.length + 1).toString(),
+            currentpassage?.questions?.push({
+              id: (currentpassage?.questions?.length + 1).toString(),
               question: questionText,
               type:
                 currentQuestionType === "DROPDOWN"

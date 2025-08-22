@@ -278,7 +278,7 @@ export default function ListeningPracticeInputForm() {
       // Calculate totalQuestion and totalPassages
       const totalPassages = values.passages.length;
       const totalQuestion = values.passages.reduce(
-        (sum, passage) => sum + passage.questions.length,
+        (sum, passage) => sum + passage?.questions?.length,
         0
       );
 

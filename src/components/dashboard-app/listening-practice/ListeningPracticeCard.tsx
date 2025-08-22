@@ -50,7 +50,7 @@ const ListeningPracticeCard = ({
   };
   const numberOfQuestions = practice.passages.reduce(
     (acc: number, passage: TPracticeDto["passages"][number]) => {
-      return acc + passage.questions.length;
+      return acc + passage?.questions?.length;
     },
     0
   );

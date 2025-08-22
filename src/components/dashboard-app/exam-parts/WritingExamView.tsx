@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, CircleCheck, LockOpen, LoaderCircle } from "lucide-react";
+import { ArrowLeft, LoaderCircle } from "lucide-react";
 import { TPracticeDto } from "@/models/practice.model";
 import { useRouter } from "nextjs-toploader/app";
 import { useEffect } from "react";
@@ -13,6 +13,28 @@ import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
 
+const parts = [
+  "Problem Solving",
+  "A Daily life conversation",
+  "Information",
+  "News Item",
+  "Discussion",
+  "Viewpoints",
+  "Correspondence",
+  "Apply a Diagram",
+  "Information",
+  "Viewpoints",
+  "Writing an Email",
+  "Survey Questions",
+  "Giving Advice",
+  "Talking about personal experience",
+  "Describing a Scene",
+  "Making predictions",
+  "Comparing and Persuading",
+  "Dealing with a difficult situation",
+  "Expressing opinions",
+  "Describing an unusual situation",
+];
 interface WritingExamViewProps {
   practice: TPracticeDto;
   partId: number;
@@ -145,9 +167,9 @@ const WritingExamView = ({ practice, partId }: WritingExamViewProps) => {
         <div className="flex justify-between pb-[21px]  lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
           <div className="flex screen744:!items-center flex-col-reverse screen744:!flex-row gap-[16px]">
             <div className="flex gap-2 flex-col screen744:!shrink-0">
-              <span>{practice.passages[passageIndex].title}</span>
+              <span>{parts[partId - 1]}</span>
               <span className="font-normal text-[14px] text-[#37465C]">
-                Writing Part {partId - 6}
+                Writing Task {partId - 10}
               </span>
             </div>
             <a

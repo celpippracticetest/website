@@ -1,10 +1,10 @@
-import AWS from 'aws-sdk'
+import AWS from "aws-sdk";
 import { ListeningPassage } from "./ListeningPractice";
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import { createReadStream } from "fs";
-import axios from 'axios';
-import { redirect, RedirectType } from 'next/navigation';
+import axios from "axios";
+import { redirect, RedirectType } from "next/navigation";
 
 export interface ListeningQuestion {
   id: string;
@@ -26,7 +26,7 @@ export const transformListeningPracticeData = (input: any) => {
   const allQuestions: ListeningQuestion[] = [];
 
   input.passages.forEach(async (passage: ListeningPassage) => {
-    passage.questions.forEach((q) => {
+    passage?.questions?.forEach((q) => {
       allQuestions.push({
         id: q.id,
         question: q.question,
@@ -62,22 +62,26 @@ export const transformListeningPracticeData = (input: any) => {
 /**
  * Save listening practice data (this would typically integrate with a backend)
  */
-export const saveListeningPractice = async (data: any, selectedPracticeId: string | null) => {
+export const saveListeningPractice = async (
+  data: any,
+  selectedPracticeId: string | null
+) => {
   // In a real application, this would make an API call to save the data
   // For now, we'll just log it and simulate a successful save
   const config = {
-    method: selectedPracticeId ? 'put' : 'post',
+    method: selectedPracticeId ? "put" : "post",
     maxBodyLength: Infinity,
-    url: '/api/practices'+ (selectedPracticeId ? `/${selectedPracticeId}` : ''),
-    headers: { 
-      'Content-Type': 'application/json'
+    url:
+      "/api/practices" + (selectedPracticeId ? `/${selectedPracticeId}` : ""),
+    headers: {
+      "Content-Type": "application/json",
     },
-    data: data
+    data: data,
   };
 
   try {
     const response = await axios.request(config);
-    router.push('/cms/practice', RedirectType.push);
+    router.push("/cms/practice", RedirectType.push);
   } catch (error) {
     console.error("Error uploading data:", error);
   }
@@ -87,5 +91,3 @@ export const saveListeningPractice = async (data: any, selectedPracticeId: strin
     data: transformListeningPracticeData(data),
   };
 };
-
-

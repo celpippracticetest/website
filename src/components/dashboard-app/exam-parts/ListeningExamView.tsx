@@ -2,12 +2,10 @@
 
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, ChevronUp, ChevronDown, LoaderCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ArrowLeft, LoaderCircle } from "lucide-react";
 import AudioPlayer from "../listening-practice/components/AudioPlayer";
 import ListeningQuestionList from "../listening-practice/components/ListeningQuestionList";
 import { TPracticeDto } from "@/models/practice.model";
-import { TPassage } from "@/models/listenExam.model";
 import { useRouter } from "nextjs-toploader/app";
 import { useEffect } from "react";
 import useStore from "@/store";
@@ -15,6 +13,28 @@ import ListeningDropDownQuestionList from "../listening-practice/components/List
 import { useUser } from "@clerk/nextjs";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 
+const parts = [
+  "Problem Solving",
+  "A Daily life conversation",
+  "Information",
+  "News Item",
+  "Discussion",
+  "Viewpoints",
+  "Correspondence",
+  "Apply a Diagram",
+  "Information",
+  "Viewpoints",
+  "Writing an Email",
+  "Survey Questions",
+  "Giving Advice",
+  "Talking about personal experience",
+  "Describing a Scene",
+  "Making predictions",
+  "Comparing and Persuading",
+  "Dealing with a difficult situation",
+  "Expressing opinions",
+  "Describing an unusual situation",
+];
 interface ListeningExamViewProps {
   practice: TPracticeDto;
   partId: number;
@@ -125,9 +145,9 @@ const ListeningExamView = ({
         <div className="flex justify-between rounded-lg lg:items-center gap-2 lg:gap-0 pb-[10px]  px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
           <div className="flex flex-col-reverse  screen744:!flex-row flex-wrap gap-[16px] max-w-[635px] w-full">
             <div className="text-[14px] flex flex-col font-semibold shrink sm:!shrink-0">
-              <span>{practice.passages[passageIndex].title}</span>
+              <span>{parts[partId - 1]}</span>
               <span className="font-normal text-[14px] text-[#37465C]">
-                Listening Part {partId}
+                Listening Task {partId}
               </span>
             </div>
             <a

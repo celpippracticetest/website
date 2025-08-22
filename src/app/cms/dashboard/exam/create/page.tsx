@@ -122,7 +122,6 @@ export default function ExamCreatePage() {
 
   function loadExam(item: ExamListItem) {
     const id = oidToString(item.id);
-    console.log(item.id, "id");
 
     setSelectedId(id);
     setForm({

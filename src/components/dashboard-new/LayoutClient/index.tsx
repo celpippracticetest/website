@@ -40,6 +40,7 @@ import { useMenuCollapsedStore } from "@/store/menuCollapsed.store";
 import SvgArrowLeft from "@/components/icons/ArrowLeft";
 import CountdownTimer from "@/components/dashboard-app/CounterDownTimer";
 import OnboardingSurvey from "@/components/onboardingSurvey";
+import SvgReferral from "@/components/icons/Referral";
 
 const NavItem = ({
   icon,
@@ -500,15 +501,71 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
             </div>
           </>
         )}
+
+        {proUser && (
+          <>
+            <div
+              className={`relative p-[8px] flex flex-col z-[999] justify-none screen744:!justify-start screen1280:!justify-none items-start left-0 right-0 mx-auto  mt-[40px] rounded-[8px] max-w-[202px] screen744:!max-w-[132px] screen1280:!max-w-[202px] h-[114px] screen744:!h-[202px]  screen1280:!h-[114px] bg-[#B86DF9]`}
+            >
+              <Image
+                alt="refer pro user"
+                width={102}
+                height={81}
+                className={`absolute flex screen744:!hidden screen1280:!flex  top-[22px] screen744:!top-0 screen744:!left-0 -right-[10px] screen744:!right-0 mx-auto screen1280:!mr-0 screen1280:!ml-0 screen1280:!left-auto screen1280:!top-[22px] w-[102px]   screen1280:!-right-[10px] scale-[0.80]`}
+                src="/images/refer.png"
+              />
+              <Image
+                alt="refer pro user"
+                width={62}
+                height={62}
+                className={`  hidden screen744:!flex  screen1280:!hidden  top-0 left-0 right-0 mx-auto screen1280:!mr-0 screen1280:!ml-0 screen1280:!left-auto screen1280:!top-[22px] w-[62px]   screen1280:!-right-[10px] `}
+                src="/images/refer-mobile.png"
+              />
+              <div className="  text-left mt-0 screen744:!mt-[8px] screen1280:!mt-0 leading-[18px] mb-[10px]">
+                <div className="text-left flex flex-col gap-[10px] leading-[100%]">
+                  <span className="text-left font-semibold text-white screen744:!text-[11px] text-[13px] h-[18px] screen1280:!text-[13px]">
+                    Refer a friend, Earn rewards{" "}
+                  </span>
+                  <span className="h-[36px] text-left mt-0 screen744:!mt-[8px] screen1280:!mt-0 font-normal text-white max-w-[111px] text-[11px]  screen744:!text-[10px]  screen1280:!text-[11px] leading-[18px]">
+                    Get %20 for each successful payments{" "}
+                  </span>
+                </div>
+              </div>
+              <div
+                onClick={() => {
+                  if (freeUser) {
+                    setShowUpgradeModal(true);
+                  } else {
+                    setShowLoginModal(true);
+                  }
+                }}
+                className="cursor-pointer max-w-[95px]  screen1280:!max-w-[95px] screen744:!w-full  flex items-center justify-center text-white border-[1px]  h-[24px] w-full rounded-[24px] "
+              >
+                <Link href={"/earn100"} className=" text-[14px] font-normal ]">
+                  see details
+                </Link>
+              </div>
+            </div>
+          </>
+        )}
       </>
     );
   };
 
   useEffect(() => {
-    setTimeout(() => {
+    // Show extra discount only for NEW free users who do NOT have an active referral
+    if (!isLoaded) return; // wait until user state is ready
+
+    const referralActive =
+      (user as any)?.publicMetadata?.referralActive === true;
+    const isFree = (user as any)?.publicMetadata?.plan === "free";
+
+    if (isSignedIn && isNewUser && isFree && !referralActive) {
       setShowExtraDiscount(true);
-    }, 3000);
-  }, []);
+    } else {
+      setShowExtraDiscount(false);
+    }
+  }, [isLoaded, isSignedIn, isNewUser, user, setShowExtraDiscount]);
 
   const { signOut } = useClerk();
 
@@ -761,6 +818,23 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
             />
           )}
 
+          {user && proUser && (
+            <NavItem
+              link="/earn100"
+              icon={<SvgReferral />}
+              label="Referral"
+              primary={"referral"}
+              active={active}
+              setIsMenuOpen={setIsMenuOpen}
+              collapsed={collapsed}
+              open={open}
+              setOpen={setOpen}
+              setActive={setActive}
+              submenuActive={submenuActive}
+              setSubmenuActive={setSubmenuActive}
+            />
+          )}
+
           <div
             className={clsx(
               collapsed
@@ -819,7 +893,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
             collapsed
               ? "max-w-[84px]  h-[1000px]  "
               : "left-0 hidden   h-[1000px]   screen744:!flex screen744:!max-w-[180px] screen1280:!max-w-[250px] px-[24px]",
-            "absolute left-0   pb-[50px]  screen1280:!static  z-[9] transition-all duration-1000 ease-in-out flex flex-col pt-[20px] bg-white w-full border-r-[1px] border-[#D5D6D8]"
+            "absolute left-0 z-[99]   pb-[50px]  screen1280:!static   transition-all duration-1000 ease-in-out flex flex-col pt-[20px] bg-white w-full border-r-[1px] border-[#D5D6D8]"
           )}
         >
           <div
@@ -937,6 +1011,22 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
               setSubmenuActive={setSubmenuActive}
             />
           )}
+          {user && proUser && (
+            <NavItem
+              link="/earn100"
+              icon={<SvgReferral />}
+              label="Referral"
+              primary={"referral"}
+              active={active}
+              setIsMenuOpen={setIsMenuOpen}
+              collapsed={collapsed}
+              open={open}
+              setOpen={setOpen}
+              setActive={setActive}
+              submenuActive={submenuActive}
+              setSubmenuActive={setSubmenuActive}
+            />
+          )}
 
           <div
             className={clsx(
@@ -959,7 +1049,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
               collapsed
                 ? "screen744:!w-[calc(100%-0)]"
                 : "screen744:!w-[calc(100%-96px)] screen1280:!w-[calc(100%-250px)]",
-              "screen1280:!w-full flex h-[64px] items-center justify-center pl-[24px] relative w-full border border-[#D5D6D8] bg-white",
+              "screen1280:!w-full flex h-[64px] items-center justify-center pl-[24px] relative w-full border-b border-[#D5D6D8] bg-white",
               submenuActive && active === "practice"
                 ? "flex-col "
                 : "flex-row items-center"
@@ -980,6 +1070,8 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                     ? "Mock Test"
                     : active === "profile"
                     ? "Account Settings"
+                    : active === "referral"
+                    ? "Referral"
                     : active === selectedExam
                     ? selectedExam
                     : ""}
@@ -1098,7 +1190,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                         (window as any).Intercom("show");
                       }
                     }}
-                    className="block px-4 py-2 text-[14px] text-gray-700 w-full text-left cursor-pointer"
+                    className=" block px-4 py-2 text-[14px] text-gray-700 w-full text-left cursor-pointer"
                     role="menuitem"
                     tabIndex={-1}
                     id="support-button"
@@ -1124,7 +1216,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
             </div>
           </div>
           {surveyVisible && (
-            <div className="fixed inset-0 z-50 flex screen1280:!pt-[101px] justify-center bg-[#F4F7FF]">
+            <div className="fixed inset-0 z-[99] flex screen1280:!pt-[101px] justify-center bg-[#F4F7FF]">
               <OnboardingSurvey onComplete={() => setSurveyVisible(false)} />
             </div>
           )}

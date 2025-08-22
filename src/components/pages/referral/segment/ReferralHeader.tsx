@@ -2,6 +2,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import React from "react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 
 const SvgDiamond = dynamic(() => import("@/components/icons/Diamond"), {
   ssr: false,
@@ -27,6 +28,8 @@ const Improve = dynamic(() => import("../segment/Improve"), { ssr: false });
 const MockTest = dynamic(() => import("../segment/MockTest"), { ssr: false });
 
 const ReferralHeader = () => {
+  const searchParams = useSearchParams();
+  const firstName = searchParams.get("inviter");
   return (
     <div className="px-[16px] screen744:!px-[16px] screen1280:!px-[40px] ">
       <div className="pt-[24px]">
@@ -36,7 +39,8 @@ const ReferralHeader = () => {
       </div>
       <div className="flex flex-col mt-[40px] screen1280:!mt-[64px] items-center  max-w-[692px] h-full min-h-[151px] mx-auto">
         <span className="font-semibold text-[32px] screen744:!text-[41px] screen1280:!text-[50px] ">
-          Your friend gave you <span className="text-error1"> 30% </span> Off!
+          Your friend {firstName} gave you{" "}
+          <span className="text-error1"> 20% </span> Off!
         </span>
 
         <div className="flex mt-[24px] screen744:!mt-[32px] flex-col font-normal text-text2 text-left screen744:!text-center ">
@@ -50,8 +54,9 @@ const ReferralHeader = () => {
         </div>
 
         <a
-          href={`https://accounts.celpippracticetest.com/sign-up`}
-          target="_blank"
+          href={`/sign-up?ref=${searchParams.get(
+            "ref"
+          )}&inviter=${searchParams.get("inviter")}`}
           className="cursor-pointer screen1280:!mt-[50px] screen744:!mt-[40px] mt-[32px]  flex text-[14px] screen744:!text-[18px] font-semibold items-center justify-center   w-[231px] h-[40px] screen744:!h-[56px] bg-primary1 rounded-[24px] text-white"
         >
           Create Account
@@ -65,7 +70,7 @@ const ReferralHeader = () => {
               You’ve Been Invited to CELPIPPRACTICETEST.com
             </div>
             <div className=" text-white text-[16px] screen1280:!text-[20px]  leading-[24px] screen1280:!leading-[100%]">
-              Get <span className="text-[24px]">30% </span> off your first
+              Get <span className="text-[24px]">20% </span> off your first
               subscription and start your journey to CELPIP success.
             </div>
           </div>
@@ -96,8 +101,7 @@ const ReferralHeader = () => {
       </div>
       <div className="text-center mt-[40px] ">
         <span className=" font-normal text-[16px]  screen744:!text-[20px] text-text2">
-          Practice screen744arter, not harder—with everything you need to
-          succeed.{" "}
+          Practice smarter, not harder—with everything you need to succeed.
         </span>
       </div>
 
@@ -303,7 +307,7 @@ const ReferralHeader = () => {
           {
             title: "Accept the Offer",
             description:
-              "Click the link and land here with your 30% discount auto-applied.",
+              "Click the link and land here with your 20% discount auto-applied.",
             icon: <SvgDiamond />,
             bgColor: "bg-[#FAE0FF]",
           },
@@ -315,7 +319,7 @@ const ReferralHeader = () => {
           },
           {
             title: "Purchase a Plan",
-            description: "Choose any paid plan and get 30% off instantly.",
+            description: "Choose any paid plan and get 20% off instantly.",
             icon: <SvgOffer />,
             bgColor: "bg-[#D1DEFF]",
           },
@@ -350,7 +354,9 @@ const ReferralHeader = () => {
       </div>
 
       <a
-        href={`https://accounts.celpippracticetest.com/sign-up`}
+        href={`/sign-up?ref=${searchParams.get(
+          "ref"
+        )}&inviter=${searchParams.get("inviter")}`}
         target="_blank"
         className="flex  mt-[64px] justify-center  mx-auto"
       >

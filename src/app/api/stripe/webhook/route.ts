@@ -2,42 +2,295 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import mongoClient from "@/lib/mongodb";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
+import { ReferralRewardRepository } from "@/repositories/referral-reward.repo";
+import { ReferralRepository } from "@/repositories/referral.repo";
+import { ReferralInvitationRepository } from "@/repositories/referral-invitation.repo";
 import { clerkClient } from "@clerk/express";
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
-// Helper to merge new fields into existing publicMetadata
 async function updateUserPublicMetadata(
   userId: string,
   newFields: Record<string, any>
 ) {
-  const user = await clerkClient.users.getUser(userId);
-  const currentMetadata = user.publicMetadata || {};
-  await clerkClient.users.updateUserMetadata(userId, {
-    publicMetadata: { ...currentMetadata, ...newFields },
-  });
+  try {
+    const user = await clerkClient.users.getUser(userId);
+    const currentMetadata = user.publicMetadata || {};
+    await clerkClient.users.updateUserMetadata(userId, {
+      publicMetadata: { ...currentMetadata, ...newFields },
+    });
+    console.log(`✅ Successfully updated metadata for user: ${userId}`);
+  } catch (error) {
+    console.log(
+      `⚠️ Could not update user ${userId} metadata: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
+}
+
+async function handleReferralRewards(
+  session: Stripe.Checkout.Session,
+  metadata: any
+) {
+  try {
+    const metaUserId = metadata?.user_id as string | undefined;
+    let userIdToUse: string | undefined = metaUserId;
+
+    let user;
+    let userMetadata: any = {};
+
+    try {
+      if (userIdToUse) {
+        user = await clerkClient.users.getUser(userIdToUse);
+      } else {
+        throw new Error("No user_id in metadata");
+      }
+      userMetadata = user.publicMetadata as any;
+    } catch (error) {
+      const inviteeEmail =
+        (session as any)?.customer_details?.email ||
+        (session as any)?.customer_email;
+      if (inviteeEmail) {
+        try {
+          const users = await clerkClient.users.getUserList({
+            emailAddress: [String(inviteeEmail).trim().toLowerCase()],
+          });
+          if (users?.data?.length) {
+            user = users.data[0];
+            userIdToUse = user.id;
+            userMetadata = user.publicMetadata as any;
+            console.log(
+              `✅ Resolved Clerk user by email (${inviteeEmail}) → ${userIdToUse}`
+            );
+          } else {
+            console.warn(`❌ No Clerk user found by email ${inviteeEmail}`);
+            return;
+          }
+        } catch (err) {
+          console.error("Error resolving user by email:", err);
+          return;
+        }
+      } else {
+        console.log(
+          "No user ID and no email found on session; cannot process referral"
+        );
+        return;
+      }
+    }
+
+    const referralCode = userMetadata?.referralCode || metadata?.referral_code;
+
+    if (!referralCode) {
+      console.log(
+        "❌ No referral code found in user metadata or session metadata"
+      );
+      return;
+    }
+
+    console.log(`🔍 Processing referral: ${referralCode}`);
+
+    // Find the referrer
+    const referralRepo = new ReferralRepository(mongoClient);
+    await referralRepo.ensureIndexes();
+
+    const referrer = await referralRepo.findOneByCode(referralCode);
+
+    if (!referrer) {
+      console.log(`❌ Referral code ${referralCode} not found in database`);
+      return;
+    }
+
+    console.log(`✅ Found referrer: ${referrer.userId}`);
+
+    // Calculate reward amount (20% of purchase)
+    const amountTotal = session.amount_total || 0;
+    const rewardAmount = (amountTotal / 100) * 0.2; // Convert from cents and apply 20%
+
+    if (rewardAmount < 0.01) {
+      console.log("Reward amount too small to process");
+      return;
+    }
+
+    const rewardRepo = new ReferralRewardRepository(mongoClient);
+    await rewardRepo.ensureIndexes();
+
+    try {
+      await rewardRepo.createReward({
+        inviterId: referrer.userId,
+        inviteeId: userIdToUse as string,
+        referralCode,
+        amount: rewardAmount,
+        status: "confirmed",
+        checkoutId: session.id,
+        planPurchased: metadata.plan_name || "premium",
+        purchaseAmount: amountTotal / 100,
+        purchaseDate: new Date(),
+      });
+
+      console.log(
+        `✅ Referral reward created: $${rewardAmount} for user ${referrer.userId}`
+      );
+
+      // Update referrer's metadata with reward information
+      const referrerUser = await clerkClient.users.getUser(referrer.userId);
+      const currentMetadata = referrerUser.publicMetadata || {};
+      const currentTotalRewards = (currentMetadata as any)?.totalRewards || 0;
+      const newTotalRewards = currentTotalRewards + rewardAmount;
+
+      const invitationRepo = new ReferralInvitationRepository(mongoClient);
+      await invitationRepo.ensureIndexes();
+
+      const invitation = await invitationRepo.findInvitationByCodeAndInvitee(
+        referralCode,
+        userIdToUse as string
+      );
+      if (invitation) {
+        await invitationRepo.updateInvitationStatus(
+          invitation._id!.toString(),
+          "completed"
+        );
+        console.log(
+          `✅ Marked referral invitation as completed: ${invitation._id}`
+        );
+      }
+
+      const totalInvitees = await invitationRepo.getTotalInvitations(
+        referrer.userId
+      );
+      const totalSuccessfulPurchases = await rewardRepo.getInviteeCount(
+        referrer.userId
+      );
+      let rewardLevel = 1;
+      if (totalSuccessfulPurchases >= 10) rewardLevel = 3;
+      else if (totalSuccessfulPurchases >= 5) rewardLevel = 2;
+
+      await clerkClient.users.updateUserMetadata(referrer.userId, {
+        publicMetadata: {
+          ...currentMetadata,
+          hasPendingRewards: true,
+          lastReferralDate: new Date().toISOString(),
+          totalRewards: newTotalRewards,
+          totalInvitees: totalInvitees,
+          rewardLevel: rewardLevel,
+          lastRewardAmount: rewardAmount,
+          lastRewardDate: new Date().toISOString(),
+        },
+      });
+
+      console.log(
+        `✅ Updated referrer metadata - Total: ${totalInvitees} invitees, $${newTotalRewards} rewards, Successful Purchases: ${totalSuccessfulPurchases}, Level: ${rewardLevel}`
+      );
+    } catch (dbError) {
+      console.error(`❌ Failed to create referral reward:`, dbError);
+      throw dbError; // Re-throw to be caught by outer try-catch
+    }
+
+    try {
+      const freshUser = await clerkClient.users.getUser(userIdToUse as string);
+      const freshMeta = freshUser.publicMetadata as any;
+      const promotionCodeId =
+        freshMeta?.referralPromotionId || freshMeta?.promotionCodeId;
+
+      console.log(
+        "Referral handling: promotionCodeId resolved ->",
+        promotionCodeId
+      );
+
+      try {
+        await clerkClient.users.updateUserMetadata(userIdToUse as string, {
+          publicMetadata: {
+            ...freshMeta,
+            referralDiscountUsed: true,
+            referralDiscountUsedAt: new Date().toISOString(),
+            referralDiscountActive: false,
+            referralActive: false,
+            referralCodeUsed: true,
+          },
+        });
+        console.log(
+          `✅ Set referralActive=false and marked referral used for invitee: ${userIdToUse}`
+        );
+      } catch (error) {
+        console.log(
+          `⚠️ Could not update invitee ${userIdToUse} metadata; continuing`
+        );
+      }
+
+      if (promotionCodeId) {
+        try {
+          await stripe.promotionCodes.update(promotionCodeId, {
+            active: false,
+          });
+          console.log(` Deactivated promotion code: ${promotionCodeId}`);
+        } catch (error) {
+          console.error(
+            "Error deactivating promotion code:",
+            promotionCodeId,
+            error
+          );
+        }
+      } else {
+        console.log(
+          "No promotionCodeId found on invitee metadata; skipping deactivation."
+        );
+      }
+    } catch (err) {
+      console.error(
+        "Failed to refresh invitee metadata before deactivating promotion code:",
+        err
+      );
+    }
+  } catch (error) {
+    console.error("Error handling referral rewards:", error);
+  }
 }
 
 export async function POST(req: Request) {
   try {
-    const rawBody = await req.text();
-    const sig = req.headers.get("stripe-signature")!;
+    // Read the raw request body as bytes (do NOT use req.json() / req.text() here)
+    const rawBody = await req.arrayBuffer();
+    const payload = Buffer.from(rawBody);
+    const sig = req.headers.get("stripe-signature");
     let event: Stripe.Event;
 
     try {
-      event = stripe.webhooks.constructEvent(
-        rawBody,
-        sig,
-        process.env.STRIPE_WEBHOOK_SECRET!
-      );
+      const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+      if (!webhookSecret) {
+        console.error("❌ STRIPE_WEBHOOK_SECRET not found in environment");
+        return NextResponse.json(
+          { error: "Webhook secret not configured" },
+          { status: 500 }
+        );
+      }
+
+      if (!sig) {
+        console.error("❌ Missing stripe-signature header");
+        return NextResponse.json(
+          { error: "Missing signature" },
+          { status: 400 }
+        );
+      }
+
+      event = stripe.webhooks.constructEvent(payload, sig, webhookSecret);
     } catch (err) {
-      console.error("Webhook signature verification failed:", err);
+      console.error(
+        "Webhook signature verification failed:" +
+          process.env.STRIPE_WEBHOOK_SECRET,
+        err
+      );
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
       const metadata = session.metadata;
+
+      console.log("🔍 Processing checkout.session.completed event");
+      console.log("🔍 Session ID:", session.id);
+      console.log("🔍 Metadata:", JSON.stringify(metadata, null, 2));
 
       if (metadata?.user_id) {
         await updateUserPublicMetadata(metadata.user_id, {
@@ -68,6 +321,15 @@ export async function POST(req: Request) {
             `Cannot update metadata: subscription ${subscription.id} is canceled.`
           );
         }
+      }
+
+      try {
+        console.log("🔍 Starting referral rewards processing...");
+        console.log("🔍 Session metadata:", JSON.stringify(metadata, null, 2));
+        await handleReferralRewards(session, metadata);
+        console.log("✅ Referral rewards processing completed successfully");
+      } catch (error) {
+        console.error("❌ Error handling referral rewards:", error);
       }
 
       return NextResponse.json({ received: true });
@@ -170,6 +432,21 @@ export async function POST(req: Request) {
                   lastCheckout.checkoutId,
                   "complete"
                 );
+
+                try {
+                  const session = await stripe.checkout.sessions.retrieve(
+                    lastCheckout.checkoutId
+                  );
+                  if (session) {
+                    await handleReferralRewards(session, session.metadata);
+                  }
+                } catch (err) {
+                  console.error(
+                    "Failed to process referral rewards from invoice branch:",
+                    err
+                  );
+                }
+
                 return NextResponse.json({ received: true });
               }
             }
@@ -190,6 +467,20 @@ export async function POST(req: Request) {
         new Date((invoice?.lines?.data[0]?.period?.start as number) * 1000)
       );
 
+      try {
+        const session = await stripe.checkout.sessions.retrieve(
+          sessionId as string
+        );
+        if (session) {
+          await handleReferralRewards(session, session.metadata);
+        }
+      } catch (err) {
+        console.error(
+          "Failed to process referral rewards for resolved sessionId:",
+          err
+        );
+      }
+
       return NextResponse.json({ received: true });
     }
 
@@ -203,7 +494,6 @@ export async function POST(req: Request) {
         { user_id, checkout_id }
       );
 
-      // 1. Fallback: metadata from subscription.latest_invoice → session
       console.log(
         "➡️ Fallback #1: latest_invoice =",
         subscription.latest_invoice
@@ -240,7 +530,6 @@ export async function POST(req: Request) {
         }
       }
 
-      // 2. Fallback: metadata from listing sessions by subscription ID
       console.log("➡️ Fallback #2: list sessions by subscription ID");
       if (!user_id || !checkout_id) {
         try {
@@ -259,7 +548,6 @@ export async function POST(req: Request) {
         }
       }
 
-      // 3. Fallback: find user_id via invoice.customer_email
       console.log("➡️ Fallback #3: invoice customer_email");
       if (!user_id && subscription.latest_invoice) {
         try {
@@ -284,7 +572,6 @@ export async function POST(req: Request) {
         }
       }
 
-      // 4. Fallback: retrieve checkout_id from database using found user_id
       console.log("➡️ Fallback #4: DB lookup for last checkout");
       if (user_id && !checkout_id) {
         try {
@@ -299,7 +586,6 @@ export async function POST(req: Request) {
         }
       }
 
-      // Final check before bail-out
       console.log("🔍 Final metadata →", { user_id, checkout_id });
       if (!user_id || !checkout_id || checkout_id === "{CHECKOUT_SESSION_ID}") {
         console.warn("❌ Still missing metadata for", subscription.id);

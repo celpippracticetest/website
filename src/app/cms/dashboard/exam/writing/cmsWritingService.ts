@@ -1,10 +1,10 @@
-import AWS from 'aws-sdk'
+import AWS from "aws-sdk";
 import { WritingPassage } from "./WritingPractice";
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import { createReadStream } from "fs";
-import axios from 'axios';
-import { redirect, RedirectType } from 'next/navigation';
+import axios from "axios";
+import { redirect, RedirectType } from "next/navigation";
 
 export interface WritingQuestion {
   id: string;
@@ -26,7 +26,7 @@ export const transformWritingPracticeData = (input: any) => {
   const allQuestions: WritingQuestion[] = [];
 
   input.passages.forEach(async (passage: WritingPassage) => {
-    passage.questions.forEach((q) => {
+    passage?.questions?.forEach((q) => {
       allQuestions.push({
         id: q.id,
         question: q.question,
@@ -62,18 +62,21 @@ export const transformWritingPracticeData = (input: any) => {
 /**
  * Save writing practice data (this would typically integrate with a backend)
  */
-export const saveWritingPractice = async (data: any,selectedExamId: string | null) => {
+export const saveWritingPractice = async (
+  data: any,
+  selectedExamId: string | null
+) => {
   // In a real application, this would make an API call to save the data
   // For now, we'll just log it and simulate a successful save
 
   let config = {
-    method: selectedExamId ? 'put' : 'post',
+    method: selectedExamId ? "put" : "post",
     maxBodyLength: Infinity,
-    url: '/api/examParts'+ (selectedExamId ? `/${selectedExamId}` : ''),
-    headers: { 
-      'Content-Type': 'application/json'
+    url: "/api/examParts" + (selectedExamId ? `/${selectedExamId}` : ""),
+    headers: {
+      "Content-Type": "application/json",
     },
-    data: data
+    data: data,
   };
 
   try {
@@ -89,5 +92,3 @@ export const saveWritingPractice = async (data: any,selectedExamId: string | nul
     data: transformWritingPracticeData(data),
   };
 };
-
-

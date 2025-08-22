@@ -10,6 +10,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
 import { USER_PROMPTS } from "./userPrompts";
 import { SYSTEM_PROPMTS } from "./systemPrompts";
+
 /**
  * Wraps a promise with a timeout.
  * @throws Error('Operation timed out') if the promise does not resolve in time.
@@ -31,6 +32,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
       });
   });
 }
+
 async function uploadAudioBuffer(
   buffer: Buffer,
   fileName: string
@@ -38,36 +40,32 @@ async function uploadAudioBuffer(
   const client = new S3Client({
     region: "eu-north-1",
     credentials: {
-      accessKeyId: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID ?? "", // Replace with your AWS Access Key ID
-      secretAccessKey: process.env.NEXT_PUBLIC_AWS_SECRETE_ACCESS_KEY ?? "", // Replace with your AWS Secret Access Key
+      accessKeyId: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID ?? "",
+      secretAccessKey: process.env.NEXT_PUBLIC_AWS_SECRETE_ACCESS_KEY ?? "",
     },
   });
 
   const upload = new Upload({
     client,
     params: {
-      Bucket: "celtest-audio", // Your bucket name
-      Key: `RecordedSpeaking/${Date.now()}_${fileName}`, // Unique key for the file
+      Bucket: "celtest-audio",
+      Key: `RecordedSpeaking/${Date.now()}_${fileName}`,
       Body: buffer,
     },
   });
 
   try {
     const result = await upload.done();
-    return result.Location ?? ""; // Replace with your bucket's URL format
+    return result.Location ?? "";
   } catch (error) {
     console.error("Upload failed", error);
     return null;
   }
 }
+
 const transcribeUrl = async (fileUrl: string) => {
-  // The API key we created in step 3
   const deepgramApiKey = process.env.DEEPGRAM_API_KEY;
-
-  // Hosted sample file
   const url = fileUrl;
-
-  // Initializes the Deepgram SDK
   const deepgram = createClient(deepgramApiKey);
 
   const { result, error } = await deepgram.listen.prerecorded.transcribeUrl(
@@ -79,6 +77,24 @@ const transcribeUrl = async (fileUrl: string) => {
   if (!error) console.dir(result, { depth: null });
   return result;
 };
+
+// ========= Off-topic helpers =========
+const stripHtml = (s: string) =>
+  s
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const uniqLower = (arr: string[]) => {
+  const seen = new Set<string>();
+  return arr.filter((t) => {
+    const k = t.toLowerCase();
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+};
+
 export const POST = async function (req: Request) {
   try {
     const user = await currentUser();
@@ -104,13 +120,16 @@ export const POST = async function (req: Request) {
         { status: 400 }
       );
     }
+
     const transcribeResult: any = await withTimeout(
       transcribeUrl(location),
       30000
     );
+
     const examPartRepo = new ExamPartsRepository(mongoClient);
     const examId = formData.get("examId") as string;
     const partId = formData.get("partId") as string;
+
     const examPart = await examPartRepo.findExamPartByExamIdAndPartId(
       examId,
       parseInt(partId)
@@ -160,12 +179,60 @@ export const POST = async function (req: Request) {
       );
     }
 
+    // ========= OFF-TOPIC: gather all topics from passages[].description =========
+    const topics = uniqLower(
+      (examPart.passages ?? [])
+        .map((p: any) => stripHtml((p?.description ?? p?.body).toString()))
+        .filter(Boolean)
+    );
+
+    // تقویت system prompt
+    let finalSystemPrompt = SYSTEM_PROPMTS[parseInt(partId)];
+
+    if (topics.length) {
+      const inlineTopics = topics.join(" | ");
+      const hasTD = command.includes("{{TASK_DESCRIPTION}}");
+      const hasTOPIC = command.includes("{{TOPIC}}");
+
+      if (hasTD || hasTOPIC) {
+        // همه placeholderهای موجود را با رشته‌ی خطی پر کن
+        command = command
+          .replaceAll("{{TASK_DESCRIPTION}}", inlineTopics)
+          .replaceAll("{{TOPIC}}", inlineTopics);
+      } else {
+        // اگر placeholder نیست، بلاک موضوع/قوانین را اضافه کن (یک بار)
+        const marker = "\n---\nTASK_TOPICS:";
+        if (!command.includes(marker)) {
+          const bulletTopics = topics.map((t) => `- ${t}`).join("\n");
+          command += `
+
+---
+TASK_TOPICS:
+${bulletTopics}
+
+SCORING_RULES_FOR_TASK_FULFILLMENT:
+- Heavily penalize off-topic responses.
+- The response must meaningfully address at least ONE of the TASK_TOPICS above.
+- If it doesn't address any, set "taskFulfillment" very low (e.g., 0–3/12) and reflect this in "overall".
+- Do NOT reward fluency or grammar with high "overall" if the response is off-topic.`;
+        }
+      }
+
+      const bulletForSystem = topics.map((t) => `- ${t}`).join("\n");
+      finalSystemPrompt += `
+
+The user must address at least ONE of the following TASK_TOPICS:
+${bulletForSystem}
+
+If the response is off-topic (i.e., does not address any topic above), sharply reduce "taskFulfillment" and lower "overall" accordingly.`;
+    }
+
     const msg: any = await withTimeout(
       anthropic.messages.create({
         model: "claude-3-7-sonnet-20250219",
         max_tokens: 20000,
         temperature: 1,
-        system: SYSTEM_PROPMTS[parseInt(partId)],
+        system: finalSystemPrompt,
         tools: [
           {
             name: "CELPIPWritingEvaluation",
@@ -222,20 +289,6 @@ export const POST = async function (req: Request) {
               ],
             },
           },
-          // {
-          //     name: "CELPIPWritingEvaluation",
-          //     description: "evaluating and providing feedback on a speaking sample",
-          //     input_schema: {
-          //       type: "object",
-          //       properties: {
-          //         feedback: {
-          //           type: "string",
-          //           description: "the full feedback on writng sample",
-          //         },
-          //       },
-
-          //     },
-          //   },
         ],
         messages: [
           {

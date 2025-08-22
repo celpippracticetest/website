@@ -73,6 +73,7 @@ const formSchema = z.object({
       id: z.string().min(1, "Passage ID is required"),
       pictureUrl: z.string().optional(),
       title: z.string().min(1, "Passage title is required"),
+      description: z.string().optional(),
       body: z.string().optional(),
       sampleResponse: z.array(
         z.object({
@@ -114,6 +115,7 @@ export default function SpeakingPracticeInputForm() {
         {
           id: "1",
           title: "",
+          description: "",
           sampleResponse: [
             {
               id: "1",
@@ -626,6 +628,20 @@ export default function SpeakingPracticeInputForm() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Title</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={`passages.${passageIndex}.description`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description</FormLabel>
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
