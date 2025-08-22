@@ -13,6 +13,7 @@ interface WithdrawalRequest {
     totalInvitees: number;
     totalReward: number;
     referralCode: string;
+    inviteeEmails?: string[];
   };
   planPurchased: string;
   purchaseDate: string;
@@ -204,199 +205,228 @@ export default function WithdrawalRequests() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {displayed.map((request) => (
-                  <tr key={request.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
+                {displayed.map((request) => {
+                  return (
+                    <tr key={request.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {request.userEmail}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            Plan: {request.planPurchased}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          {request.userEmail}
+                          ${request.amount.toFixed(2)}
                         </div>
-                        <div className="text-sm text-gray-500">
-                          Plan: {request.planPurchased}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {request.paypalEmail}
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        ${request.amount.toFixed(2)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {request.paypalEmail}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        <div>Code: {request.referralStats.referralCode}</div>
-                        <div>
-                          Invitees: {request.referralStats.totalInvitees}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          <div>Code: {request.referralStats.referralCode}</div>
+                          <div>
+                            Invitees: {request.referralStats.totalInvitees}
+                          </div>
+                          <div>
+                            Total Reward: $
+                            {request.referralStats.totalReward.toFixed(2)}
+                          </div>
+                          {Array.isArray(request.referralStats.inviteeEmails) &&
+                          request.referralStats.inviteeEmails.length > 0 ? (
+                            <details className="mt-2">
+                              <summary className="cursor-pointer select-none text-blue-600 hover:text-blue-800">
+                                View invitee emails (
+                                {request.referralStats.inviteeEmails.length})
+                              </summary>
+                              <ul className="mt-2 space-y-1">
+                                {request.referralStats.inviteeEmails.map(
+                                  (em, idx) => (
+                                    <li
+                                      key={idx}
+                                      className="text-xs text-gray-700"
+                                    >
+                                      {em}
+                                    </li>
+                                  )
+                                )}
+                              </ul>
+                            </details>
+                          ) : null}
                         </div>
-                        <div>
-                          Total Reward: $
-                          {request.referralStats.totalReward.toFixed(2)}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          request.status === "pending"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : request.status === "approved"
-                            ? "bg-blue-100 text-blue-800"
-                            : request.status === "paid"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {request.status}
-                      </span>
-                      {request.status === "rejected" && request.adminNotes ? (
-                        <div className="mt-1 text-xs text-red-700">
-                          Reason: {request.adminNotes}
-                        </div>
-                      ) : null}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(request.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      {/* Pending: approve, mark paid, reject */}
-                      {request.status === "pending" && (
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() =>
-                              updateRequestStatus(request.id, "paid")
-                            }
-                            disabled={updating === request.id}
-                            className="cursor-pointer text-blue-600 hover:text-blue-900 disabled:opacity-50"
-                          >
-                            {updating === request.id
-                              ? "Updating..."
-                              : "Mark Paid"}
-                          </button>
-                          <button
-                            onClick={() => {
-                              const notes = window.prompt(
-                                "Enter rejection reason:"
-                              );
-                              if (notes && notes.trim()) {
-                                updateRequestStatus(
-                                  request.id,
-                                  "rejected",
-                                  notes.trim()
-                                );
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            request.status === "pending"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : request.status === "approved"
+                              ? "bg-blue-100 text-blue-800"
+                              : request.status === "paid"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {request.status}
+                        </span>
+                        {request.status === "rejected" && request.adminNotes ? (
+                          <div className="mt-1 text-xs text-red-700">
+                            Reason: {request.adminNotes}
+                          </div>
+                        ) : null}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(request.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        {/* Pending: approve, mark paid, reject */}
+                        {request.status === "pending" && (
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() =>
+                                updateRequestStatus(request.id, "paid")
                               }
-                            }}
-                            disabled={updating === request.id}
-                            className="cursor-pointer text-red-600 hover:text-red-900 disabled:opacity-50"
-                          >
-                            {updating === request.id ? "Updating..." : "Reject"}
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Approved: mark paid or reject */}
-                      {request.status === "approved" && (
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() =>
-                              updateRequestStatus(request.id, "paid")
-                            }
-                            disabled={updating === request.id}
-                            className="cursor-pointer text-blue-600 hover:text-blue-900 disabled:opacity-50"
-                          >
-                            {updating === request.id
-                              ? "Updating..."
-                              : "Mark Paid"}
-                          </button>
-                          <button
-                            onClick={() => {
-                              const notes = window.prompt(
-                                "Enter rejection reason:"
-                              );
-                              if (notes && notes.trim()) {
-                                updateRequestStatus(
-                                  request.id,
-                                  "rejected",
-                                  notes.trim()
+                              disabled={updating === request.id}
+                              className="cursor-pointer text-blue-600 hover:text-blue-900 disabled:opacity-50"
+                            >
+                              {updating === request.id
+                                ? "Updating..."
+                                : "Mark Paid"}
+                            </button>
+                            <button
+                              onClick={() => {
+                                const notes = window.prompt(
+                                  "Enter rejection reason:"
                                 );
+                                if (notes && notes.trim()) {
+                                  updateRequestStatus(
+                                    request.id,
+                                    "rejected",
+                                    notes.trim()
+                                  );
+                                }
+                              }}
+                              disabled={updating === request.id}
+                              className="cursor-pointer text-red-600 hover:text-red-900 disabled:opacity-50"
+                            >
+                              {updating === request.id
+                                ? "Updating..."
+                                : "Reject"}
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Approved: mark paid or reject */}
+                        {request.status === "approved" && (
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() =>
+                                updateRequestStatus(request.id, "paid")
                               }
-                            }}
-                            disabled={updating === request.id}
-                            className="cursor-pointer text-red-600 hover:text-red-900 disabled:opacity-50"
-                          >
-                            {updating === request.id ? "Updating..." : "Reject"}
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Rejected: allow reopen or mark paid */}
-                      {request.status === "rejected" && (
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() =>
-                              updateRequestStatus(request.id, "pending")
-                            }
-                            disabled={updating === request.id}
-                            className="cursor-pointer text-gray-700 hover:text-gray-900 disabled:opacity-50"
-                          >
-                            {updating === request.id
-                              ? "Updating..."
-                              : "Reopen (Pending)"}
-                          </button>
-                          <button
-                            onClick={() =>
-                              updateRequestStatus(request.id, "paid")
-                            }
-                            disabled={updating === request.id}
-                            className="cursor-pointer text-blue-600 hover:text-blue-900 disabled:opacity-50"
-                          >
-                            {updating === request.id
-                              ? "Updating..."
-                              : "Mark Paid"}
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Paid: allow correction to pending or rejected */}
-                      {request.status === "paid" && (
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() =>
-                              updateRequestStatus(request.id, "pending")
-                            }
-                            disabled={updating === request.id}
-                            className="cursor-pointer text-gray-700 hover:text-gray-900 disabled:opacity-50"
-                          >
-                            {updating === request.id
-                              ? "Updating..."
-                              : "Mark Pending"}
-                          </button>
-                          <button
-                            onClick={() => {
-                              const notes = window.prompt(
-                                "Enter rejection reason:"
-                              );
-                              if (notes && notes.trim()) {
-                                updateRequestStatus(
-                                  request.id,
-                                  "rejected",
-                                  notes.trim()
+                              disabled={updating === request.id}
+                              className="cursor-pointer text-blue-600 hover:text-blue-900 disabled:opacity-50"
+                            >
+                              {updating === request.id
+                                ? "Updating..."
+                                : "Mark Paid"}
+                            </button>
+                            <button
+                              onClick={() => {
+                                const notes = window.prompt(
+                                  "Enter rejection reason:"
                                 );
+                                if (notes && notes.trim()) {
+                                  updateRequestStatus(
+                                    request.id,
+                                    "rejected",
+                                    notes.trim()
+                                  );
+                                }
+                              }}
+                              disabled={updating === request.id}
+                              className="cursor-pointer text-red-600 hover:text-red-900 disabled:opacity-50"
+                            >
+                              {updating === request.id
+                                ? "Updating..."
+                                : "Reject"}
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Rejected: allow reopen or mark paid */}
+                        {request.status === "rejected" && (
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() =>
+                                updateRequestStatus(request.id, "pending")
                               }
-                            }}
-                            disabled={updating === request.id}
-                            className="cursor-pointer text-red-600 hover:text-red-900 disabled:opacity-50"
-                          >
-                            {updating === request.id ? "Updating..." : "Reject"}
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                              disabled={updating === request.id}
+                              className="cursor-pointer text-gray-700 hover:text-gray-900 disabled:opacity-50"
+                            >
+                              {updating === request.id
+                                ? "Updating..."
+                                : "Reopen (Pending)"}
+                            </button>
+                            <button
+                              onClick={() =>
+                                updateRequestStatus(request.id, "paid")
+                              }
+                              disabled={updating === request.id}
+                              className="cursor-pointer text-blue-600 hover:text-blue-900 disabled:opacity-50"
+                            >
+                              {updating === request.id
+                                ? "Updating..."
+                                : "Mark Paid"}
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Paid: allow correction to pending or rejected */}
+                        {request.status === "paid" && (
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() =>
+                                updateRequestStatus(request.id, "pending")
+                              }
+                              disabled={updating === request.id}
+                              className="cursor-pointer text-gray-700 hover:text-gray-900 disabled:opacity-50"
+                            >
+                              {updating === request.id
+                                ? "Updating..."
+                                : "Mark Pending"}
+                            </button>
+                            <button
+                              onClick={() => {
+                                const notes = window.prompt(
+                                  "Enter rejection reason:"
+                                );
+                                if (notes && notes.trim()) {
+                                  updateRequestStatus(
+                                    request.id,
+                                    "rejected",
+                                    notes.trim()
+                                  );
+                                }
+                              }}
+                              disabled={updating === request.id}
+                              className="cursor-pointer text-red-600 hover:text-red-900 disabled:opacity-50"
+                            >
+                              {updating === request.id
+                                ? "Updating..."
+                                : "Reject"}
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

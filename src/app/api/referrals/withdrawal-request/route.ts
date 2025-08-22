@@ -88,6 +88,9 @@ export async function POST(req: Request) {
 
     const totalInvitees = await invitationRepo.getTotalInvitations(userId);
     const referralCode = (user.publicMetadata as any)?.referralCode || "N/A";
+    const inviteeEmails = await invitationRepo.getInviteeEmailsByInviterId(
+      userId
+    );
 
     // Get user's plan and purchase info from metadata
     const planPurchased = (user.publicMetadata as any)?.plan || "free";
@@ -104,6 +107,7 @@ export async function POST(req: Request) {
         totalInvitees,
         totalReward: totalConfirmedRewards,
         referralCode,
+        inviteeEmails,
       },
       planPurchased,
       purchaseDate: new Date(purchaseDate),
@@ -117,6 +121,7 @@ export async function POST(req: Request) {
         totalInvitees,
         totalReward: totalConfirmedRewards,
         referralCode,
+        inviteeEmails,
       },
     });
 
@@ -227,6 +232,24 @@ async function sendWithdrawalNotificationEmail({
           <p><strong>Total Reward Earned (confirmed):</strong> $${referralStats.totalReward.toFixed(
             2
           )}</p>
+          ${
+            Array.isArray(referralStats?.inviteeEmails) &&
+            referralStats.inviteeEmails.length > 0
+              ? `<div style="margin-top:10px;">
+                   <p><strong>Invitee Emails (${
+                     referralStats.inviteeEmails.length
+                   }):</strong></p>
+                   <ul style="margin:6px 0 0 18px; padding:0;">
+                     ${referralStats.inviteeEmails
+                       .map(
+                         (em: string) =>
+                           `<li style="margin:3px 0; font-size: 13px;">${em}</li>`
+                       )
+                       .join("")}
+                   </ul>
+                 </div>`
+              : ``
+          }
         </div>
 
         <div style="background: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0;">

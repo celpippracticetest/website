@@ -186,4 +186,14 @@ export class ReferralInvitationRepository {
   async getTotalInvitations(inviterId: string): Promise<number> {
     return this.getCollection().countDocuments({ inviterId });
   }
+
+  async getInviteeEmailsByInviterId(inviterId: string): Promise<string[]> {
+    const docs = await this.getCollection()
+      .find({ inviterId })
+      .project({ inviteeEmail: 1 })
+      .toArray();
+    return docs
+      .map((d: any) => d.inviteeEmail)
+      .filter((email: any) => typeof email === "string" && email.length > 0);
+  }
 }

@@ -45,6 +45,7 @@ export class WithdrawalRequestRepository {
       totalInvitees: number;
       totalReward: number;
       referralCode: string;
+      inviteeEmails: string[];
     };
     planPurchased: string;
     purchaseDate: Date;
