@@ -107,18 +107,14 @@ export class WithdrawalRequestRepository {
       { returnDocument: "after" }
     );
 
-    return result ? this.convertFromEntity(result) : null;
+    const doc = (result as any)?.value ?? result;
+    return doc ? this.convertFromEntity(doc as TWithdrawalRequestSchema) : null;
   }
 
-  async findPendingWithdrawalRequests(): Promise<
-    TWithdrawalRequestSchemaDto[]
-  > {
-    const withdrawals = await this.getWithdrawalRequestCollection()
-      .find({ status: "pending" })
-      .sort({ createdAt: 1 })
-      .toArray();
+  async findPendingWithdrawalRequests() {
+    const withdrawals = await this.getWithdrawalRequestCollection().find({});
 
-    return withdrawals.map((withdrawal) => this.convertFromEntity(withdrawal));
+    return withdrawals;
   }
 
   async findWithdrawalRequestsByStatus(
@@ -126,6 +122,15 @@ export class WithdrawalRequestRepository {
   ): Promise<TWithdrawalRequestSchemaDto[]> {
     const withdrawals = await this.getWithdrawalRequestCollection()
       .find({ status })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    return withdrawals.map((withdrawal) => this.convertFromEntity(withdrawal));
+  }
+
+  async findAllWithdrawalRequests(): Promise<TWithdrawalRequestSchemaDto[]> {
+    const withdrawals = await this.getWithdrawalRequestCollection()
+      .find({})
       .sort({ createdAt: -1 })
       .toArray();
 

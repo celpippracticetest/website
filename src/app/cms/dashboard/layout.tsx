@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 
 const examItems = [
   {
@@ -28,11 +28,7 @@ const practiceItems = [
   },
 ] as const;
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentTab = searchParams.get("tab");
@@ -42,12 +38,11 @@ export default function RootLayout({
     if (key === "overview") return "/cms/dashboard";
     if (key === "onboarding") return "/cms/dashboard?tab=onboarding";
     if (key === "withdrawal-requests")
-      return "/cms/dashboard?tab=withdrawal-requests";
+      return "/cms/dashboard/withdrawal-requests";
     return `/cms/${key}`;
   };
   const isActive = (key: string) => {
     if (key === "overview") {
-      // overview = dashboard without any tab OR plain /cms
       return (
         pathname === "/cms" || (pathname === "/cms/dashboard" && !currentTab)
       );
@@ -60,7 +55,6 @@ export default function RootLayout({
         pathname === "/cms/dashboard" && currentTab === "withdrawal-requests"
       );
     }
-    // other non-dashboard pages
     return pathname === `/cms/${key}`;
   };
   return (
@@ -270,5 +264,17 @@ export default function RootLayout({
       {/* Content */}
       <main className="flex-1 p-3 md:p-6">{children}</main>
     </div>
+  );
+}
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <Suspense fallback={null}>
+      <DashboardShell>{children}</DashboardShell>
+    </Suspense>
   );
 }

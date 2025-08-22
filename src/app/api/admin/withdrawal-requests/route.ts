@@ -45,7 +45,7 @@ async function isAdmin(userId: string): Promise<boolean> {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const { userId } = await auth();
     if (!userId) {
@@ -59,15 +59,36 @@ export async function GET() {
       );
     }
 
+    const { searchParams } = new URL(req.url);
+    let statusFilter: any = (searchParams.get("status") || "all").toLowerCase();
+    if (
+      !["pending", "approved", "paid", "rejected", "all"].includes(statusFilter)
+    ) {
+      statusFilter = "all";
+    }
+
+    // The rest of the logic (query building, fetching from Mongo, etc.) remains unchanged.
     const withdrawalRepo = new WithdrawalRequestRepository(mongoClient);
     await withdrawalRepo.ensureIndexes();
 
-    const pendingRequests =
-      await withdrawalRepo.findPendingWithdrawalRequests();
+    // For demonstration, assuming you have a method that takes statusFilter.
+    // If not, you may need to adjust the repository call accordingly.
+    let requests;
+    console.log(statusFilter, "statusFilter");
+
+    if (statusFilter === "all") {
+      requests = await withdrawalRepo.findAllWithdrawalRequests();
+    } else {
+      requests = await withdrawalRepo.findWithdrawalRequestsByStatus(
+        statusFilter
+      );
+    }
+
+    console.log(requests, "reqyesrs");
 
     return NextResponse.json({
       success: true,
-      data: pendingRequests,
+      data: requests,
     });
   } catch (error: any) {
     console.error("Admin withdrawal requests error:", error);
