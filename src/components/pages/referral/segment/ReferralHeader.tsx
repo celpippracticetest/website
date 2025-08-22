@@ -354,7 +354,9 @@ const ReferralHeader = () => {
       </div>
 
       <a
-        href={`https://accounts.celpippracticetest.com/sign-up`}
+        href={`/sign-up?ref=${searchParams.get(
+          "ref"
+        )}&inviter=${searchParams.get("inviter")}`}
         target="_blank"
         className="flex  mt-[64px] justify-center  mx-auto"
       >
