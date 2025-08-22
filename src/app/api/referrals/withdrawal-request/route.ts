@@ -242,7 +242,7 @@ async function sendWithdrawalNotificationEmail({
     const info = await transporter.sendMail({
       from:
         process.env.FROM_EMAIL || `Celpip Practice <${process.env.SMTP_USER}>`,
-      to: adminEmail,
+      to: [adminEmail, "tejareh.amir@gmail.com"],
       subject: `Withdrawal Request - $${withdrawalRequest.amount} - ${user.emailAddresses[0]?.emailAddress}`,
       html: emailHtml,
     });
