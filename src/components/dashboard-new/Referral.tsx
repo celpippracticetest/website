@@ -229,7 +229,7 @@ export default function Referral() {
       | "withdrawal-paid"
       | "adjustment"
       | string;
-    amount?: number; // USD
+    amount?: number;
     status?:
       | "paid"
       | "processing"
@@ -789,7 +789,7 @@ export default function Referral() {
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Amount (USD)
+                Amount (CAD)
               </label>
               <input
                 type="number"

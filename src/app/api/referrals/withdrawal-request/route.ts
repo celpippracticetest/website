@@ -63,14 +63,20 @@ export async function POST(req: Request) {
     );
     const totalPendingWithdrawals =
       await withdrawalRepo.getPendingWithdrawalAmount(userId);
-    const availableAmount = totalConfirmedRewards - totalPendingWithdrawals;
 
-    if (amount > availableAmount) {
+    // Work in integer cents to avoid floating-point rounding issues
+    const availableCents = Math.max(
+      0,
+      Math.round((totalConfirmedRewards - totalPendingWithdrawals) * 100)
+    );
+    const requestedCents = Math.max(0, Math.round(amount * 100));
+
+    if (requestedCents > availableCents) {
       return NextResponse.json(
         {
-          error: `Insufficient funds. Available: $${availableAmount.toFixed(
-            2
-          )}`,
+          error: `Insufficient funds. Available: $${(
+            availableCents / 100
+          ).toFixed(2)}`,
         },
         { status: 400 }
       );
