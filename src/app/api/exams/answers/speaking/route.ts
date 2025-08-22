@@ -182,7 +182,7 @@ export const POST = async function (req: Request) {
     // ========= OFF-TOPIC: gather all topics from passages[].description =========
     const topics = uniqLower(
       (examPart.passages ?? [])
-        .map((p: any) => stripHtml((p?.description ?? "").toString()))
+        .map((p: any) => stripHtml((p?.description ?? p?.body).toString()))
         .filter(Boolean)
     );
 

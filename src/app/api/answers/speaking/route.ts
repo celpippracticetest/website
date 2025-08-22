@@ -315,7 +315,8 @@ export const POST = async function (req: Request) {
     // ===== Off-topic from ALL passages[].description =====
     const topics = uniqLower(
       (practice.passages ?? [])
-        .map((p) => stripHtml((p?.description ?? "").toString()))
+        .map((p: any) => stripHtml((p?.description ?? p?.body).toString()))
+
         .filter(Boolean)
     );
 
