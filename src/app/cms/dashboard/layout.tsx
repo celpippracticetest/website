@@ -1,15 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-
-const tabs = [
-  { key: "overview", label: "Overview", icon: "🏠" },
-  { key: "onboarding", label: "Onboarding", icon: "🧭" },
-  { key: "exams", label: "Exams", icon: "📝" },
-  { key: "settings", label: "Settings", icon: "⚙️" },
-] as const;
+import { usePathname, useSearchParams } from "next/navigation";
+import { useState } from "react";
 
 const examItems = [
   {
@@ -41,23 +34,33 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams.get("tab");
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const hrefFor = (key: string) => {
     if (key === "overview") return "/cms/dashboard";
-    if (key === "onboarding") return "/cms/dashboard?tab=onboarding"; // until /cms/onboarding page exists
+    if (key === "onboarding") return "/cms/dashboard?tab=onboarding";
+    if (key === "withdrawal-requests")
+      return "/cms/dashboard?tab=withdrawal-requests";
     return `/cms/${key}`;
   };
   const isActive = (key: string) => {
-    const href = hrefFor(key);
-    // Match exact path for clean active state (ignores query for onboarding)
-    if (key === "onboarding")
+    if (key === "overview") {
+      // overview = dashboard without any tab OR plain /cms
       return (
-        pathname?.startsWith("/cms/dashboard") &&
-        pathname?.includes("/cms/dashboard")
+        pathname === "/cms" || (pathname === "/cms/dashboard" && !currentTab)
       );
-    if (key === "overview")
-      return pathname === "/cms" || pathname === "/cms/dashboard";
+    }
+    if (key === "onboarding") {
+      return pathname === "/cms/dashboard" && currentTab === "onboarding";
+    }
+    if (key === "withdrawal-requests") {
+      return (
+        pathname === "/cms/dashboard" && currentTab === "withdrawal-requests"
+      );
+    }
+    // other non-dashboard pages
     return pathname === `/cms/${key}`;
   };
   return (
@@ -145,6 +148,26 @@ export default function RootLayout({
                 >
                   <span aria-hidden>🧭</span>
                   {!collapsed && <span>Onboarding</span>}
+                </Link>
+              </li>
+              <li className="mt-3">
+                <Link
+                  href={hrefFor("withdrawal-requests")}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center ${
+                    collapsed ? "justify-center" : "justify-start"
+                  } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive("withdrawal-requests")
+                      ? "bg-gray-100 text-gray-900"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                  aria-current={
+                    isActive("withdrawal-requests") ? "page" : undefined
+                  }
+                  title="Withdrawal Requests"
+                >
+                  <span aria-hidden>🧭</span>
+                  {!collapsed && <span>Withdrawal Requests</span>}
                 </Link>
               </li>
 

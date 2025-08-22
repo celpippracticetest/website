@@ -241,13 +241,34 @@ export default function Referral() {
       | string;
     referralCode?: string;
     meta?: Record<string, any>;
+    description?: string;
   };
 
-  const activities: ActivityItem[] = Array.isArray(referralStats?.activity)
-    ? referralStats?.activity
+  // unify activity source and normalize fields
+  const rawActivities = Array.isArray(referralStats?.activities)
+    ? referralStats.activities
+    : Array.isArray(referralStats?.activity)
+    ? referralStats.activity
     : Array.isArray(referralStats?.transactions)
-    ? referralStats?.transactions
+    ? referralStats.transactions
+    : Array.isArray(referralStats?.data?.activities)
+    ? referralStats.data.activities
     : [];
+
+  const activities: ActivityItem[] = rawActivities.map((it: any) => ({
+    ...it,
+    status: (it?.status ?? it?.state ?? it?.meta?.status ?? "")
+      .toString()
+      .toLowerCase(),
+    description:
+      it?.description ??
+      it?.adminNotes ??
+      it?.reason ??
+      it?.meta?.description ??
+      it?.meta?.adminNotes ??
+      it?.meta?.reason ??
+      "",
+  }));
 
   const formatDate = (d: string | number | Date) => {
     try {
@@ -293,10 +314,11 @@ export default function Referral() {
       bg = "#F2F6FF";
       fg = "#37465C";
       label = "Pending";
-    } else if (s === "failed" || s === "refunded") {
+    } else if (s === "failed" || s === "refunded" || s === "rejected") {
       bg = "#FEE2E2";
       fg = "#991B1B";
-      label = s === "failed" ? "Failed" : "Refunded";
+      label =
+        s === "failed" ? "Failed" : s === "refunded" ? "Refunded" : "Rejected";
     }
     return (
       <span
@@ -716,6 +738,12 @@ export default function Referral() {
                   </div>
                   <div className="w-full screen744:!w-[25%] text-[13px] text-[#37465C]">
                     {actionLabel(it.action)}
+                    {it.status?.toLowerCase() === "rejected" &&
+                    it.description ? (
+                      <div className="mt-[4px] text-[12px] leading-[16px] text-[#991B1B]">
+                        Reason: {it.description}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="w-full screen744:!w-[15%] text-[13px] text-[#37465C]">
                     {formatAmount(it.amount)}

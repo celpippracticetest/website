@@ -62,6 +62,7 @@ export async function GET() {
         processing: "processing",
         failed: "failed",
         refunded: "refunded",
+        rejected: "rejected",
       };
       return {
         id: r?._id?.toString?.() || r?.id,
@@ -83,6 +84,13 @@ export async function GET() {
 
     const mapWithdrawalToActivity = (w: any) => {
       const wStatus = (w?.status || "").toLowerCase();
+      const description =
+        w?.adminNotes ||
+        w?.reason ||
+        w?.description ||
+        w?.meta?.reason ||
+        w?.meta?.description ||
+        "";
       // normalize statuses
       let status: string = "requested";
       let action: string = "withdrawal-request";
@@ -99,6 +107,9 @@ export async function GET() {
       } else if (wStatus === "failed" || wStatus === "refunded") {
         status = wStatus;
         action = "withdrawal-request";
+      } else if (wStatus === "rejected") {
+        status = "rejected";
+        action = "withdrawal-request";
       } else if (wStatus === "pending" || wStatus === "requested") {
         status = "requested";
         action = "withdrawal-request";
@@ -109,6 +120,7 @@ export async function GET() {
         action,
         amount: typeof w?.amount === "number" ? w.amount : undefined,
         status: status as any,
+        description,
         meta: w || {},
       };
     };

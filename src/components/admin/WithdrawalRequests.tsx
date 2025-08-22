@@ -186,21 +186,10 @@ export default function WithdrawalRequests() {
                         <div className="flex space-x-2">
                           <button
                             onClick={() =>
-                              updateRequestStatus(request.id, "approved")
-                            }
-                            disabled={updating === request.id}
-                            className="text-green-600 hover:text-green-900 disabled:opacity-50"
-                          >
-                            {updating === request.id
-                              ? "Updating..."
-                              : "Approve"}
-                          </button>
-                          <button
-                            onClick={() =>
                               updateRequestStatus(request.id, "paid")
                             }
                             disabled={updating === request.id}
-                            className="text-blue-600 hover:text-blue-900 disabled:opacity-50"
+                            className="cursor-pointer text-blue-600 hover:text-blue-900 disabled:opacity-50"
                           >
                             {updating === request.id
                               ? "Updating..."
@@ -208,17 +197,19 @@ export default function WithdrawalRequests() {
                           </button>
                           <button
                             onClick={() => {
-                              const notes = prompt("Enter rejection reason:");
-                              if (notes !== null) {
+                              const notes = window.prompt(
+                                "Enter rejection reason:"
+                              );
+                              if (notes && notes.trim()) {
                                 updateRequestStatus(
                                   request.id,
                                   "rejected",
-                                  notes
+                                  notes.trim()
                                 );
                               }
                             }}
                             disabled={updating === request.id}
-                            className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                            className="cursor-pointer text-red-600 hover:text-red-900 disabled:opacity-50"
                           >
                             {updating === request.id ? "Updating..." : "Reject"}
                           </button>

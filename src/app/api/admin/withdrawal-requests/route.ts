@@ -15,7 +15,7 @@ async function getTransporter() {
   const user = process.env.SMTP_USER!;
   const pass = process.env.SMTP_PASS!;
 
-  const secure = port === 465; // SSL on 465; STARTTLS on 587
+  const secure = port === 465;
 
   const transporter = nodemailer.createTransport({
     host,
@@ -34,12 +34,12 @@ async function getTransporter() {
   return transporter;
 }
 
-// Simple admin check - you might want to implement proper role-based access control
 async function isAdmin(userId: string): Promise<boolean> {
   try {
     const user = await clerkClient.users.getUser(userId);
     const metadata = user.publicMetadata as any;
-    return metadata?.role === "admin" || metadata?.isAdmin === true;
+
+    return metadata?.roles?.includes("admin");
   } catch {
     return false;
   }
