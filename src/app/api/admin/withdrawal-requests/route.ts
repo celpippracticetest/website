@@ -6,6 +6,34 @@ import mongoClient from "@/lib/mongodb";
 import { WithdrawalRequestRepository } from "@/repositories/withdrawal-request.repo";
 import nodemailer from "nodemailer";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+async function getTransporter() {
+  const host = process.env.SMTP_HOST!;
+  const port = Number(process.env.SMTP_PORT);
+  const user = process.env.SMTP_USER!;
+  const pass = process.env.SMTP_PASS!;
+
+  const secure = port === 465; // SSL on 465; STARTTLS on 587
+
+  const transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    auth: { user, pass },
+    requireTLS: port === 587,
+  });
+
+  try {
+    await transporter.verify();
+  } catch (e) {
+    console.warn("[withdrawal-email] SMTP verify failed (continuing):", e);
+  }
+
+  return transporter;
+}
+
 // Simple admin check - you might want to implement proper role-based access control
 async function isAdmin(userId: string): Promise<boolean> {
   try {
@@ -113,15 +141,7 @@ export async function PATCH(req: Request) {
 
 async function sendPaymentConfirmationEmail(withdrawalRequest: any) {
   try {
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
-      secure: Number(process.env.SMTP_PORT) === 465,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+    const transporter = await getTransporter();
 
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -142,12 +162,23 @@ async function sendPaymentConfirmationEmail(withdrawalRequest: any) {
       </div>
     `;
 
-    await transporter.sendMail({
+    console.log(
+      "[withdrawal-email] sending payment confirmation to",
+      withdrawalRequest.userEmail
+    );
+    const info = await transporter.sendMail({
       from:
         process.env.FROM_EMAIL || `Celpip Practice <${process.env.SMTP_USER}>`,
       to: withdrawalRequest.userEmail,
       subject: `Payment Confirmed - $${withdrawalRequest.amount}`,
       html: emailHtml,
+    });
+    console.log("[withdrawal-email] sendMail result:", {
+      messageId: info.messageId,
+      response: info.response,
+      accepted: info.accepted,
+      rejected: info.rejected,
+      envelope: info.envelope,
     });
   } catch (error) {
     console.error("Failed to send payment confirmation email:", error);
@@ -156,15 +187,7 @@ async function sendPaymentConfirmationEmail(withdrawalRequest: any) {
 
 async function sendRejectionEmail(withdrawalRequest: any, adminNotes: string) {
   try {
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
-      secure: Number(process.env.SMTP_PORT) === 465,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+    const transporter = await getTransporter();
 
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -185,12 +208,23 @@ async function sendRejectionEmail(withdrawalRequest: any, adminNotes: string) {
       </div>
     `;
 
-    await transporter.sendMail({
+    console.log(
+      "[withdrawal-email] sending rejection to",
+      withdrawalRequest.userEmail
+    );
+    const info = await transporter.sendMail({
       from:
         process.env.FROM_EMAIL || `Celpip Practice <${process.env.SMTP_USER}>`,
       to: withdrawalRequest.userEmail,
       subject: `Withdrawal Request Update - $${withdrawalRequest.amount}`,
       html: emailHtml,
+    });
+    console.log("[withdrawal-email] sendMail result:", {
+      messageId: info.messageId,
+      response: info.response,
+      accepted: info.accepted,
+      rejected: info.rejected,
+      envelope: info.envelope,
     });
   } catch (error) {
     console.error("Failed to send rejection email:", error);

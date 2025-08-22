@@ -522,10 +522,10 @@ export default function Referral() {
               className={`flex justify-center items-center mt-[24px] max-w-[188px] w-full h-[40px] border border-[#F27059] rounded-[24px] cursor-pointer transition-all group ${
                 referralStats?.canWithdraw
                   ? "hover:!bg-[#F27059] hover:!text-white"
-                  : "opacity-50 cursor-not-allowed"
+                  : " hover:!bg-[#F27059] hover:!text-white opacity-50 cursor-not-allowed"
               }`}
             >
-              <span className="text-[14px] font-normal  group-hover:!bg-[#F27059] text-[#F27059] group-hover:!text-white">
+              <span className="text-[14px] font-normal ] text-[#F27059] group-hover:!text-white">
                 {referralStats?.canWithdraw
                   ? "Transfer to my PayPal"
                   : "Insufficient Funds"}
