@@ -36,10 +36,12 @@ export async function POST(req: Request) {
 
     const { amount, paypalEmail } = parsed.data;
 
-    // Get user information
+    // Get user information (clerkClient is an object, not a function)
     const cc = await clerkClient();
     const user = await cc.users.getUser(userId);
-    const userEmail = user.emailAddresses[0]?.emailAddress;
+    const userEmail =
+      user.emailAddresses.find((e: any) => e.id === user.primaryEmailAddressId)
+        ?.emailAddress ?? user.emailAddresses[0]?.emailAddress;
 
     if (!userEmail) {
       return NextResponse.json(
@@ -148,14 +150,17 @@ async function sendWithdrawalNotificationEmail({
     );
   }
   try {
+    const port = Number(process.env.SMTP_PORT);
+    const secure = port === 465;
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
-      secure: Number(process.env.SMTP_PORT) === 465,
+      port,
+      secure,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
+      requireTLS: port === 587,
       pool: true,
       maxConnections: 1,
       maxMessages: 50,
