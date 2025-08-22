@@ -10,72 +10,38 @@ import SvgShare from "../icons/Share";
 
 const ReferralProgress = ({ earned }: { earned: number }) => {
   const total = 100;
-  const sections = 5;
-  const sectionValue = total / sections;
   const radius = 60;
-  const circumference = 2 * Math.PI * radius;
-  const baseOffset = circumference * 1.75;
   const strokeWidth = 20;
-  const isFull = earned >= total;
-
-  const getStrokeDasharray = (index: number) => {
-    const earnedSections = Math.floor(earned / sectionValue);
-    const partialEarned = earned % sectionValue;
-    if (index < earnedSections) {
-      return circumference / sections;
-    } else if (index === earnedSections && partialEarned > 0) {
-      return (circumference / sections) * (partialEarned / sectionValue);
-    } else {
-      return 0;
-    }
-  };
+  const circumference = 2 * Math.PI * radius;
+  const progress = Math.max(0, Math.min(earned / total, 1));
+  const dash = circumference * progress;
 
   return (
     <div className="flex justify-center items-center w-full h-[160px] max-w-[533px]">
       <svg width={160} height={160} viewBox="0 0 160 160">
+        {/* Base ring */}
         <circle
           cx="80"
           cy="80"
           r={radius}
-          className="text-gray-300"
           strokeWidth={strokeWidth}
-          stroke="currentColor"
+          stroke="#E5E7EB"
           fill="none"
         />
-        {isFull ? (
-          <circle
-            cx="80"
-            cy="80"
-            r={radius}
-            strokeWidth={strokeWidth}
-            stroke="rgb(34 197 94)"
-            fill="none"
-            strokeDasharray={`${circumference} 0`}
-            strokeDashoffset={baseOffset}
-          />
-        ) : (
-          [...Array(sections)].map((_, i) => {
-            const dasharray = getStrokeDasharray(i);
-            const dashoffset =
-              baseOffset +
-              (circumference / sections) * i +
-              (circumference / sections - dasharray);
-            return (
-              <circle
-                key={i}
-                cx="80"
-                cy="80"
-                r={radius}
-                strokeWidth={strokeWidth}
-                stroke={dasharray > 0 ? "#0DAA94" : "rgb(209 213 219)"}
-                fill="none"
-                strokeDasharray={`${dasharray} ${circumference}`}
-                strokeDashoffset={dashoffset}
-                className="transition-colors duration-300"
-              />
-            );
-          })
-        )}
+
+        <circle
+          cx="80"
+          cy="80"
+          r={radius}
+          strokeWidth={strokeWidth}
+          stroke="#0DAA94"
+          fill="none"
+          strokeDasharray={`${dash} ${circumference}`}
+          strokeDashoffset={0}
+          strokeLinecap="round"
+          transform="rotate(-90 80 80)"
+        />
+
         <text
           x="80"
           y="70"
