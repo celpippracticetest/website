@@ -48,6 +48,18 @@ async function handleReferralRewards(
         throw new Error("No user_id in metadata");
       }
       userMetadata = user.publicMetadata as any;
+      // 🚧 Guard: if referral already consumed or inactive, skip rewarding
+      if (
+        userMetadata?.referralActive === false ||
+        userMetadata?.referralDiscountActive === false ||
+        userMetadata?.referralDiscountUsed === true ||
+        userMetadata?.referralCodeUsed === true
+      ) {
+        console.log(
+          "⏭️  Skipping referral reward: invitee has already used referral or it's inactive."
+        );
+        return;
+      }
     } catch (error) {
       const inviteeEmail =
         (session as any)?.customer_details?.email ||
@@ -61,6 +73,18 @@ async function handleReferralRewards(
             user = users.data[0];
             userIdToUse = user.id;
             userMetadata = user.publicMetadata as any;
+            // 🚧 Guard: if referral already consumed or inactive, skip rewarding
+            if (
+              userMetadata?.referralActive === false ||
+              userMetadata?.referralDiscountActive === false ||
+              userMetadata?.referralDiscountUsed === true ||
+              userMetadata?.referralCodeUsed === true
+            ) {
+              console.log(
+                "⏭️  Skipping referral reward: invitee has already used referral or it's inactive."
+              );
+              return;
+            }
             console.log(
               `✅ Resolved Clerk user by email (${inviteeEmail}) → ${userIdToUse}`
             );
@@ -207,6 +231,10 @@ async function handleReferralRewards(
             referralDiscountActive: false,
             referralActive: false,
             referralCodeUsed: true,
+            // Clear referral identifiers to avoid accidental future matches
+            referralCode: null,
+            referralPromotionId: null,
+            promotionCodeId: null,
           },
         });
         console.log(
