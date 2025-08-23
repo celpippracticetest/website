@@ -94,12 +94,18 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   // Create referral code when user becomes premium
-  if (authenticate.userId && authenticate.sessionClaims?.metadata.plan === "premium") {
-    const hasReferralCode = (authenticate.sessionClaims?.metadata as any)?.referralCode;
-    
+  if (
+    authenticate.userId &&
+    authenticate.sessionClaims?.metadata.plan === "premium"
+  ) {
+    const hasReferralCode = (authenticate.sessionClaims?.metadata as any)
+      ?.referralCode;
+
     if (!hasReferralCode) {
-      console.log("🔄 User is premium but has no referral code, creating one...");
-      
+      console.log(
+        "🔄 User is premium but has no referral code, creating one..."
+      );
+
       try {
         const headers: Record<string, string> = {
           "Content-Type": "application/json",
@@ -147,7 +153,7 @@ export default clerkMiddleware(async (auth, req) => {
             ...authenticate.sessionClaims?.metadata,
             onboardingCompleted: true,
             referralCode: referralCode,
-            referralActive: true,
+            referralActive: false,
           },
         });
 
