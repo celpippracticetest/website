@@ -153,7 +153,7 @@ export default clerkMiddleware(async (auth, req) => {
             ...authenticate.sessionClaims?.metadata,
             onboardingCompleted: true,
             referralCode: referralCode,
-            referralActive: false,
+            referralActive: true,
           },
         });
 
