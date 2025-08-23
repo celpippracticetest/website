@@ -41,9 +41,9 @@ export async function POST(req: NextRequest) {
 
     if (
       promotionCodeId &&
-      !userMetadata?.referralDiscountUsed &&
+      userMetadata?.referralActive === true &&
       userMetadata?.referralDiscountActive !== false &&
-      userMetadata?.referralActive !== false // Also check referralActive status
+      !userMetadata?.referralDiscountUsed
     ) {
       let isExpired = false;
       if (userMetadata?.referralDiscountExpiry) {
