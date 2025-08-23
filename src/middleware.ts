@@ -50,7 +50,8 @@ export default clerkMiddleware(async (auth, req) => {
       return NextResponse.redirect(dashboard);
     }
     const plan = authenticate.sessionClaims?.metadata.plan;
-    if (plan !== "free" && plan !== "premium") {
+    // Allow access if plan is missing (claims may not be refreshed immediately after signup)
+    if (plan && plan !== "free" && plan !== "premium") {
       const homeUrl = new URL("/", req.url);
       return NextResponse.redirect(homeUrl);
     }
@@ -85,7 +86,7 @@ export default clerkMiddleware(async (auth, req) => {
 
   if (authenticate.userId && !authenticate.sessionClaims?.metadata.roles) {
     const client = await clerkClient();
-    client.users.updateUserMetadata(authenticate.userId, {
+    await client.users.updateUserMetadata(authenticate.userId, {
       publicMetadata: {
         roles: ["user"],
         plan: "free",
