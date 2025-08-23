@@ -636,6 +636,7 @@ export default function Profile({ prevCheckout }: any) {
                         setShowToast(false);
                         signOut();
                         localStorage.removeItem("hasClosedExtraDiscountModal");
+                        localStorage.removeItem("pendingReferralCode");
                       }, 3000);
                     },
                     onError: () => {
