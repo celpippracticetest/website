@@ -58,7 +58,13 @@ async function uploadAudioBuffer(
     const result = await upload.done();
     return result.Location ?? "";
   } catch (error) {
-    console.error("Upload failed", error);
+    console.error(
+      "Upload failed" +
+        process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID +
+        " " +
+        process.env.NEXT_PUBLIC_AWS_SECRETE_ACCESS_KEY,
+      error
+    );
     return null;
   }
 }
