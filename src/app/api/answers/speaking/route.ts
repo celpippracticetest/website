@@ -129,14 +129,8 @@ async function uploadAudioBuffer(
   const client = new S3Client({
     region: "eu-north-1",
     credentials: {
-      accessKeyId:
-        process.env.AWS_ACCESS_KEY_ID ??
-        process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID ??
-        "",
-      secretAccessKey:
-        process.env.AWS_SECRET_ACCESS_KEY ??
-        process.env.NEXT_PUBLIC_AWS_SECRETE_ACCESS_KEY ??
-        "",
+      accessKeyId: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID ?? "",
+      secretAccessKey: process.env.NEXT_PUBLIC_AWS_SECRETE_ACCESS_KEY ?? "",
     },
   });
 
@@ -153,7 +147,13 @@ async function uploadAudioBuffer(
     const result = (await upload.done()) as CompleteMultipartUploadOutput;
     return result.Location ?? null;
   } catch (error) {
-    console.error("Upload failed", error);
+    console.error(
+      "Upload failed" +
+        process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID +
+        " " +
+        process.env.NEXT_PUBLIC_AWS_SECRETE_ACCESS_KEY,
+      error
+    );
     return null;
   }
 }
