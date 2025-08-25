@@ -23,17 +23,25 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "CELPIP Practice Test Online | Instant Scoring, Expert Tips",
     description:
-      "Sharpen your CELPIP Skills, with realistic online practice tests, instant scoring, and pro-level tips for Listening, Reading, Writing & Speaking. Start Preparing today.",
+      "Celpip Practice Test platform designed to boost your score with real exam questions, instant results, and expert tips for Listening, Reading, Writing & Speaking.",
     keywords: [
-      "CellTest",
-      "AI",
-      "cell analysis",
-      "biology",
-      "research",
-      "microscopy",
-      "machine learning",
+      "CELPIP",
+      "CELPIP practice test",
+      "CELPIP mock exam",
+      "CELPIP preparation",
+      "CELPIP listening",
+      "CELPIP reading",
+      "CELPIP writing",
+      "CELPIP speaking",
+      "AI scoring",
+      "English test Canada",
     ],
-    authors: [{ name: "CellTest Team", url: "https://celpippracticetest.com" }],
+    authors: [
+      {
+        name: "CELPIP Practice Test Team",
+        url: "https://celpippracticetest.com",
+      },
+    ],
     icons: {
       icon: "/favicon/favicon.ico",
       apple: "/favicon/apple-touch-icon.png",
@@ -50,6 +58,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const baseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
   const jsonLdData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -172,6 +181,76 @@ export default async function RootLayout({
             }}
           />
           {/* End Review Snippet structured data */}
+          {/* Organization structured data */}
+          <Script
+            id="org-schema"
+            type="application/ld+json"
+            strategy="beforeInteractive"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "Organization",
+                name: "CelpipPracticeTest",
+                alternateName:
+                  "CELPIP Practice Platform | Mock Exams & Question Bank",
+                legalName: "Nextcove Technologies Inc.",
+                brand: "CelpipPracticeTest",
+                url: baseUrl,
+                logo: `${baseUrl}/logo.png`,
+                image: `${baseUrl}/logo.png`,
+                description:
+                  "CelpipPracticeTest.com is a CELPIP preparation platform trusted by thousands of test‑takers. With full‑length mock exams, practice tasks, and instant AI‑powered scoring for Speaking & Writing, we help students reach their target CELPIP score.",
+                slogan: "Reach Your CELPIP Score with Mocks & Practice",
+                areaServed: "Worldwide",
+                foundingDate: "2024",
+                foundingLocation: "Canada",
+                knowsAbout: [
+                  "CELPIP Test Preparation",
+                  "English Language Testing",
+                  "Canadian Immigration English Requirements",
+                  "AI-Powered Language Assessment",
+                  "Speaking Skills Assessment",
+                  "Writing Skills Assessment",
+                  "Listening Skills Assessment",
+                  "Reading Skills Assessment",
+                  "CELPIP Mock Exams",
+                  "CELPIP Practice Questions",
+                ],
+                keywords:
+                  "CELPIP, CELPIP practice test, CELPIP mock exam, CELPIP preparation, English Test, Immigration Canada, Language Assessment, CELPIP practice questions, AI scoring CELPIP",
+                paymentAccepted: ["Credit Card", "Stripe"],
+                contactPoint: [
+                  {
+                    "@type": "ContactPoint",
+                    contactType: "Customer Service",
+                    serviceArea: "Worldwide",
+                    email: "support@celpippracticetest.com",
+                    availableLanguage: ["en"],
+                  },
+                ],
+                audience: {
+                  "@type": "Audience",
+                  audienceType:
+                    "CELPIP Test Takers, Immigration Candidates, English Language Learners",
+                },
+                category: "Education Technology",
+                termsOfService: `${baseUrl}/terms-of-service`,
+                privacyPolicy: `${baseUrl}/privacy-policy`,
+                sameAs: ["https://www.facebook.com/celpippracticetest"],
+                potentialAction: [
+                  {
+                    "@type": "SubscribeAction",
+                    target: {
+                      "@type": "EntryPoint",
+                      urlTemplate: `${baseUrl}/profile`,
+                    },
+                  },
+                ],
+                mainEntityOfPage: baseUrl,
+              }),
+            }}
+          />
+          {/* End Organization structured data */}
         </head>
         <body className={`bg-[#F4F7FF]`}>
           {/* Google Tag Manager (noscript) */}
