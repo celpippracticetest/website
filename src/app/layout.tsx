@@ -190,11 +190,11 @@ export default async function RootLayout({
               __html: JSON.stringify({
                 "@context": "https://schema.org",
                 "@type": "Organization",
-                name: "CelpipPracticeTest",
+                name: "Celpip Practice Test",
                 alternateName:
                   "CELPIP Practice Platform | Mock Exams & Question Bank",
                 legalName: "Nextcove Technologies Inc.",
-                brand: "CelpipPracticeTest",
+                brand: "Celpip Practice Test",
                 url: baseUrl,
                 logo: `${baseUrl}/logo.png`,
                 image: `${baseUrl}/logo.png`,
@@ -236,7 +236,9 @@ export default async function RootLayout({
                 category: "Education Technology",
                 termsOfService: `${baseUrl}/terms-of-service`,
                 privacyPolicy: `${baseUrl}/privacy-policy`,
-                sameAs: ["https://www.facebook.com/celpippracticetest"],
+                sameAs: [
+                  "https://www.facebook.com/people/Celpippracticetestcom/61575822299122/",
+                ],
                 potentialAction: [
                   {
                     "@type": "SubscribeAction",
