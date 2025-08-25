@@ -23,7 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "CELPIP Practice Test Online | Instant Scoring, Expert Tips",
     description:
-      "Sharpen your CELPIP Skills, with realistic online practice tests, instant scoring, and pro-level tips for Listening, Reading, Writing & Speaking. Start Preparing today.",
+      "Celpip Practice Test platform designed to boost your score with real exam questions, instant results, and expert tips for Listening, Reading, Writing & Speaking.",
     keywords: [
       "CellTest",
       "AI",
