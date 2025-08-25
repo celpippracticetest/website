@@ -199,7 +199,7 @@ export default async function RootLayout({
                 logo: `${baseUrl}/logo.png`,
                 image: `${baseUrl}/logo.png`,
                 description:
-                  "CelpipPracticeTest.com is a CELPIP preparation platform trusted by thousands of test‑takers. With full‑length mock exams, practice tasks, and instant AI‑powered scoring for Speaking & Writing, we help students reach their target CELPIP score.",
+                  "CelpipPracticeTest.com is the most popular CELPIP preparation platform in Canada and Australia, trusted by over 20,000 test-takers. With 60+ full-length CELPIP mock exams, 3,000+ practice tasks, and instant AI-powered scoring for Speaking & Writing, we provide faster, cheaper, and more accurate preparation to help students reach their target CELPIP score.",
                 slogan: "Reach Your CELPIP Score with Mocks & Practice",
                 areaServed: "Worldwide",
                 foundingDate: "2024",
