@@ -893,7 +893,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
             collapsed
               ? "max-w-[84px]  h-[1000px]  "
               : "left-0 hidden   h-[1000px]   screen744:!flex screen744:!max-w-[180px] screen1280:!max-w-[250px] px-[24px]",
-            "absolute left-0 z-[99]   pb-[50px]  screen1280:!static   transition-all duration-1000 ease-in-out flex flex-col pt-[20px] bg-white w-full border-r-[1px] border-[#D5D6D8]"
+            "absolute left-0 z-40   pb-[50px]  screen1280:!static   transition-all duration-1000 ease-in-out flex flex-col pt-[20px] bg-white w-full border-r-[1px] border-[#D5D6D8]"
           )}
         >
           <div
