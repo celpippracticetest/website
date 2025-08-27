@@ -65,21 +65,17 @@ const nextConfig: NextConfig = {
   // Webpack optimizations
   webpack: (config, { dev, isServer }) => {
     if (!dev && !isServer) {
-      // Enable tree shaking
+      // Enhanced optimizations
       config.optimization.usedExports = true;
       config.optimization.sideEffects = false;
 
-      // Better chunk splitting optimization
+      // Advanced chunk splitting
       config.optimization.splitChunks = {
         chunks: "all",
         maxInitialRequests: 25,
         minSize: 20000,
         cacheGroups: {
-          default: {
-            minChunks: 1,
-            priority: -20,
-            reuseExistingChunk: true,
-          },
+          // Vendor chunks
           vendor: {
             test: /[\\/]node_modules[\\/]/,
             name: "vendors",
@@ -87,13 +83,15 @@ const nextConfig: NextConfig = {
             priority: 10,
             enforce: true,
           },
-          radix: {
-            test: /[\\/]node_modules[\\/]@radix-ui[\\/]/,
-            name: "radix-ui",
+          // React specific
+          react: {
+            test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+            name: "react",
             chunks: "all",
             priority: 20,
             enforce: true,
           },
+          // Clerk specific
           clerk: {
             test: /[\\/]node_modules[\\/]@clerk[\\/]/,
             name: "clerk",
@@ -101,13 +99,15 @@ const nextConfig: NextConfig = {
             priority: 15,
             enforce: true,
           },
-          react: {
-            test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
-            name: "react",
+          // UI libraries
+          ui: {
+            test: /[\\/]node_modules[\\/](@radix-ui|lucide-react|framer-motion)[\\/]/,
+            name: "ui",
             chunks: "all",
-            priority: 25,
+            priority: 12,
             enforce: true,
           },
+          // Common chunks
           common: {
             name: "common",
             minChunks: 2,
@@ -121,7 +121,7 @@ const nextConfig: NextConfig = {
       // Enable module concatenation
       config.optimization.concatenateModules = true;
 
-      // Better minification
+      // Enable tree shaking
       config.optimization.minimize = true;
     }
     return config;
