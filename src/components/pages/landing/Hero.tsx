@@ -212,10 +212,11 @@ const Hero = ({
                 <Image
                   src="/images/hero.png"
                   alt="Hero image of CELPIP preparation platform showing student success"
-                  className="hidden screen1280:!flex"
+                  className="hidden screen1280:!flex w-[327px] h-[491px]"
                   width={327}
                   height={491}
                   priority
+                  sizes="(max-width: 1280px) 0px, 327px"
                 />
               </motion.div>
             </div>

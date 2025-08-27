@@ -99,6 +99,7 @@ const TopHeader = ({ planRef }: ITopHeader) => {
               width={133}
               height={40}
               src="/images/logo.png"
+              className="w-[133px] h-[40px]"
             />
           </Link>
         </div>

@@ -6,6 +6,36 @@
   font-family: "Plus Jakarta Sans", sans-serif;
 }
 
+/* Prevent layout shifts */
+img,
+video,
+svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Critical CSS for above-the-fold content */
+.critical-content {
+  contain: layout style paint;
+}
+
+/* Optimize font loading */
+.font-optimized {
+  font-display: swap;
+  font-feature-settings: "liga" 1, "kern" 1;
+}
+
+/* Prevent cumulative layout shift */
+.layout-stable {
+  contain: layout;
+}
+
+/* Optimize images */
+.image-optimized {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -86,8 +116,6 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
-
- 
 
 @layer base {
   * {
@@ -192,5 +220,3 @@
 html:has(#plans) {
   scroll-behavior: smooth !important;
 }
-
-

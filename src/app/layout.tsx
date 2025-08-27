@@ -6,7 +6,9 @@ import { currentUser } from "@clerk/nextjs/server";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import ReactQueryProvider from "@/components/ReactQueryProvider";
-import IntercomLoader from "@/components/IntercomLoader";
+import { LazyIntercom } from "@/components/LazyComponents";
+import PerformanceMonitor from "@/components/PerformanceMonitor";
+import CriticalCSS from "@/components/CriticalCSS";
 import { Metadata } from "next";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -119,7 +121,8 @@ export default async function RootLayout({
           {/* Google Tag Manager */}
           <Script
             id="gtm"
-            strategy="beforeInteractive"
+            strategy="lazyOnload"
+            async
             dangerouslySetInnerHTML={{
               __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
       new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -135,7 +138,7 @@ export default async function RootLayout({
             src="https://assets.sandbox.cello.so/app/latest/cello.js"
             type="module"
             async
-            strategy="afterInteractive"
+            strategy="lazyOnload"
           />
           <Script
             id="json-ld"
@@ -151,7 +154,7 @@ export default async function RootLayout({
             crossOrigin={"anonymous"}
           />
           <link
-            href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap"
+            href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap&font-display=swap"
             rel="stylesheet"
           />
           <link rel="icon" href="/favicon/favicon.ico" sizes="any" />
@@ -160,6 +163,48 @@ export default async function RootLayout({
             href="/favicon/apple-touch-icon.png"
             sizes="any"
           />
+          <link rel="manifest" href="/manifest.json" />
+
+          {/* Preload critical images for LCP */}
+          <link
+            rel="preload"
+            as="image"
+            href="/images/hero.png"
+            type="image/png"
+          />
+          <link
+            rel="preload"
+            as="image"
+            href="/images/logo.png"
+            type="image/png"
+          />
+
+          {/* Preconnect to external domains */}
+          <link rel="preconnect" href="https://www.googletagmanager.com" />
+          <link rel="preconnect" href="https://api-iam.intercom.io" />
+          <link rel="dns-prefetch" href="https://assets.sandbox.cello.so" />
+
+          {/* Service Worker Registration */}
+          <Script
+            id="sw-register"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
+                if ('serviceWorker' in navigator) {
+                  window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js')
+                      .then(function(registration) {
+                        console.log('SW registered: ', registration);
+                      })
+                      .catch(function(registrationError) {
+                        console.log('SW registration failed: ', registrationError);
+                      });
+                  });
+                }
+              `,
+            }}
+          />
+
           {/* Review Snippet structured data */}
           <Script
             id="review-snippet"
@@ -181,6 +226,7 @@ export default async function RootLayout({
             }}
           />
           {/* End Review Snippet structured data */}
+
           {/* Organization structured data */}
           <Script
             id="org-schema"
@@ -269,7 +315,9 @@ export default async function RootLayout({
           <NextTopLoader />
           <ReactQueryProvider>{children}</ReactQueryProvider>
           <PremiumPlanDrawer />
-          <IntercomLoader />
+          <LazyIntercom />
+          <PerformanceMonitor />
+          <CriticalCSS />
         </body>
       </html>
     </ClerkProvider>
