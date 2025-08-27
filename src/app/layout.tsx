@@ -8,6 +8,7 @@ import Script from "next/script";
 import ReactQueryProvider from "@/components/ReactQueryProvider";
 import { LazyIntercom } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
+import CriticalCSS from "@/components/CriticalCSS";
 import { Metadata } from "next";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -120,7 +121,7 @@ export default async function RootLayout({
           {/* Google Tag Manager */}
           <Script
             id="gtm"
-            strategy="afterInteractive"
+            strategy="lazyOnload"
             async
             dangerouslySetInnerHTML={{
               __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -163,6 +164,26 @@ export default async function RootLayout({
             sizes="any"
           />
           <link rel="manifest" href="/manifest.json" />
+
+          {/* Preload critical images for LCP */}
+          <link
+            rel="preload"
+            as="image"
+            href="/images/hero.png"
+            type="image/png"
+          />
+          <link
+            rel="preload"
+            as="image"
+            href="/images/logo.png"
+            type="image/png"
+          />
+
+          {/* Preconnect to external domains */}
+          <link rel="preconnect" href="https://www.googletagmanager.com" />
+          <link rel="preconnect" href="https://api-iam.intercom.io" />
+          <link rel="dns-prefetch" href="https://assets.sandbox.cello.so" />
+
           {/* Service Worker Registration */}
           <Script
             id="sw-register"
@@ -183,6 +204,7 @@ export default async function RootLayout({
               `,
             }}
           />
+
           {/* Review Snippet structured data */}
           <Script
             id="review-snippet"
@@ -204,6 +226,7 @@ export default async function RootLayout({
             }}
           />
           {/* End Review Snippet structured data */}
+
           {/* Organization structured data */}
           <Script
             id="org-schema"
@@ -294,6 +317,7 @@ export default async function RootLayout({
           <PremiumPlanDrawer />
           <LazyIntercom />
           <PerformanceMonitor />
+          <CriticalCSS />
         </body>
       </html>
     </ClerkProvider>

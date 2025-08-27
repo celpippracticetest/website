@@ -69,30 +69,60 @@ const nextConfig: NextConfig = {
       config.optimization.usedExports = true;
       config.optimization.sideEffects = false;
 
-      // Split chunks optimization
+      // Better chunk splitting optimization
       config.optimization.splitChunks = {
         chunks: "all",
+        maxInitialRequests: 25,
+        minSize: 20000,
         cacheGroups: {
+          default: {
+            minChunks: 1,
+            priority: -20,
+            reuseExistingChunk: true,
+          },
           vendor: {
             test: /[\\/]node_modules[\\/]/,
             name: "vendors",
             chunks: "all",
             priority: 10,
+            enforce: true,
           },
           radix: {
             test: /[\\/]node_modules[\\/]@radix-ui[\\/]/,
             name: "radix-ui",
             chunks: "all",
             priority: 20,
+            enforce: true,
+          },
+          clerk: {
+            test: /[\\/]node_modules[\\/]@clerk[\\/]/,
+            name: "clerk",
+            chunks: "all",
+            priority: 15,
+            enforce: true,
+          },
+          react: {
+            test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+            name: "react",
+            chunks: "all",
+            priority: 25,
+            enforce: true,
           },
           common: {
             name: "common",
             minChunks: 2,
             chunks: "all",
             priority: 5,
+            reuseExistingChunk: true,
           },
         },
       };
+
+      // Enable module concatenation
+      config.optimization.concatenateModules = true;
+
+      // Better minification
+      config.optimization.minimize = true;
     }
     return config;
   },
