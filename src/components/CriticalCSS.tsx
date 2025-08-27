@@ -6,13 +6,16 @@ export default function CriticalCSS() {
   useEffect(() => {
     // Only run in production and when component mounts
 
-    // Simple critical CSS for layout stability
+    // Enhanced critical CSS for better LCP performance
     const criticalCSS = `
+      /* Critical LCP optimizations */
       .hero-section {
         min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
+        contain: layout style paint;
+        will-change: transform;
       }
       
       .logo-container {
@@ -21,17 +24,77 @@ export default function CriticalCSS() {
         display: flex;
         align-items: center;
         justify-content: center;
+        contain: layout style paint;
+        will-change: transform;
       }
       
       .hero-image {
         width: 327px;
         height: 491px;
         object-fit: contain;
+        contain: layout style paint;
+        will-change: transform;
+        transform: translateZ(0);
       }
       
       /* Prevent layout shifts */
       .layout-stable {
-        contain: layout;
+        contain: layout style paint;
+        will-change: transform;
+      }
+      
+      /* Critical button styles */
+      .cta-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px 24px;
+        border-radius: 24px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        contain: layout style paint;
+        will-change: transform;
+      }
+      
+      /* Critical navigation */
+      .main-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        contain: layout style paint;
+        will-change: transform;
+      }
+      
+      /* Font loading optimization */
+      body {
+        font-display: swap;
+        text-rendering: optimizeSpeed;
+        contain: layout style;
+      }
+      
+      /* Image optimization */
+      img {
+        max-width: 100%;
+        height: auto;
+        contain: layout style paint;
+        will-change: transform;
+      }
+      
+      /* Critical text rendering */
+      h1, h2, h3 {
+        contain: layout style;
+        will-change: transform;
+      }
+      
+      /* Prevent FOUC */
+      .hero-section,
+      .logo-container,
+      .hero-image {
+        opacity: 1 !important;
+        visibility: visible !important;
       }
     `;
 

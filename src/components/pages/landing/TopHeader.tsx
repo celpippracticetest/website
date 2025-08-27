@@ -94,12 +94,16 @@ const TopHeader = ({ planRef }: ITopHeader) => {
           </span>
           <Link className="shrink-0" href={"/"}>
             <Image
+              src="/images/logo.png"
               alt="logo"
-              priority
               width={133}
               height={40}
-              src="/images/logo.png"
               className="w-[133px] h-[40px]"
+              priority={true}
+              sizes="133px"
+              quality={90}
+              loading="eager"
+              fetchPriority="high"
             />
           </Link>
         </div>
@@ -167,7 +171,9 @@ const TopHeader = ({ planRef }: ITopHeader) => {
               </div>
             </Link>
           )}
-          <AuthButtons />
+          <div className="h-[40px]  w-[149px]  flex items-center justify-center">
+            <AuthButtons />
+          </div>
         </div>
       </div>
 

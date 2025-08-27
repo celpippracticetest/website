@@ -215,8 +215,11 @@ const Hero = ({
                   className="hidden screen1280:!flex w-[327px] h-[491px]"
                   width={327}
                   height={491}
-                  priority
+                  priority={true}
                   sizes="(max-width: 1280px) 0px, 327px"
+                  quality={85}
+                  loading="eager"
+                  fetchPriority="high"
                 />
               </motion.div>
             </div>
