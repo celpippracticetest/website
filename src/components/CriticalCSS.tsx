@@ -4,7 +4,9 @@ import { useEffect } from "react";
 
 export default function CriticalCSS() {
   useEffect(() => {
-    // Inline critical CSS for above-the-fold content
+    // Only run in production and when component mounts
+
+    // Simple critical CSS for layout stability
     const criticalCSS = `
       .hero-section {
         min-height: 100vh;
@@ -27,23 +29,16 @@ export default function CriticalCSS() {
         object-fit: contain;
       }
       
-      .nav-container {
-        display: flex;
-        align-items: center;
-        gap: 24px;
-      }
-      
       /* Prevent layout shifts */
       .layout-stable {
         contain: layout;
       }
-      
-      /* Optimize font rendering */
-      .font-optimized {
-        font-display: swap;
-        text-rendering: optimizeLegibility;
-      }
     `;
+
+    // Check if critical CSS already exists
+    if (document.querySelector('style[data-critical="true"]')) {
+      return;
+    }
 
     // Create and inject critical CSS
     const style = document.createElement("style");
