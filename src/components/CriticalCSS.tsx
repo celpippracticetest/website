@@ -58,15 +58,7 @@ export default function CriticalCSS() {
       }
       
       /* Critical navigation */
-      .main-nav {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 1000;
-        contain: layout style paint;
-        will-change: transform;
-      }
+     
       
       /* Font loading optimization */
       body {

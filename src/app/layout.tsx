@@ -2,7 +2,6 @@ import PremiumPlanDrawer from "./premiumPlanDrawer";
 import NextTopLoader from "nextjs-toploader";
 import { Analytics } from "@vercel/analytics/react";
 import { ClerkProvider } from "@clerk/nextjs";
-import { currentUser } from "@clerk/nextjs/server";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import ReactQueryProvider from "@/components/ReactQueryProvider";
