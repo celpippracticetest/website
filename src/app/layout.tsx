@@ -7,6 +7,7 @@ import Script from "next/script";
 import ReactQueryProvider from "@/components/ReactQueryProvider";
 import { LazyIntercom } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
+import CriticalCSS from "@/components/CriticalCSS";
 import { Metadata } from "next";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -452,6 +453,7 @@ export default async function RootLayout({
           <PremiumPlanDrawer />
           <LazyIntercom />
           <PerformanceMonitor />
+          <CriticalCSS />
         </body>
       </html>
     </ClerkProvider>
