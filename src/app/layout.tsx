@@ -123,11 +123,18 @@ export default async function RootLayout({
             strategy="lazyOnload"
             async
             dangerouslySetInnerHTML={{
-              __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-      new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-      j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-      'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-      })(window,document,'script','dataLayer','GTM-M24FJ7JC');`,
+              __html: `
+                (function(){
+                  // Guard to avoid double-injection when multiple GTM snippets exist
+                  if ((window as any).__celGtmInjected) return;
+                  (window as any).__celGtmInjected = true;
+                  (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+                  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+                  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+                  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+                  })(window,document,'script','dataLayer','GTM-M24FJ7JC');
+                })();
+              `,
             }}
           />
           {/* End Google Tag Manager */}
@@ -354,25 +361,30 @@ export default async function RootLayout({
             dangerouslySetInnerHTML={{
               __html: `
                 // Only load GTM after user interaction or 3 seconds
-                let gtmLoaded = false;
-                function loadGTM() {
-                  if (gtmLoaded) return;
-                  gtmLoaded = true;
-                  
-                  (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-                  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-                  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-                  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-                  })(window,document,'script','dataLayer','GTM-M24FJ7JC');
+                if ((window as any).__celGtmInjected) {
+                  // already injected by another snippet — do nothing
+                } else {
+                  let gtmLoaded = false;
+                  function loadGTM() {
+                    if (gtmLoaded || (window as any).__celGtmInjected) return;
+                    gtmLoaded = true;
+                    (window as any).__celGtmInjected = true;
+
+                    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+                    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+                    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+                    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+                    })(window,document,'script','dataLayer','GTM-M24FJ7JC');
+                  }
+
+                  // Load GTM on user interaction
+                  ['click', 'scroll', 'mousemove'].forEach(event => {
+                    document.addEventListener(event, loadGTM, { once: true });
+                  });
+
+                  // Load GTM after 3 seconds if no interaction
+                  setTimeout(loadGTM, 3000);
                 }
-                
-                // Load GTM on user interaction
-                ['click', 'scroll', 'mousemove'].forEach(event => {
-                  document.addEventListener(event, loadGTM, { once: true });
-                });
-                
-                // Load GTM after 3 seconds if no interaction
-                setTimeout(loadGTM, 3000);
               `,
             }}
           />
