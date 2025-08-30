@@ -38,7 +38,7 @@ export const planDetailsLanding = [
     buttonTitle: "Go Premium",
     features: [
       "Unlimited access to 3,000+ practices",
-      "50 full mock exams",
+      "60 full mock exams",
       "Instant AI feedback for all skills",
       "Progress tracking and insights",
     ],
@@ -55,7 +55,7 @@ export const planDetailsLanding = [
     buttonTitle: "Go Premium",
     features: [
       "Unlimited access to 3,000+ practices",
-      "50 full mock exams",
+      "60 full mock exams",
       "Instant AI feedback for all skills",
       "Progress tracking and insights",
     ],

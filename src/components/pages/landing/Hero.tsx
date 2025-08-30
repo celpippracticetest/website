@@ -169,7 +169,7 @@ const Hero = ({
               <div className="flex flex-col gap-[8px]  screen744:!gap-[16px] mt-0 screen744:!mt-[116px] screen1280:!mt-[108px] w-[262px] h-[186px] screen744:!h-[224px]">
                 {[
                   {
-                    title1: "50",
+                    title1: "60",
                     title2: "mock exams",
                     icon: <SvgMockExamLight />,
                   },
