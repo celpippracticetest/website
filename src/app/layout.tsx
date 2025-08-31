@@ -8,9 +8,7 @@ import ReactQueryProvider from "@/components/ReactQueryProvider";
 import { LazyIntercom } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import CriticalCSS from "@/components/CriticalCSS";
-import type { Metadata } from "next";
-import GtmPageview from "@/components/GtmPageview";
-import { Suspense } from "react";
+import { Metadata } from "next";
 
 const jakarta = Plus_Jakarta_Sans({
   display: "swap",
@@ -22,12 +20,9 @@ const jakarta = Plus_Jakarta_Sans({
   fallback: ["system-ui", "arial"],
 });
 
-const GTM_ID = "GTM-M24FJ7JC";
-
 export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "";
   const isPreview = appBaseUrl.includes("vercel.app");
-
   return {
     title: "CELPIP Practice Test Online | Instant Scoring, Expert Tips",
     description:
@@ -63,16 +58,20 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({
   children,
-}: Readonly<{ children: React.ReactNode }>) {
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   const baseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
-  const enableGtm =
-    process.env.NODE_ENV === "production" && !baseUrl.includes("vercel.app");
 
   return (
     <ClerkProvider>
-      <html suppressHydrationWarning className={jakarta.variable} lang="en">
+      <html
+        suppressHydrationWarning={true}
+        className={`${jakarta.variable}`}
+        lang="en"
+      >
         <head>
-          {/* Critical preloads */}
+          {/* Critical preloads only */}
           <link
             rel="preload"
             as="image"
@@ -88,12 +87,12 @@ export default async function RootLayout({
             fetchPriority="high"
           />
 
-          {/* DNS prefetch */}
+          {/* Essential DNS prefetch */}
           <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
           <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
           <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
 
-          {/* Preconnect */}
+          {/* Essential preconnect */}
           <link
             rel="preconnect"
             href="https://fonts.googleapis.com"
@@ -105,13 +104,13 @@ export default async function RootLayout({
             crossOrigin="anonymous"
           />
 
-          {/* Fonts CSS */}
+          {/* Font loading - optimized */}
           <link
             href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap&font-display=swap"
             rel="stylesheet"
           />
 
-          {/* Icons & PWA */}
+          {/* Essential meta tags */}
           <link rel="icon" href="/favicon/favicon.ico" sizes="any" />
           <link
             rel="apple-touch-icon"
@@ -120,7 +119,7 @@ export default async function RootLayout({
           />
           <link rel="manifest" href="/manifest.json" />
 
-          {/* Service Worker - lazy */}
+          {/* Service Worker - lazy load */}
           <Script
             id="sw-register"
             strategy="lazyOnload"
@@ -129,107 +128,55 @@ export default async function RootLayout({
                 if ('serviceWorker' in navigator) {
                   window.addEventListener('load', function() {
                     navigator.serviceWorker.register('/sw.js')
-                      .then(function(registration) { console.log('SW registered:', registration); })
-                      .catch(function(err) { console.log('SW registration failed:', err); });
+                      .then(function(registration) {
+                        console.log('SW registered: ', registration);
+                      })
+                      .catch(function(registrationError) {
+                        console.log('SW registration failed: ', registrationError);
+                      });
                   });
                 }
               `,
             }}
           />
         </head>
+        <body className={`bg-[#F4F7FF]`}>
+          {/* Google Tag Manager (noscript) */}
+          <noscript>
+            <iframe
+              src="https://www.googletagmanager.com/ns.html?id=GTM-M24FJ7JC"
+              height="0"
+              width="0"
+              style={{ display: "none", visibility: "hidden" }}
+            ></iframe>
+          </noscript>
 
-        <body className="bg-[#F4F7FF]">
-          {/* GTM noscript ONLY in production, non-preview */}
-          {enableGtm && (
-            <noscript>
-              <iframe
-                src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
-                height="0"
-                width="0"
-                style={{ display: "none", visibility: "hidden" }}
-              />
-            </noscript>
-          )}
-
-          {/* App UI */}
           <NextTopLoader />
           <ReactQueryProvider>{children}</ReactQueryProvider>
           <PremiumPlanDrawer />
           <LazyIntercom />
           <PerformanceMonitor />
           <CriticalCSS />
+
+          {/* Analytics - non-blocking */}
           <Analytics />
 
-          {/* === GTM Lightweight Loader === */}
-          {enableGtm && (
-            <>
-              {/* 1) Default Consent (denied) - no network calls */}
-              <Script
-                id="gtm-consent"
-                strategy="afterInteractive"
-                dangerouslySetInnerHTML={{
-                  __html: `
-                    (function(w){
-                      w.dataLayer = w.dataLayer || [];
-                      w.dataLayer.push({
-                        event: 'default_consent',
-                        analytics_storage: 'denied',
-                        ad_storage: 'denied',
-                        ad_user_data: 'denied',
-                        ad_personalization: 'denied'
-                      });
-                    })(window);
-                  `,
-                }}
-              />
+          {/* GTM - lazy load */}
+          <Script
+            id="gtm"
+            strategy="lazyOnload"
+            dangerouslySetInnerHTML={{
+              __html: `
+                (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+                new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+                j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+                'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+                })(window,document,'script','dataLayer','GTM-M24FJ7JC');
+              `,
+            }}
+          />
 
-              {/* 2) Inject GTM AFTER user interaction / idle */}
-              <Script
-                id="gtm-loader"
-                strategy="afterInteractive"
-                dangerouslySetInnerHTML={{
-                  __html: `
-                    (function(i){
-                      if (window.__gtmInjected) return;
-                      window.__gtmInjected = false;
-
-                      function injectGTM(){
-                        if (window.__gtmInjected) return;
-                        window.__gtmInjected = true;
-
-                        window.dataLayer = window.dataLayer || [];
-                        window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
-
-                        var s = document.createElement('script');
-                        s.async = true;
-                        s.src = 'https://www.googletagmanager.com/gtm.js?id=' + i;
-                        document.head.appendChild(s);
-                      }
-
-                      // First user interaction
-                      ['click','scroll','mousemove','touchstart','keydown'].forEach(function(evt){
-                        window.addEventListener(evt, injectGTM, { once: true, passive: true });
-                      });
-
-                      // Idle or timeout fallback
-                      if ('requestIdleCallback' in window) {
-                        requestIdleCallback(function(){ injectGTM(); }, { timeout: 6000 });
-                      } else {
-                        setTimeout(injectGTM, 6000);
-                      }
-                    })('${GTM_ID}');
-                  `,
-                }}
-              />
-
-              {/* 3) SPA pageviews (waits for router changes and pushes to dataLayer) */}
-              <Suspense fallback={<div>Loading...</div>}>
-                <GtmPageview />
-              </Suspense>
-            </>
-          )}
-
-          {/* Structured Data - lazy */}
+          {/* Structured Data - lazy load */}
           <Script
             id="structured-data"
             type="application/ld+json"
@@ -301,25 +248,32 @@ export default async function RootLayout({
             }}
           />
 
-          {/* Third-party (e.g., Cello) - ultra lazy */}
+          {/* Third-party scripts - ultra lazy load */}
           <Script
             id="third-party-loader"
             strategy="lazyOnload"
             dangerouslySetInnerHTML={{
               __html: `
-                let __thirdPartyLoaded = false;
+                // Load third-party scripts only when needed
+                let thirdPartyLoaded = false;
+                
                 function loadThirdParty() {
-                  if (__thirdPartyLoaded) return;
-                  __thirdPartyLoaded = true;
+                  if (thirdPartyLoaded) return;
+                  thirdPartyLoaded = true;
+                  
+                  // Load Cello only when needed
                   const sc = document.createElement('script');
                   sc.src = 'https://assets.sandbox.cello.so/app/latest/cello.js';
                   sc.type = 'module';
                   sc.async = true;
                   document.head.appendChild(sc);
                 }
-                ['click', 'scroll', 'mousemove', 'touchstart', 'keydown'].forEach(e => {
-                  document.addEventListener(e, loadThirdParty, { once: true, passive: true });
+                
+                // Load on user interaction or after 5 seconds
+                ['click', 'scroll', 'mousemove'].forEach(event => {
+                  document.addEventListener(event, loadThirdParty, { once: true, passive: true });
                 });
+                
                 setTimeout(loadThirdParty, 5000);
               `,
             }}
