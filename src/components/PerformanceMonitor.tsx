@@ -4,56 +4,68 @@ import { useEffect } from "react";
 
 export default function PerformanceMonitor() {
   useEffect(() => {
-    // Only run in production
     if (process.env.NODE_ENV !== "production") return;
 
-    // Monitor Core Web Vitals
-    if ("web-vital" in window) {
-      import("web-vitals").then(
-        ({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
-          getCLS(console.log);
-          getFID(console.log);
-          getFCP(console.log);
-          getLCP(console.log);
-          getTTFB(console.log);
-        }
-      );
-    }
+    (async () => {
+      try {
+        const { getCLS, getFID, getFCP, getLCP, getTTFB } = await import(
+          "web-vitals"
+        );
+        getCLS(console.log);
+        getFID(console.log);
+        getFCP(console.log);
+        getLCP(console.log);
+        getTTFB(console.log);
+      } catch (e) {
+        console.error("web-vitals load failed:", e);
+      }
+    })();
 
-    // Monitor JavaScript execution time
-    let startTime = performance.now();
-
-    const observer = new PerformanceObserver((list) => {
-      for (const entry of list.getEntries()) {
-        if (entry.entryType === "measure") {
-          const duration = entry.duration;
-          if (duration > 100) {
-            // Log if execution takes more than 100ms
-            console.warn(
-              `Slow JavaScript execution: ${entry.name} took ${duration}ms`
-            );
+    let measureObserver: PerformanceObserver | null = null;
+    if (
+      typeof PerformanceObserver !== "undefined" &&
+      (!("supportedEntryTypes" in PerformanceObserver) ||
+        PerformanceObserver.supportedEntryTypes?.includes("measure"))
+    ) {
+      measureObserver = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          if (entry.entryType === "measure") {
+            const duration = entry.duration;
+            if (duration > 100) {
+              console.warn(
+                `Slow JS execution: ${entry.name} took ${duration.toFixed(1)}ms`
+              );
+            }
           }
         }
-      }
-    });
+      });
+      try {
+        measureObserver.observe({ entryTypes: ["measure"] });
+      } catch {}
+    }
 
-    observer.observe({ entryTypes: ["measure"] });
-
-    // Monitor long tasks
-    const longTaskObserver = new PerformanceObserver((list) => {
-      for (const entry of list.getEntries()) {
-        if (entry.duration > 50) {
-          // Long task threshold
-          console.warn(`Long task detected: ${entry.duration}ms`, entry);
+    // Long tasks (Long Tasks API)
+    let longTaskObserver: PerformanceObserver | null = null;
+    if (
+      typeof PerformanceObserver !== "undefined" &&
+      PerformanceObserver.supportedEntryTypes?.includes("longtask")
+    ) {
+      longTaskObserver = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          const d = entry.duration as number;
+          if (d > 50) {
+            console.warn(`Long task detected: ${d.toFixed(1)}ms`, entry);
+          }
         }
-      }
-    });
-
-    longTaskObserver.observe({ entryTypes: ["longtask"] });
+      });
+      try {
+        longTaskObserver.observe({ entryTypes: ["longtask"] });
+      } catch {}
+    }
 
     return () => {
-      observer.disconnect();
-      longTaskObserver.disconnect();
+      measureObserver?.disconnect();
+      longTaskObserver?.disconnect();
     };
   }, []);
 
