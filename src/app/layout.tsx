@@ -118,23 +118,16 @@ export default async function RootLayout({
           <Analytics />
 
           {/* Google Tag Manager */}
+          {/* Google Tag Manager */}
           <Script
             id="gtm"
-            strategy="lazyOnload"
-            async
+            strategy="beforeInteractive"
             dangerouslySetInnerHTML={{
-              __html: `
-                (function(){
-                  // Guard to avoid double-injection when multiple GTM snippets exist
-                  if ((window as any).__celGtmInjected) return;
-                  (window as any).__celGtmInjected = true;
-                  (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-                  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-                  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-                  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-                  })(window,document,'script','dataLayer','GTM-M24FJ7JC');
-                })();
-              `,
+              __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+      new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+      j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+      'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+      })(window,document,'script','dataLayer','GTM-M24FJ7JC');`,
             }}
           />
           {/* End Google Tag Manager */}
@@ -144,7 +137,7 @@ export default async function RootLayout({
             src="https://assets.sandbox.cello.so/app/latest/cello.js"
             type="module"
             async
-            strategy="lazyOnload"
+            strategy="afterInteractive"
           />
           <Script
             id="json-ld"
@@ -226,16 +219,6 @@ export default async function RootLayout({
             rel="preconnect"
             href="https://assets.sandbox.cello.so"
             crossOrigin="anonymous"
-          />
-
-          {/* Resource hints for better performance */}
-          <link
-            rel="modulepreload"
-            href="/_next/static/chunks/vendors-b6bbc0553a1f2ad5.js"
-          />
-          <link
-            rel="modulepreload"
-            href="/_next/static/chunks/main-app-7ee00cedb2a19a54.js"
           />
 
           {/* Service Worker Registration */}
