@@ -228,16 +228,6 @@ export default async function RootLayout({
             crossOrigin="anonymous"
           />
 
-          {/* Resource hints for better performance */}
-          <link
-            rel="modulepreload"
-            href="/_next/static/chunks/vendors-b6bbc0553a1f2ad5.js"
-          />
-          <link
-            rel="modulepreload"
-            href="/_next/static/chunks/main-app-7ee00cedb2a19a54.js"
-          />
-
           {/* Service Worker Registration */}
           <Script
             id="sw-register"
