@@ -117,32 +117,50 @@ export default async function RootLayout({
         <head>
           <Analytics />
 
-          {/* Google Tag Manager */}
-          {/* Google Tag Manager */}
+          {/* Preload critical resources for better performance */}
+          <link rel="preload" href="https://www.googletagmanager.com/gtm.js" as="script" />
+          <link rel="preload" href="https://assets.sandbox.cello.so/app/latest/cello.js" as="script" />
+
+          {/* Google Tag Manager - Optimized for performance */}
           <Script
             id="gtm"
-            strategy="beforeInteractive"
+            strategy="afterInteractive"
             dangerouslySetInnerHTML={{
-              __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-      new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-      j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-      'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-      })(window,document,'script','dataLayer','GTM-M24FJ7JC');`,
+              __html: `
+                (function(w,d,s,l,i){
+                  w[l]=w[l]||[];
+                  w[l].push({'gtm.start': new Date().getTime(),event:'gtm.js'});
+                  var f=d.getElementsByTagName(s)[0],
+                  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';
+                  j.async=true;
+                  j.defer=true;
+                  j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
+                  f.parentNode.insertBefore(j,f);
+                })(window,document,'script','dataLayer','GTM-M24FJ7JC');
+              `,
             }}
           />
           {/* End Google Tag Manager */}
 
+          {/* Cello - Optimized with lazy loading */}
           <Script
             id="cello"
             src="https://assets.sandbox.cello.so/app/latest/cello.js"
             type="module"
-            async
-            strategy="afterInteractive"
+            strategy="lazyOnload"
+            onLoad={() => {
+              // Optional: Track when Cello loads
+              if (typeof window !== 'undefined' && (window as any).gtag) {
+                (window as any).gtag('event', 'cello_loaded');
+              }
+            }}
           />
+          
+          {/* JSON-LD - Optimized for SEO */}
           <Script
             id="json-ld"
             type="application/ld+json"
-            strategy="beforeInteractive"
+            strategy="afterInteractive"
             suppressHydrationWarning
             dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdData) }}
           />
@@ -187,14 +205,14 @@ export default async function RootLayout({
             fetchPriority="high"
           />
 
-          {/* DNS prefetch for critical resources */}
+          {/* DNS prefetch for critical resources - Optimized */}
           <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
           <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
           <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
           <link rel="dns-prefetch" href="https://api-iam.intercom.io" />
           <link rel="dns-prefetch" href="https://assets.sandbox.cello.so" />
 
-          {/* Preconnect for critical domains */}
+          {/* Preconnect for critical domains - Optimized */}
           <link
             rel="preconnect"
             href="https://fonts.googleapis.com"
@@ -220,6 +238,12 @@ export default async function RootLayout({
             href="https://assets.sandbox.cello.so"
             crossOrigin="anonymous"
           />
+          
+          {/* Additional performance optimizations */}
+          <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+          <link rel="dns-prefetch" href="https://ssl.google-analytics.com" />
+          <link rel="dns-prefetch" href="https://www.facebook.com" />
+          <link rel="dns-prefetch" href="https://connect.facebook.net" />
 
           {/* Service Worker Registration */}
           <Script
@@ -337,13 +361,13 @@ export default async function RootLayout({
           />
           {/* End Organization structured data */}
 
-          {/* Conditional Third-party Scripts */}
+          {/* Conditional Third-party Scripts - Optimized */}
           <Script
             id="conditional-gtm"
             strategy="lazyOnload"
             dangerouslySetInnerHTML={{
               __html: `
-                // Only load GTM after user interaction or 3 seconds
+                // Enhanced GTM loading with better performance
                 if ((window as any).__celGtmInjected) {
                   // already injected by another snippet — do nothing
                 } else {
@@ -353,20 +377,26 @@ export default async function RootLayout({
                     gtmLoaded = true;
                     (window as any).__celGtmInjected = true;
 
-                    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-                    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-                    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-                    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+                    // Use optimized GTM loading
+                    (function(w,d,s,l,i){
+                      w[l]=w[l]||[];
+                      w[l].push({'gtm.start': new Date().getTime(),event:'gtm.js'});
+                      var f=d.getElementsByTagName(s)[0],
+                      j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';
+                      j.async=true;
+                      j.defer=true;
+                      j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
+                      f.parentNode.insertBefore(j,f);
                     })(window,document,'script','dataLayer','GTM-M24FJ7JC');
                   }
 
-                  // Load GTM on user interaction
-                  ['click', 'scroll', 'mousemove'].forEach(event => {
-                    document.addEventListener(event, loadGTM, { once: true });
+                  // Load GTM on user interaction with passive listeners
+                  ['click', 'scroll'].forEach(event => {
+                    document.addEventListener(event, loadGTM, { once: true, passive: true });
                   });
 
-                  // Load GTM after 3 seconds if no interaction
-                  setTimeout(loadGTM, 3000);
+                  // Load GTM after 5 seconds if no interaction (increased delay for better performance)
+                  setTimeout(loadGTM, 5000);
                 }
               `,
             }}
