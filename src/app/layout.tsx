@@ -120,7 +120,7 @@ export default async function RootLayout({
           {/* Google Tag Manager */}
           <Script
             id="gtm"
-            strategy="lazyOnload"
+            strategy="beforeInteractive"
             async
             dangerouslySetInnerHTML={{
               __html: `
@@ -144,12 +144,12 @@ export default async function RootLayout({
             src="https://assets.sandbox.cello.so/app/latest/cello.js"
             type="module"
             async
-            strategy="lazyOnload"
+            strategy="afterInteractive"
           />
           <Script
             id="json-ld"
             type="application/ld+json"
-            strategy="beforeInteractive"
+            strategy="afterInteractive"
             suppressHydrationWarning
             dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdData) }}
           />
