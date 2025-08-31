@@ -85,7 +85,6 @@ export default async function RootLayout({
           {/* DNS prefetch / preconnect */}
           <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
           <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
-          <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
           <link
             rel="preconnect"
             href="https://fonts.googleapis.com"
@@ -260,17 +259,9 @@ export default async function RootLayout({
                       document.head.appendChild(s);
                     }
 
-                    // اولین اینتراکشن کاربر
                     ['click','scroll','mousemove','touchstart','keydown'].forEach(function(evt){
                       window.addEventListener(evt, injectGTM, { once: true, passive: true });
                     });
-
-                    // یا idle/تاخیر
-                    if ('requestIdleCallback' in window) {
-                      requestIdleCallback(function(){ injectGTM(); }, { timeout: 6000 });
-                    } else {
-                      setTimeout(injectGTM, 6000);
-                    }
                   })('${GTM_ID}');
                 `,
               }}
@@ -295,7 +286,6 @@ export default async function RootLayout({
                 ['click','scroll','mousemove','touchstart','keydown'].forEach(e=>{
                   document.addEventListener(e, loadThirdParty, { once: true, passive: true });
                 });
-                setTimeout(loadThirdParty, 5000);
               `,
             }}
           />
