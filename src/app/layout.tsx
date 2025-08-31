@@ -118,23 +118,16 @@ export default async function RootLayout({
           <Analytics />
 
           {/* Google Tag Manager */}
+          {/* Google Tag Manager */}
           <Script
             id="gtm"
             strategy="beforeInteractive"
-            async
             dangerouslySetInnerHTML={{
-              __html: `
-                (function(){
-                  // Guard to avoid double-injection when multiple GTM snippets exist
-                  if ((window as any).__celGtmInjected) return;
-                  (window as any).__celGtmInjected = true;
-                  (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-                  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-                  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-                  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-                  })(window,document,'script','dataLayer','GTM-M24FJ7JC');
-                })();
-              `,
+              __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+      new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+      j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+      'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+      })(window,document,'script','dataLayer','GTM-M24FJ7JC');`,
             }}
           />
           {/* End Google Tag Manager */}
@@ -149,7 +142,7 @@ export default async function RootLayout({
           <Script
             id="json-ld"
             type="application/ld+json"
-            strategy="afterInteractive"
+            strategy="beforeInteractive"
             suppressHydrationWarning
             dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdData) }}
           />
