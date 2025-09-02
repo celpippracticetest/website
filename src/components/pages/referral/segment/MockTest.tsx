@@ -1,10 +1,8 @@
-import {
-  Coherence,
-  Fullfilment,
-  Readability,
-  Score,
-  Vocabulary,
-} from "@/components/icons";
+import Coherence from "@/components/icons/Coherence";
+import Fullfilment from "@/components/icons/Fullfilment";
+import Readability from "@/components/icons/Readability";
+import Score from "@/components/icons/Score";
+import Vocabulary from "@/components/icons/Vocabulary";
 import React from "react";
 
 const MockTest = () => {

@@ -40,6 +40,15 @@ import CountdownTimer from "@/components/dashboard-app/CounterDownTimer";
 import OnboardingSurvey from "@/components/onboardingSurvey";
 import SvgReferral from "@/components/icons/Referral";
 import SvgLearning from "@/components/icons/Learning";
+import SvgMockTestNavigation from "@/components/icons/MockTestNavigation";
+import SvgBottomNavigation from "@/components/icons/BottomNavigation";
+import SvgPracticeHover from "@/components/icons/PracticeHover";
+import {
+  SvgMockTestHover,
+  SvgMockTestTopNavigationHover,
+  SvgPracticeBlueHover,
+} from "@/components/icons";
+import SvgDiamond from "@/components/icons/Diamond";
 
 const NavItem = ({
   icon,
@@ -819,44 +828,124 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                 src="/images/logo.png"
               />
 
-              <div className="hidden screen1280:!flex gap-[24px] shrink-0 items-center ">
+              <div className="hidden screen1280:!flex gap-[24px] shrink-0 items-center">
                 <div
-                  className="flex gap-[8px] group items-center hover:!cursor-pointer"
+                  className="flex gap-[8px] group items-center hover:!cursor-pointer relative"
                   onClick={() => router.push("/practice-overview")}
                 >
-                  <SvgPractice className="flex text-[14px] items-center text-[#76808F]  group-hover:!text-[#316BFF]" />
-                  <span className=" text-[#76808F]  group-hover:!text-[#316BFF]">
+                  <div className="relative w-[24px] h-[24px] flex items-center justify-center">
+                    <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
+                      <SvgPractice
+                        fill="transparent"
+                        stroke={"#76808F"}
+                        className="    duration-200 "
+                      />
+                    </div>
+                    <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
+                      <SvgPracticeBlueHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
+                    </div>
+                  </div>
+                  <span className="text-[#76808F] group-hover:text-[#316BFF] transition-colors duration-200">
                     Practice
                   </span>
                 </div>
+
                 <div
-                  className="flex gap-[8px] group items-center hover:!cursor-pointer"
+                  className="flex gap-[8px] group items-center hover:!cursor-pointer relative"
                   onClick={() => router.push("/exam-overview")}
                 >
-                  <SvgMockTest className="flex text-[14px] items-center text-[#76808F]  group-hover:!text-[#316BFF]" />
-                  <span className=" text-[#76808F]  group-hover:!text-[#316BFF]">
+                  <div className="relative  flex items-center justify-center">
+                    <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
+                      <SvgMockTest className="  text-[#76808F]  duration-200 " />
+                    </div>
+                    <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
+                      <SvgMockTestTopNavigationHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
+                    </div>
+                  </div>
+                  <span className="text-[#76808F] group-hover:text-[#316BFF] transition-colors duration-200">
                     Mock Test
                   </span>
                 </div>
-                {/* <div className="flex gap-[8px] ">
-                  <SvgMockTest className="shrink-0 text-[14px]" />
-                  <span>Learning</span>
-                </div> */}
+
+                <div
+                  className="flex gap-[8px] group items-center hover:!cursor-pointer relative"
+                  onClick={() => router.push("/exam-overview")}
+                >
+                  <div className="relative  flex items-center justify-center">
+                    <div className="flex group-hover:hidden w-[24px] h-[24px]  items-center justify-center">
+                      <SvgLearning
+                        stroke="#76808F"
+                        fill="transparent"
+                        className="text-[#76808F] group-hover:text-[#316BFF]"
+                      />
+                    </div>
+
+                    <div className="hidden group-hover:flex w-[24px] h-[24px]  items-center justify-center">
+                      <SvgLearning
+                        stroke="#316BFF"
+                        fill="#316BFF"
+                        className="text-[#316BFF]"
+                      />
+                    </div>
+                  </div>
+                  <span className="text-[#76808F] group-hover:text-[#316BFF] transition-colors duration-200">
+                    Learning
+                  </span>
+                </div>
               </div>
             </div>
 
             <div className="flex items-center justify-between  h-[48px]">
-              <span
+              {/* <span
                 onClick={() => setIsMenuOpen && setIsMenuOpen(!isMenuOpen)}
                 className="flex cursor-pointer gap-[5px] items-center justify-center w-[40px] h-[40px] border-[#D5D6D8]  border-[1px] rounded-[100%] screen744:!hidden"
               >
                 <SvgHamburger />
-              </span>
+              </span> */}
               <div className="hidden screen744:!flex flex-col"></div>
 
               {/* auth buttons */}
               <div className="flex items-right gap-4 lg:gap-5 md:gap-3 pr-[24px]">
-                <div className="flex items-center space-x-1">
+                <div className="flex items-center">
+                  {proUser ? (
+                    <>
+                      <button
+                        className="w-[149px] shrink-0 h-[40px] rounded-[24px] shadow-startButton cursor-pointer 
+             [border:1.5px_solid_transparent] 
+             [background:linear-gradient(white,white)_padding-box,linear-gradient(270deg,#F79D65_0%,#759CFF_100%)_border-box] 
+             group hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] hover:!border-none flex items-center justify-center"
+                        onClick={() => {
+                          router.push("/earn100");
+                        }}
+                      >
+                        <span className="font-medium text-[14px] text-black group-hover:text-white">
+                          Earn 100
+                        </span>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Scroll to Plans Section"
+                        onClick={() => {
+                          if (freeUser) {
+                            setShowUpgradeModal(true);
+                          } else {
+                            setShowLoginModal(true);
+                          }
+                        }}
+                        className=" mr-[16px] shrink-0 hover:cursor-pointer screen744:!ml-0 relative w-[40px] h-[40px] border-[1px] border-[#D5D6D8] rounded-[24px] flex items-center justify-center"
+                      >
+                        <SvgDiamond />
+                        <div className="absolute leading-[16px] font-semibold rotate-[10deg]    flex text-white items-center justify-center bg-error1 rounded-[16px] w-[34px] h-[20px] -top-[12px] -right-[12px]  text-[10px]">
+                          PRO
+                        </div>
+                      </div>
+                    </>
+                  )}
+
                   <SignedOut>
                     <button
                       className="group  hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] shadow-startButton w-[149px] hover:cursor-pointer
@@ -881,7 +970,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                       onClick={() => {
                         setUserDropDownOpen(!isUserDropDownOpen);
                       }}
-                      className="cursor-pointer"
+                      className="cursor-pointer shrink-0 mr-[24px] ml-[16px]"
                     >
                       {user && user.imageUrl ? (
                         <img
@@ -1000,41 +1089,94 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
           )}
         </div>
         <div
-          className="fixed mx-auto flex-col  rounded-[32px]  border border-[#D1DEFF] bg-[linear-gradient(90deg,_rgba(255,_255,_255,_0.65)_0%,_rgba(255,_255,_255,_0.2)_100%)]      screen744:!w-[calc(100%-84px)]
- bg-[#F4F7FF] items-end bottom-[16px] flex justify-between screen1280:!hidden max-w-[1440px] px-[16px]  screen1280:!px-[80px] h-[56px] w-full"
+          className="
+    fixed bottom-[16px] left-0 right-0
+    mx-auto
+    max-w-[1440px]
+    screen1280:px-[80px] px-[16px]
+    screen744:w-[calc(100%-84px)]
+    screen1280:!hidden
+  "
+          style={{ height: 82, pointerEvents: "none" }}
         >
-          <div className="flex justify-around gap-[24px] h-full w-full shrink-0 items-center ">
+          <SvgBottomNavigation className="absolute inset-0 w-full h-full" />
+
+          <div
+            className="
+      relative z-10
+      grid grid-cols-3
+      items-center justify-items-center
+      gap-[24px] h-full
+    "
+            style={{ pointerEvents: "auto" }}
+          >
             <div
-              className="flex flex-col gap-[4px] group items-center hover:!cursor-pointer"
+              className="group flex flex-col items-center mt-5 gap-1 cursor-pointer"
               onClick={() => router.push("/practice-overview")}
             >
-              <SvgPractice className="flex text-[11px] items-center text-[#76808F]  group-hover:!text-[#316BFF]" />
-              <span className=" text-[#76808F]  group-hover:!text-[#316BFF]">
+              <div className="flex group-hover:hidden w-[24px] h-[24px]  items-center justify-center">
+                <SvgPractice
+                  stroke="#76808F"
+                  fill="transparent"
+                  className="text-[#76808F] "
+                />
+              </div>
+
+              <div className="hidden group-hover:flex">
+                <SvgPracticeHover className="text-white" />
+              </div>
+
+              <span className="text-xs text-[#76808F] group-hover:text-[#FC8A65]">
                 Practice
               </span>
+              <span className="w-[4px] h-[4px] rounded-full group-hover:bg-[#FC8A65] group-hover:flex"></span>
             </div>
             <div
-              className="flex flex-col gap-[4px] group items-center hover:!cursor-pointer"
+              className="
+    flex flex-col gap-[4px] items-center group hover:cursor-pointer
+    relative
+    translate-y-[4px] hover:translate-y-[2px] transition-transform
+  "
               onClick={() => router.push("/exam-overview")}
             >
-              <SvgMockTest className="flex text-[11px] items-center text-[#76808F]  group-hover:!text-[#316BFF]" />
-              <span className=" text-[#76808F]  group-hover:!text-[#316BFF]">
+              <div className="w-[48px] group-hover:!w-[44px] group-hover:!h-[44px] h-[48px] flex items-center justify-center rounded-full bg-[radial-gradient(50%_265.62%_at_50%_50%,_#F26B3E_0%,_#FC8A65_100%)]">
+                <SvgMockTestNavigation className="text-[#76808F] flex group-hover:hidden group-hover:text-[#FC8A65]" />
+
+                <div className="hidden group-hover:flex w-[24px] h-[24px] items-center justify-center">
+                  <SvgMockTestHover className="text-[#76808F] group-hover:text-[#FC8A65]" />
+                </div>
+              </div>
+              <span className="text-xs text-[#76808F] group-hover:text-[#FC8A65]">
                 Mock Test
               </span>
+              <span className="w-[4px] h-[4px] rounded-full group-hover:bg-[#FC8A65] group-hover:flex"></span>
             </div>
+
             <div
-              className="flex flex-col gap-[4px] group items-center hover:!cursor-pointer"
+              className="group flex flex-col items-center mt-5 gap-1 cursor-pointer"
               onClick={() => router.push("/learning")}
             >
-              <SvgLearning className="flex text-[11px] items-center group-hover:!text-[#316BFF]" />
-              <span className=" text-[#76808F]  group-hover:!text-[#316BFF]">
+              <div className="flex group-hover:hidden w-[24px] h-[24px]  items-center justify-center">
+                <SvgLearning
+                  stroke="#76808F"
+                  fill="transparent"
+                  className="text-[#76808F] group-hover:text-[#FC8A65]"
+                />
+              </div>
+
+              <div className="hidden group-hover:flex w-[24px] h-[24px]  items-center justify-center">
+                <SvgLearning
+                  stroke="#FC8A65"
+                  fill="#FC8A65"
+                  className="text-[#FC8A65]"
+                />
+              </div>
+
+              <span className="text-xs text-[#76808F] group-hover:text-[#FC8A65]">
                 Learning
               </span>
+              <span className="w-[4px] h-[4px] rounded-full group-hover:bg-[#FC8A65] group-hover:flex"></span>
             </div>
-            {/* <div className="flex gap-[8px] ">
-                  <SvgMockTest className="shrink-0 text-[14px]" />
-                  <span>Learning</span>
-                </div> */}
           </div>
         </div>
       </div>

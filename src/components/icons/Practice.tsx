@@ -5,18 +5,18 @@ const SvgPractice = (props: SVGProps<SVGSVGElement>) => (
     xmlns="http://www.w3.org/2000/svg"
     width={20}
     height={20}
-    fill="none"
+    fill={props.fill || "currentColor"}
     {...props}
   >
     <path
-      stroke="currentColor"
+      stroke={props.stroke || "currentColor"}
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={1.5}
       d="M8.375 2.108 3.358 5.383a2.655 2.655 0 0 0 0 4.45l5.017 3.275c.9.592 2.383.592 3.283 0l4.992-3.275c1.6-1.05 1.6-3.391 0-4.441l-4.992-3.275c-.9-.6-2.383-.6-3.283-.009"
     />
     <path
-      stroke="currentColor"
+      stroke={props.stroke || "currentColor"}
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={1.5}
