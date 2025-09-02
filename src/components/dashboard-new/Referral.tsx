@@ -492,8 +492,8 @@ export default function Referral() {
   };
 
   return (
-    <div className="flex flex-col p-0 screen744:!p-[16px] bg-[#F2F6FF] w-full max-w-[1200px] mx-auto">
-      <div className="relative bg-white px-[16px] screen744:!px-[24px] py-[40px]">
+    <div className="flex flex-col px-[16px] p-0 screen744:!p-[16px] bg-[#F2F6FF] w-full max-w-[1200px] mx-auto">
+      <div className="relative bg-white mt-[16px] px-[16px] screen744:!px-[24px] py-[40px]">
         <div className=" flex-wrap flex rounded-[16px] justify-between w-full h-[123px] bg-[#FDF4FF] px-[16px] screen744:!px-[40px] py-[14px] screen744:!py-[24px] screen1280:!py-[28px]">
           <div className="flex max-w-[184px]  screen744:!max-w-[338px] w-full screen1280:!max-w-full flex-col gap-[12px]">
             <span className="text-[#212E42] leading-[18px] text-[16px] screen744:!text-[22px] screen1280:!text-[29px] font-semibold">
