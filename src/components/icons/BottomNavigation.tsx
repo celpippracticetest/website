@@ -4,10 +4,10 @@ import type { SVGProps } from "react";
 const SvgBottomNavigation = (props: SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 1231 82" // مختصات ثابت
-    width="100%" // فقط طول واکنش‌گرا
-    height={82} // ارتفاع قفل
-    preserveAspectRatio="none" // فقط محور X فشرده/کشیده
+    viewBox="0 0 1231 82"
+    width="100%"
+    height={82}
+    preserveAspectRatio="none"
     fill="none"
     style={{ display: "block", height: 82, overflow: "hidden" }}
     {...props}

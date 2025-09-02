@@ -3,6 +3,15 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import clsx from "clsx";
+import {
+  SignedIn,
+  SignedOut,
+  SignInButton,
+  SignUpButton,
+  useClerk,
+  useUser,
+} from "@clerk/nextjs";
+
 import SvgChevronRight from "@/components/icons/ChevronRight";
 import SvgPractice from "@/components/icons/Practice";
 import SvgProfile from "@/components/icons/Profile";
@@ -14,15 +23,6 @@ import SvgWritingPart from "@/components/icons/WritingPart";
 import SvgReadingPart from "@/components/icons/ReadingPart";
 import SvgAllSkills from "@/components/icons/AllSkills";
 import { usePathname, useRouter } from "next/navigation";
-
-import {
-  SignedIn,
-  SignedOut,
-  SignInButton,
-  SignUpButton,
-  useClerk,
-  useUser,
-} from "@clerk/nextjs";
 import { useSelectedTask } from "@/store/useSelectedTask.store";
 import { useSelectedExam } from "@/store/useSelectedExam.store";
 import PlanCard from "@/components/pages/dashboard/PlanCard";
@@ -31,7 +31,6 @@ import { useExtraDiscountStore } from "@/store/useExtraDiscount.store";
 import { useCreateDiscountCoupon } from "@/hooks/useCreateDiscountCoupon";
 import SvgCopy from "@/components/icons/Copy";
 import { planDetails } from "../Plans";
-import SvgHamburger from "@/components/icons/Hamburger";
 import React from "react";
 import { motion } from "framer-motion";
 import SvgClose from "@/components/icons/Close";
@@ -44,9 +43,11 @@ import SvgMockTestNavigation from "@/components/icons/MockTestNavigation";
 import SvgBottomNavigation from "@/components/icons/BottomNavigation";
 import SvgPracticeHover from "@/components/icons/PracticeHover";
 import {
+  SvgBottomNavigationMobile,
   SvgMockTestHover,
   SvgMockTestTopNavigationHover,
   SvgPracticeBlueHover,
+  SvgRefferalMobileNavigation,
 } from "@/components/icons";
 import SvgDiamond from "@/components/icons/Diamond";
 
@@ -811,186 +812,200 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
           className="flex flex-col  w-full    h-full      screen744:!w-[calc(100%-84px)]
  bg-[#F4F7FF] items-end"
         >
-          <div
-            className={clsx(
-              "transition-all flex justify-between w-full duration-1000 ease-in-out mt-[24px] rounded-[32px] ",
-              "screen1280:!w-full mx-auto max-w-[1280px] flex h-[80px] items-center justify-center pl-[24px] relative w-full border border-[#D1DEFF] bg-[linear-gradient(90deg,_rgba(255,_255,_255,_0.65)_0%,_rgba(255,_255,_255,_0.2)_100%)] ",
-              "flex-row items-center"
-            )}
-          >
-            <div className="flex gap-[64px] w-full">
-              <Image
-                onClick={() => router.push("/")}
-                alt="full logo"
-                width={133}
-                height={40}
-                className={clsx("opacity-100 delay-300 hover:!cursor-pointer")}
-                src="/images/logo.png"
-              />
+          <div className="px-[24px]  w-full">
+            <div
+              className={clsx(
+                "transition-all flex justify-between w-full px-[24px] duration-1000 ease-in-out mt-[24px] rounded-[32px] ",
+                "screen1280:!w-full mx-auto max-w-[1280px] flex h-[80px] items-center justify-center pl-[24px] relative w-full border border-[#D1DEFF] bg-[linear-gradient(90deg,_rgba(255,_255,_255,_0.65)_0%,_rgba(255,_255,_255,_0.2)_100%)] ",
+                "flex-row items-center"
+              )}
+            >
+              <div className="flex gap-[64px] w-full">
+                <Image
+                  onClick={() => router.push("/")}
+                  alt="full logo"
+                  width={133}
+                  height={40}
+                  className={clsx(
+                    "opacity-100 delay-300 hover:!cursor-pointer"
+                  )}
+                  src="/images/logo.png"
+                />
 
-              <div className="hidden screen1280:!flex gap-[24px] shrink-0 items-center">
-                <div
-                  className="flex gap-[8px] group items-center hover:!cursor-pointer relative"
-                  onClick={() => router.push("/practice-overview")}
-                >
-                  <div className="relative w-[24px] h-[24px] flex items-center justify-center">
-                    <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
-                      <SvgPractice
-                        fill="transparent"
-                        stroke={"#76808F"}
-                        className="    duration-200 "
-                      />
+                <div className="hidden screen1280:!flex gap-[24px] shrink-0 items-center">
+                  <div
+                    className="flex gap-[8px] group items-center hover:!cursor-pointer relative"
+                    onClick={() => router.push("/practice-overview")}
+                  >
+                    <div className="relative w-[24px] h-[24px] flex items-center justify-center">
+                      <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
+                        <SvgPractice
+                          fill="transparent"
+                          stroke={"#76808F"}
+                          className="    duration-200 "
+                        />
+                      </div>
+                      <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
+                        <SvgPracticeBlueHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
+                      </div>
                     </div>
-                    <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
-                      <SvgPracticeBlueHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
-                    </div>
+                    <span className="text-[#76808F] group-hover:text-[#316BFF] transition-colors duration-200">
+                      Practice
+                    </span>
                   </div>
-                  <span className="text-[#76808F] group-hover:text-[#316BFF] transition-colors duration-200">
-                    Practice
-                  </span>
-                </div>
 
-                <div
-                  className="flex gap-[8px] group items-center hover:!cursor-pointer relative"
-                  onClick={() => router.push("/exam-overview")}
-                >
-                  <div className="relative  flex items-center justify-center">
-                    <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
-                      <SvgMockTest className="  text-[#76808F]  duration-200 " />
+                  <div
+                    className="flex gap-[8px] group items-center hover:!cursor-pointer relative"
+                    onClick={() => router.push("/exam-overview")}
+                  >
+                    <div className="relative  flex items-center justify-center">
+                      <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
+                        <SvgMockTest className="  text-[#76808F]  duration-200 " />
+                      </div>
+                      <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
+                        <SvgMockTestTopNavigationHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
+                      </div>
                     </div>
-                    <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
-                      <SvgMockTestTopNavigationHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
-                    </div>
+                    <span className="text-[#76808F] group-hover:text-[#316BFF] transition-colors duration-200">
+                      Mock Test
+                    </span>
                   </div>
-                  <span className="text-[#76808F] group-hover:text-[#316BFF] transition-colors duration-200">
-                    Mock Test
-                  </span>
-                </div>
 
-                <div
-                  className="flex gap-[8px] group items-center hover:!cursor-pointer relative"
-                  onClick={() => router.push("/exam-overview")}
-                >
-                  <div className="relative  flex items-center justify-center">
-                    <div className="flex group-hover:hidden w-[24px] h-[24px]  items-center justify-center">
-                      <SvgLearning
-                        stroke="#76808F"
-                        fill="transparent"
-                        className="text-[#76808F] group-hover:text-[#316BFF]"
-                      />
-                    </div>
+                  <div
+                    className="flex gap-[8px] group items-center hover:!cursor-pointer relative"
+                    onClick={() => router.push("/exam-overview")}
+                  >
+                    <div className="relative  flex items-center justify-center">
+                      <div className="flex group-hover:hidden w-[24px] h-[24px]  items-center justify-center">
+                        <SvgLearning
+                          stroke="#76808F"
+                          fill="transparent"
+                          className="text-[#76808F] group-hover:text-[#316BFF]"
+                        />
+                      </div>
 
-                    <div className="hidden group-hover:flex w-[24px] h-[24px]  items-center justify-center">
-                      <SvgLearning
-                        stroke="#316BFF"
-                        fill="#316BFF"
-                        className="text-[#316BFF]"
-                      />
+                      <div className="hidden group-hover:flex w-[24px] h-[24px]  items-center justify-center">
+                        <SvgLearning
+                          stroke="#316BFF"
+                          fill="#316BFF"
+                          className="text-[#316BFF]"
+                        />
+                      </div>
                     </div>
+                    <span className="text-[#76808F] group-hover:text-[#316BFF] transition-colors duration-200">
+                      Learning
+                    </span>
                   </div>
-                  <span className="text-[#76808F] group-hover:text-[#316BFF] transition-colors duration-200">
-                    Learning
-                  </span>
                 </div>
               </div>
-            </div>
 
-            <div className="flex items-center justify-between  h-[48px]">
-              {/* <span
+              <div className="flex items-center justify-between  h-[48px]">
+                {/* <span
                 onClick={() => setIsMenuOpen && setIsMenuOpen(!isMenuOpen)}
                 className="flex cursor-pointer gap-[5px] items-center justify-center w-[40px] h-[40px] border-[#D5D6D8]  border-[1px] rounded-[100%] screen744:!hidden"
               >
                 <SvgHamburger />
               </span> */}
-              <div className="hidden screen744:!flex flex-col"></div>
+                <div className="hidden screen744:!flex flex-col"></div>
 
-              {/* auth buttons */}
-              <div className="flex items-right gap-4 lg:gap-5 md:gap-3 pr-[24px]">
-                <div className="flex items-center">
-                  {proUser ? (
-                    <>
-                      <button
-                        className="w-[149px] shrink-0 h-[40px] rounded-[24px] shadow-startButton cursor-pointer 
+                {/* auth buttons */}
+                <div className="flex items-right gap-4 lg:gap-5 md:gap-3 pr-[24px]">
+                  <div className="flex items-center">
+                    {proUser ? (
+                      <>
+                        <button
+                          className="hidden screen744:!flex w-[149px] shrink-0 h-[40px] rounded-[24px] shadow-startButton cursor-pointer 
              [border:1.5px_solid_transparent] 
              [background:linear-gradient(white,white)_padding-box,linear-gradient(270deg,#F79D65_0%,#759CFF_100%)_border-box] 
-             group hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] hover:!border-none flex items-center justify-center"
-                        onClick={() => {
-                          router.push("/earn100");
-                        }}
+             group hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] hover:!border-none  items-center justify-center"
+                          onClick={() => {
+                            router.push("/earn100");
+                          }}
+                        >
+                          <span className="font-medium text-[14px] text-black group-hover:text-white">
+                            Earn 100
+                          </span>
+                        </button>
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          aria-label="Scroll to Plans Section"
+                          onClick={() => {
+                            router.push("/earn100");
+                          }}
+                          className="flex screen744:!hidden  shrink-0 hover:cursor-pointer relative w-[40px] h-[40px] border-[1px] border-[#D5D6D8] rounded-[24px] flex items-center justify-center"
+                        >
+                          <SvgRefferalMobileNavigation />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          aria-label="Scroll to Plans Section"
+                          onClick={() => {
+                            if (freeUser) {
+                              setShowUpgradeModal(true);
+                            } else {
+                              setShowLoginModal(true);
+                            }
+                          }}
+                          className=" mr-[16px] shrink-0 hover:cursor-pointer screen744:!ml-0 relative w-[40px] h-[40px] border-[1px] border-[#D5D6D8] rounded-[24px] flex items-center justify-center"
+                        >
+                          <SvgDiamond />
+                          <div className="absolute leading-[16px] font-semibold rotate-[10deg]    flex text-white items-center justify-center bg-error1 rounded-[16px] w-[34px] h-[20px] -top-[12px] -right-[12px]  text-[10px]">
+                            PRO
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    <SignedOut>
+                      <button
+                        className="group  hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] shadow-startButton w-[149px] hover:cursor-pointer
+                 cursor-pointer bg-white rounded-[24px] border-[1.5px] h-full screen1280:border-neutral2 hover:!border-none flex items-center justify-center"
                       >
-                        <span className="font-medium text-[14px] text-black group-hover:text-white">
-                          Earn 100
+                        <span className=" cursor-pointer flex items-center justify-center h-[40px] font-medium text-[14px] hover:text-white text-black w-[146px]">
+                          <SignUpButton>
+                            <span className="cursor-pointer">Sign Up</span>
+                          </SignUpButton>
+                          /
+                          <SignInButton>
+                            <span className="cursor-pointer">Login</span>
+                          </SignInButton>
                         </span>
                       </button>
-                    </>
-                  ) : (
-                    <>
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        aria-label="Scroll to Plans Section"
+                    </SignedOut>
+                    <SignedIn>
+                      <button
+                        id="dropdownDefaultButton"
+                        data-dropdown-toggle="dropdown"
+                        type="button"
                         onClick={() => {
-                          if (freeUser) {
-                            setShowUpgradeModal(true);
-                          } else {
-                            setShowLoginModal(true);
-                          }
+                          setUserDropDownOpen(!isUserDropDownOpen);
                         }}
-                        className=" mr-[16px] shrink-0 hover:cursor-pointer screen744:!ml-0 relative w-[40px] h-[40px] border-[1px] border-[#D5D6D8] rounded-[24px] flex items-center justify-center"
+                        className="cursor-pointer shrink-0 mr-[24px] ml-[16px]"
                       >
-                        <SvgDiamond />
-                        <div className="absolute leading-[16px] font-semibold rotate-[10deg]    flex text-white items-center justify-center bg-error1 rounded-[16px] w-[34px] h-[20px] -top-[12px] -right-[12px]  text-[10px]">
-                          PRO
-                        </div>
-                      </div>
-                    </>
-                  )}
+                        {user && user.imageUrl ? (
+                          <img
+                            className="w-10 h-10 p-1 rounded-full ring-2 ring-gray-300 dark:ring-gray-500"
+                            src={user.imageUrl}
+                            alt="Bordered avatar"
+                          />
+                        ) : (
+                          <div className="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
+                            <span className="font-medium text-gray-600 dark:text-gray-300">
+                              {(user?.name ?? "user")[0].toLocaleUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                      </button>
+                    </SignedIn>
+                  </div>
 
-                  <SignedOut>
-                    <button
-                      className="group  hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] shadow-startButton w-[149px] hover:cursor-pointer
-                 cursor-pointer bg-white rounded-[24px] border-[1.5px] h-full screen1280:border-neutral2 hover:!border-none flex items-center justify-center"
-                    >
-                      <span className=" cursor-pointer flex items-center justify-center h-[40px] font-medium text-[14px] hover:text-white text-black w-[146px]">
-                        <SignUpButton>
-                          <span className="cursor-pointer">Sign Up</span>
-                        </SignUpButton>
-                        /
-                        <SignInButton>
-                          <span className="cursor-pointer">Login</span>
-                        </SignInButton>
-                      </span>
-                    </button>
-                  </SignedOut>
-                  <SignedIn>
-                    <button
-                      id="dropdownDefaultButton"
-                      data-dropdown-toggle="dropdown"
-                      type="button"
-                      onClick={() => {
-                        setUserDropDownOpen(!isUserDropDownOpen);
-                      }}
-                      className="cursor-pointer shrink-0 mr-[24px] ml-[16px]"
-                    >
-                      {user && user.imageUrl ? (
-                        <img
-                          className="w-10 h-10 p-1 rounded-full ring-2 ring-gray-300 dark:ring-gray-500"
-                          src={user.imageUrl}
-                          alt="Bordered avatar"
-                        />
-                      ) : (
-                        <div className="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
-                          <span className="font-medium text-gray-600 dark:text-gray-300">
-                            {(user?.name ?? "user")[0].toLocaleUpperCase()}
-                          </span>
-                        </div>
-                      )}
-                    </button>
-                  </SignedIn>
-                </div>
-
-                {/* Mobile menu button */}
-                {/* <div className="flex md:hidden">
+                  {/* Mobile menu button */}
+                  {/* <div className="flex md:hidden">
             <button
               type="button"
               className="text-gray-700 hover:text-gray-900"
@@ -1004,77 +1019,79 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
               )}
             </button>
           </div> */}
-              </div>
-              {/* dropdown for auth buttons */}
-              <div
-                ref={userDropdownRef}
-                className={
-                  (isUserDropDownOpen && user ? "" : " hidden ") +
-                  " absolute right-0 z-10 mt-2 w-56 top-[48px] rounded-md bg-white ring-1 shadow-lg ring-black/5 focus:outline-hidden"
-                }
-                role="menu"
-                aria-orientation="vertical"
-                aria-labelledby="menu-button"
-                tabIndex={-1}
-              >
-                <div className="py-1" role="none">
-                  {user &&
-                    user.publicMetadata.roles &&
-                    user.publicMetadata.roles.includes("admin") && (
-                      <a
-                        href="/cms/dashboard"
-                        className="block px-4 py-2 text-[14px] text-gray-700 w-full text-left"
-                        role="menuitem"
-                        tabIndex={-1}
-                        id="menu-item-0"
-                      >
-                        CMS Dashboard
-                      </a>
-                    )}
+                </div>
+                {/* dropdown for auth buttons */}
+                <div
+                  ref={userDropdownRef}
+                  className={
+                    (isUserDropDownOpen && user ? "" : " hidden ") +
+                    " absolute right-0 z-10 mt-2 w-56 top-[48px] rounded-md bg-white ring-1 shadow-lg ring-black/5 focus:outline-hidden"
+                  }
+                  role="menu"
+                  aria-orientation="vertical"
+                  aria-labelledby="menu-button"
+                  tabIndex={-1}
+                >
+                  <div className="py-1" role="none">
+                    {user &&
+                      user.publicMetadata.roles &&
+                      user.publicMetadata.roles.includes("admin") && (
+                        <a
+                          href="/cms/dashboard"
+                          className="block px-4 py-2 text-[14px] text-gray-700 w-full text-left"
+                          role="menuitem"
+                          tabIndex={-1}
+                          id="menu-item-0"
+                        >
+                          CMS Dashboard
+                        </a>
+                      )}
 
-                  <a
-                    href="/profile"
-                    className="block px-4 py-2 text-[14px] text-gray-700"
-                    role="menuitem"
-                    tabIndex={-1}
-                    id="menu-item-0"
-                  >
-                    Profile
-                  </a>
-                  <button
-                    onClick={() => {
-                      if (
-                        typeof window !== "undefined" &&
-                        (window as any).Intercom
-                      ) {
-                        (window as any).Intercom("show");
-                      }
-                    }}
-                    className=" block px-4 py-2 text-[14px] text-gray-700 w-full text-left cursor-pointer"
-                    role="menuitem"
-                    tabIndex={-1}
-                    id="support-button"
-                  >
-                    Support
-                  </button>
+                    <a
+                      href="/profile"
+                      className="block px-4 py-2 text-[14px] text-gray-700"
+                      role="menuitem"
+                      tabIndex={-1}
+                      id="menu-item-0"
+                    >
+                      Profile
+                    </a>
+                    <button
+                      onClick={() => {
+                        if (
+                          typeof window !== "undefined" &&
+                          (window as any).Intercom
+                        ) {
+                          (window as any).Intercom("show");
+                        }
+                      }}
+                      className=" block px-4 py-2 text-[14px] text-gray-700 w-full text-left cursor-pointer"
+                      role="menuitem"
+                      tabIndex={-1}
+                      id="support-button"
+                    >
+                      Support
+                    </button>
 
-                  <button
-                    onClick={() => {
-                      localStorage.removeItem("hasClosedExtraDiscountModal");
+                    <button
+                      onClick={() => {
+                        localStorage.removeItem("hasClosedExtraDiscountModal");
 
-                      signOut();
-                    }}
-                    className="block px-4 py-2 text-[14px] text-gray-700 cursor-pointer"
-                    role="menuitem"
-                    tabIndex={-1}
-                    id="menu-item-2"
-                  >
-                    Sign out
-                  </button>
+                        signOut();
+                      }}
+                      className="block px-4 py-2 text-[14px] text-gray-700 cursor-pointer"
+                      role="menuitem"
+                      tabIndex={-1}
+                      id="menu-item-2"
+                    >
+                      Sign out
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+
           {surveyVisible && (
             <div className="fixed inset-0 z-[99] flex screen1280:!pt-[101px] justify-center bg-[#F4F7FF]">
               <OnboardingSurvey onComplete={() => setSurveyVisible(false)} />
@@ -1099,8 +1116,12 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
   "
           style={{ height: 82, pointerEvents: "none" }}
         >
-          <SvgBottomNavigation className="absolute inset-0 w-full h-full" />
-
+          <div className="hidden screen744:!flex">
+            <SvgBottomNavigation className="hidden screen744:!flex absolute inset-0 w-full h-full" />
+          </div>
+          <div className="flex screen744:!hidden items-center">
+            <SvgBottomNavigationMobile className="flex screen744:!hidden absolute right-0 left-0 mx-auto inset-0 w-full h-full" />
+          </div>
           <div
             className="
       relative z-10
