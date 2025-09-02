@@ -3,33 +3,46 @@ import type { SVGProps } from "react";
 
 type Props = SVGProps<SVGSVGElement> & {
   width?: number;
+  marginX?: number;
+  notchFactor?: number;
 };
 
-const SvgBottomNavigationMobile = ({ width = 696, ...props }: Props) => {
+const SvgBottomNavigationMobile = ({
+  width = 696,
+  marginX = 24,
+  notchFactor = 1.3,
+  ...props
+}: Props) => {
   const H = 82 as const;
 
   const cx = width / 2;
 
-  const left = 24;
-  const right = width - 24;
+  const left = marginX;
+  const right = width - marginX;
 
   const topY = 0.5;
   const midY = 36.756;
   const bottomInnerY = H - 16;
   const bottomStrokeY = H - 0.5;
 
-  const START_TO_CENTER = 47.388;
-  const CP1_OFFSET = 26.931;
-  const CP2_OFFSET = 15.426;
+  const START_TO_CENTER_BASE = 47.388;
+  const CP1_OFFSET_BASE = 26.931;
+  const CP2_OFFSET_BASE = 15.426;
+
+  const START_TO_CENTER = START_TO_CENTER_BASE * notchFactor;
+  const CP1_OFFSET = CP1_OFFSET_BASE * notchFactor;
+  const CP2_OFFSET = CP2_OFFSET_BASE * notchFactor;
 
   const startXLeftCurve = cx - START_TO_CENTER;
   const cp1x = cx - CP1_OFFSET;
   const cp2x = cx - CP2_OFFSET;
 
+  const sx = (v: number) => v * notchFactor;
+
   const d = [
     `M${cx} ${topY}`,
-    `c15.112 0 26.077 8.034 32.182 14.072`,
-    `3.884 3.842 9.007 6.684 14.557 6.684`,
+    `c${sx(15.112)} 0 ${sx(26.077)} 8.034 ${sx(32.182)} 14.072`,
+    `${sx(3.884)} 3.842 ${sx(9.007)} 6.684 ${sx(14.557)} 6.684`,
     `H${right}`,
     `c8.56 0 15.5 6.94 15.5 15.5`,
     `V${bottomInnerY}`,
