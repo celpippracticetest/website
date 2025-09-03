@@ -63,7 +63,7 @@ const ListeningPractice = ({
   };
 
   return (
-    <div className="animate-fadeIn space-y-6 md:space-y-8">
+    <div className="animate-fadeIn space-y-6 md:space-y-8 px-[16px] screen744:!px-0">
       {selectedPractice ? (
         <ListeningPracticeView
           practice={selectedPractice}

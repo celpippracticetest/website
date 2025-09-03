@@ -70,7 +70,7 @@ const ReadingPage = async ({
             Reading
           </span>
         </div>
-        <div className="flex mt-[32px]  screen744:!mt-[0] items-center justify-center gap-[8px] max-w-[792px] w-full h-[60px] rounded-[12px] bg-[#FFE2E8]">
+        <div className="flex mt-[32px]  screen744:!mt-[0] items-center justify-center gap-[8px] max-w-[1200px] w-full h-[60px] rounded-[12px] bg-[#FFE2E8]">
           <SvgReadingPart className="text-[#EE4266]" />
           <span className="text-[#37465C] font-semibold text-[20px]">
             Reading Practice

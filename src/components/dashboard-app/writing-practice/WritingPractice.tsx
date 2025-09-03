@@ -10,6 +10,7 @@ import { TTaskSchemaDto } from "@/models/tasks.model";
 import ListeningTaskView from "../listening-practice/ListeningTaskView";
 import { useRouter } from "nextjs-toploader/app";
 import { useUser } from "@clerk/nextjs";
+import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 
 interface WritingPracticeProps {
   showHeader?: boolean;
@@ -63,7 +64,31 @@ const WritingPractice = ({
   };
 
   return selectedPractice ? (
-    <>
+    <div className="flex flex-col mx-auto w-full max-w-[1200px]">
+      <div className="pl-[40px] text-[#76808F] text-[14px] mt-[24px] mb-[28px] items-center flex gap-[8px]">
+        <div
+          onClick={() => {
+            router.push("/practice-overview");
+          }}
+        >
+          Practice
+        </div>
+        <SvgChevronRightForTitle />
+        <div
+          onClick={() => {
+            router.push("/writing");
+          }}
+        >
+          Writing
+        </div>
+        <SvgChevronRightForTitle />{" "}
+        <span className="text-[#212E42]">
+          <span className="text-[#76808F]">
+            {task.taskNumber?.replace(" #", "")}
+          </span>
+          .{task.name}
+        </span>
+      </div>
       <WritingPracticeView
         onAnswerButtonClick={onAnswerButtonClick}
         practice={selectedPractice}
@@ -82,7 +107,7 @@ const WritingPractice = ({
         setAnswerModalOpen={setAnswerModalOpen}
         result={result}
       />
-    </>
+    </div>
   ) : (
     <ListeningTaskView
       allPractices={allPractices}

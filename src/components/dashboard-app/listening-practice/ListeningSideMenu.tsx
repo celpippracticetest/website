@@ -26,14 +26,14 @@ const ListeningSideMenu = ({
   const { user } = useUser();
 
   return (
-    <aside className="sticky top-0 hidden bg-white screen1280:!h-[920px] overflow-scroll screen1280:!flex shrink-0 border-[1px] border-[#D5D6D8] rounded-lg w-[320px] flex-col items-center ">
-      <div className="bg-white gap-[16px] overflow-y-auto flex flex-col w-full [&::-webkit-scrollbar]:w-2 p-[16px] [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full  [&::-webkit-scrollbar-track]:bg-slate-100">
+    <aside className="sticky top-0 hidden bg-white screen1280:!h-[920px] overflow-scroll screen1280:!flex shrink-0 border-[1px] border-[#D5D6D8] max-w-[305px] rounded-lg w-full flex-col items-center ">
+      <div className="bg-white gap-[16px] overflow-y-auto  flex flex-col w-full [&::-webkit-scrollbar]:w-2 p-[16px] [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full  [&::-webkit-scrollbar-track]:bg-slate-100">
         {allPractices.map((p: TPracticeDto, index: number) => (
           <a
             key={index}
             className={`${
               completedPractice.includes(p.id) ? "h-[33px]" : "h-[24px]"
-            } flex items-center h-[24px] text-[14px] rounded-md transition-colors  ${
+            } flex items-center gap-[8px] h-[24px] text-[14px] rounded-md transition-colors  ${
               selectedPracticeId && selectedPracticeId == p.id
                 ? "font-bold"
                 : "font-normal"

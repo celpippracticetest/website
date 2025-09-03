@@ -18,6 +18,7 @@ import UpgradeModal from "@/components/modal/UpgradeModal";
 import { TWritingAnswerDto } from "@/models/answer";
 import LoginModal from "@/components/modal/LoginModal";
 import SvgRecording from "@/components/icons/Recording";
+import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 
 interface SpeakingPracticeViewProps {
   practice: TPracticeDto;
@@ -329,6 +330,7 @@ const SpeakingPracticeView = ({
       ) : (
         <></>
       )}
+
       <ListeningSideMenu
         allPractices={allPractices}
         task={task}

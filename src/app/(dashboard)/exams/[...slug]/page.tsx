@@ -55,7 +55,7 @@ const Exam = async ({ params }: { params: Promise<{ slug: string }> }) => {
       await answersRepo.findAnswersByExamIdAndUser(examId, user.id);
 
     return (
-      <main className="bg-[#F2F6FF] min-h-screen flex w-full  p-[16px] screen1280:!p-[24px] ">
+      <main className="bg-[#F2F6FF] min-h-screen flex w-full max-w-[1280px] mx-auto">
         <div className=" mx-auto w-full flex flex-col rounded-lg">
           <ResultExamView
             exams={exam}
@@ -83,7 +83,7 @@ const Exam = async ({ params }: { params: Promise<{ slug: string }> }) => {
 
   return (
     <main className="max-w-[995px] w-full h-full mx-auto">
-      <div className=" w-full p-[24px] flex h-full flex-col rounded-lg">
+      <div className=" w-full py-[24px] px-[16px] screen744:!px-0 flex h-full flex-col rounded-lg">
         {practice.type == "LISTENING" && (
           <ListeningExamView
             examId={examId}

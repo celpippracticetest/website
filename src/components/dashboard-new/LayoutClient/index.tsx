@@ -812,10 +812,10 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
           className="flex flex-col  w-full    h-full      screen744:!w-[calc(100%-84px)]
  bg-[#F4F7FF] items-end"
         >
-          <div className="px-[24px]  w-full">
+          <div className="px-[16px] screen744:!px-0  w-full">
             <div
               className={clsx(
-                "transition-all flex justify-between w-full px-[24px] duration-1000 ease-in-out mt-[24px] rounded-[32px] ",
+                "transition-all flex justify-between w-full px-[16px] duration-1000 ease-in-out mt-[24px] rounded-[32px] ",
                 "screen1280:!w-full mx-auto max-w-[1280px] flex h-[80px] items-center justify-center pl-[24px] relative w-full border border-[#D1DEFF] bg-[linear-gradient(90deg,_rgba(255,_255,_255,_0.65)_0%,_rgba(255,_255,_255,_0.2)_100%)] ",
                 "flex-row items-center"
               )}
@@ -933,7 +933,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                           onClick={() => {
                             router.push("/earn100");
                           }}
-                          className="flex screen744:!hidden  shrink-0 hover:cursor-pointer relative w-[40px] h-[40px] border-[1px] border-[#D5D6D8] rounded-[24px] flex items-center justify-center"
+                          className="flex screen744:!hidden  shrink-0 hover:cursor-pointer relative w-[40px] h-[40px] border-[1px] border-[#D5D6D8] rounded-[24px]  items-center justify-center"
                         >
                           <SvgRefferalMobileNavigation />
                         </div>

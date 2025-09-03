@@ -27,6 +27,7 @@ import { planDetails } from "@/components/dashboard-new/Plans";
 import LoginModal from "@/components/modal/LoginModal";
 import UpgradeModal from "@/components/modal/UpgradeModal";
 import SvgArrowRight from "@/components/icons/ArrowRight";
+import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 const SvgBestValuePlan = dynamic(
   () => import("../../../components/icons/BestValuePlan"),
   {

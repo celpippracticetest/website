@@ -9,6 +9,7 @@ import SpeakingAnswerModal from "./AnswerModal";
 import ListeningTaskView from "../listening-practice/ListeningTaskView";
 import { useUser } from "@clerk/nextjs";
 import { TTaskSchemaDto } from "@/models/tasks.model";
+import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 
 interface SpeakingPracticeProps {
   showHeader?: boolean;
@@ -81,7 +82,32 @@ const SpeakingPractice = ({
   };
 
   return selectedPractice ? (
-    <>
+    <div className="flex flex-col mx-auto  w-full max-w-[1200px]">
+      <div className="pl-[40px] text-[#76808F] text-[14px] mt-[24px] mb-[28px] items-center flex gap-[8px]">
+        <div
+          onClick={() => {
+            router.push("/practice-overview");
+          }}
+        >
+          Practice
+        </div>
+        <SvgChevronRightForTitle />
+        <div
+          onClick={() => {
+            router.push("/speaking");
+          }}
+        >
+          Speaking
+        </div>
+        <SvgChevronRightForTitle />{" "}
+        <span className="text-[#212E42]">
+          <span className="text-[#76808F]">
+            {task.taskNumber?.replace(" #", "")}
+          </span>
+          .{task.name}
+        </span>
+      </div>
+
       <SpeakingPracticeView
         onAnswerButtonClick={onAnswerButtonClick}
         task={task}
@@ -100,7 +126,7 @@ const SpeakingPractice = ({
         setAnswerModalOpen={setAnswerModalOpen}
         result={result}
       />
-    </>
+    </div>
   ) : (
     <ListeningTaskView
       task={task}

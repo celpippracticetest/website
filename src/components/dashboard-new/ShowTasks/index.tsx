@@ -59,7 +59,7 @@ const ShowTasks = ({ tasks }: any) => {
     } catch (error) {}
   };
   return (
-    <div className="gap-[16px] bg-[#F4F7FF] pt-[16px] max-w-[792px] w-full">
+    <div className="gap-[16px] bg-[#F4F7FF] pt-[16px] max-w-[1200px] w-full">
       {tasks.map((section: any, index: number) => (
         <div
           key={index}

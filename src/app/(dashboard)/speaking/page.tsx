@@ -67,7 +67,7 @@ const SpeakingPage = async ({
             Speaking
           </span>
         </div>
-        <div className="flex mt-[32px]  screen744:!mt-[0] items-center justify-center gap-[8px] max-w-[792px] w-full h-[60px] rounded-[12px] bg-[#FFEBD6]">
+        <div className="flex mt-[32px]  screen744:!mt-[0] items-center justify-center gap-[8px] max-w-[1200px] w-full h-[60px] rounded-[12px] bg-[#FFEBD6]">
           <SvgSpeakingPart className="text-[#F27059]" />
           <span className="text-[#37465C] font-semibold text-[20px]">
             Speaking Practice
