@@ -934,7 +934,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
 
                   <div
                     className="flex gap-[8px] group items-center hover:!cursor-pointer relative"
-                    onClick={() => router.push("/exam-overview")}
+                    onClick={() => router.push("/learning")}
                   >
                     <div className="relative  flex items-center justify-center">
                       <div className="flex group-hover:hidden w-[24px] h-[24px]  items-center justify-center">
