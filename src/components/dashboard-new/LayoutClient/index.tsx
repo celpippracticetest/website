@@ -525,6 +525,27 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
   }, [isLoaded, isSignedIn, isNewUser, user, setShowExtraDiscount]);
 
   const { signOut } = useClerk();
+  const [practice, setPractice] = useState(false);
+  const [mockTest, setMockTest] = useState(false);
+
+  useEffect(() => {
+    if (pathname === "/practice-overview") {
+      setPractice(true);
+      setMockTest(false);
+    } else if (pathname === "/exam-overview") {
+      setMockTest(true);
+      setPractice(false);
+    }
+  }, [pathname]);
+  useEffect(() => {
+    if (pathname === "/practice-overview") {
+      setPractice(true);
+      setMockTest(false);
+    } else if (pathname === "/exam-overview") {
+      setMockTest(true);
+      setPractice(false);
+    }
+  }, []);
 
   useEffect(() => {
     const routes = [
@@ -833,43 +854,83 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                 />
 
                 <div className="hidden screen1280:!flex gap-[24px] shrink-0 items-center">
-                  <div
-                    className="flex gap-[8px] group items-center hover:!cursor-pointer relative"
-                    onClick={() => router.push("/practice-overview")}
-                  >
-                    <div className="relative w-[24px] h-[24px] flex items-center justify-center">
-                      <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
-                        <SvgPractice
-                          fill="transparent"
-                          stroke={"#76808F"}
-                          className="    duration-200 "
-                        />
+                  {practice ? (
+                    <>
+                      <div
+                        className="flex gap-[8px] group items-center hover:!cursor-pointer relative"
+                        onClick={() => router.push("/practice-overview")}
+                      >
+                        <div className="relative w-[24px] h-[24px] flex items-center justify-center">
+                          <div className=" w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
+                            <SvgPracticeBlueHover className="   text-[#316BFF]   duration-200 " />
+                          </div>
+                        </div>
+                        <span className="text-[#316BFF] transition-colors duration-200">
+                          Practice
+                        </span>
                       </div>
-                      <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
-                        <SvgPracticeBlueHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
+                    </>
+                  ) : (
+                    <>
+                      <div
+                        className="flex gap-[8px] group items-center hover:!cursor-pointer relative"
+                        onClick={() => router.push("/practice-overview")}
+                      >
+                        <div className="relative w-[24px] h-[24px] flex items-center justify-center">
+                          <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
+                            <SvgPractice
+                              fill="transparent"
+                              stroke={"#76808F"}
+                              className="    duration-200 "
+                            />
+                          </div>
+                          <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
+                            <SvgPracticeBlueHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
+                          </div>
+                        </div>
+                        <span className="text-[#76808F] group-hover:text-[#316BFF] transition-colors duration-200">
+                          Practice
+                        </span>
                       </div>
-                    </div>
-                    <span className="text-[#76808F] group-hover:text-[#316BFF] transition-colors duration-200">
-                      Practice
-                    </span>
-                  </div>
+                    </>
+                  )}
 
-                  <div
-                    className="flex gap-[8px] group items-center hover:!cursor-pointer relative"
-                    onClick={() => router.push("/exam-overview")}
-                  >
-                    <div className="relative  flex items-center justify-center">
-                      <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
-                        <SvgMockTest className="  text-[#76808F]  duration-200 " />
+                  {mockTest ? (
+                    <>
+                      <div
+                        className="flex gap-[8px] group items-center hover:!cursor-pointer relative"
+                        onClick={() => router.push("/exam-overview")}
+                      >
+                        <div className="relative  flex items-center justify-center">
+                          <div className="flex w-[24px] h-[24px]  items-center justify-center  ">
+                            <SvgMockTestTopNavigationHover className="   text-[#316BFF]   duration-200 opacity-100" />
+                          </div>
+                        </div>
+                        <span className=" text-[#316BFF] transition-colors duration-200">
+                          Mock Test
+                        </span>
                       </div>
-                      <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
-                        <SvgMockTestTopNavigationHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
+                    </>
+                  ) : (
+                    <>
+                      <div
+                        className="flex gap-[8px] group items-center hover:!cursor-pointer relative"
+                        onClick={() => router.push("/exam-overview")}
+                      >
+                        <div className="relative  flex items-center justify-center">
+                          <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
+                            <SvgMockTest className="  text-[#76808F]  duration-200 " />
+                          </div>
+                          <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
+                            <SvgMockTestTopNavigationHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
+                          </div>
+                        </div>
+                        <span className="text-[#76808F] group-hover:text-[#316BFF] transition-colors duration-200">
+                          Mock Test
+                        </span>
                       </div>
-                    </div>
-                    <span className="text-[#76808F] group-hover:text-[#316BFF] transition-colors duration-200">
-                      Mock Test
-                    </span>
-                  </div>
+                    </>
+                  )}
 
                   <div
                     className="flex gap-[8px] group items-center hover:!cursor-pointer relative"
