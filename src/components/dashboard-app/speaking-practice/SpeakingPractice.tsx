@@ -85,6 +85,7 @@ const SpeakingPractice = ({
     <div className="flex flex-col w-full ">
       <div className="pl-[40px] text-[#76808F] text-[14px] mt-[24px] mb-[28px] items-center flex gap-[8px]">
         <div
+          className="cursor-pointer"
           onClick={() => {
             router.push("/practice-overview");
           }}
@@ -93,13 +94,14 @@ const SpeakingPractice = ({
         </div>
         <SvgChevronRightForTitle />
         <div
+          className="cursor-pointer"
           onClick={() => {
             router.push("/speaking");
           }}
         >
           Speaking
         </div>
-        <SvgChevronRightForTitle />{" "}
+        <SvgChevronRightForTitle />
         <span className="text-[#212E42]">
           <span className="text-[#76808F]">
             {task.taskNumber?.replace(" #", "")}
