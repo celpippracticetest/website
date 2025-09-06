@@ -723,8 +723,6 @@ export default function Referral() {
             </div>
           ) : (
             sortedActivities.map((it, idx) => {
-              console.log(it, "it ");
-
               return (
                 <div
                   key={it.id || idx}

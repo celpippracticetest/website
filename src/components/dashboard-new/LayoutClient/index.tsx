@@ -532,7 +532,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
     if (pathname === "/practice-overview") {
       setPractice(true);
       setMockTest(false);
-    } else if (pathname === "/exam-overview") {
+    } else if (pathname === "/exam-overview" || pathname.includes("exams")) {
       setMockTest(true);
       setPractice(false);
     }
@@ -833,7 +833,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
           className="flex flex-col  w-full    h-full      screen744:!w-[calc(100%-84px)]
  bg-[#F4F7FF] items-end"
         >
-          <div className="px-[16px] screen744:!px-0  w-full">
+          <div className="px-[16px] screen744:!px-0  w-full mb-[16px]">
             <div
               className={clsx(
                 "transition-all flex justify-between w-full px-[16px] duration-1000 ease-in-out mt-[24px] rounded-[32px] ",

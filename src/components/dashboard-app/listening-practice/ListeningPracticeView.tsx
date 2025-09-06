@@ -162,8 +162,6 @@ const ListeningPracticeView = ({
     );
   }
 
-  console.log(task, "taks");
-
   return (
     <div className="">
       {freeUser ? (

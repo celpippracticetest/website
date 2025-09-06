@@ -14,19 +14,19 @@ import { ObjectId } from "mongodb";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
 import { currentUser } from "@clerk/nextjs/server";
 
-const Exam = async ({ params }: { params: Promise<{ slug: string }> }) => {
-  const examId: string | undefined = (await params).slug[0].split("exam_")[1];
-  const partNumber: string | undefined = (await params).slug[1].split(
-    "part"
-  )[1];
-  const isResultPage: boolean = (await params).slug[1] === "results";
+const Exam = async ({ params }: { params: { slug: string[] } }) => {
+  const examId: string | undefined = params?.slug?.[0]?.split("exam_")?.[1];
+  const partNumber: string | undefined = params?.slug?.[1]?.split("part")?.[1];
+  const isResultPage: boolean = params?.slug?.[1] === "results";
   const user: any = await currentUser();
-  if (
-    !user ||
-    (user &&
-      user.publicMetadata.plan !== "premium" &&
-      !user.publicMetadata.role.includes("admin"))
-  ) {
+  const plan: string | undefined = user?.publicMetadata?.plan as
+    | string
+    | undefined;
+  const roleValue = user?.publicMetadata?.role as unknown;
+  const isAdmin: boolean = Array.isArray(roleValue)
+    ? roleValue.includes("admin")
+    : roleValue === "admin";
+  if (!user || (plan !== "premium" && !isAdmin)) {
     redirect("/exam-overview", RedirectType.push);
   }
   if (
@@ -82,24 +82,43 @@ const Exam = async ({ params }: { params: Promise<{ slug: string }> }) => {
   });
 
   return (
-    <main className="max-w-[995px] w-full h-full mx-auto">
-      <div className=" w-full py-[24px] px-[16px] screen744:!px-0 flex h-full flex-col rounded-lg">
+    <main className="max-w-[1200px] w-full h-full mx-auto">
+      <div className=" w-full pb-[24px] px-[16px] screen744:!px-0 flex h-full flex-col rounded-lg">
         {practice.type == "LISTENING" && (
           <ListeningExamView
             examId={examId}
             partNumber={partNumber}
             practice={practice}
             partId={parseInt(partNumber)}
+            examName={exam?.name}
           />
         )}
         {practice.type == "READING" && (
-          <ReadingExamView practice={practice} partId={parseInt(partNumber)} />
+          <ReadingExamView
+            practice={practice}
+            partNumber={partNumber}
+            partId={parseInt(partNumber)}
+            examId={examId}
+            examName={exam?.name}
+          />
         )}
         {practice.type == "WRITING" && (
-          <WritingExamView practice={practice} partId={parseInt(partNumber)} />
+          <WritingExamView
+            practice={practice}
+            partId={parseInt(partNumber)}
+            partNumber={partNumber}
+            examId={examId}
+            examName={exam?.name}
+          />
         )}
         {practice.type == "SPEAKING" && (
-          <SpeakingExamView practice={practice} partId={parseInt(partNumber)} />
+          <SpeakingExamView
+            practice={practice}
+            partId={parseInt(partNumber)}
+            examId={examId}
+            partNumber={partNumber}
+            examName={exam?.name}
+          />
         )}
       </div>
     </main>
