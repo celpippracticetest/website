@@ -1192,47 +1192,89 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
     "
             style={{ pointerEvents: "auto" }}
           >
-            <div
-              className="group flex flex-col items-center mt-5 gap-1 cursor-pointer"
-              onClick={() => router.push("/practice-overview")}
-            >
-              <div className="flex group-hover:hidden w-[24px] h-[24px]  items-center justify-center">
-                <SvgPractice
-                  stroke="#76808F"
-                  fill="transparent"
-                  className="text-[#76808F] "
-                />
-              </div>
+            {practice ? (
+              <>
+                <div
+                  className="group flex flex-col items-center mt-5 gap-1 cursor-pointer"
+                  onClick={() => router.push("/practice-overview")}
+                >
+                  <div className=" flex">
+                    <SvgPracticeHover className="text-white" />
+                  </div>
 
-              <div className="hidden group-hover:flex">
-                <SvgPracticeHover className="text-white" />
-              </div>
+                  <span className="text-xs text-[#FC8A65]">Practice</span>
+                  <span className="w-[4px] h-[4px] rounded-full bg-[#FC8A65] flex"></span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div
+                  className="group flex flex-col items-center mt-5 gap-1 cursor-pointer"
+                  onClick={() => router.push("/practice-overview")}
+                >
+                  <div className="flex group-hover:hidden w-[24px] h-[24px]  items-center justify-center">
+                    <SvgPractice
+                      stroke="#76808F"
+                      fill="transparent"
+                      className="text-[#76808F] "
+                    />
+                  </div>
 
-              <span className="text-xs text-[#76808F] group-hover:text-[#FC8A65]">
-                Practice
-              </span>
-              <span className="w-[4px] h-[4px] rounded-full group-hover:bg-[#FC8A65] group-hover:flex"></span>
-            </div>
-            <div
-              className="
+                  <div className="hidden group-hover:flex">
+                    <SvgPracticeHover className="text-white" />
+                  </div>
+
+                  <span className="text-xs text-[#76808F] group-hover:text-[#FC8A65]">
+                    Practice
+                  </span>
+                  <span className="w-[4px] h-[4px] rounded-full group-hover:bg-[#FC8A65] group-hover:flex"></span>
+                </div>
+              </>
+            )}
+
+            {mockTest ? (
+              <>
+                <div
+                  className="
+    flex flex-col gap-[4px] items-center cursor-pointer
+    relative
+     translate-y-[2px] transition-transform
+  "
+                  onClick={() => router.push("/exam-overview")}
+                >
+                  <div className="w-[44px] h-[44px]  flex items-center justify-center rounded-full bg-[radial-gradient(50%_265.62%_at_50%_50%,_#F26B3E_0%,_#FC8A65_100%)]">
+                    <div className=" flex w-[24px] h-[24px] items-center justify-center">
+                      <SvgMockTestHover className=" text-[#FC8A65]" />
+                    </div>
+                  </div>
+                  <span className="text-xs text-[#FC8A65]">Mock Test</span>
+                  <span className="w-[4px] h-[4px] rounded-full bg-[#FC8A65] flex"></span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div
+                  className="
     flex flex-col gap-[4px] items-center group hover:cursor-pointer
     relative
     translate-y-[4px] hover:translate-y-[2px] transition-transform
   "
-              onClick={() => router.push("/exam-overview")}
-            >
-              <div className="w-[48px] group-hover:!w-[44px] group-hover:!h-[44px] h-[48px] flex items-center justify-center rounded-full bg-[radial-gradient(50%_265.62%_at_50%_50%,_#F26B3E_0%,_#FC8A65_100%)]">
-                <SvgMockTestNavigation className="text-[#76808F] flex group-hover:hidden group-hover:text-[#FC8A65]" />
+                  onClick={() => router.push("/exam-overview")}
+                >
+                  <div className="w-[48px] group-hover:!w-[44px] group-hover:!h-[44px] h-[48px] flex items-center justify-center rounded-full bg-[radial-gradient(50%_265.62%_at_50%_50%,_#F26B3E_0%,_#FC8A65_100%)]">
+                    <SvgMockTestNavigation className="text-[#76808F] flex group-hover:hidden group-hover:text-[#FC8A65]" />
 
-                <div className="hidden group-hover:flex w-[24px] h-[24px] items-center justify-center">
-                  <SvgMockTestHover className="text-[#76808F] group-hover:text-[#FC8A65]" />
+                    <div className="hidden group-hover:flex w-[24px] h-[24px] items-center justify-center">
+                      <SvgMockTestHover className="text-[#76808F] group-hover:text-[#FC8A65]" />
+                    </div>
+                  </div>
+                  <span className="text-xs text-[#76808F] group-hover:text-[#FC8A65]">
+                    Mock Test
+                  </span>
+                  <span className="w-[4px] h-[4px] rounded-full group-hover:bg-[#FC8A65] group-hover:flex"></span>
                 </div>
-              </div>
-              <span className="text-xs text-[#76808F] group-hover:text-[#FC8A65]">
-                Mock Test
-              </span>
-              <span className="w-[4px] h-[4px] rounded-full group-hover:bg-[#FC8A65] group-hover:flex"></span>
-            </div>
+              </>
+            )}
 
             <div
               className="group flex flex-col items-center mt-5 gap-1 cursor-pointer"
