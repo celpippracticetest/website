@@ -11,6 +11,7 @@ import {
   SvgMic,
 } from "@/components/icons";
 import SvgSvgBeforeTypingWord from "@/components/icons/SvgBeforeTypingWord";
+import SvgLearningArrowUp from "@/components/icons/LearningArrowUp";
 
 type Skill = {
   label: string;
@@ -151,20 +152,30 @@ const Page = () => {
                   className="flex-1 p-[24px] rounded-[16px] min-h-[76px] border bg-white border-[#D1D5DB] pr-[112px] pb-[64px] text-[14px] text-[#111827] outline-none focus:border-[#6366F1] shadow-sm"
                 />
                 <div className="absolute w-[88px] h-[40px] right-[18px] bottom-[18px] flex items-center gap-[12px]">
-                  <button type="button" aria-label="Record with microphone">
+                  <button
+                    type="button"
+                    className="cursor-pointer"
+                    aria-label="Record with microphone"
+                  >
                     <SvgMic />
                   </button>
 
                   {text.trim().length === 0 ? (
-                    <button type="submit" aria-label="Send">
+                    <button
+                      type="submit"
+                      aria-label="Send"
+                      className="cursor-pointer"
+                    >
                       <SvgSvgBeforeTypingWord />
                     </button>
                   ) : (
                     <button
                       type="submit"
                       aria-label="Send"
-                      className="w-9 h-9 rounded-full bg-[#6366F1] hover:bg-[#4F46E5] transition-colors shadow-sm"
-                    />
+                      className="w-[40px] flex items-center justify-center h-[40px] cursor-pointer rounded-full bg-[#6366F1] hover:!bg-[#4F46E5] transition-colors"
+                    >
+                      <SvgLearningArrowUp />
+                    </button>
                   )}
                 </div>
               </form>

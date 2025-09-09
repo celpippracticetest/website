@@ -9,7 +9,7 @@ const SvgLearningWriting = (props: SVGProps<SVGSVGElement>) => (
     {...props}
   >
     <path
-      stroke="currentColor"
+      stroke="#0DAA94"
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeMiterlimit={10}
@@ -17,7 +17,7 @@ const SvgLearningWriting = (props: SVGProps<SVGSVGElement>) => (
       d="m11.883 3-6.842 7.242c-.258.275-.508.816-.558 1.191l-.308 2.7c-.109.975.591 1.642 1.558 1.475l2.683-.458c.375-.067.9-.342 1.159-.625l6.841-7.242c1.184-1.25 1.717-2.675-.125-4.416-1.833-1.725-3.225-1.117-4.408.133"
     />
     <path
-      stroke="currentColor"
+      stroke="#0DAA94"
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeMiterlimit={10}

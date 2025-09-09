@@ -9,14 +9,14 @@ const SvgLearningMockExam = (props: SVGProps<SVGSVGElement>) => (
     {...props}
   >
     <path
-      stroke="currentColor"
+      stroke="#DA2AFE"
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={1.5}
       d="M10.808 7.4h4.375M5.817 7.4l.625.625L8.317 6.15M10.808 13.232h4.375M5.817 13.232l.625.625 1.875-1.875"
     />
     <path
-      stroke="currentColor"
+      stroke="#DA2AFE"
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={1.5}

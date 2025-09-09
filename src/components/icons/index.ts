@@ -1,3 +1,4 @@
+export { default as LearningArrowUp } from "./LearningArrowUp";
 export { default as LearningGift } from "./LearningGift";
 export { default as LearningGuide } from "./LearningGuide";
 export { default as LearningListening } from "./LearningListening";

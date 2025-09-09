@@ -9,14 +9,14 @@ const SvgLearningGuide = (props: SVGProps<SVGSVGElement>) => (
     {...props}
   >
     <path
-      stroke="currentColor"
+      stroke="#759CFF"
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={1.5}
       d="m18.217 8.7-.817 3.483c-.7 3.008-2.083 4.225-4.683 3.975a9 9 0 0 1-1.35-.225l-1.4-.334c-3.475-.825-4.55-2.541-3.733-6.025l.816-3.491c.167-.709.367-1.325.617-1.834.975-2.016 2.633-2.558 5.417-1.9l1.391.325c3.492.817 4.559 2.542 3.742 6.025"
     />
     <path
-      stroke="currentColor"
+      stroke="#759CFF"
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={1.5}
