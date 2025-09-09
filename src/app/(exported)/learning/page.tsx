@@ -136,8 +136,8 @@ const Page = () => {
             </h2>
           </div>
 
-          <div className="w-full">
-            <div className="max-w-[980px] mx-auto px-[12px] py-[12px]">
+          <div className="w-full max-w-[900px] mx-auto">
+            <div className="max-w-[980px] mx-auto py-[12px]">
               <form
                 className="w-full flex gap-[8px] relative"
                 onSubmit={(e) => {
@@ -181,7 +181,7 @@ const Page = () => {
               </form>
             </div>
 
-            <div className="max-w-[980px] mx-auto px-[12px] pt-[8px] flex flex-wrap gap-[8px] justify-center">
+            <div className="max-w-[980px] mx-auto  pt-[8px] flex flex-wrap gap-[12px] justify-center">
               {skills.map((s, index) => (
                 <button
                   key={s.label}
@@ -194,7 +194,7 @@ const Page = () => {
                     cursor-pointer 
                     group relative gap-[8px]
                     px-[16px] h-[40px]
-                    bg-white rounded-[24px]
+                    bg-white rounded-[20px]
                     flex items-center justify-center
                     shadow-startButton
                     hover:bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]
@@ -202,8 +202,8 @@ const Page = () => {
                     transition-colors
                   `}
                 >
-                  <span className="mr-[8px]">{s.icon}</span>
-                  <span className="font-medium text-[14px] text-black group-hover:text-white">
+                  <span>{s.icon}</span>
+                  <span className="font-medium leading-[24px] text-[16px] text-[#37465C] group-hover:text-white">
                     {s.label}
                   </span>
                 </button>
