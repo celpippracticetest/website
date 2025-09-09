@@ -35,6 +35,7 @@ const Page = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const userContext = useUserContext();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const skills: Skill[] = [
     {
@@ -118,6 +119,11 @@ const Page = () => {
 
   const [text, setText] = useState<string>("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -255,128 +261,130 @@ const Page = () => {
 
           {/* Conversation Mode */}
           {isInConversation ? (
-            <>
-              <div className="max-w-[616px] screen1280:!max-w-[900px] w-full mx-auto py-[12px]">
-                <form
-                  className="w-full flex gap-[8px] relative"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }}
-                >
-                  <textarea
-                    ref={textareaRef}
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    placeholder={
-                      isInConversation
-                        ? "Continue the conversation..."
-                        : "Write your answer or ask for help…"
-                    }
-                    className="flex-1 p-[24px] rounded-[16px] min-h-[76px] border bg-white border-[#D1D5DB] pr-[112px] pb-[64px] text-[14px] text-[#111827] outline-none focus:border-[#6366F1] shadow-sm"
-                  />
-                  <div className="absolute w-[88px] h-[40px] right-[18px] bottom-[18px] flex items-center gap-[12px]">
-                    <button
-                      type="button"
-                      className="cursor-pointer"
-                      aria-label="Record with microphone"
-                    >
-                      <SvgMic />
-                    </button>
-
-                    {text.trim().length === 0 ? (
-                      <button
-                        type="submit"
-                        aria-label="Send"
-                        className="cursor-pointer"
-                        disabled
-                      >
-                        <SvgSvgBeforeTypingWord />
-                      </button>
-                    ) : (
-                      <button
-                        type="submit"
-                        aria-label="Send"
-                        disabled={isLoading}
-                        className={`w-[40px] flex items-center justify-center h-[40px] cursor-pointer rounded-full transition-colors ${
-                          isLoading
-                            ? "bg-gray-300 cursor-not-allowed"
-                            : "bg-[#6366F1] hover:!bg-[#4F46E5]"
-                        }`}
-                      >
-                        {isLoading ? (
-                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        ) : (
-                          <SvgLearningArrowUp />
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </form>
-              </div>
-
-              <div className="max-w-[900px] mx-auto">
-                {/* Messages */}
-                <div className="mb-6 space-y-4 max-h-[60vh] overflow-y-auto">
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${
-                        message.type === "user"
-                          ? "justify-end"
-                          : "justify-start"
-                      }`}
-                    >
+            <div className="flex flex-col h-full">
+              {/* Messages Container */}
+              <div className="flex-1 overflow-y-auto px-4">
+                <div className="max-w-[900px] mx-auto py-4">
+                  <div className="space-y-4">
+                    {messages.map((message) => (
                       <div
-                        className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                        key={message.id}
+                        className={`flex ${
                           message.type === "user"
-                            ? "bg-[#6366F1] text-white"
-                            : "bg-gray-100 text-gray-900"
+                            ? "justify-end"
+                            : "justify-start"
                         }`}
                       >
-                        <p className="text-sm whitespace-pre-wrap">
-                          {message.content}
-                        </p>
-                        <p className="text-xs opacity-70 mt-1">
-                          {message.timestamp.toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-
-                  {isLoading && (
-                    <div className="flex justify-center">
-                      <div className="bg-gray-100 rounded-2xl px-4 py-3">
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                          <div
-                            className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                            style={{ animationDelay: "0.1s" }}
-                          ></div>
-                          <div
-                            className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                            style={{ animationDelay: "0.2s" }}
-                          ></div>
+                        <div
+                          className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                            message.type === "user"
+                              ? "bg-[#6366F1] text-white"
+                              : "bg-gray-100 text-gray-900"
+                          }`}
+                        >
+                          <p className="text-sm whitespace-pre-wrap">
+                            {message.content}
+                          </p>
+                          <p className="text-xs opacity-70 mt-1">
+                            {message.timestamp.toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
+                    ))}
 
-                {/* New Conversation Button */}
-                <div className="flex justify-center mb-4">
-                  <button
-                    onClick={handleNewConversation}
-                    className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Start New Conversation
-                  </button>
+                    {isLoading && (
+                      <div className="flex justify-start">
+                        <div className="bg-gray-100 rounded-2xl px-4 py-3">
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                            <div
+                              className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                              style={{ animationDelay: "0.1s" }}
+                            ></div>
+                            <div
+                              className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                              style={{ animationDelay: "0.2s" }}
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div ref={messagesEndRef} />
+                  </div>
+
+                  {/* New Conversation Button */}
+                  <div className="flex justify-center mt-6">
+                    <button
+                      onClick={handleNewConversation}
+                      className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Start New Conversation
+                    </button>
+                  </div>
                 </div>
               </div>
-            </>
+
+              {/* Fixed Input at Bottom */}
+              <div className="sticky bottom-0  border-gray-200 p-4">
+                <div className="max-w-[900px] mx-auto">
+                  <form
+                    className="w-full flex gap-[8px] relative"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }}
+                  >
+                    <textarea
+                      ref={textareaRef}
+                      value={text}
+                      onChange={(e) => setText(e.target.value)}
+                      placeholder="Continue the conversation..."
+                      className="flex-1 p-[24px] rounded-[16px] min-h-[76px] border bg-white border-[#D1D5DB] pr-[112px] pb-[64px] text-[14px] text-[#111827] outline-none focus:border-[#6366F1] shadow-sm"
+                    />
+                    <div className="absolute w-[88px] h-[40px] right-[18px] bottom-[18px] flex items-center gap-[12px]">
+                      <button
+                        type="button"
+                        className="cursor-pointer"
+                        aria-label="Record with microphone"
+                      >
+                        <SvgMic />
+                      </button>
+
+                      {text.trim().length === 0 ? (
+                        <button
+                          type="submit"
+                          aria-label="Send"
+                          className="cursor-pointer"
+                          disabled
+                        >
+                          <SvgSvgBeforeTypingWord />
+                        </button>
+                      ) : (
+                        <button
+                          type="submit"
+                          aria-label="Send"
+                          disabled={isLoading}
+                          className={`w-[40px] flex items-center justify-center h-[40px] cursor-pointer rounded-full transition-colors ${
+                            isLoading
+                              ? "bg-gray-300 cursor-not-allowed"
+                              : "bg-[#6366F1] hover:!bg-[#4F46E5]"
+                          }`}
+                        >
+                          {isLoading ? (
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          ) : (
+                            <SvgLearningArrowUp />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="flex flex-col-reverse screen744:!flex-col w-full max-w-[616px] screen1280:!max-w-[900px] mx-auto">
               <div className="max-w-[616px] screen1280:!max-w-[900px] w-full mx-auto py-[12px]">
@@ -447,20 +455,20 @@ const Page = () => {
                     }}
                     onClick={() => openPopover(index)}
                     className={`
-                      cursor-pointer 
-                      group relative gap-[8px]
-                      px-[16px] h-[40px]
-                      bg-white rounded-[20px]
-                      flex items-center justify-center
-                      shadow-startButton
-                      screen744:!max-w-[197px]
-                      max-w-[165px]
-                      screen1280:!max-w-fit
-                      w-full
-                      hover:bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]
-                      hover:text-white
-                      transition-colors
-                    `}
+                    cursor-pointer 
+                    group relative gap-[8px]
+                    px-[16px] h-[40px]
+                    bg-white rounded-[20px]
+                    flex items-center justify-center
+                    shadow-startButton
+                    screen744:!max-w-[197px]
+                    max-w-[165px]
+                    screen1280:!max-w-fit
+                    w-full
+                    hover:bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]
+                    hover:text-white
+                    transition-colors
+                  `}
                   >
                     <span>{s.icon}</span>
                     <span className="font-medium leading-[24px] text-[16px] text-[#37465C] group-hover:text-white">
