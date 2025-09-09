@@ -136,8 +136,8 @@ const Page = () => {
             </h2>
           </div>
 
-          <div className="w-full max-w-[900px] mx-auto">
-            <div className="max-w-[980px] mx-auto py-[12px]">
+          <div className="flex flex-col-reverse screen744:!flex-col w-full max-w-[616px] screen1280:!max-w-[900px] mx-auto">
+            <div className="max-w-[980px] w-full mx-auto py-[12px]">
               <form
                 className="w-full flex gap-[8px] relative"
                 onSubmit={(e) => {
@@ -181,7 +181,7 @@ const Page = () => {
               </form>
             </div>
 
-            <div className=" mx-auto  pt-[8px] flex flex-wrap gap-[12px] justify-between">
+            <div className=" mx-auto flex-wrap  pt-[8px] flex flex-wrap gap-[12px] justify-between">
               {skills.map((s, index) => (
                 <button
                   key={s.label}
@@ -197,6 +197,10 @@ const Page = () => {
                     bg-white rounded-[20px]
                     flex items-center justify-center
                     shadow-startButton
+                    screen744:!max-w-[197px]
+                    max-w-[165px]
+                    screen1280:!max-w-fit
+                    w-full
                     hover:bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]
                     hover:text-white
                     transition-colors
@@ -217,7 +221,7 @@ const Page = () => {
         <div
           ref={popoverRef}
           style={{ top: pos.top, left: pos.left, position: "fixed" as const }}
-          className="z-[1000] h-[268px] max-w-[412px]"
+          className="z-[1000] h-[268px] max-w-[328px] screen744:!max-w-[412px]"
           role="dialog"
           aria-label={`${skills[openIndex].label} options`}
         >
