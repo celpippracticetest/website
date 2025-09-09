@@ -9,14 +9,14 @@ const SvgLearningSpeaking = (props: SVGProps<SVGSVGElement>) => (
     {...props}
   >
     <path
-      stroke="#F4845F"
+      stroke="currentColor"
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={1.5}
       d="M10.5 12.916a3.33 3.33 0 0 0 3.333-3.333V4.999a3.332 3.332 0 1 0-6.666 0v4.584a3.33 3.33 0 0 0 3.333 3.333"
     />
     <path
-      stroke="#F4845F"
+      stroke="currentColor"
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={1.5}
