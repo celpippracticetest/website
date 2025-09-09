@@ -181,7 +181,7 @@ const Page = () => {
               </form>
             </div>
 
-            <div className="max-w-[980px] mx-auto  pt-[8px] flex flex-wrap gap-[12px] justify-center">
+            <div className=" mx-auto  pt-[8px] flex flex-wrap gap-[12px] justify-between">
               {skills.map((s, index) => (
                 <button
                   key={s.label}
