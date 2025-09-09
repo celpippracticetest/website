@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-key */
 import {
   LearningGuide,
   LearningListening,
@@ -20,9 +21,9 @@ const Page = () => {
     <LearningGuide />,
   ];
   return (
-    <section className="relative h-[100vh] w-full transition-all duration-300 shadow-[inset_0px_-80px_96px_-4px_#F4F7FF] overflow-hidden">
+    <section className="relative  w-full transition-all duration-300 overflow-hidden">
       <div className="flex h-full flex-col">
-        <div className="flex-1 overflow-y-auto px-[16px] screen744:!px-[24px] screen1280:!px-[32px] pt-[140px] pb-[140px]">
+        <div className="flex-1 overflow-y-auto px-[16px] screen744:!px-[24px] screen1280:!px-[32px] pt-[76px] pb-[10px]">
           <div className="max-w-[980px] z-[999] mx-auto text-center">
             <h1 className="text-[28px] screen744:!text-[36px] z-[999] screen1280:!text-[44px] font-bold text-[#37465C] tracking-tight mb-[6px]">
               Talk & Learn – CELPIP Style
@@ -36,7 +37,7 @@ const Page = () => {
               <form className="w-full flex gap-[8px] relative">
                 <textarea
                   placeholder="Write your answer or ask for help…"
-                  className="flex-1 p-[24px] rounded-[16px] w-[150px] h-auto min-h-[140px] border bg-white border-[#D1D5DB] pr-[112px] pb-[64px]  text-[14px] text-[#111827] outline-none focus:border-[#6366F1] shadow-sm"
+                  className="flex-1 p-[24px] rounded-[16px] w-[150px] h-auto min-h-[76px] border bg-white border-[#D1D5DB] pr-[112px] pb-[64px]  text-[14px] text-[#111827] outline-none focus:border-[#6366F1] shadow-sm"
                 ></textarea>
 
                 <div className="absolute w-[88px] h-[40px] right-[18px] bottom-[18px] flex items-center gap-[12px]">

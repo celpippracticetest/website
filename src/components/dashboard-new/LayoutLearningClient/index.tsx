@@ -856,7 +856,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
 
         <div
           className="flex flex-col  w-full    h-full     w-full
- bg-[#F4F7FF] items-end"
+ items-end"
         >
           <div className=" mx-auto px-[16px]  w-full mb-[16px]">
             <div
