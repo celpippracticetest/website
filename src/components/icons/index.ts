@@ -1,3 +1,10 @@
+export { default as LearningGift } from "./LearningGift";
+export { default as LearningGuide } from "./LearningGuide";
+export { default as LearningListening } from "./LearningListening";
+export { default as LearningMockExam } from "./LearningMockExam";
+export { default as LearningReading } from "./LearningReading";
+export { default as LearningSpeaking } from "./LearningSpeaking";
+export { default as LearningWriting } from "./LearningWriting";
 export { default as SvgBeforeTypingWord } from "./SvgBeforeTypingWord";
 export { default as SvgBottomNavigationMobile } from "./SvgBottomNavigationMobile";
 export { default as SvgChevronTitle } from "./SvgChevronTitle";

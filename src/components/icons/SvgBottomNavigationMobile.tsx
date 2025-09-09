@@ -11,7 +11,7 @@ const SvgSvgBottomNavigationMobile = (props: SVGProps<SVGSVGElement>) => {
       width="calc(100% - 32px)"
       height={80}
       viewBox={`0 0 ${VB_W} ${VB_H}`}
-      preserveAspectRatio="none" // بیرونی فقط برای لAYOUT
+      preserveAspectRatio="none"
       fill="none"
       style={{
         display: "block",
@@ -23,7 +23,6 @@ const SvgSvgBottomNavigationMobile = (props: SVGProps<SVGSVGElement>) => {
       }}
       {...props}
     >
-      {/* داخلی: نسبت را حفظ می‌کند تا دایره له نشود */}
       <svg
         x={0}
         y={0}
@@ -68,9 +67,9 @@ const SvgSvgBottomNavigationMobile = (props: SVGProps<SVGSVGElement>) => {
           fill="url(#bn_grad)"
           stroke="#E6E6E6"
           strokeWidth={1}
-          strokeLinejoin="round" // ← لبه‌ها نرم
-          strokeLinecap="round" // ← لبه‌های باز (اگر باشند) گرد
-          strokeMiterlimit={1.5} // ← جلوگیری از نوک‌تیزی
+          strokeLinejoin="round"
+          strokeLinecap="round"
+          strokeMiterlimit={1.5}
           vectorEffect="non-scaling-stroke"
         />
       </svg>

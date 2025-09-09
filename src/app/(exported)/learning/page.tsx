@@ -1,25 +1,26 @@
-import { SvgMic } from "@/components/icons";
+import {
+  LearningGuide,
+  LearningListening,
+  LearningMockExam,
+  LearningReading,
+  LearningSpeaking,
+  LearningWriting,
+  SvgMic,
+} from "@/components/icons";
 import SvgSvgBeforeTypingWord from "@/components/icons/SvgBeforeTypingWord";
 import React from "react";
 
 const Page = () => {
+  const SvgAllSkills = [
+    <LearningListening />,
+    <LearningSpeaking />,
+    <LearningWriting />,
+    <LearningReading />,
+    <LearningMockExam />,
+    <LearningGuide />,
+  ];
   return (
     <section className="relative h-[100vh] w-full transition-all duration-300 shadow-[inset_0px_-80px_96px_-4px_#F4F7FF] overflow-hidden">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-[220px] w-[1065px] h-[629px] rounded-[9999px]"
-        style={{ background: "#DAFFFA", filter: "blur(120px)", opacity: 0.8 }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -left-[360px] top-1/4 w-[1065px] h-[629px] rounded-[9999px] rotate-[-20deg]"
-        style={{ background: "#CEDCFF80", filter: "blur(120px)", opacity: 0.9 }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-[360px] top-1/3 w-[1065px] h-[629px] rounded-[9999px] rotate-[15deg]"
-        style={{ background: "#FFB78A80", filter: "blur(120px)", opacity: 0.9 }}
-      />
       <div className="flex h-full flex-col">
         <div className="flex-1 overflow-y-auto px-[16px] screen744:!px-[24px] screen1280:!px-[32px] pt-[140px] pb-[140px]">
           <div className="max-w-[980px] z-[999] mx-auto text-center">
@@ -51,18 +52,20 @@ const Page = () => {
 
             <div className="max-w-[980px] mx-auto px-[12px] pt-[8px] flex flex-wrap gap-[8px] justify-center">
               {[
-                "Speaking",
+                "Listening",
+                "Speaking ",
                 "Writing",
                 "Reading",
-                "Listening",
                 "Mock Exams",
                 "Guide & Tips",
-              ].map((label) => (
+              ].map((label, index) => (
                 <button
                   key={label}
-                  className="group  hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] px-[16px] z-[9999] shadow-startButton  hover:cursor-pointer
+                  className="group gap-[8px]  hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] px-[16px] z-[9999] shadow-startButton  hover:cursor-pointer
                                  cursor-pointer bg-white rounded-[24px] flex items-center justify-center"
                 >
+                  <span>{SvgAllSkills[index]}</span>
+
                   <h2 className=" cursor-pointer flex items-center justify-center h-[40px] font-medium text-[14px] group-hover:text-white text-black ">
                     {label}
                   </h2>
