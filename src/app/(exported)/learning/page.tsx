@@ -136,7 +136,7 @@ const Page = () => {
   // Check server-side message count on component mount
   useEffect(() => {
     const checkMessageCount = async () => {
-      if ((isFreeUser || noUser) && !isPremiumUser) {
+      if (isFreeUser && !isPremiumUser) {
         try {
           const response = await fetch("/api/chatbot/check-limit", {
             method: "GET",
@@ -146,7 +146,26 @@ const Page = () => {
             const data = await response.json();
             setServerMessageCount(data.count || 0);
 
-            // If user has already sent messages, lock the chat
+            // If free user has already sent messages, lock the chat
+            if (data.count >= 1) {
+              setIsChatLocked(true);
+            }
+          }
+        } catch (error) {
+          console.error("Error checking message count:", error);
+        }
+      } else if (noUser) {
+        // For guests, check if they've already sent a message
+        try {
+          const response = await fetch("/api/chatbot/check-limit", {
+            method: "GET",
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setServerMessageCount(data.count || 0);
+
+            // If guest has already sent 1 message, lock the chat
             if (data.count >= 1) {
               setIsChatLocked(true);
             }
@@ -217,21 +236,20 @@ const Page = () => {
   const handleSendMessage = async () => {
     if (!text.trim() || isLoading) return;
 
-    // Check if user is not signed in
-    if (noUser) {
-      handleUpgradeClick();
+    // Allow guests to send 1 message, then show login modal
+    // No need to block them immediately
+
+    // Check if free user has exceeded their limit using server count
+    const currentMessageCount =
+      serverMessageCount + messages.filter((m) => m.type === "user").length;
+    if (isFreeUser && !isPremiumUser && currentMessageCount >= 1) {
+      setShowUpgradeModal(true);
       return;
     }
 
-    // Check if free user or guest has exceeded their limit using server count
-    const currentMessageCount =
-      serverMessageCount + messages.filter((m) => m.type === "user").length;
-    if ((isFreeUser || noUser) && !isPremiumUser && currentMessageCount >= 1) {
-      if (noUser) {
-        setShowLoginModal(true);
-      } else if (isFreeUser) {
-        setShowUpgradeModal(true);
-      }
+    // Check if guest has exceeded their limit (after 1 message)
+    if (noUser && currentMessageCount >= 1) {
+      setShowLoginModal(true);
       return;
     }
 
@@ -357,7 +375,7 @@ const Page = () => {
 
   // Function to refresh message count from server
   const refreshMessageCount = useCallback(async () => {
-    if ((isFreeUser || noUser) && !isPremiumUser) {
+    if (isFreeUser && !isPremiumUser) {
       try {
         const response = await fetch("/api/chatbot/check-limit", {
           method: "GET",
@@ -367,7 +385,26 @@ const Page = () => {
           const data = await response.json();
           setServerMessageCount(data.count || 0);
 
-          // If user has already sent messages, lock the chat
+          // If free user has already sent messages, lock the chat
+          if (data.count >= 1) {
+            setIsChatLocked(true);
+          }
+        }
+      } catch (error) {
+        console.error("Error checking message count:", error);
+      }
+    } else if (noUser) {
+      // For guests, check if they've already sent a message
+      try {
+        const response = await fetch("/api/chatbot/check-limit", {
+          method: "GET",
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setServerMessageCount(data.count || 0);
+
+          // If guest has already sent 1 message, lock the chat
           if (data.count >= 1) {
             setIsChatLocked(true);
           }
