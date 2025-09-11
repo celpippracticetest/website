@@ -293,16 +293,28 @@ const Page = () => {
           message: userMessage.content,
           context: {
             targetCLB: userContext.targetCLB || "Not specified",
-            mockScores: userContext.mockScores
+            currentScores: userContext.mockScores
               ? `L:${userContext.mockScores.listening || "N/A"} R:${
                   userContext.mockScores.reading || "N/A"
                 } W:${userContext.mockScores.writing || "N/A"} S:${
                   userContext.mockScores.speaking || "N/A"
                 }`
               : "Not available",
+            scoreSource: userContext.scoreSource || "Not available",
+            answerCounts: userContext.answerCounts
+              ? `Writing: ${userContext.answerCounts.writing || 0}, Speaking: ${
+                  userContext.answerCounts.speaking || 0
+                }, Listening: ${
+                  userContext.answerCounts.listening || 0
+                }, Reading: ${userContext.answerCounts.reading || 0}`
+              : "No answers available",
             weakAreas: userContext.weakAreas?.join(", ") || "Not identified",
             practiceHistory: userContext.practiceHistory
-              ? `${userContext.practiceHistory.totalPractices} practices, avg: ${userContext.practiceHistory.averageScore}`
+              ? `${
+                  userContext.practiceHistory.totalPractices
+                } practices, avg: ${
+                  userContext.practiceHistory.averageScore || "N/A"
+                }`
               : "Not available",
           },
         }),

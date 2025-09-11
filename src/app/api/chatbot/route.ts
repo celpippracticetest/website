@@ -235,9 +235,14 @@ export async function POST(request: NextRequest) {
     if (context) {
       userContext = `\n\nUSER CONTEXT:
 - Target CLB: ${context.targetCLB || "Not specified"}
-- Latest Mock Scores: ${context.mockScores || "Not available"}
+- Current Scores (${context.scoreSource || "Not available"}): ${
+        context.currentScores || "Not available"
+      }
+- Answer Counts: ${context.answerCounts || "Not available"}
 - Weak Areas: ${context.weakAreas || "Not identified"}
-- Practice History: ${context.practiceHistory || "Not available"}`;
+- Practice History: ${context.practiceHistory || "Not available"}
+
+IMPORTANT: Use the current scores to provide personalized advice. Focus on the weak areas identified and provide specific improvement strategies based on their actual performance. The scores are calculated from their actual answers in the system.`;
     }
 
     const response = await anthropic.messages.create({

@@ -4,43 +4,61 @@ import { useQuery } from "@tanstack/react-query";
 interface UserContext {
   targetCLB?: string;
   mockScores?: {
-    listening?: number;
-    reading?: number;
-    writing?: number;
-    speaking?: number;
-  };
+    listening?: number | null;
+    reading?: number | null;
+    writing?: number | null;
+    speaking?: number | null;
+  } | null;
   weakAreas?: string[];
   practiceHistory?: {
     totalPractices?: number;
-    lastPracticeDate?: string;
-    averageScore?: number;
+    lastPracticeDate?: string | null;
+    averageScore?: number | null;
+  };
+  scoreSource?: string; // "answers_collection"
+  answerCounts?: {
+    writing?: number;
+    speaking?: number;
+    listening?: number;
+    reading?: number;
   };
 }
 
 export const useUserContext = (): UserContext => {
   const { user } = useUser();
 
-  // Mock data for now - you can replace this with actual API calls
+  // Fetch real user data from API
   const { data: userData } = useQuery({
     queryKey: ["userContext", user?.id],
     queryFn: async () => {
       if (!user) return null;
-      
-      // Here you would fetch actual user data from your API
-      // For now, returning mock data
+
+      try {
+        const response = await fetch("/api/user-scores");
+        if (response.ok) {
+          const data = await response.json();
+          return {
+            targetCLB: data.targetCLB,
+            mockScores: data.scoresToUse,
+            weakAreas: data.weakAreas,
+            practiceHistory: data.practiceHistory,
+            scoreSource: data.scoreSource, // "answers_collection"
+            answerCounts: data.answerCounts,
+          };
+        }
+      } catch (error) {
+        console.error("Error fetching user context:", error);
+      }
+
+      // Fallback to empty data if API fails
       return {
-        targetCLB: "8",
-        mockScores: {
-          listening: 7,
-          reading: 8,
-          writing: 6,
-          speaking: 7,
-        },
-        weakAreas: ["Writing", "Speaking"],
+        targetCLB: "Not specified",
+        mockScores: null,
+        weakAreas: [],
         practiceHistory: {
-          totalPractices: 15,
-          lastPracticeDate: "2024-01-15",
-          averageScore: 7.2,
+          totalPractices: 0,
+          lastPracticeDate: null,
+          averageScore: null,
         },
       };
     },
