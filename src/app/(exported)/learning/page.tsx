@@ -254,7 +254,7 @@ const Page = () => {
             <h1 className="text-[28px] screen744:!text-[36px] screen1280:!text-[44px] font-bold text-[#37465C] tracking-tight mb-[6px]">
               Talk & Learn – CELPIP Style
             </h1>
-            <h2 className="text-[#37465C] text-[14px] screen744:!text-[16px] mb-[22px]">
+            <h2 className="text-[#76808F] text-[20px] screen744:!text-[16px] mb-[22px]">
               Ask CELPIP-style questions, get real-time answers.
             </h2>
           </div>
