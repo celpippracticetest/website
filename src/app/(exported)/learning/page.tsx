@@ -450,7 +450,7 @@ const Page = () => {
       {showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />}
 
       <div className="flex h-full flex-col">
-        <div className="flex-1 overflow-y-auto px-[16px] screen744:!px-[24px] screen1280:!px-[32px] pt-[76px] pb-[10px]">
+        <div className="flex-1 overflow-y-auto px-[16px] screen744:!px-[24px] screen1280:!px-[32px] pt-[24px] screen1280:!pt-[76px] pb-[10px]">
           <div className="max-w-[980px] z-[1] mx-auto text-center">
             <h1 className="text-[28px] screen744:!text-[36px] screen1280:!text-[44px] font-bold text-[#37465C] tracking-tight mb-[6px]">
               Talk & Learn – CELPIP Style
@@ -595,19 +595,6 @@ const Page = () => {
                       }`}
                     />
                     <div className="absolute w-[88px] h-[40px] right-[18px] bottom-[18px] flex items-center gap-[12px]">
-                      <button
-                        type="button"
-                        className={`cursor-pointer ${
-                          isChatLocked && (isFreeUser || noUser)
-                            ? "opacity-50 cursor-not-allowed"
-                            : ""
-                        }`}
-                        aria-label="Record with microphone"
-                        disabled={isChatLocked && (isFreeUser || noUser)}
-                      >
-                        <SvgMic />
-                      </button>
-
                       {text.trim().length === 0 ||
                       (isChatLocked && (isFreeUser || noUser)) ? (
                         <button
@@ -692,19 +679,6 @@ const Page = () => {
                     }`}
                   />
                   <div className="absolute w-[88px] h-[40px] right-[18px] bottom-[18px] flex items-center gap-[12px]">
-                    <button
-                      type="button"
-                      className={`cursor-pointer ${
-                        isChatLocked && (isFreeUser || noUser)
-                          ? "opacity-50 cursor-not-allowed"
-                          : ""
-                      }`}
-                      aria-label="Record with microphone"
-                      disabled={isChatLocked && (isFreeUser || noUser)}
-                    >
-                      <SvgMic />
-                    </button>
-
                     {text.trim().length === 0 ||
                     (isChatLocked && (isFreeUser || noUser)) ? (
                       <button

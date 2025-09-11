@@ -829,15 +829,15 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
         </div>
       )}
 
-      <div className="relative flex w-full mb-[100px] justify-center mx-auto z-[99999999] overflow-x-clip">
+      <div className="relative flex w-full  mb-[88px] justify-center mx-auto z-[99999999] overflow-x-clip">
         <div
           aria-hidden
-          className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-[220px] w-[1065px] h-[629px] rounded-[9999px]"
+          className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-[220px] w-[1065px] h-auto min-h-[300px] screen:744:!h-[629px] rounded-[9999px]"
           style={{ background: "#DAFFFA", filter: "blur(120px)", opacity: 0.8 }}
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -left-[360px] top-1/4 w-[1065px] h-[629px] rounded-[9999px] rotate-[-20deg]"
+          className="pointer-events-none absolute -left-[360px] top-1/4 w-[1065px] h-auto min-h-[300px] screen:744:!h-[629px] rounded-[9999px] rotate-[-20deg]"
           style={{
             background: "#CEDCFF80",
             filter: "blur(120px)",
@@ -846,7 +846,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-[360px] top-1/3 w-[1065px] h-[629px] rounded-[9999px] rotate-[15deg]"
+          className="pointer-events-none absolute -right-[360px] top-1/3 w-[1065px] h-auto min-h-[300px] screen:744:!h-[629px] rounded-[9999px] rotate-[15deg]"
           style={{
             background: "#FFB78A80",
             filter: "blur(120px)",
