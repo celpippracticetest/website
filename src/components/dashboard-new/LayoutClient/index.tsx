@@ -50,6 +50,7 @@ import {
   SvgRefferalMobileNavigation,
 } from "@/components/icons";
 import SvgDiamond from "@/components/icons/Diamond";
+import SvgLearningGift from "@/components/icons/LearningGift";
 
 const NavItem = ({
   icon,
@@ -975,7 +976,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                     {proUser ? (
                       <>
                         <button
-                          className="hidden screen744:!flex w-[149px] shrink-0 h-[40px] rounded-[24px] shadow-startButton cursor-pointer 
+                          className="hidden gap-[10px] screen744:!flex w-[149px] shrink-0 h-[40px] rounded-[24px] shadow-startButton cursor-pointer 
              [border:1.5px_solid_transparent] 
              [background:linear-gradient(white,white)_padding-box,linear-gradient(270deg,#F79D65_0%,#759CFF_100%)_border-box] 
              group hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] hover:!border-none  items-center justify-center"
@@ -983,8 +984,11 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                             router.push("/earn100");
                           }}
                         >
-                          <span className="font-medium text-[14px] text-black group-hover:text-white">
-                            Earn 100
+                          <span>
+                            <SvgLearningGift />
+                          </span>
+                          <span className="font-regular text-[14px] text-[#37465C] text-black group-hover:text-white">
+                            Earn $100
                           </span>
                         </button>
                         <div
