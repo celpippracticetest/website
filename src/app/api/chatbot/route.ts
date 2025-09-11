@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { currentUser } from "@clerk/nextjs/server";
+import client from "@/lib/mongodb";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -165,14 +166,68 @@ One-liner template: "I can't help with that—my scope is CELPIP and English lea
 export async function POST(request: NextRequest) {
   try {
     const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const isAuthenticated = !!user;
 
     const { message, context } = await request.json();
 
     if (!message || typeof message !== "string") {
-      return NextResponse.json({ error: "Message is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Message is required" },
+        { status: 400 }
+      );
+    }
+
+    // Check user plan and message limits
+    const userPlan = user?.publicMetadata?.plan as string;
+    const isFreeUser = userPlan === "free";
+    const isPremiumUser = userPlan === "premium";
+    const isGuest = !isAuthenticated;
+
+    // Server-side message count validation
+    if ((isFreeUser || isGuest) && !isPremiumUser) {
+      const db = client.db();
+      const messageCountsCollection = db.collection("messageCounts");
+
+      // Create a unique identifier for the user/guest
+      const userIdentifier = isAuthenticated
+        ? user.id
+        : `guest_${request.headers.get("x-forwarded-for") || "unknown"}`;
+
+      // Get current message count from database
+      const existingRecord = await messageCountsCollection.findOne({
+        userIdentifier: userIdentifier,
+        date: new Date().toISOString().split("T")[0], // Today's date
+      });
+
+      const currentCount = existingRecord?.count || 0;
+
+      // Check if user has exceeded their limit
+      if (currentCount >= 1) {
+        return NextResponse.json(
+          {
+            error:
+              "You've reached your message limit. Please upgrade to Pro for unlimited access.",
+            upgradeRequired: true,
+          },
+          { status: 403 }
+        );
+      }
+
+      // Increment message count in database
+      await messageCountsCollection.updateOne(
+        {
+          userIdentifier: userIdentifier,
+          date: new Date().toISOString().split("T")[0],
+        },
+        {
+          $inc: { count: 1 },
+          $set: {
+            lastMessageAt: new Date(),
+            userPlan: isAuthenticated ? userPlan : "guest",
+          },
+        },
+        { upsert: true }
+      );
     }
 
     // Build context for the AI

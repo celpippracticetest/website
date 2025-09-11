@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   LearningGuide,
   LearningListening,
@@ -13,6 +13,9 @@ import {
 import SvgSvgBeforeTypingWord from "@/components/icons/SvgBeforeTypingWord";
 import SvgLearningArrowUp from "@/components/icons/LearningArrowUp";
 import { useUserContext } from "@/hooks/useUserContext";
+import { useUser } from "@clerk/nextjs";
+import UpgradeModal from "@/components/modal/UpgradeModal";
+import LoginModal from "@/components/modal/LoginModal";
 
 type Skill = {
   label: string;
@@ -34,8 +37,18 @@ const Page = () => {
   const [isInConversation, setIsInConversation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isChatLocked, setIsChatLocked] = useState(false);
+  const [serverMessageCount, setServerMessageCount] = useState(0);
   const userContext = useUserContext();
+  const { user, isLoaded, isSignedIn } = useUser();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Check if user is free or premium
+  const isFreeUser = user?.publicMetadata?.plan === "free";
+  const isPremiumUser = user?.publicMetadata?.plan === "premium";
+  const noUser = isLoaded ? !isSignedIn : false;
 
   const skills: Skill[] = [
     {
@@ -120,10 +133,39 @@ const Page = () => {
   const [text, setText] = useState<string>("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
+  // Check server-side message count on component mount
+  useEffect(() => {
+    const checkMessageCount = async () => {
+      if ((isFreeUser || noUser) && !isPremiumUser) {
+        try {
+          const response = await fetch("/api/chatbot/check-limit", {
+            method: "GET",
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setServerMessageCount(data.count || 0);
+
+            // If user has already sent messages, lock the chat
+            if (data.count >= 1) {
+              setIsChatLocked(true);
+            }
+          }
+        } catch (error) {
+          console.error("Error checking message count:", error);
+        }
+      }
+    };
+
+    checkMessageCount();
+  }, [isFreeUser, noUser, isPremiumUser]);
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
+
+  // Security monitoring removed - server-side validation is more secure and prevents infinite loops
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -175,6 +217,42 @@ const Page = () => {
   const handleSendMessage = async () => {
     if (!text.trim() || isLoading) return;
 
+    // Check if user is not signed in
+    if (noUser) {
+      handleUpgradeClick();
+      return;
+    }
+
+    // Check if free user or guest has exceeded their limit using server count
+    const currentMessageCount =
+      serverMessageCount + messages.filter((m) => m.type === "user").length;
+    if ((isFreeUser || noUser) && !isPremiumUser && currentMessageCount >= 1) {
+      if (noUser) {
+        setShowLoginModal(true);
+      } else if (isFreeUser) {
+        setShowUpgradeModal(true);
+      }
+      return;
+    }
+
+    // Check if chat is locked
+    if (isChatLocked) {
+      return;
+    }
+
+    // Additional security check - prevent bypassing via DOM manipulation
+    if ((isFreeUser || noUser) && !isPremiumUser) {
+      if (currentMessageCount >= 1) {
+        if (noUser) {
+          setShowLoginModal(true);
+        } else if (isFreeUser) {
+          setShowUpgradeModal(true);
+        }
+        setIsChatLocked(true);
+        return;
+      }
+    }
+
     const userMessage: Message = {
       id: Date.now().toString(),
       type: "user",
@@ -213,6 +291,16 @@ const Page = () => {
       });
 
       if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.upgradeRequired) {
+          if (noUser) {
+            setShowLoginModal(true);
+          } else if (isFreeUser) {
+            setShowUpgradeModal(true);
+          }
+          setIsChatLocked(true);
+          throw new Error("Upgrade required");
+        }
         throw new Error("Failed to get response");
       }
 
@@ -226,6 +314,13 @@ const Page = () => {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // Lock chat for free users/guests after first response and refresh server count
+      if ((isFreeUser || noUser) && !isPremiumUser) {
+        setIsChatLocked(true);
+        // Refresh server message count
+        refreshMessageCount();
+      }
     } catch (error) {
       console.error("Error sending message:", error);
       const errorMessage: Message = {
@@ -244,10 +339,67 @@ const Page = () => {
     setMessages([]);
     setIsInConversation(false);
     setText("");
+    setIsChatLocked(false);
+
+    // Refresh server message count for new conversation
+    if ((isFreeUser || noUser) && !isPremiumUser) {
+      refreshMessageCount();
+    }
   };
+
+  const handleUpgradeClick = useCallback(() => {
+    if (noUser) {
+      setShowLoginModal(true);
+    } else if (isFreeUser) {
+      setShowUpgradeModal(true);
+    }
+  }, [noUser, isFreeUser]);
+
+  // Function to refresh message count from server
+  const refreshMessageCount = useCallback(async () => {
+    if ((isFreeUser || noUser) && !isPremiumUser) {
+      try {
+        const response = await fetch("/api/chatbot/check-limit", {
+          method: "GET",
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setServerMessageCount(data.count || 0);
+
+          // If user has already sent messages, lock the chat
+          if (data.count >= 1) {
+            setIsChatLocked(true);
+          }
+        }
+      } catch (error) {
+        console.error("Error checking message count:", error);
+      }
+    }
+  }, [isFreeUser, noUser, isPremiumUser]);
+
+  // Clear message count when user becomes premium
+  useEffect(() => {
+    if (isPremiumUser) {
+      setServerMessageCount(0);
+      setIsChatLocked(false);
+    }
+  }, [isPremiumUser]);
+
+  // Reset message count when user signs in (if they were a guest before)
+  useEffect(() => {
+    if (isLoaded && isSignedIn && !isPremiumUser) {
+      // Refresh server message count when user signs in
+      refreshMessageCount();
+    }
+  }, [isLoaded, isSignedIn, isPremiumUser, refreshMessageCount]);
 
   return (
     <section className="relative w-full transition-all duration-300 overflow-hidden">
+      {/* Modals */}
+      {showUpgradeModal && <UpgradeModal setShowModal={setShowUpgradeModal} />}
+      {showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />}
+
       <div className="flex h-full flex-col">
         <div className="flex-1 overflow-y-auto px-[16px] screen744:!px-[24px] screen1280:!px-[32px] pt-[76px] pb-[10px]">
           <div className="max-w-[980px] z-[1] mx-auto text-center">
@@ -257,6 +409,26 @@ const Page = () => {
             <h2 className="text-[#76808F] text-[20px] screen744:!text-[16px] mb-[22px]">
               Ask CELPIP-style questions, get real-time answers.
             </h2>
+
+            {/* Plan Status Indicator */}
+            {noUser && (
+              <div className="mb-4 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]">
+                <span className="w-2 h-2 bg-[#F59E0B] rounded-full mr-2"></span>
+                Guest - 1 message limit
+              </div>
+            )}
+            {isFreeUser && !noUser && (
+              <div className="mb-4 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]">
+                <span className="w-2 h-2 bg-[#F59E0B] rounded-full mr-2"></span>
+                Free Plan - 1 message limit
+              </div>
+            )}
+            {isPremiumUser && (
+              <div className="mb-4 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#D1FAE5] text-[#065F46] border border-[#10B981]">
+                <span className="w-2 h-2 bg-[#10B981] rounded-full mr-2"></span>
+                Pro Plan - Unlimited access
+              </div>
+            )}
           </div>
 
           {/* Conversation Mode */}
@@ -330,6 +502,26 @@ const Page = () => {
               {/* Fixed Input at Bottom */}
               <div className="sticky bottom-0  border-gray-200 p-4">
                 <div className="max-w-[900px] mx-auto">
+                  {/* Chat Locked Message for Free Users and Guests */}
+                  {isChatLocked && (isFreeUser || noUser) && (
+                    <div className="mb-4 p-4 bg-[#37465C] border rounded-[12px]  max-w-[478px]">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className="text-white text-sm font-medium">
+                            You’ve reach your free limit. Upgrade to Pro to
+                            unlock unlimited access and exclusive features.
+                          </div>
+                        </div>
+                        <button
+                          onClick={handleUpgradeClick}
+                          className="text-[12px] max-w-[105px] w-full bg-white rounded-[24px] flex items-center justify-center h-[24px] text-[#76808F] text-sm font-medium  transition-colors"
+                        >
+                          Upgrade to Pro
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <form
                     className="w-full flex gap-[8px] relative"
                     onSubmit={(e) => {
@@ -341,19 +533,34 @@ const Page = () => {
                       ref={textareaRef}
                       value={text}
                       onChange={(e) => setText(e.target.value)}
-                      placeholder="Continue the conversation..."
-                      className="flex-1 p-[24px] rounded-[16px] min-h-[76px] border bg-white border-[#D1D5DB] pr-[112px] pb-[64px] text-[14px] text-[#111827] outline-none focus:border-[#6366F1] shadow-sm"
+                      placeholder={
+                        isChatLocked && (isFreeUser || noUser)
+                          ? "Upgrade to Pro to continue chatting..."
+                          : "Continue the conversation..."
+                      }
+                      disabled={isChatLocked && (isFreeUser || noUser)}
+                      className={`flex-1 p-[24px] rounded-[16px] min-h-[76px] border pr-[112px] pb-[64px] text-[14px] text-[#111827] outline-none shadow-sm ${
+                        isChatLocked && (isFreeUser || noUser)
+                          ? "bg-gray-100 border-gray-300 cursor-not-allowed"
+                          : "bg-white border-[#D1D5DB] focus:border-[#6366F1]"
+                      }`}
                     />
                     <div className="absolute w-[88px] h-[40px] right-[18px] bottom-[18px] flex items-center gap-[12px]">
                       <button
                         type="button"
-                        className="cursor-pointer"
+                        className={`cursor-pointer ${
+                          isChatLocked && (isFreeUser || noUser)
+                            ? "opacity-50 cursor-not-allowed"
+                            : ""
+                        }`}
                         aria-label="Record with microphone"
+                        disabled={isChatLocked && (isFreeUser || noUser)}
                       >
                         <SvgMic />
                       </button>
 
-                      {text.trim().length === 0 ? (
+                      {text.trim().length === 0 ||
+                      (isChatLocked && (isFreeUser || noUser)) ? (
                         <button
                           type="submit"
                           aria-label="Send"
@@ -366,9 +573,13 @@ const Page = () => {
                         <button
                           type="submit"
                           aria-label="Send"
-                          disabled={isLoading}
+                          disabled={
+                            isLoading ||
+                            (isChatLocked && (isFreeUser || noUser))
+                          }
                           className={`w-[40px] flex items-center justify-center h-[40px] cursor-pointer rounded-full transition-colors ${
-                            isLoading
+                            isLoading ||
+                            (isChatLocked && (isFreeUser || noUser))
                               ? "bg-gray-300 cursor-not-allowed"
                               : "bg-[#6366F1] hover:!bg-[#4F46E5]"
                           }`}
@@ -388,15 +599,24 @@ const Page = () => {
           ) : (
             <div className="flex flex-col-reverse screen744:!flex-col w-full max-w-[616px] screen1280:!max-w-[900px] mx-auto">
               <div className="max-w-[616px] screen1280:!max-w-[900px] w-full mx-auto py-[12px]">
-                <div className="flex items-center mb-[16px] screen1280:!mb-[28px] px-[16px] py-[12px] bg-[#37465C] w-full max-w-[478px] rounded-[12px]">
-                  <div className="font-normal text-[14px] text-white">
-                    You’ve reach your free limit. Upgrade to Pro to unlock
-                    unlimited access and exclusive features.
-                  </div>
-                  <div className="w-full h-[24px] flex items-center justify-center max-w-[105px] text-[12px] font-normal text-[#76808F] border border-[#76808F] rounded-[24px] bg-white">
-                    Upgrade to Pro
-                  </div>
-                </div>
+                {/* Show upgrade banner for free users or guests who have reached their limit */}
+                {(isFreeUser || noUser) &&
+                  serverMessageCount +
+                    messages.filter((m) => m.type === "user").length >=
+                    1 && (
+                    <div className="flex items-center mb-[16px] screen1280:!mb-[28px] px-[16px] py-[12px] bg-[#37465C] w-full max-w-[478px] rounded-[12px]">
+                      <div className="font-normal text-[14px] text-white">
+                        You've reach your free limit. Upgrade to Pro to unlock
+                        unlimited access and exclusive features.
+                      </div>
+                      <button
+                        onClick={handleUpgradeClick}
+                        className="w-full h-[24px] flex items-center justify-center max-w-[105px] text-[12px] font-normal text-[#76808F] border border-[#76808F] rounded-[24px] bg-white hover:bg-gray-50 transition-colors cursor-pointer"
+                      >
+                        Upgrade to Pro
+                      </button>
+                    </div>
+                  )}
                 <form
                   className="w-full flex gap-[8px] relative"
                   onSubmit={(e) => {
@@ -409,22 +629,35 @@ const Page = () => {
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     placeholder={
-                      isInConversation
+                      isChatLocked && (isFreeUser || noUser)
+                        ? "Upgrade to Pro to continue chatting..."
+                        : isInConversation
                         ? "Continue the conversation..."
                         : "Write your answer or ask for help…"
                     }
-                    className="flex-1 p-[24px] rounded-[16px] min-h-[76px] border bg-white border-[#D1D5DB] pr-[112px] pb-[64px] text-[14px] text-[#111827] outline-none focus:border-[#6366F1] shadow-sm"
+                    disabled={isChatLocked && (isFreeUser || noUser)}
+                    className={`flex-1 p-[24px] rounded-[16px] min-h-[76px] border pr-[112px] pb-[64px] text-[14px] text-[#111827] outline-none shadow-sm ${
+                      isChatLocked && (isFreeUser || noUser)
+                        ? "bg-gray-100 border-gray-300 cursor-not-allowed"
+                        : "bg-white border-[#D1D5DB] focus:border-[#6366F1]"
+                    }`}
                   />
                   <div className="absolute w-[88px] h-[40px] right-[18px] bottom-[18px] flex items-center gap-[12px]">
                     <button
                       type="button"
-                      className="cursor-pointer"
+                      className={`cursor-pointer ${
+                        isChatLocked && (isFreeUser || noUser)
+                          ? "opacity-50 cursor-not-allowed"
+                          : ""
+                      }`}
                       aria-label="Record with microphone"
+                      disabled={isChatLocked && (isFreeUser || noUser)}
                     >
                       <SvgMic />
                     </button>
 
-                    {text.trim().length === 0 ? (
+                    {text.trim().length === 0 ||
+                    (isChatLocked && (isFreeUser || noUser)) ? (
                       <button
                         type="submit"
                         aria-label="Send"
@@ -437,9 +670,11 @@ const Page = () => {
                       <button
                         type="submit"
                         aria-label="Send"
-                        disabled={isLoading}
+                        disabled={
+                          isLoading || (isChatLocked && (isFreeUser || noUser))
+                        }
                         className={`w-[40px] flex items-center justify-center h-[40px] cursor-pointer rounded-full transition-colors ${
-                          isLoading
+                          isLoading || (isChatLocked && (isFreeUser || noUser))
                             ? "bg-gray-300 cursor-not-allowed"
                             : "bg-[#6366F1] hover:!bg-[#4F46E5]"
                         }`}
