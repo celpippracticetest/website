@@ -9,7 +9,7 @@ const SvgLearningReading = (props: SVGProps<SVGSVGElement>) => (
     {...props}
   >
     <path
-      stroke="#EE4266"
+      stroke="currentColor"
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={1.5}
