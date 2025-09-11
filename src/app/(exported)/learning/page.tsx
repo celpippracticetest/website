@@ -45,10 +45,10 @@ const Page = () => {
         <LearningSpeaking className="text-[#F4845F] group-hover:!text-white" />
       ),
       description: [
-        "Can you evaluate my speaking and give me feedback?",
-        "How can I improve my pronunciation and fluency?",
-        "Can we practice a speaking test together?",
-        "What are some common speaking mistakes made by learners?",
+        "How do I get better at managing time in Speaking tasks?",
+        "Can you give me a sample answer for “Describe a place you visited”?",
+        "How can I improve my fluency and avoid pauses?",
+        "Based on my last Speaking test, what is my weakest area?",
       ],
     },
     {
@@ -57,10 +57,10 @@ const Page = () => {
         <LearningWriting className="text-[#0DAA94] group-hover:!text-white" />
       ),
       description: [
-        "Can you review my writing and provide feedback?",
-        "How can I improve my CELPIP Writing score?",
-        "What are the key elements of a good CELPIP essay?",
-        "Can you help me with email writing format?",
+        "How do I structure a CELPIP Writing Task 1 email?",
+        "Can you show me common mistakes in Writing Task 2 essays?",
+        "How can I improve coherence and grammar in my writing?",
+        "What feedback do you have on my last Writing submission?",
       ],
     },
     {
@@ -69,10 +69,10 @@ const Page = () => {
         <LearningReading className="text-[#EE4266] group-hover:!text-white" />
       ),
       description: [
-        "What are the best strategies for CELPIP Reading?",
-        "How can I improve my reading speed and comprehension?",
-        "Can you help me with reading practice questions?",
-        "What should I focus on for different reading task types?",
+        "	What strategies help answer “fill in the blank” questions faster?",
+        "How can I improve my reading speed for CELPIP passages?",
+        "Which type of questions are hardest in Reading, and how do I tackle them?",
+        "Based on my Reading results, what should I practice more?",
       ],
     },
     {
@@ -81,10 +81,10 @@ const Page = () => {
         <LearningListening className="text-[#316BFF] group-hover:!text-white" />
       ),
       description: [
-        "How can I improve my CELPIP Listening score?",
-        "What are the best note-taking strategies?",
-        "Can you help me practice listening comprehension?",
-        "How should I approach different listening task types?",
+        "How can I improve my note-taking during CELPIP Listening tasks?",
+        "Why do I miss details like numbers and dates in the Listening test?",
+        "Can you explain the Listening task types in CELPIP?",
+        "Based on my last practice, what should I focus on in Listening?",
       ],
     },
     {
@@ -93,10 +93,10 @@ const Page = () => {
         <LearningMockExam className="text-[#DA2AFE] group-hover:!text-white" />
       ),
       description: [
-        "Can you analyze my mock exam results?",
-        "What should I focus on based on my performance?",
-        "How can I improve my overall CELPIP score?",
-        "What's the best way to prepare for the actual exam?",
+        "How close are my mock exam results to the real CELPIP test?",
+        "What were my top 2 weak skills in my last mock exam?",
+        "How can I manage time better across the full mock exam?",
+        "Should I take more mock exams before my real test?",
       ],
     },
     {
@@ -105,10 +105,10 @@ const Page = () => {
         <LearningGuide className="text-[#759CFF] group-hover:!text-white" />
       ),
       description: [
-        "What is the CELPIP scoring system?",
-        "How long should I study for CELPIP?",
-        "What are the exam day tips?",
-        "How can I manage my time during the exam?",
+        "What is the structure of the CELPIP exam?",
+        "How is CELPIP different from IELTS?",
+        "What are some general tips to score 9 or higher?",
+        "What scoring criteria does CELPIP use for Speaking and Writing?",
       ],
     },
   ];
