@@ -388,7 +388,7 @@ const Page = () => {
           ) : (
             <div className="flex flex-col-reverse screen744:!flex-col w-full max-w-[616px] screen1280:!max-w-[900px] mx-auto">
               <div className="max-w-[616px] screen1280:!max-w-[900px] w-full mx-auto py-[12px]">
-                <div className="flex items-center mb-[28px] px-[16px] py-[12px] bg-[#37465C] w-full max-w-[478px] rounded-[12px]">
+                <div className="flex items-center mb-[16px] screen1280:!mb-[28px] px-[16px] py-[12px] bg-[#37465C] w-full max-w-[478px] rounded-[12px]">
                   <div className="font-normal text-[14px] text-white">
                     You’ve reach your free limit. Upgrade to Pro to unlock
                     unlimited access and exclusive features.
