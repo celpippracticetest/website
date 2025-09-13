@@ -235,7 +235,7 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
 
     const msg: any = await withTimeout(
       anthropic.messages.create({
-        model: "claude-3-7-sonnet-20250219",
+        model: "claude-3-5-sonnet-20241022",
         max_tokens: 20000,
         temperature: 1,
         system: finalSystemPrompt,

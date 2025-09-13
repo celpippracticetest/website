@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useUserContext } from "@/hooks/useUserContext";
 import SvgBeavo from "../icons/Beavo";
 import SvgClose from "../icons/Close";
+import SvgChatBotSend from "../icons/ChatBotSend";
 
 interface Message {
   id: string;
@@ -29,7 +30,7 @@ const AskBeavoButton: React.FC = () => {
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputText("");
     setIsLoading(true);
 
@@ -76,7 +77,7 @@ const AskBeavoButton: React.FC = () => {
       }
 
       const data = await response.json();
-      
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "assistant",
@@ -84,7 +85,7 @@ const AskBeavoButton: React.FC = () => {
         timestamp: new Date(),
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Error sending message:", error);
       const errorMessage: Message = {
@@ -93,7 +94,7 @@ const AskBeavoButton: React.FC = () => {
         content: "Sorry, I encountered an error. Please try again.",
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -109,159 +110,181 @@ const AskBeavoButton: React.FC = () => {
   return (
     <>
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-  <button
-    onClick={() => setIsOpen(!isOpen)}
-    className="relative flex items-center cursor-pointer justify-center text-[#212E42] text-[14px] h-[40px] max-w-[134px] w-full gap-[8px] rounded-[24px] px-[16px] pl-[8px] font-normal
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="relative flex items-center cursor-pointer justify-center text-[#212E42] text-[14px] h-[40px] max-w-[134px] w-full gap-[8px] rounded-[24px] px-[16px] pl-[8px] font-normal
                 bg-white overflow-hidden"
-  >
-    <span className="absolute  inset-0 rounded-[24px] p-[1px] bg-[length:200%_200%] animate-gradientBorder 
-                     bg-gradient-to-r from-[#F79D65] via-[#759CFF] to-[#F79D65]">
-      <span className="block w-full h-full rounded-[24px] bg-white"></span>
-    </span>
+        >
+          <span
+            className="absolute  inset-0 rounded-[24px] p-[1px] bg-[length:200%_200%] animate-gradientBorder 
+                     bg-gradient-to-r from-[#F79D65] via-[#759CFF] to-[#F79D65]"
+          >
+            <span className="block w-full h-full rounded-[24px] bg-white"></span>
+          </span>
 
-    <span className="relative text-lg">
-      <SvgBeavo />
-    </span>
-    <span className="relative">Ask Beavo</span>
-  </button>
-</div>
+          <span className="relative text-lg">
+            <SvgBeavo />
+          </span>
+          <span className="relative">Ask Beavo</span>
+        </button>
+      </div>
 
       {/* Chat Box */}
       {isOpen && (
-  <div
-  className="
-    fixed bottom-24 right-6 z-50 w-[700px] h-[715px]
+        <div
+          className="
+    fixed bottom-24  screen744:!right-6 z-50 w-full max-w-[700px] h-[min(715px,calc(100dvh-7rem))] max-h-[calc(100dvh-7rem)]
     rounded-2xl shadow-2xl overflow-hidden
     p-[2px]                   
     bg-[length:200%_200%] animate-gradientBorder
     bg-gradient-to-r from-[#F79D65] via-[#759CFF] to-[#F79D65]
   "
->
-  <div className="flex h-full w-full flex-col rounded-[18px] bg-white">
-    {/* Header */}
-    <div className="flex items-center justify-between p-4  text-[#212E42] rounded-t-[16px]">
-      <div className="flex items-center gap-3">
-        <div>
-          <h3 className="font-semibold text-lg">Ask Beavo</h3>
-        </div>
-      </div>
-      <button
-        onClick={() => setIsOpen(false)}
-        className="text-white cursor-pointer hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-colors"
-      >
-       <SvgClose/>
-      </button>
-    </div>
-
-    <div className="px-[24px]">
-    <div className="h-[1px] bg-[#D5D6D8] w-full"></div>
-
-    </div>
-
-
-    {/* Example Questions */}
-    {messages.length === 0 && (
-      <div className="p-4  ">
-        <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-          🔍 Example Questions I Can Help You With:
-        </h4>
-        <div className="space-y-3 text-sm">
-          <div className="bg-white p-3 rounded-lg border border-gray-200">
-            <div className="font-medium text-blue-600 mb-1">📢 Speaking (Task 1: Giving Advice)</div>
-            <div className="text-gray-600 italic">
-              "Your friend is moving to a new city. Give some advice about finding a place to live."
-            </div>
-            <div className="text-gray-500 text-xs mt-1">
-              You can type your answer, and I'll review it for clarity, grammar, tone, and vocabulary.
-            </div>
-          </div>
-
-          <div className="bg-white p-3 rounded-lg border border-gray-200">
-            <div className="font-medium text-green-600 mb-1">✍️ Writing (Task 1: Responding to a Survey)</div>
-            <div className="text-gray-600 italic">
-              "Your city is deciding whether to build a new public library or a sports complex. Which do you support?"
-            </div>
-            <div className="text-gray-500 text-xs mt-1">
-              You can write your opinion, and I'll help you refine it.
-            </div>
-          </div>
-
-          <div className="bg-white p-3 rounded-lg border border-gray-200">
-            <div className="font-medium text-purple-600 mb-1">👂 Listening / Reading</div>
-            <div className="text-gray-600">
-              I can simulate practice questions or help you understand question types, keywords, or strategies
-            </div>
-          </div>
-        </div>
-      </div>
-    )}
-
-    {/* Messages */}
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      {messages.map((message) => (
-        <div
-          key={message.id}
-          className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
         >
-          <div
-            className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-              message.type === "user"
-                ? "bg-gradient-to-r from-[#F79D65] to-[#759CFF] text-white"
-                : "bg-gray-100 text-gray-900"
-            }`}
-          >
-            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-            <p className="text-xs opacity-70 mt-1">
-              {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </p>
-          </div>
-        </div>
-      ))}
+          <div className="flex h-full w-full overflow-auto flex-col rounded-[18px] bg-white">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4  text-[#212E42] rounded-t-[16px]">
+              <div className="flex items-center gap-3">
+                <div>
+                  <h3 className="font-semibold text-lg">Ask Beavo</h3>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="text-white cursor-pointer hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-colors"
+              >
+                <SvgClose />
+              </button>
+            </div>
 
-      {isLoading && (
-        <div className="flex justify-start">
-          <div className="bg-gray-100 rounded-2xl px-4 py-3">
-            <div className="flex space-x-1">
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+            <div className="px-[24px]">
+              <div className="h-[1px] bg-[#D5D6D8] w-full"></div>
+            </div>
+
+            {/* Example Questions */}
+            {messages.length === 0 && (
+              <div className="p-4  ">
+                <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  🔍 Example Questions I Can Help You With:
+                </h4>
+                <div className="space-y-3 text-sm">
+                  <div className="bg-white p-3 rounded-lg border border-gray-200">
+                    <div className="font-medium text-blue-600 mb-1">
+                      📢 Speaking (Task 1: Giving Advice)
+                    </div>
+                    <div className="text-gray-600 italic">
+                      "Your friend is moving to a new city. Give some advice
+                      about finding a place to live."
+                    </div>
+                    <div className="text-gray-500 text-xs mt-1">
+                      You can type your answer, and I'll review it for clarity,
+                      grammar, tone, and vocabulary.
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-lg border border-gray-200">
+                    <div className="font-medium text-green-600 mb-1">
+                      ✍️ Writing (Task 1: Responding to a Survey)
+                    </div>
+                    <div className="text-gray-600 italic">
+                      "Your city is deciding whether to build a new public
+                      library or a sports complex. Which do you support?"
+                    </div>
+                    <div className="text-gray-500 text-xs mt-1">
+                      You can write your opinion, and I'll help you refine it.
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-lg border border-gray-200">
+                    <div className="font-medium text-purple-600 mb-1">
+                      👂 Listening / Reading
+                    </div>
+                    <div className="text-gray-600">
+                      I can simulate practice questions or help you understand
+                      question types, keywords, or strategies
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Messages */}
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${
+                    message.type === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                      message.type === "user"
+                        ? "bg-gradient-to-r from-[#F79D65] to-[#759CFF] text-white"
+                        : "bg-gray-100 text-gray-900"
+                    }`}
+                  >
+                    <p className="text-sm whitespace-pre-wrap">
+                      {message.content}
+                    </p>
+                    <p className="text-xs opacity-70 mt-1">
+                      {message.timestamp.toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-100 rounded-2xl px-4 py-3">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div
+                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "0.1s" }}
+                      ></div>
+                      <div
+                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "0.2s" }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Input */}
+            <div className="p-4 ">
+              <div className="flex gap-2 relative ">
+                <textarea
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Ask me anything about CELPIP..."
+                  className="flex-1 p-3 rounded-xl border border-gray-300 focus:border-[#6366F1] focus:outline-none resize-none text-sm"
+                  rows={2}
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!inputText.trim() || isLoading}
+                  className={`cursor-pointer px-4 top-[12px] absolute right-[24px] py-2 rounded-xl font-medium transition-colors ${
+                    inputText.trim() && !isLoading
+                      ? " from-[#F79D65] to-[#759CFF] text-white"
+                      : " text-gray-400 cursor-not-allowed"
+                  }`}
+                >
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <SvgChatBotSend />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      )}
-    </div>
-
-    {/* Input */}
-    <div className="p-4 ">
-      <div className="flex gap-2 relative ">
-        <textarea
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="Ask me anything about CELPIP..."
-          className="flex-1 p-3 rounded-xl border border-gray-300 focus:border-[#6366F1] focus:outline-none resize-none text-sm"
-          rows={2}
-        />
-        <button
-          onClick={handleSendMessage}
-          disabled={!inputText.trim() || isLoading}
-          className={`px-4 absolute right-[24px] py-2 rounded-xl font-medium transition-colors ${
-            inputText.trim() && !isLoading
-              ? "bg-gradient-to-r from-[#F79D65] to-[#759CFF] text-white hover:shadow-md"
-              : "bg-gray-200 text-gray-400 cursor-not-allowed"
-          }`}
-        >
-          {isLoading ? (
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-          ) : (
-            "Send"
-          )}
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
       )}
     </>
   );

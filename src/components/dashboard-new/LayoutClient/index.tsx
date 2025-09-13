@@ -530,8 +530,13 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
   const [mockTest, setMockTest] = useState(false);
 
   useEffect(() => {
-    if (pathname === "/practice-overview" || pathname.includes("listening") || pathname.includes("reading") 
-      || pathname.includes("writing") || pathname.includes("speaking"))  {
+    if (
+      pathname === "/practice-overview" ||
+      pathname.includes("listening") ||
+      pathname.includes("reading") ||
+      pathname.includes("writing") ||
+      pathname.includes("speaking")
+    ) {
       setPractice(true);
       setMockTest(false);
     } else if (pathname === "/exam-overview" || pathname.includes("exams")) {
@@ -1087,11 +1092,17 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
           </div> */}
                 </div>
                 {/* dropdown for auth buttons */}
+                {isUserDropDownOpen && user && (
+                  <div
+                    className="screen1280:!hidden fixed inset-0 z-[90]"
+                    onClick={() => setUserDropDownOpen(false)}
+                  />
+                )}
                 <div
                   ref={userDropdownRef}
                   className={
                     (isUserDropDownOpen && user ? "" : " hidden ") +
-                    " absolute right-0 z-10 mt-2 w-56 top-[48px] rounded-md bg-white ring-1 shadow-lg ring-black/5 focus:outline-hidden"
+                    " screen1280:!absolute fixed right-[16px] screen1280:!right-0 top-[88px] screen1280:!top-[48px] z-[100] mt-2 w-[90vw] screen744:!w-64 screen1280:!w-56 rounded-md bg-white ring-1 shadow-lg ring-black/5 focus:outline-hidden max-h-[70vh] overflow-auto"
                   }
                   role="menu"
                   aria-orientation="vertical"

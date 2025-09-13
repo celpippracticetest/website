@@ -272,10 +272,14 @@ const ListeningExamView = ({
             Exam {examName?.replace("Mock Set", "")}
           </span>
           <a
-            className="rounded-[24px] shrink-0 flex-wrap px-[16px]   text-[14px] font-normal border-[1px] bg-white flex items-center justify-center border-[#76808F] max-w-[186px] w-full h-[40px]"
+            className="rounded-[24px] flex-wrap px-[16px]   text-[14px] font-normal border-[1px] bg-white flex items-center justify-center border-[#76808F] max-w-[186px] w-full h-[40px]"
             href={`/exams/exam_${examId}/results?partNumber=part${partNumber}`}
           >
-            View Answers &amp; Score
+            <span className="hidden screen1280:!flex">
+              {" "}
+              View Answers &amp; Score
+            </span>
+            <span className="flex screen1280:!hidden"> Score</span>
           </a>
         </div>
         <div
