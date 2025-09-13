@@ -64,7 +64,7 @@ const WritingPractice = ({
   };
 
   return selectedPractice ? (
-    <div className="flex flex-col  w-full ">
+    <div className="flex flex-col  w-full max-w-[1280px]">
       <div className="pl-[40px] text-[#76808F] text-[14px] mt-[24px] mb-[28px] items-center flex gap-[8px]">
         <div
           className="cursor-pointer"
