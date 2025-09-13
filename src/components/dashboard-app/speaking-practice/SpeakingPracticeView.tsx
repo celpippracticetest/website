@@ -322,7 +322,7 @@ const SpeakingPracticeView = ({
   }
 
   return (
-    <div className="h-full mx-auto w-full p-2   transition-all duration-300 flex gap-5">
+    <div className="h-full mx-auto w-full transition-all duration-300 flex gap-5">
       {freeUser ? (
         showModal && <UpgradeModal setShowModal={setShowModal} />
       ) : noUser ? (

@@ -136,7 +136,7 @@ const ReadingPracticeView = ({
       user.publicMetadata.plan === "premium");
   return (
     <>
-      <div className="w-full transition-all duration-300 flex gap-5 items-center max-w-[1200px]">
+      <div className="w-full transition-all duration-300 flex gap-5 items-center ">
         {freeUser ? (
           showModal && <UpgradeModal setShowModal={setShowModal} />
         ) : noUser ? (
