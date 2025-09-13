@@ -531,7 +531,8 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
   const [learning, setLearning] = useState(false);
 
   useEffect(() => {
-    if (pathname === "/practice-overview") {
+    if (pathname === "/practice-overview" || pathname.includes("listening") || pathname.includes("reading") 
+      || pathname.includes("writing") || pathname.includes("speaking"))  {
       setPractice(true);
       setMockTest(false);
       setLearning(false);
