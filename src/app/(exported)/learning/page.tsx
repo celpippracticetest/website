@@ -8,7 +8,6 @@ import {
   LearningReading,
   LearningSpeaking,
   LearningWriting,
-  SvgMic,
 } from "@/components/icons";
 import SvgSvgBeforeTypingWord from "@/components/icons/SvgBeforeTypingWord";
 import SvgLearningArrowUp from "@/components/icons/LearningArrowUp";
@@ -594,7 +593,7 @@ const Page = () => {
                           : "bg-white border-[#D1D5DB] focus:border-[#6366F1]"
                       }`}
                     />
-                    <div className="absolute w-[88px] h-[40px] right-[18px] bottom-[18px] flex items-center gap-[12px]">
+                    <div className="absolute w-[88px] h-[40px] justify-end right-[18px] bottom-[18px] flex items-center gap-[12px]">
                       {text.trim().length === 0 ||
                       (isChatLocked && (isFreeUser || noUser)) ? (
                         <button
@@ -678,7 +677,7 @@ const Page = () => {
                         : "bg-white border-[#D1D5DB] focus:border-[#6366F1]"
                     }`}
                   />
-                  <div className="absolute w-[88px] h-[40px] right-[18px] bottom-[18px] flex items-center gap-[12px]">
+                  <div className="absolute w-[88px] h-[40px] justify-end right-[18px] bottom-[18px] flex items-center gap-[12px]">
                     {text.trim().length === 0 ||
                     (isChatLocked && (isFreeUser || noUser)) ? (
                       <button

@@ -528,16 +528,24 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
   const { signOut } = useClerk();
   const [practice, setPractice] = useState(false);
   const [mockTest, setMockTest] = useState(false);
+  const [learning, setLearning] = useState(false);
 
   useEffect(() => {
     if (pathname === "/practice-overview") {
       setPractice(true);
       setMockTest(false);
+      setLearning(false);
     } else if (pathname === "/exam-overview" || pathname.includes("exams")) {
       setMockTest(true);
       setPractice(false);
+      setLearning(false);
+    } else if (pathname === "/learning") {
+      setMockTest(false);
+      setPractice(false);
+      setLearning(true);
     }
   }, [pathname]);
+
   useEffect(() => {
     if (pathname === "/practice-overview") {
       setPractice(true);
@@ -545,6 +553,10 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
     } else if (pathname === "/exam-overview") {
       setMockTest(true);
       setPractice(false);
+    } else if (pathname === "/learning") {
+      setMockTest(false);
+      setPractice(false);
+      setLearning(true);
     }
   }, []);
 
@@ -957,7 +969,28 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                     </>
                   )}
 
-                  <div
+                  {learning ? (<>
+                    <div
+                    className="flex gap-[8px] group items-center hover:!cursor-pointer relative"
+                    onClick={() => router.push("/learning")}
+                  >
+                    <div className="relative  flex items-center justify-center">
+                 
+
+                      <div className="flex w-[24px] h-[24px]  items-center justify-center">
+                        <SvgLearning
+                          stroke="#316BFF"
+                          fill="#316BFF"
+                          className="text-[#316BFF]"
+                        />
+                      </div>
+                    </div>
+                    <span className="text-[#316BFF] transition-colors duration-200">
+                      Learning
+                    </span>
+                  </div>
+                  </>):(<>
+                    <div
                     className="flex gap-[8px] group items-center hover:!cursor-pointer relative"
                     onClick={() => router.push("/learning")}
                   >
@@ -982,6 +1015,9 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                       Learning
                     </span>
                   </div>
+                  </>)}
+
+            
                 </div>
               </div>
 
@@ -1304,31 +1340,53 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
               </>
             )}
 
-            <div
-              className="group flex flex-col items-center mt-5 gap-1 cursor-pointer"
-              onClick={() => router.push("/learning")}
-            >
-              <div className="flex group-hover:hidden w-[24px] h-[24px]  items-center justify-center">
-                <SvgLearning
-                  stroke="#76808F"
-                  fill="transparent"
-                  className="text-[#76808F] group-hover:text-[#FC8A65]"
-                />
-              </div>
+            {learning ? (
+              <>
+                <div
+                  className="group flex flex-col items-center mt-5 gap-1 cursor-pointer"
+                  onClick={() => router.push("/learning")}
+                >
+                  <div className=" flex w-[24px] h-[24px]  items-center justify-center">
+                    <SvgLearning
+                      stroke="#FC8A65"
+                      fill="#FC8A65"
+                      className="text-[#FC8A65]"
+                    />
+                  </div>
 
-              <div className="hidden group-hover:flex w-[24px] h-[24px]  items-center justify-center">
-                <SvgLearning
-                  stroke="#FC8A65"
-                  fill="#FC8A65"
-                  className="text-[#FC8A65]"
-                />
-              </div>
+                  <span className="text-xs text-[#FC8A65]">Learning</span>
+                  <span className="w-[4px] h-[4px] rounded-full bg-[#FC8A65] flex"></span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div
+                  className="group flex flex-col items-center mt-5 gap-1 cursor-pointer"
+                  onClick={() => router.push("/learning")}
+                >
+                  <div className="flex group-hover:hidden w-[24px] h-[24px]  items-center justify-center">
+                    <SvgLearning
+                      stroke="#76808F"
+                      fill="transparent"
+                      className="text-[#76808F] group-hover:text-[#FC8A65]"
+                    />
+                  </div>
 
-              <span className="text-xs text-[#76808F] group-hover:text-[#FC8A65]">
-                Learning
-              </span>
-              <span className="w-[4px] h-[4px] rounded-full group-hover:bg-[#FC8A65] group-hover:flex"></span>
-            </div>
+                  <div className="hidden group-hover:flex w-[24px] h-[24px]  items-center justify-center">
+                    <SvgLearning
+                      stroke="#FC8A65"
+                      fill="#FC8A65"
+                      className="text-[#FC8A65]"
+                    />
+                  </div>
+
+                  <span className="text-xs text-[#76808F] group-hover:text-[#FC8A65]">
+                    Learning
+                  </span>
+                  <span className="w-[4px] h-[4px] rounded-full group-hover:bg-[#FC8A65] group-hover:flex"></span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
