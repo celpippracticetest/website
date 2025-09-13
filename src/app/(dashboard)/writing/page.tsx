@@ -127,7 +127,7 @@ const WritingPage = async ({
   }
 
   return (
-    <main className="bg-[#F2F6FF] min-h-screen flex w-full pl-[16px] pr-[24px] ">
+    <main className="bg-[#F2F6FF] min-h-screen flex w-full">
       <WritingPractice
         showHeader={true}
         allPractices={practices.items}

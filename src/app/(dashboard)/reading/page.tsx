@@ -133,7 +133,7 @@ const ReadingPage = async ({
       );
   }
   return (
-    <main className="bg-[#F2F6FF] min-h-screen flex w-full pl-[16px] pr-[24px] pt-[16px]">
+    <main className="bg-[#F2F6FF] min-h-screen flex w-full  ">
       <ReadingPractice
         allPractices={practices.items}
         selectedPractice={selectedPractice}
