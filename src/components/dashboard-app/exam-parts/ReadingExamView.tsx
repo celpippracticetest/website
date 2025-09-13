@@ -281,7 +281,7 @@ const ReadingExamView = ({
         <div className="flex  flex-col screen744:!flex-row flex-wra[]  justify-between my-[24px] w-full h-auto gap-[20px] min-h-[56px]">
           <div className="flex gap-[10px]  screen744:!gap-[40px] items-center">
             <span className="shrink-0">
-              Exam {examName?.replace("Mock Set", "")}
+              Exam {(examName ?? "").replace(/Mock\s+(Set|Test)/gi, "").trim()}
             </span>
             <div className="flex gap-[10px]">
               <a
