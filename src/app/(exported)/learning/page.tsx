@@ -316,6 +316,7 @@ const Page = () => {
                 }`
               : "Not available",
           },
+          conversationHistory: messages, // Send all previous messages for context
         }),
       });
 

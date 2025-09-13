@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
     const user = await currentUser();
     const isAuthenticated = !!user;
 
-    const { message, context } = await request.json();
+    const { message, context, conversationHistory } = await request.json();
 
     if (!message || typeof message !== "string") {
       return NextResponse.json(
@@ -245,16 +245,32 @@ export async function POST(request: NextRequest) {
 IMPORTANT: Use the current scores to provide personalized advice. Focus on the weak areas identified and provide specific improvement strategies based on their actual performance. The scores are calculated from their actual answers in the system.`;
     }
 
+    // Build conversation history for Anthropic
+    const messages: Array<{ role: "user" | "assistant"; content: string }> = [];
+    
+    // Add conversation history if provided
+    if (conversationHistory && Array.isArray(conversationHistory)) {
+      conversationHistory.forEach((msg: any) => {
+        if (msg.type === "user" || msg.type === "assistant") {
+          messages.push({
+            role: msg.type === "user" ? "user" as const : "assistant" as const,
+            content: msg.content,
+          });
+        }
+      });
+    }
+    
+    // Add current message
+    messages.push({
+      role: "user",
+      content: message,
+    });
+
     const response = await anthropic.messages.create({
       model: "claude-3-5-sonnet-20241022",
       max_tokens: 1000,
       system: SYSTEM_PROMPT + userContext,
-      messages: [
-        {
-          role: "user",
-          content: message,
-        },
-      ],
+      messages: messages,
     });
 
     const aiResponse = response.content[0];
