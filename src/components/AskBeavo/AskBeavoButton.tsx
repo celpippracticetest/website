@@ -167,7 +167,7 @@ const AskBeavoButton: React.FC = () => {
 
             {/* Example Questions */}
             {messages.length === 0 && (
-              <div className="p-4  ">
+              <div className="p-4  overflow-auto">
                 <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
                   🔍 Example Questions I Can Help You With:
                 </h4>
