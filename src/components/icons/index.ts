@@ -1,3 +1,4 @@
+export { default as Beavo } from "./Beavo";
 export { default as LearningArrowUp } from "./LearningArrowUp";
 export { default as LearningGift } from "./LearningGift";
 export { default as LearningGuide } from "./LearningGuide";

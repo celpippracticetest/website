@@ -13,11 +13,13 @@ import ResultExamView from "@/components/dashboard-app/exam-parts/ResultExamView
 import { ObjectId } from "mongodb";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
 import { currentUser } from "@clerk/nextjs/server";
+import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 
-const Exam = async ({ params }: { params: { slug: string[] } }) => {
-  const examId: string | undefined = params?.slug?.[0]?.split("exam_")?.[1];
-  const partNumber: string | undefined = params?.slug?.[1]?.split("part")?.[1];
-  const isResultPage: boolean = params?.slug?.[1] === "results";
+const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
+  const resolvedParams = await params;
+  const examId: string | undefined = resolvedParams?.slug?.[0]?.split("exam_")?.[1];
+  const partNumber: string | undefined = resolvedParams?.slug?.[1]?.split("part")?.[1];
+  const isResultPage: boolean = resolvedParams?.slug?.[1] === "results";
   const user: any = await currentUser();
   const plan: string | undefined = user?.publicMetadata?.plan as
     | string
@@ -64,6 +66,7 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
             speakingAndWritingAnswers={speakingAndWritingAnswers}
           />
         </div>
+        <AskBeavoButton />
       </main>
     );
   }
@@ -121,6 +124,7 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
           />
         )}
       </div>
+      <AskBeavoButton />
     </main>
   );
 };
