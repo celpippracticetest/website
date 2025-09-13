@@ -109,7 +109,7 @@ const AskBeavoButton: React.FC = () => {
 
   return (
     <>
-      <div className="fixed top-[290px] right-1 screen744:!top-[240px] screen1280:!top-auto screen744:!right-[190px] left-auto screen1280:!right-auto screen1280:!bottom-6 screen1280:!left-1/2 -translate-x-1/2 z-50">
+      <div className=" screen1280:!fixed   screen1280:!top-auto  screen1280:!right-auto screen1280:!bottom-6 screen1280:!left-1/2 screen1280:!-translate-x-1/2 z-50">
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="relative flex items-center cursor-pointer justify-center text-[#212E42] text-[14px] h-[40px] max-w-[134px] w-full gap-[8px] rounded-[24px] px-[16px] pl-[8px] font-normal
@@ -125,7 +125,10 @@ const AskBeavoButton: React.FC = () => {
           <span className="relative text-lg">
             <SvgBeavo />
           </span>
-          <span className="relative">Ask Beavo</span>
+          <span className="relative">
+            <span className="flex screen1280:!hidden">Ask </span>
+            <span className="hidden screen1280:!flex">Ask Beavo</span>{" "}
+          </span>
         </button>
       </div>
 
@@ -133,14 +136,16 @@ const AskBeavoButton: React.FC = () => {
       {isOpen && (
         <div
           className="
-    fixed bottom-24  screen744:!right-6 z-50 w-full max-w-[700px] h-[min(715px,calc(100dvh-7rem))] max-h-[calc(100dvh-7rem)]
+    fixed z-50 left-1/2 -translate-x-1/2 bottom-[max(1rem,env(safe-area-inset-bottom))]
+    w-[min(700px,calc(100vw-1.5rem))]
+    h-[min(715px,calc(100svh-2rem))] max-h-[calc(100svh-2rem)]
     rounded-2xl shadow-2xl overflow-hidden
-    p-[2px]                   
+    p-[2px]
     bg-[length:200%_200%] animate-gradientBorder
     bg-gradient-to-r from-[#F79D65] via-[#759CFF] to-[#F79D65]
   "
         >
-          <div className="flex h-full w-full overflow-auto flex-col rounded-[18px] bg-white">
+          <div className="flex h-full w-full flex-col rounded-[18px] bg-white overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between p-4  text-[#212E42] rounded-t-[16px]">
               <div className="flex items-center gap-3">
@@ -150,7 +155,7 @@ const AskBeavoButton: React.FC = () => {
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-white cursor-pointer hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-colors"
+                className="cursor-pointer hover:bg-gray-100 rounded-full p-2 transition-colors"
               >
                 <SvgClose />
               </button>
@@ -256,20 +261,20 @@ const AskBeavoButton: React.FC = () => {
             </div>
 
             {/* Input */}
-            <div className="p-4 ">
-              <div className="flex gap-2 relative ">
+            <div className="sticky bottom-0 p-4 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-t border-gray-200">
+              <div className="flex gap-2 relative">
                 <textarea
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Ask me anything about CELPIP..."
-                  className="flex-1 p-3 rounded-xl border border-gray-300 focus:border-[#6366F1] focus:outline-none resize-none text-sm"
+                  className="flex-1 p-3 pr-12 rounded-xl border border-gray-300 focus:border-[#6366F1] focus:outline-none resize-none text-sm"
                   rows={2}
                 />
                 <button
                   onClick={handleSendMessage}
                   disabled={!inputText.trim() || isLoading}
-                  className={`cursor-pointer px-4 top-[12px] absolute right-[24px] py-2 rounded-xl font-medium transition-colors ${
+                  className={`cursor-pointer px-3 py-2 absolute right-3 top-1/2 -translate-y-1/2 rounded-xl font-medium transition-colors ${
                     inputText.trim() && !isLoading
                       ? " from-[#F79D65] to-[#759CFF] text-white"
                       : " text-gray-400 cursor-not-allowed"

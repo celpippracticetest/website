@@ -17,8 +17,10 @@ import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 
 const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
   const resolvedParams = await params;
-  const examId: string | undefined = resolvedParams?.slug?.[0]?.split("exam_")?.[1];
-  const partNumber: string | undefined = resolvedParams?.slug?.[1]?.split("part")?.[1];
+  const examId: string | undefined =
+    resolvedParams?.slug?.[0]?.split("exam_")?.[1];
+  const partNumber: string | undefined =
+    resolvedParams?.slug?.[1]?.split("part")?.[1];
   const isResultPage: boolean = resolvedParams?.slug?.[1] === "results";
   const user: any = await currentUser();
   const plan: string | undefined = user?.publicMetadata?.plan as
@@ -66,7 +68,9 @@ const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
             speakingAndWritingAnswers={speakingAndWritingAnswers}
           />
         </div>
-        <AskBeavoButton />
+        <div className="hidden screen1280:!flex">
+          <AskBeavoButton />
+        </div>
       </main>
     );
   }
@@ -124,7 +128,9 @@ const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
           />
         )}
       </div>
-      <AskBeavoButton />
+      <div className="hidden screen1280:!flex">
+        <AskBeavoButton />
+      </div>
     </main>
   );
 };

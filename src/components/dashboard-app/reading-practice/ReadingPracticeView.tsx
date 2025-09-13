@@ -233,7 +233,10 @@ const ReadingPracticeView = ({
                         : "bg-white"
                     }`}
                   >
-                    View Answers &amp; Score
+                    <span className="hidden screen1280:!flex">
+                      View Answers &amp; Score
+                    </span>
+                    <span className="flex screen1280:!hidden"> Score</span>{" "}
                   </button>
                 </>
               )}

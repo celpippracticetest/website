@@ -563,7 +563,7 @@ const Page = () => {
                         </div>
                         <button
                           onClick={handleUpgradeClick}
-                          className="text-[12px] max-w-[105px] w-full bg-white rounded-[24px] flex items-center justify-center h-[24px] text-[#76808F] text-sm font-medium  transition-colors"
+                          className="text-[12px] max-w-[105px] w-full bg-white rounded-[24px] flex items-center justify-center h-auto min-h-[24px] text-[#76808F] text-sm font-medium  transition-colors"
                         >
                           Upgrade to Pro
                         </button>

@@ -17,6 +17,7 @@ import SvgWritingPart from "@/components/icons/WritingPart";
 import SvgReadingPart from "@/components/icons/ReadingPart";
 import SvgListeningPart from "@/components/icons/ListeningPart";
 import SvgSpeakingPart from "@/components/icons/SpeakingPart";
+import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 
 const parts = [
   "Problem Solving",
@@ -306,12 +307,20 @@ const WritingExamView = ({
               <span className="shrink-0">
                 Exam {examName?.replace("Mock Set", "")}
               </span>
-              <a
-                className="rounded-[24px] flex-wrap px-[16px]  text-[14px] font-normal border-[1px] bg-white flex items-center justify-center border-[#76808F] max-w-[186px] w-full h-[40px]"
-                href={`/exams/exam_${examId}/results?partNumber=part${partNumber}`}
-              >
-                View Answers &amp; Score
-              </a>
+              <div className="flex gap-[10px]">
+                <a
+                  className="relative rounded-[24px] flex-wrap px-[16px]   text-[14px] font-normal border-[1px] bg-white flex items-center justify-center border-[#76808F] max-w-[186px] w-full h-[40px]"
+                  href={`/exams/exam_${examId}/results?partNumber=part${partNumber}`}
+                >
+                  <span className="hidden screen1280:!flex">
+                    View Answers &amp; Score
+                  </span>
+                  <span className="flex screen1280:!hidden"> Score</span>
+                </a>
+                <div className="flex  screen1280:!hidden">
+                  <AskBeavoButton />
+                </div>
+              </div>
             </div>
             <div
               onClick={() => setMenuShowModal(true)}

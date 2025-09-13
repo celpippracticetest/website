@@ -10,6 +10,7 @@ import { TExamSchemaDto } from "@/models/exam.model";
 import { useRouter } from "nextjs-toploader/app";
 import { useUser } from "@clerk/nextjs";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 
 function scaleToBand(weightedPercent: number): number {
   return Math.ceil((weightedPercent / 100) * 12);
@@ -130,9 +131,13 @@ const ResultExamView = ({
   }
   return (
     <div className=" mx-auto w-full flex flex-col bg-white  rounded-[8px]">
-      <div className="text-[#212E42] px-[24px] flex items-center bg-[#FFEBD6] h-[56px] rounded-tl-[8px] rounded-tr-[8px]  text-[18px] font-bold">
+      <div className=" gap-[10px] text-[#212E42] px-[24px] flex items-center bg-[#FFEBD6] h-[56px] rounded-tl-[8px] rounded-tr-[8px]  text-[18px] font-bold">
         Answers & Score
+        <div className="flex  screen1280:!hidden">
+          <AskBeavoButton />
+        </div>
       </div>
+
       <div className="px-[16px] screen744:!px-[24px] mt-[24px]">
         <Tabs defaultValue="listening" className="w-full pb-[100px] ">
           <TabsList className="screen744:!grid grid-cols-4 flex justify-start shrink-0 overflow-x-auto px-[8px] w-full gap-[0]">
