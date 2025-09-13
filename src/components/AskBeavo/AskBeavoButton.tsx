@@ -109,7 +109,7 @@ const AskBeavoButton: React.FC = () => {
 
   return (
     <>
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+      <div className="fixed top-[290px] right-1 screen744:!top-[240px] screen1280:!top-auto screen744:!right-[190px] left-auto screen1280:!right-auto screen1280:!bottom-6 screen1280:!left-1/2 -translate-x-1/2 z-50">
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="relative flex items-center cursor-pointer justify-center text-[#212E42] text-[14px] h-[40px] max-w-[134px] w-full gap-[8px] rounded-[24px] px-[16px] pl-[8px] font-normal
