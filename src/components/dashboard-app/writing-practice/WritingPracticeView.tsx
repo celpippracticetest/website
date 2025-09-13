@@ -238,7 +238,7 @@ const WritingPracticeView = ({
   }
 
   return (
-    <div className=" w-full p-2  transition-all duration-300 flex gap-5">
+    <div className=" w-full transition-all duration-300 flex gap-5">
       {freeUser ? (
         showModal && <UpgradeModal setShowModal={setShowModal} />
       ) : noUser ? (
