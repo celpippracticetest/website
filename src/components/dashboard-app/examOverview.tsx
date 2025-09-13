@@ -16,7 +16,6 @@ const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
   const { user, isLoaded, isSignedIn } = useUser();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
-  const [showModal, setShowModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -86,7 +85,7 @@ const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
       className={`w-full pt-[24px] mx-auto max-w-[1280px] px-[16px] screen744:!px-0`}
     >
       {freeUser ? (
-        showModal && <UpgradeModal />
+        showUpgradeModal && <UpgradeModal />
       ) : noUser ? (
         showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />
       ) : (
@@ -101,7 +100,7 @@ const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
                 className="flex grow basis-0 min-w-[calc(50%-8px)] screen744:min-w-[calc(25%-12px)] max-w-full screen744:max-w-[calc(25%-12px)] rounded-[12px] h-[124px] bg-white overflow-hidden cursor-pointer items-center justify-center flex-col"
                 onClick={() => {
                   if (freeUser) {
-                    setShowModal(true);
+                    setShowUpgradeModal(true);
                     return;
                   } else if (noUser) {
                     setShowLoginModal(true);
