@@ -73,18 +73,33 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // For listening and reading, we need to calculate scores from correct answers
-    // This is a simplified calculation - you might need to adjust based on your scoring logic
+    // For listening and reading, calculate scores from correct answers
     if (listeningAnswers.length > 0) {
-      // This is a placeholder - you'll need to implement actual scoring logic
-      // based on how listening questions are scored
-      scores.listening = 7.5; // Placeholder
+      const listeningScores = listeningAnswers
+        .map((answer) => answer.result?.overall)
+        .filter((score) => typeof score === "number");
+
+      if (listeningScores.length > 0) {
+        scores.listening =
+          Math.round(
+            (listeningScores.reduce((a, b) => a + b, 0) / listeningScores.length) *
+              10
+          ) / 10;
+      }
     }
 
     if (readingAnswers.length > 0) {
-      // This is a placeholder - you'll need to implement actual scoring logic
-      // based on how reading questions are scored
-      scores.reading = 8.0; // Placeholder
+      const readingScores = readingAnswers
+        .map((answer) => answer.result?.overall)
+        .filter((score) => typeof score === "number");
+
+      if (readingScores.length > 0) {
+        scores.reading =
+          Math.round(
+            (readingScores.reduce((a, b) => a + b, 0) / readingScores.length) *
+              10
+          ) / 10;
+      }
     }
 
     // Identify weak areas (scores below 7)
