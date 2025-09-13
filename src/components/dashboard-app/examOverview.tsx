@@ -20,11 +20,7 @@ const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
 
   return (
     <main
-      className={`
-    
-     w-full
-    
-     pt-[24px] px-[16px]`}
+      className={`w-full pt-[24px] mx-auto max-w-[1280px] px-[16px] screen744:!px-0`}
     >
       {freeUser ? (
         showModal && <UpgradeModal setShowModal={setShowModal} />

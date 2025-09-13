@@ -1,5 +1,7 @@
+import Down from "@/components/icons/Down";
+import Svg7 from "@/components/icons/Svg7";
+import Svg9 from "@/components/icons/Svg9";
 import React from "react";
-import { Down, Svg7, Svg9 } from "../../../icons";
 
 const Improve = () => {
   return (

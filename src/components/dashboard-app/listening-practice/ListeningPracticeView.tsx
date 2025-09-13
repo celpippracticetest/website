@@ -17,6 +17,8 @@ import { TListeningAndReadingAnswerDto } from "@/models/answer";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
+import SvgChevronRight from "@/components/icons/ChevronRight";
+import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 
 interface ListeningPracticeViewProps {
   practice: TPracticeDto;
@@ -169,7 +171,33 @@ const ListeningPracticeView = ({
       ) : (
         <></>
       )}
-      <div className=" mx-auto w-full flex-col screen1280:!flex-row p-[16px] py-[16px]  transition-all duration-300 flex gap-[16px]">
+      <div className="pl-[40px] text-[#76808F] text-[14px] mt-[24px] mb-[28px] items-center flex gap-[8px]">
+        <div
+          className="cursor-pointer"
+          onClick={() => {
+            router.push("/practice-overview");
+          }}
+        >
+          Practice
+        </div>
+        <SvgChevronRightForTitle />
+        <div
+          className="cursor-pointer"
+          onClick={() => {
+            router.push("/listening");
+          }}
+        >
+          Listening
+        </div>
+        <SvgChevronRightForTitle />
+        <span className="text-[#212E42]">
+          <span className="text-[#76808F]">
+            {task.taskNumber?.replace(" #", "")}
+          </span>
+          .{task.name}
+        </span>
+      </div>
+      <div className=" mx-auto w-full flex-col screen1280:!flex-row   transition-all duration-300 flex gap-[20px]">
         <ListeningSideMenu
           allPractices={allPractices}
           practice={practice}

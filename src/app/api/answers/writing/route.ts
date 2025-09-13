@@ -74,7 +74,7 @@ export const POST = async function (req: NextRequest) {
       );
     }
     const msg = await anthropic.messages.create({
-      model: "claude-3-7-sonnet-20250219",
+      model: "claude-3-5-sonnet-20241022",
       max_tokens: 20000,
       temperature: 1,
       system: task.antropicCommand?.systemPrompt ?? "",

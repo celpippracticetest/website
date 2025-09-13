@@ -6,6 +6,13 @@ import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 const AuthButtons = dynamic(() => import("./AuthButtons"), { ssr: false });
 import Image from "next/image";
+import SvgLearning from "@/components/icons/Learning";
+import SvgPractice from "@/components/icons/Practice";
+import SvgMockTest from "@/components/icons/MockTest";
+import {
+  SvgMockTestTopNavigationHover,
+  SvgPracticeBlueHover,
+} from "@/components/icons";
 
 const SvgClose = dynamic(() => import("../../icons/Close"), { ssr: false });
 const SvgDiamond = dynamic(() => import("../../icons/Diamond"), { ssr: true });
@@ -19,12 +26,7 @@ interface ITopHeader {
 const TopHeader = ({ planRef }: ITopHeader) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const hrefs = [
-    "/exam-overview",
-    "/practice-overview",
-    "/wiki",
-    "https://blog.celpippracticetest.com/",
-  ];
+  const hrefs = ["/exam-overview", "/practice-overview", "/learning"];
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const sidebarMenuRef = useRef<HTMLDivElement>(null);
 
@@ -60,6 +62,46 @@ const TopHeader = ({ planRef }: ITopHeader) => {
     };
     window.addEventListener("resize", handleSize);
   }, []);
+
+  const icons = [
+    <div className="relative  flex items-center justify-center">
+      <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
+        <SvgMockTest className="  text-[#76808F]  duration-200 " />
+      </div>
+      <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
+        <SvgMockTestTopNavigationHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
+      </div>
+    </div>,
+    <div className="relative w-[24px] h-[24px] flex items-center justify-center">
+      <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
+        <SvgPractice
+          fill="transparent"
+          stroke={"#76808F"}
+          className="    duration-200 "
+        />
+      </div>
+      <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
+        <SvgPracticeBlueHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
+      </div>
+    </div>,
+    <div className="relative  flex items-center justify-center">
+      <div className="flex group-hover:hidden w-[24px] h-[24px]  items-center justify-center">
+        <SvgLearning
+          stroke="#76808F"
+          fill="transparent"
+          className="text-[#76808F] group-hover:text-[#316BFF]"
+        />
+      </div>
+
+      <div className="hidden group-hover:flex w-[24px] h-[24px]  items-center justify-center">
+        <SvgLearning
+          stroke="#316BFF"
+          fill="#316BFF"
+          className="text-[#316BFF]"
+        />
+      </div>
+    </div>,
+  ];
 
   return (
     <div className="max-w-[1440px]  w-full flex justify-center mx-auto ">
@@ -108,7 +150,7 @@ const TopHeader = ({ planRef }: ITopHeader) => {
           </Link>
         </div>
         <nav className="gap-[24px] hidden screen1280:!flex">
-          {["Mock Exams", "Practice Overview", "CELPIP Wiki", "Blog"].map(
+          {["Mock Exams", "Practice Overview", "Learning"].map(
             (label, index) => (
               <React.Fragment key={label}>
                 {index === 3 ? (
@@ -127,9 +169,11 @@ const TopHeader = ({ planRef }: ITopHeader) => {
                 ) : (
                   <>
                     <Link
-                      className="h-[36px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
+                      className="group gap-[10px] h-[36px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
                       href={hrefs[index]}
                     >
+                      {icons[index]}
+
                       <span className=" text-[16px] font-normal">{label}</span>
                     </Link>
                     {index != 2 && (
@@ -208,7 +252,7 @@ const TopHeader = ({ planRef }: ITopHeader) => {
           </span>
         </div>
         <div className=" mt-[32px] gap-[16px]">
-          {["Mock Exams", "Practice Overview", "CELPIP Wiki", "Blog"].map(
+          {["Mock Exams", "Practice Overview", "Learning"].map(
             (label, index) => (
               <React.Fragment key={label}>
                 {index === 3 ? (
@@ -223,9 +267,11 @@ const TopHeader = ({ planRef }: ITopHeader) => {
                 ) : (
                   <Link
                     key={label}
-                    className="h-[36px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
+                    className="h-[36px] group gap-[10px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
                     href={hrefs[index]}
                   >
+                    {icons[index]}
+
                     <span className=" text-[16px] font-normal">{label}</span>
                   </Link>
                 )}

@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Close } from "../icons";
 import { useExtraDiscountStore } from "@/store/useExtraDiscount.store";
 import SvgCopy from "../icons/Copy";
 import { useUser } from "@clerk/nextjs";
+import Close from "../icons/Close";
 
 const ExtraDiscountModal = () => {
   const ref = useRef<HTMLDivElement>(null);

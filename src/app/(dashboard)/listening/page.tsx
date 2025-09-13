@@ -70,7 +70,7 @@ const DashboardApp = async ({
             Listening
           </span>
         </div>
-        <div className="flex items-center mt-[32px]  screen744:!mt-[0] justify-center gap-[8px] max-w-[792px] w-full h-[60px] rounded-[12px] bg-[#D1DEFF]">
+        <div className="flex items-center mt-[16px]  screen744:!mt-[0] justify-center gap-[8px] max-w-[1200px] w-full h-[60px] rounded-[12px] bg-[#D1DEFF]">
           <SvgListeningPart className="text-[#316BFF]" />
           <span className="text-[#37465C] font-semibold text-[20px]">
               Listening Practice
@@ -131,7 +131,8 @@ const DashboardApp = async ({
   }
 
   return (
-    <main className="bg-[#F2F6FF] min-h-screen flex w-full  ">
+    <main className=" bg-[#F2F6FF] min-h-screen flex w-full justify-center  max-w-[1280px] mx-auto">
+      <div className="w-f"></div>
       <div className="w-full">
         <ListeningPractice
           showHeader={true}

@@ -68,7 +68,7 @@ const WritingPage = async ({
             Writing
           </span>
         </div>
-        <div className="flex  mt-[32px]  screen744:!mt-[0] items-center justify-center gap-[8px] max-w-[792px] w-full h-[60px] rounded-[12px] bg-[#F0FFFD]">
+        <div className="flex  mt-[32px]  screen744:!mt-[0] items-center justify-center gap-[8px] max-w-[1200px] w-full h-[60px] rounded-[12px] bg-[#F0FFFD]">
           <SvgWritingPart className="text-[#0DAA94]" />
           <span className="text-[#37465C] font-semibold text-[20px]">
             Writing Practice
@@ -127,7 +127,7 @@ const WritingPage = async ({
   }
 
   return (
-    <main className="bg-[#F2F6FF] min-h-screen flex w-full pl-[16px] pr-[24px] pt-[16px] ">
+    <main className=" bg-[#F2F6FF] min-h-screen flex w-full justify-center ">
       <WritingPractice
         showHeader={true}
         allPractices={practices.items}

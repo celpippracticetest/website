@@ -6,12 +6,29 @@
   font-family: "Plus Jakarta Sans", sans-serif;
 }
 
+@keyframes gradientBorder {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradientBorder {
+  animation: gradientBorder 4s linear infinite;
+}
+
+
+
+
 /* Prevent layout shifts */
 img,
 video,
 svg {
   max-width: 100%;
   height: auto;
+}
+
+.intercom-lightweight-app-launcher {
+  bottom: 80px !important;
 }
 
 /* Critical CSS for above-the-fold content */
@@ -219,4 +236,18 @@ svg {
 
 html:has(#plans) {
   scroll-behavior: smooth !important;
+}
+
+/* Custom animations for Ask Beavo button */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 2s linear infinite;
 }

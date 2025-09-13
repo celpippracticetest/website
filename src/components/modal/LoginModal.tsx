@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
-import { Close } from "../icons";
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
+import Close from "../icons/Close";
 
 const LoginModal = (params: any) => {
   const { setShowLoginModal } = params;

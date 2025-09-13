@@ -27,6 +27,7 @@ import { planDetails } from "@/components/dashboard-new/Plans";
 import LoginModal from "@/components/modal/LoginModal";
 import UpgradeModal from "@/components/modal/UpgradeModal";
 import SvgArrowRight from "@/components/icons/ArrowRight";
+import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 const SvgBestValuePlan = dynamic(
   () => import("../../../components/icons/BestValuePlan"),
   {
@@ -237,7 +238,7 @@ const WritingPracticeView = ({
   }
 
   return (
-    <div className="max-w-6xl mx-auto w-full p-2  transition-all duration-300 flex gap-5">
+    <div className=" w-full transition-all duration-300 flex gap-5">
       {freeUser ? (
         showModal && <UpgradeModal setShowModal={setShowModal} />
       ) : noUser ? (

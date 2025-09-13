@@ -291,7 +291,7 @@ export default function Profile({ prevCheckout }: any) {
           {toastMessage}
         </div>
       )}
-      <div className="flex flex-col p-[16px] bg-[#F2F6FF] w-full">
+      <div className="flex flex-col py-[16px] bg-[#F2F6FF] w-full mx-auto max-w-[1280px]">
         <div className="flex flex-col h-auto min-h-[405px] rounded-[8px] bg-white p-[16px]">
           <div className="text-[#212E42] h-[16px] text-[16px] font-semibold">
             Profile
