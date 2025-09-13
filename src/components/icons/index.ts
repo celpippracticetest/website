@@ -1,4 +1,5 @@
 export { default as Beavo } from "./Beavo";
+export { default as ChatBotSend } from "./ChatBotSend";
 export { default as LearningArrowUp } from "./LearningArrowUp";
 export { default as LearningGift } from "./LearningGift";
 export { default as LearningGuide } from "./LearningGuide";
@@ -8,10 +9,12 @@ export { default as LearningReading } from "./LearningReading";
 export { default as LearningSpeaking } from "./LearningSpeaking";
 export { default as LearningWriting } from "./LearningWriting";
 export { default as SvgBeforeTypingWord } from "./SvgBeforeTypingWord";
-export { default as SvgBottomNavigationMobile } from "./SvgBottomNavigationMobile";
 export { default as SvgChevronTitle } from "./SvgChevronTitle";
 export { default as SvgMic } from "./SvgMic";
 export { default as SvgMockTestHover } from "./SvgMockTestHover";
 export { default as SvgMockTestTopNavigationHover } from "./SvgMockTestTopNavigationHover";
 export { default as SvgPracticeBlueHover } from "./SvgPracticeBlueHover";
 export { default as SvgRefferalMobileNavigation } from "./SvgRefferalMobileNavigation";
+export { default as SvgBottomNavigationMobile } from "./SvgBottomNavigationMobile";
+
+
