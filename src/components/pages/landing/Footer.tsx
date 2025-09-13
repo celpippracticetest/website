@@ -86,7 +86,7 @@ const Footer = () => {
                       <Link href={"/exam-overview"}> Mock Exams</Link>
                     </li>
                     <li className="text-text2 font-normal h-[19px] text-[16px]">
-                      <Link href={"/wiki"}> CELPIP Wiki</Link>
+                      <Link href={"https://blog.celpippracticetest.com/"}> Blog</Link>
                     </li>
                   </ul>
                 </li>

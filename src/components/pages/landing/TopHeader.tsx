@@ -22,8 +22,7 @@ const TopHeader = ({ planRef }: ITopHeader) => {
   const hrefs = [
     "/exam-overview",
     "/practice-overview",
-    "/wiki",
-    "https://blog.celpippracticetest.com/",
+    "/learning",
   ];
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const sidebarMenuRef = useRef<HTMLDivElement>(null);
@@ -108,7 +107,7 @@ const TopHeader = ({ planRef }: ITopHeader) => {
           </Link>
         </div>
         <nav className="gap-[24px] hidden screen1280:!flex">
-          {["Mock Exams", "Practice Overview", "CELPIP Wiki", "Blog"].map(
+          {["Mock Exams", "Practice Overview", "Learning"].map(
             (label, index) => (
               <React.Fragment key={label}>
                 {index === 3 ? (
@@ -208,7 +207,7 @@ const TopHeader = ({ planRef }: ITopHeader) => {
           </span>
         </div>
         <div className=" mt-[32px] gap-[16px]">
-          {["Mock Exams", "Practice Overview", "CELPIP Wiki", "Blog"].map(
+          {["Mock Exams", "Practice Overview", "Learning"].map(
             (label, index) => (
               <React.Fragment key={label}>
                 {index === 3 ? (
