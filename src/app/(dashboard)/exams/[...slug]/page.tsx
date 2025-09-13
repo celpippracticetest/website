@@ -55,7 +55,7 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
       await answersRepo.findAnswersByExamIdAndUser(examId, user.id);
 
     return (
-      <main className="bg-[#F2F6FF] min-h-screen flex w-full max-w-[1280px] mx-auto">
+      <main className=" bg-[#F2F6FF] min-h-screen flex w-full justify-center  max-w-[1280px] mx-auto">
         <div className=" mx-auto w-full flex flex-col rounded-lg">
           <ResultExamView
             exams={exam}

@@ -126,7 +126,7 @@ const SpeakingPage = async ({
   }
 
   return (
-    <main className="bg-[#F2F6FF] min-h-screen flex w-full  ">
+    <main className=" bg-[#F2F6FF] min-h-screen flex w-full justify-center   ">
       <SpeakingPractice
         showHeader={true}
         allPractices={practices.items}

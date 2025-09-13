@@ -131,7 +131,7 @@ const DashboardApp = async ({
   }
 
   return (
-    <main className="bg-[#F2F6FF] min-h-screen flex w-full max-w-[1280px] mx-auto">
+    <main className=" bg-[#F2F6FF] min-h-screen flex w-full justify-center  max-w-[1280px] mx-auto">
       <div className="w-f"></div>
       <div className="w-full">
         <ListeningPractice
