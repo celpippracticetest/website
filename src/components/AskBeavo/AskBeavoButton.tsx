@@ -112,7 +112,7 @@ const AskBeavoButton: React.FC = () => {
       <div className=" screen1280:!fixed   screen1280:!top-auto  screen1280:!right-auto screen1280:!bottom-6 screen1280:!left-1/2 screen1280:!-translate-x-1/2 z-50">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="relative flex items-center cursor-pointer justify-center text-[#212E42] text-[14px] h-[40px] max-w-[134px] w-full gap-[8px] rounded-[24px] px-[16px] pl-[8px] font-normal
+          className="relative flex items-center cursor-pointer justify-center text-[#212E42] text-[14px] h-[40px] w-[70px] screen1280:!w-[134px]  gap-[8px] rounded-[24px] px-[16px] pl-[8px] font-normal
                 bg-white overflow-hidden"
         >
           <span
@@ -122,12 +122,12 @@ const AskBeavoButton: React.FC = () => {
             <span className="block w-full h-full rounded-[24px] bg-white"></span>
           </span>
 
-          <span className="relative text-lg">
+          <div className="relative text-lg z-50">
             <SvgBeavo />
-          </span>
+          </div>
           <span className="relative">
             <span className="flex screen1280:!hidden">Ask </span>
-            <span className="hidden screen1280:!flex">Ask Beavo</span>{" "}
+            <span className="hidden screen1280:!flex">Ask Beavo</span>
           </span>
         </button>
       </div>
