@@ -267,7 +267,7 @@ const TopHeader = ({ planRef }: ITopHeader) => {
                 ) : (
                   <Link
                     key={label}
-                    className="h-[36px] gap-[10px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
+                    className="h-[36px] group gap-[10px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
                     href={hrefs[index]}
                   >
                     {icons[index]}
