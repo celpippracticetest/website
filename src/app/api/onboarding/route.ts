@@ -72,16 +72,18 @@ export async function GET(request: Request) {
     
     // Calculate statistics from all data
     const stats = {
-      part1Answers: new Set(allResults.map(item => {
+      part1Answers: allResults.filter(item => {
         const reasons = item.answers?.stepOneReasons;
-        return Array.isArray(reasons) ? reasons.join(", ") : (reasons || "");
-      }).filter(Boolean)).size,
-      part2Answers: new Set(allResults.map(item => {
+        return Array.isArray(reasons) && reasons.length > 0;
+      }).length,
+      part2Answers: allResults.filter(item => {
         const reasons = item.answers?.stepTwoReasons;
-        return Array.isArray(reasons) ? reasons.join(", ") : (reasons || "");
-      }).filter(Boolean)).size,
+        return Array.isArray(reasons) && reasons.length > 0;
+      }).length,
       customAnswers: allResults.filter(item => item.answers?.customReason || item.answers?.customStepTwoReason).length
     };
+    
+
     
     // Process results to include user names
     const processedResults = await Promise.all(

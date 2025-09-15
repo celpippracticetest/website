@@ -70,8 +70,8 @@ export async function GET(request: Request) {
     
     // Calculate statistics from all data
     const stats = {
-      testDates: new Set(allResults.map(item => item.answers?.testDate || "").filter(Boolean)).size,
-      focusSkills: new Set(allResults.map(item => item.answers?.focusSkill || "").filter(Boolean)).size,
+      testDates: allResults.filter(item => item.answers?.testDate).length,
+      focusSkills: allResults.filter(item => item.answers?.focusSkill).length,
       customFocusSkills: allResults.filter(item => item.answers?.customFocusSkill).length,
       averageTargetScore: allResults.length > 0 ? 
         Math.round((allResults.reduce((sum, item) => {
