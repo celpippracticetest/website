@@ -41,9 +41,14 @@ interface DashboardProps {
   totalRecords: number;
   totalPages: number;
   currentPage: number;
+  statistics: {
+    part1Answers: number;
+    part2Answers: number;
+    customAnswers: number;
+  };
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ chartData, data, totalRecords, totalPages, currentPage }) => {
+const Dashboard: React.FC<DashboardProps> = ({ chartData, data, totalRecords, totalPages, currentPage, statistics }) => {
   // Use all data from server (already paginated)
   const currentData = data;
   const chartOptions = {
@@ -112,19 +117,19 @@ const Dashboard: React.FC<DashboardProps> = ({ chartData, data, totalRecords, to
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-semibold text-gray-700">Part 1 Answers</h3>
           <p className="text-3xl font-bold text-green-600">
-            {new Set(data.map(item => item["Answer Part 1"])).size}
+            {statistics.part1Answers}
           </p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-semibold text-gray-700">Part 2 Answers</h3>
           <p className="text-3xl font-bold text-purple-600">
-            {new Set(data.map(item => item["Answer Part 2"])).size}
+            {statistics.part2Answers}
           </p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-semibold text-gray-700">Custom Answers</h3>
           <p className="text-3xl font-bold text-orange-600">
-            {data.filter(item => item["Custom Part 1"] || item["Custom Part 2"]).length}
+            {statistics.customAnswers}
           </p>
         </div>
       </div>
@@ -191,7 +196,7 @@ const Dashboard: React.FC<DashboardProps> = ({ chartData, data, totalRecords, to
         {totalPages > 1 && (
           <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
             <div className="text-sm text-gray-700">
-              Showing {data.length} of {totalRecords} total records (Page {currentPage} of {totalPages})
+              Showing {((currentPage - 1) * 100) + 1} to {Math.min(currentPage * 100, totalRecords)} of {totalRecords} total records (Page {currentPage} of {totalPages})
             </div>
             <div className="flex space-x-2">
               <a

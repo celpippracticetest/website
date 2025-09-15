@@ -65,6 +65,24 @@ export async function GET(request: Request) {
     const results = await onboardingRepo.getOnboardingResultsPaginated(page, limit);
     const totalCount = await onboardingRepo.getOnboardingResultsCount();
     
+    console.log(`📊 Found ${results.length} results for page ${page}, total count: ${totalCount}`);
+    
+    // Get all data for statistics (not paginated)
+    const allResults = await onboardingRepo.getAllOnboardingResults();
+    
+    // Calculate statistics from all data
+    const stats = {
+      part1Answers: new Set(allResults.map(item => {
+        const reasons = item.answers?.stepOneReasons;
+        return Array.isArray(reasons) ? reasons.join(", ") : (reasons || "");
+      }).filter(Boolean)).size,
+      part2Answers: new Set(allResults.map(item => {
+        const reasons = item.answers?.stepTwoReasons;
+        return Array.isArray(reasons) ? reasons.join(", ") : (reasons || "");
+      }).filter(Boolean)).size,
+      customAnswers: allResults.filter(item => item.answers?.customReason || item.answers?.customStepTwoReason).length
+    };
+    
     // Process results to include user names
     const processedResults = await Promise.all(
       results.map(async (result) => {
@@ -90,7 +108,8 @@ export async function GET(request: Request) {
         limit,
         total: totalCount,
         totalPages: Math.ceil(totalCount / limit)
-      }
+      },
+      statistics: stats
     });
   } catch (err) {
     console.error("❌ Error fetching onboarding data:", err);
