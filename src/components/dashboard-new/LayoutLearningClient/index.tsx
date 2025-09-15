@@ -198,20 +198,10 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [surveyVisible, setSurveyVisible] = useState(showSurvey);
   const [couponModal, setCouponModal] = useState(false);
+  const [hasClosedModal, setHasClosedModal] = useState(false);
   const { user, isLoaded, isSignedIn }: any = useUser();
 
   const router = useRouter();
-
-
-
-  useEffect(() => {
-    const hasClosedModal =
-      localStorage.getItem("hasClosedExtraDiscountModal") === "true";
-
-    if (hasClosedModal && freeUser && isNewUser) {
-      setCouponModal(true);
-    }
-  }, [user]);
 
   const setShowExtraDiscount = useExtraDiscountStore(
     (state) => state.setShowExtraDiscount
@@ -275,13 +265,28 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
   }, [isMenuOpen, dimensions]);
 
   useEffect(() => {
-    const hasClosedModal =
-      localStorage.getItem("hasClosedExtraDiscountModal") === "true";
+    const checkLocalStorage = () => {
+      const hasClosed = localStorage.getItem("hasClosedExtraDiscountModal") === "true";
+      setHasClosedModal(hasClosed);
+    };
 
-    if (hasClosedModal && freeUser && isNewUser) {
-      setVisibleHorizontalCoupon(true);
+    checkLocalStorage();
+
+    window.addEventListener('storage', checkLocalStorage);
+    
+    window.addEventListener('localStorageChanged', checkLocalStorage);
+
+    return () => {
+      window.removeEventListener('storage', checkLocalStorage);
+      window.removeEventListener('localStorageChanged', checkLocalStorage);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (hasClosedModal) {
+      setCouponModal(true);
     }
-  }, [user]);
+  }, [hasClosedModal]);
 
   const upgradeModalOpenRef = useRef(showUpgradeModal);
   const loginModalOpenRef = useRef(showLoginModal);
@@ -863,7 +868,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
       <div className="relative flex w-full  mb-[88px] justify-center mx-auto z-[9] overflow-x-clip">
         <div
           aria-hidden
-          className={`pointer-events-none absolute left-1/2 -translate-x-1/2 ${couponModal?"-top-[386px]":"-top-[220px]"} w-[1065px] h-auto min-h-[300px] screen:744:!h-[629px] rounded-[9999px]`}
+          className={`pointer-events-none absolute left-1/2 -translate-x-1/2 ${hasClosedModal?"-top-[386px]":"-top-[220px]"} w-[1065px] h-auto min-h-[300px] screen:744:!h-[629px] rounded-[9999px]`}
           style={{ background: "#DAFFFA", filter: "blur(120px)", opacity: 0.8 }}
         />
         <div
