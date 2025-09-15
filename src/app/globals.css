@@ -16,9 +16,9 @@
   animation: gradientBorder 4s linear infinite;
 }
 
-
-
-
+#sign-up-button button{
+  cursor: pointer;
+}
 /* Prevent layout shifts */
 img,
 video,

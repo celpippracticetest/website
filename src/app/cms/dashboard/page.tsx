@@ -10,9 +10,13 @@ export const metadata: Metadata = {
 };
 
 type OnboardingRecord = {
+  "User ID": string;
   Name: string;
   "Answer Part 1": string;
+  "Custom Part 1": string;
   "Answer Part 2": string;
+  "Custom Part 2": string;
+  "Answered At": string;
 };
 
 async function fetchOnboardingData() {
@@ -32,9 +36,9 @@ async function fetchOnboardingData() {
   const workbook: WorkBook = XLSX.read(new Uint8Array(buffer), {
     type: "array",
   });
-  const data = XLSX.utils.sheet_to_json<OnboardingRecord>(
+  const data = XLSX.utils.sheet_to_json(
     workbook.Sheets[workbook.SheetNames[0]]
-  );
+  ) as OnboardingRecord[];
   return { data, stats: stats ? JSON.parse(decodeURIComponent(stats)) : {} };
 }
 
@@ -62,7 +66,15 @@ export default async function CMSDashboard({
 
   if (tab === "onboarding") {
     const result = await fetchOnboardingData();
-    data = result.data;
+    // Serialize data to plain objects
+    data = result.data.map(item => ({
+      "User ID": item["User ID"] || '',
+      Name: item.Name || '',
+      "Answer Part 1": item["Answer Part 1"] || '',
+      "Custom Part 1": item["Custom Part 1"] || '',
+      "Answer Part 2": item["Answer Part 2"] || '',
+      "Custom Part 2": item["Custom Part 2"] || '',
+    }));
     stats = result.stats as Record<string, number>;
     chartData = {
       labels: Object.keys(stats),

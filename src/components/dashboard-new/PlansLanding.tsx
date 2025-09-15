@@ -59,7 +59,7 @@ export const planDetailsLanding = [
       "Instant AI feedback for all skills",
       "Progress tracking and insights",
     ],
-    icon: <></>,
-    iconWrapperColor: "",
+    icon: <SvgFreePlan />,
+    iconWrapperColor: "bg-[#D1DEFF]",
   },
 ];

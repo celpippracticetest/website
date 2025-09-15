@@ -111,15 +111,15 @@ const AuthButtons = () => {
         <div className="mr-[24px] h-[40px]  w-[100px] screen1280:!w-[149px] flex items-center justify-center">
           <SignedOut>
             <div
-              className="group hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] shadow-startButton  w-[100px] screen1280:!w-[149px] hover:cursor-pointer
+              className="group hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] shadow-startButton  w-[100px] screen1280:!w-[149px] 
                  cursor-pointer bg-primary2 screen1280:!bg-white rounded-[24px] screen1280:border-[1.5px] h-full screen1280:border-neutral2 hover:!border-none flex items-center justify-center"
             >
-              <span className="hidden screen1280:!flex items-center justify-center h-[40px] font-medium text-[14px] hover:text-white text-black w-[146px]">
+              <span id="sign-up-button" className="hidden screen1280:!flex cursor-pointer items-center justify-center h-[40px] font-medium text-[14px] hover:text-white text-black w-[146px]">
                 <SignUpButton>Sign Up </SignUpButton>
                 <span className="mx-1">/</span>
                 <SignInButton>Login</SignInButton>
               </span>
-              <span className="flex screen1280:!hidden items-center justify-center h-[40px] font-normal text-[14px] text-white w-[100px]">
+              <span className="flex screen1280:!hidden cursor-pointer items-center justify-center h-[40px] font-normal text-[14px] text-white w-[100px]">
                 <SignUpButton>Sign Up </SignUpButton>
               </span>
             </div>
