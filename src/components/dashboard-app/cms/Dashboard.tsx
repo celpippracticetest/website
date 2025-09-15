@@ -39,16 +39,13 @@ interface DashboardProps {
     datasets: { label: string; data: number[] }[];
   };
   totalRecords: number;
+  totalPages: number;
+  currentPage: number;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ chartData, data, totalRecords }) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-
-  const totalPages = Math.ceil(data.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentData = data.slice(startIndex, endIndex);
+const Dashboard: React.FC<DashboardProps> = ({ chartData, data, totalRecords, totalPages, currentPage }) => {
+  // Use all data from server (already paginated)
+  const currentData = data;
   const chartOptions = {
     responsive: true,
     plugins: {
@@ -194,26 +191,32 @@ const Dashboard: React.FC<DashboardProps> = ({ chartData, data, totalRecords }) 
         {totalPages > 1 && (
           <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
             <div className="text-sm text-gray-700">
-              Showing {startIndex + 1} to {Math.min(endIndex, data.length)} of {data.length} results
+              Showing {data.length} of {totalRecords} total records (Page {currentPage} of {totalPages})
             </div>
             <div className="flex space-x-2">
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              <a
+                href={`/cms/dashboard?tab=onboarding&page=${Math.max(currentPage - 1, 1)}`}
+                className={`px-3 py-1 border border-gray-300 rounded text-sm ${
+                  currentPage === 1 
+                    ? 'opacity-50 cursor-not-allowed bg-gray-100' 
+                    : 'hover:bg-gray-50 cursor-pointer'
+                }`}
               >
                 Previous
-              </button>
+              </a>
               <span className="px-3 py-1 text-sm">
                 Page {currentPage} of {totalPages}
               </span>
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              <a
+                href={`/cms/dashboard?tab=onboarding&page=${Math.min(currentPage + 1, totalPages)}`}
+                className={`px-3 py-1 border border-gray-300 rounded text-sm ${
+                  currentPage === totalPages 
+                    ? 'opacity-50 cursor-not-allowed bg-gray-100' 
+                    : 'hover:bg-gray-50 cursor-pointer'
+                }`}
               >
                 Next
-      </button>
+              </a>
             </div>
           </div>
         )}
