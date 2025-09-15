@@ -69,7 +69,7 @@ const ExtraDiscountModal = () => {
     <div className="z-[9999] px-[16px] fixed top-0 left-0 right-0 mx-auto w-full h-full bg-[#17161680] flex justify-center items-center">
       <div
         ref={ref}
-        className="flex-col items-center relative w-full max-w-[343px] screen744:!max-w-[584px]  screen1280:!max-w-[680px] pt-[20px] px-[16px] screen744:!px-[24px] pb-[24px] h-[375px] screen744:!h-[394px] rounded-[24px] bg-[#F2F6FF] flex bg-[linear-gradient(to_right,_#F4845F26,_#759CFF26)]"
+        className="flex-col items-center relative w-full max-w-[343px] screen744:!max-w-[584px]  screen1280:!max-w-[680px] z-[999999999] pt-[20px] px-[16px] screen744:!px-[24px] pb-[24px] h-[375px] screen744:!h-[394px] rounded-[24px] bg-[#F2F6FF] flex bg-[linear-gradient(to_right,_#F4845F26,_#759CFF26)]"
       >
         <div
           onClick={() => {
