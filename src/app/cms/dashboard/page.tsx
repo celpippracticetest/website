@@ -118,7 +118,7 @@ export default async function CMSDashboard({
   
   // Pagination parameters
   const page = parseInt(searchParams?.page || "1");
-  const limit = parseInt(searchParams?.limit || "100");
+  const limit = parseInt(searchParams?.limit || "100"); // 100 records per page
 
   // Only fetch onboarding data when needed
   let data: OnboardingRecord[] = [];
@@ -128,6 +128,7 @@ export default async function CMSDashboard({
     datasets: { label: string; data: number[] }[];
   } | null = null;
   let totalRecords = 0;
+  let totalPages = 0;
 
   // Onboarding new data
   let dataNew: OnboardingNewRecord[] = [];
@@ -137,13 +138,15 @@ export default async function CMSDashboard({
     datasets: { label: string; data: number[] }[];
   } | null = null;
   let totalRecordsNew = 0;
+  let totalPagesNew = 0;
 
   if (tab === "onboarding") {
     try {
       // Fetch data with pagination
       const result = await fetchOnboardingData(page, limit);
-      // Get total records from pagination info
+      // Get total records and pages from pagination info
       totalRecords = result.pagination?.total || 0;
+      totalPages = result.pagination?.totalPages || 0;
       
       // Serialize data to plain objects
       data = result.data.map((item: any) => ({
@@ -179,8 +182,9 @@ export default async function CMSDashboard({
     try {
       // Fetch data with pagination
       const result = await fetchOnboardingNewData(page, limit);
-      // Get total records from pagination info
+      // Get total records and pages from pagination info
       totalRecordsNew = result.pagination?.total || 0;
+      totalPagesNew = result.pagination?.totalPages || 0;
       
       // Serialize data to plain objects
       dataNew = result.data.map((item: any) => ({
@@ -219,9 +223,9 @@ export default async function CMSDashboard({
   return (
     <div className="w-full">
       {/* Content area */}
-      {tab === "onboarding" && <Dashboard data={data} chartData={chartData!} totalRecords={totalRecords} />}
+      {tab === "onboarding" && <Dashboard data={data} chartData={chartData!} totalRecords={totalRecords} totalPages={totalPages} currentPage={page} />}
 
-      {tab === "onboarding-new" && <OnboardingNewDashboard data={dataNew} chartData={chartDataNew!} totalRecords={totalRecordsNew} />}
+      {tab === "onboarding-new" && <OnboardingNewDashboard data={dataNew} chartData={chartDataNew!} totalRecords={totalRecordsNew} totalPages={totalPagesNew} currentPage={page} />}
 
       {tab === "overview" && (
         <div className="text-sm text-gray-700">Welcome to CMS Overview.</div>
