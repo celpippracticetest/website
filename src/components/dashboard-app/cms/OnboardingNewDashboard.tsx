@@ -43,6 +43,12 @@ interface OnboardingNewDashboardProps {
   totalRecords: number;
   totalPages: number;
   currentPage: number;
+  statistics: {
+    testDates: number;
+    focusSkills: number;
+    customFocusSkills: number;
+    averageTargetScore: number;
+  };
 }
 
 const OnboardingNewDashboard: React.FC<OnboardingNewDashboardProps> = ({
@@ -51,6 +57,7 @@ const OnboardingNewDashboard: React.FC<OnboardingNewDashboardProps> = ({
   totalRecords,
   totalPages,
   currentPage,
+  statistics,
 }) => {
   // Use all data from server (already paginated)
   const currentData = data;
@@ -121,27 +128,19 @@ const OnboardingNewDashboard: React.FC<OnboardingNewDashboardProps> = ({
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-semibold text-gray-700">Test Dates</h3>
           <p className="text-3xl font-bold text-green-600">
-            {new Set(data.map(item => item["Test Date"])).size}
+            {statistics.testDates}
           </p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-semibold text-gray-700">Focus Skills</h3>
           <p className="text-3xl font-bold text-purple-600">
-            {new Set(data.map(item => item["Focus Skill"])).size}
+            {statistics.focusSkills}
           </p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-semibold text-gray-700">Avg Target Score</h3>
           <p className="text-3xl font-bold text-orange-600">
-            {data.length > 0 
-              ? Math.round(
-                  (data.reduce((sum, item) => 
-                    sum + item["Target Listening"] + item["Target Reading"] + 
-                    item["Target Writing"] + item["Target Speaking"], 0
-                  ) / (data.length * 4)) * 10
-                ) / 10
-              : 0
-            }
+            {statistics.averageTargetScore}
           </p>
         </div>
       </div>
@@ -226,7 +225,7 @@ const OnboardingNewDashboard: React.FC<OnboardingNewDashboardProps> = ({
         {totalPages > 1 && (
           <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
             <div className="text-sm text-gray-700">
-              Showing {data.length} of {totalRecords} total records (Page {currentPage} of {totalPages})
+              Showing {((currentPage - 1) * 100) + 1} to {Math.min(currentPage * 100, totalRecords)} of {totalRecords} total records (Page {currentPage} of {totalPages})
             </div>
             <div className="flex space-x-2">
               <a

@@ -144,31 +144,37 @@ export default async function CMSDashboard({
     try {
       // Fetch data with pagination
       const result = await fetchOnboardingData(page, limit);
+      console.log("📊 API Response:", JSON.stringify(result, null, 2));
+      
       // Get total records and pages from pagination info
       totalRecords = result.pagination?.total || 0;
       totalPages = result.pagination?.totalPages || 0;
+      
+      // Get statistics from API response
+      stats = result.statistics || {};
       
       // Serialize data to plain objects
       data = result.data.map((item: any) => ({
         "User ID": item.userId || '',
         Name: item.name || '',
-        "Answer Part 1": item.answers?.stepOneReasons?.join(", ") || '',
+        "Answer Part 1": Array.isArray(item.answers?.stepOneReasons) 
+          ? item.answers.stepOneReasons.join(", ") 
+          : (item.answers?.stepOneReasons || ''),
         "Custom Part 1": item.answers?.customReason || '',
-        "Answer Part 2": item.answers?.stepTwoReasons?.join(", ") || '',
+        "Answer Part 2": Array.isArray(item.answers?.stepTwoReasons) 
+          ? item.answers.stepTwoReasons.join(", ") 
+          : (item.answers?.stepTwoReasons || ''),
         "Custom Part 2": item.answers?.customStepTwoReason || '',
       }));
-      
-      // Get stats separately
-      stats = await fetchOnboardingStats();
-      chartData = {
-        labels: Object.keys(stats),
-        datasets: [
-          {
-            label: "Number of Selections",
-            data: Object.values(stats),
-          },
-        ],
-      };
+    chartData = {
+      labels: Object.keys(stats),
+      datasets: [
+        {
+          label: "Number of Selections",
+          data: Object.values(stats),
+        },
+      ],
+    };
     } catch (error) {
       console.error("Error fetching onboarding data:", error);
       data = [];
@@ -186,6 +192,9 @@ export default async function CMSDashboard({
       totalRecordsNew = result.pagination?.total || 0;
       totalPagesNew = result.pagination?.totalPages || 0;
       
+      // Get statistics from API response
+      statsNew = result.statistics || {};
+      
       // Serialize data to plain objects
       dataNew = result.data.map((item: any) => ({
         "User ID": item.userId || '',
@@ -199,9 +208,6 @@ export default async function CMSDashboard({
         "Target Speaking": item.answers?.targetScores?.speaking || 0,
         "Answered At": item.answeredAt || '',
       }));
-      
-      // Get stats separately
-      statsNew = await fetchOnboardingNewStats();
       chartDataNew = {
         labels: Object.keys(statsNew),
         datasets: [
@@ -223,9 +229,9 @@ export default async function CMSDashboard({
   return (
     <div className="w-full">
       {/* Content area */}
-      {tab === "onboarding" && <Dashboard data={data} chartData={chartData!} totalRecords={totalRecords} totalPages={totalPages} currentPage={page} />}
+      {tab === "onboarding" && <Dashboard data={data} chartData={chartData!} totalRecords={totalRecords} totalPages={totalPages} currentPage={page} statistics={stats as any} />}
 
-      {tab === "onboarding-new" && <OnboardingNewDashboard data={dataNew} chartData={chartDataNew!} totalRecords={totalRecordsNew} totalPages={totalPagesNew} currentPage={page} />}
+      {tab === "onboarding-new" && <OnboardingNewDashboard data={dataNew} chartData={chartDataNew!} totalRecords={totalRecordsNew} totalPages={totalPagesNew} currentPage={page} statistics={statsNew as any} />}
 
       {tab === "overview" && (
         <div className="text-sm text-gray-700">Welcome to CMS Overview.</div>

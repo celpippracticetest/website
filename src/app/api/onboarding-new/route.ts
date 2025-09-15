@@ -65,6 +65,21 @@ export async function GET(request: Request) {
     const results = await onboardingNewRepo.getOnboardingNewResultsPaginated(page, limit);
     const totalCount = await onboardingNewRepo.getOnboardingNewResultsCount();
     
+    // Get all data for statistics (not paginated)
+    const allResults = await onboardingNewRepo.getAllOnboardingNewResults();
+    
+    // Calculate statistics from all data
+    const stats = {
+      testDates: new Set(allResults.map(item => item.answers?.testDate || "").filter(Boolean)).size,
+      focusSkills: new Set(allResults.map(item => item.answers?.focusSkill || "").filter(Boolean)).size,
+      customFocusSkills: allResults.filter(item => item.answers?.customFocusSkill).length,
+      averageTargetScore: allResults.length > 0 ? 
+        Math.round((allResults.reduce((sum, item) => {
+          const scores = item.answers?.targetScores || {};
+          return sum + (scores.listening || 0) + (scores.reading || 0) + (scores.writing || 0) + (scores.speaking || 0);
+        }, 0) / (allResults.length * 4)) * 10) / 10 : 0
+    };
+    
     // Process results to include user names
     const processedResults = await Promise.all(
       results.map(async (result) => {
@@ -90,7 +105,8 @@ export async function GET(request: Request) {
         limit,
         total: totalCount,
         totalPages: Math.ceil(totalCount / limit)
-      }
+      },
+      statistics: stats
     });
   } catch (err) {
     console.error("❌ Error fetching onboarding new data:", err);
