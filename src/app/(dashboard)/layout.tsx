@@ -34,17 +34,18 @@ export default async function RootLayout({
   const privateMetadata = user?.privateMetadata || {};
 
   const onboarding: OnboardingMetadata = privateMetadata.onboarding || {};
+  const onboardingNew: any = privateMetadata.onboardingNew || {};
 
   const showSurvey =
     publicMetadata.plan === "free" &&
-    onboarding.completed !== true &&
-    (!onboarding.askedLaterAt || daysSince(onboarding.askedLaterAt) >= 7);
+    onboardingNew.completed !== true &&
+    (!onboardingNew.askedLaterAt || daysSince(onboardingNew.askedLaterAt) >= 7);
 
   const showCompletedModal =
     !showSurvey &&
     publicMetadata.plan === "free" &&
-    (onboarding.completed === true ||
-      (onboarding.askedLaterAt && daysSince(onboarding.askedLaterAt) < 7));
+    (onboardingNew.completed === true ||
+      (onboardingNew.askedLaterAt && daysSince(onboardingNew.askedLaterAt) < 7));
   return (
     <>
       <IntercomLoader />
