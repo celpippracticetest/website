@@ -148,7 +148,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                   {!collapsed && <span>Onboarding</span>}
                 </Link>
               </li>
-                 {/* New Onboarding */}
+              {/* New Onboarding */}
               <li className="mt-3">
                 <Link
                   href={hrefFor("onboarding-new")}
@@ -185,6 +185,30 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                 >
                   <span aria-hidden>🧭</span>
                   {!collapsed && <span>Withdrawal Requests</span>}
+                </Link>
+              </li>
+
+              {/* Users Management */}
+              <li className="mt-3">
+                <Link
+                  href="/cms/dashboard/users"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center ${
+                    collapsed ? "justify-center" : "justify-start"
+                  } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    pathname.startsWith("/cms/dashboard/users")
+                      ? "bg-gray-100 text-gray-900"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                  aria-current={
+                    pathname.startsWith("/cms/dashboard/users")
+                      ? "page"
+                      : undefined
+                  }
+                  title="User Management"
+                >
+                  <span aria-hidden>👥</span>
+                  {!collapsed && <span>Users</span>}
                 </Link>
               </li>
 
