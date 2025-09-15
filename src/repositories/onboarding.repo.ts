@@ -34,6 +34,20 @@ export class OnboardingRepository {
     return this.getCollection().find({}).toArray();
   }
 
+  async getOnboardingResultsPaginated(page: number, limit: number): Promise<TOnboardingResult[]> {
+    const skip = (page - 1) * limit;
+    return this.getCollection()
+      .find({})
+      .sort({ answeredAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray();
+  }
+
+  async getOnboardingResultsCount(): Promise<number> {
+    return this.getCollection().countDocuments();
+  }
+
   async findByUserId(userId: string): Promise<TOnboardingResult | null> {
     return this.getCollection().findOne({ userId });
   }

@@ -6,6 +6,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { clerkClient } from "@clerk/express";
 
 export const runtime = "nodejs";
+export const maxDuration = 30; // 30 seconds timeout
 
 export async function POST(req: Request) {
   // Get the current authenticated user
@@ -50,76 +51,53 @@ export async function POST(req: Request) {
   return NextResponse.json({ ok: true });
 }
 
-// GET: Export onboarding data as Excel and stats as JSON
-export async function GET() {
+// GET: Get paginated onboarding data
+export async function GET(request: Request) {
   try {
-    console.log("⏳ Fetching onboarding results...");
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '100');
+    
+    console.log(`⏳ Fetching onboarding results... Page: ${page}, Limit: ${limit}`);
     const onboardingRepo = new OnboardingRepository(mongoClient);
-    const results = await onboardingRepo.getAllOnboardingResults();
-
-    const workbookData: any[] = [];
-    const stats: Record<string, number> = {};
-
-    for (const result of results) {
-      const userId = result.userId;
-      const answers = result.answers || {};
-      let name = "";
-
-      try {
-        const user = await clerkClient.users.getUser(userId);
-        name = (user.firstName || "") + " " + (user.lastName || "");
-      } catch (e) {
-        console.warn("⚠️ Clerk user not found for:", userId);
-        name = "";
+    
+    // Get paginated data
+    const results = await onboardingRepo.getOnboardingResultsPaginated(page, limit);
+    const totalCount = await onboardingRepo.getOnboardingResultsCount();
+    
+    // Process results to include user names
+    const processedResults = await Promise.all(
+      results.map(async (result) => {
+        let name = "";
+        try {
+          const user = await clerkClient.users.getUser(result.userId);
+          name = (user.firstName || "") + " " + (user.lastName || "");
+        } catch (e) {
+          console.warn("⚠️ Clerk user not found for:", result.userId);
+        }
+        
+        return {
+          ...result,
+          name: name.trim(),
+        };
+      })
+    );
+    
+    return NextResponse.json({
+      data: processedResults,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limit)
       }
-
-      const part1 = answers.stepOneReasons?.join(", ") || "";
-      const part2 = answers.stepTwoReasons?.join(", ") || "";
-      const custom1 = answers.customReason || "";
-      const custom2 = answers.customStepTwoReason || "";
-
-      for (const item of answers.stepOneReasons || []) {
-        stats[item] = (stats[item] || 0) + 1;
-      }
-      for (const item of answers.stepTwoReasons || []) {
-        stats[item] = (stats[item] || 0) + 1;
-      }
-
-      workbookData.push({
-        "User ID": userId,
-        Name: name.trim(),
-        "Answer Part 1": part1,
-        "Custom Part 1": custom1,
-        "Answer Part 2": part2,
-        "Custom Part 2": custom2,
-      });
-    }
-
-    console.log("📊 Workbook rows:", workbookData.length);
-    const worksheet = XLSX.utils.json_to_sheet(workbookData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Onboarding Data");
-
-    console.log("📝 Writing Excel file to buffer...");
-    const fileBuffer = XLSX.write(workbook, {
-      type: "buffer",
-      bookType: "xlsx",
-    });
-    console.log("✅ Buffer created successfully.");
-
-    return new NextResponse(fileBuffer, {
-      headers: {
-        "Content-Type":
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": `attachment; filename=onboarding_export.xlsx`,
-        "x-answer-stats": encodeURIComponent(JSON.stringify(stats)),
-      },
     });
   } catch (err) {
-    console.error("❌ Error generating Excel export:", err);
+    console.error("❌ Error fetching onboarding data:", err);
     return NextResponse.json(
-      { error: "Failed to generate export" },
+      { error: "Failed to fetch data" },
       { status: 500 }
     );
   }
 }
+

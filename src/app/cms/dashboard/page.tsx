@@ -16,14 +16,32 @@ type OnboardingRecord = {
   "Custom Part 1": string;
   "Answer Part 2": string;
   "Custom Part 2": string;
-  "Answered At": string;
 };
 
-async function fetchOnboardingData() {
+async function fetchOnboardingData(page: number = 1, limit: number = 100) {
   const baseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
   // const baseUrl = "http://localhost:3000";
 
-  const res = await fetch(`${baseUrl}/api/onboarding`, {
+  const res = await fetch(`${baseUrl}/api/onboarding?page=${page}&limit=${limit}`, {
+    cache: "no-cache",
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch data: ${res.status}`);
+  }
+
+  const result = await res.json();
+  return result;
+}
+
+async function fetchOnboardingStats() {
+  const baseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
+  
+  const res = await fetch(`${baseUrl}/api/onboarding/export`, {
     cache: "no-cache",
     method: "GET",
     headers: {
@@ -32,14 +50,7 @@ async function fetchOnboardingData() {
   });
 
   const stats = res.headers.get("x-answer-stats");
-  const buffer = await res.arrayBuffer();
-  const workbook: WorkBook = XLSX.read(new Uint8Array(buffer), {
-    type: "array",
-  });
-  const data = XLSX.utils.sheet_to_json(
-    workbook.Sheets[workbook.SheetNames[0]]
-  ) as OnboardingRecord[];
-  return { data, stats: stats ? JSON.parse(decodeURIComponent(stats)) : {} };
+  return stats ? JSON.parse(decodeURIComponent(stats)) : {};
 }
 
 export default async function CMSDashboard({
@@ -65,26 +76,35 @@ export default async function CMSDashboard({
   } | null = null;
 
   if (tab === "onboarding") {
-    const result = await fetchOnboardingData();
-    // Serialize data to plain objects
-    data = result.data.map(item => ({
-      "User ID": item["User ID"] || '',
-      Name: item.Name || '',
-      "Answer Part 1": item["Answer Part 1"] || '',
-      "Custom Part 1": item["Custom Part 1"] || '',
-      "Answer Part 2": item["Answer Part 2"] || '',
-      "Custom Part 2": item["Custom Part 2"] || '',
-    }));
-    stats = result.stats as Record<string, number>;
-    chartData = {
-      labels: Object.keys(stats),
-      datasets: [
-        {
-          label: "Number of Selections",
-          data: Object.values(stats),
-        },
-      ],
-    };
+    try {
+      const result = await fetchOnboardingData(1, 100);
+      // Serialize data to plain objects
+      data = result.data.map((item: any) => ({
+        "User ID": item.userId || '',
+        Name: item.name || '',
+        "Answer Part 1": item.answers?.stepOneReasons?.join(", ") || '',
+        "Custom Part 1": item.answers?.customReason || '',
+        "Answer Part 2": item.answers?.stepTwoReasons?.join(", ") || '',
+        "Custom Part 2": item.answers?.customStepTwoReason || '',
+      }));
+      
+      // Get stats separately
+      stats = await fetchOnboardingStats();
+      chartData = {
+        labels: Object.keys(stats),
+        datasets: [
+          {
+            label: "Number of Selections",
+            data: Object.values(stats),
+          },
+        ],
+      };
+    } catch (error) {
+      console.error("Error fetching onboarding data:", error);
+      data = [];
+      stats = {};
+      chartData = null;
+    }
   }
 
   return (
