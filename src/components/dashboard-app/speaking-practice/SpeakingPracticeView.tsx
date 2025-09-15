@@ -19,6 +19,7 @@ import { TWritingAnswerDto } from "@/models/answer";
 import LoginModal from "@/components/modal/LoginModal";
 import SvgRecording from "@/components/icons/Recording";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
+import { ActivityLogger } from "@/lib/userActivity";
 
 interface SpeakingPracticeViewProps {
   practice: TPracticeDto;
@@ -181,7 +182,13 @@ const SpeakingPracticeView = ({
     }
     setTime(preparationTime[practice.taskId.toString()]);
     setRecordingTime(recordingTimePerTask[practice.taskId.toString()]);
-  }, [selectedPracticeId]);
+
+    // Log practice started
+    if (user && selectedPracticeId) {
+      const attemptId = `practice_${selectedPracticeId}_${Date.now()}`;
+      ActivityLogger.practiceStarted(attemptId, selectedPracticeId, "Speaking");
+    }
+  }, [selectedPracticeId, user]);
   useEffect(() => {
     fetchUsersAnswer();
   }, [isSubmit]);
@@ -271,7 +278,18 @@ const SpeakingPracticeView = ({
             }
             return response.json();
           })
-          .then((data) => {
+          .then(async (data) => {
+            // Log practice completed
+            const attemptId = `practice_${practice.id}_${Date.now()}`;
+            await ActivityLogger.practiceCompleted(
+              attemptId,
+              practice.id,
+              "Speaking",
+              data.overall,
+              data,
+              recordingTime
+            );
+
             setIsSubmit(false);
             onAnswerButtonClick(practice, data);
           })

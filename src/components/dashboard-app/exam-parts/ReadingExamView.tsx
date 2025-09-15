@@ -22,6 +22,7 @@ import SvgWritingPart from "@/components/icons/WritingPart";
 import SvgReadingPart from "@/components/icons/ReadingPart";
 import SvgChevronDownExam from "@/components/icons/ChevronDownExam";
 import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
+import { ActivityLogger } from "@/lib/userActivity";
 
 interface ReadingExamViewProps {
   practice: TPracticeDto;
@@ -99,10 +100,18 @@ const ReadingExamView = ({
     };
   }, [page, time]);
   useEffect(() => {
+    // Log mock exam started when component mounts
+    if (user && practice.taskId) {
+      const attemptId = `mock_${practice.taskId}_${Date.now()}`;
+      ActivityLogger.mockStarted(attemptId, practice.taskId.toString());
+    }
+  }, [user, practice.taskId]);
+
+  useEffect(() => {
     if (page === "answer" && user) {
       const submitAnswers = async () => {
         try {
-          await fetch("/api/exams/answers", {
+          const response = await fetch("/api/exams/answers", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -113,6 +122,19 @@ const ReadingExamView = ({
               answers: selectedAnswers,
             }),
           });
+
+          if (response.ok) {
+            const result = await response.json();
+            // Log mock exam part completed
+            const attemptId = `mock_${practice.taskId}_${Date.now()}`;
+            await ActivityLogger.mockCompleted(
+              attemptId,
+              practice.taskId.toString(),
+              result.overall,
+              result,
+              time
+            );
+          }
         } catch (error) {
           // Optionally handle error
           console.error("Failed to submit answers:", error);
