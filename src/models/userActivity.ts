@@ -56,6 +56,7 @@ const UserActivitySchema = new Schema<IUserActivity>(
         "ai_feedback_generated",
         "learning_attempt_started",
         "score_report_viewed",
+        "signup",
         "login",
         "logout",
         "payment_successful",

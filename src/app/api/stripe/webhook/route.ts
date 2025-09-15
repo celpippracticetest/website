@@ -6,6 +6,7 @@ import { ReferralRewardRepository } from "@/repositories/referral-reward.repo";
 import { ReferralRepository } from "@/repositories/referral.repo";
 import { ReferralInvitationRepository } from "@/repositories/referral-invitation.repo";
 import { clerkClient } from "@clerk/express";
+import { ActivityLogger } from "@/lib/userActivity";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -360,6 +361,23 @@ export async function POST(req: Request) {
         console.error("❌ Error handling referral rewards:", error);
       }
 
+      // Log payment successful
+      if (metadata?.user_id) {
+        try {
+          await ActivityLogger.paymentSuccessful(
+            session.amount_total || 0,
+            session.currency || "usd",
+            {
+              sessionId: session.id,
+              subscriptionId: session.subscription,
+              customerId: session.customer,
+            }
+          );
+        } catch (logErr) {
+          console.error("Payment activity logging failed:", logErr);
+        }
+      }
+
       return NextResponse.json({ received: true });
     }
 
@@ -373,6 +391,20 @@ export async function POST(req: Request) {
         console.log(
           `Cleared planCancelled for user ${metadata.user_id} on subscription creation.`
         );
+
+        // Log subscription created
+        try {
+          await ActivityLogger.subscriptionCreated(
+            subscription.items.data[0]?.price?.id || "unknown",
+            {
+              subscriptionId: subscription.id,
+              customerId: subscription.customer,
+              status: subscription.status,
+            }
+          );
+        } catch (logErr) {
+          console.error("Subscription activity logging failed:", logErr);
+        }
       }
       return NextResponse.json({ received: true });
     }
@@ -629,8 +661,94 @@ export async function POST(req: Request) {
       console.log(
         `✅ Subscription ${subscription.id} cancelled and user ${user_id} downgraded (checkout_id=${checkout_id}).`
       );
+
+      // Log subscription cancelled
+      try {
+        await ActivityLogger.subscriptionCancelled(
+          subscription.items.data[0]?.price?.id || "unknown",
+          "webhook_cancelled",
+          {
+            subscriptionId: subscription.id,
+            customerId: subscription.customer,
+            checkoutId: checkout_id,
+          }
+        );
+      } catch (logErr) {
+        console.error(
+          "Subscription cancellation activity logging failed:",
+          logErr
+        );
+      }
+
       return NextResponse.json({ received: true });
     }
+
+    // Handle dispute events
+    if (event.type === "charge.dispute.created") {
+      const dispute = event.data.object as Stripe.Dispute;
+      const charge = dispute.charge as string;
+
+      try {
+        // Get charge details to find user
+        const chargeDetails = await stripe.charges.retrieve(charge);
+        const sessionId = chargeDetails.metadata?.session_id;
+
+        if (sessionId) {
+          const checkoutRepo = new CheckoutRepository(mongoClient);
+          const checkout = await checkoutRepo.findBySessionId(sessionId);
+
+          if (checkout?.userId) {
+            await ActivityLogger.disputeCreated(
+              dispute.id,
+              dispute.amount,
+              dispute.reason || "unknown",
+              {
+                disputeId: dispute.id,
+                chargeId: charge,
+                sessionId: sessionId,
+                reason: dispute.reason,
+                status: dispute.status,
+              }
+            );
+          }
+        }
+      } catch (logErr) {
+        console.error("Dispute activity logging failed:", logErr);
+      }
+
+      return NextResponse.json({ received: true });
+    }
+
+    if (event.type === "charge.dispute.updated") {
+      const dispute = event.data.object as Stripe.Dispute;
+      const charge = dispute.charge as string;
+
+      try {
+        // Get charge details to find user
+        const chargeDetails = await stripe.charges.retrieve(charge);
+        const sessionId = chargeDetails.metadata?.session_id;
+
+        if (sessionId) {
+          const checkoutRepo = new CheckoutRepository(mongoClient);
+          const checkout = await checkoutRepo.findBySessionId(sessionId);
+
+          if (checkout?.userId) {
+            await ActivityLogger.disputeResolved(dispute.id, dispute.status, {
+              disputeId: dispute.id,
+              chargeId: charge,
+              sessionId: sessionId,
+              reason: dispute.reason,
+              status: dispute.status,
+            });
+          }
+        }
+      } catch (logErr) {
+        console.error("Dispute resolution activity logging failed:", logErr);
+      }
+
+      return NextResponse.json({ received: true });
+    }
+
     if (event.type === "charge.refunded") {
       const chargeObj = event.data.object as any;
       const refundId = chargeObj.id as string;

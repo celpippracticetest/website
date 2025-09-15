@@ -9,6 +9,7 @@ export interface ActivityLogData {
     | "ai_feedback_generated"
     | "learning_attempt_started"
     | "score_report_viewed"
+    | "signup"
     | "login"
     | "logout"
     | "payment_successful"
@@ -200,6 +201,14 @@ export const ActivityLogger = {
   },
 
   // Authentication activities
+  async userSignup(userId: string) {
+    return logUserActivity({
+      eventType: "signup",
+      context: "system",
+      metadata: { userId },
+    });
+  },
+
   async userLogin() {
     return logUserActivity({
       eventType: "login",
