@@ -38,9 +38,10 @@ interface DashboardProps {
     labels: string[];
     datasets: { label: string; data: number[] }[];
   };
+  totalRecords: number;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ chartData, data }) => {
+const Dashboard: React.FC<DashboardProps> = ({ chartData, data, totalRecords }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -73,22 +74,22 @@ const Dashboard: React.FC<DashboardProps> = ({ chartData, data }) => {
         <h1 className="text-2xl font-bold text-gray-900">
           Onboarding Data
         </h1>
-        <button
-          onClick={async () => {
+      <button
+        onClick={async () => {
             try {
               const res = await fetch("/api/onboarding/export");
-              if (!res.ok) {
-                console.error("Failed to download file");
-                return;
-              }
-              const blob = await res.blob();
-              const url = window.URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = "onboarding_export.xlsx";
+          if (!res.ok) {
+            console.error("Failed to download file");
+            return;
+          }
+          const blob = await res.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "onboarding_export.xlsx";
               document.body.appendChild(a);
-              a.click();
-              window.URL.revokeObjectURL(url);
+          a.click();
+          window.URL.revokeObjectURL(url);
               document.body.removeChild(a);
             } catch (error) {
               console.error("Error exporting data:", error);
@@ -109,7 +110,7 @@ const Dashboard: React.FC<DashboardProps> = ({ chartData, data }) => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-semibold text-gray-700">Total Responses</h3>
-          <p className="text-3xl font-bold text-blue-600">{data.length}</p>
+          <p className="text-3xl font-bold text-blue-600">{totalRecords}</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-semibold text-gray-700">Part 1 Answers</h3>
@@ -212,7 +213,7 @@ const Dashboard: React.FC<DashboardProps> = ({ chartData, data }) => {
                 className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
                 Next
-              </button>
+      </button>
             </div>
           </div>
         )}

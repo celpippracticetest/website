@@ -40,11 +40,13 @@ interface OnboardingNewDashboardProps {
     labels: string[];
     datasets: { label: string; data: number[] }[];
   };
+  totalRecords: number;
 }
 
 const OnboardingNewDashboard: React.FC<OnboardingNewDashboardProps> = ({
   data,
   chartData,
+  totalRecords,
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -115,7 +117,7 @@ const OnboardingNewDashboard: React.FC<OnboardingNewDashboardProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-semibold text-gray-700">Total Responses</h3>
-          <p className="text-3xl font-bold text-blue-600">{data.length}</p>
+          <p className="text-3xl font-bold text-blue-600">{totalRecords}</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-semibold text-gray-700">Test Dates</h3>
