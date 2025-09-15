@@ -8,21 +8,21 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { useUser } from "@clerk/nextjs";
 
-const REASONS = [
-  "For Permanent Residency (PR) / Express Entry",
-  "For Canadian Citizenship",
-  "For Work Permit / Job Application",
-  "For Study Permit / University Admission",
-  "For Professional Licensing or Certification",
-  "For Personal Development / Improve English",
-  "Other (please specify)",
+const TEST_DATE_OPTIONS = [
+  "Within 2 weeks",
+  "Within 1 month",
+  "1–3 months",
+  "3–6 months",
+  "6+ months",
+  "I don't have a date yet",
 ];
 
-const STEP_TWO_REASONS = [
-  "To take a full mock exam simulation",
-  "To practice individual CELPIP skills",
-  "To get instant AI feedback and improve",
-  "To learn about CELPIP format and tips",
+const FOCUS_SKILL_OPTIONS = [
+  "Speaking",
+  "Writing",
+  "Listening",
+  "Reading",
+  "Exam strategy (time management, format)",
   "Other (please specify)",
 ];
 
@@ -32,32 +32,38 @@ export default function OnboardingSurvey({
   onComplete: () => void;
 }) {
   const [step, setStep] = useState(1);
-  const [reasons, setReasons] = useState<string[]>([]);
-  const [stepTwoReasons, setStepTwoReasons] = useState<string[]>([]);
-  const [customReason, setCustomReason] = useState("");
-  const [customStepTwoReason, setCustomStepTwoReason] = useState("");
+  const [testDate, setTestDate] = useState("");
+  const [focusSkill, setFocusSkill] = useState("");
+  const [customFocusSkill, setCustomFocusSkill] = useState("");
+  const [targetScores, setTargetScores] = useState({
+    listening: 7,
+    reading: 7,
+    writing: 7,
+    speaking: 7,
+  });
   const { user } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const toggleReason = (reason: string) => {
-    setReasons((prev) =>
-      prev.includes(reason)
-        ? prev.filter((r) => r !== reason)
-        : [...prev, reason]
-    );
+  const handleScoreChange = (skill: string, value: number) => {
+    const newValue = Math.max(5, Math.min(12, value));
+    setTargetScores(prev => ({
+      ...prev,
+      [skill]: newValue,
+    }));
   };
 
-  const toggleStepTwoReason = (reason: string) => {
-    setStepTwoReasons((prev) =>
-      prev.includes(reason)
-        ? prev.filter((r) => r !== reason)
-        : [...prev, reason]
-    );
+  const handleNext = () => {
+    if (step === 1 && testDate) {
+      setStep(2);
+    } else if (step === 2 && focusSkill) {
+      setStep(3);
+    }
   };
 
-  const handleSubmit = () => {
-    if (reasons.length === 0) return;
-    setStep(2);
+  const handleBack = () => {
+    if (step > 1) {
+      setStep(step - 1);
+    }
   };
 
   return (
@@ -102,13 +108,19 @@ export default function OnboardingSurvey({
           <div
             className={cn(
               "rounded-[10px] w-full transition-colors duration-500",
-              step === 1 ? "bg-[#F27059]" : "bg-[#E6E6E6]"
+              step >= 1 ? "bg-[#F27059]" : "bg-[#E6E6E6]"
             )}
           ></div>
           <div
             className={cn(
               "rounded-[10px] w-full transition-colors duration-500",
-              step === 2 ? "bg-[#F27059]" : "bg-[#E6E6E6]"
+              step >= 2 ? "bg-[#F27059]" : "bg-[#E6E6E6]"
+            )}
+          ></div>
+          <div
+            className={cn(
+              "rounded-[10px] w-full transition-colors duration-500",
+              step >= 3 ? "bg-[#F27059]" : "bg-[#E6E6E6]"
             )}
           ></div>
         </div>
@@ -117,7 +129,7 @@ export default function OnboardingSurvey({
           Help us improve your experience.
         </p>
         <p className="text-[16px] font-normal text-[#316BFF] mb-[24px] screen744:!mb-[32px]">
-          {step === 1 ? "Question 1 of 2" : "Question 2 of 2"}
+          {step === 1 ? "Question 1 of 3" : step === 2 ? "Question 2 of 3" : "Question 3 of 3"}
         </p>
 
         {step === 1 && (
@@ -129,64 +141,32 @@ export default function OnboardingSurvey({
             transition={{ duration: 0.4, ease: "easeInOut" }}
           >
             <h2 className="text-[20px] text-[#212E42] font-semibold mb-[28px]">
-              Why are you taking the CELPIP test?
+              When is your CELPIP test?
             </h2>
 
             <div className="flex flex-col mb-[24px] screen744:!mb-[32px] gap-[16px] data-[state=checked]:!bg-[#F27059]">
-              {REASONS.map((reason, index) => (
-                <div
-                  className={`flex ${
-                    index === 6
-                      ? "flex-col gap-[24px] screen744:!flex-row screen744:!gap-1"
-                      : "flex-row"
-                  }`}
-                  key={reason}
-                >
+              {TEST_DATE_OPTIONS.map((option) => (
                   <label
+                  key={option}
                     className={cn(
                       "flex items-center h-[48px] screen744:!h-[52px] px-[16px] screen744:!px-[32px] rounded-[40px] transition-all cursor-pointer text-[12px] screen744:!text-[16px] font-normal w-fit",
-                      reasons.includes(reason)
+                    testDate === option
                         ? " bg-[#F27059] text-white "
                         : "bg-white text-[#212E42]"
                     )}
                   >
                     <Checkbox
-                      checked={reasons.includes(reason)}
-                      onCheckedChange={() => toggleReason(reason)}
+                    checked={testDate === option}
+                    onCheckedChange={() => setTestDate(option)}
                       className={cn(
                         "mr-3  w-[24px] h-[24px] border-2 rounded-[6px] flex items-center justify-center transition-all",
-                        reasons.includes(reason)
+                      testDate === option
                           ? "border-[#F27059] bg-white data-[state=checked]:!bg-white  data-[state=checked]:!text-[#F27059]"
                           : "border-gray-300"
                       )}
                     />
-                    {reason}
-                  </label>
-                  {reason === "Other (please specify)" &&
-                    reasons.includes(reason) && (
-                      <div className="relative w-[300px]  screen744:!ml-8">
-                        <input
-                          type="text"
-                          id="customReason"
-                          className="peer w-full border border-gray-300 rounded px-[16px] h-[56px] pb-1 text-sm text-gray-900 placeholder-transparent focus:border-blue-500 focus:outline-none"
-                          placeholder="Write your answer"
-                          value={customReason}
-                          onChange={(e) => setCustomReason(e.target.value)}
-                        />
-                        <label
-                          htmlFor="customReason"
-                          className={cn(
-                            "absolute left-2 text-xs bg-[#F4F7FF] px-1 text-gray-500 transition-all",
-                            !customReason
-                              ? "peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400"
-                              : "-top-2 text-xs text-blue-500"
-                          )}
-                        >
-                          Write your answer
+                  {option}
                         </label>
-                      </div>
-                    )}
-                </div>
               ))}
             </div>
 
@@ -196,7 +176,7 @@ export default function OnboardingSurvey({
                 <button
                   className="cursor-pointer text-[14px] text-[#212E42] font-normal"
                   onClick={async () => {
-                    await fetch("/api/onboarding", {
+                    await fetch("/api/onboarding-new", {
                       method: "POST",
                       body: JSON.stringify({
                         action: "askLater",
@@ -215,20 +195,14 @@ export default function OnboardingSurvey({
                   Ask later
                 </button>
                 <Button
-                  disabled={
-                    reasons.length === 0 ||
-                    (reasons.includes("Other (please specify)") &&
-                      !customReason.trim())
-                  }
+                  disabled={!testDate}
                   className={cn(
                     "rounded-[24px] font-normal h-[40px] text-[14px]",
-                    reasons.length === 0 ||
-                      (reasons.includes("Other (please specify)") &&
-                        !customReason.trim())
+                    !testDate
                       ? "bg-gray-300 text-white cursor-not-allowed"
                       : "cursor-pointer"
                   )}
-                  onClick={handleSubmit}
+                  onClick={handleNext}
                 >
                   Next Question
                 </Button>
@@ -246,57 +220,55 @@ export default function OnboardingSurvey({
             transition={{ duration: 0.4, ease: "easeInOut" }}
           >
             <h2 className="text-[20px] text-[#212E42] font-semibold mb-[28px]">
-              What brings you here today?
+              Which skill are you focused on improving first?
             </h2>
 
-            <div className="flex flex-col mb-[32px] gap-[16px] data-[state=checked]:!bg-[#F27059]">
-              {STEP_TWO_REASONS.map((reason, index) => (
+            <div className="flex flex-col mb-[24px] screen744:!mb-[32px] gap-[16px] data-[state=checked]:!bg-[#F27059]">
+              {FOCUS_SKILL_OPTIONS.map((option, index) => (
                 <div
                   className={`flex ${
-                    index === 4
+                    index === 5
                       ? "flex-col gap-[24px] screen744:!flex-row screen744:!gap-1"
                       : "flex-row"
                   }`}
-                  key={reason}
+                  key={option}
                 >
                   <label
                     className={cn(
-                      "flex items-center h-[48px]  screen744:!h-[52px] px-[32px] rounded-[40px] transition-all cursor-pointer text-[12px] screen744:!text-[16px] font-normal w-fit",
-                      stepTwoReasons.includes(reason)
+                      "flex items-center h-[48px] screen744:!h-[52px] px-[16px] screen744:!px-[32px] rounded-[40px] transition-all cursor-pointer text-[12px] screen744:!text-[16px] font-normal w-fit",
+                      focusSkill === option
                         ? " bg-[#F27059] text-white "
                         : "bg-white text-[#212E42]"
                     )}
                   >
                     <Checkbox
-                      checked={stepTwoReasons.includes(reason)}
-                      onCheckedChange={() => toggleStepTwoReason(reason)}
+                      checked={focusSkill === option}
+                      onCheckedChange={() => setFocusSkill(option)}
                       className={cn(
                         "mr-3  w-[24px] h-[24px] border-2 rounded-[6px] flex items-center justify-center transition-all",
-                        stepTwoReasons.includes(reason)
+                        focusSkill === option
                           ? "border-[#F27059] bg-white data-[state=checked]:!bg-white  data-[state=checked]:!text-[#F27059]"
                           : "border-gray-300"
                       )}
                     />
-                    {reason}
+                    {option}
                   </label>
-                  {reason === "Other (please specify)" &&
-                    stepTwoReasons.includes(reason) && (
+                  {option === "Other (please specify)" &&
+                    focusSkill === option && (
                       <div className="relative w-[300px]  screen744:!ml-8">
                         <input
                           type="text"
-                          id="customStepTwoReason"
+                          id="customFocusSkill"
                           className="peer w-full border border-gray-300 rounded px-[16px] h-[56px] pb-1 text-sm text-gray-900 placeholder-transparent focus:border-blue-500 focus:outline-none"
                           placeholder="Write your answer"
-                          value={customStepTwoReason}
-                          onChange={(e) =>
-                            setCustomStepTwoReason(e.target.value)
-                          }
+                          value={customFocusSkill}
+                          onChange={(e) => setCustomFocusSkill(e.target.value)}
                         />
                         <label
-                          htmlFor="customStepTwoReason"
+                          htmlFor="customFocusSkill"
                           className={cn(
                             "absolute left-2 text-xs bg-[#F4F7FF] px-1 text-gray-500 transition-all",
-                            !customStepTwoReason
+                            !customFocusSkill
                               ? "peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400"
                               : "-top-2 text-xs text-blue-500"
                           )}
@@ -312,16 +284,16 @@ export default function OnboardingSurvey({
             <div className="flex justify-between items-center gap-[24px]">
               <button
                 className="cursor-pointer hover:!bg-blue-500 hover:!text-white px-[24px] rounded-[24px] border-[#76808F] bg-white max-w-[82px] h-[40px] text-[14px] text-[#76808F] font-normal"
-                onClick={() => setStep(1)}
+                onClick={handleBack}
               >
                 Back
               </button>
 
               <div className="flex gap-[24px]">
                 <button
-                  className="cursor-pointer  text-[14px] text-[#212E42] font-normal"
+                  className="cursor-pointer text-[14px] text-[#212E42] font-normal"
                   onClick={async () => {
-                    await fetch("/api/onboarding", {
+                    await fetch("/api/onboarding-new", {
                       method: "POST",
                       body: JSON.stringify({
                         action: "askLater",
@@ -340,32 +312,114 @@ export default function OnboardingSurvey({
                   Ask later
                 </button>
                 <Button
-                  disabled={
-                    isSubmitting ||
-                    stepTwoReasons.length === 0 ||
-                    (stepTwoReasons.includes("Other (please specify)") &&
-                      !customStepTwoReason.trim())
-                  }
+                  disabled={!focusSkill || (focusSkill === "Other (please specify)" && !customFocusSkill.trim())}
+                          className={cn(
+                    "rounded-[24px] font-normal h-[40px] text-[14px]",
+                    !focusSkill || (focusSkill === "Other (please specify)" && !customFocusSkill.trim())
+                      ? "bg-gray-300 text-white cursor-not-allowed"
+                      : "cursor-pointer"
+                  )}
+                  onClick={handleNext}
+                >
+                  Next Question
+                </Button>
+              </div>
+                      </div>
+          </motion.div>
+        )}
+
+        {step === 3 && (
+          <motion.div
+            key="step3"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.4, ease: "easeInOut" }}
+          >
+            <h2 className="text-[20px] text-[#212E42] font-semibold mb-[28px]">
+              What is your target score?
+            </h2>
+
+            <div className="grid  gap-6 mb-[32px]">
+              {Object.entries(targetScores).map(([skill, score]) => (
+                <div key={skill} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-white">
+                  <span className="font-medium capitalize text-gray-700">
+                    {skill}:
+                  </span>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => handleScoreChange(skill, score - 1)}
+                      disabled={score <= 5}
+                      className="w-8 h-8 cursor-pointer rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      −
+                    </button>
+                    <span className="w-8 text-center font-semibold text-lg">
+                      {score}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleScoreChange(skill, score + 1)}
+                      disabled={score >= 12}
+                      className="w-8 h-8  cursor-pointer rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-between items-center gap-[24px]">
+              <button
+                className="cursor-pointer hover:!bg-blue-500 hover:!text-white px-[24px] rounded-[24px] border-[#76808F] bg-white max-w-[82px] h-[40px] text-[14px] text-[#76808F] font-normal"
+                onClick={handleBack}
+              >
+                Back
+              </button>
+
+              <div className="flex gap-[24px]">
+                <button
+                  className="cursor-pointer text-[14px] text-[#212E42] font-normal"
+                  onClick={async () => {
+                    await fetch("/api/onboarding-new", {
+                      method: "POST",
+                      body: JSON.stringify({
+                        action: "askLater",
+                      }),
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                    });
+
+                    user?.reload();
+                    setTimeout(() => {
+                      onComplete();
+                    }, 1000);
+                  }}
+                >
+                  Ask later
+                </button>
+                <Button
+                  disabled={isSubmitting}
                   className={cn(
                     "rounded-[24px] font-normal h-[40px] text-[14px]",
-                    stepTwoReasons.length === 0 ||
-                      (stepTwoReasons.includes("Other (please specify)") &&
-                        !customStepTwoReason.trim()) ||
                       isSubmitting
                       ? "bg-gray-300 text-white cursor-not-allowed"
                       : "cursor-pointer"
                   )}
                   onClick={async () => {
                     setIsSubmitting(true);
-                    await fetch("/api/onboarding", {
+                    await fetch("/api/onboarding-new", {
                       method: "POST",
                       body: JSON.stringify({
                         action: "submit",
                         answers: {
-                          stepOneReasons: reasons,
-                          customStepOneReason: customReason,
-                          stepTwoReasons,
-                          customStepTwoReason,
+                          testDate,
+                          focusSkill,
+                          customFocusSkill: focusSkill === "Other (please specify)" ? customFocusSkill : "",
+                          targetScores,
                         },
                       }),
                       headers: {

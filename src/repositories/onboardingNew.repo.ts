@@ -1,12 +1,22 @@
 import { Db, MongoClient } from "mongodb";
 
-type TOnboardingResult = {
+type TOnboardingNewResult = {
   userId: string;
-  answers: any;
+  answers: {
+    testDate: string;
+    focusSkill: string;
+    customFocusSkill?: string;
+    targetScores: {
+      listening: number;
+      reading: number;
+      writing: number;
+      speaking: number;
+    };
+  };
   answeredAt: Date;
 };
 
-export class OnboardingRepository {
+export class OnboardingNewRepository {
   private readonly db: Db;
 
   constructor(mongoClient: MongoClient) {
@@ -14,10 +24,10 @@ export class OnboardingRepository {
   }
 
   private getCollection() {
-    return this.db.collection<TOnboardingResult>("onboarding_results");
+    return this.db.collection<TOnboardingNewResult>("onboarding_new_results");
   }
 
-  async createOrUpdateOnboardingResult(data: TOnboardingResult) {
+  async createOrUpdateOnboardingNewResult(data: TOnboardingNewResult) {
     await this.getCollection().updateOne(
       { userId: data.userId },
       {
@@ -30,11 +40,11 @@ export class OnboardingRepository {
     );
   }
 
-  async getAllOnboardingResults(): Promise<TOnboardingResult[]> {
+  async getAllOnboardingNewResults(): Promise<TOnboardingNewResult[]> {
     return this.getCollection().find({}).toArray();
   }
 
-  async getOnboardingResultsPaginated(page: number, limit: number): Promise<TOnboardingResult[]> {
+  async getOnboardingNewResultsPaginated(page: number, limit: number): Promise<TOnboardingNewResult[]> {
     const skip = (page - 1) * limit;
     return this.getCollection()
       .find({})
@@ -44,11 +54,11 @@ export class OnboardingRepository {
       .toArray();
   }
 
-  async getOnboardingResultsCount(): Promise<number> {
+  async getOnboardingNewResultsCount(): Promise<number> {
     return this.getCollection().countDocuments();
   }
 
-  async findByUserId(userId: string): Promise<TOnboardingResult | null> {
+  async findByUserId(userId: string): Promise<TOnboardingNewResult | null> {
     return this.getCollection().findOne({ userId });
   }
 }

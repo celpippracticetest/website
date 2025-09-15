@@ -37,6 +37,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   const hrefFor = (key: string) => {
     if (key === "overview") return "/cms/dashboard";
     if (key === "onboarding") return "/cms/dashboard?tab=onboarding";
+    if (key === "onboarding-new") return "/cms/dashboard?tab=onboarding-new";
     if (key === "withdrawal-requests")
       return "/cms/dashboard/withdrawal-requests";
     return `/cms/${key}`;
@@ -49,6 +50,9 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
     }
     if (key === "onboarding") {
       return pathname === "/cms/dashboard" && currentTab === "onboarding";
+    }
+    if (key === "onboarding-new") {
+      return pathname === "/cms/dashboard" && currentTab === "onboarding-new";
     }
     if (key === "withdrawal-requests") {
       return (
@@ -142,6 +146,25 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                 >
                   <span aria-hidden>🧭</span>
                   {!collapsed && <span>Onboarding</span>}
+                </Link>
+              </li>
+                 {/* New Onboarding */}
+              <li className="mt-3">
+                <Link
+                  href={hrefFor("onboarding-new")}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center ${
+                    collapsed ? "justify-center" : "justify-start"
+                  } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive("onboarding-new")
+                      ? "bg-gray-100 text-gray-900"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                  aria-current={isActive("onboarding-new") ? "page" : undefined}
+                  title="Onboarding New"
+                >
+                  <span aria-hidden>🧭</span>
+                  {!collapsed && <span>Onboarding New</span>}
                 </Link>
               </li>
               <li className="mt-3">

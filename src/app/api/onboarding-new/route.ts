@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
 import mongoClient from "@/lib/mongodb";
-import { OnboardingRepository } from "@/repositories/onboarding.repo";
+import { OnboardingNewRepository } from "@/repositories/onboardingNew.repo";
 import { NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { clerkClient } from "@clerk/express";
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   const data = await req.json();
 
   const existing =
-    (user.privateMetadata?.onboarding as Record<string, any>) || {};
+    (user.privateMetadata?.onboardingNew as Record<string, any>) || {};
   const meta: Record<string, any> = { ...existing };
 
   if (data.action === "askLater") {
@@ -30,8 +30,8 @@ export async function POST(req: Request) {
       answeredAt: new Date().toISOString(),
     };
 
-    const onboardingRepo = new OnboardingRepository(mongoClient);
-    await onboardingRepo.createOrUpdateOnboardingResult({
+    const onboardingNewRepo = new OnboardingNewRepository(mongoClient);
+    await onboardingNewRepo.createOrUpdateOnboardingNewResult({
       userId: user.id,
       answers: data.answers,
       answeredAt: new Date(),
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
   await clerkClient.users.updateUser(user.id, {
     privateMetadata: {
       ...user.privateMetadata,
-      onboarding: meta,
+      onboardingNew: meta,
     },
     publicMetadata: user.publicMetadata,
   });
@@ -51,19 +51,19 @@ export async function POST(req: Request) {
   return NextResponse.json({ ok: true });
 }
 
-// GET: Get paginated onboarding data
+// GET: Get paginated onboarding new data
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '100');
     
-    console.log(`⏳ Fetching onboarding results... Page: ${page}, Limit: ${limit}`);
-    const onboardingRepo = new OnboardingRepository(mongoClient);
+    console.log(`⏳ Fetching onboarding new results... Page: ${page}, Limit: ${limit}`);
+    const onboardingNewRepo = new OnboardingNewRepository(mongoClient);
     
     // Get paginated data
-    const results = await onboardingRepo.getOnboardingResultsPaginated(page, limit);
-    const totalCount = await onboardingRepo.getOnboardingResultsCount();
+    const results = await onboardingNewRepo.getOnboardingNewResultsPaginated(page, limit);
+    const totalCount = await onboardingNewRepo.getOnboardingNewResultsCount();
     
     // Process results to include user names
     const processedResults = await Promise.all(
@@ -93,11 +93,10 @@ export async function GET(request: Request) {
       }
     });
   } catch (err) {
-    console.error("❌ Error fetching onboarding data:", err);
+    console.error("❌ Error fetching onboarding new data:", err);
     return NextResponse.json(
       { error: "Failed to fetch data" },
       { status: 500 }
     );
   }
 }
-
