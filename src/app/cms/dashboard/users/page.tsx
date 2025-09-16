@@ -12,6 +12,7 @@ import {
 
 interface User {
   userId: string;
+  email?: string;
   lastActivity: string;
   firstActivity: string;
   totalActivities: number;
@@ -66,6 +67,7 @@ export default function UsersPage() {
       const response = await fetch(`/api/admin/users?${params}`);
       if (response.ok) {
         const data: UsersResponse = await response.json();
+
         setUsers(data.users);
         setPagination(data.pagination);
       }
@@ -102,15 +104,18 @@ export default function UsersPage() {
     });
   };
 
-  const exportUserData = async (userId: string) => {
+  const exportUserData = async (identifier: string) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}/export`);
+      const response = await fetch(`/api/admin/users/${identifier}/export`);
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
+        const safe = identifier.includes("@")
+          ? identifier.split("@")[0]
+          : identifier;
         a.href = url;
-        a.download = `user-${userId}-activity-export.xlsx`;
+        a.download = `user-${safe}-activity-export.xlsx`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -140,7 +145,7 @@ export default function UsersPage() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
-                placeholder="Search by User ID, IP, or User Agent..."
+                placeholder="Search by User ID, Email, IP, or User Agent..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -187,6 +192,9 @@ export default function UsersPage() {
                       User ID
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Email
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Risk Score
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -215,9 +223,10 @@ export default function UsersPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {users.map((user) => (
                     <tr key={user.userId} className="hover:bg-gray-50">
+                      {/* User ID */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          {user.userId.slice(0, 8)}...
+                          {user.userId}
                         </div>
                         <div className="text-xs text-gray-500">
                           {user.disputeEvents > 0 && (
@@ -227,6 +236,13 @@ export default function UsersPage() {
                           )}
                         </div>
                       </td>
+
+                      {/* Email */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {user.email ?? "-"}
+                      </td>
+
+                      {/* Risk Score */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRiskColor(
@@ -237,9 +253,13 @@ export default function UsersPage() {
                           <span className="ml-1">{user.riskScore}%</span>
                         </span>
                       </td>
+
+                      {/* Activities */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {user.totalActivities.toLocaleString()}
                       </td>
+
+                      {/* Practice */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div>
                           {user.practiceAttempts} / {user.practiceCompletions}
@@ -255,6 +275,8 @@ export default function UsersPage() {
                           % completion
                         </div>
                       </td>
+
+                      {/* Mock Exams */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div>
                           {user.mockAttempts} / {user.mockCompletions}
@@ -268,18 +290,26 @@ export default function UsersPage() {
                           % completion
                         </div>
                       </td>
+
+                      {/* Tokens */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {user.totalTokens.toLocaleString()}
                       </td>
+
+                      {/* IPs/Devices */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div>{user.uniqueIpAddresses} IPs</div>
                         <div className="text-xs text-gray-500">
                           {user.uniqueUserAgents} devices
                         </div>
                       </td>
+
+                      {/* Last Active */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(user.lastActivity)}
                       </td>
+
+                      {/* Actions */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
                           <button

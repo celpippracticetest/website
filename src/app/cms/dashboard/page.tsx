@@ -36,13 +36,16 @@ async function fetchOnboardingData(page: number = 1, limit: number = 100) {
   const baseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
   // const baseUrl = "http://localhost:3000";
 
-  const res = await fetch(`${baseUrl}/api/onboarding?page=${page}&limit=${limit}`, {
-    cache: "no-cache",
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  const res = await fetch(
+    `${baseUrl}/api/onboarding?page=${page}&limit=${limit}`,
+    {
+      cache: "no-cache",
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
 
   if (!res.ok) {
     throw new Error(`Failed to fetch data: ${res.status}`);
@@ -54,7 +57,7 @@ async function fetchOnboardingData(page: number = 1, limit: number = 100) {
 
 async function fetchOnboardingStats() {
   const baseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
-  
+
   const res = await fetch(`${baseUrl}/api/onboarding/export`, {
     cache: "no-cache",
     method: "GET",
@@ -70,13 +73,16 @@ async function fetchOnboardingStats() {
 async function fetchOnboardingNewData(page: number = 1, limit: number = 100) {
   const baseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
 
-  const res = await fetch(`${baseUrl}/api/onboarding-new?page=${page}&limit=${limit}`, {
-    cache: "no-cache",
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  const res = await fetch(
+    `${baseUrl}/api/onboarding-new?page=${page}&limit=${limit}`,
+    {
+      cache: "no-cache",
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
 
   if (!res.ok) {
     throw new Error(`Failed to fetch data: ${res.status}`);
@@ -88,7 +94,7 @@ async function fetchOnboardingNewData(page: number = 1, limit: number = 100) {
 
 async function fetchOnboardingNewStats() {
   const baseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
-  
+
   const res = await fetch(`${baseUrl}/api/onboarding-new/export`, {
     cache: "no-cache",
     method: "GET",
@@ -103,7 +109,9 @@ async function fetchOnboardingNewStats() {
 
 export default async function CMSDashboard({
   searchParams,
-}: Readonly<{ searchParams: { tab?: string; page?: string; limit?: string } }>) {
+}: Readonly<{
+  searchParams: { tab?: string; page?: string; limit?: string };
+}>) {
   const tabs = [
     { key: "overview", label: "Overview" },
     { key: "onboarding", label: "Onboarding" },
@@ -115,7 +123,7 @@ export default async function CMSDashboard({
   ] as const;
   const tabParam = (searchParams?.tab || "overview").toLowerCase();
   const tab = tabs.some((t) => t.key === tabParam) ? tabParam : "overview";
-  
+
   // Pagination parameters
   const page = parseInt(searchParams?.page || "1");
   const limit = parseInt(searchParams?.limit || "100"); // 100 records per page
@@ -145,36 +153,36 @@ export default async function CMSDashboard({
       // Fetch data with pagination
       const result = await fetchOnboardingData(page, limit);
       console.log("📊 API Response:", JSON.stringify(result, null, 2));
-      
+
       // Get total records and pages from pagination info
       totalRecords = result.pagination?.total || 0;
       totalPages = result.pagination?.totalPages || 0;
-      
+
       // Get statistics from API response
       stats = result.statistics || {};
-      
+
       // Serialize data to plain objects
       data = result.data.map((item: any) => ({
-        "User ID": item.userId || '',
-        Name: item.name || '',
-        "Answer Part 1": Array.isArray(item.answers?.stepOneReasons) 
-          ? item.answers.stepOneReasons.join(", ") 
-          : (item.answers?.stepOneReasons || ''),
-        "Custom Part 1": item.answers?.customReason || '',
-        "Answer Part 2": Array.isArray(item.answers?.stepTwoReasons) 
-          ? item.answers.stepTwoReasons.join(", ") 
-          : (item.answers?.stepTwoReasons || ''),
-        "Custom Part 2": item.answers?.customStepTwoReason || '',
+        "User ID": item.userId || "",
+        Name: item.name || "",
+        "Answer Part 1": Array.isArray(item.answers?.stepOneReasons)
+          ? item.answers.stepOneReasons.join(", ")
+          : item.answers?.stepOneReasons || "",
+        "Custom Part 1": item.answers?.customReason || "",
+        "Answer Part 2": Array.isArray(item.answers?.stepTwoReasons)
+          ? item.answers.stepTwoReasons.join(", ")
+          : item.answers?.stepTwoReasons || "",
+        "Custom Part 2": item.answers?.customStepTwoReason || "",
       }));
-    chartData = {
-      labels: Object.keys(stats),
-      datasets: [
-        {
-          label: "Number of Selections",
-          data: Object.values(stats),
-        },
-      ],
-    };
+      chartData = {
+        labels: Object.keys(stats),
+        datasets: [
+          {
+            label: "Number of Selections",
+            data: Object.values(stats),
+          },
+        ],
+      };
     } catch (error) {
       console.error("Error fetching onboarding data:", error);
       data = [];
@@ -191,22 +199,22 @@ export default async function CMSDashboard({
       // Get total records and pages from pagination info
       totalRecordsNew = result.pagination?.total || 0;
       totalPagesNew = result.pagination?.totalPages || 0;
-      
+
       // Get statistics from API response
       statsNew = result.statistics || {};
-      
+
       // Serialize data to plain objects
       dataNew = result.data.map((item: any) => ({
-        "User ID": item.userId || '',
-        Name: item.name || '',
-        "Test Date": item.answers?.testDate || '',
-        "Focus Skill": item.answers?.focusSkill || '',
-        "Custom Focus Skill": item.answers?.customFocusSkill || '',
+        "User ID": item.userId || "",
+        Name: item.name || "",
+        "Test Date": item.answers?.testDate || "",
+        "Focus Skill": item.answers?.focusSkill || "",
+        "Custom Focus Skill": item.answers?.customFocusSkill || "",
         "Target Listening": item.answers?.targetScores?.listening || 0,
         "Target Reading": item.answers?.targetScores?.reading || 0,
         "Target Writing": item.answers?.targetScores?.writing || 0,
         "Target Speaking": item.answers?.targetScores?.speaking || 0,
-        "Answered At": item.answeredAt || '',
+        "Answered At": item.answeredAt || "",
       }));
       chartDataNew = {
         labels: Object.keys(statsNew),
@@ -229,9 +237,27 @@ export default async function CMSDashboard({
   return (
     <div className="w-full">
       {/* Content area */}
-      {tab === "onboarding" && <Dashboard data={data} chartData={chartData!} totalRecords={totalRecords} totalPages={totalPages} currentPage={page} statistics={stats as any} />}
+      {tab === "onboarding" && (
+        <Dashboard
+          data={data}
+          chartData={chartData!}
+          totalRecords={totalRecords}
+          totalPages={totalPages}
+          currentPage={page}
+          statistics={stats as any}
+        />
+      )}
 
-      {tab === "onboarding-new" && <OnboardingNewDashboard data={dataNew} chartData={chartDataNew!} totalRecords={totalRecordsNew} totalPages={totalPagesNew} currentPage={page} statistics={statsNew as any} />}
+      {tab === "onboarding-new" && (
+        <OnboardingNewDashboard
+          data={dataNew}
+          chartData={chartDataNew!}
+          totalRecords={totalRecordsNew}
+          totalPages={totalPagesNew}
+          currentPage={page}
+          statistics={statsNew as any}
+        />
+      )}
 
       {tab === "overview" && (
         <div className="text-sm text-gray-700">Welcome to CMS Overview.</div>

@@ -2,12 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import client from "@/lib/mongodb";
 
+function extractEmailFromClerkUser(user: any): string | null {
+  const byId = user?.emailAddresses?.find?.(
+    (e: any) => e.id === user?.primaryEmailAddressId
+  )?.emailAddress;
+
+  const direct = user?.primaryEmailAddress?.emailAddress;
+
+  const first = user?.emailAddresses?.[0]?.emailAddress;
+
+  return byId || direct || first || null;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const user = await currentUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const email = extractEmailFromClerkUser(user);
 
     const body = await request.json();
     const {
@@ -28,7 +42,6 @@ export async function POST(request: NextRequest) {
       metadata = {},
     } = body;
 
-    // Validate required fields
     if (!eventType || !context) {
       return NextResponse.json(
         { error: "eventType and context are required" },
@@ -36,14 +49,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get IP address from headers if not provided
     const clientIp =
       ipAddress ||
       request.headers.get("x-forwarded-for")?.split(",")[0] ||
       request.headers.get("x-real-ip") ||
       "unknown";
 
-    // Get user agent if not provided
     const clientUserAgent =
       userAgent || request.headers.get("user-agent") || "unknown";
 
@@ -52,6 +63,7 @@ export async function POST(request: NextRequest) {
 
     const activityLog = {
       userId: user.id,
+      email, // ← ایمیل از Clerk
       eventType,
       context,
       skill: skill || null,
@@ -96,6 +108,8 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const email = extractEmailFromClerkUser(user);
+
     const body = await request.json();
     const { activities } = body;
 
@@ -115,8 +129,9 @@ export async function PUT(request: NextRequest) {
       "unknown";
     const clientUserAgent = request.headers.get("user-agent") || "unknown";
 
-    const activityLogs = activities.map((activity) => ({
+    const activityLogs = activities.map((activity: any) => ({
       userId: user.id,
+      email,
       eventType: activity.eventType,
       context: activity.context,
       skill: activity.skill || null,

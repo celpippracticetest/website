@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
     if (search) {
       searchFilter.$or = [
         { userId: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
         { ipAddress: { $regex: search, $options: "i" } },
         { userAgent: { $regex: search, $options: "i" } },
       ];
@@ -41,9 +42,11 @@ export async function GET(request: NextRequest) {
     // Get unique users with their latest activity
     const pipeline = [
       { $match: searchFilter },
+      { $sort: { timestampUtc: 1 } },
       {
         $group: {
           _id: "$userId",
+          email: { $last: "$email" },
           lastActivity: { $max: "$timestampUtc" },
           firstActivity: { $min: "$timestampUtc" },
           totalActivities: { $sum: 1 },
@@ -120,12 +123,8 @@ export async function GET(request: NextRequest) {
             sortOrder === "desc" ? -1 : 1,
         },
       },
-      {
-        $skip: (page - 1) * limit,
-      },
-      {
-        $limit: limit,
-      },
+      { $skip: (page - 1) * limit },
+      { $limit: limit },
     ];
 
     const users = await userActivityCollection.aggregate(pipeline).toArray();
@@ -143,24 +142,30 @@ export async function GET(request: NextRequest) {
     const totalCount = totalCountResult[0]?.total || 0;
 
     // Format response
-    const formattedUsers = users.map((user) => ({
-      userId: user._id,
-      lastActivity: user.lastActivity,
-      firstActivity: user.firstActivity,
-      totalActivities: user.totalActivities,
-      uniqueIpAddresses: user.ipAddresses.length,
-      uniqueUserAgents: user.userAgents.length,
-      totalTokens: user.totalTokens,
-      practiceAttempts: user.practiceAttempts,
-      practiceCompletions: user.practiceCompletions,
-      mockAttempts: user.mockAttempts,
-      mockCompletions: user.mockCompletions,
-      paymentEvents: user.paymentEvents,
-      disputeEvents: user.disputeEvents,
-      riskScore: calculateRiskScore(user),
-      ipAddresses: user.ipAddresses.slice(0, 5), // Show only first 5 IPs
-      userAgents: user.userAgents.slice(0, 3), // Show only first 3 user agents
-    }));
+    const formattedUsers = users.map((user) => {
+      const uniqueIpAddresses = user.ipAddresses.length;
+      const uniqueUserAgents = user.userAgents.length;
+
+      return {
+        userId: user._id,
+        email: user.email ?? null,
+        lastActivity: user.lastActivity,
+        firstActivity: user.firstActivity,
+        totalActivities: user.totalActivities,
+        uniqueIpAddresses,
+        uniqueUserAgents,
+        totalTokens: user.totalTokens,
+        practiceAttempts: user.practiceAttempts,
+        practiceCompletions: user.practiceCompletions,
+        mockAttempts: user.mockAttempts,
+        mockCompletions: user.mockCompletions,
+        paymentEvents: user.paymentEvents,
+        disputeEvents: user.disputeEvents,
+        riskScore: calculateRiskScoreGrouped(user),
+        ipAddresses: user.ipAddresses.slice(0, 5),
+        userAgents: user.userAgents.slice(0, 3),
+      };
+    });
 
     return NextResponse.json({
       users: formattedUsers,
@@ -180,27 +185,32 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function calculateRiskScore(user: any): number {
+function calculateRiskScoreGrouped(user: any): number {
   let riskScore = 0;
+
+  const uniqueIpAddresses = user.ipAddresses?.length ?? 0;
+  const uniqueUserAgents = user.userAgents?.length ?? 0;
 
   // High dispute events
   if (user.disputeEvents > 0) riskScore += 50;
 
   // Multiple IP addresses (potential shared account)
-  if (user.uniqueIpAddresses > 3) riskScore += 20;
-  if (user.uniqueIpAddresses > 10) riskScore += 30;
+  if (uniqueIpAddresses > 10) riskScore += 30;
+  else if (uniqueIpAddresses > 3) riskScore += 20;
 
   // Multiple user agents (potential automation)
-  if (user.uniqueUserAgents > 5) riskScore += 15;
+  if (uniqueUserAgents > 5) riskScore += 15;
 
   // High token usage without completion
-  const completionRate =
-    (user.practiceCompletions + user.mockCompletions) /
-    (user.practiceAttempts + user.mockAttempts || 1);
-  if (completionRate < 0.3 && user.totalTokens > 10000) riskScore += 25;
+  const attempts = (user.practiceAttempts || 0) + (user.mockAttempts || 0);
+  const completions =
+    (user.practiceCompletions || 0) + (user.mockCompletions || 0);
+  const completionRate = attempts ? completions / attempts : 1;
+  if (completionRate < 0.3 && (user.totalTokens || 0) > 10000) riskScore += 25;
 
   // Payment events without corresponding activity
-  if (user.paymentEvents > 0 && user.totalActivities < 10) riskScore += 20;
+  if ((user.paymentEvents || 0) > 0 && (user.totalActivities || 0) < 10)
+    riskScore += 20;
 
   return Math.min(riskScore, 100);
 }

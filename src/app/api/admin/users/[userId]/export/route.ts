@@ -38,7 +38,9 @@ export async function GET(
     const userActivityCollection = db.collection("useractivities");
 
     // Build filter (same as in the GET route)
-    const filter: any = { userId: params.userId };
+    const filter: any = {
+      $or: [{ userId: params.userId }, { email: params.userId }],
+    };
 
     if (startDate || endDate) {
       filter.timestampUtc = {};
@@ -98,6 +100,8 @@ export async function GET(
         { attemptId: { $regex: search, $options: "i" } },
         { contentId: { $regex: search, $options: "i" } },
         { notes: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+        { userId: { $regex: search, $options: "i" } },
       ];
     }
 
