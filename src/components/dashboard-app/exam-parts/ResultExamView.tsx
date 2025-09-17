@@ -36,7 +36,7 @@ const ResultExamView = ({
   // Log score report viewed
   useEffect(() => {
     if (user && exams) {
-      ActivityLogger.scoreReportViewed(exams._id.toString());
+      ActivityLogger.scoreReportViewed(exams.id, "mock");
     }
   }, [user, exams]);
   const listeningAverage = (() => {

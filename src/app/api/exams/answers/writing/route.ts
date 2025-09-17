@@ -245,14 +245,14 @@ export const POST = async function (req: NextRequest) {
       overalScore:
         msg &&
         msg.content.length > 1 &&
-        msg.content[1].input &&
-        msg.content[1].input.overall
-          ? msg.content[1].input.overall
+        (msg.content[1] as any).input &&
+        (msg.content[1] as any).input.overall
+          ? (msg.content[1] as any).input.overall
           : 0,
       type: "WRITING",
       result:
-        msg && msg.content.length > 1 && msg.content[1].input
-          ? msg.content[1].input
+        msg && msg.content.length > 1 && (msg.content[1] as any).input
+          ? (msg.content[1] as any).input
           : {
               overall: 0,
               contentAndCoherence: 0,
