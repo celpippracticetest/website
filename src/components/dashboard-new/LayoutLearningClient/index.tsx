@@ -11,6 +11,7 @@ import {
   useClerk,
   useUser,
 } from "@clerk/nextjs";
+import { useHasEverPurchased } from "@/hooks/useHasEverPurchased";
 
 import SvgChevronRight from "@/components/icons/ChevronRight";
 import SvgPractice from "@/components/icons/Practice";
@@ -200,6 +201,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
   const [couponModal, setCouponModal] = useState(false);
   const [hasClosedModal, setHasClosedModal] = useState(false);
   const { user, isLoaded, isSignedIn }: any = useUser();
+  const { hasEverPurchased } = useHasEverPurchased();
 
   const router = useRouter();
 
@@ -266,19 +268,20 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
 
   useEffect(() => {
     const checkLocalStorage = () => {
-      const hasClosed = localStorage.getItem("hasClosedExtraDiscountModal") === "true";
+      const hasClosed =
+        localStorage.getItem("hasClosedExtraDiscountModal") === "true";
       setHasClosedModal(hasClosed);
     };
 
     checkLocalStorage();
 
-    window.addEventListener('storage', checkLocalStorage);
-    
-    window.addEventListener('localStorageChanged', checkLocalStorage);
+    window.addEventListener("storage", checkLocalStorage);
+
+    window.addEventListener("localStorageChanged", checkLocalStorage);
 
     return () => {
-      window.removeEventListener('storage', checkLocalStorage);
-      window.removeEventListener('localStorageChanged', checkLocalStorage);
+      window.removeEventListener("storage", checkLocalStorage);
+      window.removeEventListener("localStorageChanged", checkLocalStorage);
     };
   }, []);
 
@@ -478,52 +481,56 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
           </>
         )}
 
-        {proUser && (
-          <>
-            <div
-              className={`relative p-[8px] flex flex-col z-[999] justify-none screen744:!justify-start screen1280:!justify-none items-start left-0 right-0 mx-auto  mt-[40px] rounded-[8px] max-w-[202px] screen744:!max-w-[132px] screen1280:!max-w-[202px] h-[114px] screen744:!h-[202px]  screen1280:!h-[114px] bg-[#B86DF9]`}
-            >
-              <Image
-                alt="refer pro user"
-                width={102}
-                height={81}
-                className={`absolute flex screen744:!hidden screen1280:!flex  top-[22px] screen744:!top-0 screen744:!left-0 -right-[10px] screen744:!right-0 mx-auto screen1280:!mr-0 screen1280:!ml-0 screen1280:!left-auto screen1280:!top-[22px] w-[102px]   screen1280:!-right-[10px] scale-[0.80]`}
-                src="/images/refer.png"
-              />
-              <Image
-                alt="refer pro user"
-                width={62}
-                height={62}
-                className={`  hidden screen744:!flex  screen1280:!hidden  top-0 left-0 right-0 mx-auto screen1280:!mr-0 screen1280:!ml-0 screen1280:!left-auto screen1280:!top-[22px] w-[62px]   screen1280:!-right-[10px] `}
-                src="/images/refer-mobile.png"
-              />
-              <div className="  text-left mt-0 screen744:!mt-[8px] screen1280:!mt-0 leading-[18px] mb-[10px]">
-                <div className="text-left flex flex-col gap-[10px] leading-[100%]">
-                  <span className="text-left font-semibold text-white screen744:!text-[11px] text-[13px] h-[18px] screen1280:!text-[13px]">
-                    Refer a friend, Earn rewards{" "}
-                  </span>
-                  <span className="h-[36px] text-left mt-0 screen744:!mt-[8px] screen1280:!mt-0 font-normal text-white max-w-[111px] text-[11px]  screen744:!text-[10px]  screen1280:!text-[11px] leading-[18px]">
-                    Get %20 for each successful payments{" "}
-                  </span>
+        {proUser ||
+          (hasEverPurchased && (
+            <>
+              <div
+                className={`relative p-[8px] flex flex-col z-[999] justify-none screen744:!justify-start screen1280:!justify-none items-start left-0 right-0 mx-auto  mt-[40px] rounded-[8px] max-w-[202px] screen744:!max-w-[132px] screen1280:!max-w-[202px] h-[114px] screen744:!h-[202px]  screen1280:!h-[114px] bg-[#B86DF9]`}
+              >
+                <Image
+                  alt="refer pro user"
+                  width={102}
+                  height={81}
+                  className={`absolute flex screen744:!hidden screen1280:!flex  top-[22px] screen744:!top-0 screen744:!left-0 -right-[10px] screen744:!right-0 mx-auto screen1280:!mr-0 screen1280:!ml-0 screen1280:!left-auto screen1280:!top-[22px] w-[102px]   screen1280:!-right-[10px] scale-[0.80]`}
+                  src="/images/refer.png"
+                />
+                <Image
+                  alt="refer pro user"
+                  width={62}
+                  height={62}
+                  className={`  hidden screen744:!flex  screen1280:!hidden  top-0 left-0 right-0 mx-auto screen1280:!mr-0 screen1280:!ml-0 screen1280:!left-auto screen1280:!top-[22px] w-[62px]   screen1280:!-right-[10px] `}
+                  src="/images/refer-mobile.png"
+                />
+                <div className="  text-left mt-0 screen744:!mt-[8px] screen1280:!mt-0 leading-[18px] mb-[10px]">
+                  <div className="text-left flex flex-col gap-[10px] leading-[100%]">
+                    <span className="text-left font-semibold text-white screen744:!text-[11px] text-[13px] h-[18px] screen1280:!text-[13px]">
+                      Refer a friend, Earn rewards{" "}
+                    </span>
+                    <span className="h-[36px] text-left mt-0 screen744:!mt-[8px] screen1280:!mt-0 font-normal text-white max-w-[111px] text-[11px]  screen744:!text-[10px]  screen1280:!text-[11px] leading-[18px]">
+                      Get %20 for each successful payments{" "}
+                    </span>
+                  </div>
+                </div>
+                <div
+                  onClick={() => {
+                    if (freeUser) {
+                      setShowUpgradeModal(true);
+                    } else {
+                      setShowLoginModal(true);
+                    }
+                  }}
+                  className="cursor-pointer max-w-[95px]  screen1280:!max-w-[95px] screen744:!w-full  flex items-center justify-center text-white border-[1px]  h-[24px] w-full rounded-[24px] "
+                >
+                  <Link
+                    href={"/earn100"}
+                    className=" text-[14px] font-normal ]"
+                  >
+                    see details
+                  </Link>
                 </div>
               </div>
-              <div
-                onClick={() => {
-                  if (freeUser) {
-                    setShowUpgradeModal(true);
-                  } else {
-                    setShowLoginModal(true);
-                  }
-                }}
-                className="cursor-pointer max-w-[95px]  screen1280:!max-w-[95px] screen744:!w-full  flex items-center justify-center text-white border-[1px]  h-[24px] w-full rounded-[24px] "
-              >
-                <Link href={"/earn100"} className=" text-[14px] font-normal ]">
-                  see details
-                </Link>
-              </div>
-            </div>
-          </>
-        )}
+            </>
+          ))}
       </>
     );
   };
@@ -796,7 +803,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
             />
           )}
 
-          {user && proUser && (
+          {user && hasEverPurchased && (
             <NavItem
               link="/earn100"
               icon={<SvgReferral />}
@@ -868,7 +875,9 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
       <div className="relative flex w-full  mb-[88px] justify-center mx-auto z-[9] overflow-x-clip">
         <div
           aria-hidden
-          className={`pointer-events-none absolute left-1/2 -translate-x-1/2 ${hasClosedModal?"top-[170px]":"-top-[220px]"} w-[1065px] h-auto min-h-[300px] screen:744:!h-[629px] rounded-[9999px]`}
+          className={`pointer-events-none absolute left-1/2 -translate-x-1/2 ${
+            hasClosedModal ? "top-[170px]" : "-top-[220px]"
+          } w-[1065px] h-auto min-h-[300px] screen:744:!h-[629px] rounded-[9999px]`}
           style={{ background: "#DAFFFA", filter: "blur(120px)", opacity: 0.8 }}
         />
         <div
@@ -1057,7 +1066,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                 {/* auth buttons */}
                 <div className="flex items-right gap-4 lg:gap-5 md:gap-3 pr-[24px]">
                   <div className="flex items-center">
-                    {proUser ? (
+                    {proUser || hasEverPurchased ? (
                       <>
                         <button
                           className="hidden gap-[10px] screen744:!flex w-[149px] shrink-0 h-[40px] rounded-[24px] shadow-startButton cursor-pointer 
@@ -1071,7 +1080,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                           <span>
                             <SvgLearningGift />
                           </span>
-                          <span className="font-regular text-[14px] text-[#37465C] text-black group-hover:text-white">
+                          <span className="font-regular text-[14px] text-[#37465C]  group-hover:text-white">
                             Earn $100
                           </span>
                         </button>

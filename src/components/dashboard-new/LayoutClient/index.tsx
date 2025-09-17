@@ -11,6 +11,7 @@ import {
   useClerk,
   useUser,
 } from "@clerk/nextjs";
+import { useHasEverPurchased } from "@/hooks/useHasEverPurchased";
 
 import SvgChevronRight from "@/components/icons/ChevronRight";
 import SvgPractice from "@/components/icons/Practice";
@@ -212,6 +213,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
     (state) => state.setVisibleHorizontalCoupon
   );
   const { user, isLoaded, isSignedIn }: any = useUser();
+  const { hasEverPurchased } = useHasEverPurchased();
 
   const noUser = isLoaded ? !isSignedIn : false;
 
@@ -766,7 +768,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
             />
           )}
 
-          {user && proUser && (
+          {user && hasEverPurchased && (
             <NavItem
               link="/earn100"
               icon={<SvgReferral />}
@@ -979,7 +981,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                 {/* auth buttons */}
                 <div className="flex items-right gap-4 lg:gap-5 md:gap-3 pr-[24px]">
                   <div className="flex items-center">
-                    {proUser ? (
+                    {proUser || hasEverPurchased ? (
                       <>
                         <button
                           className="hidden gap-[10px] screen744:!flex w-[149px] shrink-0 h-[40px] rounded-[24px] shadow-startButton cursor-pointer 
@@ -993,7 +995,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                           <span>
                             <SvgLearningGift />
                           </span>
-                          <span className="font-regular text-[14px] text-[#37465C] text-black group-hover:text-white">
+                          <span className="font-regular text-[14px] text-[#37465C]  group-hover:text-white">
                             Earn $100
                           </span>
                         </button>
