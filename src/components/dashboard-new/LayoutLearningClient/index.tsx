@@ -11,6 +11,7 @@ import {
   useClerk,
   useUser,
 } from "@clerk/nextjs";
+import { useHasEverPurchased } from "@/hooks/useHasEverPurchased";
 
 import SvgChevronRight from "@/components/icons/ChevronRight";
 import SvgPractice from "@/components/icons/Practice";
@@ -200,6 +201,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
   const [couponModal, setCouponModal] = useState(false);
   const [hasClosedModal, setHasClosedModal] = useState(false);
   const { user, isLoaded, isSignedIn }: any = useUser();
+  const { hasEverPurchased } = useHasEverPurchased();
 
   const router = useRouter();
 
@@ -266,19 +268,20 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
 
   useEffect(() => {
     const checkLocalStorage = () => {
-      const hasClosed = localStorage.getItem("hasClosedExtraDiscountModal") === "true";
+      const hasClosed =
+        localStorage.getItem("hasClosedExtraDiscountModal") === "true";
       setHasClosedModal(hasClosed);
     };
 
     checkLocalStorage();
 
-    window.addEventListener('storage', checkLocalStorage);
-    
-    window.addEventListener('localStorageChanged', checkLocalStorage);
+    window.addEventListener("storage", checkLocalStorage);
+
+    window.addEventListener("localStorageChanged", checkLocalStorage);
 
     return () => {
-      window.removeEventListener('storage', checkLocalStorage);
-      window.removeEventListener('localStorageChanged', checkLocalStorage);
+      window.removeEventListener("storage", checkLocalStorage);
+      window.removeEventListener("localStorageChanged", checkLocalStorage);
     };
   }, []);
 
@@ -796,7 +799,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
             />
           )}
 
-          {user && proUser && (
+          {user && hasEverPurchased && (
             <NavItem
               link="/earn100"
               icon={<SvgReferral />}
@@ -868,7 +871,9 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
       <div className="relative flex w-full  mb-[88px] justify-center mx-auto z-[9] overflow-x-clip">
         <div
           aria-hidden
-          className={`pointer-events-none absolute left-1/2 -translate-x-1/2 ${hasClosedModal?"top-[170px]":"-top-[220px]"} w-[1065px] h-auto min-h-[300px] screen:744:!h-[629px] rounded-[9999px]`}
+          className={`pointer-events-none absolute left-1/2 -translate-x-1/2 ${
+            hasClosedModal ? "top-[170px]" : "-top-[220px]"
+          } w-[1065px] h-auto min-h-[300px] screen:744:!h-[629px] rounded-[9999px]`}
           style={{ background: "#DAFFFA", filter: "blur(120px)", opacity: 0.8 }}
         />
         <div

@@ -11,6 +11,7 @@ import {
   useClerk,
   useUser,
 } from "@clerk/nextjs";
+import { useHasEverPurchased } from "@/hooks/useHasEverPurchased";
 
 import SvgChevronRight from "@/components/icons/ChevronRight";
 import SvgPractice from "@/components/icons/Practice";
@@ -212,6 +213,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
     (state) => state.setVisibleHorizontalCoupon
   );
   const { user, isLoaded, isSignedIn }: any = useUser();
+  const { hasEverPurchased } = useHasEverPurchased();
 
   const noUser = isLoaded ? !isSignedIn : false;
 
@@ -766,7 +768,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
             />
           )}
 
-          {user && proUser && (
+          {user && hasEverPurchased && (
             <NavItem
               link="/earn100"
               icon={<SvgReferral />}
