@@ -8,6 +8,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  ArcElement,
 } from "chart.js";
 
 ChartJS.register(
@@ -16,12 +17,12 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  ArcElement
 );
 
-import React, { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Bar } from "react-chartjs-2";
+import React from "react";
+import { Pie } from "react-chartjs-2";
 
 interface OnboardingRecord {
   "User ID": string;
@@ -48,9 +49,38 @@ interface DashboardProps {
   };
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ chartData, data, totalRecords, totalPages, currentPage, statistics }) => {
+const Dashboard: React.FC<DashboardProps> = ({
+  data,
+  totalRecords,
+  totalPages,
+  currentPage,
+  statistics,
+}) => {
   // Use all data from server (already paginated)
   const currentData = data;
+
+  // Create answer distribution data
+  const answerDistribution = React.useMemo(() => {
+    const part1Answers: { [key: string]: number } = {};
+    const part2Answers: { [key: string]: number } = {};
+
+    currentData.forEach((record) => {
+      // Count Part 1 answers
+      if (record["Answer Part 1"]) {
+        const answer = record["Answer Part 1"];
+        part1Answers[answer] = (part1Answers[answer] || 0) + 1;
+      }
+
+      // Count Part 2 answers
+      if (record["Answer Part 2"]) {
+        const answer = record["Answer Part 2"];
+        part2Answers[answer] = (part2Answers[answer] || 0) + 1;
+      }
+    });
+
+    return { part1Answers, part2Answers };
+  }, [currentData]);
+
   const chartOptions = {
     responsive: true,
     plugins: {
@@ -59,12 +89,7 @@ const Dashboard: React.FC<DashboardProps> = ({ chartData, data, totalRecords, to
       },
       title: {
         display: true,
-        text: "Onboarding Statistics",
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
+        text: "Answer Distribution",
       },
     },
   };
@@ -73,25 +98,23 @@ const Dashboard: React.FC<DashboardProps> = ({ chartData, data, totalRecords, to
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Onboarding Data
-        </h1>
-      <button
-        onClick={async () => {
+        <h1 className="text-2xl font-bold text-gray-900">Onboarding Data</h1>
+        <button
+          onClick={async () => {
             try {
               const res = await fetch("/api/onboarding/export");
-          if (!res.ok) {
-            console.error("Failed to download file");
-            return;
-          }
-          const blob = await res.blob();
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "onboarding_export.xlsx";
+              if (!res.ok) {
+                console.error("Failed to download file");
+                return;
+              }
+              const blob = await res.blob();
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "onboarding_export.xlsx";
               document.body.appendChild(a);
-          a.click();
-          window.URL.revokeObjectURL(url);
+              a.click();
+              window.URL.revokeObjectURL(url);
               document.body.removeChild(a);
             } catch (error) {
               console.error("Error exporting data:", error);
@@ -103,31 +126,97 @@ const Dashboard: React.FC<DashboardProps> = ({ chartData, data, totalRecords, to
         </button>
       </div>
 
-      {/* Chart */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <Bar data={chartData} options={chartOptions} />
+      {/* Answer Distribution Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Part 1 Answers Distribution */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4">
+            Part 1 Answers Distribution
+          </h3>
+          <Pie
+            data={{
+              labels: Object.keys(answerDistribution.part1Answers),
+              datasets: [
+                {
+                  data: Object.values(answerDistribution.part1Answers),
+                  backgroundColor: [
+                    "#FF6384",
+                    "#36A2EB",
+                    "#FFCE56",
+                    "#4BC0C0",
+                    "#9966FF",
+                    "#FF9F40",
+                    "#FF6384",
+                    "#C9CBCF",
+                  ],
+                  borderWidth: 2,
+                  borderColor: "#fff",
+                },
+              ],
+            }}
+            options={chartOptions}
+          />
+        </div>
+
+        {/* Part 2 Answers Distribution */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4">
+            Part 2 Answers Distribution
+          </h3>
+          <Pie
+            data={{
+              labels: Object.keys(answerDistribution.part2Answers),
+              datasets: [
+                {
+                  data: Object.values(answerDistribution.part2Answers),
+                  backgroundColor: [
+                    "#FF6384",
+                    "#36A2EB",
+                    "#FFCE56",
+                    "#4BC0C0",
+                    "#9966FF",
+                    "#FF9F40",
+                    "#FF6384",
+                    "#C9CBCF",
+                  ],
+                  borderWidth: 2,
+                  borderColor: "#fff",
+                },
+              ],
+            }}
+            options={chartOptions}
+          />
+        </div>
       </div>
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-700">Total Responses</h3>
+          <h3 className="text-lg font-semibold text-gray-700">
+            Total Responses
+          </h3>
           <p className="text-3xl font-bold text-blue-600">{totalRecords}</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-700">Part 1 Answers</h3>
+          <h3 className="text-lg font-semibold text-gray-700">
+            Part 1 Answers
+          </h3>
           <p className="text-3xl font-bold text-green-600">
             {statistics.part1Answers}
           </p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-700">Part 2 Answers</h3>
+          <h3 className="text-lg font-semibold text-gray-700">
+            Part 2 Answers
+          </h3>
           <p className="text-3xl font-bold text-purple-600">
             {statistics.part2Answers}
           </p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-700">Custom Answers</h3>
+          <h3 className="text-lg font-semibold text-gray-700">
+            Custom Answers
+          </h3>
           <p className="text-3xl font-bold text-orange-600">
             {statistics.customAnswers}
           </p>
@@ -142,7 +231,10 @@ const Dashboard: React.FC<DashboardProps> = ({ chartData, data, totalRecords, to
           </h3>
         </div>
         <div className="overflow-x-auto max-w-full">
-          <table className="w-full divide-y divide-gray-200" style={{ minWidth: '800px' }}>
+          <table
+            className="w-full divide-y divide-gray-200"
+            style={{ minWidth: "800px" }}
+          >
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
@@ -196,15 +288,20 @@ const Dashboard: React.FC<DashboardProps> = ({ chartData, data, totalRecords, to
         {totalPages > 1 && (
           <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
             <div className="text-sm text-gray-700">
-              Showing {((currentPage - 1) * 100) + 1} to {Math.min(currentPage * 100, totalRecords)} of {totalRecords} total records (Page {currentPage} of {totalPages})
+              Showing {(currentPage - 1) * 100 + 1} to{" "}
+              {Math.min(currentPage * 100, totalRecords)} of {totalRecords}{" "}
+              total records (Page {currentPage} of {totalPages})
             </div>
             <div className="flex space-x-2">
               <a
-                href={`/cms/dashboard?tab=onboarding&page=${Math.max(currentPage - 1, 1)}`}
+                href={`/cms/dashboard?tab=onboarding&page=${Math.max(
+                  currentPage - 1,
+                  1
+                )}`}
                 className={`px-3 py-1 border border-gray-300 rounded text-sm ${
-                  currentPage === 1 
-                    ? 'opacity-50 cursor-not-allowed bg-gray-100' 
-                    : 'hover:bg-gray-50 cursor-pointer'
+                  currentPage === 1
+                    ? "opacity-50 cursor-not-allowed bg-gray-100"
+                    : "hover:bg-gray-50 cursor-pointer"
                 }`}
               >
                 Previous
@@ -213,11 +310,14 @@ const Dashboard: React.FC<DashboardProps> = ({ chartData, data, totalRecords, to
                 Page {currentPage} of {totalPages}
               </span>
               <a
-                href={`/cms/dashboard?tab=onboarding&page=${Math.min(currentPage + 1, totalPages)}`}
+                href={`/cms/dashboard?tab=onboarding&page=${Math.min(
+                  currentPage + 1,
+                  totalPages
+                )}`}
                 className={`px-3 py-1 border border-gray-300 rounded text-sm ${
-                  currentPage === totalPages 
-                    ? 'opacity-50 cursor-not-allowed bg-gray-100' 
-                    : 'hover:bg-gray-50 cursor-pointer'
+                  currentPage === totalPages
+                    ? "opacity-50 cursor-not-allowed bg-gray-100"
+                    : "hover:bg-gray-50 cursor-pointer"
                 }`}
               >
                 Next

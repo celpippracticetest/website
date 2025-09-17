@@ -11,6 +11,8 @@ import { useRouter } from "nextjs-toploader/app";
 import { useUser } from "@clerk/nextjs";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
+import { ActivityLogger } from "@/lib/userActivity";
+import { useEffect } from "react";
 
 function scaleToBand(weightedPercent: number): number {
   return Math.ceil((weightedPercent / 100) * 12);
@@ -30,6 +32,13 @@ const ResultExamView = ({
   const route = useRouter();
 
   const { user, isLoaded } = useUser();
+
+  // Log score report viewed
+  useEffect(() => {
+    if (user && exams) {
+      ActivityLogger.scoreReportViewed(exams._id.toString());
+    }
+  }, [user, exams]);
   const listeningAverage = (() => {
     const average = Array.from({ length: 6 })
       .map((_, index) => {

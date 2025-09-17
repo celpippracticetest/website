@@ -15,6 +15,7 @@ import { useUserContext } from "@/hooks/useUserContext";
 import { useUser } from "@clerk/nextjs";
 import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
+import { ActivityLogger } from "@/lib/userActivity";
 
 type Skill = {
   label: string;
@@ -252,6 +253,12 @@ const Page = () => {
       return;
     }
 
+    // Log learning activity start
+    const attemptId = `learning_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+    await ActivityLogger.learningStarted(attemptId);
+
     // Check if chat is locked
     if (isChatLocked) {
       return;
@@ -344,6 +351,15 @@ const Page = () => {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // Log AI feedback generation
+      await ActivityLogger.aiFeedbackGenerated(
+        "learning",
+        undefined,
+        data.usage?.prompt_tokens || 0,
+        data.usage?.completion_tokens || 0,
+        attemptId
+      );
 
       // Lock chat for free users/guests after first response and refresh server count
       if ((isFreeUser || noUser) && !isPremiumUser) {

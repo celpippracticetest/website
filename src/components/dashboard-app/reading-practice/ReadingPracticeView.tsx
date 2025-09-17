@@ -25,6 +25,7 @@ import LoginModal from "@/components/modal/LoginModal";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import SvgCircle from "@/components/icons/Circle";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
+import { ActivityLogger } from "@/lib/userActivity";
 
 interface ReadingPracticeViewProps {
   practice: TPracticeDto;
@@ -91,12 +92,18 @@ const ReadingPracticeView = ({
     setPassageIndex(0);
     setQuestionIndex(0);
     setSelectedAnswers({});
-  }, [selectedPracticeId]);
+
+    // Log practice started
+    if (user && selectedPracticeId) {
+      const attemptId = `practice_${selectedPracticeId}_${Date.now()}`;
+      ActivityLogger.practiceStarted(attemptId, selectedPracticeId, "Reading");
+    }
+  }, [selectedPracticeId, user]);
   useEffect(() => {
     if (page === "answer" && user) {
       const submitAnswers = async () => {
         try {
-          await fetch("/api/answers", {
+          const response = await fetch("/api/answers", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -106,6 +113,20 @@ const ReadingPracticeView = ({
               answers: selectedAnswers,
             }),
           });
+
+          if (response.ok) {
+            const result = await response.json();
+            // Log practice completed
+            const attemptId = `practice_${practice.id}_${Date.now()}`;
+            await ActivityLogger.practiceCompleted(
+              attemptId,
+              practice.id,
+              "Reading",
+              result.overall,
+              result,
+              time
+            );
+          }
         } catch (error) {
           // Optionally handle error
           console.error("Failed to submit answers:", error);

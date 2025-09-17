@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Webhook } from "svix";
 import { TrackClient, RegionUS } from "customerio-node";
 import { ensureUserReferral } from "@/app/api/referrals/route";
+import { ActivityLogger } from "@/lib/userActivity";
 
 const GA_MEASUREMENT_ID = process.env.GA_MEASUREMENT_ID!;
 const GA_API_SECRET = process.env.GA_API_SECRET!;
@@ -45,6 +46,13 @@ export async function POST(req: NextRequest) {
     // Check for Clerk user.created event
     if (body.type === "user.created" && body.data?.id) {
       const userId = body.data.id;
+
+      try {
+        // Log user signup
+        await ActivityLogger.userSignup(userId);
+      } catch (logErr) {
+        console.error("Activity logging failed:", logErr);
+      }
 
       try {
         // Ensure the newly created user immediately gets their own referral code

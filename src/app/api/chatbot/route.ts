@@ -247,19 +247,20 @@ IMPORTANT: Use the current scores to provide personalized advice. Focus on the w
 
     // Build conversation history for Anthropic
     const messages: Array<{ role: "user" | "assistant"; content: string }> = [];
-    
+
     // Add conversation history if provided
     if (conversationHistory && Array.isArray(conversationHistory)) {
       conversationHistory.forEach((msg: any) => {
         if (msg.type === "user" || msg.type === "assistant") {
           messages.push({
-            role: msg.type === "user" ? "user" as const : "assistant" as const,
+            role:
+              msg.type === "user" ? ("user" as const) : ("assistant" as const),
             content: msg.content,
           });
         }
       });
     }
-    
+
     // Add current message
     messages.push({
       role: "user",
@@ -281,6 +282,10 @@ IMPORTANT: Use the current scores to provide personalized advice. Focus on the w
     return NextResponse.json({
       response: aiResponse.text,
       timestamp: new Date().toISOString(),
+      usage: {
+        prompt_tokens: response.usage?.input_tokens || 0,
+        completion_tokens: response.usage?.output_tokens || 0,
+      },
     });
   } catch (error) {
     console.error("Chatbot API error:", error);

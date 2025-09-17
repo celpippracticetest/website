@@ -338,7 +338,13 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    return NextResponse.json(answer);
+    return NextResponse.json({
+      ...answer,
+      usage: {
+        prompt_tokens: msg?.usage?.input_tokens || 0,
+        completion_tokens: msg?.usage?.output_tokens || 0,
+      },
+    });
   } catch (error) {
     console.error("Error uploading file:", error);
     return NextResponse.json(

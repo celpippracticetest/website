@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Bar } from "react-chartjs-2";
+import React,from "react";
+import { Pie } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -10,6 +10,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  ArcElement,
 } from "chart.js";
 
 ChartJS.register(
@@ -18,7 +19,8 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  ArcElement
 );
 
 interface OnboardingNewRecord {
@@ -53,7 +55,6 @@ interface OnboardingNewDashboardProps {
 
 const OnboardingNewDashboard: React.FC<OnboardingNewDashboardProps> = ({
   data,
-  chartData,
   totalRecords,
   totalPages,
   currentPage,
@@ -61,6 +62,28 @@ const OnboardingNewDashboard: React.FC<OnboardingNewDashboardProps> = ({
 }) => {
   // Use all data from server (already paginated)
   const currentData = data;
+
+  // Create answer distribution data
+  const answerDistribution = React.useMemo(() => {
+    const testDates: { [key: string]: number } = {};
+    const focusSkills: { [key: string]: number } = {};
+
+    currentData.forEach((record) => {
+      // Count Test Date answers
+      if (record["Test Date"]) {
+        const answer = record["Test Date"];
+        testDates[answer] = (testDates[answer] || 0) + 1;
+      }
+
+      // Count Focus Skill answers
+      if (record["Focus Skill"]) {
+        const answer = record["Focus Skill"];
+        focusSkills[answer] = (focusSkills[answer] || 0) + 1;
+      }
+    });
+
+    return { testDates, focusSkills };
+  }, [currentData]);
 
   const exportToExcel = async () => {
     try {
@@ -89,12 +112,7 @@ const OnboardingNewDashboard: React.FC<OnboardingNewDashboardProps> = ({
       },
       title: {
         display: true,
-        text: "Onboarding New Statistics",
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
+        text: "Answer Distribution",
       },
     },
   };
@@ -114,15 +132,75 @@ const OnboardingNewDashboard: React.FC<OnboardingNewDashboardProps> = ({
         </button>
       </div>
 
-      {/* Chart */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <Bar data={chartData} options={chartOptions} />
+      {/* Answer Distribution Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Test Date Distribution */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4">
+            Test Date Distribution
+          </h3>
+          <Pie
+            data={{
+              labels: Object.keys(answerDistribution.testDates),
+              datasets: [
+                {
+                  data: Object.values(answerDistribution.testDates),
+                  backgroundColor: [
+                    "#FF6384",
+                    "#36A2EB",
+                    "#FFCE56",
+                    "#4BC0C0",
+                    "#9966FF",
+                    "#FF9F40",
+                    "#FF6384",
+                    "#C9CBCF",
+                  ],
+                  borderWidth: 2,
+                  borderColor: "#fff",
+                },
+              ],
+            }}
+            options={chartOptions}
+          />
+        </div>
+
+        {/* Focus Skill Distribution */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4">
+            Focus Skill Distribution
+          </h3>
+          <Pie
+            data={{
+              labels: Object.keys(answerDistribution.focusSkills),
+              datasets: [
+                {
+                  data: Object.values(answerDistribution.focusSkills),
+                  backgroundColor: [
+                    "#FF6384",
+                    "#36A2EB",
+                    "#FFCE56",
+                    "#4BC0C0",
+                    "#9966FF",
+                    "#FF9F40",
+                    "#FF6384",
+                    "#C9CBCF",
+                  ],
+                  borderWidth: 2,
+                  borderColor: "#fff",
+                },
+              ],
+            }}
+            options={chartOptions}
+          />
+        </div>
       </div>
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-700">Total Responses</h3>
+          <h3 className="text-lg font-semibold text-gray-700">
+            Total Responses
+          </h3>
           <p className="text-3xl font-bold text-blue-600">{totalRecords}</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow">
@@ -138,7 +216,9 @@ const OnboardingNewDashboard: React.FC<OnboardingNewDashboardProps> = ({
           </p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-700">Avg Target Score</h3>
+          <h3 className="text-lg font-semibold text-gray-700">
+            Avg Target Score
+          </h3>
           <p className="text-3xl font-bold text-orange-600">
             {statistics.averageTargetScore}
           </p>
@@ -153,7 +233,10 @@ const OnboardingNewDashboard: React.FC<OnboardingNewDashboardProps> = ({
           </h3>
         </div>
         <div className="overflow-x-auto max-w-full">
-          <table className="w-full divide-y divide-gray-200" style={{ minWidth: '900px' }}>
+          <table
+            className="w-full divide-y divide-gray-200"
+            style={{ minWidth: "900px" }}
+          >
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
@@ -225,15 +308,20 @@ const OnboardingNewDashboard: React.FC<OnboardingNewDashboardProps> = ({
         {totalPages > 1 && (
           <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
             <div className="text-sm text-gray-700">
-              Showing {((currentPage - 1) * 100) + 1} to {Math.min(currentPage * 100, totalRecords)} of {totalRecords} total records (Page {currentPage} of {totalPages})
+              Showing {(currentPage - 1) * 100 + 1} to{" "}
+              {Math.min(currentPage * 100, totalRecords)} of {totalRecords}{" "}
+              total records (Page {currentPage} of {totalPages})
             </div>
             <div className="flex space-x-2">
               <a
-                href={`/cms/dashboard?tab=onboarding-new&page=${Math.max(currentPage - 1, 1)}`}
+                href={`/cms/dashboard?tab=onboarding-new&page=${Math.max(
+                  currentPage - 1,
+                  1
+                )}`}
                 className={`px-3 py-1 border border-gray-300 rounded text-sm ${
-                  currentPage === 1 
-                    ? 'opacity-50 cursor-not-allowed bg-gray-100' 
-                    : 'hover:bg-gray-50 cursor-pointer'
+                  currentPage === 1
+                    ? "opacity-50 cursor-not-allowed bg-gray-100"
+                    : "hover:bg-gray-50 cursor-pointer"
                 }`}
               >
                 Previous
@@ -242,11 +330,14 @@ const OnboardingNewDashboard: React.FC<OnboardingNewDashboardProps> = ({
                 Page {currentPage} of {totalPages}
               </span>
               <a
-                href={`/cms/dashboard?tab=onboarding-new&page=${Math.min(currentPage + 1, totalPages)}`}
+                href={`/cms/dashboard?tab=onboarding-new&page=${Math.min(
+                  currentPage + 1,
+                  totalPages
+                )}`}
                 className={`px-3 py-1 border border-gray-300 rounded text-sm ${
-                  currentPage === totalPages 
-                    ? 'opacity-50 cursor-not-allowed bg-gray-100' 
-                    : 'hover:bg-gray-50 cursor-pointer'
+                  currentPage === totalPages
+                    ? "opacity-50 cursor-not-allowed bg-gray-100"
+                    : "hover:bg-gray-50 cursor-pointer"
                 }`}
               >
                 Next

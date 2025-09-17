@@ -18,6 +18,7 @@ import SvgReadingPart from "@/components/icons/ReadingPart";
 import SvgListeningPart from "@/components/icons/ListeningPart";
 import SvgSpeakingPart from "@/components/icons/SpeakingPart";
 import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
+import { ActivityLogger } from "@/lib/userActivity";
 
 const parts = [
   "Problem Solving",
@@ -107,6 +108,14 @@ const WritingExamView = ({
     };
   }, [page, time]);
   useEffect(() => {
+    // Log mock exam started when component mounts
+    if (user && practice.taskId) {
+      const attemptId = `mock_${practice.taskId}_${Date.now()}`;
+      ActivityLogger.mockStarted(attemptId, practice.taskId.toString());
+    }
+  }, [user, practice.taskId]);
+
+  useEffect(() => {
     if (isSubmit) {
       submitAnswer();
     }
@@ -139,6 +148,27 @@ const WritingExamView = ({
       }
       setProgressBar(100);
       const result = await response.json();
+
+      // Log mock exam part completed
+      const attemptId = `mock_${practice.taskId}_${Date.now()}`;
+      await ActivityLogger.mockCompleted(
+        attemptId,
+        practice.taskId.toString(),
+        result.overall,
+        result,
+        time
+      );
+
+      // Log AI feedback generation
+      if (result.usage) {
+        await ActivityLogger.aiFeedbackGenerated(
+          "mock",
+          "Writing",
+          result.usage.prompt_tokens || 0,
+          result.usage.completion_tokens || 0,
+          attemptId
+        );
+      }
     } catch (error) {
       console.error("Error submitting answer:", error);
     } finally {

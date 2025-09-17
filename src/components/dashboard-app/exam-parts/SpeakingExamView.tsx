@@ -20,6 +20,7 @@ import SvgListeningPart from "@/components/icons/ListeningPart";
 import SvgReadingPart from "@/components/icons/ReadingPart";
 import SvgChevronDownExam from "@/components/icons/ChevronDownExam";
 import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
+import { ActivityLogger } from "@/lib/userActivity";
 
 const parts = [
   "Problem Solving",
@@ -172,6 +173,17 @@ const SpeakingExamView = ({
         return;
       }
       setProgressBar(100);
+
+      // Log mock exam part completed
+      const attemptId = `mock_${practice.taskId}_${Date.now()}`;
+      await ActivityLogger.mockCompleted(
+        attemptId,
+        practice.taskId.toString(),
+        undefined, // Score will be available later
+        undefined, // Breakdown will be available later
+        recordingTime
+      );
+
       setIsSubmit(true);
     } catch (error) {
       clearInterval(progressInterval);
@@ -244,7 +256,13 @@ const SpeakingExamView = ({
     setTime(partId === 17 || partId === 18 ? 60 : 30);
     setRecordingTime(partId === 13 || partId === 18 || partId === 19 ? 90 : 60);
     hasStartedRecordingRef.current = false;
-  }, [practice.taskId, partId]);
+
+    // Log mock exam started when component mounts
+    if (user && practice.taskId) {
+      const attemptId = `mock_${practice.taskId}_${Date.now()}`;
+      ActivityLogger.mockStarted(attemptId, practice.taskId.toString());
+    }
+  }, [practice.taskId, partId, user]);
 
   const [menuShowModal, setMenuShowModal] = useState(false);
   interface PracticeSection {

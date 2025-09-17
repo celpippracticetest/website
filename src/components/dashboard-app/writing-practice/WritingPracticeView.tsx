@@ -19,7 +19,6 @@ import { TWritingAnswerDto } from "@/models/answer";
 import { cn } from "@/lib/utils";
 import { SignInButton, SignUpButton, useUser } from "@clerk/nextjs";
 import dynamic from "next/dynamic";
-import { Close } from "@/components/icons";
 import Image from "next/image";
 import PlanCard from "@/components/pages/dashboard/PlanCard";
 import { TTaskSchemaDto } from "@/models/tasks.model";
@@ -28,6 +27,7 @@ import LoginModal from "@/components/modal/LoginModal";
 import UpgradeModal from "@/components/modal/UpgradeModal";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
+import { ActivityLogger } from "@/lib/userActivity";
 const SvgBestValuePlan = dynamic(
   () => import("../../../components/icons/BestValuePlan"),
   {
@@ -193,6 +193,29 @@ const WritingPracticeView = ({
       }
       setProgressBar(100);
       const result = await response.json();
+
+      // Log practice completed
+      const attemptId = `practice_${practice.id}_${Date.now()}`;
+      await ActivityLogger.practiceCompleted(
+        attemptId,
+        practice.id,
+        "Writing",
+        result.overall,
+        result,
+        time
+      );
+
+      // Log AI feedback generation
+      if (result.usage) {
+        await ActivityLogger.aiFeedbackGenerated(
+          "practice",
+          "Writing",
+          result.usage.prompt_tokens || 0,
+          result.usage.completion_tokens || 0,
+          attemptId
+        );
+      }
+
       onAnswerButtonClick(practice, result);
       setProgressBar(0);
       setTryToSubmit(false);
@@ -213,7 +236,13 @@ const WritingPracticeView = ({
     setProgressBar(0);
     setIsSubmit(false);
     setIsSubmit(false);
-  }, [selectedPracticeId]);
+
+    // Log practice started
+    if (user && selectedPracticeId) {
+      const attemptId = `practice_${selectedPracticeId}_${Date.now()}`;
+      ActivityLogger.practiceStarted(attemptId, selectedPracticeId, "Writing");
+    }
+  }, [selectedPracticeId, user]);
   // const {
   //   selectedAnswers,
   //   showResults,

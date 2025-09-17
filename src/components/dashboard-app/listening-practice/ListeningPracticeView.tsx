@@ -19,6 +19,7 @@ import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
 import SvgChevronRight from "@/components/icons/ChevronRight";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
+import { ActivityLogger } from "@/lib/userActivity";
 
 interface ListeningPracticeViewProps {
   practice: TPracticeDto;
@@ -97,13 +98,23 @@ const ListeningPracticeView = ({
     setPassageIndex(0);
     setQuestionIndex(0);
     setSelectedAnswers({});
-  }, [selectedPracticeId]);
+
+    // Log practice started
+    if (user && selectedPracticeId) {
+      const attemptId = `practice_${selectedPracticeId}_${Date.now()}`;
+      ActivityLogger.practiceStarted(
+        attemptId,
+        selectedPracticeId,
+        "Listening"
+      );
+    }
+  }, [selectedPracticeId, user]);
 
   useEffect(() => {
     if (page === "answer" && user && !isFromFirstPage) {
       const submitAnswers = async () => {
         try {
-          await fetch("/api/answers", {
+          const response = await fetch("/api/answers", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -113,6 +124,20 @@ const ListeningPracticeView = ({
               answers: selectedAnswers,
             }),
           });
+
+          if (response.ok) {
+            const result = await response.json();
+            // Log practice completed
+            const attemptId = `practice_${practice.id}_${Date.now()}`;
+            await ActivityLogger.practiceCompleted(
+              attemptId,
+              practice.id,
+              "Listening",
+              result.overall,
+              result,
+              time
+            );
+          }
         } catch (error) {
           // Optionally handle error
           console.error("Failed to submit answers:", error);
