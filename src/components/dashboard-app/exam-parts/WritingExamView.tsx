@@ -158,6 +158,17 @@ const WritingExamView = ({
         result,
         time
       );
+
+      // Log AI feedback generation
+      if (result.usage) {
+        await ActivityLogger.aiFeedbackGenerated(
+          "mock",
+          "Writing",
+          result.usage.prompt_tokens || 0,
+          result.usage.completion_tokens || 0,
+          attemptId
+        );
+      }
     } catch (error) {
       console.error("Error submitting answer:", error);
     } finally {

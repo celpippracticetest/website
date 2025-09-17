@@ -205,6 +205,17 @@ const WritingPracticeView = ({
         time
       );
 
+      // Log AI feedback generation
+      if (result.usage) {
+        await ActivityLogger.aiFeedbackGenerated(
+          "practice",
+          "Writing",
+          result.usage.prompt_tokens || 0,
+          result.usage.completion_tokens || 0,
+          attemptId
+        );
+      }
+
       onAnswerButtonClick(practice, result);
       setProgressBar(0);
       setTryToSubmit(false);

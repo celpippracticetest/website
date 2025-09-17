@@ -194,7 +194,13 @@ export const POST = async function (req: NextRequest) {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    return NextResponse.json(answer);
+    return NextResponse.json({
+      ...answer,
+      usage: {
+        prompt_tokens: msg?.usage?.input_tokens || 0,
+        completion_tokens: msg?.usage?.output_tokens || 0,
+      },
+    });
   } else {
     return NextResponse.json({ message: answersParser.error }, { status: 400 });
   }

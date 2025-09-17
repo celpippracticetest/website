@@ -290,6 +290,17 @@ const SpeakingPracticeView = ({
               recordingTime
             );
 
+            // Log AI feedback generation
+            if (data.usage) {
+              await ActivityLogger.aiFeedbackGenerated(
+                "practice",
+                "Speaking",
+                data.usage.prompt_tokens || 0,
+                data.usage.completion_tokens || 0,
+                attemptId
+              );
+            }
+
             setIsSubmit(false);
             onAnswerButtonClick(practice, data);
           })

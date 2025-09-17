@@ -85,6 +85,10 @@ interface AnthropicToolUseBlock {
 type AnthropicContentBlock = AnthropicTextBlock | AnthropicToolUseBlock;
 interface AnthropicResponse {
   content: AnthropicContentBlock[];
+  usage?: {
+    input_tokens: number;
+    output_tokens: number;
+  };
 }
 
 // =============== Stored evaluation type  ===============
@@ -451,7 +455,13 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
       updatedAt: new Date(),
     });
 
-    return NextResponse.json(answer);
+    return NextResponse.json({
+      ...answer,
+      usage: {
+        prompt_tokens: msg?.usage?.input_tokens || 0,
+        completion_tokens: msg?.usage?.output_tokens || 0,
+      },
+    });
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
     console.error("Error uploading/transcribing/evaluating:", err);
