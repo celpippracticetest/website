@@ -301,9 +301,7 @@ const ListeningExamView = ({
             >
               <span className="flex">View Answers &amp; Score</span>
             </a>
-            <div className="flex  screen1280:!hidden">
-              <AskBeavoButton />
-            </div>
+            <AskBeavoButton />
           </div>
         </div>
         <div

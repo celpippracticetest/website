@@ -13,8 +13,9 @@ export { default as SvgChevronTitle } from "./SvgChevronTitle";
 export { default as SvgMic } from "./SvgMic";
 export { default as SvgMockTestHover } from "./SvgMockTestHover";
 export { default as SvgMockTestTopNavigationHover } from "./SvgMockTestTopNavigationHover";
+export { default as SvgPause } from "./Pause";
 export { default as SvgPracticeBlueHover } from "./SvgPracticeBlueHover";
 export { default as SvgRefferalMobileNavigation } from "./SvgRefferalMobileNavigation";
+export { default as SvgSpeaker } from "./Speaker";
+export { default as SvgTrianglePlay } from "./TrianglePlay";
 export { default as SvgBottomNavigationMobile } from "./SvgBottomNavigationMobile";
-
-

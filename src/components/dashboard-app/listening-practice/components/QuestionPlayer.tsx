@@ -1,8 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
-import SvgPause from "@/components/icons/Pause";
-import SvgTrianglePlay from "@/components/icons/TrianglePlay";
-import SvgSpeaker from "@/components/icons/Speaker";
 import SvgMore from "@/components/icons/More";
+import { SvgPause, SvgSpeaker, SvgTrianglePlay } from "@/components/icons";
 
 export default function QuestionPlayer({ audioUrl }: { audioUrl: string }) {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -84,7 +82,7 @@ export default function QuestionPlayer({ audioUrl }: { audioUrl: string }) {
   }, []);
 
   return (
-    <div className="custom-player mt-[32px] max-w-[421px] relative flex items-center h-[60px] gap-[8px] screen744:!gap-[24px] p-[16px] bg-[#F3F3F3] border border-[#D5D6D8] rounded-[40px]">
+    <div className="custom-player mt-[32px] max-w-[421px] relative flex items-center h-[60px] gap-[8px] p-[24px] bg-[#F3F3F3] border border-[#D5D6D8] rounded-[40px]">
       {showMenu && (
         <div
           ref={menuRef}
@@ -120,7 +118,7 @@ export default function QuestionPlayer({ audioUrl }: { audioUrl: string }) {
         </div>
       )}
       <audio ref={audioRef} autoPlay src={audioUrl} preload="metadata" />
-      <button onClick={togglePlay} className="btn-play">
+      <button onClick={togglePlay} className="btn-play shrink-0">
         {isPlaying ? <SvgPause /> : <SvgTrianglePlay />}
       </button>
       <div className="times shrink-0">
@@ -137,8 +135,8 @@ export default function QuestionPlayer({ audioUrl }: { audioUrl: string }) {
         onChange={onSeek}
         className="slider"
       />
-      <div className="flex gap-[16px] items-center">
-        <div ref={volumeRef} className="btn-volume relative">
+      <div className="flex items-center">
+        <div ref={volumeRef} className="btn-volume relative shrink-0">
           <button
             onClick={() => setShowVolume(!showVolume)}
             className="focus:outline-none cursor-pointer"
@@ -161,7 +159,7 @@ export default function QuestionPlayer({ audioUrl }: { audioUrl: string }) {
         </div>
         <button
           onClick={() => setShowMenu(!showMenu)}
-          className="cursor-pointer"
+          className="cursor-pointer shrink-0"
         >
           <SvgMore />
         </button>
