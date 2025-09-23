@@ -300,7 +300,7 @@ const ReadingExamView = ({
             </div>
           </div>
         </div>
-        <div className="flex  flex-col screen744:!flex-row flex-wra[]  justify-between my-[24px] w-full h-auto gap-[20px] min-h-[56px]">
+        <div className="flex flex-col screen744:!flex-row flex-wrap  justify-between my-[24px] w-full h-auto min-h-[56px] gap-[20px]">
           <div className="flex gap-[10px]  screen744:!gap-[40px] items-center">
             <span className="shrink-0">
               Exam {(examName ?? "").replace(/Mock\s+(Set|Test)/gi, "").trim()}
@@ -312,9 +312,7 @@ const ReadingExamView = ({
               >
                 <span className="flex">View Answers &amp; Score</span>
               </a>
-              <div className="flex  screen1280:!hidden">
-                <AskBeavoButton />
-              </div>
+              <AskBeavoButton />
             </div>
           </div>
           <div

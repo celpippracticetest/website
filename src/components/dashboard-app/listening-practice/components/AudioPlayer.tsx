@@ -1,9 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
-import SvgTrianglePlay from "@/components/icons/TrianglePlay";
-import SvgSpeaker from "@/components/icons/Speaker";
 import SvgMore from "@/components/icons/More";
-import SvgPause from "@/components/icons/Pause";
-
+import { SvgPause, SvgSpeaker, SvgTrianglePlay } from "@/components/icons";
 export default function AudioPlayer({
   audioUrl,
 }: {
@@ -88,7 +85,7 @@ export default function AudioPlayer({
   };
 
   return (
-    <div className="custom-player max-w-[450px] relative flex items-center h-[60px] gap-[8px] screen744:!gap-[24px] p-[16px] bg-[#F3F3F3] border border-[#D5D6D8] rounded-[40px]">
+    <div className="custom-player max-w-[550px] relative flex items-center h-[60px] gap-[8px]  p-[24px] bg-[#F3F3F3] border border-[#D5D6D8] rounded-[40px]">
       {showMenu && (
         <div
           ref={menuRef}
@@ -124,7 +121,7 @@ export default function AudioPlayer({
         </div>
       )}
       <audio ref={audioRef} src={audioUrl} autoPlay preload="metadata" />
-      <button onClick={togglePlay} className="btn-play">
+      <button onClick={togglePlay} className="btn-play shrink-0">
         {isPlaying ? <SvgPause /> : <SvgTrianglePlay />}
       </button>
       <div className="times shrink-0">
@@ -141,8 +138,8 @@ export default function AudioPlayer({
         onChange={onSeek}
         className="slider"
       />
-      <div className="flex gap-[16px] items-center">
-        <div ref={volumeRef} className="btn-volume relative">
+      <div className="flex items-center">
+        <div ref={volumeRef} className="btn-volume relative shrink-0">
           <button
             onClick={() => setShowVolume(!showVolume)}
             className="focus:outline-none cursor-pointer"
@@ -165,7 +162,7 @@ export default function AudioPlayer({
         </div>
         <button
           onClick={() => setShowMenu(!showMenu)}
-          className="cursor-pointer"
+          className="cursor-pointer shrink-0"
         >
           <SvgMore />
         </button>

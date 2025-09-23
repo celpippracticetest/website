@@ -448,7 +448,7 @@ const ListeningPracticeView = ({
             )}
 
             {page == "problem" && (
-              <div className="p-6 h-full  w-full">
+              <div className="p-2 h-full  w-full">
                 <p className="text-[18px] text-[#212E42] font-semibold flex justify-center">
                   Listen to the conversation
                 </p>

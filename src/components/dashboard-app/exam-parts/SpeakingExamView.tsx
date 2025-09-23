@@ -400,7 +400,7 @@ const SpeakingExamView = ({
               </div>
             </div>
           </div>
-          <div className="flex  flex-col screen744:!flex-row  flex-wrap justify-between my-[24px] w-full h-auto min-h-[56px] gap-[20px]">
+          <div className="flex flex-col screen744:!flex-row flex-wrap  justify-between my-[24px] w-full h-auto min-h-[56px] gap-[20px]">
             <div className="flex gap-[10px]  screen744:!gap-[40px] items-center">
               <span className="shrink-0">
                 Exam{" "}
@@ -413,9 +413,7 @@ const SpeakingExamView = ({
                 >
                   <span className="flex">View Answers &amp; Score</span>
                 </a>
-                <div className="flex  screen1280:!hidden">
-                  <AskBeavoButton />
-                </div>
+                <AskBeavoButton />
               </div>
             </div>
             <div
