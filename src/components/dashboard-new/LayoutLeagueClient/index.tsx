@@ -873,31 +873,7 @@ const LayoutClient = ({ children, showSurvey }: any) => {
       )}
 
       <div className="relative flex w-full  mb-[88px] justify-center mx-auto z-[9] overflow-x-clip">
-        <div
-          aria-hidden
-          className={`pointer-events-none absolute left-1/2 -translate-x-1/2 ${
-            hasClosedModal ? "top-[170px]" : "-top-[220px]"
-          } w-[1065px] h-auto min-h-[300px] screen:744:!h-[629px] rounded-[9999px]`}
-          style={{ background: "#DAFFFA", filter: "blur(120px)", opacity: 0.8 }}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -left-[360px] top-1/4 w-[1065px] h-auto min-h-[300px] screen:744:!h-[629px] rounded-[9999px] rotate-[-20deg]"
-          style={{
-            background: "#CEDCFF80",
-            filter: "blur(120px)",
-            opacity: 0.9,
-          }}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-[360px] top-1/3 w-[1065px] h-auto min-h-[300px] screen:744:!h-[629px] rounded-[9999px] rotate-[15deg]"
-          style={{
-            background: "#FFB78A80",
-            filter: "blur(120px)",
-            opacity: 0.9,
-          }}
-        />
+     
 
         <div
           className="flex flex-col  w-full    h-full     w-full
@@ -1255,7 +1231,6 @@ const LayoutClient = ({ children, showSurvey }: any) => {
               <OnboardingSurvey onComplete={() => setSurveyVisible(false)} />
             </div>
           )}
-
           {children}
           {copied && (
             <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-[#37465C] text-white px-4 py-2 rounded-[8px] text-[14px] shadow-lg z-[9999] transition-opacity duration-300">
@@ -1263,165 +1238,7 @@ const LayoutClient = ({ children, showSurvey }: any) => {
             </div>
           )}
         </div>
-        <div
-          className="
-    fixed bottom-[16px] left-0 right-0
-    mx-auto
-    max-w-[1440px]
-    screen1280:px-[80px] px-[16px]
-    screen744:w-[calc(100%-84px)]
-    screen1280:!hidden
-  "
-          style={{ height: 82, pointerEvents: "none" }}
-        >
-          <div className="hidden screen744:!flex">
-            <SvgBottomNavigation className="hidden screen744:!flex absolute inset-0 w-full h-full" />
-          </div>
-          <div className="flex screen744:!hidden items-center">
-            <SvgBottomNavigationMobile className="flex screen744:!hidden absolute right-0 left-0 mx-auto inset-0 w-full h-full" />
-          </div>
-          <div
-            className="
-      relative z-10
-      grid grid-cols-3
-      items-center justify-items-center
-      gap-[24px] h-full
-    "
-            style={{ pointerEvents: "auto" }}
-          >
-            {practice ? (
-              <>
-                <div
-                  className="group flex flex-col items-center mt-5 gap-1 cursor-pointer"
-                  onClick={() => router.push("/practice-overview")}
-                >
-                  <div className=" flex">
-                    <SvgPracticeHover className="text-white" />
-                  </div>
-
-                  <span className="text-xs text-[#FC8A65]">Practice</span>
-                  <span className="w-[4px] h-[4px] rounded-full bg-[#FC8A65] flex"></span>
-                </div>
-              </>
-            ) : (
-              <>
-                <div
-                  className="group flex flex-col items-center mt-5 gap-1 cursor-pointer"
-                  onClick={() => router.push("/practice-overview")}
-                >
-                  <div className="flex group-hover:hidden w-[24px] h-[24px]  items-center justify-center">
-                    <SvgPractice
-                      stroke="#76808F"
-                      fill="transparent"
-                      className="text-[#76808F] "
-                    />
-                  </div>
-
-                  <div className="hidden group-hover:flex">
-                    <SvgPracticeHover className="text-white" />
-                  </div>
-
-                  <span className="text-xs text-[#76808F] group-hover:text-[#FC8A65]">
-                    Practice
-                  </span>
-                  <span className="w-[4px] h-[4px] rounded-full group-hover:bg-[#FC8A65] group-hover:flex"></span>
-                </div>
-              </>
-            )}
-
-            {mockTest ? (
-              <>
-                <div
-                  className="
-    flex flex-col gap-[4px] items-center cursor-pointer
-    relative
-     translate-y-[2px] transition-transform
-  "
-                  onClick={() => router.push("/exam-overview")}
-                >
-                  <div className="w-[44px] h-[44px]  flex items-center justify-center rounded-full bg-[radial-gradient(50%_265.62%_at_50%_50%,_#F26B3E_0%,_#FC8A65_100%)]">
-                    <div className=" flex w-[24px] h-[24px] items-center justify-center">
-                      <SvgMockTestHover className=" text-[#FC8A65]" />
-                    </div>
-                  </div>
-                  <span className="text-xs text-[#FC8A65]">Mock Test</span>
-                  <span className="w-[4px] h-[4px] rounded-full bg-[#FC8A65] flex"></span>
-                </div>
-              </>
-            ) : (
-              <>
-                <div
-                  className="
-    flex flex-col gap-[4px] items-center group hover:cursor-pointer
-    relative
-    translate-y-[4px] hover:translate-y-[2px] transition-transform
-  "
-                  onClick={() => router.push("/exam-overview")}
-                >
-                  <div className="w-[48px] group-hover:!w-[44px] group-hover:!h-[44px] h-[48px] flex items-center justify-center rounded-full bg-[radial-gradient(50%_265.62%_at_50%_50%,_#F26B3E_0%,_#FC8A65_100%)]">
-                    <SvgMockTestNavigation className="text-[#76808F] flex group-hover:hidden group-hover:text-[#FC8A65]" />
-
-                    <div className="hidden group-hover:flex w-[24px] h-[24px] items-center justify-center">
-                      <SvgMockTestHover className="text-[#76808F] group-hover:text-[#FC8A65]" />
-                    </div>
-                  </div>
-                  <span className="text-xs text-[#76808F] group-hover:text-[#FC8A65]">
-                    Mock Test
-                  </span>
-                  <span className="w-[4px] h-[4px] rounded-full group-hover:bg-[#FC8A65] group-hover:flex"></span>
-                </div>
-              </>
-            )}
-
-            {learning ? (
-              <>
-                <div
-                  className="group flex flex-col items-center mt-5 gap-1 cursor-pointer"
-                  onClick={() => router.push("/learning")}
-                >
-                  <div className=" flex w-[24px] h-[24px]  items-center justify-center">
-                    <SvgLearning
-                      stroke="#FC8A65"
-                      fill="#FC8A65"
-                      className="text-[#FC8A65]"
-                    />
-                  </div>
-
-                  <span className="text-xs text-[#FC8A65]">Learning</span>
-                  <span className="w-[4px] h-[4px] rounded-full bg-[#FC8A65] flex"></span>
-                </div>
-              </>
-            ) : (
-              <>
-                <div
-                  className="group flex flex-col items-center mt-5 gap-1 cursor-pointer"
-                  onClick={() => router.push("/learning")}
-                >
-                  <div className="flex group-hover:hidden w-[24px] h-[24px]  items-center justify-center">
-                    <SvgLearning
-                      stroke="#76808F"
-                      fill="transparent"
-                      className="text-[#76808F] group-hover:text-[#FC8A65]"
-                    />
-                  </div>
-
-                  <div className="hidden group-hover:flex w-[24px] h-[24px]  items-center justify-center">
-                    <SvgLearning
-                      stroke="#FC8A65"
-                      fill="#FC8A65"
-                      className="text-[#FC8A65]"
-                    />
-                  </div>
-
-                  <span className="text-xs text-[#76808F] group-hover:text-[#FC8A65]">
-                    Learning
-                  </span>
-                  <span className="w-[4px] h-[4px] rounded-full group-hover:bg-[#FC8A65] group-hover:flex"></span>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+      
       </div>
     </>
   );
