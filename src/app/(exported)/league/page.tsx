@@ -3,6 +3,9 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Bronz40,
+  CircleCheck,
+  Gold24,
+  Gold40,
   LearningGuide,
   LearningListening,
   LearningMockExam,
@@ -10,6 +13,7 @@ import {
   LearningSpeaking,
   LearningWriting,
   Silver24,
+  Silver40,
 } from "@/components/icons";
 import SvgSvgBeforeTypingWord from "@/components/icons/SvgBeforeTypingWord";
 import SvgLearningArrowUp from "@/components/icons/LearningArrowUp";
@@ -19,6 +23,8 @@ import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
 import { ActivityLogger } from "@/lib/userActivity";
 import SvgLeagueKados from "@/components/icons/LeagueKados";
+import SvgLeagueKados24 from "@/components/icons/LeagueKados24";
+import SvgCheck from "@/components/icons/Check";
 
 type Skill = {
   label: string;
@@ -434,6 +440,104 @@ Users in the Gold League will enter a raffle for a $100 gift card.
       <Silver24/>
       <span className="text-[#F27059] text-[14px]">Silver League</span>
     </div>
+  </div>
+  <div className="mt-[24px] flex flex-col gap-[8px]">
+    <div className="flex gap-[8px]">
+        <CircleCheck/>
+        <span className="text-[#37465C] text-[14px]">1 Mock Exam Completed</span>
+    </div>
+    <div className="flex gap-[8px]">
+        <CircleCheck/>
+        <span className="text-[#37465C] text-[14px]">4 Skills Tried (L, R, W, S)</span>
+    </div>
+    <div className="flex gap-[8px]">
+        <CircleCheck/>
+        <span className="text-[#37465C] text-[14px]">1 Writing or Speaking with AI Feedback</span>
+    </div>
+  </div>
+</div>
+
+
+<div className="min-h-[232px] rounded-[12px] mt-[16px] p-[16px] bg-white mt-[24px]">
+  <div className="flex justify-between">
+    <div className="flex gap-[6px] items-center"><Silver40/><span className="text-[16px] text-[#212E42] font-semibold">Bronz Leage</span></div>
+    <div className="flex items-center text-[14px]"><span className="text-[#76808F]">Requirement: </span><span>2+ trophy</span></div>
+  </div>
+  <div className="mt-[24px] items-center flex gap-[16px]">
+    <span className="text-[14px] text-[#76808F ]">Progress</span>
+    <div className="w-full relative bg-[#E6E6E6] h-[12px] rounded-[16px]">
+      <div className="absolute left-0 bg-[#F26B3E] w-[12px] h-[12px] rounded-full"></div>
+    </div>
+    <div className="flex gap-[4px] items-center shrink-0">
+      <Gold24/>
+      <span className="text-[#F27059] text-[14px]">Gold League</span>
+    </div>
+  </div>
+  <div className="mt-[24px] flex flex-col gap-[8px]">
+    <div className="flex gap-[8px]">
+        <CircleCheck/>
+        <span className="text-[#37465C] text-[14px]">5 Mock Exams Completed</span>
+    </div>
+    <div className="flex gap-[8px]">
+        <CircleCheck/>
+        <span className="text-[#37465C] text-[14px]">+1 CLB Improvement (any skill)</span>
+    </div>
+    <div className="flex gap-[8px]">
+        <CircleCheck/>
+        <span className="text-[#37465C] text-[14px]">3 Writing with Feedback</span>
+    </div>
+    <div className="flex gap-[8px]">
+        <CircleCheck/>
+        <span className="text-[#37465C] text-[14px]">3 Speaking with Feedback</span>
+    </div>
+  </div>
+</div>
+
+
+<div className="min-h-[232px] rounded-[12px] mt-[16px] p-[16px] bg-white mt-[24px]">
+  <div className="flex justify-between">
+    <div className="flex gap-[6px] items-center"><Gold40/><span className="text-[16px] text-[#212E42] font-semibold">Gold Leage</span></div>
+    <div className="flex items-center text-[14px]"><span className="text-[#76808F]">Requirement: </span><span>3+ trophy</span></div>
+  </div>
+  <div className="mt-[24px] items-center flex gap-[16px]">
+    <span className="text-[14px] text-[#76808F ]">Progress</span>
+    <div className="w-full relative bg-[#E6E6E6] h-[12px] rounded-[16px]">
+      <div className="absolute left-0 bg-[#F26B3E] w-[12px] h-[12px] rounded-full"></div>
+    </div>
+    <div className="flex gap-[4px] items-center shrink-0">
+      <SvgLeagueKados24/>
+      <span className="text-[#212E42] font-medium text-[14px]">100$ Gift Card</span>
+    </div>
+  </div>
+  <div className="mt-[24px] flex flex-col gap-[8px]">
+    <div className="flex gap-[8px]">
+        <CircleCheck/>
+        <span className="text-[#37465C] text-[14px]">10 Mock Exams Completed</span>
+    </div>
+    <div className="flex gap-[8px]">
+        <CircleCheck/>
+        <span className="text-[#37465C] text-[14px]"> Practice 3x/Week (4 Weeks)</span>
+    </div>
+    <div className="flex gap-[8px]">
+        <CircleCheck/>
+        <span className="text-[#37465C] text-[14px]">1 Friend Referred (paid plan)</span>
+    </div>
+    <div className="flex flex-col gap-[8px]">
+      <div className="flex gap-[8px]">
+      <CircleCheck/>
+      <span className="text-[#F27059] text-[14px]">CELPIP Champion: </span>
+      </div>
+
+        <div className="flex flex-col gap-[8px]">
+          <div className="flex gap-[8px]"><SvgCheck className="text-[#979EA8]"/> 10 mocks</div>
+          <div className="flex gap-[8px]"><SvgCheck className="text-[#979EA8]"/> +2 CLB in 1 skill</div>
+          <div className="flex gap-[8px]"><SvgCheck className="text-[#979EA8]"/> 5 Writing</div>
+          <div className="flex gap-[8px]"><SvgCheck className="text-[#979EA8]"/> + 5 Speaking improved</div>
+          <div className="flex gap-[8px]"><SvgCheck className="text-[#979EA8]"/>all skills practiced</div>
+          <div className="flex gap-[8px]"><SvgCheck className="text-[#979EA8]"/>1 referral</div>
+        </div>
+    </div>
+ 
   </div>
 </div>
 
