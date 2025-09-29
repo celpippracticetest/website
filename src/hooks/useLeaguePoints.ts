@@ -1,0 +1,72 @@
+import { useCallback } from 'react';
+import { useUser } from '@clerk/nextjs';
+
+export const useLeaguePoints = () => {
+  const { user } = useUser();
+
+  const addPoints = useCallback(async (
+    points: number, 
+    pointsType: 'mockExams' | 'practiceSessions' | 'aiFeedback' | 'skillsTried' | 'timeSpent',
+    timeSpent?: string
+  ) => {
+    if (!user) return;
+
+    try {
+      const response = await fetch('/api/league', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'add_points',
+          points,
+          pointsType
+        })
+      });
+
+      if (response.ok) {
+        // Return points data for medal display
+        return {
+          points,
+          timeSpent: timeSpent || `${Math.floor(Math.random() * 30) + 5} minutes`,
+          success: true
+        };
+      }
+    } catch (error) {
+      console.error('Error adding points:', error);
+    }
+
+    return { success: false };
+  }, [user]);
+
+  const completeTask = useCallback(async (taskId: string, leagueType: string) => {
+    if (!user) return;
+
+    try {
+      const response = await fetch('/api/league', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'complete_task',
+          taskId,
+          leagueType
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          success: true,
+          points: data.points
+        };
+      }
+    } catch (error) {
+      console.error('Error completing task:', error);
+    }
+
+    return { success: false };
+  }, [user]);
+
+  return {
+    addPoints,
+    completeTask
+  };
+};
