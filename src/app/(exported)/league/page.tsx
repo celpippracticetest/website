@@ -439,10 +439,8 @@ const Page = () => {
           <div className="w-[40px] h-[40px] bg-[#E5E7EB] rounded-full flex items-center justify-center">
             <div className="w-[32px] h-[32px] bg-[#9CA3AF] rounded-full"></div>
           </div>
-          <div className="flex-1">
             <div className="text-[#374151] font-medium">{user?.firstName || 'You'}</div>
-          </div>
-          <div className="text-[#374151] font-medium">0 XP</div>
+          <div className="text-[#374151] font-medium flex-1 text-right">0 XP</div>
         </div>
       </div>
     </div>
