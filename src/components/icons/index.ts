@@ -3,6 +3,7 @@ export { default as Bronz40 } from "./Bronz40";
 export { default as Bronz80 } from "./Bronz80";
 export { default as Bronz96 } from "./Bronz96";
 export { default as ChatBotSend } from "./ChatBotSend";
+export { default as CircleCheck } from "./CircleCheck";
 export { default as Gold24 } from "./Gold24";
 export { default as Gold40 } from "./Gold40";
 export { default as Gold80 } from "./Gold80";

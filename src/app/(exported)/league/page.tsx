@@ -2,12 +2,14 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Bronz40,
   LearningGuide,
   LearningListening,
   LearningMockExam,
   LearningReading,
   LearningSpeaking,
   LearningWriting,
+  Silver24,
 } from "@/components/icons";
 import SvgSvgBeforeTypingWord from "@/components/icons/SvgBeforeTypingWord";
 import SvgLearningArrowUp from "@/components/icons/LearningArrowUp";
@@ -420,10 +422,19 @@ Users in the Gold League will enter a raffle for a $100 gift card.
 
 <div className="min-h-[232px] rounded-[12px] p-[16px] bg-white mt-[24px]">
   <div className="flex justify-between">
-    <div><span className="text-[16px] text-[#212E42] font-semibold">Bronz Leage</span></div>
-    <div className="text-[14px]"><span className="text-[#76808F]">Requirement</span><span>1+ trophy</span></div>
+    <div className="flex gap-[6px] items-center"><Bronz40/><span className="text-[16px] text-[#212E42] font-semibold">Bronz Leage</span></div>
+    <div className="flex items-center text-[14px]"><span className="text-[#76808F]">Requirement: </span><span>1+ trophy</span></div>
   </div>
-  <div className="mt-[24px]"></div>
+  <div className="mt-[24px] items-center flex gap-[16px]">
+    <span className="text-[14px] text-[#76808F ]">Progress</span>
+    <div className="w-full relative bg-[#E6E6E6] h-[12px] rounded-[16px]">
+      <div className="absolute left-0 bg-[#F26B3E] w-[12px] h-[12px] rounded-full"></div>
+    </div>
+    <div className="flex gap-[4px] items-center shrink-0">
+      <Silver24/>
+      <span className="text-[#F27059] text-[14px]">Silver League</span>
+    </div>
+  </div>
 </div>
 
   </div>
