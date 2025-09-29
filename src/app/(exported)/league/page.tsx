@@ -117,6 +117,17 @@ const Page = () => {
   const fetchLeagueData = async () => {
     try {
       setIsLoadingLeague(true);
+      
+      // First, try to auto-assign user to appropriate league
+      const autoAssignResponse = await fetch('/api/league', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'auto_assign_league'
+        })
+      });
+      
+      // Then fetch league data
       const response = await fetch('/api/league');
       const data = await response.json();
       
@@ -249,25 +260,18 @@ const Page = () => {
     router.push("/exam-overview");
   };
 
-  // Handle joining a league
-  const handleJoinLeague = async (leagueType: string) => {
-    try {
-      const response = await fetch('/api/league', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'join_league',
-          leagueType
-        })
-      });
-
-      if (response.ok) {
-        // Refresh league data
-        await fetchLeagueData();
-      }
-    } catch (error) {
-      console.error('Error joining league:', error);
-    }
+  // Check if user meets requirements for a league
+  const checkLeagueRequirements = (leagueType: string) => {
+    if (!leagueData) return false;
+    
+    const league = allLeagues.find(l => l.type === leagueType);
+    if (!league) return false;
+    
+    // Check if user has enough trophies/points
+    const requiredTrophies = league.requirements?.minTrophies || 0;
+    const userTrophies = Math.floor(leagueData.userPoints / 50); // Assuming 50 points = 1 trophy
+    
+    return userTrophies >= requiredTrophies;
   };
 
   // Get tasks for specific league
@@ -992,27 +996,38 @@ const Page = () => {
 
                 <div className="min-h-[232px] rounded-[12px] p-[16px] bg-white mt-[24px]">
                   <div className="flex justify-between">
-                    <div className="flex gap-[6px] items-center"><Bronz40 /><span className="text-[16px] text-[#212E42] font-semibold">Bronz League</span></div>
-                    <div className="flex items-center gap-[12px]">
-                      <div className="text-[14px]"><span className="text-[#76808F]">Requirement: </span><span>1+ trophy</span></div>
-                      {currentLeague?.type !== 'bronze' && (
-                        <button
-                          onClick={() => handleJoinLeague('bronze')}
-                          className="bg-[#4A7DFF] text-white px-[12px] py-[6px] rounded-[6px] text-[12px] font-medium hover:bg-[#3B6BFF] transition-colors"
-                        >
-                          Join League
-                        </button>
+                    <div className="flex gap-[6px] items-center">
+                      <Bronz40 />
+                      <span className="text-[16px] text-[#212E42] font-semibold">Bronz League</span>
+                      {currentLeague?.type === 'bronze' && (
+                        <span className="bg-[#10B981] text-white px-[8px] py-[2px] rounded-[4px] text-[12px] font-medium">
+                          Current League
+                        </span>
                       )}
+                    </div>
+                    <div className="flex items-center gap-[12px]">
+                      <div className="text-[14px]">
+                        <span className="text-[#76808F]">Requirement: </span>
+                        <span className={checkLeagueRequirements('bronze') ? 'text-[#10B981]' : 'text-[#F59E0B]'}>
+                          1+ trophy
+                        </span>
+                      </div>
+                   
                     </div>
                   </div>
                   <div className="mt-[24px] items-center flex gap-[16px]">
                     <span className="text-[14px] text-[#76808F ]">Progress</span>
                     <div className="w-full relative bg-[#E6E6E6] h-[12px] rounded-[16px]">
-                      <div className="absolute left-0 bg-[#F26B3E] w-[12px] h-[12px] rounded-full"></div>
+                      <div 
+                        className="absolute left-0 bg-[#F26B3E] h-[12px] rounded-full transition-all duration-300"
+                        style={{ 
+                          width: `${Math.min(100, ((leagueData?.userPoints || 0) / 50) * 50)}%` 
+                        }}
+                      ></div>
                     </div>
                     <div className="flex gap-[4px] items-center shrink-0">
                       <Silver24 />
-                      <span className="text-[#F27059] text-[14px]">Silver League</span>
+                      <span className=" text-[14px]">Silver League</span>
                     </div>
                   </div>
                   <div className="mt-[24px] flex flex-col gap-[8px]">
@@ -1027,27 +1042,38 @@ const Page = () => {
 
                 <div className="min-h-[232px] rounded-[12px] mt-[16px] p-[16px] bg-white mt-[24px]">
                   <div className="flex justify-between">
-                    <div className="flex gap-[6px] items-center"><Silver40 /><span className="text-[16px] text-[#212E42] font-semibold">Silver League</span></div>
-                    <div className="flex items-center gap-[12px]">
-                      <div className="text-[14px]"><span className="text-[#76808F]">Requirement: </span><span>2+ trophy</span></div>
-                      {currentLeague?.type !== 'silver' && (
-                        <button
-                          onClick={() => handleJoinLeague('silver')}
-                          className="bg-[#4A7DFF] text-white px-[12px] py-[6px] rounded-[6px] text-[12px] font-medium hover:bg-[#3B6BFF] transition-colors"
-                        >
-                          Join League
-                        </button>
+                    <div className="flex gap-[6px] items-center">
+                      <Silver40 />
+                      <span className="text-[16px] text-[#212E42] font-semibold">Silver League</span>
+                      {currentLeague?.type === 'silver' && (
+                        <span className="bg-[#10B981] text-white px-[8px] py-[2px] rounded-[4px] text-[12px] font-medium">
+                          Current League
+                        </span>
                       )}
+                    </div>
+                    <div className="flex items-center gap-[12px]">
+                      <div className="text-[14px]">
+                        <span className="text-[#76808F]">Requirement: </span>
+                        <span className={checkLeagueRequirements('silver') ? 'text-[#10B981]' : 'text-[#F59E0B]'}>
+                          2+ trophy
+                        </span>
+                      </div>
+                  
                     </div>
                   </div>
                   <div className="mt-[24px] items-center flex gap-[16px]">
                     <span className="text-[14px] text-[#76808F ]">Progress</span>
                     <div className="w-full relative bg-[#E6E6E6] h-[12px] rounded-[16px]">
-                      <div className="absolute left-0 bg-[#F26B3E] w-[12px] h-[12px] rounded-full"></div>
+                      <div 
+                        className="absolute left-0 bg-[#F26B3E] h-[12px] rounded-full transition-all duration-300"
+                        style={{ 
+                          width: `${Math.min(100, Math.max(0, ((leagueData?.userPoints || 0) - 50) / 50) * 50)}%` 
+                        }}
+                      ></div>
                     </div>
                     <div className="flex gap-[4px] items-center shrink-0">
                       <Gold24 />
-                      <span className="text-[#F27059] text-[14px]">Gold League</span>
+                      <span className="text-[14px]">Gold League</span>
                     </div>
                   </div>
                   <div className="mt-[24px] flex flex-col gap-[8px]">
@@ -1063,23 +1089,34 @@ const Page = () => {
 
                 <div className="min-h-[232px] rounded-[12px] mt-[16px] p-[16px] bg-white mt-[24px]">
                   <div className="flex justify-between">
-                    <div className="flex gap-[6px] items-center"><Gold40 /><span className="text-[16px] text-[#212E42] font-semibold">Gold League</span></div>
-                    <div className="flex items-center gap-[12px]">
-                      <div className="text-[14px]"><span className="text-[#76808F]">Requirement: </span><span>3+ trophy</span></div>
-                      {currentLeague?.type !== 'gold' && (
-                        <button
-                          onClick={() => handleJoinLeague('gold')}
-                          className="bg-[#4A7DFF] text-white px-[12px] py-[6px] rounded-[6px] text-[12px] font-medium hover:bg-[#3B6BFF] transition-colors"
-                        >
-                          Join League
-                        </button>
+                    <div className="flex gap-[6px] items-center">
+                      <Gold40 />
+                      <span className="text-[16px] text-[#212E42] font-semibold">Gold League</span>
+                      {currentLeague?.type === 'gold' && (
+                        <span className="bg-[#10B981] text-white px-[8px] py-[2px] rounded-[4px] text-[12px] font-medium">
+                          Current League
+                        </span>
                       )}
+                    </div>
+                    <div className="flex items-center gap-[12px]">
+                      <div className="text-[14px]">
+                        <span className="text-[#76808F]">Requirement: </span>
+                        <span className={checkLeagueRequirements('gold') ? 'text-[#10B981]' : 'text-[#F59E0B]'}>
+                          3+ trophy
+                        </span>
+                      </div>
+              
                     </div>
                   </div>
                   <div className="mt-[24px] items-center flex gap-[16px]">
                     <span className="text-[14px] text-[#76808F ]">Progress</span>
                     <div className="w-full relative bg-[#E6E6E6] h-[12px] rounded-[16px]">
-                      <div className="absolute left-0 bg-[#F26B3E] w-[12px] h-[12px] rounded-full"></div>
+                      <div 
+                        className="absolute left-0 bg-[#F26B3E] h-[12px] rounded-full transition-all duration-300"
+                        style={{ 
+                          width: `${Math.min(100, Math.max(0, ((leagueData?.userPoints || 0) - 100) / 50) * 50)}%` 
+                        }}
+                      ></div>
                     </div>
                     <div className="flex gap-[4px] items-center shrink-0">
                       <SvgLeagueKados24 />
