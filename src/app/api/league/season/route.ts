@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
 import { LeagueRepository } from "@/repositories/league.repo";
+import { ObjectId } from "mongodb";
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
         groups.push(groupId);
         seasonLeagues.push({
           leagueType: league.type,
-          groups: [groupId],
+          groups: [new ObjectId(groupId)],
         });
       }
 

@@ -118,16 +118,7 @@ const Page = () => {
     try {
       setIsLoadingLeague(true);
       
-      // First, try to auto-assign user to appropriate league
-      const autoAssignResponse = await fetch('/api/league', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'auto_assign_league'
-        })
-      });
-      
-      // Then fetch league data
+      // Fetch league data - API will handle season creation and auto-assignment
       const response = await fetch('/api/league');
       const data = await response.json();
       
