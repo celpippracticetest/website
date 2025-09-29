@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "No active season" }, { status: 404 });
       }
 
-      // Add points to user
+      // Add points to user (both overall and season points)
       const success = await leagueRepo.addPointsToUser(
         userId,
         currentSeason.seasonId,
@@ -189,14 +189,28 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Failed to add points" }, { status: 400 });
       }
 
-      // Update group leaderboard
+      // Update group leaderboard with season points
       const userPoints = await leagueRepo.getUserLeaguePoints(userId, currentSeason.seasonId);
       if (userPoints) {
         await leagueRepo.updateUserPointsInGroup(
           userId,
           userPoints.groupId.toString(),
-          userPoints.totalPoints
+          userPoints.totalPoints // This is season points
         );
+      }
+
+      // Check if user should be promoted to higher league based on overall points
+      const overallPoints = await leagueRepo.getUserOverallPoints(userId);
+      let targetLeagueType = "bronze";
+      if (overallPoints >= 150) { // 3+ trophies
+        targetLeagueType = "gold";
+      } else if (overallPoints >= 100) { // 2+ trophies
+        targetLeagueType = "silver";
+      }
+
+      // Auto-promote if needed
+      if (targetLeagueType !== currentLeague?.type) {
+        await leagueRepo.promoteUserToLeague(userId, targetLeagueType, currentSeason.seasonId);
       }
 
       return NextResponse.json({ success: true });

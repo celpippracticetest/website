@@ -172,7 +172,8 @@ export class LeagueRepository {
       { userId, seasonId },
       {
         $inc: {
-          totalPoints: points,
+          totalPoints: points, // Season points
+          overallPoints: points, // Overall points (never reset)
           [`pointsBreakdown.${pointsType}`]: points,
         },
         $set: {
@@ -182,6 +183,79 @@ export class LeagueRepository {
       }
     );
     return result.modifiedCount > 0;
+  }
+
+  // Get user's overall points across all seasons
+  async getUserOverallPoints(userId: string): Promise<number> {
+    const userPoints = await this.db.collection(this.userLeaguePointsCollection).findOne(
+      { userId },
+      { sort: { updatedAt: -1 } }
+    );
+    return userPoints?.overallPoints || 0;
+  }
+
+  // Promote user to a different league
+  async promoteUserToLeague(
+    userId: string, 
+    targetLeagueType: TLeagueType, 
+    seasonId: string
+  ): Promise<boolean> {
+    const targetLeague = await this.getLeagueByType(targetLeagueType);
+    if (!targetLeague) return false;
+
+    // Find or create group in target league
+    const currentSeason = await this.getCurrentSeason();
+    if (!currentSeason) return false;
+
+    const seasonLeague = currentSeason.leagues.find(l => l.leagueType === targetLeagueType);
+    if (!seasonLeague) return false;
+
+    // Try to add user to existing group
+    let added = false;
+    for (const groupId of seasonLeague.groups) {
+      const group = await this.getGroupLeaderboard(groupId.toString());
+      if (group && group.users.length < group.maxUsers) {
+        added = await this.addUserToGroup(userId, groupId.toString(), targetLeagueType);
+        if (added) break;
+      }
+    }
+
+    if (!added) {
+      // Create new group
+      const newGroup = {
+        leagueId: new ObjectId(targetLeague._id),
+        groupNumber: seasonLeague.groups.length + 1,
+        seasonId: currentSeason.seasonId,
+        startDate: new Date(),
+        endDate: currentSeason.endDate,
+        status: "active" as const,
+        maxUsers: 10,
+        users: [{
+          userId,
+          points: 0, // Season points start from 0
+          position: 1,
+          status: "safe" as const,
+          joinedAt: new Date(),
+        }],
+      };
+      
+      const groupId = await this.createLeagueGroup(newGroup);
+      
+      // Update user's league assignment
+      await this.db.collection(this.userLeaguePointsCollection).updateOne(
+        { userId, seasonId },
+        {
+          $set: {
+            leagueId: new ObjectId(targetLeague._id),
+            groupId: new ObjectId(groupId),
+            totalPoints: 0, // Reset season points
+            updatedAt: new Date(),
+          }
+        }
+      );
+    }
+
+    return true;
   }
 
   // League Seasons Management
@@ -359,6 +433,12 @@ export class LeagueRepository {
               description: "Complete 10 mock exams"
             },
             {
+              id: "clb-improvement-3-skills",
+              title: "+1 CLB in 3 Skills",
+              points: 150,
+              description: "Improve CLB score in 3 different skills"
+            },
+            {
               id: "practice-consistency",
               title: "Practice 3x/Week (4 Weeks)",
               points: 150,
@@ -369,6 +449,20 @@ export class LeagueRepository {
               title: "1 Friend Referred (paid plan)",
               points: 100,
               description: "Refer a friend who purchases a plan"
+            },
+            {
+              id: "celpip-champion",
+              title: "CELPIP Champion",
+              points: 500,
+              description: "Complete all champion requirements",
+              subTasks: [
+                { id: "champion-mocks", title: "10 mocks", points: 100 },
+                { id: "champion-clb", title: "+2 CLB in 1 skill", points: 100 },
+                { id: "champion-writing", title: "5 Writing", points: 100 },
+                { id: "champion-speaking", title: "+5 Speaking improved", points: 100 },
+                { id: "champion-skills", title: "all skills practiced", points: 50 },
+                { id: "champion-referral", title: "1 referral", points: 50 }
+              ]
             }
           ]
         },
@@ -383,6 +477,89 @@ export class LeagueRepository {
 
     for (const league of defaultLeagues) {
       await this.createLeague(league);
+    }
+  }
+
+  // End current season and start new one
+  async endCurrentSeason(): Promise<boolean> {
+    const currentSeason = await this.getCurrentSeason();
+    if (!currentSeason) return false;
+
+    // Process league promotions/demotions
+    await this.processSeasonEnd(currentSeason);
+
+    // Mark current season as ended
+    await this.db.collection(this.leagueSeasonsCollection).updateOne(
+      { seasonId: currentSeason.seasonId },
+      { 
+        $set: { 
+          status: "ended",
+          endDate: new Date(),
+          updatedAt: new Date()
+        } 
+      }
+    );
+
+    // Create new season
+    const newSeasonId = `season_${Date.now()}`;
+    const newSeason = {
+      seasonId: newSeasonId,
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      status: "active" as const,
+      leagues: currentSeason.leagues.map(league => ({
+        ...league,
+        groups: [] // Start with empty groups
+      })),
+    };
+
+    await this.createSeason(newSeason);
+    return true;
+  }
+
+  // Process season end - promotions, demotions, and reset season points
+  async processSeasonEnd(season: TLeagueSeason): Promise<void> {
+    for (const league of season.leagues) {
+      for (const groupId of league.groups) {
+        const group = await this.getGroupLeaderboard(groupId.toString());
+        if (!group) continue;
+
+        // Sort users by season points
+        const sortedUsers = group.users.sort((a, b) => b.points - a.points);
+        const totalUsers = sortedUsers.length;
+
+        // Calculate promotion/demotion zones
+        const promotionCount = Math.ceil(totalUsers * 0.3); // Top 30%
+        const demotionCount = Math.ceil(totalUsers * 0.3); // Bottom 30%
+
+        for (let i = 0; i < totalUsers; i++) {
+          const user = sortedUsers[i];
+          let newStatus: "promotion" | "safe" | "demotion" = "safe";
+
+          if (i < promotionCount) {
+            newStatus = "promotion";
+          } else if (i >= totalUsers - demotionCount) {
+            newStatus = "demotion";
+          }
+
+          // Update user status
+          await this.db.collection(this.leagueGroupsCollection).updateOne(
+            { _id: new ObjectId(groupId), "users.userId": user.userId },
+            { $set: { "users.$.status": newStatus } }
+          );
+
+          // Reset season points for next season
+          await this.db.collection(this.userLeaguePointsCollection).updateOne(
+            { userId: user.userId, seasonId: season.seasonId },
+            { 
+              $set: { 
+                totalPoints: 0, // Reset season points
+                updatedAt: new Date()
+              } 
+            }
+          );
+        }
+      }
     }
   }
 }

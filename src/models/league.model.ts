@@ -19,6 +19,11 @@ const LeagueSchema = z.object({
       title: z.string(),
       points: z.number(),
       description: z.string(),
+      subTasks: z.array(z.object({
+        id: z.string(),
+        title: z.string(),
+        points: z.number(),
+      })).optional(),
     })),
   }),
   rewards: z.object({
@@ -59,7 +64,8 @@ const UserLeaguePointsSchema = z.object({
   leagueId: z.instanceof(ObjectId),
   groupId: z.instanceof(ObjectId),
   seasonId: z.string(),
-  totalPoints: z.number().default(0),
+  totalPoints: z.number().default(0), // Season points (reset each season)
+  overallPoints: z.number().default(0), // Overall points (never reset)
   pointsBreakdown: z.object({
     mockExams: z.number().default(0),
     practiceSessions: z.number().default(0),
@@ -140,7 +146,7 @@ export {
   TLeagueGroupDto,
   TUserLeaguePoints,
   TUserLeaguePointsDto,
-  TLeagueSeason,
+  TLeagueSeason, 
   TLeagueSeasonDto,
   TLeagueType,
   TGroupStatus,
