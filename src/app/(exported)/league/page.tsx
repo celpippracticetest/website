@@ -460,7 +460,7 @@ Users in the Gold League will enter a raffle for a $100 gift card.
 
 <div className="min-h-[232px] rounded-[12px] mt-[16px] p-[16px] bg-white mt-[24px]">
   <div className="flex justify-between">
-    <div className="flex gap-[6px] items-center"><Silver40/><span className="text-[16px] text-[#212E42] font-semibold">Bronz Leage</span></div>
+    <div className="flex gap-[6px] items-center"><Silver40/><span className="text-[16px] text-[#212E42] font-semibold">Silver Leage</span></div>
     <div className="flex items-center text-[14px]"><span className="text-[#76808F]">Requirement: </span><span>2+ trophy</span></div>
   </div>
   <div className="mt-[24px] items-center flex gap-[16px]">
