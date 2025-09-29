@@ -28,6 +28,9 @@ import UpgradeModal from "@/components/modal/UpgradeModal";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 import { ActivityLogger } from "@/lib/userActivity";
+import { useLeaguePoints } from "@/hooks/useLeaguePoints";
+import { useTrophySystem } from "@/hooks/useTrophySystem";
+import TrophyModal from "@/components/modal/TrophyModal";
 const SvgBestValuePlan = dynamic(
   () => import("../../../components/icons/BestValuePlan"),
   {
@@ -77,6 +80,15 @@ const WritingPracticeView = ({
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { user, isLoaded, isSignedIn } = useUser();
+  const { addPoints } = useLeaguePoints();
+  const {
+    isModalOpen,
+    currentTrophy,
+    userPoints,
+    timeSpent,
+    closeTrophy,
+    checkTrophyAchievements,
+  } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
   const [showModal, setShowModal] = useState(false);
@@ -205,6 +217,13 @@ const WritingPracticeView = ({
         time
       );
 
+      // Add league points for practice completion
+      await addPoints(
+        10,
+        "practiceSessions",
+        `${Math.floor(time / 60)} minutes`
+      );
+
       // Log AI feedback generation
       if (result.usage) {
         await ActivityLogger.aiFeedbackGenerated(
@@ -214,7 +233,17 @@ const WritingPracticeView = ({
           result.usage.completion_tokens || 0,
           attemptId
         );
+
+        // Add league points for AI feedback
+        await addPoints(5, "aiFeedback");
       }
+
+      // Check for trophy achievements
+      await checkTrophyAchievements(
+        10,
+        "practiceSessions",
+        `${Math.floor(time / 60)}:${time % 60}`
+      );
 
       onAnswerButtonClick(practice, result);
       setProgressBar(0);
@@ -738,6 +767,15 @@ const WritingPracticeView = ({
           )}
         </div>
       </div>
+
+      {/* Trophy Modal */}
+      <TrophyModal
+        isOpen={isModalOpen}
+        onClose={closeTrophy}
+        trophy={currentTrophy}
+        userPoints={userPoints}
+        timeSpent={timeSpent}
+      />
     </div>
   );
 };

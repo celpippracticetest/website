@@ -1,12 +1,12 @@
 import { Db, ObjectId } from "mongodb";
-import { 
-  TLeague, 
-  TLeagueGroup, 
-  TUserLeaguePoints, 
+import {
+  TLeague,
+  TLeagueGroup,
+  TUserLeaguePoints,
   TLeagueSeason,
   TLeagueType,
   TGroupStatus,
-  TUserLeagueStatus 
+  TUserLeagueStatus,
 } from "../models/league.model";
 
 export class LeagueRepository {
@@ -21,7 +21,9 @@ export class LeagueRepository {
   }
 
   // League Management
-  async createLeague(league: Omit<TLeague, "_id" | "createdAt" | "updatedAt">): Promise<string> {
+  async createLeague(
+    league: Omit<TLeague, "_id" | "createdAt" | "updatedAt">
+  ): Promise<string> {
     const result = await this.db.collection(this.leaguesCollection).insertOne({
       ...league,
       createdAt: new Date(),
@@ -31,173 +33,383 @@ export class LeagueRepository {
   }
 
   async getLeagueByType(type: TLeagueType): Promise<TLeague | null> {
-    const league = await this.db.collection(this.leaguesCollection).findOne({ type, isActive: true });
+    const league = await this.db
+      .collection(this.leaguesCollection)
+      .findOne({ type, isActive: true });
     return league as TLeague | null;
   }
 
   async getAllLeagues(): Promise<TLeague[]> {
-    const leagues = await this.db.collection(this.leaguesCollection).find({ isActive: true }).toArray();
+    const leagues = await this.db
+      .collection(this.leaguesCollection)
+      .find({ isActive: true })
+      .toArray();
     return leagues as TLeague[];
   }
 
   // League Groups Management
-  async createLeagueGroup(group: Omit<TLeagueGroup, "_id" | "createdAt" | "updatedAt">): Promise<string> {
-    const result = await this.db.collection(this.leagueGroupsCollection).insertOne({
-      ...group,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+  async createLeagueGroup(
+    group: Omit<TLeagueGroup, "_id" | "createdAt" | "updatedAt">
+  ): Promise<string> {
+    const result = await this.db
+      .collection(this.leagueGroupsCollection)
+      .insertOne({
+        ...group,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
     return result.insertedId.toString();
   }
 
-  async getActiveGroupForUser(userId: string, leagueType: TLeagueType): Promise<TLeagueGroup | null> {
+  async getActiveGroupForUser(
+    userId: string,
+    leagueType: TLeagueType
+  ): Promise<TLeagueGroup | null> {
     const currentSeason = await this.getCurrentSeason();
     if (!currentSeason) return null;
 
-    const group = await this.db.collection(this.leagueGroupsCollection).findOne({
-      leagueId: new ObjectId(currentSeason.leagues.find(l => l.leagueType === leagueType)?.groups[0]),
-      seasonId: currentSeason.seasonId,
-      status: "active",
-      "users.userId": userId,
-    });
+    const group = await this.db
+      .collection(this.leagueGroupsCollection)
+      .findOne({
+        leagueId: new ObjectId(
+          currentSeason.leagues.find(
+            (l) => l.leagueType === leagueType
+          )?.groups[0]
+        ),
+        seasonId: currentSeason.seasonId,
+        status: "active",
+        "users.userId": userId,
+      });
     return group as TLeagueGroup | null;
   }
 
-  async addUserToGroup(userId: string, groupId: string, leagueType: TLeagueType): Promise<boolean> {
-    const group = await this.db.collection(this.leagueGroupsCollection).findOne({ _id: new ObjectId(groupId) });
-    if (!group) return false;
+  async addUserToGroup(
+    userId: string,
+    groupId: string,
+    leagueType: TLeagueType
+  ): Promise<boolean> {
+    try {
+      const group = await this.db
+        .collection(this.leagueGroupsCollection)
+        .findOne({ _id: new ObjectId(groupId) });
+      if (!group) return false;
 
-    // Check if group is full
-    if (group.users.length >= group.maxUsers) return false;
+      // Check if group is full
+      if (group.users.length >= group.maxUsers) return false;
 
-    // Add user to group
-    const result = await this.db.collection(this.leagueGroupsCollection).updateOne(
-      { _id: new ObjectId(groupId) },
-      {
-        $push: {
-          users: {
-            userId,
-            points: 0,
-            position: group.users.length + 1,
-            status: "safe",
-            joinedAt: new Date(),
+      // Add user to group
+      const result = await this.db
+        .collection(this.leagueGroupsCollection)
+        .updateOne(
+          { _id: new ObjectId(groupId) },
+          {
+            $push: {
+              users: {
+                userId,
+                points: 0,
+                position: group.users.length + 1,
+                status: "safe",
+                joinedAt: new Date(),
+              },
+            },
           }
+        );
+
+      if (result.modifiedCount > 0) {
+        // Also create user league points record if it doesn't exist
+        const existingUserPoints = await this.db
+          .collection(this.userLeaguePointsCollection)
+          .findOne({
+            userId,
+            seasonId: group.seasonId,
+          });
+
+        if (!existingUserPoints) {
+          const overallPoints = await this.getUserOverallPoints(userId);
+          await this.createUserLeaguePoints({
+            userId,
+            leagueId: group.leagueId,
+            groupId: new ObjectId(groupId),
+            seasonId: group.seasonId,
+            totalPoints: 0,
+            overallPoints: overallPoints,
+            pointsBreakdown: {
+              mockExams: 0,
+              practiceSessions: 0,
+              aiFeedback: 0,
+              skillsTried: 0,
+              timeSpent: 0,
+            },
+            tasksCompleted: [],
+            lastActivityAt: new Date(),
+          });
         }
       }
-    );
 
-    return result.modifiedCount > 0;
+      return result.modifiedCount > 0;
+    } catch (error) {
+      console.error("Error adding user to group:", error);
+      return false;
+    }
   }
 
-  async updateUserPointsInGroup(userId: string, groupId: string, points: number): Promise<boolean> {
-    const result = await this.db.collection(this.leagueGroupsCollection).updateOne(
-      { 
-        _id: new ObjectId(groupId),
-        "users.userId": userId 
-      },
-      {
-        $set: {
-          "users.$.points": points,
-          "users.$.lastActivityAt": new Date(),
+  async updateUserPointsInGroup(
+    userId: string,
+    groupId: string,
+    points: number
+  ): Promise<boolean> {
+    const result = await this.db
+      .collection(this.leagueGroupsCollection)
+      .updateOne(
+        {
+          _id: new ObjectId(groupId),
+          "users.userId": userId,
+        },
+        {
+          $set: {
+            "users.$.points": points,
+            "users.$.lastActivityAt": new Date(),
+          },
         }
-      }
-    );
+      );
 
     return result.modifiedCount > 0;
   }
 
   async getGroupLeaderboard(groupId: string): Promise<TLeagueGroup | null> {
-    const group = await this.db.collection(this.leagueGroupsCollection).findOne({ _id: new ObjectId(groupId) });
+    const group = await this.db
+      .collection(this.leagueGroupsCollection)
+      .findOne({ _id: new ObjectId(groupId) });
     if (!group) return null;
 
     // Sort users by points (descending)
     group.users.sort((a: any, b: any) => b.points - a.points);
-    
+
     // Update positions
     group.users.forEach((user: any, index: number) => {
       user.position = index + 1;
     });
 
     // Update positions in database
-    await this.db.collection(this.leagueGroupsCollection).updateOne(
-      { _id: new ObjectId(groupId) },
-      { $set: { users: group.users } }
-    );
+    await this.db
+      .collection(this.leagueGroupsCollection)
+      .updateOne(
+        { _id: new ObjectId(groupId) },
+        { $set: { users: group.users } }
+      );
 
     return group as TLeagueGroup;
   }
 
   // User League Points Management
-  async createUserLeaguePoints(points: Omit<TUserLeaguePoints, "_id" | "createdAt" | "updatedAt">): Promise<string> {
-    const result = await this.db.collection(this.userLeaguePointsCollection).insertOne({
-      ...points,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+  async createUserLeaguePoints(
+    points: Omit<TUserLeaguePoints, "_id" | "createdAt" | "updatedAt">
+  ): Promise<string> {
+    const result = await this.db
+      .collection(this.userLeaguePointsCollection)
+      .insertOne({
+        ...points,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
     return result.insertedId.toString();
   }
 
-  async getUserLeaguePoints(userId: string, seasonId: string): Promise<TUserLeaguePoints | null> {
-    const points = await this.db.collection(this.userLeaguePointsCollection).findOne({
-      userId,
-      seasonId,
-    });
+  async getUserLeaguePoints(
+    userId: string,
+    seasonId: string
+  ): Promise<TUserLeaguePoints | null> {
+    const points = await this.db
+      .collection(this.userLeaguePointsCollection)
+      .findOne({
+        userId,
+        seasonId,
+      });
     return points as TUserLeaguePoints | null;
   }
 
   async updateUserLeaguePoints(
-    userId: string, 
-    seasonId: string, 
+    userId: string,
+    seasonId: string,
     pointsUpdate: Partial<TUserLeaguePoints>
   ): Promise<boolean> {
-    const result = await this.db.collection(this.userLeaguePointsCollection).updateOne(
-      { userId, seasonId },
-      {
-        $set: {
-          ...pointsUpdate,
-          updatedAt: new Date(),
+    const result = await this.db
+      .collection(this.userLeaguePointsCollection)
+      .updateOne(
+        { userId, seasonId },
+        {
+          $set: {
+            ...pointsUpdate,
+            updatedAt: new Date(),
+          },
         }
-      }
-    );
+      );
     return result.modifiedCount > 0;
   }
 
   async addPointsToUser(
-    userId: string, 
-    seasonId: string, 
-    pointsType: keyof TUserLeaguePoints['pointsBreakdown'],
+    userId: string,
+    seasonId: string,
+    pointsType: keyof TUserLeaguePoints["pointsBreakdown"],
     points: number
   ): Promise<boolean> {
-    const result = await this.db.collection(this.userLeaguePointsCollection).updateOne(
-      { userId, seasonId },
-      {
-        $inc: {
-          totalPoints: points, // Season points
-          overallPoints: points, // Overall points (never reset)
-          [`pointsBreakdown.${pointsType}`]: points,
-        },
-        $set: {
-          lastActivityAt: new Date(),
-          updatedAt: new Date(),
+    try {
+      // Check if user has a league record for this season
+      const existingRecord = await this.db
+        .collection(this.userLeaguePointsCollection)
+        .findOne({
+          userId,
+          seasonId,
+        });
+
+      if (!existingRecord) {
+        // Auto assign user to league first
+        const autoAssignResult = await this.autoAssignUserToLeague(userId);
+        if (!autoAssignResult) {
+          console.error("Failed to auto assign user to league");
+          return false;
         }
       }
-    );
-    return result.modifiedCount > 0;
+
+      // Now add points
+      const result = await this.db
+        .collection(this.userLeaguePointsCollection)
+        .updateOne(
+          { userId, seasonId },
+          {
+            $inc: {
+              totalPoints: points, // Season points
+              overallPoints: points, // Overall points (never reset)
+              [`pointsBreakdown.${pointsType}`]: points,
+            },
+            $set: {
+              lastActivityAt: new Date(),
+              updatedAt: new Date(),
+            },
+          }
+        );
+
+      return result.modifiedCount > 0;
+    } catch (error) {
+      console.error("Error adding points to user:", error);
+      return false;
+    }
   }
 
   // Get user's overall points across all seasons
   async getUserOverallPoints(userId: string): Promise<number> {
-    const userPoints = await this.db.collection(this.userLeaguePointsCollection).findOne(
-      { userId },
-      { sort: { updatedAt: -1 } }
-    );
+    const userPoints = await this.db
+      .collection(this.userLeaguePointsCollection)
+      .findOne({ userId }, { sort: { updatedAt: -1 } });
     return userPoints?.overallPoints || 0;
+  }
+
+  // Auto assign user to appropriate league
+  async autoAssignUserToLeague(userId: string): Promise<boolean> {
+    try {
+      // Get current season
+      const currentSeason = await this.getCurrentSeason();
+      if (!currentSeason) return false;
+
+      // Get user's overall points to determine league
+      const overallPoints = await this.getUserOverallPoints(userId);
+      let targetLeagueType = "bronze";
+      if (overallPoints >= 150) {
+        targetLeagueType = "gold";
+      } else if (overallPoints >= 100) {
+        targetLeagueType = "silver";
+      }
+
+      // Find target league
+      const targetLeague = await this.getLeagueByType(targetLeagueType as any);
+      if (!targetLeague) return false;
+
+      const seasonLeague = currentSeason.leagues.find(
+        (l) => l.leagueType === targetLeagueType
+      );
+      if (!seasonLeague) return false;
+
+      // Try to add user to existing group
+      let added = false;
+      let groupId = null;
+      for (const gId of seasonLeague.groups) {
+        const group = await this.getGroupLeaderboard(gId.toString());
+        if (group && group.users.length < group.maxUsers) {
+          added = await this.addUserToGroup(
+            userId,
+            gId.toString(),
+            targetLeagueType as any
+          );
+          if (added) {
+            groupId = gId;
+            break;
+          }
+        }
+      }
+
+      if (!added) {
+        // Create new group
+        const newGroup = {
+          leagueId: new ObjectId(targetLeague._id),
+          groupNumber: seasonLeague.groups.length + 1,
+          seasonId: currentSeason.seasonId,
+          startDate: new Date(),
+          endDate: currentSeason.endDate,
+          status: "active" as const,
+          maxUsers: 10,
+          users: [
+            {
+              userId,
+              points: 0,
+              position: 1,
+              status: "safe" as const,
+              joinedAt: new Date(),
+            },
+          ],
+        };
+
+        groupId = await this.createLeagueGroup(newGroup);
+
+        // Create user league points record for new group
+        await this.createUserLeaguePoints({
+          userId,
+          leagueId: new ObjectId(targetLeague._id),
+          groupId: new ObjectId(groupId!),
+          seasonId: currentSeason.seasonId,
+          totalPoints: 0,
+          overallPoints: overallPoints,
+          pointsBreakdown: {
+            mockExams: 0,
+            practiceSessions: 0,
+            aiFeedback: 0,
+            skillsTried: 0,
+            timeSpent: 0,
+          },
+          tasksCompleted: [],
+          lastActivityAt: new Date(),
+        });
+
+        // Update season league groups
+        await this.db
+          .collection(this.leagueSeasonsCollection)
+          .updateOne(
+            { _id: new ObjectId(currentSeason._id) },
+            { $push: { "leagues.$[league].groups": new ObjectId(groupId!) } },
+            { arrayFilters: [{ "league.leagueType": targetLeagueType }] }
+          );
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error auto assigning user to league:", error);
+      return false;
+    }
   }
 
   // Promote user to a different league
   async promoteUserToLeague(
-    userId: string, 
-    targetLeagueType: TLeagueType, 
+    userId: string,
+    targetLeagueType: TLeagueType,
     seasonId: string
   ): Promise<boolean> {
     const targetLeague = await this.getLeagueByType(targetLeagueType);
@@ -207,7 +419,9 @@ export class LeagueRepository {
     const currentSeason = await this.getCurrentSeason();
     if (!currentSeason) return false;
 
-    const seasonLeague = currentSeason.leagues.find(l => l.leagueType === targetLeagueType);
+    const seasonLeague = currentSeason.leagues.find(
+      (l) => l.leagueType === targetLeagueType
+    );
     if (!seasonLeague) return false;
 
     // Try to add user to existing group
@@ -215,7 +429,11 @@ export class LeagueRepository {
     for (const groupId of seasonLeague.groups) {
       const group = await this.getGroupLeaderboard(groupId.toString());
       if (group && group.users.length < group.maxUsers) {
-        added = await this.addUserToGroup(userId, groupId.toString(), targetLeagueType);
+        added = await this.addUserToGroup(
+          userId,
+          groupId.toString(),
+          targetLeagueType
+        );
         if (added) break;
       }
     }
@@ -230,17 +448,19 @@ export class LeagueRepository {
         endDate: currentSeason.endDate,
         status: "active" as const,
         maxUsers: 10,
-        users: [{
-          userId,
-          points: 0, // Season points start from 0
-          position: 1,
-          status: "safe" as const,
-          joinedAt: new Date(),
-        }],
+        users: [
+          {
+            userId,
+            points: 0, // Season points start from 0
+            position: 1,
+            status: "safe" as const,
+            joinedAt: new Date(),
+          },
+        ],
       };
-      
+
       const groupId = await this.createLeagueGroup(newGroup);
-      
+
       // Update user's league assignment
       await this.db.collection(this.userLeaguePointsCollection).updateOne(
         { userId, seasonId },
@@ -250,7 +470,7 @@ export class LeagueRepository {
             groupId: new ObjectId(groupId),
             totalPoints: 0, // Reset season points
             updatedAt: new Date(),
-          }
+          },
         }
       );
     }
@@ -259,35 +479,43 @@ export class LeagueRepository {
   }
 
   // League Seasons Management
-  async createSeason(season: Omit<TLeagueSeason, "_id" | "createdAt" | "updatedAt">): Promise<string> {
-    const result = await this.db.collection(this.leagueSeasonsCollection).insertOne({
-      ...season,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+  async createSeason(
+    season: Omit<TLeagueSeason, "_id" | "createdAt" | "updatedAt">
+  ): Promise<string> {
+    const result = await this.db
+      .collection(this.leagueSeasonsCollection)
+      .insertOne({
+        ...season,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
     return result.insertedId.toString();
   }
 
   async getCurrentSeason(): Promise<TLeagueSeason | null> {
     const now = new Date();
-    const season = await this.db.collection(this.leagueSeasonsCollection).findOne({
-      startDate: { $lte: now },
-      endDate: { $gte: now },
-      isActive: true,
-    });
+    const season = await this.db
+      .collection(this.leagueSeasonsCollection)
+      .findOne({
+        startDate: { $lte: now },
+        endDate: { $gte: now },
+        isActive: true,
+      });
     return season as TLeagueSeason | null;
   }
 
   async endSeason(seasonId: string): Promise<boolean> {
-    const result = await this.db.collection(this.leagueSeasonsCollection).updateOne(
-      { seasonId },
-      {
-        $set: {
-          isActive: false,
-          updatedAt: new Date(),
+    const result = await this.db
+      .collection(this.leagueSeasonsCollection)
+      .updateOne(
+        { seasonId },
+        {
+          $set: {
+            isActive: false,
+            updatedAt: new Date(),
+          },
         }
-      }
-    );
+      );
     return result.modifiedCount > 0;
   }
 
@@ -297,7 +525,9 @@ export class LeagueRepository {
     if (!group) return false;
 
     const totalUsers = group.users.length;
-    const league = await this.getLeagueByType(group.leagueId.toString() as TLeagueType);
+    const league = await this.getLeagueByType(
+      group.leagueId.toString() as TLeagueType
+    );
     if (!league) return false;
 
     // Calculate promotion and demotion zones
@@ -322,10 +552,13 @@ export class LeagueRepository {
     // Update user statuses
     const updatedUsers = group.users.map((user: any, index: number) => {
       let status: TUserLeagueStatus = "safe";
-      
+
       if (index < promotionZone && league.type !== "gold") {
         status = "promoted";
-      } else if (index >= totalUsers - demotionZone && league.type !== "bronze") {
+      } else if (
+        index >= totalUsers - demotionZone &&
+        league.type !== "bronze"
+      ) {
         status = "demoted";
       }
 
@@ -333,17 +566,21 @@ export class LeagueRepository {
     });
 
     // Update group with new statuses
-    await this.db.collection(this.leagueGroupsCollection).updateOne(
-      { _id: new ObjectId(groupId) },
-      { $set: { users: updatedUsers, status: "completed" } }
-    );
+    await this.db
+      .collection(this.leagueGroupsCollection)
+      .updateOne(
+        { _id: new ObjectId(groupId) },
+        { $set: { users: updatedUsers, status: "completed" } }
+      );
 
     return true;
   }
 
   // Initialize default leagues
   async initializeDefaultLeagues(): Promise<void> {
-    const existingLeagues = await this.db.collection(this.leaguesCollection).countDocuments();
+    const existingLeagues = await this.db
+      .collection(this.leaguesCollection)
+      .countDocuments();
     if (existingLeagues > 0) return;
 
     const defaultLeagues = [
@@ -358,21 +595,21 @@ export class LeagueRepository {
               id: "mock-exam",
               title: "1 Mock Exam Completed",
               points: 50,
-              description: "Complete a full mock exam"
+              description: "Complete a full mock exam",
             },
             {
               id: "skills-tried",
               title: "4 Skills Tried (L, R, W, S)",
               points: 30,
-              description: "Practice all four CELPIP skills"
+              description: "Practice all four CELPIP skills",
             },
             {
               id: "ai-feedback",
               title: "1 Writing or Speaking with AI Feedback",
               points: 40,
-              description: "Get AI feedback on writing or speaking"
-            }
-          ]
+              description: "Get AI feedback on writing or speaking",
+            },
+          ],
         },
         rewards: {
           promotionPoints: 30,
@@ -391,27 +628,27 @@ export class LeagueRepository {
               id: "mock-exams-5",
               title: "5 Mock Exams Completed",
               points: 100,
-              description: "Complete 5 mock exams"
+              description: "Complete 5 mock exams",
             },
             {
               id: "clb-improvement",
               title: "+1 CLB Improvement (any skill)",
               points: 80,
-              description: "Improve CLB score in any skill"
+              description: "Improve CLB score in any skill",
             },
             {
               id: "writing-feedback-3",
               title: "3 Writing with Feedback",
               points: 60,
-              description: "Complete 3 writing tasks with AI feedback"
+              description: "Complete 3 writing tasks with AI feedback",
             },
             {
               id: "speaking-feedback-3",
               title: "3 Speaking with Feedback",
               points: 60,
-              description: "Complete 3 speaking tasks with AI feedback"
-            }
-          ]
+              description: "Complete 3 speaking tasks with AI feedback",
+            },
+          ],
         },
         rewards: {
           promotionPoints: 25,
@@ -430,25 +667,25 @@ export class LeagueRepository {
               id: "mock-exams-10",
               title: "10 Mock Exams Completed",
               points: 200,
-              description: "Complete 10 mock exams"
+              description: "Complete 10 mock exams",
             },
             {
               id: "clb-improvement-3-skills",
               title: "+1 CLB in 3 Skills",
               points: 150,
-              description: "Improve CLB score in 3 different skills"
+              description: "Improve CLB score in 3 different skills",
             },
             {
               id: "practice-consistency",
               title: "Practice 3x/Week (4 Weeks)",
               points: 150,
-              description: "Maintain consistent practice schedule"
+              description: "Maintain consistent practice schedule",
             },
             {
               id: "referral",
               title: "1 Friend Referred (paid plan)",
               points: 100,
-              description: "Refer a friend who purchases a plan"
+              description: "Refer a friend who purchases a plan",
             },
             {
               id: "celpip-champion",
@@ -459,12 +696,20 @@ export class LeagueRepository {
                 { id: "champion-mocks", title: "10 mocks", points: 100 },
                 { id: "champion-clb", title: "+2 CLB in 1 skill", points: 100 },
                 { id: "champion-writing", title: "5 Writing", points: 100 },
-                { id: "champion-speaking", title: "+5 Speaking improved", points: 100 },
-                { id: "champion-skills", title: "all skills practiced", points: 50 },
-                { id: "champion-referral", title: "1 referral", points: 50 }
-              ]
-            }
-          ]
+                {
+                  id: "champion-speaking",
+                  title: "+5 Speaking improved",
+                  points: 100,
+                },
+                {
+                  id: "champion-skills",
+                  title: "all skills practiced",
+                  points: 50,
+                },
+                { id: "champion-referral", title: "1 referral", points: 50 },
+              ],
+            },
+          ],
         },
         rewards: {
           promotionPoints: 0,
@@ -472,7 +717,7 @@ export class LeagueRepository {
           giftCardAmount: 100,
         },
         isActive: true,
-      }
+      },
     ];
 
     for (const league of defaultLeagues) {
@@ -491,12 +736,12 @@ export class LeagueRepository {
     // Mark current season as ended
     await this.db.collection(this.leagueSeasonsCollection).updateOne(
       { seasonId: currentSeason.seasonId },
-      { 
-        $set: { 
+      {
+        $set: {
           status: "ended",
           endDate: new Date(),
-          updatedAt: new Date()
-        } 
+          updatedAt: new Date(),
+        },
       }
     );
 
@@ -507,9 +752,9 @@ export class LeagueRepository {
       startDate: new Date(),
       endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
       status: "active" as const,
-      leagues: currentSeason.leagues.map(league => ({
+      leagues: currentSeason.leagues.map((league) => ({
         ...league,
-        groups: [] // Start with empty groups
+        groups: [], // Start with empty groups
       })),
     };
 
@@ -543,19 +788,21 @@ export class LeagueRepository {
           }
 
           // Update user status
-          await this.db.collection(this.leagueGroupsCollection).updateOne(
-            { _id: new ObjectId(groupId), "users.userId": user.userId },
-            { $set: { "users.$.status": newStatus } }
-          );
+          await this.db
+            .collection(this.leagueGroupsCollection)
+            .updateOne(
+              { _id: new ObjectId(groupId), "users.userId": user.userId },
+              { $set: { "users.$.status": newStatus } }
+            );
 
           // Reset season points for next season
           await this.db.collection(this.userLeaguePointsCollection).updateOne(
             { userId: user.userId, seasonId: season.seasonId },
-            { 
-              $set: { 
+            {
+              $set: {
                 totalPoints: 0, // Reset season points
-                updatedAt: new Date()
-              } 
+                updatedAt: new Date(),
+              },
             }
           );
         }

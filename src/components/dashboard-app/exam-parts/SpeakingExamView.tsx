@@ -21,6 +21,7 @@ import SvgReadingPart from "@/components/icons/ReadingPart";
 import SvgChevronDownExam from "@/components/icons/ChevronDownExam";
 import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 import { ActivityLogger } from "@/lib/userActivity";
+import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 
 const parts = [
   "Problem Solving",
@@ -71,6 +72,7 @@ const SpeakingExamView = ({
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { user, isLoaded, isSignedIn } = useUser();
+  const { addPoints } = useLeaguePoints();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
   const [showModal, setShowModal] = useState(false);
@@ -182,6 +184,13 @@ const SpeakingExamView = ({
         undefined, // Score will be available later
         undefined, // Breakdown will be available later
         recordingTime
+      );
+
+      // Add league points for mock exam completion
+      await addPoints(
+        20,
+        "mockExams",
+        `${Math.floor(recordingTime / 60)} minutes`
       );
 
       setIsSubmit(true);

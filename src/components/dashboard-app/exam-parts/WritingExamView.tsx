@@ -19,6 +19,7 @@ import SvgListeningPart from "@/components/icons/ListeningPart";
 import SvgSpeakingPart from "@/components/icons/SpeakingPart";
 import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 import { ActivityLogger } from "@/lib/userActivity";
+import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 
 const parts = [
   "Problem Solving",
@@ -72,6 +73,7 @@ const WritingExamView = ({
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { user, isLoaded, isSignedIn } = useUser();
+  const { addPoints } = useLeaguePoints();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
   const [showModal, setShowModal] = useState(false);
@@ -159,6 +161,9 @@ const WritingExamView = ({
         time
       );
 
+      // Add league points for mock exam completion
+      await addPoints(20, "mockExams", `${Math.floor(time / 60)} minutes`);
+
       // Log AI feedback generation
       if (result.usage) {
         await ActivityLogger.aiFeedbackGenerated(
@@ -168,6 +173,9 @@ const WritingExamView = ({
           result.usage.completion_tokens || 0,
           attemptId
         );
+
+        // Add league points for AI feedback
+        await addPoints(5, "aiFeedback");
       }
     } catch (error) {
       console.error("Error submitting answer:", error);
