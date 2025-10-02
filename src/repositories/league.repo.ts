@@ -298,10 +298,17 @@ export class LeagueRepository {
 
   // Get user's overall points across all seasons
   async getUserOverallPoints(userId: string): Promise<number> {
-    const userPoints = await this.db
+    const result = await this.db
       .collection(this.userLeaguePointsCollection)
-      .findOne({ userId }, { sort: { updatedAt: -1 } });
-    return userPoints?.overallPoints || 0;
+      .aggregate([
+        { $match: { userId } },
+        {
+          $group: { _id: null, totalOverallPoints: { $sum: "$overallPoints" } },
+        },
+      ])
+      .toArray();
+
+    return result.length > 0 ? result[0].totalOverallPoints : 0;
   }
 
   // Auto assign user to appropriate league

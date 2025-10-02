@@ -106,16 +106,13 @@ export const useTrophySystem = () => {
         const currentTotal = data.userPoints?.totalPoints || 0;
         const previousTotal = currentTotal - pointsEarned;
 
-        // Check for league-based trophies
-        const leagueTrophies = trophies.filter((trophy) =>
-          trophy.id.includes("league")
+        // Check for activity-based trophies first (immediate feedback)
+        const activityTrophies = trophies.filter(
+          (trophy) => !trophy.id.includes("league")
         );
 
-        for (const trophy of leagueTrophies) {
-          const shouldShow =
-            previousTotal < trophy.points && currentTotal >= trophy.points;
-
-          if (shouldShow) {
+        for (const trophy of activityTrophies) {
+          if (shouldShowActivityTrophy(trophy, pointsType, currentTotal)) {
             showTrophy(
               trophy,
               {
@@ -129,13 +126,16 @@ export const useTrophySystem = () => {
           }
         }
 
-        // Check for activity-based trophies
-        const activityTrophies = trophies.filter(
-          (trophy) => !trophy.id.includes("league")
+        // Check for league-based trophies
+        const leagueTrophies = trophies.filter((trophy) =>
+          trophy.id.includes("league")
         );
 
-        for (const trophy of activityTrophies) {
-          if (shouldShowActivityTrophy(trophy, pointsType, currentTotal)) {
+        for (const trophy of leagueTrophies) {
+          const shouldShow =
+            previousTotal < trophy.points && currentTotal >= trophy.points;
+
+          if (shouldShow) {
             showTrophy(
               trophy,
               {
