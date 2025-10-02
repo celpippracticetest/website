@@ -20,6 +20,8 @@ import SvgSpeakingPart from "@/components/icons/SpeakingPart";
 import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
+import { useTrophySystem } from "@/hooks/useTrophySystem";
+import TrophyModal from "@/components/modal/TrophyModal";
 
 const parts = [
   "Problem Solving",
@@ -74,6 +76,14 @@ const WritingExamView = ({
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { user, isLoaded, isSignedIn } = useUser();
   const { addPoints } = useLeaguePoints();
+  const {
+    isModalOpen,
+    currentTrophy,
+    userPoints,
+    timeSpent,
+    closeTrophy,
+    checkTrophyAchievements,
+  } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
   const [showModal, setShowModal] = useState(false);
@@ -163,6 +173,13 @@ const WritingExamView = ({
 
       // Add league points for mock exam completion
       await addPoints(20, "mockExams", `${Math.floor(time / 60)} minutes`);
+
+      // Check for trophy achievements
+      await checkTrophyAchievements(
+        20,
+        "mockExams",
+        `${Math.floor(time / 60)}:${time % 60}`
+      );
 
       // Log AI feedback generation
       if (result.usage) {
@@ -606,6 +623,15 @@ const WritingExamView = ({
           </div>
         </div>
       </div>
+
+      {/* Trophy Modal */}
+      <TrophyModal
+        isOpen={isModalOpen}
+        onClose={closeTrophy}
+        trophy={currentTrophy}
+        userPoints={userPoints}
+        timeSpent={timeSpent}
+      />
     </div>
   );
 };
