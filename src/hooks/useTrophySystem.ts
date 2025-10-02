@@ -103,7 +103,7 @@ export const useTrophySystem = () => {
         if (!response.ok) return;
 
         const data = await response.json();
-        const currentTotal = data.userPoints?.totalPoints || 0;
+        const currentTotal = data.userPoints?.overallPoints || 0;
         const previousTotal = currentTotal - pointsEarned;
 
         // Check for activity-based trophies first (immediate feedback)
