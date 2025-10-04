@@ -340,6 +340,12 @@ export class LeagueRepository {
 
       // Get user's overall points to determine league
       const overallPoints = await this.getUserOverallPoints(userId);
+      
+      // Only assign users to leagues if they have points
+      if (overallPoints === 0) {
+        return false;
+      }
+      
       let targetLeagueType = "bronze";
       if (overallPoints >= 150) {
         targetLeagueType = "gold";
@@ -472,96 +478,6 @@ export class LeagueRepository {
     }
   }
 
-  // Add sample users to league for testing (only in development)
-  async addSampleUsersToLeague(
-    leagueType: TLeagueType,
-    count: number = 5
-  ): Promise<void> {
-    try {
-      const currentSeason = await this.getCurrentSeason();
-      if (!currentSeason) return;
-
-      const seasonLeague = currentSeason.leagues.find(
-        (l) => l.leagueType === leagueType
-      );
-      if (!seasonLeague) return;
-
-      // Find a group with space
-      let targetGroup = null;
-      for (const groupId of seasonLeague.groups) {
-        const group = await this.getGroupLeaderboard(groupId.toString());
-        if (group && group.users.length < group.maxUsers) {
-          targetGroup = group;
-          break;
-        }
-      }
-
-      if (!targetGroup) {
-        // Create new group if no space
-        const league = await this.getLeagueByType(leagueType);
-        if (!league) return;
-
-        const newGroup = {
-          leagueId: new ObjectId(league._id),
-          groupNumber: seasonLeague.groups.length + 1,
-          seasonId: currentSeason.seasonId,
-          startDate: new Date(),
-          endDate: currentSeason.endDate,
-          status: "active" as const,
-          maxUsers: 10,
-          users: [],
-        };
-
-        const groupId = await this.createLeagueGroup(newGroup);
-        targetGroup = await this.getGroupLeaderboard(groupId);
-      }
-
-      if (!targetGroup) return;
-
-      // Add sample users
-      for (let i = 0; i < count; i++) {
-        const sampleUserId = `sample_user_${leagueType}_${i}_${Date.now()}`;
-        const samplePoints = Math.floor(Math.random() * 100) + 10; // Random points between 10-110
-
-        // Add to group
-        await this.db.collection(this.leagueGroupsCollection).updateOne(
-          { _id: new ObjectId(targetGroup._id) },
-          {
-            $push: {
-              users: {
-                userId: sampleUserId,
-                points: samplePoints,
-                position: targetGroup.users.length + i + 1,
-                status: "safe" as const,
-                joinedAt: new Date(),
-              },
-            } as any,
-          }
-        );
-
-        // Create user league points record
-        await this.createUserLeaguePoints({
-          userId: sampleUserId,
-          leagueId: new ObjectId(targetGroup.leagueId),
-          groupId: new ObjectId(targetGroup._id),
-          seasonId: currentSeason.seasonId,
-          totalPoints: samplePoints,
-          overallPoints: samplePoints,
-          pointsBreakdown: {
-            mockExams: Math.floor(samplePoints * 0.4),
-            practiceSessions: Math.floor(samplePoints * 0.3),
-            aiFeedback: Math.floor(samplePoints * 0.2),
-            skillsTried: Math.floor(samplePoints * 0.1),
-            timeSpent: 0,
-          },
-          tasksCompleted: [],
-          lastActivityAt: new Date(),
-        });
-      }
-    } catch (error) {
-      console.error("Error adding sample users to league:", error);
-    }
-  }
 
   // Promote user to a different league
   async promoteUserToLeague(

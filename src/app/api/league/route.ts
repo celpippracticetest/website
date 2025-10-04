@@ -74,23 +74,27 @@ export async function GET(request: NextRequest) {
     // Auto-assign user to appropriate league if not already assigned
     if (!userPoints) {
       const overallPoints = await leagueRepo.getUserOverallPoints(userId);
-      let targetLeagueType = "bronze";
-      if (overallPoints >= 150) {
-        // 3+ trophies
-        targetLeagueType = "gold";
-      } else if (overallPoints >= 100) {
-        // 2+ trophies
-        targetLeagueType = "silver";
-      }
+      
+      // Only assign users to leagues if they have points
+      if (overallPoints > 0) {
+        let targetLeagueType = "bronze";
+        if (overallPoints >= 150) {
+          // 3+ trophies
+          targetLeagueType = "gold";
+        } else if (overallPoints >= 100) {
+          // 2+ trophies
+          targetLeagueType = "silver";
+        }
 
-      // Use the improved auto-assignment method
-      const autoAssignResult = await leagueRepo.autoAssignUserToLeague(userId);
-      if (autoAssignResult) {
-        // Refresh user points after assignment
-        userPoints = await leagueRepo.getUserLeaguePoints(
-          userId,
-          currentSeason!.seasonId
-        );
+        // Use the improved auto-assignment method
+        const autoAssignResult = await leagueRepo.autoAssignUserToLeague(userId);
+        if (autoAssignResult) {
+          // Refresh user points after assignment
+          userPoints = await leagueRepo.getUserLeaguePoints(
+            userId,
+            currentSeason!.seasonId
+          );
+        }
       }
     }
 
@@ -163,6 +167,14 @@ export async function POST(request: NextRequest) {
         currentSeason.seasonId
       );
       const totalPoints = userPoints?.totalPoints || 0;
+
+      // Only assign users to leagues if they have points
+      if (totalPoints === 0) {
+        return NextResponse.json({
+          success: false,
+          message: "User needs to earn points before joining a league",
+        });
+      }
 
       // Determine appropriate league based on points
       let targetLeagueType = "bronze";
@@ -338,28 +350,6 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.json({ success: true });
-    } else if (action === "add_sample_users") {
-      // Add sample users for testing (only in development)
-      if (process.env.NODE_ENV !== "development") {
-        return NextResponse.json(
-          { error: "Only available in development" },
-          { status: 403 }
-        );
-      }
-
-      const { leagueType, count } = body;
-      const targetLeagueType = leagueType || "bronze";
-      const userCount = count || 5;
-
-      await leagueRepo.addSampleUsersToLeague(
-        targetLeagueType as any,
-        userCount
-      );
-
-      return NextResponse.json({
-        success: true,
-        message: `Added ${userCount} sample users to ${targetLeagueType} league`,
-      });
     } else if (action === "complete_task") {
       // Get current season
       const currentSeason = await leagueRepo.getCurrentSeason();

@@ -240,32 +240,6 @@ const Page = () => {
     }
   };
 
-  // Add sample users for testing (development only)
-  const handleAddSampleUsers = async () => {
-    try {
-      const response = await fetch("/api/league", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "add_sample_users",
-          leagueType: currentLeague?.type || "bronze",
-          count: 5,
-        }),
-      });
-
-      if (response.ok) {
-        // Refresh league data
-        await fetchLeagueData();
-        alert("Sample users added successfully!");
-      } else {
-        const error = await response.json();
-        alert(`Error: ${error.error}`);
-      }
-    } catch (error) {
-      console.error("Error adding sample users:", error);
-      alert("Error adding sample users");
-    }
-  };
 
   // Handle task completion
   const handleTaskCompletion = async (taskId: string) => {
@@ -1134,8 +1108,8 @@ const Page = () => {
                   </span>
                 </div>
 
-                {/* Only show Get Trophy button if user is not in any league yet */}
-                {!currentLeague && (
+                {/* Only show Get Trophy button if user is not in any league yet and has points */}
+                {!currentLeague && (leagueData?.userPoints || 0) > 0 && (
                   <div
                     className="mt-[12px] flex items-center justify-center h-[40px] max-w-[136px] bg-[#4A7DFF] gap-[8px] flex-items-center rounded-[24px] cursor-pointer hover:bg-[#3B6BFF] transition-colors"
                     onClick={handleGetTrophy}
@@ -1147,18 +1121,15 @@ const Page = () => {
                   </div>
                 )}
 
-                {/* Development only: Add sample users button */}
-                {process.env.NODE_ENV === "development" && currentLeague && (
-                  <div
-                    className="mt-[12px] flex items-center justify-center h-[40px] max-w-[200px] bg-[#10B981] gap-[8px] flex-items-center rounded-[24px] cursor-pointer hover:bg-[#059669] transition-colors"
-                    onClick={handleAddSampleUsers}
-                  >
-                    <span className="text-white">+</span>
-                    <span className="text-[16px] font-normal text-white">
-                      Add Sample Users
-                    </span>
+                {/* Show message for users with 0 points */}
+                {!currentLeague && (leagueData?.userPoints || 0) === 0 && (
+                  <div className="mt-[12px] p-[16px] bg-[#FEF3C7] border border-[#F59E0B] rounded-[8px]">
+                    <p className="text-[14px] text-[#92400E] text-center">
+                      You need to earn points by practicing to join a league. Complete some tasks to get started!
+                    </p>
                   </div>
                 )}
+
 
                 {/* League Table */}
                 <div className="mt-[24px]">
