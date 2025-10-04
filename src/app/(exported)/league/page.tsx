@@ -642,7 +642,7 @@ const Page = () => {
             .sort((a, b) => b.points - a.points)
             .map((groupUser, index) => (
               <div
-                key={groupUser.id}
+                key={`user-${groupUser.id || 'unknown'}-${index}-${groupUser.points || 0}`}
                 className={`flex items-center gap-[16px] py-[8px] ${
                   groupUser.isCurrentUser
                     ? "bg-[#FED7AA] rounded-[8px] p-[12px]"

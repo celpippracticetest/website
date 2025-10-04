@@ -94,6 +94,11 @@ export class LeagueRepository {
         .findOne({ _id: new ObjectId(groupId) });
       if (!group) return false;
 
+      // Check if user is already in the group
+      if (group.users.some((u: any) => u.userId === userId)) {
+        return false; // User already in group
+      }
+
       // Check if group is full
       if (group.users.length >= group.maxUsers) return false;
 
@@ -774,6 +779,44 @@ export class LeagueRepository {
     } catch (error) {
       console.error("Error checking if league has enough users:", error);
       return false;
+    }
+  }
+
+  // Clean up duplicate users in groups
+  async cleanupDuplicateUsers(): Promise<void> {
+    try {
+      const groups = await this.db
+        .collection(this.leagueGroupsCollection)
+        .find({})
+        .toArray();
+
+      for (const group of groups) {
+        if (!group.users || !Array.isArray(group.users)) continue;
+
+        // Create a map to track unique users
+        const uniqueUsers = new Map();
+        const cleanedUsers = [];
+
+        for (const user of group.users) {
+          if (!uniqueUsers.has(user.userId)) {
+            uniqueUsers.set(user.userId, true);
+            cleanedUsers.push(user);
+          }
+        }
+
+        // Update the group if duplicates were found
+        if (cleanedUsers.length !== group.users.length) {
+          await this.db
+            .collection(this.leagueGroupsCollection)
+            .updateOne(
+              { _id: group._id },
+              { $set: { users: cleanedUsers } }
+            );
+          console.log(`Cleaned up ${group.users.length - cleanedUsers.length} duplicate users from group ${group._id}`);
+        }
+      }
+    } catch (error) {
+      console.error("Error cleaning up duplicate users:", error);
     }
   }
 

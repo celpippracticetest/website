@@ -16,6 +16,9 @@ export async function GET(request: NextRequest) {
 
     // Initialize default leagues if they don't exist
     await leagueRepo.initializeDefaultLeagues();
+    
+    // Clean up any duplicate users in groups
+    await leagueRepo.cleanupDuplicateUsers();
 
     // Get current season or create one
     let currentSeason = await leagueRepo.getCurrentSeason();
