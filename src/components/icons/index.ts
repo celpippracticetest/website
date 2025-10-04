@@ -10,6 +10,7 @@ export { default as Gold80 } from "./Gold80";
 export { default as Gold96 } from "./Gold96";
 export { default as LeagueKados } from "./LeagueKados";
 export { default as LeagueKados24 } from "./LeagueKados24";
+export { default as LeagueLogo } from "./LeagueLogo";
 export { default as LearningArrowUp } from "./LearningArrowUp";
 export { default as LearningGift } from "./LearningGift";
 export { default as LearningGuide } from "./LearningGuide";
