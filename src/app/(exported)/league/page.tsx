@@ -69,8 +69,9 @@ interface LeagueTask {
 }
 
 interface MedalData {
-  type: "points" | "task";
+  type: "points" | "task" | "promotion" | "demotion";
   title: string;
+  message?: string;
   points?: number;
   timeSpent?: string;
   taskTitle?: string;
@@ -82,6 +83,8 @@ interface LeagueData {
   currentLeague: LeagueType;
   seasonEndDate: Date;
   userPoints: number;
+  pointsBreakdown?: any;
+  tasksCompleted?: string[];
 }
 
 const Page = () => {
@@ -119,22 +122,6 @@ const Page = () => {
     try {
       setIsLoadingLeague(true);
 
-      // First, try to auto-assign user to league if not already assigned (only if user is signed in)
-      if (isSignedIn) {
-        try {
-          await fetch("/api/league", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "auto_assign_league",
-            }),
-          });
-        } catch (error) {
-          console.log("Auto-assignment failed or user already assigned:", error);
-        }
-      }
-
-      // Fetch league data - API will handle season creation and auto-assignment
       const response = await fetch("/api/league");
       const data = await response.json();
 
@@ -176,6 +163,8 @@ const Page = () => {
             currentLeague: data.currentLeague?.type || "bronze",
             seasonEndDate: new Date(data.currentSeason?.endDate),
             userPoints: data.userPoints?.totalPoints || 0,
+            pointsBreakdown: data.pointsBreakdown || {},
+            tasksCompleted: data.tasksCompleted || [],
           });
         } else {
           // User not in league yet - show empty state
@@ -192,6 +181,8 @@ const Page = () => {
             currentLeague: "bronze",
             seasonEndDate: new Date(data.currentSeason?.endDate),
             userPoints: 0,
+            pointsBreakdown: data.pointsBreakdown || {},
+            tasksCompleted: data.tasksCompleted || [],
           });
         }
       }
@@ -227,12 +218,46 @@ const Page = () => {
       });
 
       if (response.ok) {
-        setMedalData({
-          type: "points",
-          title: "Points Earned!",
-          points,
-          timeSpent,
-        });
+        const result = await response.json();
+        
+        // Show appropriate modal based on league change
+        if (result.leagueChanged) {
+          if (result.action === "promoted") {
+            setMedalData({
+              type: "promotion",
+              title: "League Promotion! 🎉",
+              message: `Congratulations! You've been promoted from ${result.previousLeague?.toUpperCase()} to ${result.newLeague?.toUpperCase()} League!`,
+              points,
+              timeSpent,
+            });
+          } else if (result.action === "demoted") {
+            if (result.newLeague) {
+              setMedalData({
+                type: "demotion",
+                title: "League Demotion 📉",
+                message: `You've been demoted from ${result.previousLeague?.toUpperCase()} to ${result.newLeague?.toUpperCase()} League. Keep practicing to get back up!`,
+                points,
+                timeSpent,
+              });
+            } else {
+              setMedalData({
+                type: "demotion",
+                title: "Removed from League 😔",
+                message: `You've been removed from all leagues. Earn more points to rejoin!`,
+                points,
+                timeSpent,
+              });
+            }
+          }
+        } else {
+          setMedalData({
+            type: "points",
+            title: "Points Earned!",
+            points,
+            timeSpent,
+          });
+        }
+        
         setShowMedalModal(true);
 
         // Refresh league data
@@ -316,9 +341,9 @@ const Page = () => {
   const isTaskCompleted = (taskTitle: string, leagueType: string) => {
     if (!leagueData) return false;
 
-    // Get user's points breakdown
-    const pointsBreakdown = (leagueData as any).pointsBreakdown || {};
-    const tasksCompleted = (leagueData as any).tasksCompleted || [];
+    // Get user's points breakdown from leagueData
+    const pointsBreakdown = leagueData.pointsBreakdown || {};
+    const tasksCompleted = leagueData.tasksCompleted || [];
 
     // Mock exam completion check
     if (taskTitle.includes("Mock Exam")) {
@@ -678,12 +703,25 @@ const Page = () => {
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-[16px] p-[32px] max-w-[400px] w-full mx-4 text-center">
           <div className="mb-[24px]">
-            <div className="w-[80px] h-[80px] bg-[#FED7AA] rounded-full flex items-center justify-center mx-auto mb-[16px]">
-              <span className="text-[32px]">🏆</span>
+            <div className={`w-[80px] h-[80px] rounded-full flex items-center justify-center mx-auto mb-[16px] ${
+              medalData.type === "promotion" ? "bg-[#10B981]" :
+              medalData.type === "demotion" ? "bg-[#EF4444]" :
+              "bg-[#FED7AA]"
+            }`}>
+              <span className="text-[32px]">
+                {medalData.type === "promotion" ? "🎉" :
+                 medalData.type === "demotion" ? "📉" :
+                 "🏆"}
+              </span>
             </div>
             <h3 className="text-[24px] font-bold text-[#212E42] mb-[8px]">
               {medalData.title}
             </h3>
+            {medalData.message && (
+              <p className="text-[16px] text-[#37465C] mb-[8px]">
+                {medalData.message}
+              </p>
+            )}
             {medalData.points && (
               <p className="text-[18px] text-[#37465C] mb-[8px]">
                 +{medalData.points} Points

@@ -3,6 +3,16 @@ import { getDb } from "@/lib/mongodb";
 import { LeagueRepository } from "@/repositories/league.repo";
 import { auth } from "@clerk/nextjs/server";
 import { ObjectId } from "mongodb";
+
+// Helper function to get league level for comparison
+function getLeagueLevel(leagueType: string): number {
+  switch (leagueType) {
+    case "bronze": return 1;
+    case "silver": return 2;
+    case "gold": return 3;
+    default: return 0;
+  }
+}
 import { TUserLeaguePoints } from "@/models/league.model";
 
 export async function GET(request: NextRequest) {
@@ -137,12 +147,14 @@ export async function GET(request: NextRequest) {
       userPoints,
       currentLeague,
       userGroup,
+      pointsBreakdown: userPoints?.pointsBreakdown || {},
+      tasksCompleted: userPoints?.tasksCompleted || [],
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching league data:", error);
     console.error("Error details:", JSON.stringify(error, null, 2));
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error", details: error?.message },
       { status: 500 }
     );
   }
@@ -159,12 +171,8 @@ export async function POST(request: NextRequest) {
       console.log("Auth result:", { userId: userId ? "present" : "missing" });
     } catch (authError) {
       console.error("Auth error:", authError);
-      return NextResponse.json({ error: "Authentication failed" }, { status: 401 });
-    }
-    
-    if (!userId) {
-      console.error("No userId found in auth");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      // Don't return error, just continue without userId
+      userId = null;
     }
 
     let body;
@@ -200,6 +208,13 @@ export async function POST(request: NextRequest) {
     await leagueRepo.initializeDefaultLeagues();
 
     if (action === "auto_assign_league") {
+      if (!userId) {
+        return NextResponse.json(
+          { error: "User ID is required for auto-assignment" },
+          { status: 400 }
+        );
+      }
+
       // Get current season
       const currentSeason = await leagueRepo.getCurrentSeason();
       if (!currentSeason) {
@@ -239,6 +254,13 @@ export async function POST(request: NextRequest) {
         });
       }
     } else if (action === "add_points") {
+      if (!userId) {
+        return NextResponse.json(
+          { error: "User ID is required for adding points" },
+          { status: 400 }
+        );
+      }
+      
       console.log("Adding points:", { userId, points, pointsType });
       
       // Validate required parameters
@@ -342,8 +364,11 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Check if user should be promoted to higher league based on overall points
+      // Check if user should change league based on overall points
       const overallPoints = await leagueRepo.getUserOverallPoints(userId);
+      console.log("Checking for league change. Overall points:", overallPoints);
+      
+      // Determine target league based on overall points
       let targetLeagueType = "bronze";
       if (overallPoints >= 150) {
         // 3+ trophies
@@ -351,23 +376,57 @@ export async function POST(request: NextRequest) {
       } else if (overallPoints >= 100) {
         // 2+ trophies
         targetLeagueType = "silver";
+      } else if (overallPoints >= 50) {
+        // 1+ trophy
+        targetLeagueType = "bronze";
+      } else {
+        // No trophies yet - should not be in any league
+        targetLeagueType = "none";
       }
 
-      // Auto-promote if needed
-      const userCurrentLeague = await leagueRepo.getActiveGroupForUser(
-        userId,
-        targetLeagueType as any
-      );
-      if (!userCurrentLeague) {
-        await leagueRepo.promoteUserToLeague(
-          userId,
-          targetLeagueType as any,
-          currentSeason.seasonId
+      // Check if user is already in the correct league
+      const currentLeague = await leagueRepo.getUserCurrentLeague(userId);
+      const leagueChange = currentLeague && currentLeague.type !== targetLeagueType;
+      
+      if (leagueChange) {
+        if (targetLeagueType === "none") {
+          // User should be removed from all leagues (demotion to no league)
+          console.log(`User should be demoted from ${currentLeague?.type} to no league`);
+          const demotionResult = await leagueRepo.removeUserFromLeague(userId);
+          console.log("Demotion result:", demotionResult);
+        } else {
+          // User should be moved to different league
+          const isPromotion = getLeagueLevel(currentLeague.type) < getLeagueLevel(targetLeagueType);
+          const action = isPromotion ? "promoted" : "demoted";
+          
+          console.log(`User should be ${action} from ${currentLeague?.type} to ${targetLeagueType}`);
+          const changeResult = await leagueRepo.promoteUserToLeague(
+            userId,
+            targetLeagueType as "bronze" | "silver" | "gold",
+            currentSeason.seasonId
+          );
+          console.log("League change result:", changeResult);
+        }
+      }
+
+      return NextResponse.json({ 
+        success: true, 
+        message: "Points added successfully",
+        points: points,
+        pointsType: pointsType,
+        leagueChanged: leagueChange,
+        action: leagueChange ? (targetLeagueType === "none" ? "demoted" : (getLeagueLevel(currentLeague?.type || "") < getLeagueLevel(targetLeagueType) ? "promoted" : "demoted")) : null,
+        newLeague: leagueChange ? (targetLeagueType === "none" ? null : targetLeagueType) : null,
+        previousLeague: leagueChange ? currentLeague?.type : null
+      });
+    } else if (action === "complete_task") {
+      if (!userId) {
+        return NextResponse.json(
+          { error: "User ID is required for completing tasks" },
+          { status: 400 }
         );
       }
 
-      return NextResponse.json({ success: true });
-    } else if (action === "complete_task") {
       // Get current season
       const currentSeason = await leagueRepo.getCurrentSeason();
       if (!currentSeason) {
@@ -390,7 +449,24 @@ export async function POST(request: NextRequest) {
       }
 
       // Find task in league requirements
-      const league = await leagueRepo.getLeagueByType(leagueType);
+      const { taskId } = body;
+      if (!taskId) {
+        return NextResponse.json(
+          { error: "Task ID is required" },
+          { status: 400 }
+        );
+      }
+
+      // Determine league type from user's current league
+      const currentLeague = await leagueRepo.getUserCurrentLeague(userId);
+      if (!currentLeague) {
+        return NextResponse.json(
+          { error: "User not in any league" },
+          { status: 400 }
+        );
+      }
+
+      const league = await leagueRepo.getLeagueByType(currentLeague.type as "bronze" | "silver" | "gold");
       if (!league) {
         return NextResponse.json(
           { error: "League not found" },
@@ -398,7 +474,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const task = league.requirements.tasks.find((t) => t.id === body.taskId);
+      const task = league.requirements.tasks.find((t) => t.id === taskId);
       if (!task) {
         return NextResponse.json({ error: "Task not found" }, { status: 404 });
       }

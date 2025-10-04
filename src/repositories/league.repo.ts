@@ -423,6 +423,69 @@ export class LeagueRepository {
     return result.length > 0 ? result[0].totalOverallPoints : 0;
   }
 
+  // Get user's current league type
+  async getUserCurrentLeague(userId: string): Promise<{ type: string; groupId: string } | null> {
+    try {
+      const currentSeason = await this.getCurrentSeason();
+      if (!currentSeason) return null;
+
+      // Check all leagues to find where user is currently assigned
+      for (const seasonLeague of currentSeason.leagues) {
+        for (const groupId of seasonLeague.groups) {
+          const group = await this.db
+            .collection(this.leagueGroupsCollection)
+            .findOne({ _id: groupId });
+
+          if (group && group.users.some((u: any) => u.userId === userId)) {
+            return {
+              type: seasonLeague.leagueType,
+              groupId: groupId.toString()
+            };
+          }
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error getting user current league:", error);
+      return null;
+    }
+  }
+
+  // Remove user from all leagues (demotion to no league)
+  async removeUserFromLeague(userId: string): Promise<boolean> {
+    try {
+      const currentSeason = await this.getCurrentSeason();
+      if (!currentSeason) return false;
+
+      // Remove user from all groups in current season
+      for (const seasonLeague of currentSeason.leagues) {
+        for (const groupId of seasonLeague.groups) {
+          await this.db
+            .collection(this.leagueGroupsCollection)
+            .updateOne(
+              { _id: groupId },
+              { $pull: { users: { userId: userId } } } as any
+            );
+        }
+      }
+
+      // Remove user's league points record for current season
+      await this.db
+        .collection(this.userLeaguePointsCollection)
+        .deleteOne({
+          userId,
+          seasonId: currentSeason.seasonId
+        });
+
+      console.log(`User ${userId} removed from all leagues`);
+      return true;
+    } catch (error) {
+      console.error("Error removing user from league:", error);
+      return false;
+    }
+  }
+
   // Auto assign user to appropriate league
   async autoAssignUserToLeague(userId: string): Promise<boolean> {
     try {
