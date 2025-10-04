@@ -70,7 +70,7 @@ export const POST = async function (req: NextRequest) {
     if (command.includes("{{WRITING_PROMPT}}")) {
       command = command.replace(
         "{{WRITING_PROMPT}}",
-        practice.passages[0].body
+        practice.passages?.[0]?.body || ""
       );
     }
     const msg = await anthropic.messages.create({
@@ -166,31 +166,32 @@ export const POST = async function (req: NextRequest) {
       ],
     });
 
+    // Extract tool use result from Anthropic response
+    let toolResult: any = {
+      overall: 0,
+      contentAndCoherence: 0,
+      vocabulary: 0,
+      readabilityAndGrammar: 0,
+      taskFulfillment: 0,
+      feedback: "",
+      betterVersion: "",
+      grammarMistakes: [],
+    };
+
+    if (msg && msg.content.length > 1) {
+      const toolUse = msg.content[1];
+      if (toolUse.type === 'tool_use' && 'input' in toolUse) {
+        toolResult = toolUse.input;
+      }
+    }
+
     const answer = await answerRepo.createAnswer({
       text: answerBody.text,
       userId: user?.id,
       practiceId: answerBody.practiceId,
-      overalScore:
-        msg &&
-        msg.content.length > 1 &&
-        msg.content[1].input &&
-        msg.content[1].input.overall
-          ? msg.content[1].input.overall
-          : 0,
+      overalScore: toolResult.overall || 0,
       type: "WRITING",
-      result:
-        msg && msg.content.length > 1 && msg.content[1].input
-          ? msg.content[1].input
-          : {
-              overall: 0,
-              contentAndCoherence: 0,
-              vocabulary: 0,
-              readabilityAndGrammar: 0,
-              taskFulfillment: 0,
-              feedback: "",
-              betterVersion: "",
-              grammarMistakes: [],
-            },
+      result: toolResult,
       createdAt: new Date(),
       updatedAt: new Date(),
     });

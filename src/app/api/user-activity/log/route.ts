@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
-import client from "@/lib/mongodb";
+import { getDb } from "@/lib/mongodb";
 
 function extractEmailFromClerkUser(user: any): string | null {
   const byId = user?.emailAddresses?.find?.(
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     const clientUserAgent =
       userAgent || request.headers.get("user-agent") || "unknown";
 
-    const db = client.db();
+    const db = await getDb();
     const userActivityCollection = db.collection("useractivities");
 
     const activityLog = {
@@ -120,7 +120,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const db = client.db();
+    const db = await getDb();
     const userActivityCollection = db.collection("useractivities");
 
     const clientIp =

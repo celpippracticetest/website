@@ -187,11 +187,34 @@ export class LeagueRepository {
       .findOne({ _id: new ObjectId(groupId) });
     if (!group) return null;
 
+    // Get current season to fetch real user points
+    const currentSeason = await this.getCurrentSeason();
+    if (!currentSeason) return group as TLeagueGroup;
+
+    // Update user points from UserLeaguePoints collection
+    const updatedUsers = [];
+    for (const user of group.users) {
+      const userPoints = await this.db
+        .collection(this.userLeaguePointsCollection)
+        .findOne({
+          userId: user.userId,
+          seasonId: currentSeason.seasonId,
+        });
+
+      if (userPoints) {
+        // Update user points in group
+        user.points = userPoints.totalPoints;
+        user.lastActivityAt = userPoints.lastActivityAt;
+      }
+
+      updatedUsers.push(user);
+    }
+
     // Sort users by points (descending)
-    group.users.sort((a: any, b: any) => b.points - a.points);
+    updatedUsers.sort((a: any, b: any) => b.points - a.points);
 
     // Update positions
-    group.users.forEach((user: any, index: number) => {
+    updatedUsers.forEach((user: any, index: number) => {
       user.position = index + 1;
     });
 
@@ -200,9 +223,10 @@ export class LeagueRepository {
       .collection(this.leagueGroupsCollection)
       .updateOne(
         { _id: new ObjectId(groupId) },
-        { $set: { users: group.users } }
+        { $set: { users: updatedUsers } }
       );
 
+    group.users = updatedUsers;
     return group as TLeagueGroup;
   }
 
