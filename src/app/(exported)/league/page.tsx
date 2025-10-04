@@ -117,62 +117,83 @@ const Page = () => {
   const fetchLeagueData = async () => {
     try {
       setIsLoadingLeague(true);
-      
+
+      // First, try to auto-assign user to league if not already assigned
+      try {
+        await fetch("/api/league", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "auto_assign_league",
+          }),
+        });
+      } catch (error) {
+        console.log("Auto-assignment failed or user already assigned:", error);
+      }
+
       // Fetch league data - API will handle season creation and auto-assignment
-      const response = await fetch('/api/league');
+      const response = await fetch("/api/league");
       const data = await response.json();
-      
+
       if (response.ok) {
         setCurrentLeague(data.currentLeague);
         setUserGroup(data.userGroup);
         setAllLeagues(data.leagues || []);
-        
+
         if (data.userGroup) {
           // User is in a league group
           const users = data.userGroup.users.map((u: any) => ({
             id: u.userId,
-            name: u.userId === user?.id ? (user?.firstName || 'You') : `User ${u.userId.slice(-4)}`,
+            name:
+              u.userId === user?.id
+                ? user?.firstName ||
+                  user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] ||
+                  "You"
+                : `User ${u.userId.slice(-4)}`,
             points: u.points,
-            league: data.currentLeague?.type || 'bronze',
+            league: data.currentLeague?.type || "bronze",
             position: u.position,
             tasksCompleted: data.userPoints?.tasksCompleted || [],
-            isCurrentUser: u.userId === user?.id
+            isCurrentUser: u.userId === user?.id,
           }));
 
-          const tasks = data.currentLeague?.requirements?.tasks?.map((task: any) => ({
-            id: task.id,
-            title: task.title,
-            points: task.points,
-            completed: data.userPoints?.tasksCompleted?.includes(task.id) || false,
-            description: task.description
-          })) || [];
+          const tasks =
+            data.currentLeague?.requirements?.tasks?.map((task: any) => ({
+              id: task.id,
+              title: task.title,
+              points: task.points,
+              completed:
+                data.userPoints?.tasksCompleted?.includes(task.id) || false,
+              description: task.description,
+            })) || [];
 
           setLeagueData({
             users,
             tasks,
-            currentLeague: data.currentLeague?.type || 'bronze',
+            currentLeague: data.currentLeague?.type || "bronze",
             seasonEndDate: new Date(data.currentSeason?.endDate),
-            userPoints: data.userPoints?.totalPoints || 0
+            userPoints: data.userPoints?.totalPoints || 0,
           });
         } else {
           // User not in league yet - show empty state
           setLeagueData({
             users: [],
-            tasks: data.leagues?.[0]?.requirements?.tasks?.map((task: any) => ({
-              id: task.id,
-              title: task.title,
-              points: task.points,
-              completed: false,
-              description: task.description
-            })) || [],
-            currentLeague: 'bronze',
+            tasks:
+              data.leagues?.[0]?.requirements?.tasks?.map((task: any) => ({
+                id: task.id,
+                title: task.title,
+                points: task.points,
+                completed: false,
+                description: task.description,
+              })) || [],
+            currentLeague: "bronze",
             seasonEndDate: new Date(data.currentSeason?.endDate),
-            userPoints: 0
+            userPoints: 0,
           });
         }
       }
     } catch (error) {
-      console.error('Error fetching league data:', error);
+      console.error("Error fetching league data:", error);
     } finally {
       setIsLoadingLeague(false);
     }
@@ -186,16 +207,20 @@ const Page = () => {
   }, [isLoaded, isSignedIn, user?.id]);
 
   // Handle points earned
-  const handlePointsEarned = async (points: number, timeSpent: string, pointsType: string = 'practiceSessions') => {
+  const handlePointsEarned = async (
+    points: number,
+    timeSpent: string,
+    pointsType: string = "practiceSessions"
+  ) => {
     try {
-      const response = await fetch('/api/league', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/league", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: 'add_points',
+          action: "add_points",
           points,
-          pointsType
-        })
+          pointsType,
+        }),
       });
 
       if (response.ok) {
@@ -203,46 +228,73 @@ const Page = () => {
           type: "points",
           title: "Points Earned!",
           points,
-          timeSpent
+          timeSpent,
         });
         setShowMedalModal(true);
-        
+
         // Refresh league data
         await fetchLeagueData();
       }
     } catch (error) {
-      console.error('Error adding points:', error);
+      console.error("Error adding points:", error);
+    }
+  };
+
+  // Add sample users for testing (development only)
+  const handleAddSampleUsers = async () => {
+    try {
+      const response = await fetch("/api/league", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "add_sample_users",
+          leagueType: currentLeague?.type || "bronze",
+          count: 5,
+        }),
+      });
+
+      if (response.ok) {
+        // Refresh league data
+        await fetchLeagueData();
+        alert("Sample users added successfully!");
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.error}`);
+      }
+    } catch (error) {
+      console.error("Error adding sample users:", error);
+      alert("Error adding sample users");
     }
   };
 
   // Handle task completion
   const handleTaskCompletion = async (taskId: string) => {
     if (!leagueData || !currentLeague) return;
-    
-    const task = leagueData.tasks.find(t => t.id === taskId);
+
+    const task = leagueData.tasks.find((t) => t.id === taskId);
     if (!task || task.completed) return;
 
     try {
-      const response = await fetch('/api/league', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/league", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: 'complete_task',
+          action: "complete_task",
           taskId,
-          leagueType: currentLeague.type
-        })
+          leagueType: currentLeague.type,
+        }),
       });
 
       if (response.ok) {
         const data = await response.json();
         setCompletedTaskId(taskId);
         setShowTaskModal(true);
-        
+
         // Refresh league data
         await fetchLeagueData();
       }
     } catch (error) {
-      console.error('Error completing task:', error);
+      console.error("Error completing task:", error);
     }
   };
 
@@ -254,30 +306,94 @@ const Page = () => {
   // Check if user meets requirements for a league
   const checkLeagueRequirements = (leagueType: string) => {
     if (!leagueData) return false;
-    
-    const league = allLeagues.find(l => l.type === leagueType);
+
+    const league = allLeagues.find((l) => l.type === leagueType);
     if (!league) return false;
-    
+
     // Check if user has enough trophies/points
     const requiredTrophies = league.requirements?.minTrophies || 0;
     const userTrophies = Math.floor(leagueData.userPoints / 50); // Assuming 50 points = 1 trophy
-    
+
     return userTrophies >= requiredTrophies;
   };
 
   // Get tasks for specific league
   const getTasksForLeague = (leagueType: string) => {
-    const league = allLeagues.find(l => l.type === leagueType);
+    const league = allLeagues.find((l) => l.type === leagueType);
     if (!league) return [];
-    
-    return league.requirements?.tasks?.map((task: any) => ({
-      id: task.id,
-      title: task.title,
-      points: task.points,
-      completed: leagueData?.userPoints ? 
-        (leagueData.tasksCompleted?.includes(task.id) || false) : false,
-      description: task.description
-    })) || [];
+
+    return (
+      league.requirements?.tasks?.map((task: any) => ({
+        id: task.id,
+        title: task.title,
+        points: task.points,
+        completed: leagueData?.userPoints
+          ? (leagueData as any).tasksCompleted?.includes(task.id) || false
+          : false,
+        description: task.description,
+      })) || []
+    );
+  };
+
+  // Check if a task is completed based on user data
+  const isTaskCompleted = (taskTitle: string, leagueType: string) => {
+    if (!leagueData) return false;
+
+    // Mock exam completion check
+    if (taskTitle.includes("Mock Exam")) {
+      const requiredCount = parseInt(taskTitle.match(/\d+/)?.[0] || "1");
+      // Check if user has enough points from mock exams (20 points each)
+      const mockExamPoints =
+        (leagueData as any).pointsBreakdown?.mockExams || 0;
+      return mockExamPoints >= requiredCount * 20;
+    }
+
+    // Skills tried check
+    if (taskTitle.includes("Skills Tried")) {
+      // Check if user has tried all 4 skills (L, R, W, S)
+      const skillsTriedPoints =
+        (leagueData as any).pointsBreakdown?.skillsTried || 0;
+      return skillsTriedPoints >= 40; // Assuming 10 points per skill
+    }
+
+    // AI Feedback check
+    if (taskTitle.includes("AI Feedback")) {
+      const aiFeedbackPoints =
+        (leagueData as any).pointsBreakdown?.aiFeedback || 0;
+      return aiFeedbackPoints >= 5; // Assuming 5 points per AI feedback
+    }
+
+    // CLB Improvement check
+    if (taskTitle.includes("CLB Improvement")) {
+      // This would need to be tracked separately in user scores
+      return leagueData.userPoints >= 50; // Placeholder logic
+    }
+
+    // Writing/Speaking with Feedback check
+    if (
+      taskTitle.includes("Writing with Feedback") ||
+      taskTitle.includes("Speaking with Feedback")
+    ) {
+      const requiredCount = parseInt(taskTitle.match(/\d+/)?.[0] || "1");
+      const aiFeedbackPoints =
+        (leagueData as any).pointsBreakdown?.aiFeedback || 0;
+      return aiFeedbackPoints >= requiredCount * 5; // Assuming 5 points per feedback
+    }
+
+    // Practice frequency check
+    if (taskTitle.includes("Practice 3x/Week")) {
+      const practicePoints =
+        (leagueData as any).pointsBreakdown?.practiceSessions || 0;
+      return practicePoints >= 100; // Assuming 100 points for consistent practice
+    }
+
+    // Referral check
+    if (taskTitle.includes("Friend Referred")) {
+      // This would need to be tracked separately
+      return leagueData.userPoints >= 80; // Placeholder logic
+    }
+
+    return false;
   };
 
   // Render tasks for a specific league
@@ -286,37 +402,57 @@ const Page = () => {
     if (currentLeague?.type === leagueType && leagueData?.tasks) {
       return leagueData.tasks.map((task) => (
         <div key={task.id} className="flex gap-[8px]">
-          <div 
-            className={`cursor-pointer ${task.completed ? 'text-[#10B981]' : 'text-[#979EA8]'}`}
+          <div
+            className={`cursor-pointer ${
+              task.completed ? "text-[#10B981]" : "text-[#979EA8]"
+            }`}
             onClick={() => !task.completed && handleTaskCompletion(task.id)}
           >
             <CircleCheck />
           </div>
-          <span className={`text-[14px] ${task.completed ? 'text-[#10B981]' : 'text-[#37465C]'}`}>
+          <span
+            className={`text-[14px] ${
+              task.completed ? "text-[#10B981]" : "text-[#37465C]"
+            }`}
+          >
             {task.title}
           </span>
         </div>
       ));
     }
-    
-    // Otherwise show static tasks
-    return staticTasks.map((task, index) => (
-      <div key={index} className="flex gap-[8px]">
-        <CircleCheck />
-        <span className="text-[#37465C] text-[14px]">{task}</span>
-      </div>
-    ));
+
+    // Otherwise show static tasks with completion status
+    return staticTasks.map((task, index) => {
+      const completed = isTaskCompleted(task, leagueType);
+      return (
+        <div key={index} className="flex gap-[8px]">
+          <div className={completed ? "text-[#10B981]" : "text-[#979EA8]"}>
+            <CircleCheck />
+          </div>
+          <span
+            className={`text-[14px] ${
+              completed ? "text-[#10B981]" : "text-[#37465C]"
+            }`}
+          >
+            {task}
+          </span>
+        </div>
+      );
+    });
   };
 
   // League progression logic
-  const calculateLeagueProgression = (users: LeagueUser[], currentLeague: LeagueType) => {
+  const calculateLeagueProgression = (
+    users: LeagueUser[],
+    currentLeague: LeagueType
+  ) => {
     const sortedUsers = [...users].sort((a, b) => b.points - a.points);
     const totalUsers = sortedUsers.length;
-    
+
     // Define zones based on league
     let promotionZone: number;
     let demotionZone: number;
-    
+
     switch (currentLeague) {
       case "bronze":
         promotionZone = Math.ceil(totalUsers * 0.3); // Top 30% promote to Silver
@@ -335,11 +471,14 @@ const Page = () => {
     return sortedUsers.map((user, index) => {
       let newLeague = user.league;
       let status = "safe";
-      
+
       if (index < promotionZone && currentLeague !== "gold") {
         newLeague = currentLeague === "bronze" ? "silver" : "gold";
         status = "promoted";
-      } else if (index >= totalUsers - demotionZone && currentLeague !== "bronze") {
+      } else if (
+        index >= totalUsers - demotionZone &&
+        currentLeague !== "bronze"
+      ) {
         newLeague = currentLeague === "gold" ? "silver" : "bronze";
         status = "demoted";
       } else if (index >= promotionZone && index < totalUsers - demotionZone) {
@@ -350,7 +489,7 @@ const Page = () => {
         ...user,
         league: newLeague,
         position: index + 1,
-        status
+        status,
       };
     });
   };
@@ -358,24 +497,27 @@ const Page = () => {
   // Check if season should end and process league changes
   const processSeasonEnd = () => {
     if (!leagueData) return;
-    
+
     const now = new Date();
     const timeLeft = leagueData.seasonEndDate.getTime() - now.getTime();
-    
+
     if (timeLeft <= 0) {
       // Season ended, process league changes
-      const updatedUsers = calculateLeagueProgression(leagueData.users, leagueData.currentLeague);
-      
+      const updatedUsers = calculateLeagueProgression(
+        leagueData.users,
+        leagueData.currentLeague
+      );
+
       // Create new season
       const newSeasonEndDate = new Date();
       newSeasonEndDate.setDate(newSeasonEndDate.getDate() + 7);
-      
-      setLeagueData(prev => {
+
+      setLeagueData((prev) => {
         if (!prev) return prev;
         return {
           ...prev,
           users: updatedUsers,
-          seasonEndDate: newSeasonEndDate
+          seasonEndDate: newSeasonEndDate,
         };
       });
     }
@@ -393,14 +535,17 @@ const Page = () => {
       <div className="space-y-[16px]">
         {/* Skeleton rows */}
         {Array.from({ length: 7 }).map((_, index) => (
-          <div key={index} className="flex items-center gap-[16px] py-[8px] animate-pulse">
+          <div
+            key={index}
+            className="flex items-center gap-[16px] py-[8px] animate-pulse"
+          >
             <div className="w-[8px] h-[8px] bg-[#E5E7EB] rounded-full"></div>
             <div className="w-[40px] h-[40px] bg-[#E5E7EB] rounded-full"></div>
             <div className="flex-1 h-[12px] bg-[#E5E7EB] rounded-[4px]"></div>
             <div className="w-[60px] h-[12px] bg-[#E5E7EB] rounded-[4px]"></div>
           </div>
         ))}
-        
+
         {/* Current user skeleton row */}
         <div className="bg-[#F8FAFC] rounded-[8px] p-[12px] flex items-center gap-[12px] animate-pulse">
           <div className="w-[8px] h-[8px] bg-[#E5E7EB] rounded-full"></div>
@@ -427,15 +572,21 @@ const Page = () => {
             <div className="w-[60px] h-[12px] bg-[#E5E7EB] rounded-[4px]"></div>
           </div>
         ))}
-        
+
         {/* Current user row (highlighted) */}
         <div className="bg-[#FED7AA] rounded-[8px] p-[12px] flex items-center gap-[12px]">
           <div className="w-[8px] h-[8px] bg-[#374151] rounded-full"></div>
           <div className="w-[40px] h-[40px] bg-[#E5E7EB] rounded-full flex items-center justify-center">
             <div className="w-[32px] h-[32px] bg-[#9CA3AF] rounded-full"></div>
           </div>
-            <div className="text-[#374151] font-medium">{user?.firstName || 'You'}</div>
-          <div className="text-[#374151] font-medium flex-1 text-right">0 XP</div>
+          <div className="text-[#374151] font-medium">
+            {user?.firstName ||
+              user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] ||
+              "You"}
+          </div>
+          <div className="text-[#374151] font-medium flex-1 text-right">
+            0 XP
+          </div>
         </div>
       </div>
     </div>
@@ -448,14 +599,18 @@ const Page = () => {
     const now = new Date();
     const timeLeft = leagueData.seasonEndDate.getTime() - now.getTime();
     const daysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
-    const hoursLeft = Math.ceil((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const hoursLeft = Math.ceil(
+      (timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+    );
 
     return (
       <div className="mb-[16px] p-[16px] bg-[#F8FAFC] rounded-[8px] border border-[#E2E8F0]">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-[16px] font-semibold text-[#212E42]">
-              {leagueData.currentLeague.charAt(0).toUpperCase() + leagueData.currentLeague.slice(1)} League
+              {leagueData.currentLeague.charAt(0).toUpperCase() +
+                leagueData.currentLeague.slice(1)}{" "}
+              League
             </h3>
             <p className="text-[14px] text-[#64748B]">
               Season ends in {daysLeft} days, {hoursLeft} hours
@@ -482,27 +637,42 @@ const Page = () => {
       <div className="min-h-[529px] bg-white border border-[#E0E7FF] rounded-[12px] p-[24px]">
         <LeagueStatusComponent />
         <div className="space-y-[16px]">
-          {leagueData.users.map((user, index) => (
-            <div 
-              key={user.id} 
-              className={`flex items-center gap-[16px] py-[8px] ${
-                user.isCurrentUser ? 'bg-[#FED7AA] rounded-[8px] p-[12px]' : ''
-              }`}
-            >
-              <div className="w-[8px] h-[8px] bg-[#E5E7EB] rounded-full"></div>
-              <div className="w-[40px] h-[40px] bg-[#E5E7EB] rounded-full flex items-center justify-center">
-                {user.avatar ? (
-                  <img src={user.avatar} alt={user.name} className="w-[32px] h-[32px] rounded-full" />
-                ) : (
-                  <div className="w-[32px] h-[32px] bg-[#9CA3AF] rounded-full"></div>
-                )}
+          {/* Show all users in the group, sorted by points */}
+          {leagueData.users
+            .sort((a, b) => b.points - a.points)
+            .map((groupUser, index) => (
+              <div
+                key={groupUser.id}
+                className={`flex items-center gap-[16px] py-[8px] ${
+                  groupUser.isCurrentUser
+                    ? "bg-[#FED7AA] rounded-[8px] p-[12px]"
+                    : ""
+                }`}
+              >
+                <div className="w-[8px] h-[8px] bg-[#E5E7EB] rounded-full"></div>
+                <div className="w-[40px] h-[40px] bg-[#E5E7EB] rounded-full flex items-center justify-center">
+                  {groupUser.avatar ? (
+                    <img
+                      src={groupUser.avatar}
+                      alt={groupUser.name}
+                      className="w-[32px] h-[32px] rounded-full"
+                    />
+                  ) : (
+                    <div className="w-[32px] h-[32px] bg-[#9CA3AF] rounded-full"></div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="text-[#374151] font-medium">
+                    {groupUser.name ||
+                      (groupUser as any).email?.split("@")[0] ||
+                      "User"}
+                  </div>
+                </div>
+                <div className="text-[#374151] font-medium">
+                  {groupUser.points} XP
+                </div>
               </div>
-              <div className="flex-1">
-                <div className="text-[#374151] font-medium">{user.name}</div>
-              </div>
-              <div className="text-[#374151] font-medium">{user.points} XP</div>
-            </div>
-          ))}
+            ))}
         </div>
       </div>
     );
@@ -556,7 +726,7 @@ const Page = () => {
   const TaskCompletionModal = () => {
     if (!showTaskModal || !completedTaskId || !leagueData) return null;
 
-    const task = leagueData.tasks.find(t => t.id === completedTaskId);
+    const task = leagueData.tasks.find((t) => t.id === completedTaskId);
     if (!task) return null;
 
     return (
@@ -569,15 +739,16 @@ const Page = () => {
             <h3 className="text-[24px] font-bold text-[#212E42] mb-[8px]">
               Task Completed!
             </h3>
-            <p className="text-[16px] text-[#37465C] mb-[16px]">
-              {task.title}
-            </p>
+            <p className="text-[16px] text-[#37465C] mb-[16px]">{task.title}</p>
             <p className="text-[14px] text-[#76808F] mb-[16px]">
               You're on your way!
             </p>
             {/* Progress bar animation */}
             <div className="w-full bg-[#E5E7EB] rounded-full h-[8px] mb-[16px]">
-              <div className="bg-[#10B981] h-[8px] rounded-full animate-pulse" style={{width: '100%'}}></div>
+              <div
+                className="bg-[#10B981] h-[8px] rounded-full animate-pulse"
+                style={{ width: "100%" }}
+              ></div>
             </div>
           </div>
           <button
@@ -844,21 +1015,27 @@ const Page = () => {
           context: {
             targetCLB: userContext.targetCLB || "Not specified",
             currentScores: userContext.mockScores
-              ? `L:${userContext.mockScores.listening || "N/A"} R:${userContext.mockScores.reading || "N/A"
-              } W:${userContext.mockScores.writing || "N/A"} S:${userContext.mockScores.speaking || "N/A"
-              }`
+              ? `L:${userContext.mockScores.listening || "N/A"} R:${
+                  userContext.mockScores.reading || "N/A"
+                } W:${userContext.mockScores.writing || "N/A"} S:${
+                  userContext.mockScores.speaking || "N/A"
+                }`
               : "Not available",
             scoreSource: userContext.scoreSource || "Not available",
             answerCounts: userContext.answerCounts
-              ? `Writing: ${userContext.answerCounts.writing || 0}, Speaking: ${userContext.answerCounts.speaking || 0
-              }, Listening: ${userContext.answerCounts.listening || 0
-              }, Reading: ${userContext.answerCounts.reading || 0}`
+              ? `Writing: ${userContext.answerCounts.writing || 0}, Speaking: ${
+                  userContext.answerCounts.speaking || 0
+                }, Listening: ${
+                  userContext.answerCounts.listening || 0
+                }, Reading: ${userContext.answerCounts.reading || 0}`
               : "No answers available",
             weakAreas: userContext.weakAreas?.join(", ") || "Not identified",
             practiceHistory: userContext.practiceHistory
-              ? `${userContext.practiceHistory.totalPractices
-              } practices, avg: ${userContext.practiceHistory.averageScore || "N/A"
-              }`
+              ? `${
+                  userContext.practiceHistory.totalPractices
+                } practices, avg: ${
+                  userContext.practiceHistory.averageScore || "N/A"
+                }`
               : "Not available",
           },
           conversationHistory: messages, // Send all previous messages for context
@@ -903,7 +1080,6 @@ const Page = () => {
       if ((isFreeUser || noUser) && !isPremiumUser) {
         setIsChatLocked(true);
         // Refresh server message count
-
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -919,10 +1095,6 @@ const Page = () => {
     }
   };
 
-
-
-
-
   // Clear message count when user becomes premium
   useEffect(() => {
     if (isPremiumUser) {
@@ -930,9 +1102,6 @@ const Page = () => {
       setIsChatLocked(false);
     }
   }, [isPremiumUser]);
-
-
-
 
   return (
     <section className="relative w-full transition-all duration-300 overflow-hidden">
@@ -945,52 +1114,77 @@ const Page = () => {
       <div className="flex h-full flex-col">
         <div className="flex-1 overflow-y-auto  justify-center ">
           <div className="flex max-w-[1200px] mx-auto z-[1]  text-center">
-
             <div className="flex gap-[48px] w-full">
               <div className="w-full">
-
                 <div className="flex items-center gap-[24px] mt-[24px]">
-                  <SvgBronz96/>
-                  <SvgSilver80/>
-                  <SvgGold80/>
+                  <SvgBronz96 />
+                  <SvgSilver80 />
+                  <SvgGold80 />
                 </div>
 
                 <div className="mt-[24px] flex">
-                  <span className="text-[18px] text-[#212E42] font-semibold leading-[28px]">‌Bronze League</span>
+                  <span className="text-[18px] text-[#212E42] font-semibold leading-[28px]">
+                    ‌Bronze League
+                  </span>
                 </div>
                 <div className="flex mt-[12px] ">
-                  <span className="text-[14px] text-[#37465C] font-semibold text-justify">Unlock this league by completing the tasks and earning trophies along the way!</span>
+                  <span className="text-[14px] text-[#37465C] font-semibold text-justify">
+                    Unlock this league by completing the tasks and earning
+                    trophies along the way!
+                  </span>
                 </div>
 
-                <div className="mt-[12px] flex items-center justify-center h-[40px] max-w-[136px] bg-[#4A7DFF] gap-[8px] flex-items-center rounded-[24px] cursor-pointer hover:bg-[#3B6BFF] transition-colors"
-                     onClick={handleGetTrophy}>
-                  <span className="text-white">+</span>
-                  <span className="text-[16px] font-normal text-white">Get trophy</span>
-                </div>
+                {/* Only show Get Trophy button if user is not in any league yet */}
+                {!currentLeague && (
+                  <div
+                    className="mt-[12px] flex items-center justify-center h-[40px] max-w-[136px] bg-[#4A7DFF] gap-[8px] flex-items-center rounded-[24px] cursor-pointer hover:bg-[#3B6BFF] transition-colors"
+                    onClick={handleGetTrophy}
+                  >
+                    <span className="text-white">+</span>
+                    <span className="text-[16px] font-normal text-white">
+                      Get trophy
+                    </span>
+                  </div>
+                )}
 
+                {/* Development only: Add sample users button */}
+                {process.env.NODE_ENV === "development" && currentLeague && (
+                  <div
+                    className="mt-[12px] flex items-center justify-center h-[40px] max-w-[200px] bg-[#10B981] gap-[8px] flex-items-center rounded-[24px] cursor-pointer hover:bg-[#059669] transition-colors"
+                    onClick={handleAddSampleUsers}
+                  >
+                    <span className="text-white">+</span>
+                    <span className="text-[16px] font-normal text-white">
+                      Add Sample Users
+                    </span>
+                  </div>
+                )}
 
                 {/* League Table */}
                 <div className="mt-[24px]">
                   <LeagueTableComponent />
                 </div>
-
               </div>
 
               <div className="w-full mt-[40px] max-w-[522px]">
-
                 <div className="border gap-[16px]  px-[16px] flex items-center rounded-[8px] justify-center border-[#0DAA94] bg-[#F0FFFD] h-[50px] text-[#0DAA94] text-[14px] font-medium leading-[24px]">
                   <SvgLeagueKados />
-                  Users in the Gold League will enter a raffle for a $100 gift card.
+                  Users in the Gold League will enter a raffle for a $100 gift
+                  card.
                 </div>
 
-                <div className="mt-[24px] text-[18px] text-[#212E42] font-semibold leading-[28px]">League	Focus	Trophies & Tasks	Requirement to Enter</div>
+                <div className="mt-[24px] text-[18px] text-[#212E42] font-semibold leading-[28px]">
+                  League Focus Trophies & Tasks Requirement to Enter
+                </div>
 
                 <div className="min-h-[232px] rounded-[12px] p-[16px] bg-white mt-[24px]">
                   <div className="flex justify-between">
                     <div className="flex gap-[6px] items-center">
                       <Bronz40 />
-                      <span className="text-[16px] text-[#212E42] font-semibold">Bronz League</span>
-                      {currentLeague?.type === 'bronze' && (
+                      <span className="text-[16px] text-[#212E42] font-semibold">
+                        Bronz League
+                      </span>
+                      {currentLeague?.type === "bronze" && (
                         <span className="bg-[#10B981] text-white px-[8px] py-[2px] rounded-[4px] text-[12px] font-medium">
                           Current League
                         </span>
@@ -999,20 +1193,30 @@ const Page = () => {
                     <div className="flex items-center gap-[12px]">
                       <div className="text-[14px]">
                         <span className="text-[#76808F]">Requirement: </span>
-                        <span className={checkLeagueRequirements('bronze') ? 'text-[#10B981]' : 'text-[#F59E0B]'}>
+                        <span
+                          className={
+                            checkLeagueRequirements("bronze")
+                              ? "text-[#10B981]"
+                              : "text-[#F59E0B]"
+                          }
+                        >
                           1+ trophy
                         </span>
                       </div>
-                   
                     </div>
                   </div>
                   <div className="mt-[24px] items-center flex gap-[16px]">
-                    <span className="text-[14px] text-[#76808F ]">Progress</span>
+                    <span className="text-[14px] text-[#76808F ]">
+                      Progress
+                    </span>
                     <div className="w-full relative bg-[#E6E6E6] h-[12px] rounded-[16px]">
-                      <div 
+                      <div
                         className="absolute left-0 bg-[#F26B3E] h-[12px] rounded-full transition-all duration-300"
-                        style={{ 
-                          width: `${Math.min(100, ((leagueData?.userPoints || 0) / 50) * 50)}%` 
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            ((leagueData?.userPoints || 0) / 50) * 50
+                          )}%`,
                         }}
                       ></div>
                     </div>
@@ -1022,136 +1226,187 @@ const Page = () => {
                     </div>
                   </div>
                   <div className="mt-[24px] flex flex-col gap-[8px]">
-                    {renderLeagueTasks('bronze', [
-                      '1 Mock Exam Completed',
-                      '4 Skills Tried (L, R, W, S)',
-                      '1 Writing or Speaking with AI Feedback'
+                    {renderLeagueTasks("bronze", [
+                      "1 Mock Exam Completed",
+                      "4 Skills Tried (L, R, W, S)",
+                      "1 Writing or Speaking with AI Feedback",
                     ])}
                   </div>
                 </div>
 
-
-                <div className="min-h-[232px] rounded-[12px] mt-[16px] p-[16px] bg-white mt-[24px]">
-                  <div className="flex justify-between">
-                    <div className="flex gap-[6px] items-center">
-                      <Silver40 />
-                      <span className="text-[16px] text-[#212E42] font-semibold">Silver League</span>
-                      {currentLeague?.type === 'silver' && (
-                        <span className="bg-[#10B981] text-white px-[8px] py-[2px] rounded-[4px] text-[12px] font-medium">
-                          Current League
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-[12px]">
-                      <div className="text-[14px]">
-                        <span className="text-[#76808F]">Requirement: </span>
-                        <span className={checkLeagueRequirements('silver') ? 'text-[#10B981]' : 'text-[#F59E0B]'}>
-                          2+ trophy
-                        </span>
+                {/* Only show Silver League if user is not in Bronze or Gold League */}
+                {currentLeague?.type !== "bronze" &&
+                  currentLeague?.type !== "gold" && (
+                    <div className="min-h-[232px] rounded-[12px] mt-[24px] p-[16px] bg-white">
+                      <div className="flex justify-between">
+                        <div className="flex gap-[6px] items-center">
+                          <Silver40 />
+                          <span className="text-[16px] text-[#212E42] font-semibold">
+                            Silver League
+                          </span>
+                          {currentLeague?.type === "silver" && (
+                            <span className="bg-[#10B981] text-white px-[8px] py-[2px] rounded-[4px] text-[12px] font-medium">
+                              Current League
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-[12px]">
+                          <div className="text-[14px]">
+                            <span className="text-[#76808F]">
+                              Requirement:{" "}
+                            </span>
+                            <span
+                              className={
+                                checkLeagueRequirements("silver")
+                                  ? "text-[#10B981]"
+                                  : "text-[#F59E0B]"
+                              }
+                            >
+                              2+ trophy
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                  
-                    </div>
-                  </div>
-                  <div className="mt-[24px] items-center flex gap-[16px]">
-                    <span className="text-[14px] text-[#76808F ]">Progress</span>
-                    <div className="w-full relative bg-[#E6E6E6] h-[12px] rounded-[16px]">
-                      <div 
-                        className="absolute left-0 bg-[#F26B3E] h-[12px] rounded-full transition-all duration-300"
-                        style={{ 
-                          width: `${Math.min(100, Math.max(0, ((leagueData?.userPoints || 0) - 50) / 50) * 50)}%` 
-                        }}
-                      ></div>
-                    </div>
-                    <div className="flex gap-[4px] items-center shrink-0">
-                      <Gold24 />
-                      <span className="text-[14px]">Gold League</span>
-                    </div>
-                  </div>
-                  <div className="mt-[24px] flex flex-col gap-[8px]">
-                    {renderLeagueTasks('silver', [
-                      '5 Mock Exams Completed',
-                      '+1 CLB Improvement (any skill)',
-                      '3 Writing with Feedback',
-                      '3 Speaking with Feedback'
-                    ])}
-                  </div>
-                </div>
-
-
-                <div className="min-h-[232px] rounded-[12px] mt-[16px] p-[16px] bg-white mt-[24px]">
-                  <div className="flex justify-between">
-                    <div className="flex gap-[6px] items-center">
-                      <Gold40 />
-                      <span className="text-[16px] text-[#212E42] font-semibold">Gold League</span>
-                      {currentLeague?.type === 'gold' && (
-                        <span className="bg-[#10B981] text-white px-[8px] py-[2px] rounded-[4px] text-[12px] font-medium">
-                          Current League
+                      <div className="mt-[24px] items-center flex gap-[16px]">
+                        <span className="text-[14px] text-[#76808F ]">
+                          Progress
                         </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-[12px]">
-                      <div className="text-[14px]">
-                        <span className="text-[#76808F]">Requirement: </span>
-                        <span className={checkLeagueRequirements('gold') ? 'text-[#10B981]' : 'text-[#F59E0B]'}>
-                          3+ trophy
-                        </span>
+                        <div className="w-full relative bg-[#E6E6E6] h-[12px] rounded-[16px]">
+                          <div
+                            className="absolute left-0 bg-[#F26B3E] h-[12px] rounded-full transition-all duration-300"
+                            style={{
+                              width: `${Math.min(
+                                100,
+                                Math.max(
+                                  0,
+                                  ((leagueData?.userPoints || 0) - 50) / 50
+                                ) * 50
+                              )}%`,
+                            }}
+                          ></div>
+                        </div>
+                        <div className="flex gap-[4px] items-center shrink-0">
+                          <Gold24 />
+                          <span className="text-[14px]">Gold League</span>
+                        </div>
                       </div>
-              
-                    </div>
-                  </div>
-                  <div className="mt-[24px] items-center flex gap-[16px]">
-                    <span className="text-[14px] text-[#76808F ]">Progress</span>
-                    <div className="w-full relative bg-[#E6E6E6] h-[12px] rounded-[16px]">
-                      <div 
-                        className="absolute left-0 bg-[#F26B3E] h-[12px] rounded-full transition-all duration-300"
-                        style={{ 
-                          width: `${Math.min(100, Math.max(0, ((leagueData?.userPoints || 0) - 100) / 50) * 50)}%` 
-                        }}
-                      ></div>
-                    </div>
-                    <div className="flex gap-[4px] items-center shrink-0">
-                      <SvgLeagueKados24 />
-                      <span className="text-[#212E42] font-medium text-[14px]">100$ Gift Card</span>
-                    </div>
-                  </div>
-                  <div className="mt-[24px] flex flex-col gap-[8px]">
-                    {renderLeagueTasks('gold', [
-                      '10 Mock Exams Completed',
-                      'Practice 3x/Week (4 Weeks)',
-                      '1 Friend Referred (paid plan)'
-                    ])}
-                    
-                    {/* CELPIP Champion special section for Gold League */}
-                    <div className="flex flex-col gap-[8px] mt-[16px]">
-                      <div className="flex gap-[8px]">
-                        <CircleCheck />
-                        <span className="text-[#F27059] text-[14px]">CELPIP Champion: </span>
-                      </div>
-
-                      <div className="flex flex-col gap-[8px]">
-                        <div className="flex gap-[8px]"><SvgCheck className="text-[#979EA8]" /> 10 mocks</div>
-                        <div className="flex gap-[8px]"><SvgCheck className="text-[#979EA8]" /> +2 CLB in 1 skill</div>
-                        <div className="flex gap-[8px]"><SvgCheck className="text-[#979EA8]" /> 5 Writing</div>
-                        <div className="flex gap-[8px]"><SvgCheck className="text-[#979EA8]" /> + 5 Speaking improved</div>
-                        <div className="flex gap-[8px]"><SvgCheck className="text-[#979EA8]" />all skills practiced</div>
-                        <div className="flex gap-[8px]"><SvgCheck className="text-[#979EA8]" />1 referral</div>
+                      <div className="mt-[24px] flex flex-col gap-[8px]">
+                        {renderLeagueTasks("silver", [
+                          "5 Mock Exams Completed",
+                          "+1 CLB Improvement (any skill)",
+                          "3 Writing with Feedback",
+                          "3 Speaking with Feedback",
+                        ])}
                       </div>
                     </div>
+                  )}
 
-                  </div>
-                </div>
+                {/* Only show Gold League if user is not in Bronze or Silver League */}
+                {currentLeague?.type !== "bronze" &&
+                  currentLeague?.type !== "silver" && (
+                    <div className="min-h-[232px] rounded-[12px] mt-[24px] p-[16px] bg-white">
+                      <div className="flex justify-between">
+                        <div className="flex gap-[6px] items-center">
+                          <Gold40 />
+                          <span className="text-[16px] text-[#212E42] font-semibold">
+                            Gold League
+                          </span>
+                          {currentLeague?.type === "gold" && (
+                            <span className="bg-[#10B981] text-white px-[8px] py-[2px] rounded-[4px] text-[12px] font-medium">
+                              Current League
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-[12px]">
+                          <div className="text-[14px]">
+                            <span className="text-[#76808F]">
+                              Requirement:{" "}
+                            </span>
+                            <span
+                              className={
+                                checkLeagueRequirements("gold")
+                                  ? "text-[#10B981]"
+                                  : "text-[#F59E0B]"
+                              }
+                            >
+                              3+ trophy
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-[24px] items-center flex gap-[16px]">
+                        <span className="text-[14px] text-[#76808F ]">
+                          Progress
+                        </span>
+                        <div className="w-full relative bg-[#E6E6E6] h-[12px] rounded-[16px]">
+                          <div
+                            className="absolute left-0 bg-[#F26B3E] h-[12px] rounded-full transition-all duration-300"
+                            style={{
+                              width: `${Math.min(
+                                100,
+                                Math.max(
+                                  0,
+                                  ((leagueData?.userPoints || 0) - 100) / 50
+                                ) * 50
+                              )}%`,
+                            }}
+                          ></div>
+                        </div>
+                        <div className="flex gap-[4px] items-center shrink-0">
+                          <SvgLeagueKados24 />
+                          <span className="text-[#212E42] font-medium text-[14px]">
+                            100$ Gift Card
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-[24px] flex flex-col gap-[8px]">
+                        {renderLeagueTasks("gold", [
+                          "10 Mock Exams Completed",
+                          "Practice 3x/Week (4 Weeks)",
+                          "1 Friend Referred (paid plan)",
+                        ])}
 
+                        {/* CELPIP Champion special section for Gold League */}
+                        <div className="flex flex-col gap-[8px] mt-[16px]">
+                          <div className="flex gap-[8px]">
+                            <CircleCheck />
+                            <span className="text-[#F27059] text-[14px]">
+                              CELPIP Champion:{" "}
+                            </span>
+                          </div>
+
+                          <div className="flex flex-col gap-[8px]">
+                            <div className="flex gap-[8px]">
+                              <SvgCheck className="text-[#979EA8]" /> 10 mocks
+                            </div>
+                            <div className="flex gap-[8px]">
+                              <SvgCheck className="text-[#979EA8]" /> +2 CLB in
+                              1 skill
+                            </div>
+                            <div className="flex gap-[8px]">
+                              <SvgCheck className="text-[#979EA8]" /> 5 Writing
+                            </div>
+                            <div className="flex gap-[8px]">
+                              <SvgCheck className="text-[#979EA8]" /> + 5
+                              Speaking improved
+                            </div>
+                            <div className="flex gap-[8px]">
+                              <SvgCheck className="text-[#979EA8]" />
+                              all skills practiced
+                            </div>
+                            <div className="flex gap-[8px]">
+                              <SvgCheck className="text-[#979EA8]" />1 referral
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
               </div>
-
             </div>
-
           </div>
-
-
         </div>
       </div>
-
-
     </section>
   );
 };

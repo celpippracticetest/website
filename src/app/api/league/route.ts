@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 
       const leagues = await leagueRepo.getAllLeagues();
       const seasonLeagues = [];
-      
+
       for (const league of leagues) {
         // Create initial group for each league
         const groupId = await leagueRepo.createLeagueGroup({
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
           maxUsers: 10,
           users: [],
         });
-        
+
         seasonLeagues.push({
           leagueType: league.type,
           groups: [new ObjectId(groupId)],
@@ -60,8 +60,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user's league points
-    let userPoints = await leagueRepo.getUserLeaguePoints(userId, currentSeason!.seasonId);
-    
+    let userPoints = await leagueRepo.getUserLeaguePoints(
+      userId,
+      currentSeason!.seasonId
+    );
+
     // Get all leagues
     const leagues = await leagueRepo.getAllLeagues();
 
@@ -69,85 +72,38 @@ export async function GET(request: NextRequest) {
     if (!userPoints) {
       const overallPoints = await leagueRepo.getUserOverallPoints(userId);
       let targetLeagueType = "bronze";
-      if (overallPoints >= 150) { // 3+ trophies
+      if (overallPoints >= 150) {
+        // 3+ trophies
         targetLeagueType = "gold";
-      } else if (overallPoints >= 100) { // 2+ trophies
+      } else if (overallPoints >= 100) {
+        // 2+ trophies
         targetLeagueType = "silver";
       }
 
-      // Find or create group for target league
-      const targetLeague = leagues.find(l => l.type === targetLeagueType);
-      if (targetLeague) {
-        const seasonLeague = currentSeason!.leagues.find(l => l.leagueType === targetLeagueType);
-        if (seasonLeague) {
-          // Try to add user to existing group
-          let added = false;
-          for (const groupId of seasonLeague.groups) {
-            const group = await leagueRepo.getGroupLeaderboard(groupId.toString());
-            if (group && group.users.length < group.maxUsers) {
-              added = await leagueRepo.addUserToGroup(userId, groupId.toString(), targetLeagueType as any);
-              if (added) break;
-            }
-          }
-
-          if (!added) {
-            // Create new group
-            const newGroup = {
-              leagueId: new ObjectId(targetLeague._id),
-              groupNumber: seasonLeague.groups.length + 1,
-              seasonId: currentSeason!.seasonId,
-              startDate: new Date(),
-              endDate: currentSeason!.endDate,
-              status: "active" as const,
-              maxUsers: 10,
-              users: [{
-                userId,
-                points: 0,
-                position: 1,
-                status: "safe" as const,
-                joinedAt: new Date(),
-              }],
-            };
-            
-            const groupId = await leagueRepo.createLeagueGroup(newGroup);
-            
-            // Create user league points record
-            await leagueRepo.createUserLeaguePoints({
-              userId,
-              leagueId: new ObjectId(targetLeague._id),
-              groupId: new ObjectId(groupId),
-              seasonId: currentSeason!.seasonId,
-              totalPoints: 0,
-              overallPoints: overallPoints,
-              pointsBreakdown: {
-                mockExams: 0,
-                practiceSessions: 0,
-                aiFeedback: 0,
-                skillsTried: 0,
-                timeSpent: 0,
-              },
-              tasksCompleted: [],
-              lastActivityAt: new Date(),
-            });
-          }
-        }
+      // Use the improved auto-assignment method
+      const autoAssignResult = await leagueRepo.autoAssignUserToLeague(userId);
+      if (autoAssignResult) {
+        // Refresh user points after assignment
+        userPoints = await leagueRepo.getUserLeaguePoints(
+          userId,
+          currentSeason!.seasonId
+        );
       }
-
-      // Refresh user points after assignment
-      userPoints = await leagueRepo.getUserLeaguePoints(userId, currentSeason!.seasonId);
     }
 
     // Determine user's current league
     let currentLeague = null;
     let userGroup = null;
-    
+
     if (userPoints) {
       // Find user's active group
       for (const league of currentSeason!.leagues) {
         for (const groupId of league.groups) {
-          const group = await leagueRepo.getGroupLeaderboard(groupId.toString());
+          const group = await leagueRepo.getGroupLeaderboard(
+            groupId.toString()
+          );
           if (group && group.users.some((u: any) => u.userId === userId)) {
-            currentLeague = leagues.find(l => l.type === league.leagueType);
+            currentLeague = leagues.find((l) => l.type === league.leagueType);
             userGroup = group;
             break;
           }
@@ -163,10 +119,12 @@ export async function GET(request: NextRequest) {
       currentLeague,
       userGroup,
     });
-
   } catch (error) {
     console.error("Error fetching league data:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
 
@@ -190,37 +148,59 @@ export async function POST(request: NextRequest) {
       // Get current season
       const currentSeason = await leagueRepo.getCurrentSeason();
       if (!currentSeason) {
-        return NextResponse.json({ error: "No active season" }, { status: 404 });
+        return NextResponse.json(
+          { error: "No active season" },
+          { status: 404 }
+        );
       }
 
       // Get user's current points
-      const userPoints = await leagueRepo.getUserLeaguePoints(userId, currentSeason.seasonId);
+      const userPoints = await leagueRepo.getUserLeaguePoints(
+        userId,
+        currentSeason.seasonId
+      );
       const totalPoints = userPoints?.totalPoints || 0;
-      
+
       // Determine appropriate league based on points
       let targetLeagueType = "bronze";
-      if (totalPoints >= 150) { // 3+ trophies
+      if (totalPoints >= 150) {
+        // 3+ trophies
         targetLeagueType = "gold";
-      } else if (totalPoints >= 100) { // 2+ trophies
+      } else if (totalPoints >= 100) {
+        // 2+ trophies
         targetLeagueType = "silver";
       }
 
       // Check if user is already in the correct league
-      const existingGroup = await leagueRepo.getActiveGroupForUser(userId, targetLeagueType as any);
+      const existingGroup = await leagueRepo.getActiveGroupForUser(
+        userId,
+        targetLeagueType as any
+      );
       if (existingGroup) {
-        return NextResponse.json({ success: true, message: "Already in correct league" });
+        return NextResponse.json({
+          success: true,
+          message: "Already in correct league",
+        });
       }
 
       // Find league
       const league = await leagueRepo.getLeagueByType(targetLeagueType as any);
       if (!league) {
-        return NextResponse.json({ error: "League not found" }, { status: 404 });
+        return NextResponse.json(
+          { error: "League not found" },
+          { status: 404 }
+        );
       }
 
       // Find or create a group
-      const seasonLeague = currentSeason.leagues.find(l => l.leagueType === targetLeagueType);
+      const seasonLeague = currentSeason.leagues.find(
+        (l) => l.leagueType === targetLeagueType
+      );
       if (!seasonLeague) {
-        return NextResponse.json({ error: "League not in current season" }, { status: 404 });
+        return NextResponse.json(
+          { error: "League not in current season" },
+          { status: 404 }
+        );
       }
 
       // Try to add user to existing group
@@ -228,7 +208,11 @@ export async function POST(request: NextRequest) {
       for (const groupId of seasonLeague.groups) {
         const group = await leagueRepo.getGroupLeaderboard(groupId.toString());
         if (group && group.users.length < group.maxUsers) {
-          added = await leagueRepo.addUserToGroup(userId, groupId.toString(), targetLeagueType as any);
+          added = await leagueRepo.addUserToGroup(
+            userId,
+            groupId.toString(),
+            targetLeagueType as any
+          );
           if (added) break;
         }
       }
@@ -243,23 +227,29 @@ export async function POST(request: NextRequest) {
           endDate: currentSeason.endDate,
           status: "active" as const,
           maxUsers: 10,
-          users: [{
-            userId,
-            points: totalPoints,
-            position: 1,
-            status: "safe" as const,
-            joinedAt: new Date(),
-          }],
+          users: [
+            {
+              userId,
+              points: totalPoints,
+              position: 1,
+              status: "safe" as const,
+              joinedAt: new Date(),
+            },
+          ],
         };
-        
+
         const groupId = await leagueRepo.createLeagueGroup(newGroup);
-        
+
         // Create or update user league points record
         if (userPoints) {
-          await leagueRepo.updateUserLeaguePoints(userId, currentSeason.seasonId, {
-            leagueId: new ObjectId(league._id),
-            groupId: new ObjectId(groupId),
-          });
+          await leagueRepo.updateUserLeaguePoints(
+            userId,
+            currentSeason.seasonId,
+            {
+              leagueId: new ObjectId(league._id),
+              groupId: new ObjectId(groupId),
+            }
+          );
         } else {
           await leagueRepo.createUserLeaguePoints({
             userId,
@@ -282,12 +272,14 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.json({ success: true, leagueType: targetLeagueType });
-
     } else if (action === "add_points") {
       // Get current season
       const currentSeason = await leagueRepo.getCurrentSeason();
       if (!currentSeason) {
-        return NextResponse.json({ error: "No active season" }, { status: 404 });
+        return NextResponse.json(
+          { error: "No active season" },
+          { status: 404 }
+        );
       }
 
       // Add points to user (both overall and season points)
@@ -299,11 +291,17 @@ export async function POST(request: NextRequest) {
       );
 
       if (!success) {
-        return NextResponse.json({ error: "Failed to add points" }, { status: 400 });
+        return NextResponse.json(
+          { error: "Failed to add points" },
+          { status: 400 }
+        );
       }
 
       // Update group leaderboard with season points
-      const userPoints = await leagueRepo.getUserLeaguePoints(userId, currentSeason.seasonId);
+      const userPoints = await leagueRepo.getUserLeaguePoints(
+        userId,
+        currentSeason.seasonId
+      );
       if (userPoints) {
         await leagueRepo.updateUserPointsInGroup(
           userId,
@@ -315,47 +313,92 @@ export async function POST(request: NextRequest) {
       // Check if user should be promoted to higher league based on overall points
       const overallPoints = await leagueRepo.getUserOverallPoints(userId);
       let targetLeagueType = "bronze";
-      if (overallPoints >= 150) { // 3+ trophies
+      if (overallPoints >= 150) {
+        // 3+ trophies
         targetLeagueType = "gold";
-      } else if (overallPoints >= 100) { // 2+ trophies
+      } else if (overallPoints >= 100) {
+        // 2+ trophies
         targetLeagueType = "silver";
       }
 
       // Auto-promote if needed
-      const userCurrentLeague = await leagueRepo.getActiveGroupForUser(userId, targetLeagueType as any);
+      const userCurrentLeague = await leagueRepo.getActiveGroupForUser(
+        userId,
+        targetLeagueType as any
+      );
       if (!userCurrentLeague) {
-        await leagueRepo.promoteUserToLeague(userId, targetLeagueType as any, currentSeason.seasonId);
+        await leagueRepo.promoteUserToLeague(
+          userId,
+          targetLeagueType as any,
+          currentSeason.seasonId
+        );
       }
 
       return NextResponse.json({ success: true });
+    } else if (action === "add_sample_users") {
+      // Add sample users for testing (only in development)
+      if (process.env.NODE_ENV !== "development") {
+        return NextResponse.json(
+          { error: "Only available in development" },
+          { status: 403 }
+        );
+      }
 
+      const { leagueType, count } = body;
+      const targetLeagueType = leagueType || "bronze";
+      const userCount = count || 5;
+
+      await leagueRepo.addSampleUsersToLeague(
+        targetLeagueType as any,
+        userCount
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: `Added ${userCount} sample users to ${targetLeagueType} league`,
+      });
     } else if (action === "complete_task") {
       // Get current season
       const currentSeason = await leagueRepo.getCurrentSeason();
       if (!currentSeason) {
-        return NextResponse.json({ error: "No active season" }, { status: 404 });
+        return NextResponse.json(
+          { error: "No active season" },
+          { status: 404 }
+        );
       }
 
       // Get user points
-      const userPoints = await leagueRepo.getUserLeaguePoints(userId, currentSeason.seasonId);
+      const userPoints = await leagueRepo.getUserLeaguePoints(
+        userId,
+        currentSeason.seasonId
+      );
       if (!userPoints) {
-        return NextResponse.json({ error: "User not in league" }, { status: 400 });
+        return NextResponse.json(
+          { error: "User not in league" },
+          { status: 400 }
+        );
       }
 
       // Find task in league requirements
       const league = await leagueRepo.getLeagueByType(leagueType);
       if (!league) {
-        return NextResponse.json({ error: "League not found" }, { status: 404 });
+        return NextResponse.json(
+          { error: "League not found" },
+          { status: 404 }
+        );
       }
 
-      const task = league.requirements.tasks.find(t => t.id === body.taskId);
+      const task = league.requirements.tasks.find((t) => t.id === body.taskId);
       if (!task) {
         return NextResponse.json({ error: "Task not found" }, { status: 404 });
       }
 
       // Check if task already completed
       if (userPoints.tasksCompleted.includes(task.id)) {
-        return NextResponse.json({ error: "Task already completed" }, { status: 400 });
+        return NextResponse.json(
+          { error: "Task already completed" },
+          { status: 400 }
+        );
       }
 
       // Add task completion
@@ -372,13 +415,14 @@ export async function POST(request: NextRequest) {
       );
 
       return NextResponse.json({ success: true, points: task.points });
-
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-
   } catch (error) {
     console.error("Error in league API:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

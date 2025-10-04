@@ -108,10 +108,10 @@ export class LeagueRepository {
                 userId,
                 points: 0,
                 position: group.users.length + 1,
-                status: "safe",
+                status: "safe" as const,
                 joinedAt: new Date(),
               },
-            },
+            } as any,
           }
         );
 
@@ -289,6 +289,21 @@ export class LeagueRepository {
           }
         );
 
+      if (result.modifiedCount > 0) {
+        // Also update the group leaderboard
+        const userRecord = await this.db
+          .collection(this.userLeaguePointsCollection)
+          .findOne({ userId, seasonId });
+
+        if (userRecord && userRecord.groupId) {
+          await this.updateUserPointsInGroup(
+            userId,
+            userRecord.groupId.toString(),
+            userRecord.totalPoints
+          );
+        }
+      }
+
       return result.modifiedCount > 0;
     } catch (error) {
       console.error("Error adding points to user:", error);
@@ -336,21 +351,21 @@ export class LeagueRepository {
       );
       if (!seasonLeague) return false;
 
-      // Try to add user to existing group
+      // Try to add user to best available group
       let added = false;
       let groupId = null;
-      for (const gId of seasonLeague.groups) {
-        const group = await this.getGroupLeaderboard(gId.toString());
-        if (group && group.users.length < group.maxUsers) {
-          added = await this.addUserToGroup(
-            userId,
-            gId.toString(),
-            targetLeagueType as any
-          );
-          if (added) {
-            groupId = gId;
-            break;
-          }
+
+      const bestGroupId = await this.findBestGroupForUser(
+        targetLeagueType as any
+      );
+      if (bestGroupId) {
+        added = await this.addUserToGroup(
+          userId,
+          bestGroupId,
+          targetLeagueType as any
+        );
+        if (added) {
+          groupId = bestGroupId;
         }
       }
 
@@ -397,19 +412,149 @@ export class LeagueRepository {
         });
 
         // Update season league groups
-        await this.db
-          .collection(this.leagueSeasonsCollection)
-          .updateOne(
-            { _id: new ObjectId(currentSeason._id) },
-            { $push: { "leagues.$[league].groups": new ObjectId(groupId!) } },
-            { arrayFilters: [{ "league.leagueType": targetLeagueType }] }
-          );
+        await this.db.collection(this.leagueSeasonsCollection).updateOne(
+          { _id: new ObjectId(currentSeason._id) },
+          {
+            $push: {
+              "leagues.$[league].groups": new ObjectId(groupId!),
+            } as any,
+          },
+          { arrayFilters: [{ "league.leagueType": targetLeagueType }] }
+        );
       }
 
       return true;
     } catch (error) {
       console.error("Error auto assigning user to league:", error);
       return false;
+    }
+  }
+
+  // Find best group for user (prefer groups with more users for better competition)
+  async findBestGroupForUser(
+    targetLeagueType: TLeagueType
+  ): Promise<string | null> {
+    try {
+      const currentSeason = await this.getCurrentSeason();
+      if (!currentSeason) return null;
+
+      const seasonLeague = currentSeason.leagues.find(
+        (l) => l.leagueType === targetLeagueType
+      );
+      if (!seasonLeague) return null;
+
+      // Sort groups by user count (ascending) to prefer groups with more users
+      const groupsWithCounts = await Promise.all(
+        seasonLeague.groups.map(async (groupId) => {
+          const group = await this.getGroupLeaderboard(groupId.toString());
+          return {
+            groupId: groupId.toString(),
+            userCount: group?.users.length || 0,
+            group,
+          };
+        })
+      );
+
+      // Find groups that are not full and have the most users
+      const availableGroups = groupsWithCounts
+        .filter((g) => g.group && g.userCount < g.group.maxUsers)
+        .sort((a, b) => b.userCount - a.userCount); // Sort by user count descending
+
+      return availableGroups.length > 0 ? availableGroups[0].groupId : null;
+    } catch (error) {
+      console.error("Error finding best group for user:", error);
+      return null;
+    }
+  }
+
+  // Add sample users to league for testing (only in development)
+  async addSampleUsersToLeague(
+    leagueType: TLeagueType,
+    count: number = 5
+  ): Promise<void> {
+    try {
+      const currentSeason = await this.getCurrentSeason();
+      if (!currentSeason) return;
+
+      const seasonLeague = currentSeason.leagues.find(
+        (l) => l.leagueType === leagueType
+      );
+      if (!seasonLeague) return;
+
+      // Find a group with space
+      let targetGroup = null;
+      for (const groupId of seasonLeague.groups) {
+        const group = await this.getGroupLeaderboard(groupId.toString());
+        if (group && group.users.length < group.maxUsers) {
+          targetGroup = group;
+          break;
+        }
+      }
+
+      if (!targetGroup) {
+        // Create new group if no space
+        const league = await this.getLeagueByType(leagueType);
+        if (!league) return;
+
+        const newGroup = {
+          leagueId: new ObjectId(league._id),
+          groupNumber: seasonLeague.groups.length + 1,
+          seasonId: currentSeason.seasonId,
+          startDate: new Date(),
+          endDate: currentSeason.endDate,
+          status: "active" as const,
+          maxUsers: 10,
+          users: [],
+        };
+
+        const groupId = await this.createLeagueGroup(newGroup);
+        targetGroup = await this.getGroupLeaderboard(groupId);
+      }
+
+      if (!targetGroup) return;
+
+      // Add sample users
+      for (let i = 0; i < count; i++) {
+        const sampleUserId = `sample_user_${leagueType}_${i}_${Date.now()}`;
+        const samplePoints = Math.floor(Math.random() * 100) + 10; // Random points between 10-110
+
+        // Add to group
+        await this.db.collection(this.leagueGroupsCollection).updateOne(
+          { _id: new ObjectId(targetGroup._id) },
+          {
+            $push: {
+              users: {
+                userId: sampleUserId,
+                points: samplePoints,
+                position: targetGroup.users.length + i + 1,
+                status: "safe" as const,
+                joinedAt: new Date(),
+              },
+            } as any,
+          }
+        );
+
+        // Create user league points record
+        await this.createUserLeaguePoints({
+          userId: sampleUserId,
+          leagueId: new ObjectId(targetGroup.leagueId),
+          groupId: new ObjectId(targetGroup._id),
+          seasonId: currentSeason.seasonId,
+          totalPoints: samplePoints,
+          overallPoints: samplePoints,
+          pointsBreakdown: {
+            mockExams: Math.floor(samplePoints * 0.4),
+            practiceSessions: Math.floor(samplePoints * 0.3),
+            aiFeedback: Math.floor(samplePoints * 0.2),
+            skillsTried: Math.floor(samplePoints * 0.1),
+            timeSpent: 0,
+          },
+          tasksCompleted: [],
+          lastActivityAt: new Date(),
+        });
+      }
+    } catch (error) {
+      console.error("Error adding sample users to league:", error);
     }
   }
 
@@ -537,22 +682,42 @@ export class LeagueRepository {
     );
     if (!league) return false;
 
+    // Minimum users required for meaningful progression
+    const MIN_USERS_FOR_PROGRESSION = 5;
+
+    if (totalUsers < MIN_USERS_FOR_PROGRESSION) {
+      // Not enough users for progression - mark all as safe
+      const updatedUsers = group.users.map((user: any) => ({
+        ...user,
+        status: "safe" as const,
+      }));
+
+      await this.db
+        .collection(this.leagueGroupsCollection)
+        .updateOne(
+          { _id: new ObjectId(groupId) },
+          { $set: { users: updatedUsers, status: "completed" } }
+        );
+
+      return true;
+    }
+
     // Calculate promotion and demotion zones
     let promotionZone: number;
     let demotionZone: number;
 
     switch (league.type) {
       case "bronze":
-        promotionZone = Math.ceil(totalUsers * 0.3);
-        demotionZone = Math.floor(totalUsers * 0.2);
+        promotionZone = Math.max(1, Math.ceil(totalUsers * 0.3)); // At least 1, max 30%
+        demotionZone = Math.max(0, Math.floor(totalUsers * 0.2)); // At least 0, max 20%
         break;
       case "silver":
-        promotionZone = Math.ceil(totalUsers * 0.25);
-        demotionZone = Math.floor(totalUsers * 0.3);
+        promotionZone = Math.max(1, Math.ceil(totalUsers * 0.25)); // At least 1, max 25%
+        demotionZone = Math.max(1, Math.floor(totalUsers * 0.3)); // At least 1, max 30%
         break;
       case "gold":
-        promotionZone = 0;
-        demotionZone = Math.floor(totalUsers * 0.4);
+        promotionZone = 0; // No promotion from Gold
+        demotionZone = Math.max(1, Math.floor(totalUsers * 0.4)); // At least 1, max 40%
         break;
     }
 
@@ -581,6 +746,35 @@ export class LeagueRepository {
       );
 
     return true;
+  }
+
+  // Check if league has enough users for meaningful competition
+  async hasEnoughUsersForCompetition(
+    leagueType: TLeagueType
+  ): Promise<boolean> {
+    try {
+      const currentSeason = await this.getCurrentSeason();
+      if (!currentSeason) return false;
+
+      const seasonLeague = currentSeason.leagues.find(
+        (l) => l.leagueType === leagueType
+      );
+      if (!seasonLeague) return false;
+
+      // Count total users across all groups in this league
+      let totalUsers = 0;
+      for (const groupId of seasonLeague.groups) {
+        const group = await this.getGroupLeaderboard(groupId.toString());
+        if (group) {
+          totalUsers += group.users.length;
+        }
+      }
+
+      return totalUsers >= 5; // Minimum 5 users for meaningful competition
+    } catch (error) {
+      console.error("Error checking if league has enough users:", error);
+      return false;
+    }
   }
 
   // Initialize default leagues
@@ -759,6 +953,7 @@ export class LeagueRepository {
       startDate: new Date(),
       endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
       status: "active" as const,
+      isActive: true,
       leagues: currentSeason.leagues.map((league) => ({
         ...league,
         groups: [], // Start with empty groups
