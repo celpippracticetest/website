@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
           console.log("User points after assignment:", userPoints);
         }
       } else {
-        console.log("User has no overall points, not assigning to league");
+        console.log("User has no points, not assigning to league");
       }
     }
 

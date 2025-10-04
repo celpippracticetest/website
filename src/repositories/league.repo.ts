@@ -225,7 +225,12 @@ export class LeagueRepository {
     const group = await this.db
       .collection(this.leagueGroupsCollection)
       .findOne({ _id: new ObjectId(groupId) });
-    if (!group) return null;
+    if (!group) {
+      console.log("Group not found:", groupId);
+      return null;
+    }
+
+    console.log("Group found:", groupId, "with users:", group.users.length);
 
     // Get current season to fetch real user points
     const currentSeason = await this.getCurrentSeason();
