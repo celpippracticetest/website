@@ -16,12 +16,8 @@ export async function GET(request: NextRequest) {
       console.log("Auth result:", { userId: userId ? "present" : "missing" });
     } catch (authError) {
       console.error("Auth error:", authError);
-      return NextResponse.json({ error: "Authentication failed" }, { status: 401 });
-    }
-    
-    if (!userId) {
-      console.error("No userId found in auth");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      // Don't return error, just continue without userId
+      userId = null;
     }
 
     const db = await getDb();
@@ -75,17 +71,20 @@ export async function GET(request: NextRequest) {
       currentSeason = await leagueRepo.getCurrentSeason();
     }
 
-    // Get user's league points
-    let userPoints = await leagueRepo.getUserLeaguePoints(
-      userId,
-      currentSeason!.seasonId
-    );
+    // Get user's league points (only if user is authenticated)
+    let userPoints = null;
+    if (userId) {
+      userPoints = await leagueRepo.getUserLeaguePoints(
+        userId,
+        currentSeason!.seasonId
+      );
+    }
 
     // Get all leagues
     const leagues = await leagueRepo.getAllLeagues();
 
-    // Auto-assign user to appropriate league if not already assigned
-    if (!userPoints) {
+    // Auto-assign user to appropriate league if not already assigned (only if user is authenticated)
+    if (userId && !userPoints) {
       const overallPoints = await leagueRepo.getUserOverallPoints(userId);
       
       // Only assign users to leagues if they have points
@@ -115,7 +114,7 @@ export async function GET(request: NextRequest) {
     let currentLeague = null;
     let userGroup = null;
 
-    if (userPoints) {
+    if (userId && userPoints) {
       // Find user's active group
       for (const league of currentSeason!.leagues) {
         for (const groupId of league.groups) {
@@ -141,8 +140,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error fetching league data:", error);
+    console.error("Error details:", JSON.stringify(error, null, 2));
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", details: error.message },
       { status: 500 }
     );
   }
