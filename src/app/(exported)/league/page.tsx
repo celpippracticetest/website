@@ -124,6 +124,10 @@ const Page = () => {
 
       const response = await fetch("/api/league");
       const data = await response.json();
+      
+      console.log("League API response:", data);
+      console.log("User signed in:", isSignedIn);
+      console.log("User ID:", user?.id);
 
       if (response.ok) {
         setCurrentLeague(data.currentLeague);

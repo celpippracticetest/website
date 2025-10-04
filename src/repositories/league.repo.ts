@@ -371,7 +371,8 @@ export class LeagueRepository {
               lastActivityAt: new Date(),
               updatedAt: new Date(),
             },
-          }
+          },
+          { upsert: true } // Create document if it doesn't exist
         );
 
       console.log("Database update result:", { modifiedCount: result.modifiedCount });
@@ -410,16 +411,38 @@ export class LeagueRepository {
 
   // Get user's overall points across all seasons
   async getUserOverallPoints(userId: string): Promise<number> {
+    // First try to get from current season
+    const currentSeason = await this.getCurrentSeason();
+    if (currentSeason) {
+      const currentSeasonPoints = await this.db
+        .collection(this.userLeaguePointsCollection)
+        .findOne({
+          userId,
+          seasonId: currentSeason.seasonId
+        });
+      
+      if (currentSeasonPoints) {
+        const overallPoints = currentSeasonPoints.overallPoints || 0;
+        console.log("getUserOverallPoints from current season:", overallPoints);
+        return overallPoints;
+      }
+    }
+
+    // Fallback to aggregation across all seasons
     const result = await this.db
       .collection(this.userLeaguePointsCollection)
       .aggregate([
         { $match: { userId } },
         {
-          $group: { _id: null, totalOverallPoints: { $sum: "$overallPoints" } },
+          $group: { 
+            _id: null, 
+            totalOverallPoints: { $sum: { $ifNull: ["$overallPoints", 0] } } 
+          },
         },
       ])
       .toArray();
 
+    console.log("getUserOverallPoints result:", result);
     return result.length > 0 ? result[0].totalOverallPoints : 0;
   }
 
@@ -489,22 +512,29 @@ export class LeagueRepository {
   // Auto assign user to appropriate league
   async autoAssignUserToLeague(userId: string): Promise<boolean> {
     try {
+      console.log("autoAssignUserToLeague called for user:", userId);
+      
       // Get current season
       const currentSeason = await this.getCurrentSeason();
-      if (!currentSeason) return false;
+      if (!currentSeason) {
+        console.log("No current season found");
+        return false;
+      }
 
-      // Check if user is already in a league group
-      const existingGroup = await this.getActiveGroupForUser(userId, "bronze");
-      if (existingGroup) {
-        console.log("User already in league group:", existingGroup._id);
+      // Check if user is already in any league group
+      const currentLeague = await this.getUserCurrentLeague(userId);
+      if (currentLeague) {
+        console.log("User already in league group:", currentLeague.groupId);
         return true;
       }
 
       // Get user's overall points to determine league
       const overallPoints = await this.getUserOverallPoints(userId);
+      console.log("User overall points:", overallPoints);
       
       // Only assign users to leagues if they have points
       if (overallPoints === 0) {
+        console.log("User has no points, not assigning to league");
         return false;
       }
       

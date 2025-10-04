@@ -95,7 +95,9 @@ export async function GET(request: NextRequest) {
 
     // Auto-assign user to appropriate league if not already assigned (only if user is authenticated)
     if (userId && !userPoints) {
+      console.log("User not in league, checking for auto-assignment...");
       const overallPoints = await leagueRepo.getUserOverallPoints(userId);
+      console.log("User overall points:", overallPoints);
       
       // Only assign users to leagues if they have points
       if (overallPoints > 0) {
@@ -108,15 +110,21 @@ export async function GET(request: NextRequest) {
           targetLeagueType = "silver";
         }
 
+        console.log("Target league type:", targetLeagueType);
         // Use the improved auto-assignment method
         const autoAssignResult = await leagueRepo.autoAssignUserToLeague(userId);
+        console.log("Auto-assignment result:", autoAssignResult);
+        
         if (autoAssignResult) {
           // Refresh user points after assignment
           userPoints = await leagueRepo.getUserLeaguePoints(
             userId,
             currentSeason!.seasonId
           );
+          console.log("User points after assignment:", userPoints);
         }
+      } else {
+        console.log("User has no overall points, not assigning to league");
       }
     }
 
