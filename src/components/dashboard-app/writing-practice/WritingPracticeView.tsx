@@ -79,6 +79,7 @@ const WritingPracticeView = ({
   const router = useRouter();
 
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [pointsAwarded, setPointsAwarded] = useState(false);
   const { user, isLoaded, isSignedIn } = useUser();
   const { addPoints } = useLeaguePoints();
   const {
@@ -217,12 +218,15 @@ const WritingPracticeView = ({
         time
       );
 
-      // Add league points for practice completion
-      await addPoints(
-        10,
-        "practiceSessions",
-        `${Math.floor(time / 60)} minutes`
-      );
+      // Add league points for practice completion (only once)
+      if (!pointsAwarded) {
+        await addPoints(
+          10,
+          "practiceSessions",
+          `${Math.floor(time / 60)} minutes`
+        );
+        setPointsAwarded(true);
+      }
 
       // Log AI feedback generation
       if (result.usage) {

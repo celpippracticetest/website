@@ -73,6 +73,7 @@ const SpeakingPracticeView = ({
   };
 
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [pointsAwarded, setPointsAwarded] = useState(false);
   const { user, isLoaded, isSignedIn } = useUser();
   const { addPoints } = useLeaguePoints();
   const {
@@ -302,12 +303,15 @@ const SpeakingPracticeView = ({
               recordingTime
             );
 
-            // Add league points for practice completion
-            await addPoints(
-              10,
-              "practiceSessions",
-              `${Math.floor(recordingTime / 60)} minutes`
-            );
+            // Add league points for practice completion (only once)
+            if (!pointsAwarded) {
+              await addPoints(
+                10,
+                "practiceSessions",
+                `${Math.floor(recordingTime / 60)} minutes`
+              );
+              setPointsAwarded(true);
+            }
 
             // Log AI feedback generation
             if (data.usage) {

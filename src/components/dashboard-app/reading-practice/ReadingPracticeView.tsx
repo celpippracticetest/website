@@ -64,6 +64,7 @@ const ReadingPracticeView = ({
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
   const [showModal, setShowModal] = useState(false);
+  const [pointsAwarded, setPointsAwarded] = useState(false);
   const timerTime = practice.taskId === "67f168222f0ca7f9a751ed3d" ? 780 : 660;
   const router = useRouter();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -139,12 +140,15 @@ const ReadingPracticeView = ({
               time
             );
 
-            // Add league points
-            await addPoints(
-              10,
-              "practiceSessions",
-              `${Math.floor(time / 60)} minutes`
-            );
+            // Add league points (only once)
+            if (!pointsAwarded) {
+              await addPoints(
+                10,
+                "practiceSessions",
+                `${Math.floor(time / 60)} minutes`
+              );
+              setPointsAwarded(true);
+            }
 
             // Check for trophy achievements
             await checkTrophyAchievements(

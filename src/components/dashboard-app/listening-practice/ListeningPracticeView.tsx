@@ -54,6 +54,7 @@ const ListeningPracticeView = ({
   const task5or6 = ["67ebeffe187829d27daac3c8", "67ebf003187829d27daac3c9"];
 
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [pointsAwarded, setPointsAwarded] = useState(false);
   const { user, isSignedIn, isLoaded } = useUser();
   const { addPoints } = useLeaguePoints();
   const {
@@ -150,12 +151,15 @@ const ListeningPracticeView = ({
               time
             );
 
-            // Add league points
-            await addPoints(
-              10,
-              "practiceSessions",
-              `${Math.floor(time / 60)} minutes`
-            );
+            // Add league points (only once)
+            if (!pointsAwarded) {
+              await addPoints(
+                10,
+                "practiceSessions",
+                `${Math.floor(time / 60)} minutes`
+              );
+              setPointsAwarded(true);
+            }
 
             // Check for trophy achievements
             await checkTrophyAchievements(
