@@ -3,11 +3,24 @@ import { getDb } from "@/lib/mongodb";
 import { LeagueRepository } from "@/repositories/league.repo";
 import { auth } from "@clerk/nextjs/server";
 import { ObjectId } from "mongodb";
+import { TUserLeaguePoints } from "@/models/league.model";
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    console.log("League API GET request received");
+    
+    let userId;
+    try {
+      const authResult = await auth();
+      userId = authResult.userId;
+      console.log("Auth result:", { userId: userId ? "present" : "missing" });
+    } catch (authError) {
+      console.error("Auth error:", authError);
+      return NextResponse.json({ error: "Authentication failed" }, { status: 401 });
+    }
+    
     if (!userId) {
+      console.error("No userId found in auth");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -137,15 +150,50 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    console.log("League API POST request received");
+    
+    let userId;
+    try {
+      const authResult = await auth();
+      userId = authResult.userId;
+      console.log("Auth result:", { userId: userId ? "present" : "missing" });
+    } catch (authError) {
+      console.error("Auth error:", authError);
+      return NextResponse.json({ error: "Authentication failed" }, { status: 401 });
+    }
+    
     if (!userId) {
+      console.error("No userId found in auth");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+      console.log("Request body received:", body);
+    } catch (jsonError) {
+      console.error("JSON parsing error:", jsonError);
+      return NextResponse.json(
+        { error: "Invalid JSON in request body" },
+        { status: 400 }
+      );
+    }
+    
     const { action, leagueType, points, pointsType } = body;
+    console.log("Extracted parameters:", { action, leagueType, points, pointsType });
 
-    const db = await getDb();
+    let db;
+    try {
+      db = await getDb();
+      console.log("Database connected successfully");
+    } catch (dbError) {
+      console.error("Database connection error:", dbError);
+      return NextResponse.json(
+        { error: "Database connection failed" },
+        { status: 500 }
+      );
+    }
+    
     const leagueRepo = new LeagueRepository(db);
 
     // Initialize default leagues if they don't exist
@@ -291,16 +339,36 @@ export async function POST(request: NextRequest) {
       console.log("Adding points:", { userId, points, pointsType });
       
       // Validate required parameters
-      if (!points || points <= 0) {
+      if (points === undefined || points === null) {
+        console.error("Points is undefined or null");
         return NextResponse.json(
-          { error: "Invalid points value" },
+          { error: "Points is required" },
+          { status: 400 }
+        );
+      }
+      
+      if (typeof points !== 'number' || points <= 0) {
+        console.error("Invalid points value:", points, "type:", typeof points);
+        return NextResponse.json(
+          { error: "Invalid points value - must be a positive number" },
           { status: 400 }
         );
       }
 
-      if (!pointsType) {
+      if (!pointsType || typeof pointsType !== 'string') {
+        console.error("Invalid pointsType:", pointsType, "type:", typeof pointsType);
         return NextResponse.json(
-          { error: "pointsType is required" },
+          { error: "pointsType is required and must be a string" },
+          { status: 400 }
+        );
+      }
+
+      // Validate pointsType is one of the allowed values
+      const validPointsTypes = ['mockExams', 'practiceSessions', 'aiFeedback', 'skillsTried', 'timeSpent'];
+      if (!validPointsTypes.includes(pointsType)) {
+        console.error("Invalid pointsType value:", pointsType, "valid types:", validPointsTypes);
+        return NextResponse.json(
+          { error: `Invalid pointsType. Must be one of: ${validPointsTypes.join(', ')}` },
           { status: 400 }
         );
       }
@@ -318,18 +386,42 @@ export async function POST(request: NextRequest) {
       console.log("Current season:", currentSeason.seasonId);
 
       // Add points to user (both overall and season points)
+      console.log("Calling addPointsToUser with:", {
+        userId,
+        seasonId: currentSeason.seasonId,
+        pointsType,
+        points
+      });
+      
       const success = await leagueRepo.addPointsToUser(
         userId,
         currentSeason.seasonId,
-        pointsType,
+        pointsType as keyof TUserLeaguePoints["pointsBreakdown"],
         points
       );
 
       console.log("Add points result:", success);
 
       if (!success) {
+        console.error("addPointsToUser returned false - checking user league status...");
+        
+        // Check if user has any league record
+        const userPoints = await leagueRepo.getUserLeaguePoints(userId, currentSeason.seasonId);
+        console.log("User league points record:", userPoints);
+        
+        // Check if user has overall points
+        const overallPoints = await leagueRepo.getUserOverallPoints(userId);
+        console.log("User overall points:", overallPoints);
+        
         return NextResponse.json(
-          { error: "Failed to add points" },
+          { 
+            error: "Failed to add points", 
+            details: {
+              hasLeagueRecord: !!userPoints,
+              overallPoints,
+              seasonId: currentSeason.seasonId
+            }
+          },
           { status: 400 }
         );
       }

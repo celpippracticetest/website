@@ -29,6 +29,10 @@ export const useLeaguePoints = () => {
           timeSpent: timeSpent || `${Math.floor(Math.random() * 30) + 5} minutes`,
           success: true
         };
+      } else {
+        // Log the error response
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('League API error:', response.status, errorData);
       }
     } catch (error) {
       console.error('Error adding points:', error);

@@ -317,7 +317,7 @@ const ListeningPracticeView = ({
                         : 30
                     );
                   }}
-                  className="cursor-pointer w-[40px] h-[40px] border flex items-center justify-center border-[#37465C] rounded-[100%]"
+                  className="cursor-pointer shrink-0 w-[40px] h-[40px] border flex items-center justify-center border-[#37465C] rounded-[100%]"
                 >
                   <ArrowLeft size={18} strokeWidth={1.7}></ArrowLeft>
                 </button>
@@ -610,7 +610,7 @@ const ListeningPracticeView = ({
 
       {/* Trophy Modal */}
       <TrophyModal
-        isOpen={isModalOpen}
+        isOpen={true}
         onClose={closeTrophy}
         trophy={currentTrophy}
         userPoints={userPoints}

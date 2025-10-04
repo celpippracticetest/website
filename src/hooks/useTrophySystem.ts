@@ -26,7 +26,7 @@ interface TrophySystemState {
 export const useTrophySystem = () => {
   const { user } = useUser();
   const [state, setState] = useState<TrophySystemState>({
-    isModalOpen: false,
+    isModalOpen: true,
     currentTrophy: null,
     userPoints: { total: 0, previous: 0, earned: 0 },
     timeSpent: undefined,
@@ -203,15 +203,15 @@ export const useTrophySystem = () => {
   };
 
   // Auto-close modal after 5 seconds
-  useEffect(() => {
-    if (state.isModalOpen) {
-      const timer = setTimeout(() => {
-        closeTrophy();
-      }, 5000);
+  // useEffect(() => {
+  //   if (state.isModalOpen) {
+  //     const timer = setTimeout(() => {
+  //       closeTrophy();
+  //     }, 5000);
 
-      return () => clearTimeout(timer);
-    }
-  }, [state.isModalOpen]);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [state.isModalOpen]);
 
   return {
     ...state,

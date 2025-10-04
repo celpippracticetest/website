@@ -1,4 +1,5 @@
 export { default as Beavo } from "./Beavo";
+export { default as BeavoShowsTime } from "./BeavoShowsTime";
 export { default as Bronz40 } from "./Bronz40";
 export { default as Bronz80 } from "./Bronz80";
 export { default as Bronz96 } from "./Bronz96";

@@ -98,44 +98,27 @@ const TrophyModal: React.FC<TrophyModalProps> = ({
 
           {/* Trophy Details */}
           <div className="w-full space-y-4">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-medium text-gray-700">Trophy Earned</span>
-                <Badge
-                  variant="secondary"
-                  className={`bg-gradient-to-r ${getLeagueColor(
-                    trophy.leagueType
-                  )} text-white`}
-                >
-                  {trophy.leagueType.toUpperCase()}
-                </Badge>
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-1">
-                {trophy.title}
-              </h3>
-              <p className="text-sm text-gray-600">{trophy.description}</p>
-            </div>
+     
 
             {/* Points Cards */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-gradient-to-br from-purple-500 to-orange-500 rounded-lg p-4 text-white">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium">Total</span>
-                  <Trophy className="w-4 h-4" />
-                </div>
-                <div className="text-2xl font-bold">{userPoints.total} XP</div>
-                <div className="text-xs opacity-90">
-                  +{userPoints.earned} earned
+              <div className="relative h-[72px] overflow-hidden rounded-[16px]">
+                {/* Gradient border using pseudo-element */}
+                <div className="absolute inset-0 rounded-[16px] p-[3px] bg-gradient-to-r from-[#F79D65] to-[#759CFF]">
+                  <div className="w-full h-full bg-white rounded-[13px] flex flex-col">
+                    <div className="bg-gradient-to-r from-[#F79D65] to-[#759CFF] h-[32px] flex items-center justify-center">
+                      <span className="text-sm font-medium text-white">Total</span>
+                    </div>
+                    <div className="text-black flex items-center justify-center text-[14px] h-[40px] text-center font-medium">{userPoints.total} XP</div>
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-teal-500 to-green-500 rounded-lg p-4 text-white">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium">Time</span>
-                  <Clock className="w-4 h-4" />
+              <div className="text-black h-[72px] overflow-hidden rounded-[16px] border-[3px] border-[#0DAA94]">
+                <div className="bg-[#0DAA94] h-[32px]  flex items-center justify-center">
+                  <span className="text-[14px] font-normal text-center text-white">Time</span>
                 </div>
-                <div className="text-2xl font-bold">{timeSpent || "02:45"}</div>
-                <div className="text-xs opacity-90">spent</div>
+                <div className="text-[14px] flex items-center justify-center h-[40px] text-center font-medium">{timeSpent || "02:45"}</div>
               </div>
             </div>
 
@@ -159,13 +142,13 @@ const TrophyModal: React.FC<TrophyModalProps> = ({
             <Button
               variant="outline"
               onClick={onClose}
-              className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="rounded-[24px] flex-1 h-[40px] border-[#76808F] text-[#76808F] "
             >
               Back to Practice
             </Button>
             <Button
               onClick={onClose}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              className="rounded-[24px]  h-[40px] flex-1 bg-blue-600 hover:bg-blue-700 text-white"
             >
               Next
             </Button>

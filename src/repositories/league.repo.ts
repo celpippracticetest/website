@@ -276,9 +276,36 @@ export class LeagueRepository {
         // Auto assign user to league first
         const autoAssignResult = await this.autoAssignUserToLeague(userId);
         console.log("Auto assign result:", autoAssignResult);
+        
         if (!autoAssignResult) {
-          console.error("Failed to auto assign user to league");
-          return false;
+          console.log("Auto assign failed, creating basic user record for points tracking...");
+          // Create a basic user league points record even without league assignment
+          // This allows users to earn points before joining a league
+          const basicRecord = {
+            userId,
+            leagueId: new ObjectId(), // Temporary league ID
+            groupId: new ObjectId(), // Temporary group ID
+            seasonId,
+            totalPoints: 0,
+            overallPoints: 0,
+            pointsBreakdown: {
+              mockExams: 0,
+              practiceSessions: 0,
+              aiFeedback: 0,
+              skillsTried: 0,
+              timeSpent: 0,
+            },
+            tasksCompleted: [],
+            lastActivityAt: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          
+          await this.db
+            .collection(this.userLeaguePointsCollection)
+            .insertOne(basicRecord);
+            
+          console.log("Created basic user record for points tracking");
         }
       }
 
