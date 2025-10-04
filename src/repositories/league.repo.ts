@@ -191,9 +191,13 @@ export class LeagueRepository {
     const currentSeason = await this.getCurrentSeason();
     if (!currentSeason) return group as TLeagueGroup;
 
+    console.log("Getting group leaderboard for group:", groupId);
+    console.log("Current season:", currentSeason.seasonId);
+
     // Update user points from UserLeaguePoints collection
     const updatedUsers = [];
     for (const user of group.users) {
+      console.log("Checking user:", user.userId);
       const userPoints = await this.db
         .collection(this.userLeaguePointsCollection)
         .findOne({
@@ -201,10 +205,15 @@ export class LeagueRepository {
           seasonId: currentSeason.seasonId,
         });
 
+      console.log("User points found:", userPoints);
+
       if (userPoints) {
         // Update user points in group
         user.points = userPoints.totalPoints;
         user.lastActivityAt = userPoints.lastActivityAt;
+        console.log("Updated user points:", user.userId, "totalPoints:", userPoints.totalPoints);
+      } else {
+        console.log("No user points found for:", user.userId);
       }
 
       updatedUsers.push(user);
@@ -217,6 +226,8 @@ export class LeagueRepository {
     updatedUsers.forEach((user: any, index: number) => {
       user.position = index + 1;
     });
+
+    console.log("Final updated users:", updatedUsers);
 
     // Update positions in database
     await this.db
@@ -363,13 +374,17 @@ export class LeagueRepository {
 
         if (userRecord && userRecord.groupId) {
           console.log("Updating group leaderboard for group:", userRecord.groupId.toString());
-          await this.updateUserPointsInGroup(
+          const updateResult = await this.updateUserPointsInGroup(
             userId,
             userRecord.groupId.toString(),
             userRecord.totalPoints
           );
+          console.log("Group leaderboard update result:", updateResult);
         } else {
-          console.log("No group ID found for user record");
+          console.log("No group ID found for user record, attempting auto-assignment...");
+          // Try to auto-assign user to league if not in a group
+          const autoAssignResult = await this.autoAssignUserToLeague(userId);
+          console.log("Auto-assignment result:", autoAssignResult);
         }
       } else {
         console.log("No documents were modified");

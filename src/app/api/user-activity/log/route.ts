@@ -16,14 +16,17 @@ function extractEmailFromClerkUser(user: any): string | null {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("User activity log API called");
     const user = await currentUser();
     if (!user) {
+      console.log("No user found in request");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const email = extractEmailFromClerkUser(user);
 
     const body = await request.json();
+    console.log("Request body:", body);
     const {
       eventType,
       context,
@@ -43,6 +46,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!eventType || !context) {
+      console.log("Missing required fields:", { eventType, context });
       return NextResponse.json(
         { error: "eventType and context are required" },
         { status: 400 }
@@ -85,7 +89,9 @@ export async function POST(request: NextRequest) {
       timestampUtc: new Date(),
     };
 
+    console.log("Inserting activity log:", activityLog);
     await userActivityCollection.insertOne(activityLog);
+    console.log("Activity logged successfully");
 
     return NextResponse.json({
       success: true,

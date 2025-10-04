@@ -269,7 +269,9 @@ const WritingPracticeView = ({
     // Log practice started
     if (user && selectedPracticeId) {
       const attemptId = `practice_${selectedPracticeId}_${Date.now()}`;
-      ActivityLogger.practiceStarted(attemptId, selectedPracticeId, "Writing");
+      ActivityLogger.practiceStarted(attemptId, selectedPracticeId, "Writing").catch(error => {
+        console.error("Error logging practice started:", error);
+      });
     }
   }, [selectedPracticeId, user]);
   // const {
