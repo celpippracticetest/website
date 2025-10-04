@@ -640,14 +640,14 @@ const Page = () => {
                     <div className="w-[32px] h-[32px] bg-[#9CA3AF] rounded-full"></div>
                   )}
                 </div>
-                <div className="flex-1">
+                <div className="">
                   <div className="text-[#374151] font-medium">
                     {groupUser.name ||
                       (groupUser as any).email?.split("@")[0] ||
                       "User"}
                   </div>
                 </div>
-                <div className="text-[#374151] font-medium">
+                <div className="  flex-1 text-[#374151] text-right font-medium">
                   {groupUser.points} XP
                 </div>
               </div>
