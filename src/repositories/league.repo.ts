@@ -100,20 +100,32 @@ export class LeagueRepository {
     leagueType: TLeagueType
   ): Promise<boolean> {
     try {
+      console.log("addUserToGroup called:", { userId, groupId, leagueType });
+      
       const group = await this.db
         .collection(this.leagueGroupsCollection)
         .findOne({ _id: new ObjectId(groupId) });
-      if (!group) return false;
+      if (!group) {
+        console.log("Group not found:", groupId);
+        return false;
+      }
+
+      console.log("Group found:", groupId, "with users:", group.users.length);
 
       // Check if user is already in the group
       if (group.users.some((u: any) => u.userId === userId)) {
+        console.log("User already in group");
         return false; // User already in group
       }
 
       // Check if group is full
-      if (group.users.length >= group.maxUsers) return false;
+      if (group.users.length >= group.maxUsers) {
+        console.log("Group is full");
+        return false;
+      }
 
       // Add user to group
+      console.log("Adding user to group...");
       const result = await this.db
         .collection(this.leagueGroupsCollection)
         .updateOne(
@@ -130,6 +142,8 @@ export class LeagueRepository {
             } as any,
           }
         );
+
+      console.log("Add user to group result:", { modifiedCount: result.modifiedCount });
 
       if (result.modifiedCount > 0) {
         // Also create user league points record if it doesn't exist
@@ -174,17 +188,24 @@ export class LeagueRepository {
     groupId: string,
     points: number
   ): Promise<boolean> {
+    console.log("updateUserPointsInGroup called:", { userId, groupId, points });
+    
     // First check if user is already in the group
     const group = await this.db
       .collection(this.leagueGroupsCollection)
       .findOne({ _id: new ObjectId(groupId) });
     
-    if (!group) return false;
+    if (!group) {
+      console.log("Group not found:", groupId);
+      return false;
+    }
     
     const userInGroup = group.users.some((u: any) => u.userId === userId);
+    console.log("User in group:", userInGroup);
     
     if (userInGroup) {
       // Update existing user's points
+      console.log("Updating existing user's points...");
       const result = await this.db
         .collection(this.leagueGroupsCollection)
         .updateOne(
@@ -199,9 +220,11 @@ export class LeagueRepository {
             },
           }
         );
+      console.log("Update result:", { modifiedCount: result.modifiedCount });
       return result.modifiedCount > 0;
     } else {
       // Add user to group if not already there
+      console.log("Adding user to group...");
       const result = await this.db
         .collection(this.leagueGroupsCollection)
         .updateOne(
@@ -217,6 +240,7 @@ export class LeagueRepository {
             },
           } as any
         );
+      console.log("Add user result:", { modifiedCount: result.modifiedCount });
       return result.modifiedCount > 0;
     }
   }
@@ -414,14 +438,15 @@ export class LeagueRepository {
       console.log("Database update result:", { modifiedCount: result.modifiedCount });
 
       if (result.modifiedCount > 0) {
-        console.log("Points updated successfully, updating group leaderboard...");
-        // Also update the group leaderboard
+        console.log("Points updated successfully, checking if user needs league assignment...");
+        
+        // Check if user is already in a group
         const userRecord = await this.db
           .collection(this.userLeaguePointsCollection)
           .findOne({ userId, seasonId });
 
         if (userRecord && userRecord.groupId) {
-          console.log("Updating group leaderboard for group:", userRecord.groupId.toString());
+          console.log("User already in group, updating group leaderboard...");
           const updateResult = await this.updateUserPointsInGroup(
             userId,
             userRecord.groupId.toString(),
@@ -429,26 +454,45 @@ export class LeagueRepository {
           );
           console.log("Group leaderboard update result:", updateResult);
         } else {
-          console.log("No group ID found for user record, attempting auto-assignment...");
-          // Try to auto-assign user to league if not in a group
-          const autoAssignResult = await this.autoAssignUserToLeague(userId);
-          console.log("Auto-assignment result:", autoAssignResult);
+          console.log("User not in any group, assigning to Bronze League...");
           
-          // If auto-assignment succeeded, update the group leaderboard
-          if (autoAssignResult) {
-            const updatedUserRecord = await this.db
-              .collection(this.userLeaguePointsCollection)
-              .findOne({ userId, seasonId });
-            
-            if (updatedUserRecord && updatedUserRecord.groupId) {
-              console.log("Updating group leaderboard after auto-assignment for group:", updatedUserRecord.groupId.toString());
-              const updateResult = await this.updateUserPointsInGroup(
-                userId,
-                updatedUserRecord.groupId.toString(),
-                updatedUserRecord.totalPoints
-              );
-              console.log("Group leaderboard update result after auto-assignment:", updateResult);
+          // Assign user to Bronze League since they now have points
+          const bronzeLeague = await this.getLeagueByType("bronze");
+          if (bronzeLeague) {
+            const currentSeason = await this.getCurrentSeason();
+            if (currentSeason) {
+              const seasonLeague = currentSeason.leagues.find(l => l.leagueType === "bronze");
+              if (seasonLeague && seasonLeague.groups.length > 0) {
+                const groupId = seasonLeague.groups[0].toString();
+                console.log("Assigning user to Bronze League group:", groupId);
+                
+                // Add user to group
+                const added = await this.addUserToGroup(userId, groupId, "bronze");
+                if (added) {
+                  // Update user record with group ID
+                  await this.db.collection(this.userLeaguePointsCollection).updateOne(
+                    { userId, seasonId },
+                    { $set: { groupId: new ObjectId(groupId) } }
+                  );
+                  
+                  // Update group leaderboard
+                  const updateResult = await this.updateUserPointsInGroup(
+                    userId,
+                    groupId,
+                    userRecord?.totalPoints || 0
+                  );
+                  console.log("Direct assignment result:", updateResult);
+                } else {
+                  console.log("Failed to add user to group");
+                }
+              } else {
+                console.log("No Bronze League groups found");
+              }
+            } else {
+              console.log("No current season found");
             }
+          } else {
+            console.log("Bronze League not found");
           }
         }
       } else {
