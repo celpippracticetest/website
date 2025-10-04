@@ -174,22 +174,51 @@ export class LeagueRepository {
     groupId: string,
     points: number
   ): Promise<boolean> {
-    const result = await this.db
+    // First check if user is already in the group
+    const group = await this.db
       .collection(this.leagueGroupsCollection)
-      .updateOne(
-        {
-          _id: new ObjectId(groupId),
-          "users.userId": userId,
-        },
-        {
-          $set: {
-            "users.$.points": points,
-            "users.$.lastActivityAt": new Date(),
+      .findOne({ _id: new ObjectId(groupId) });
+    
+    if (!group) return false;
+    
+    const userInGroup = group.users.some((u: any) => u.userId === userId);
+    
+    if (userInGroup) {
+      // Update existing user's points
+      const result = await this.db
+        .collection(this.leagueGroupsCollection)
+        .updateOne(
+          {
+            _id: new ObjectId(groupId),
+            "users.userId": userId,
           },
-        }
-      );
-
-    return result.modifiedCount > 0;
+          {
+            $set: {
+              "users.$.points": points,
+              "users.$.lastActivityAt": new Date(),
+            },
+          }
+        );
+      return result.modifiedCount > 0;
+    } else {
+      // Add user to group if not already there
+      const result = await this.db
+        .collection(this.leagueGroupsCollection)
+        .updateOne(
+          { _id: new ObjectId(groupId) },
+          {
+            $push: {
+              users: {
+                userId,
+                points,
+                position: group.users.length + 1,
+                lastActivityAt: new Date(),
+              },
+            },
+          } as any
+        );
+      return result.modifiedCount > 0;
+    }
   }
 
   async getGroupLeaderboard(groupId: string): Promise<TLeagueGroup | null> {
@@ -225,6 +254,8 @@ export class LeagueRepository {
         console.log("Updated user points:", user.userId, "totalPoints:", userPoints.totalPoints);
       } else {
         console.log("No user points found for:", user.userId);
+        // Keep user in group even if no points found
+        user.points = user.points || 0;
       }
 
       updatedUsers.push(user);
@@ -397,6 +428,23 @@ export class LeagueRepository {
           // Try to auto-assign user to league if not in a group
           const autoAssignResult = await this.autoAssignUserToLeague(userId);
           console.log("Auto-assignment result:", autoAssignResult);
+          
+          // If auto-assignment succeeded, update the group leaderboard
+          if (autoAssignResult) {
+            const updatedUserRecord = await this.db
+              .collection(this.userLeaguePointsCollection)
+              .findOne({ userId, seasonId });
+            
+            if (updatedUserRecord && updatedUserRecord.groupId) {
+              console.log("Updating group leaderboard after auto-assignment for group:", updatedUserRecord.groupId.toString());
+              const updateResult = await this.updateUserPointsInGroup(
+                userId,
+                updatedUserRecord.groupId.toString(),
+                updatedUserRecord.totalPoints
+              );
+              console.log("Group leaderboard update result after auto-assignment:", updateResult);
+            }
+          }
         }
       } else {
         console.log("No documents were modified");

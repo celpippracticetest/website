@@ -133,19 +133,38 @@ export async function GET(request: NextRequest) {
     let userGroup = null;
 
     if (userId && userPoints) {
-      // Find user's active group
-      for (const league of currentSeason!.leagues) {
-        for (const groupId of league.groups) {
-          const group = await leagueRepo.getGroupLeaderboard(
-            groupId.toString()
-          );
-          if (group && group.users.some((u: any) => u.userId === userId)) {
-            currentLeague = leagues.find((l) => l.type === league.leagueType);
-            userGroup = group;
-            break;
+      // Find user's active group by checking their groupId directly
+      if (userPoints.groupId) {
+        const group = await leagueRepo.getGroupLeaderboard(
+          userPoints.groupId.toString()
+        );
+        if (group) {
+          // Find the league type for this group
+          for (const league of currentSeason!.leagues) {
+            if (league.groups.some(gId => gId.toString() === userPoints.groupId.toString())) {
+              currentLeague = leagues.find((l) => l.type === league.leagueType);
+              userGroup = group;
+              break;
+            }
           }
         }
-        if (currentLeague) break;
+      }
+      
+      // Fallback: search all groups if not found above
+      if (!currentLeague) {
+        for (const league of currentSeason!.leagues) {
+          for (const groupId of league.groups) {
+            const group = await leagueRepo.getGroupLeaderboard(
+              groupId.toString()
+            );
+            if (group && group.users.some((u: any) => u.userId === userId)) {
+              currentLeague = leagues.find((l) => l.type === league.leagueType);
+              userGroup = group;
+              break;
+            }
+          }
+          if (currentLeague) break;
+        }
       }
     }
 
