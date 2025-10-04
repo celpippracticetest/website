@@ -68,19 +68,30 @@ export class LeagueRepository {
     const currentSeason = await this.getCurrentSeason();
     if (!currentSeason) return null;
 
-    const group = await this.db
-      .collection(this.leagueGroupsCollection)
-      .findOne({
-        leagueId: new ObjectId(
-          currentSeason.leagues.find(
-            (l) => l.leagueType === leagueType
-          )?.groups[0]
-        ),
-        seasonId: currentSeason.seasonId,
-        status: "active",
-        "users.userId": userId,
-      });
-    return group as TLeagueGroup | null;
+    // Find the league
+    const seasonLeague = currentSeason.leagues.find(
+      (l) => l.leagueType === leagueType
+    );
+    if (!seasonLeague) return null;
+
+    // Check all groups in this league
+    for (const groupId of seasonLeague.groups) {
+      const group = await this.db
+        .collection(this.leagueGroupsCollection)
+        .findOne({
+          _id: new ObjectId(groupId),
+          seasonId: currentSeason.seasonId,
+          status: "active",
+          "users.userId": userId,
+        });
+      
+      if (group) {
+        console.log("Found existing group for user:", groupId);
+        return group as TLeagueGroup;
+      }
+    }
+
+    return null;
   }
 
   async addUserToGroup(
@@ -418,6 +429,13 @@ export class LeagueRepository {
       // Get current season
       const currentSeason = await this.getCurrentSeason();
       if (!currentSeason) return false;
+
+      // Check if user is already in a league group
+      const existingGroup = await this.getActiveGroupForUser(userId, "bronze");
+      if (existingGroup) {
+        console.log("User already in league group:", existingGroup._id);
+        return true;
+      }
 
       // Get user's overall points to determine league
       const overallPoints = await this.getUserOverallPoints(userId);
