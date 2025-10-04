@@ -28,7 +28,7 @@ import SvgCheck from "@/components/icons/Check";
 import SvgBronz96 from "@/components/icons/Bronz96";
 import SvgGold80 from "@/components/icons/Gold80";
 import SvgSilver80 from "@/components/icons/Silver80";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 type Skill = {
   label: string;
@@ -96,6 +96,7 @@ const Page = () => {
   const { user, isLoaded, isSignedIn } = useUser();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
 
   // League System State
   const [leagueData, setLeagueData] = useState<LeagueData | null>(null);
@@ -656,6 +657,12 @@ const Page = () => {
   const MedalModal = () => {
     if (!showMedalModal || !medalData) return null;
 
+    // Determine if we're on a practice page or exam page
+    const isPracticePage = pathname.includes('/practice') || pathname.includes('/listening') || pathname.includes('/reading') || pathname.includes('/writing') || pathname.includes('/speaking');
+    const isExamPage = pathname.includes('/exam') || pathname.includes('/mock');
+    
+    const buttonText = isExamPage ? 'Back to Exam' : 'Back to Practice';
+
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-[16px] p-[32px] max-w-[400px] w-full mx-4 text-center">
@@ -677,18 +684,12 @@ const Page = () => {
               </p>
             )}
           </div>
-          <div className="flex gap-[12px]">
+          <div className="flex w-full">
             <button
               onClick={() => setShowMedalModal(false)}
-              className="flex-1 bg-[#4A7DFF] text-white py-[12px] px-[24px] rounded-[8px] font-medium"
+              className="w-full bg-[#4A7DFF] text-white py-[12px] px-[24px] rounded-[8px] font-medium"
             >
-              Back to Exam
-            </button>
-            <button
-              onClick={() => setShowMedalModal(false)}
-              className="flex-1 bg-[#F3F4F6] text-[#37465C] py-[12px] px-[24px] rounded-[8px] font-medium"
-            >
-              Back to Practice
+              {buttonText}
             </button>
           </div>
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { usePathname } from 'next/navigation';
 
 interface LeagueMedalModalProps {
   isOpen: boolean;
@@ -21,7 +22,15 @@ const LeagueMedalModal: React.FC<LeagueMedalModalProps> = ({
   timeSpent,
   taskTitle
 }) => {
+  const pathname = usePathname();
+  
   if (!isOpen) return null;
+
+  // Determine if we're on a practice page or exam page
+  const isPracticePage = pathname.includes('/practice') || pathname.includes('/listening') || pathname.includes('/reading') || pathname.includes('/writing') || pathname.includes('/speaking');
+  const isExamPage = pathname.includes('/exam') || pathname.includes('/mock');
+  
+  const buttonText = isExamPage ? 'Back to Exam' : 'Back to Practice';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -63,21 +72,13 @@ const LeagueMedalModal: React.FC<LeagueMedalModalProps> = ({
             </div>
           )}
         </div>
-        <div className="flex gap-[12px]">
+        <div className="flex w-full">
           <button
             onClick={onClose}
-            className="flex-1 bg-[#4A7DFF] text-white py-[12px] px-[24px] rounded-[8px] font-medium"
+            className="w-full bg-[#4A7DFF] text-white py-[12px] px-[24px] rounded-[8px] font-medium"
           >
-            {type === 'points' ? 'Back to Exam' : 'Next'}
+            {buttonText}
           </button>
-          {type === 'points' && (
-            <button
-              onClick={onClose}
-              className="flex-1 bg-[#F3F4F6] text-[#37465C] py-[12px] px-[24px] rounded-[8px] font-medium"
-            >
-              Back to Practice
-            </button>
-          )}
         </div>
       </div>
     </div>

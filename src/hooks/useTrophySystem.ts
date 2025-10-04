@@ -203,15 +203,6 @@ export const useTrophySystem = () => {
   };
 
   // Auto-close modal after 5 seconds
-  useEffect(() => {
-    if (state.isModalOpen) {
-      const timer = setTimeout(() => {
-        closeTrophy();
-      }, 5000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [state.isModalOpen]);
 
   return {
     ...state,

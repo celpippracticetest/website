@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { usePathname } from "next/navigation";
 // import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +34,15 @@ const TrophyModal: React.FC<TrophyModalProps> = ({
   userPoints,
   timeSpent,
 }) => {
+  const pathname = usePathname();
+  
   if (!trophy) return null;
+
+  // Determine if we're on a practice page or exam page
+  const isPracticePage = pathname.includes('/practice') || pathname.includes('/listening') || pathname.includes('/reading') || pathname.includes('/writing') || pathname.includes('/speaking');
+  const isExamPage = pathname.includes('/exam') || pathname.includes('/mock');
+  
+  const buttonText = isExamPage ? 'Back to Exam' : 'Back to Practice';
 
   const getLeagueColor = (leagueType: string) => {
     switch (leagueType) {
@@ -129,20 +138,13 @@ const TrophyModal: React.FC<TrophyModalProps> = ({
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex space-x-3 w-full">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="rounded-[24px] cursor-pointer flex-1 h-[40px] border-[#76808F] text-[#76808F] "
-            >
-              Back to Practice
-            </Button>
+          {/* Action Button */}
+          <div className="flex w-full">
             <Button
               onClick={onClose}
-              className="rounded-[24px] cursor-pointer  h-[40px] flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              className="rounded-[24px] cursor-pointer h-[40px] w-full bg-blue-600 hover:bg-blue-700 text-white"
             >
-              Next
+              {buttonText}
             </Button>
           </div>
         </div>
