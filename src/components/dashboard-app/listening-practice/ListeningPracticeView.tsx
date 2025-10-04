@@ -610,7 +610,7 @@ const ListeningPracticeView = ({
 
       {/* Trophy Modal */}
       <TrophyModal
-        isOpen={true}
+        isOpen={isModalOpen}
         onClose={closeTrophy}
         trophy={currentTrophy}
         userPoints={userPoints}

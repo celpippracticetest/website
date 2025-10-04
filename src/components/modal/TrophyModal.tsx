@@ -5,6 +5,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Star, Clock, Target } from "lucide-react";
+import SvgBeavoShowsTime from "../icons/BeavoShowsTime";
 
 interface TrophyModalProps {
   isOpen: boolean;
@@ -69,19 +70,10 @@ const TrophyModal: React.FC<TrophyModalProps> = ({
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
         <div className="flex flex-col items-center space-y-6 p-6">
-          {/* Trophy Icon */}
-          <div className="relative">
-            <div
-              className={`w-24 h-24 rounded-full bg-gradient-to-br ${getLeagueColor(
-                trophy.leagueType
-              )} flex items-center justify-center text-4xl shadow-lg`}
-            >
-              {trophy.icon || getLeagueIcon(trophy.leagueType)}
-            </div>
-            <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
-              <Star className="w-5 h-5 text-yellow-800" />
-            </div>
-          </div>
+       
+       <SvgBeavoShowsTime/>
+
+
 
           {/* Trophy Title */}
           <div className="text-center">
@@ -142,13 +134,13 @@ const TrophyModal: React.FC<TrophyModalProps> = ({
             <Button
               variant="outline"
               onClick={onClose}
-              className="rounded-[24px] flex-1 h-[40px] border-[#76808F] text-[#76808F] "
+              className="rounded-[24px] cursor-pointer flex-1 h-[40px] border-[#76808F] text-[#76808F] "
             >
               Back to Practice
             </Button>
             <Button
               onClick={onClose}
-              className="rounded-[24px]  h-[40px] flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              className="rounded-[24px] cursor-pointer  h-[40px] flex-1 bg-blue-600 hover:bg-blue-700 text-white"
             >
               Next
             </Button>
