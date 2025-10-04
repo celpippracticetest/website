@@ -259,6 +259,8 @@ export class LeagueRepository {
     points: number
   ): Promise<boolean> {
     try {
+      console.log("addPointsToUser called with:", { userId, seasonId, pointsType, points });
+      
       // Check if user has a league record for this season
       const existingRecord = await this.db
         .collection(this.userLeaguePointsCollection)
@@ -267,9 +269,13 @@ export class LeagueRepository {
           seasonId,
         });
 
+      console.log("Existing record found:", !!existingRecord);
+
       if (!existingRecord) {
+        console.log("No existing record, attempting auto assign...");
         // Auto assign user to league first
         const autoAssignResult = await this.autoAssignUserToLeague(userId);
+        console.log("Auto assign result:", autoAssignResult);
         if (!autoAssignResult) {
           console.error("Failed to auto assign user to league");
           return false;
@@ -277,6 +283,7 @@ export class LeagueRepository {
       }
 
       // Now add points
+      console.log("Updating points in database...");
       const result = await this.db
         .collection(this.userLeaguePointsCollection)
         .updateOne(
@@ -294,19 +301,27 @@ export class LeagueRepository {
           }
         );
 
+      console.log("Database update result:", { modifiedCount: result.modifiedCount });
+
       if (result.modifiedCount > 0) {
+        console.log("Points updated successfully, updating group leaderboard...");
         // Also update the group leaderboard
         const userRecord = await this.db
           .collection(this.userLeaguePointsCollection)
           .findOne({ userId, seasonId });
 
         if (userRecord && userRecord.groupId) {
+          console.log("Updating group leaderboard for group:", userRecord.groupId.toString());
           await this.updateUserPointsInGroup(
             userId,
             userRecord.groupId.toString(),
             userRecord.totalPoints
           );
+        } else {
+          console.log("No group ID found for user record");
         }
+      } else {
+        console.log("No documents were modified");
       }
 
       return result.modifiedCount > 0;

@@ -288,14 +288,34 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({ success: true, leagueType: targetLeagueType });
     } else if (action === "add_points") {
+      console.log("Adding points:", { userId, points, pointsType });
+      
+      // Validate required parameters
+      if (!points || points <= 0) {
+        return NextResponse.json(
+          { error: "Invalid points value" },
+          { status: 400 }
+        );
+      }
+
+      if (!pointsType) {
+        return NextResponse.json(
+          { error: "pointsType is required" },
+          { status: 400 }
+        );
+      }
+
       // Get current season
       const currentSeason = await leagueRepo.getCurrentSeason();
       if (!currentSeason) {
+        console.error("No active season found");
         return NextResponse.json(
           { error: "No active season" },
           { status: 404 }
         );
       }
+
+      console.log("Current season:", currentSeason.seasonId);
 
       // Add points to user (both overall and season points)
       const success = await leagueRepo.addPointsToUser(
@@ -304,6 +324,8 @@ export async function POST(request: NextRequest) {
         pointsType,
         points
       );
+
+      console.log("Add points result:", success);
 
       if (!success) {
         return NextResponse.json(
