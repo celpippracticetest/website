@@ -578,7 +578,7 @@ const WritingPracticeView = ({
                         (freeAttempts === null || freeAttempts > 0) && (
                           <button
                             disabled={progressBar > 0}
-                            className="flex h-[40px] items-center justify-center text-white text-[14px] font-normal  rounded-[24px] bg-[#4A7DFF] w-full"
+                            className="cursor-pointer flex h-[40px] items-center justify-center text-white text-[14px] font-normal  rounded-[24px] bg-[#4A7DFF] w-full"
                             onClick={() => {
                               if (!user) {
                                 setPremiumPlanModalState();
