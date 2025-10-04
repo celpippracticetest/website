@@ -52,6 +52,7 @@ import {
 } from "@/components/icons";
 import SvgDiamond from "@/components/icons/Diamond";
 import SvgLearningGift from "@/components/icons/LearningGift";
+import SvgLeagueLogo from "@/components/icons/LeagueLogo";
 
 const NavItem = ({
   icon,
@@ -99,9 +100,8 @@ const NavItem = ({
 
   return (
     <div
-      className={`flex flex-col cursor-pointer w-full ${
-        primary === "practice" ? "mt-[24px]" : "mt-[16px]"
-      } `}
+      className={`flex flex-col cursor-pointer w-full ${primary === "practice" ? "mt-[24px]" : "mt-[16px]"
+        } `}
     >
       <div
         className={clsx(
@@ -117,7 +117,7 @@ const NavItem = ({
                 isActive && !isPractice && "text-[#316BFF]",
                 isActive && isPractice && open && "text-[#316BFF]",
                 (!isActive || (isActive && isPractice && !open)) &&
-                  "text-[#37465C]"
+                "text-[#37465C]"
               )}
             >
               <span>{icon}</span>
@@ -136,9 +136,8 @@ const NavItem = ({
         ) : (
           <Link
             href={link}
-            className={`${
-              collapsed ? "justify-center" : "justify-start"
-            } text-[14px]  flex items-center w-full font-normal text-[#37465C] h-[36px]`}
+            className={`${collapsed ? "justify-center" : "justify-start"
+              } text-[14px]  flex items-center w-full font-normal text-[#37465C] h-[36px]`}
             onClick={() => {
               setTimeout(() => {
                 setIsMenuOpen(false);
@@ -151,7 +150,7 @@ const NavItem = ({
                 isActive && !isPractice && "text-[#316BFF]",
                 isActive && isPractice && open && "text-[#316BFF]",
                 (!isActive || (isActive && isPractice && !open)) &&
-                  "text-[#37465C]"
+                "text-[#37465C]"
               )}
             >
               {icon}
@@ -173,9 +172,8 @@ const NavItem = ({
           <span
             className="opacity-0 inline-flex"
             style={{
-              animation: `fadeIn 0.3s ease-in-out ${
-                open ? "500ms" : "0ms"
-              } forwards`,
+              animation: `fadeIn 0.3s ease-in-out ${open ? "500ms" : "0ms"
+                } forwards`,
             }}
           >
             {open ? (
@@ -236,7 +234,7 @@ const LayoutClient = ({ children, showSurvey }: any) => {
   const isNewUser =
     user?.createdAt &&
     new Date().getTime() - new Date(user.createdAt).getTime() <
-      24 * 60 * 60 * 1000;
+    24 * 60 * 60 * 1000;
   const freeUser = user?.publicMetadata.plan == "free";
   const proUser = user?.publicMetadata.plan == "premium";
 
@@ -873,7 +871,7 @@ const LayoutClient = ({ children, showSurvey }: any) => {
       )}
 
       <div className="relative flex w-full  mb-[88px] justify-center mx-auto z-[9] overflow-x-clip">
-     
+
 
         <div
           className="flex flex-col  w-full    h-full     w-full
@@ -1042,6 +1040,9 @@ const LayoutClient = ({ children, showSurvey }: any) => {
                 {/* auth buttons */}
                 <div className="flex items-right gap-4 lg:gap-5 md:gap-3 pr-[24px]">
                   <div className="flex items-center">
+                  <div onClick={() => router.push("/league")} className="cursor-pointer w-[40px] shrink-0 h-[40px] rounded-full border border-[#D5D6D8] bg-transparent flex items-center mr-[16px] justify-center">
+                      <SvgLeagueLogo />
+                    </div>
                     {proUser || hasEverPurchased ? (
                       <>
                         <button
@@ -1053,6 +1054,7 @@ const LayoutClient = ({ children, showSurvey }: any) => {
                             router.push("/earn100");
                           }}
                         >
+                          
                           <span>
                             <SvgLearningGift />
                           </span>
@@ -1095,6 +1097,8 @@ const LayoutClient = ({ children, showSurvey }: any) => {
                       </>
                     )}
 
+              
+
                     <SignedOut>
                       <button
                         className="group  hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] shadow-startButton w-[149px] hover:cursor-pointer
@@ -1136,6 +1140,7 @@ const LayoutClient = ({ children, showSurvey }: any) => {
                         )}
                       </button>
                     </SignedIn>
+                    
                   </div>
 
                   {/* Mobile menu button */}
@@ -1238,7 +1243,7 @@ const LayoutClient = ({ children, showSurvey }: any) => {
             </div>
           )}
         </div>
-      
+
       </div>
     </>
   );
