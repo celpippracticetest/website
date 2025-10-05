@@ -49,6 +49,7 @@ const ListeningPracticeView = ({
   onBackClick,
 }: ListeningPracticeViewProps) => {
   const task5or6 = ["67ebeffe187829d27daac3c8", "67ebf003187829d27daac3c9"];
+  const useDropdownForQuestions = true;
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { user, isSignedIn, isLoaded } = useUser();
@@ -71,6 +72,14 @@ const ListeningPracticeView = ({
       ? 240 + (task5or6[1] === practice.taskId ? 30 : 0)
       : 30
   );
+
+  // Safe helpers to avoid optional-undefined issues
+  const totalQuestionsCount =
+    practice.totalQuestion !== undefined
+      ? practice.totalQuestion
+      : practice.passages.reduce((sum: number, p: TPassage) => {
+          return sum + (p.questions?.length ?? 0);
+        }, 0);
 
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
@@ -268,7 +277,11 @@ const ListeningPracticeView = ({
                       setPage("question");
                       setPassageIndex(passageIndex - 1);
                       setQuestionIndex(
-                        practice.passages[passageIndex - 1].questions.length - 1
+                        Math.max(
+                          0,
+                          (practice.passages[passageIndex - 1].questions?.length ?? 1) -
+                            1
+                        )
                       );
                       // setQuestionIndexInPractice(questionIndexInPractice - 1);
                     } else if (page == "question" && questionIndex > 0) {
@@ -281,7 +294,11 @@ const ListeningPracticeView = ({
                     } else if (page == "answer") {
                       setPage("question");
                       setQuestionIndex(
-                        practice.passages[passageIndex].questions.length - 1
+                        Math.max(
+                          0,
+                          (practice.passages[passageIndex].questions?.length ?? 1) -
+                            1
+                        )
                       );
                       setPassageIndex(practice.passages.length - 1);
                     }
@@ -306,8 +323,8 @@ const ListeningPracticeView = ({
                     } else if (
                       page == "question" &&
                       questionIndex <
-                        practice.passages[passageIndex].questions.length - 1 &&
-                      !task5or6.includes(practice.taskId)
+                        (practice.passages[passageIndex].questions?.length ?? 0) - 1 &&
+                      !useDropdownForQuestions
                     ) {
                       setQuestionIndex(questionIndex + 1);
                       setQuestionIndexInPractice(questionIndexInPractice + 1);
@@ -503,15 +520,15 @@ const ListeningPracticeView = ({
             )}
             {page == "question" && (
               <div className="flex flex-col h-full w-full ">
-                {task5or6.includes(practice.taskId) ? (
+                {useDropdownForQuestions ? (
                   practice.passages[passageIndex].questions?.map(
                     (question, index) => (
                       <ListeningDropDownQuestionList
                         key={index}
                         questionIndex={index + 1}
-                        totalQuestions={practice.totalQuestion}
+                        totalQuestions={practice.totalQuestion ?? totalQuestionsCount}
                         question={
-                          practice.passages[passageIndex].questions[index]
+                          (practice.passages[passageIndex].questions ?? [])[index]
                         }
                         onAnswerSelect={handleAnswerSelect}
                         selectedAnswers={selectedAnswers}
@@ -521,9 +538,9 @@ const ListeningPracticeView = ({
                 ) : (
                   <ListeningQuestionList
                     questionIndex={questionIndexInPractice}
-                    totalQuestions={practice.totalQuestion}
+                    totalQuestions={practice.totalQuestion ?? totalQuestionsCount}
                     question={
-                      practice.passages[passageIndex].questions[questionIndex]
+                      (practice.passages[passageIndex].questions ?? [])[questionIndex]
                     }
                     onAnswerSelect={handleAnswerSelect}
                     selectedAnswers={selectedAnswers}
