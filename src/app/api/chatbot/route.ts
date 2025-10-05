@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 import { currentUser } from "@clerk/nextjs/server";
 import client from "@/lib/mongodb";
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
 
 const SYSTEM_PROMPT = `ROLE & AUDIENCE
 You are CELPIP Tutor, an expert CELPIP coach and English tutor inside CelpipPracticeTest.com.
@@ -267,24 +262,47 @@ IMPORTANT: Use the current scores to provide personalized advice. Focus on the w
       content: message,
     });
 
-    const response = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
-      max_tokens: 1000,
-      system: SYSTEM_PROMPT + userContext,
-      messages: messages,
+    // Call OpenRouter API
+    const openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "HTTP-Referer": "https://celpippracticetest.com",
+        "X-Title": "CELPIP Practice Test",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "anthropic/claude-3.5-sonnet",
+        messages: [
+          {
+            role: "system",
+            content: SYSTEM_PROMPT + userContext
+          },
+          ...messages
+        ],
+        max_tokens: 1000,
+      })
     });
 
-    const aiResponse = response.content[0];
-    if (aiResponse.type !== "text") {
-      throw new Error("Unexpected response type from Anthropic");
+    if (!openRouterResponse.ok) {
+      const errorData = await openRouterResponse.json();
+      console.error("OpenRouter API error:", errorData);
+      throw new Error(`OpenRouter API failed: ${openRouterResponse.status}`);
+    }
+
+    const data = await openRouterResponse.json();
+    const aiResponse = data.choices?.[0]?.message?.content;
+
+    if (!aiResponse) {
+      throw new Error("Unexpected response format from OpenRouter");
     }
 
     return NextResponse.json({
-      response: aiResponse.text,
+      response: aiResponse,
       timestamp: new Date().toISOString(),
       usage: {
-        prompt_tokens: response.usage?.input_tokens || 0,
-        completion_tokens: response.usage?.output_tokens || 0,
+        prompt_tokens: data.usage?.prompt_tokens || 0,
+        completion_tokens: data.usage?.completion_tokens || 0,
       },
     });
   } catch (error) {

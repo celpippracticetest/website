@@ -4,7 +4,6 @@ import mongoClient from "@/lib/mongodb";
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import { createClient } from "@deepgram/sdk";
-import Anthropic from "@anthropic-ai/sdk";
 import { WritingAnswerRepository } from "@/repositories/writingAnswers";
 import { currentUser } from "@clerk/nextjs/server";
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
@@ -144,9 +143,6 @@ export const POST = async function (req: Request) {
       return NextResponse.json({ message: "exam not found" }, { status: 404 });
     }
 
-    const anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    });
     const commandTemplate = USER_PROMPTS[parseInt(partId)];
 
     let command = commandTemplate;
@@ -233,83 +229,120 @@ ${bulletForSystem}
 If the response is off-topic (i.e., does not address any topic above), sharply reduce "taskFulfillment" and lower "overall" accordingly.`;
     }
 
-    const msg: any = await withTimeout(
-      anthropic.messages.create({
-        model: "claude-3-7-sonnet-20250219",
-        max_tokens: 20000,
-        temperature: 1,
-        system: finalSystemPrompt,
-        tools: [
-          {
-            name: "CELPIPWritingEvaluation",
-            description:
-              "evaluating and providing feedback on a speaking sample and content analysis scores",
-            input_schema: {
-              type: "object",
-              properties: {
-                overall: {
-                  type: "number",
-                  description: "Overall Score: (out of 12)",
-                },
-                contentAndCoherence: {
-                  type: "number",
-                  description: "Content & Coherence: (out of 12)",
-                },
-                vocabulary: {
-                  type: "number",
-                  description: "Vocabulary: (out of 12)",
-                },
-                readabilityAndGrammar: {
-                  type: "number",
-                  description: "Vocabulary: (out of 12)",
-                },
-                taskFulfillment: {
-                  type: "number",
-                  description: "Task Fulfillment: (out of 12)",
-                },
-
-                feedback: {
-                  type: "string",
-                  description:
-                    "Provide structured feedback exactly in these five sections with the exact headings and format:\n1. Enhance Professional Vocabulary\n2. Add Specific Details\n3. Formal Tone\n4. Proper Structure\n5. Transitional Phrases\nFor each section, briefly describe mistakes and improvement areas, provide specific suggestions, and offer an improved version of the user's text incorporating these enhancements.",
-                },
-                grammarMistakes: {
-                  type: "array",
-                  description:
-                    "a list of grammar or vocabulary mistakes and the correct way for that mistake, build an array that consist all part of provided text, each part should consist original and improve part and if that part doesnt need improvement it should set null for improvement but original part should has value.",
-                },
-                betterVersion: {
-                  type: "string",
-                  description:
-                    "write a better version of this answer with all suggestion and improvement",
-                },
-              },
-              required: [
-                "overall",
-                "contentAndCoherence",
-                "vocabulary",
-                "readabilityAndGrammar",
-                "taskFulfillment",
-                "feedback",
-                "grammarMistakes",
-              ],
+    // Call OpenRouter API with tool calling
+    const openRouterResponse: any = await withTimeout(
+      fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "HTTP-Referer": "https://celpippracticetest.com",
+          "X-Title": "CELPIP Practice Test",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "anthropic/claude-3.7-sonnet",
+          max_tokens: 20000,
+          temperature: 1,
+          messages: [
+            {
+              role: "system",
+              content: finalSystemPrompt
             },
-          },
-        ],
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: command,
-              },
-            ],
-          },
-        ],
+            {
+              role: "user",
+              content: command
+            }
+          ],
+          tools: [
+            {
+              type: "function",
+              function: {
+                name: "CELPIPWritingEvaluation",
+                description: "evaluating and providing feedback on a speaking sample and content analysis scores",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    overall: {
+                      type: "number",
+                      description: "Overall Score: (out of 12)",
+                    },
+                    contentAndCoherence: {
+                      type: "number",
+                      description: "Content & Coherence: (out of 12)",
+                    },
+                    vocabulary: {
+                      type: "number",
+                      description: "Vocabulary: (out of 12)",
+                    },
+                    readabilityAndGrammar: {
+                      type: "number",
+                      description: "Vocabulary: (out of 12)",
+                    },
+                    taskFulfillment: {
+                      type: "number",
+                      description: "Task Fulfillment: (out of 12)",
+                    },
+                    feedback: {
+                      type: "string",
+                      description: "Provide structured feedback exactly in these five sections with the exact headings and format:\n1. Enhance Professional Vocabulary\n2. Add Specific Details\n3. Formal Tone\n4. Proper Structure\n5. Transitional Phrases\nFor each section, briefly describe mistakes and improvement areas, provide specific suggestions, and offer an improved version of the user's text incorporating these enhancements.",
+                    },
+                    grammarMistakes: {
+                      type: "array",
+                      description: "a list of grammar or vocabulary mistakes and the correct way for that mistake, build an array that consist all part of provided text, each part should consist original and improve part and if that part doesnt need improvement it should set null for improvement but original part should has value.",
+                      items: {
+                        type: "object",
+                        properties: {
+                          original: { type: "string" },
+                          improvement: { type: ["string", "null"] }
+                        }
+                      }
+                    },
+                    betterVersion: {
+                      type: "string",
+                      description: "write a better version of this answer with all suggestion and improvement",
+                    },
+                  },
+                  required: [
+                    "overall",
+                    "contentAndCoherence",
+                    "vocabulary",
+                    "readabilityAndGrammar",
+                    "taskFulfillment",
+                    "feedback",
+                    "grammarMistakes",
+                  ],
+                }
+              }
+            }
+          ],
+          tool_choice: "auto"
+        })
+      }).then(async (res) => {
+        if (!res.ok) {
+          const errorData = await res.json();
+          console.error("OpenRouter API error:", errorData);
+          throw new Error(`OpenRouter API failed: ${res.status}`);
+        }
+        return res.json();
       }),
       60000
     );
+
+    // Extract tool call result and format like Anthropic response
+    const toolCall = openRouterResponse.choices?.[0]?.message?.tool_calls?.[0];
+    const msg: any = {
+      content: [
+        { type: "text", text: openRouterResponse.choices?.[0]?.message?.content || "" },
+        { 
+          type: "tool_use",
+          input: toolCall?.function?.arguments ? JSON.parse(toolCall.function.arguments) : {}
+        }
+      ],
+      usage: {
+        input_tokens: openRouterResponse.usage?.prompt_tokens || 0,
+        output_tokens: openRouterResponse.usage?.completion_tokens || 0
+      }
+    };
 
     const answerRepo = new WritingAnswerRepository(mongoClient);
 
