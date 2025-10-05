@@ -449,18 +449,15 @@ export async function POST(request: NextRequest) {
       console.log("Checking for league change. Overall points:", overallPoints);
       
       // Determine target league based on overall points
+      // Align thresholds with autoAssignUserToLeague to prevent immediate demotion
       let targetLeagueType = "bronze";
       if (overallPoints >= 150) {
-        // 3+ trophies
         targetLeagueType = "gold";
       } else if (overallPoints >= 100) {
-        // 2+ trophies
         targetLeagueType = "silver";
-      } else if (overallPoints >= 50) {
-        // 1+ trophy
-        targetLeagueType = "bronze";
+      } else if (overallPoints > 0) {
+        targetLeagueType = "bronze"; // any positive points keep user in Bronze
       } else {
-        // No trophies yet - should not be in any league
         targetLeagueType = "none";
       }
 

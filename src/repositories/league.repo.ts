@@ -458,6 +458,28 @@ export class LeagueRepository {
         console.log("No existing user points record yet; will handle league assignment after points update.");
       }
 
+      // Ensure base document exists before increment
+      if (!existingRecord) {
+        console.log("Creating base user_league_points document before increment...");
+        await this.createUserLeaguePoints({
+          userId,
+          leagueId: new ObjectId(), // placeholder, will be updated on assignment
+          groupId: new ObjectId(), // placeholder, will be updated on assignment
+          seasonId,
+          totalPoints: 0,
+          overallPoints: 0,
+          pointsBreakdown: {
+            mockExams: 0,
+            practiceSessions: 0,
+            aiFeedback: 0,
+            skillsTried: 0,
+            timeSpent: 0,
+          },
+          tasksCompleted: [],
+          lastActivityAt: new Date(),
+        });
+      }
+
       // Now add points
       console.log("Updating points in database...");
       const result = await this.db
@@ -474,8 +496,7 @@ export class LeagueRepository {
               lastActivityAt: new Date(),
               updatedAt: new Date(),
             },
-          },
-          { upsert: true } // Create document if it doesn't exist
+          }
         );
 
       const upsertedId = (result as any).upsertedId;
@@ -529,10 +550,7 @@ export class LeagueRepository {
         console.log("No documents were modified (possible upsert without modification)");
       }
 
-      const successUpdate =
-        result.modifiedCount > 0 ||
-        ((result as any).upsertedCount && (result as any).upsertedCount > 0) ||
-        !!(result as any).upsertedId;
+      const successUpdate = result.acknowledged === true;
       return !!successUpdate;
     } catch (error) {
       console.error("Error adding points to user:", error);

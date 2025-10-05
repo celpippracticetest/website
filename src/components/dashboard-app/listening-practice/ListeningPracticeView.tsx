@@ -151,22 +151,25 @@ const ListeningPracticeView = ({
               time
             );
 
-            // Add league points (only once)
+            // Add league points (only once) and confirm success
             if (!pointsAwarded) {
-              await addPoints(
+              const res = await addPoints(
                 10,
                 "practiceSessions",
                 `${Math.floor(time / 60)} minutes`
               );
-              setPointsAwarded(true);
+              if (res && (res as any).success) {
+                setPointsAwarded(true);
+                // Check for trophy achievements only after success
+                await checkTrophyAchievements(
+                  10,
+                  "practiceSessions",
+                  `${Math.floor(time / 60)}:${time % 60}`
+                );
+              } else {
+                console.warn("addPoints failed; skipping trophy check and award flag");
+              }
             }
-
-            // Check for trophy achievements
-            await checkTrophyAchievements(
-              10,
-              "practiceSessions",
-              `${Math.floor(time / 60)}:${time % 60}`
-            );
           }
         } catch (error) {
           // Optionally handle error
