@@ -146,7 +146,7 @@ export class LeagueRepository {
       console.log("Add user to group result:", { modifiedCount: result.modifiedCount });
 
       if (result.modifiedCount > 0) {
-        // Also create user league points record if it doesn't exist
+        // Ensure user has a linked user_league_points record with league and group
         const existingUserPoints = await this.db
           .collection(this.userLeaguePointsCollection)
           .findOne({
@@ -173,6 +173,20 @@ export class LeagueRepository {
             tasksCompleted: [],
             lastActivityAt: new Date(),
           });
+        } else {
+          // Update existing record to reflect latest league and group assignment
+          await this.db
+            .collection(this.userLeaguePointsCollection)
+            .updateOne(
+              { userId, seasonId: group.seasonId },
+              {
+                $set: {
+                  leagueId: group.leagueId,
+                  groupId: new ObjectId(groupId),
+                  updatedAt: new Date(),
+                },
+              }
+            );
         }
       }
 
@@ -221,6 +235,38 @@ export class LeagueRepository {
           }
         );
       console.log("Update result:", { modifiedCount: result.modifiedCount });
+
+      if (result.modifiedCount > 0) {
+        // Ensure user's user_league_points is linked to this group/league
+        await this.db
+          .collection(this.userLeaguePointsCollection)
+          .updateOne(
+            { userId, seasonId: group.seasonId },
+            {
+              $set: {
+                leagueId: group.leagueId,
+                groupId: group._id,
+                updatedAt: new Date(),
+                lastActivityAt: new Date(),
+              },
+              $setOnInsert: {
+                totalPoints: 0,
+                overallPoints: await this.getUserOverallPoints(userId),
+                pointsBreakdown: {
+                  mockExams: 0,
+                  practiceSessions: 0,
+                  aiFeedback: 0,
+                  skillsTried: 0,
+                  timeSpent: 0,
+                },
+                tasksCompleted: [],
+                createdAt: new Date(),
+              },
+            } as any,
+            { upsert: true }
+          );
+      }
+
       return result.modifiedCount > 0;
     } else {
       // Add user to group if not already there
@@ -241,6 +287,37 @@ export class LeagueRepository {
           } as any
         );
       console.log("Add user result:", { modifiedCount: result.modifiedCount });
+      if (result.modifiedCount > 0) {
+        // Create or link user_league_points for this user/group
+        await this.db
+          .collection(this.userLeaguePointsCollection)
+          .updateOne(
+            { userId, seasonId: group.seasonId },
+            {
+              $set: {
+                leagueId: group.leagueId,
+                groupId: group._id,
+                updatedAt: new Date(),
+                lastActivityAt: new Date(),
+              },
+              $setOnInsert: {
+                totalPoints: 0,
+                overallPoints: await this.getUserOverallPoints(userId),
+                pointsBreakdown: {
+                  mockExams: 0,
+                  practiceSessions: 0,
+                  aiFeedback: 0,
+                  skillsTried: 0,
+                  timeSpent: 0,
+                },
+                tasksCompleted: [],
+                createdAt: new Date(),
+              },
+            } as any,
+            { upsert: true }
+          );
+      }
+
       return result.modifiedCount > 0;
     }
   }
@@ -753,7 +830,20 @@ export class LeagueRepository {
           groupId.toString(),
           targetLeagueType
         );
-        if (added) break;
+        if (added) {
+          // Link user's user_league_points to the new league/group
+          await this.db.collection(this.userLeaguePointsCollection).updateOne(
+            { userId, seasonId },
+            {
+              $set: {
+                leagueId: new ObjectId(targetLeague._id),
+                groupId: new ObjectId(groupId.toString()),
+                updatedAt: new Date(),
+              },
+            }
+          );
+          break;
+        }
       }
     }
 

@@ -420,16 +420,27 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Update group leaderboard with season points
+      // Update group leaderboard with season points (guard missing groupId)
       const userPoints = await leagueRepo.getUserLeaguePoints(
         userId,
         currentSeason.seasonId
       );
-      if (userPoints) {
+
+      let groupIdToUpdate: string | null = null;
+      const seasonPointsToApply = userPoints?.totalPoints ?? points;
+
+      if (userPoints && (userPoints as any).groupId) {
+        groupIdToUpdate = (userPoints as any).groupId.toString();
+      } else {
+        const inferred = await leagueRepo.getUserCurrentLeague(userId);
+        if (inferred?.groupId) groupIdToUpdate = inferred.groupId;
+      }
+
+      if (groupIdToUpdate) {
         await leagueRepo.updateUserPointsInGroup(
           userId,
-          userPoints.groupId.toString(),
-          userPoints.totalPoints // This is season points
+          groupIdToUpdate,
+          seasonPointsToApply
         );
       }
 
