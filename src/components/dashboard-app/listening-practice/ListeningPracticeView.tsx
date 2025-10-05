@@ -322,6 +322,11 @@ const ListeningPracticeView = ({
                       setQuestionIndexInPractice(questionIndexInPractice + 1);
                     } else if (
                       page == "question" &&
+                      useDropdownForQuestions
+                    ) {
+                      setPage("answer");
+                    } else if (
+                      page == "question" &&
                       questionIndex <
                         (practice.passages[passageIndex].questions?.length ?? 0) - 1 &&
                       !useDropdownForQuestions
@@ -521,20 +526,23 @@ const ListeningPracticeView = ({
             {page == "question" && (
               <div className="flex flex-col h-full w-full ">
                 {useDropdownForQuestions ? (
-                  practice.passages[passageIndex].questions?.map(
-                    (question, index) => (
-                      <ListeningDropDownQuestionList
-                        key={index}
-                        questionIndex={index + 1}
-                        totalQuestions={practice.totalQuestion ?? totalQuestionsCount}
-                        question={
-                          (practice.passages[passageIndex].questions ?? [])[index]
-                        }
-                        onAnswerSelect={handleAnswerSelect}
-                        selectedAnswers={selectedAnswers}
-                      />
+                  (
+                    practice.passages.reduce(
+                      (acc: any[], p: TPassage) => {
+                        return acc.concat(p.questions ?? []);
+                      },
+                      []
                     )
-                  )
+                  ).map((question, index) => (
+                    <ListeningDropDownQuestionList
+                      key={index}
+                      questionIndex={index + 1}
+                      totalQuestions={practice.totalQuestion ?? totalQuestionsCount}
+                      question={question}
+                      onAnswerSelect={handleAnswerSelect}
+                      selectedAnswers={selectedAnswers}
+                    />
+                  ))
                 ) : (
                   <ListeningQuestionList
                     questionIndex={questionIndexInPractice}
