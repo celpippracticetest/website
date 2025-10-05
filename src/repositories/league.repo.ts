@@ -888,14 +888,13 @@ export class LeagueRepository {
 
       const groupId = await this.createLeagueGroup(newGroup);
 
-      // Update user's league assignment
+      // Update user's league assignment, preserve existing season points
       await this.db.collection(this.userLeaguePointsCollection).updateOne(
         { userId, seasonId },
         {
           $set: {
             leagueId: new ObjectId(targetLeague._id),
             groupId: new ObjectId(groupId),
-            totalPoints: 0, // Reset season points
             updatedAt: new Date(),
           },
         }
