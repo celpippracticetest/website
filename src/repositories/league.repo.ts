@@ -378,41 +378,7 @@ export class LeagueRepository {
       console.log("Existing record found:", !!existingRecord);
 
       if (!existingRecord) {
-        console.log("No existing record, attempting auto assign...");
-        // Auto assign user to league first
-        const autoAssignResult = await this.autoAssignUserToLeague(userId);
-        console.log("Auto assign result:", autoAssignResult);
-        
-        if (!autoAssignResult) {
-          console.log("Auto assign failed, creating basic user record for points tracking...");
-          // Create a basic user league points record even without league assignment
-          // This allows users to earn points before joining a league
-          const basicRecord = {
-            userId,
-            leagueId: new ObjectId(), // Temporary league ID
-            groupId: new ObjectId(), // Temporary group ID
-            seasonId,
-            totalPoints: 0,
-            overallPoints: 0,
-            pointsBreakdown: {
-              mockExams: 0,
-              practiceSessions: 0,
-              aiFeedback: 0,
-              skillsTried: 0,
-              timeSpent: 0,
-            },
-            tasksCompleted: [],
-            lastActivityAt: new Date(),
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
-          
-          await this.db
-            .collection(this.userLeaguePointsCollection)
-            .insertOne(basicRecord);
-            
-          console.log("Created basic user record for points tracking");
-        }
+        console.log("No existing user points record yet; will handle league assignment after points update.");
       }
 
       // Now add points
@@ -435,9 +401,10 @@ export class LeagueRepository {
           { upsert: true } // Create document if it doesn't exist
         );
 
-      console.log("Database update result:", { modifiedCount: result.modifiedCount });
+      const upsertedId = (result as any).upsertedId;
+      console.log("Database update result:", { modifiedCount: result.modifiedCount, upsertedId });
 
-      if (result.modifiedCount > 0) {
+      if (result.modifiedCount > 0 || upsertedId) {
         console.log("Points updated successfully, checking if user needs league assignment...");
         
         // Check if user is already in a group
@@ -445,61 +412,51 @@ export class LeagueRepository {
           .collection(this.userLeaguePointsCollection)
           .findOne({ userId, seasonId });
 
-        if (userRecord && userRecord.groupId) {
+        // Validate that the stored groupId actually exists
+        let groupIsValid = false;
+        if (userRecord && (userRecord as any).groupId) {
+          const existingGroup = await this.db
+            .collection(this.leagueGroupsCollection)
+            .findOne({ _id: typeof (userRecord as any).groupId === 'string' ? new ObjectId((userRecord as any).groupId) : (userRecord as any).groupId });
+          groupIsValid = !!existingGroup;
+        }
+
+        if (userRecord && (userRecord as any).groupId && groupIsValid) {
           console.log("User already in group, updating group leaderboard...");
           const updateResult = await this.updateUserPointsInGroup(
             userId,
-            userRecord.groupId.toString(),
-            userRecord.totalPoints
+            (userRecord as any).groupId.toString(),
+            (userRecord as any).totalPoints
           );
           console.log("Group leaderboard update result:", updateResult);
         } else {
-          console.log("User not in any group, assigning to Bronze League...");
-          
-          // Assign user to Bronze League since they now have points
-          const bronzeLeague = await this.getLeagueByType("bronze");
-          if (bronzeLeague) {
-            const currentSeason = await this.getCurrentSeason();
-            if (currentSeason) {
-              const seasonLeague = currentSeason.leagues.find(l => l.leagueType === "bronze");
-              if (seasonLeague && seasonLeague.groups.length > 0) {
-                const groupId = seasonLeague.groups[0].toString();
-                console.log("Assigning user to Bronze League group:", groupId);
-                
-                // Add user to group
-                const added = await this.addUserToGroup(userId, groupId, "bronze");
-                if (added) {
-                  // Update user record with group ID
-                  await this.db.collection(this.userLeaguePointsCollection).updateOne(
-                    { userId, seasonId },
-                    { $set: { groupId: new ObjectId(groupId) } }
-                  );
-                  
-                  // Update group leaderboard
-                  const updateResult = await this.updateUserPointsInGroup(
-                    userId,
-                    groupId,
-                    userRecord?.totalPoints || 0
-                  );
-                  console.log("Direct assignment result:", updateResult);
-                } else {
-                  console.log("Failed to add user to group");
-                }
-              } else {
-                console.log("No Bronze League groups found");
-              }
-            } else {
-              console.log("No current season found");
+          console.log("User not in any group, using auto-assign logic...");
+          const assigned = await this.autoAssignUserToLeague(userId);
+          console.log("Auto-assign after points result:", assigned);
+
+          if (assigned) {
+            // Refresh record and update leaderboard
+            const refreshed = await this.db
+              .collection(this.userLeaguePointsCollection)
+              .findOne({ userId, seasonId });
+            if (refreshed && (refreshed as any).groupId) {
+              await this.updateUserPointsInGroup(
+                userId,
+                (refreshed as any).groupId.toString(),
+                (refreshed as any).totalPoints || 0
+              );
             }
-          } else {
-            console.log("Bronze League not found");
           }
         }
       } else {
-        console.log("No documents were modified");
+        console.log("No documents were modified (possible upsert without modification)");
       }
 
-      return result.modifiedCount > 0;
+      const successUpdate =
+        result.modifiedCount > 0 ||
+        ((result as any).upsertedCount && (result as any).upsertedCount > 0) ||
+        !!(result as any).upsertedId;
+      return !!successUpdate;
     } catch (error) {
       console.error("Error adding points to user:", error);
       return false;

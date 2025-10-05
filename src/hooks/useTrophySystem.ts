@@ -99,7 +99,9 @@ export const useTrophySystem = () => {
 
       try {
         // Get current user points from league API
-        const response = await fetch("/api/league");
+        const response = await fetch(`/api/league?ts=${Date.now()}`, {
+          cache: "no-store",
+        });
         if (!response.ok) return;
 
         const data = await response.json();

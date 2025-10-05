@@ -35,6 +35,48 @@ export async function GET(request: NextRequest) {
 
     // Initialize default leagues if they don't exist
     await leagueRepo.initializeDefaultLeagues();
+
+    // Ensure there is an active season (mirror GET bootstrap logic)
+    try {
+      let currentSeason = await leagueRepo.getCurrentSeason();
+      if (!currentSeason) {
+        const seasonId = `season_${Date.now()}`;
+        const startDate = new Date();
+        const endDate = new Date();
+        endDate.setDate(endDate.getDate() + 7);
+
+        const leagues = await leagueRepo.getAllLeagues();
+        const seasonLeagues: { leagueType: "bronze" | "silver" | "gold"; groups: ObjectId[] }[] = [];
+
+        for (const league of leagues) {
+          const groupId = await leagueRepo.createLeagueGroup({
+            leagueId: league._id,
+            groupNumber: 1,
+            seasonId,
+            startDate,
+            endDate,
+            status: "active",
+            maxUsers: 10,
+            users: [],
+          });
+
+          seasonLeagues.push({
+            leagueType: league.type as "bronze" | "silver" | "gold",
+            groups: [new ObjectId(groupId)],
+          });
+        }
+
+        await leagueRepo.createSeason({
+          seasonId,
+          startDate,
+          endDate,
+          isActive: true,
+          leagues: seasonLeagues,
+        });
+      }
+    } catch (bootstrapErr) {
+      console.error("Failed to ensure active season in POST /api/league:", bootstrapErr);
+    }
     
     // Clean up any duplicate users in groups
     await leagueRepo.cleanupDuplicateUsers();

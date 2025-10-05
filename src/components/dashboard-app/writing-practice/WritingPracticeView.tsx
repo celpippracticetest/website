@@ -249,7 +249,10 @@ const WritingPracticeView = ({
         `${Math.floor(time / 60)}:${time % 60}`
       );
 
-      onAnswerButtonClick(practice, result);
+      // Allow trophy modal to render before navigation to results
+      setTimeout(() => {
+        onAnswerButtonClick(practice, result);
+      }, 800);
       setProgressBar(0);
       setTryToSubmit(false);
       setIsSubmit(false);
