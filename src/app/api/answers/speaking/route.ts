@@ -362,100 +362,105 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
 
     // Call OpenRouter API with tool calling
     const openRouterResponse = await withRetry(
-      () => fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          "HTTP-Referer": "https://celpippracticetest.com",
-          "X-Title": "CELPIP Practice Test",
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "qwen/qwen2.5-vl-32b-instruct",
-          max_tokens: 20000,
-          temperature: 1,
-          messages: [
-            {
-              role: "system",
-              content: finalSystemPrompt
-            },
-            {
-              role: "user",
-              content: command
-            }
-          ],
-          tools: [
-            {
-              type: "function",
-              function: {
-                name: "CELPIPWritingEvaluation",
-                description: "evaluating and providing feedback on a speaking sample and content analysis scores",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    overall: {
-                      type: "number",
-                      description: "Overall Score: (out of 12)",
+      () =>
+        fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+            "HTTP-Referer": "https://celpippracticetest.com",
+            "X-Title": "CELPIP Practice Test",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "qwen/qwen-2.5-7b-instruct",
+            max_tokens: 20000,
+            temperature: 1,
+            messages: [
+              {
+                role: "system",
+                content: finalSystemPrompt,
+              },
+              {
+                role: "user",
+                content: command,
+              },
+            ],
+            tools: [
+              {
+                type: "function",
+                function: {
+                  name: "CELPIPWritingEvaluation",
+                  description:
+                    "evaluating and providing feedback on a speaking sample and content analysis scores",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      overall: {
+                        type: "number",
+                        description: "Overall Score: (out of 12)",
+                      },
+                      contentAndCoherence: {
+                        type: "number",
+                        description: "Content & Coherence: (out of 12)",
+                      },
+                      vocabulary: {
+                        type: "number",
+                        description: "Vocabulary: (out of 12)",
+                      },
+                      readabilityAndGrammar: {
+                        type: "number",
+                        description: "Vocabulary: (out of 12)",
+                      },
+                      taskFulfillment: {
+                        type: "number",
+                        description:
+                          "Task Fulfillment: (out of 12). Strictly tied to TASK_TOPICS; off-topic => low score.",
+                      },
+                      feedback: {
+                        type: "string",
+                        description: task.antropicCommand?.systemPrompt ?? "",
+                      },
+                      grammarMistakes: {
+                        type: "array",
+                        description:
+                          "a list of grammar or vocabulary mistakes and the correct way for that mistake, build an array that consist all part of provided text, each part should consist original and improve part and if that part doesnt need improvement it should set null for improvement but original part should has value.",
+                        items: {
+                          type: "object",
+                          properties: {
+                            original: { type: "string" },
+                            improvement: { type: ["string", "null"] },
+                          },
+                        },
+                      },
+                      betterVersion: {
+                        type: "string",
+                        description:
+                          "write a better version of this answer with all suggestion and improvement",
+                      },
                     },
-                    contentAndCoherence: {
-                      type: "number",
-                      description: "Content & Coherence: (out of 12)",
-                    },
-                    vocabulary: {
-                      type: "number",
-                      description: "Vocabulary: (out of 12)",
-                    },
-                    readabilityAndGrammar: {
-                      type: "number",
-                      description: "Vocabulary: (out of 12)",
-                    },
-                    taskFulfillment: {
-                      type: "number",
-                      description: "Task Fulfillment: (out of 12). Strictly tied to TASK_TOPICS; off-topic => low score.",
-                    },
-                    feedback: {
-                      type: "string",
-                      description: task.antropicCommand?.systemPrompt ?? "",
-                    },
-                    grammarMistakes: {
-                      type: "array",
-                      description: "a list of grammar or vocabulary mistakes and the correct way for that mistake, build an array that consist all part of provided text, each part should consist original and improve part and if that part doesnt need improvement it should set null for improvement but original part should has value.",
-                      items: {
-                        type: "object",
-                        properties: {
-                          original: { type: "string" },
-                          improvement: { type: ["string", "null"] }
-                        }
-                      }
-                    },
-                    betterVersion: {
-                      type: "string",
-                      description: "write a better version of this answer with all suggestion and improvement",
-                    },
+                    required: [
+                      "overall",
+                      "contentAndCoherence",
+                      "vocabulary",
+                      "readabilityAndGrammar",
+                      "taskFulfillment",
+                      "feedback",
+                      "grammarMistakes",
+                    ],
                   },
-                  required: [
-                    "overall",
-                    "contentAndCoherence",
-                    "vocabulary",
-                    "readabilityAndGrammar",
-                    "taskFulfillment",
-                    "feedback",
-                    "grammarMistakes",
-                  ],
-                }
-              }
-            }
-          ],
-          tool_choice: "auto"
-        })
-      }).then(async (res) => {
-        if (!res.ok) {
-          const errorData = await res.json();
-          console.error("OpenRouter API error:", errorData);
-          throw new Error(`OpenRouter API failed: ${res.status}`);
-        }
-        return res.json();
-      }),
+                },
+              },
+            ],
+            tool_choice: "auto",
+          }),
+        }).then(async (res) => {
+          if (!res.ok) {
+            const errorData = await res.json();
+            console.error("OpenRouter API error:", errorData);
+            throw new Error(`OpenRouter API failed: ${res.status}`);
+          }
+          return res.json();
+        }),
       {
         retries: 3,
         shouldRetry: (e) => /429|5\d\d|ETIMEDOUT|ECONNRESET/i.test(e.message),
@@ -466,17 +471,22 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
     const toolCall = openRouterResponse.choices?.[0]?.message?.tool_calls?.[0];
     const msg: AnthropicResponse = {
       content: [
-        { type: "text", text: openRouterResponse.choices?.[0]?.message?.content || "" },
-        { 
+        {
+          type: "text",
+          text: openRouterResponse.choices?.[0]?.message?.content || "",
+        },
+        {
           type: "tool_use",
           name: "CELPIPWritingEvaluation",
-          input: toolCall?.function?.arguments ? JSON.parse(toolCall.function.arguments) : {}
-        }
+          input: toolCall?.function?.arguments
+            ? JSON.parse(toolCall.function.arguments)
+            : {},
+        },
       ] as AnthropicContentBlock[],
       usage: {
         input_tokens: openRouterResponse.usage?.prompt_tokens || 0,
-        output_tokens: openRouterResponse.usage?.completion_tokens || 0
-      }
+        output_tokens: openRouterResponse.usage?.completion_tokens || 0,
+      },
     };
 
     const evaluation = extractEvaluation(msg.content);

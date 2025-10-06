@@ -263,26 +263,29 @@ IMPORTANT: Use the current scores to provide personalized advice. Focus on the w
     });
 
     // Call OpenRouter API
-    const openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "HTTP-Referer": "https://celpippracticetest.com",
-        "X-Title": "CELPIP Practice Test",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "qwen/qwen2.5-vl-32b-instruct",
-        messages: [
-          {
-            role: "system",
-            content: SYSTEM_PROMPT + userContext
-          },
-          ...messages
-        ],
-        max_tokens: 1000,
-      })
-    });
+    const openRouterResponse = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "HTTP-Referer": "https://celpippracticetest.com",
+          "X-Title": "CELPIP Practice Test",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "qwen/qwen-2.5-7b-instruct",
+          messages: [
+            {
+              role: "system",
+              content: SYSTEM_PROMPT + userContext,
+            },
+            ...messages,
+          ],
+          max_tokens: 1000,
+        }),
+      }
+    );
 
     if (!openRouterResponse.ok) {
       const errorData = await openRouterResponse.json();
