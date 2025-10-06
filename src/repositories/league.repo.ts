@@ -979,19 +979,26 @@ export class LeagueRepository {
     // Calculate promotion and demotion zones
     let promotionZone: number;
     let demotionZone: number;
+    let safeZone: number;
 
     switch (league.type) {
       case "bronze":
-        promotionZone = Math.max(1, Math.ceil(totalUsers * 0.3)); // At least 1, max 30%
-        demotionZone = Math.max(0, Math.floor(totalUsers * 0.2)); // At least 0, max 20%
+        // Bronze: Entry level - can only promote up, no demotion
+        promotionZone = Math.max(1, Math.ceil(totalUsers * 0.3)); // Top 30% promote to Silver
+        demotionZone = 0; // No demotion from Bronze (lowest league)
+        safeZone = totalUsers - promotionZone; // Remaining 70% stay in Bronze
         break;
       case "silver":
-        promotionZone = Math.max(1, Math.ceil(totalUsers * 0.25)); // At least 1, max 25%
-        demotionZone = Math.max(1, Math.floor(totalUsers * 0.3)); // At least 1, max 30%
+        // Silver: Middle tier - can promote to Gold or demote to Bronze
+        promotionZone = Math.max(1, Math.ceil(totalUsers * 0.25)); // Top 25% promote to Gold
+        demotionZone = Math.max(1, Math.floor(totalUsers * 0.3)); // Bottom 30% demote to Bronze
+        safeZone = totalUsers - promotionZone - demotionZone; // Middle 45% stay in Silver
         break;
       case "gold":
-        promotionZone = 0; // No promotion from Gold
-        demotionZone = Math.max(1, Math.floor(totalUsers * 0.4)); // At least 1, max 40%
+        // Gold: Highest tier - no promotion, staying is winning!
+        promotionZone = 0; // No promotion from Gold (highest league)
+        demotionZone = Math.max(1, Math.floor(totalUsers * 0.4)); // Bottom 40% demote to Silver
+        safeZone = totalUsers - demotionZone; // Top 60% stay in Gold (winners!)
         break;
     }
 
@@ -1276,32 +1283,131 @@ export class LeagueRepository {
     return true;
   }
 
-  // Process season end - promotions, demotions, and reset season points
+  // Get raffle winners for a season
+  async getRaffleWinners(seasonId: string): Promise<any> {
+    const winners = await this.db
+      .collection("league_raffle_winners")
+      .findOne({ seasonId });
+    return winners;
+  }
+
+  // Select 3 random winners from Gold League top performers
+  async selectGoldLeagueWinners(seasonId: string): Promise<string[]> {
+    const currentSeason = await this.getCurrentSeason();
+    if (!currentSeason || currentSeason.seasonId !== seasonId) return [];
+
+    const goldLeague = currentSeason.leagues.find(l => l.leagueType === "gold");
+    if (!goldLeague) return [];
+
+    // Collect all winners (top 60%) from all gold groups
+    const allWinners: Array<{ userId: string; points: number; groupId: string }> = [];
+
+    for (const groupId of goldLeague.groups) {
+      const group = await this.getGroupLeaderboard(groupId.toString());
+      if (!group) continue;
+
+      const sortedUsers = [...group.users].sort((a, b) => b.points - a.points);
+      const totalUsers = sortedUsers.length;
+      const winnerCount = totalUsers - Math.ceil(totalUsers * 0.4); // Top 60%
+
+      // Add top 60% to winners list
+      for (let i = 0; i < winnerCount; i++) {
+        allWinners.push({
+          userId: sortedUsers[i].userId,
+          points: sortedUsers[i].points,
+          groupId: groupId.toString(),
+        });
+      }
+    }
+
+    // Randomly select 3 winners
+    const selectedWinners: string[] = [];
+    const winnersCopy = [...allWinners];
+
+    for (let i = 0; i < 3 && winnersCopy.length > 0; i++) {
+      const randomIndex = Math.floor(Math.random() * winnersCopy.length);
+      selectedWinners.push(winnersCopy[randomIndex].userId);
+      winnersCopy.splice(randomIndex, 1); // Remove selected winner to avoid duplicates
+    }
+
+    // Store winners in a collection for tracking
+    if (selectedWinners.length > 0) {
+      await this.db.collection("league_raffle_winners").insertOne({
+        seasonId,
+        winners: selectedWinners.map(userId => ({
+          userId,
+          selectedAt: new Date(),
+        })),
+        createdAt: new Date(),
+      });
+    }
+
+    return selectedWinners;
+  }
+
+  // Process season end - promotions, demotions, reset points, and move users
   async processSeasonEnd(season: TLeagueSeason): Promise<void> {
+    console.log(`Processing season end for: ${season.seasonId}`);
+
+    // Step 1: Process each league and determine user statuses
+    // Note: Raffle winners are selected manually by admin, not automatically
+    const usersToMove: Array<{
+      userId: string;
+      currentLeague: TLeagueType;
+      targetLeague: TLeagueType;
+      status: "promotion" | "safe" | "demotion";
+      isRaffleWinner: boolean;
+    }> = [];
+
     for (const league of season.leagues) {
+      const leagueDetails = await this.getLeagueByType(league.leagueType);
+      if (!leagueDetails) continue;
+
       for (const groupId of league.groups) {
         const group = await this.getGroupLeaderboard(groupId.toString());
         if (!group) continue;
 
         // Sort users by season points
-        const sortedUsers = group.users.sort((a, b) => b.points - a.points);
+        const sortedUsers = [...group.users].sort((a, b) => b.points - a.points);
         const totalUsers = sortedUsers.length;
 
-        // Calculate promotion/demotion zones
-        const promotionCount = Math.ceil(totalUsers * 0.3); // Top 30%
-        const demotionCount = Math.ceil(totalUsers * 0.3); // Bottom 30%
+        // Calculate promotion/demotion zones based on league type
+        let promotionCount: number;
+        let demotionCount: number;
+
+        switch (league.leagueType) {
+          case "bronze":
+            promotionCount = Math.ceil(totalUsers * 0.3); // Top 30% promote to Silver
+            demotionCount = 0; // No demotion from Bronze
+            break;
+          case "silver":
+            promotionCount = Math.ceil(totalUsers * 0.25); // Top 25% promote to Gold
+            demotionCount = Math.ceil(totalUsers * 0.3); // Bottom 30% demote to Bronze
+            break;
+          case "gold":
+            promotionCount = 0; // No promotion from Gold
+            demotionCount = Math.ceil(totalUsers * 0.4); // Bottom 40% demote to Silver
+            break;
+        }
 
         for (let i = 0; i < totalUsers; i++) {
           const user = sortedUsers[i];
           let newStatus: "promotion" | "safe" | "demotion" = "safe";
+          let targetLeague = league.leagueType;
 
-          if (i < promotionCount) {
+          // Determine status and target league
+          if (i < promotionCount && league.leagueType !== "gold") {
             newStatus = "promotion";
-          } else if (i >= totalUsers - demotionCount) {
+            targetLeague = league.leagueType === "bronze" ? "silver" : "gold";
+          } else if (i >= totalUsers - demotionCount && league.leagueType !== "bronze") {
             newStatus = "demotion";
+            targetLeague = league.leagueType === "gold" ? "silver" : "bronze";
+          } else {
+            newStatus = "safe";
+            targetLeague = league.leagueType; // Stay in same league
           }
 
-          // Update user status
+          // Update user status in current group
           await this.db
             .collection(this.leagueGroupsCollection)
             .updateOne(
@@ -1309,7 +1415,16 @@ export class LeagueRepository {
               { $set: { "users.$.status": newStatus } }
             );
 
-          // Reset season points for next season
+          // Track users to move to next season
+          usersToMove.push({
+            userId: user.userId,
+            currentLeague: league.leagueType,
+            targetLeague,
+            status: newStatus,
+            isRaffleWinner: false, // Admin will select raffle winners manually
+          });
+
+          // Reset season points for next season (but keep overall points)
           await this.db.collection(this.userLeaguePointsCollection).updateOne(
             { userId: user.userId, seasonId: season.seasonId },
             {
@@ -1321,6 +1436,225 @@ export class LeagueRepository {
           );
         }
       }
+    }
+
+    // Step 3: Mark current season as ended
+    await this.db.collection(this.leagueSeasonsCollection).updateOne(
+      { seasonId: season.seasonId },
+      { $set: { isActive: false, endedAt: new Date() } }
+    );
+
+    console.log(`Season ${season.seasonId} ended. ${usersToMove.length} users processed.`);
+  }
+
+  // Get season statistics for admin dashboard
+  async getSeasonStatistics(seasonId: string): Promise<any> {
+    const season = await this.db
+      .collection(this.leagueSeasonsCollection)
+      .findOne({ seasonId });
+    
+    if (!season) return null;
+
+    const stats = {
+      seasonId,
+      startDate: season.startDate,
+      endDate: season.endDate,
+      isActive: season.isActive,
+      leagues: [] as any[],
+    };
+
+    for (const league of season.leagues) {
+      const leagueDetails = await this.getLeagueByType(league.leagueType);
+      if (!leagueDetails) continue;
+
+      const leagueStats = {
+        type: league.leagueType,
+        groups: [] as any[],
+        totalUsers: 0,
+        promoted: [] as any[],
+        demoted: [] as any[],
+        safe: [] as any[],
+      };
+
+      for (const groupId of league.groups) {
+        const group = await this.getGroupLeaderboard(groupId.toString());
+        if (!group) continue;
+
+        const sortedUsers = [...group.users].sort((a, b) => b.points - a.points);
+        leagueStats.totalUsers += sortedUsers.length;
+
+        // Calculate zones
+        let promotionCount = 0;
+        let demotionCount = 0;
+
+        switch (league.leagueType) {
+          case "bronze":
+            promotionCount = Math.ceil(sortedUsers.length * 0.3);
+            demotionCount = 0;
+            break;
+          case "silver":
+            promotionCount = Math.ceil(sortedUsers.length * 0.25);
+            demotionCount = Math.ceil(sortedUsers.length * 0.3);
+            break;
+          case "gold":
+            promotionCount = 0;
+            demotionCount = Math.ceil(sortedUsers.length * 0.4);
+            break;
+        }
+
+        // Categorize users
+        for (let i = 0; i < sortedUsers.length; i++) {
+          const user = sortedUsers[i];
+          const userInfo = {
+            userId: user.userId,
+            points: user.points,
+            position: i + 1,
+            groupId: groupId.toString(),
+          };
+
+          if (i < promotionCount && league.leagueType !== "gold") {
+            leagueStats.promoted.push(userInfo);
+          } else if (i >= sortedUsers.length - demotionCount && league.leagueType !== "bronze") {
+            leagueStats.demoted.push(userInfo);
+          } else {
+            leagueStats.safe.push(userInfo);
+          }
+        }
+
+        leagueStats.groups.push({
+          groupId: groupId.toString(),
+          groupNumber: group.groupNumber,
+          users: sortedUsers.length,
+        });
+      }
+
+      stats.leagues.push(leagueStats);
+    }
+
+    return stats;
+  }
+
+  // Get eligible raffle candidates (Top 60% of Gold League)
+  async getGoldLeagueEligibleWinners(seasonId: string): Promise<any[]> {
+    const season = await this.db
+      .collection(this.leagueSeasonsCollection)
+      .findOne({ seasonId });
+    
+    if (!season) return [];
+
+    const goldLeague = season.leagues.find((l: any) => l.leagueType === "gold");
+    if (!goldLeague) return [];
+
+    const eligibleWinners: any[] = [];
+
+    for (const groupId of goldLeague.groups) {
+      const group = await this.getGroupLeaderboard(groupId.toString());
+      if (!group) continue;
+
+      const sortedUsers = [...group.users].sort((a, b) => b.points - a.points);
+      const totalUsers = sortedUsers.length;
+      const winnerCount = totalUsers - Math.ceil(totalUsers * 0.4); // Top 60%
+
+      for (let i = 0; i < winnerCount; i++) {
+        // Get user details from database
+        const userDetails = await this.db
+          .collection("users")
+          .findOne({ clerkUserId: sortedUsers[i].userId });
+
+        eligibleWinners.push({
+          userId: sortedUsers[i].userId,
+          points: sortedUsers[i].points,
+          position: i + 1,
+          groupId: groupId.toString(),
+          email: userDetails?.email || "Unknown",
+          name: userDetails?.fullName || userDetails?.firstName || "Unknown",
+        });
+      }
+    }
+
+    // Sort by points descending
+    eligibleWinners.sort((a, b) => b.points - a.points);
+
+    return eligibleWinners;
+  }
+
+  // Manually set raffle winners (by admin)
+  async setRaffleWinners(seasonId: string, winnerUserIds: string[]): Promise<boolean> {
+    try {
+      // Check if already exists
+      const existing = await this.db
+        .collection("league_raffle_winners")
+        .findOne({ seasonId });
+
+      if (existing) {
+        // Update existing
+        await this.db
+          .collection("league_raffle_winners")
+          .updateOne(
+            { seasonId },
+            {
+              $set: {
+                winners: winnerUserIds.map(userId => ({
+                  userId,
+                  selectedAt: new Date(),
+                  notified: false,
+                  prizeAwarded: false,
+                })),
+                updatedAt: new Date(),
+              },
+            }
+          );
+      } else {
+        // Insert new
+        await this.db
+          .collection("league_raffle_winners")
+          .insertOne({
+            seasonId,
+            winners: winnerUserIds.map(userId => ({
+              userId,
+              selectedAt: new Date(),
+              notified: false,
+              prizeAwarded: false,
+            })),
+            createdAt: new Date(),
+          });
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error setting raffle winners:", error);
+      return false;
+    }
+  }
+
+  // Mark raffle winners as notified or prize awarded
+  async updateRaffleWinnerStatus(
+    seasonId: string,
+    userId: string,
+    updates: { notified?: boolean; prizeAwarded?: boolean }
+  ): Promise<boolean> {
+    try {
+      const updateFields: any = {};
+      
+      if (updates.notified !== undefined) {
+        updateFields["winners.$[elem].notified"] = updates.notified;
+      }
+      if (updates.prizeAwarded !== undefined) {
+        updateFields["winners.$[elem].prizeAwarded"] = updates.prizeAwarded;
+      }
+
+      const result = await this.db
+        .collection("league_raffle_winners")
+        .updateOne(
+          { seasonId },
+          { $set: updateFields },
+          { arrayFilters: [{ "elem.userId": userId }] }
+        );
+
+      return result.modifiedCount > 0;
+    } catch (error) {
+      console.error("Error updating raffle winner status:", error);
+      return false;
     }
   }
 }

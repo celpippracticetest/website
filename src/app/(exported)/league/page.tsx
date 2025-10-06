@@ -462,19 +462,26 @@ const Page = () => {
     // Define zones based on league
     let promotionZone: number;
     let demotionZone: number;
+    let safeZone: number;
 
     switch (currentLeague) {
       case "bronze":
+        // Bronze: Entry level - can only promote up, no demotion
         promotionZone = Math.ceil(totalUsers * 0.3); // Top 30% promote to Silver
-        demotionZone = Math.floor(totalUsers * 0.2); // Bottom 20% stay in Bronze
+        demotionZone = 0; // No demotion from Bronze (lowest league)
+        safeZone = totalUsers - promotionZone; // Remaining 70% stay in Bronze
         break;
       case "silver":
+        // Silver: Middle tier - can promote to Gold or demote to Bronze
         promotionZone = Math.ceil(totalUsers * 0.25); // Top 25% promote to Gold
         demotionZone = Math.floor(totalUsers * 0.3); // Bottom 30% demote to Bronze
+        safeZone = totalUsers - promotionZone - demotionZone; // Middle 45% stay in Silver
         break;
       case "gold":
-        promotionZone = 0; // No promotion from Gold
+        // Gold: Highest tier - no promotion, staying is winning!
+        promotionZone = 0; // No promotion from Gold (highest league)
         demotionZone = Math.floor(totalUsers * 0.4); // Bottom 40% demote to Silver
+        safeZone = totalUsers - demotionZone; // Top 60% stay in Gold (winners!)
         break;
     }
 
@@ -483,15 +490,18 @@ const Page = () => {
       let status = "safe";
 
       if (index < promotionZone && currentLeague !== "gold") {
+        // Promotion zone
         newLeague = currentLeague === "bronze" ? "silver" : "gold";
         status = "promoted";
       } else if (
         index >= totalUsers - demotionZone &&
         currentLeague !== "bronze"
       ) {
+        // Demotion zone
         newLeague = currentLeague === "gold" ? "silver" : "bronze";
         status = "demoted";
-      } else if (index >= promotionZone && index < totalUsers - demotionZone) {
+      } else {
+        // Safe zone - stay in current league
         status = "safe";
       }
 

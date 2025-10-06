@@ -94,6 +94,19 @@ const LeagueSeasonSchema = z.object({
   updatedAt: z.date().default(() => new Date()),
 });
 
+// League Raffle Winners Schema (for Gold League prize draws)
+const LeagueRaffleWinnersSchema = z.object({
+  _id: z.instanceof(ObjectId),
+  seasonId: z.string(),
+  winners: z.array(z.object({
+    userId: z.string(),
+    selectedAt: z.date(),
+    notified: z.boolean().default(false),
+    prizeAwarded: z.boolean().default(false),
+  })),
+  createdAt: z.date().default(() => new Date()),
+});
+
 // DTOs
 const LeagueSchemaDto = z.object({
   id: z.string(),
@@ -115,6 +128,11 @@ const LeagueSeasonSchemaDto = z.object({
   ...LeagueSeasonSchema.omit({ _id: true }).shape,
 });
 
+const LeagueRaffleWinnersSchemaDto = z.object({
+  id: z.string(),
+  ...LeagueRaffleWinnersSchema.omit({ _id: true }).shape,
+});
+
 // Types
 type TLeague = z.infer<typeof LeagueSchema>;
 type TLeagueDto = z.infer<typeof LeagueSchemaDto>;
@@ -124,6 +142,8 @@ type TUserLeaguePoints = z.infer<typeof UserLeaguePointsSchema>;
 type TUserLeaguePointsDto = z.infer<typeof UserLeaguePointsSchemaDto>;
 type TLeagueSeason = z.infer<typeof LeagueSeasonSchema>;
 type TLeagueSeasonDto = z.infer<typeof LeagueSeasonSchemaDto>;
+type TLeagueRaffleWinners = z.infer<typeof LeagueRaffleWinnersSchema>;
+type TLeagueRaffleWinnersDto = z.infer<typeof LeagueRaffleWinnersSchemaDto>;
 type TLeagueType = z.infer<typeof LeagueTypeSchema>;
 type TGroupStatus = z.infer<typeof GroupStatusSchema>;
 type TUserLeagueStatus = z.infer<typeof UserLeagueStatusSchema>;
@@ -137,6 +157,8 @@ export {
   UserLeaguePointsSchemaDto,
   LeagueSeasonSchema,
   LeagueSeasonSchemaDto,
+  LeagueRaffleWinnersSchema,
+  LeagueRaffleWinnersSchemaDto,
   LeagueTypeSchema,
   GroupStatusSchema,
   UserLeagueStatusSchema,
@@ -148,6 +170,8 @@ export {
   TUserLeaguePointsDto,
   TLeagueSeason, 
   TLeagueSeasonDto,
+  TLeagueRaffleWinners,
+  TLeagueRaffleWinnersDto,
   TLeagueType,
   TGroupStatus,
   TUserLeagueStatus,
