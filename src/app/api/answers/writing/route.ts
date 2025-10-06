@@ -78,6 +78,10 @@ export const POST = async function (req: NextRequest) {
           "HTTP-Referer": "https://celpippracticetest.com",
           "X-Title": "CELPIP Practice Test",
           "Content-Type": "application/json",
+          "X-OpenRouter-Provider-Preferences": JSON.stringify({
+            order: ["DeepInfra"],
+            require_parameters: true,
+          }),
         },
         body: JSON.stringify({
           model: "qwen/qwen3-next-80b-a3b-instruct",

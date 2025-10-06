@@ -371,7 +371,8 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
             "X-Title": "CELPIP Practice Test",
             "Content-Type": "application/json",
             "X-OpenRouter-Provider-Preferences": JSON.stringify({
-              order: ["DeepInfra", "Fireworks", "Together"],
+              order: ["DeepInfra"],
+              require_parameters: true,
             }),
           },
           body: JSON.stringify({
