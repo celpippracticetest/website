@@ -81,7 +81,7 @@ export const POST = async function (req: NextRequest) {
         },
         body: JSON.stringify({
           model: "qwen/qwen3-next-80b-a3b-instruct",
-
+          max_tokens: 20000,
           temperature: 1,
           messages: [
             {
@@ -179,16 +179,26 @@ export const POST = async function (req: NextRequest) {
 
     // Extract tool call result
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    console.log("OpenRouter response:", JSON.stringify(data, null, 2));
+    console.log("=== OPENROUTER DEBUG ===");
+    console.log("Environment:", process.env.VERCEL_ENV || "local");
+    console.log("Model requested:", "qwen/qwen3-next-80b-a3b-instruct");
+    console.log("Model returned:", data.model);
+    console.log("Provider:", data.provider);
     console.log("Tool call found:", !!toolCall);
+    console.log(
+      "Message content:",
+      data.choices?.[0]?.message?.content?.substring(0, 100)
+    );
 
     if (!toolCall) {
       console.error(
-        "No tool call in response! Model may not support tool calling."
+        "No tool call! Full response:",
+        JSON.stringify(data, null, 2)
       );
       throw new Error(
-        "Model did not return tool call. Please use a model that supports function calling." +
-          process.env.OPENROUTER_API_KEY
+        `Model did not return tool call. Env: ${
+          process.env.VERCEL_ENV || "local"
+        }, Provider: ${data.provider}, Model: ${data.model}`
       );
     }
 

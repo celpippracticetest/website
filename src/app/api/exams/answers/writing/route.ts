@@ -152,7 +152,7 @@ export const POST = async function (req: NextRequest) {
         },
         body: JSON.stringify({
           model: "qwen/qwen3-next-80b-a3b-instruct",
-
+          max_tokens: 20000,
           temperature: 1,
           messages: [
             {
