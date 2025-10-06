@@ -274,7 +274,7 @@ IMPORTANT: Use the current scores to provide personalized advice. Focus on the w
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "qwen/qwen-2.5-7b-instruct",
+          model: "qwen/qwen3-next-80b-a3b-instruct",
           messages: [
             {
               role: "system",
