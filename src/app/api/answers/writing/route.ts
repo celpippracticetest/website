@@ -80,7 +80,7 @@ export const POST = async function (req: NextRequest) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "claude-3-7-sonnet-20250219",
+          model: "anthropic/claude-3-7-sonnet-20250219",
           max_tokens: 20000,
           temperature: 1,
           messages: [
