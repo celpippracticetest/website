@@ -80,7 +80,7 @@ export const POST = async function (req: NextRequest) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "anthropic/claude-3-7-sonnet-20250219",
+          model: "qwen/qwen3-next-80b-a3b-instruct",
           max_tokens: 20000,
           temperature: 1,
           messages: [
@@ -179,6 +179,18 @@ export const POST = async function (req: NextRequest) {
 
     // Extract tool call result
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    console.log("OpenRouter response:", JSON.stringify(data, null, 2));
+    console.log("Tool call found:", !!toolCall);
+
+    if (!toolCall) {
+      console.error(
+        "No tool call in response! Model may not support tool calling."
+      );
+      throw new Error(
+        "Model did not return tool call. Please use a model that supports function calling."
+      );
+    }
+
     const msg: any = {
       content: [
         { type: "text", text: data.choices?.[0]?.message?.content || "" },
