@@ -234,31 +234,32 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
       fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
           "HTTP-Referer": "https://celpippracticetest.com",
           "X-Title": "CELPIP Practice Test",
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "qwen/qwen2.5-vl-32b-instruct",
+          model: "qwen/qwen-2.5-7b-instruct",
           max_tokens: 20000,
           temperature: 1,
           messages: [
             {
               role: "system",
-              content: finalSystemPrompt
+              content: finalSystemPrompt,
             },
             {
               role: "user",
-              content: command
-            }
+              content: command,
+            },
           ],
           tools: [
             {
               type: "function",
               function: {
                 name: "CELPIPWritingEvaluation",
-                description: "evaluating and providing feedback on a speaking sample and content analysis scores",
+                description:
+                  "evaluating and providing feedback on a speaking sample and content analysis scores",
                 parameters: {
                   type: "object",
                   properties: {
@@ -284,22 +285,25 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
                     },
                     feedback: {
                       type: "string",
-                      description: "Provide structured feedback exactly in these five sections with the exact headings and format:\n1. Enhance Professional Vocabulary\n2. Add Specific Details\n3. Formal Tone\n4. Proper Structure\n5. Transitional Phrases\nFor each section, briefly describe mistakes and improvement areas, provide specific suggestions, and offer an improved version of the user's text incorporating these enhancements.",
+                      description:
+                        "Provide structured feedback exactly in these five sections with the exact headings and format:\n1. Enhance Professional Vocabulary\n2. Add Specific Details\n3. Formal Tone\n4. Proper Structure\n5. Transitional Phrases\nFor each section, briefly describe mistakes and improvement areas, provide specific suggestions, and offer an improved version of the user's text incorporating these enhancements.",
                     },
                     grammarMistakes: {
                       type: "array",
-                      description: "a list of grammar or vocabulary mistakes and the correct way for that mistake, build an array that consist all part of provided text, each part should consist original and improve part and if that part doesnt need improvement it should set null for improvement but original part should has value.",
+                      description:
+                        "a list of grammar or vocabulary mistakes and the correct way for that mistake, build an array that consist all part of provided text, each part should consist original and improve part and if that part doesnt need improvement it should set null for improvement but original part should has value.",
                       items: {
                         type: "object",
                         properties: {
                           original: { type: "string" },
-                          improvement: { type: ["string", "null"] }
-                        }
-                      }
+                          improvement: { type: ["string", "null"] },
+                        },
+                      },
                     },
                     betterVersion: {
                       type: "string",
-                      description: "write a better version of this answer with all suggestion and improvement",
+                      description:
+                        "write a better version of this answer with all suggestion and improvement",
                     },
                   },
                   required: [
@@ -311,12 +315,12 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
                     "feedback",
                     "grammarMistakes",
                   ],
-                }
-              }
-            }
+                },
+              },
+            },
           ],
-          tool_choice: "auto"
-        })
+          tool_choice: "auto",
+        }),
       }).then(async (res) => {
         if (!res.ok) {
           const errorData = await res.json();
@@ -332,16 +336,21 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
     const toolCall = openRouterResponse.choices?.[0]?.message?.tool_calls?.[0];
     const msg: any = {
       content: [
-        { type: "text", text: openRouterResponse.choices?.[0]?.message?.content || "" },
-        { 
+        {
+          type: "text",
+          text: openRouterResponse.choices?.[0]?.message?.content || "",
+        },
+        {
           type: "tool_use",
-          input: toolCall?.function?.arguments ? JSON.parse(toolCall.function.arguments) : {}
-        }
+          input: toolCall?.function?.arguments
+            ? JSON.parse(toolCall.function.arguments)
+            : {},
+        },
       ],
       usage: {
         input_tokens: openRouterResponse.usage?.prompt_tokens || 0,
-        output_tokens: openRouterResponse.usage?.completion_tokens || 0
-      }
+        output_tokens: openRouterResponse.usage?.completion_tokens || 0,
+      },
     };
 
     const answerRepo = new WritingAnswerRepository(mongoClient);
