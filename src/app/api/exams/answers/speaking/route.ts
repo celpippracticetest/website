@@ -237,11 +237,10 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
           Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
           "HTTP-Referer": "https://celpippracticetest.com",
           "X-Title": "CELPIP Practice Test",
-          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           model: "qwen/qwen3-next-80b-a3b-instruct",
-
+          max_tokens: 20000,
           temperature: 1,
           messages: [
             {
