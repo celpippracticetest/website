@@ -370,10 +370,7 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
             "HTTP-Referer": "https://celpippracticetest.com",
             "X-Title": "CELPIP Practice Test",
             "Content-Type": "application/json",
-            "X-OpenRouter-Provider-Preferences": JSON.stringify({
-              order: ["DeepInfra"],
-              require_parameters: true,
-            }),
+            "X-OpenRouter-Provider-Order": "DeepInfra,Together,Fireworks",
           },
           body: JSON.stringify({
             model: "qwen/qwen3-next-80b-a3b-instruct",
