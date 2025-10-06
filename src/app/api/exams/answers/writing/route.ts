@@ -149,7 +149,7 @@ export const POST = async function (req: NextRequest) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "anthropic/claude-3.7-sonnet",
+        model: "qwen/qwen2.5-vl-32b-instruct",
         max_tokens: 20000,
         temperature: 1,
         messages: [

@@ -272,7 +272,7 @@ IMPORTANT: Use the current scores to provide personalized advice. Focus on the w
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "anthropic/claude-3.5-sonnet",
+        model: "qwen/qwen2.5-vl-32b-instruct",
         messages: [
           {
             role: "system",
