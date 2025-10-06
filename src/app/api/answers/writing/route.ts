@@ -81,7 +81,7 @@ export const POST = async function (req: NextRequest) {
         },
         body: JSON.stringify({
           model: "qwen/qwen3-next-80b-a3b-instruct",
-          max_tokens: 20000,
+
           temperature: 1,
           messages: [
             {
@@ -187,7 +187,8 @@ export const POST = async function (req: NextRequest) {
         "No tool call in response! Model may not support tool calling."
       );
       throw new Error(
-        "Model did not return tool call. Please use a model that supports function calling."
+        "Model did not return tool call. Please use a model that supports function calling." +
+          process.env.OPENROUTER_API_KEY
       );
     }
 

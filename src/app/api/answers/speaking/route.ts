@@ -373,7 +373,7 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
           },
           body: JSON.stringify({
             model: "qwen/qwen3-next-80b-a3b-instruct",
-            max_tokens: 20000,
+
             temperature: 1,
             messages: [
               {
