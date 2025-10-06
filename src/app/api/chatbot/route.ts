@@ -274,7 +274,7 @@ IMPORTANT: Use the current scores to provide personalized advice. Focus on the w
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "qwen/qwen3-next-80b-a3b-instruct",
+          model: "claude-3-5-sonnet-20241022",
           messages: [
             {
               role: "system",

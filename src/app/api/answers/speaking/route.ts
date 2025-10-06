@@ -372,7 +372,7 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "qwen/qwen3-next-80b-a3b-instruct",
+            model: "claude-3-5-sonnet-20241022",
             max_tokens: 20000,
             temperature: 1,
             messages: [
