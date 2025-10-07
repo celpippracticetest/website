@@ -139,6 +139,10 @@ export const POST = async function (req: NextRequest) {
       );
     }
 
+    // Determine which model to use
+    const modelToUse = process.env.OPENROUTER_MODEL ;
+    console.log("Using model:", modelToUse);
+
     // Call OpenRouter API with tool calling
     const openRouterResponse = await fetch(
       "https://openrouter.ai/api/v1/chat/completions",
@@ -151,7 +155,7 @@ export const POST = async function (req: NextRequest) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "anthropic/claude-3-7-sonnet-20250219",
+          model: modelToUse,
           max_tokens: 20000,
           temperature: 1,
           messages: [
@@ -235,7 +239,7 @@ export const POST = async function (req: NextRequest) {
               },
             },
           ],
-          tool_choice: "auto",
+          tool_choice: { type: "function", function: { name: "CELPIPWritingEvaluation" } },
         }),
       }
     );

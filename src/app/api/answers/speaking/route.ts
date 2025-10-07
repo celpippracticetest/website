@@ -360,6 +360,10 @@ ${bulletForSystem}
 If the response is off-topic (i.e., does not address any topic above), sharply reduce "taskFulfillment" and lower "overall" accordingly.`;
     }
 
+    // Determine which model to use
+    const modelToUse = process.env.OPENROUTER_MODEL ;
+    console.log("Using model:", modelToUse);
+
     // Call OpenRouter API with tool calling
     const openRouterResponse = await withRetry(
       () =>
@@ -372,7 +376,7 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "anthropic/claude-3-7-sonnet-20250219",
+            model: modelToUse,
             max_tokens: 20000,
             temperature: 1,
             messages: [
@@ -451,7 +455,7 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
                 },
               },
             ],
-            tool_choice: "auto",
+            tool_choice: { type: "function", function: { name: "CELPIPWritingEvaluation" } },
           }),
         }).then(async (res) => {
           if (!res.ok) {

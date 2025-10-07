@@ -68,6 +68,13 @@ export const POST = async function (req: NextRequest) {
       command = command.replace("{{WRITING_PROMPT}}", writingPrompt);
     }
 
+    // Determine which model to use
+    // Set OPENROUTER_MODEL in your environment variables to override
+    // Examples: "qwen/qwen3-next-80b-a3b-instruct" or "anthropic/claude-3-7-sonnet-20250219"
+    const modelToUse = process.env.OPENROUTER_MODEL ;
+    
+    console.log("Using model:", modelToUse);
+
     // Call OpenRouter API with tool calling
     const openRouterResponse = await fetch(
       "https://openrouter.ai/api/v1/chat/completions",
@@ -80,7 +87,7 @@ export const POST = async function (req: NextRequest) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "anthropic/claude-3-7-sonnet-20250219",
+          model: modelToUse,
           max_tokens: 20000,
           temperature: 1,
           messages: [
@@ -164,7 +171,7 @@ export const POST = async function (req: NextRequest) {
               },
             },
           ],
-          tool_choice: "auto",
+          tool_choice: { type: "function", function: { name: "CELPIPWritingEvaluation" } },
         }),
       }
     );
@@ -181,8 +188,7 @@ export const POST = async function (req: NextRequest) {
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     console.log("=== OPENROUTER DEBUG ===");
     console.log("Environment:", process.env.VERCEL_ENV || "local");
-    console.log("Model requested:", "qwen/qwen3-next-80b-a3b-instruct");
-    console.log("Model returned:", data.model);
+    console.log("Model requested:", data.model);
     console.log("Provider:", data.provider);
     console.log("Tool call found:", !!toolCall);
     console.log(
@@ -195,11 +201,68 @@ export const POST = async function (req: NextRequest) {
         "No tool call! Full response:",
         JSON.stringify(data, null, 2)
       );
-      throw new Error(
-        `Model did not return tool call. Env: ${
-          process.env.VERCEL_ENV || "local"
-        }, Provider: ${data.provider}, Model: ${data.model}`
-      );
+      
+      // Fallback: Try to parse structured content from message
+      const messageContent = data.choices?.[0]?.message?.content || "";
+      
+      // Try to extract JSON-like structure from content
+      let parsedResult = null;
+      try {
+        // Try direct JSON parse
+        parsedResult = JSON.parse(messageContent);
+      } catch {
+        // Try to find JSON in markdown code blocks
+        const jsonMatch = messageContent.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+        if (jsonMatch) {
+          try {
+            parsedResult = JSON.parse(jsonMatch[1]);
+          } catch (e) {
+            console.error("Failed to parse JSON from code block", e);
+          }
+        }
+      }
+      
+      if (!parsedResult || typeof parsedResult !== 'object') {
+        throw new Error(
+          `Model did not return tool call and fallback parsing failed. Env: ${
+            process.env.VERCEL_ENV || "local"
+          }, Provider: ${data.provider}, Model: ${data.model}`
+        );
+      }
+      
+      // Use parsed result as tool call
+      console.log("Successfully extracted data from content fallback");
+      const msg: any = {
+        content: [
+          { type: "text", text: messageContent },
+          {
+            type: "tool_use",
+            input: parsedResult,
+          },
+        ],
+        usage: {
+          input_tokens: data.usage?.prompt_tokens || 0,
+          output_tokens: data.usage?.completion_tokens || 0,
+        },
+      };
+
+      const answer = await answerRepo.createAnswer({
+        text: answerBody.text,
+        userId: user?.id,
+        practiceId: answerBody.practiceId,
+        overalScore: parsedResult.overall || 0,
+        type: "WRITING",
+        result: parsedResult,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      return NextResponse.json({
+        ...answer,
+        usage: {
+          prompt_tokens: msg?.usage?.input_tokens || 0,
+          completion_tokens: msg?.usage?.output_tokens || 0,
+        },
+      });
     }
 
     const msg: any = {
