@@ -80,7 +80,29 @@ export const POST = async function (req: NextRequest) {
     let enhancedSystemPrompt = task.antropicCommand?.systemPrompt ?? "";
     
     if (isQwen) {
-      enhancedSystemPrompt += `\n\nCRITICAL: You MUST call the CELPIPWritingEvaluation function with your response. Do NOT return plain text feedback. Your response must be a structured function call with all required fields: overall, contentAndCoherence, vocabulary, readabilityAndGrammar, taskFulfillment, feedback, grammarMistakes, and betterVersion.`;
+      enhancedSystemPrompt += `
+
+CRITICAL INSTRUCTIONS FOR SCORING:
+1. You MUST call the CELPIPWritingEvaluation function with your response.
+2. BE EXTREMELY STRICT in scoring. A score of 12/12 means PERFECT with ZERO mistakes.
+3. NEVER give full marks (12/12) unless the response is absolutely flawless.
+4. Even ONE vocabulary mistake = maximum 11/12 for vocabulary
+5. Even ONE grammar mistake = maximum 11/12 for readability
+6. Weak structure or missing transitions = reduce contentAndCoherence to 8-10
+7. Missing details or off-topic = reduce taskFulfillment to 6-9
+8. Average responses should get 7-9 out of 12, NOT 10-12
+9. If you give 12/12 in ANY category, you MUST explicitly state "This is PERFECT with zero issues"
+10. Default mindset: Look for problems, not perfection. Be a harsh critic.
+
+SCORING GUIDELINES:
+- 12/12 = Perfect, zero mistakes (VERY RARE)
+- 10-11/12 = Excellent, minor issues only
+- 8-9/12 = Good, several small issues
+- 6-7/12 = Adequate, noticeable problems
+- 4-5/12 = Weak, significant issues
+- 1-3/12 = Poor, major problems
+
+Remember: Your job is to HELP users IMPROVE, not to make them feel good with fake high scores!`;
     }
 
     // Call OpenRouter API with tool calling
@@ -121,7 +143,7 @@ export const POST = async function (req: NextRequest) {
                     overall: {
                       type: "number",
                       description:
-                        "You are an experienced CELPIP Examiner. Read the whole user response carefully and provide an Overall Score out of 12. If there is only one minor vocabulary or grammatical mistake, the score should reflect exactly one point deduction (score = 11). Multiple mistakes should be accurately reflected in the overall score.",
+                        "Overall Score out of 12. BE STRICT: 12 = PERFECT (zero mistakes), 11 = one minor error, 10 = 2-3 small errors, 8-9 = several issues, 6-7 = noticeable problems. AVERAGE responses get 7-9, NOT 10-12. ONE mistake = automatic deduction.",
                     },
                     feedback: {
                       type: "string",
@@ -131,7 +153,7 @@ export const POST = async function (req: NextRequest) {
                     vocabulary: {
                       type: "number",
                       description:
-                        "As an experienced CELPIP Examiner, assess the user's response and assign an accurate Vocabulary score out of 12. One vocabulary mistake equals a one-point deduction.",
+                        "Vocabulary score out of 12. BE HARSH: Each imprecise word = -1 point. Repetitive vocabulary = -2 points. Lack of advanced words = maximum 9/12. Basic vocabulary = 6-8/12. One mistake = maximum 11/12.",
                     },
                     betterVersion: {
                       type: "string",
@@ -153,17 +175,17 @@ export const POST = async function (req: NextRequest) {
                     taskFulfillment: {
                       type: "number",
                       description:
-                        "Evaluate the user's response for Task Fulfillment, providing an accurate and fair score out of 12.",
+                        "Task Fulfillment score out of 12. STRICT: Missing any prompt requirement = -3 points. Incomplete address = maximum 9/12. Vague or generic = 6-8/12. Perfect coverage = 12/12 (rare).",
                     },
                     contentAndCoherence: {
                       type: "number",
                       description:
-                        "Evaluate the user's response for Content & Coherence, assigning an accurate and fair score out of 12.",
+                        "Content & Coherence score out of 12. CRITICAL: Weak transitions = -2 points. Poor structure = -3 points. Unclear ideas = -2 points. Missing paragraphing = -2 points. Good but not perfect = 8-9/12.",
                     },
                     readabilityAndGrammar: {
                       type: "number",
                       description:
-                        "Evaluate the user's response for Readability & Grammar, assigning an accurate and fair score out of 12. One grammatical mistake equals a one-point deduction.",
+                        "Readability & Grammar score out of 12. STRICT: Each grammar error = -1 point. Awkward phrasing = -1 point. Run-on sentences = -2 points. One error = maximum 11/12. Multiple errors = 7-9/12.",
                     },
                   },
                   required: [

@@ -367,7 +367,29 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
     // Enhance system prompt for models that don't support tool calling well
     const isQwen = modelToUse?.includes('qwen');
     if (isQwen) {
-      finalSystemPrompt += `\n\nCRITICAL: You MUST call the CELPIPWritingEvaluation function with your response. Do NOT return plain text feedback. Your response must be a structured function call with all required fields: overall, contentAndCoherence, vocabulary, readabilityAndGrammar, taskFulfillment, feedback, grammarMistakes, and betterVersion.`;
+      finalSystemPrompt += `
+
+CRITICAL INSTRUCTIONS FOR SCORING:
+1. You MUST call the CELPIPWritingEvaluation function with your response.
+2. BE EXTREMELY STRICT in scoring. A score of 12/12 means PERFECT with ZERO mistakes.
+3. NEVER give full marks (12/12) unless the response is absolutely flawless.
+4. Even ONE vocabulary mistake = maximum 11/12 for vocabulary
+5. Even ONE grammar mistake = maximum 11/12 for readability
+6. Weak structure or missing transitions = reduce contentAndCoherence to 8-10
+7. Missing details or off-topic = reduce taskFulfillment to 6-9
+8. Average responses should get 7-9 out of 12, NOT 10-12
+9. If you give 12/12 in ANY category, you MUST explicitly state "This is PERFECT with zero issues"
+10. Default mindset: Look for problems, not perfection. Be a harsh critic.
+
+SCORING GUIDELINES:
+- 12/12 = Perfect, zero mistakes (VERY RARE)
+- 10-11/12 = Excellent, minor issues only
+- 8-9/12 = Good, several small issues
+- 6-7/12 = Adequate, noticeable problems
+- 4-5/12 = Weak, significant issues
+- 1-3/12 = Poor, major problems
+
+Remember: Your job is to HELP users IMPROVE, not to make them feel good with fake high scores!`;
     }
 
     // Call OpenRouter API with tool calling
