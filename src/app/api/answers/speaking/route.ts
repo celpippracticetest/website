@@ -364,6 +364,12 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
     const modelToUse = process.env.OPENROUTER_MODEL ;
     console.log("Using model:", modelToUse);
 
+    // Enhance system prompt for models that don't support tool calling well
+    const isQwen = modelToUse?.includes('qwen');
+    if (isQwen) {
+      finalSystemPrompt += `\n\nCRITICAL: You MUST call the CELPIPWritingEvaluation function with your response. Do NOT return plain text feedback. Your response must be a structured function call with all required fields: overall, contentAndCoherence, vocabulary, readabilityAndGrammar, taskFulfillment, feedback, grammarMistakes, and betterVersion.`;
+    }
+
     // Call OpenRouter API with tool calling
     const openRouterResponse = await withRetry(
       () =>
@@ -473,6 +479,76 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
 
     // Extract tool call result
     const toolCall = openRouterResponse.choices?.[0]?.message?.tool_calls?.[0];
+    
+    if (!toolCall) {
+      console.error("No tool call! Full response:", JSON.stringify(openRouterResponse, null, 2));
+      
+      // Fallback: Try to parse structured content from message
+      const messageContent = openRouterResponse.choices?.[0]?.message?.content || "";
+      let parsedResult: any = null;
+      
+      // Strategy 1: Try direct JSON parse
+      try {
+        parsedResult = JSON.parse(messageContent);
+      } catch {
+        // Strategy 2: Try to find JSON in markdown code blocks
+        const jsonMatch = messageContent.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+        if (jsonMatch) {
+          try {
+            parsedResult = JSON.parse(jsonMatch[1]);
+          } catch (e) {
+            console.error("Failed to parse JSON from code block", e);
+          }
+        }
+      }
+      
+      if (!parsedResult || typeof parsedResult !== 'object') {
+        console.error("All parsing strategies failed!");
+        throw new Error(
+          `This model does not support tool calling properly. Please use a different model (e.g., Claude). Provider: ${openRouterResponse.provider}, Model: ${openRouterResponse.model}`
+        );
+      }
+      
+      // Validate that all required fields exist - NO DEFAULTS!
+      const requiredFields = [
+        'overall', 'contentAndCoherence', 'vocabulary', 
+        'readabilityAndGrammar', 'taskFulfillment', 'feedback', 'grammarMistakes'
+      ];
+      
+      const missingFields = requiredFields.filter(field => 
+        parsedResult[field] === undefined || parsedResult[field] === null
+      );
+      
+      if (missingFields.length > 0) {
+        console.error("Missing required fields:", missingFields);
+        throw new Error(
+          `Model returned incomplete data. Missing fields: ${missingFields.join(', ')}. Please use Claude instead of ${openRouterResponse.model}`
+        );
+      }
+      
+      console.log("Successfully extracted complete data from content");
+      
+      const answerRepo = new WritingAnswerRepository(mongoClient);
+      const answer = await answerRepo.createOrUpdateAnswer({
+        audioUrl: location,
+        userId: user.id,
+        practiceId,
+        overalScore: parsedResult.overall,
+        type: "SPEAKING",
+        result: parsedResult,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      return NextResponse.json({
+        ...answer,
+        usage: {
+          prompt_tokens: openRouterResponse.usage?.prompt_tokens || 0,
+          completion_tokens: openRouterResponse.usage?.completion_tokens || 0,
+        },
+      });
+    }
+    
     const msg: AnthropicResponse = {
       content: [
         {
@@ -494,6 +570,11 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
     };
 
     const evaluation = extractEvaluation(msg.content);
+    
+    if (!evaluation) {
+      throw new Error("Failed to extract evaluation from tool call response");
+    }
+    
     const stored = toStoredEvaluation(evaluation);
 
     const answerRepo = new WritingAnswerRepository(mongoClient);
