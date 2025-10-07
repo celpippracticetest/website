@@ -6,7 +6,6 @@ import {
 } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import { createClient } from "@deepgram/sdk";
-import Anthropic from "@anthropic-ai/sdk";
 import { PracticeRepository } from "@/repositories/practice.repo";
 import { WritingAnswerRepository } from "@/repositories/writingAnswers";
 import { TPracticeDto } from "@/models/practice.model";
@@ -286,8 +285,6 @@ export const POST = async function (req: Request) {
       );
     }
 
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
     const alt = transcribeResult.results.channels[0]?.alternatives[0];
     const userAnswer = alt ? alt.transcript : "";
 
@@ -363,84 +360,254 @@ ${bulletForSystem}
 If the response is off-topic (i.e., does not address any topic above), sharply reduce "taskFulfillment" and lower "overall" accordingly.`;
     }
 
-    // Retry: Anthropic
-    const msg: AnthropicResponse = await withRetry(
+    // Determine which model to use
+    const modelToUse = process.env.OPENROUTER_MODEL ;
+    console.log("Using model:", modelToUse);
+
+    // Enhance system prompt for models that don't support tool calling well
+    const isQwen = modelToUse?.includes('qwen');
+    if (isQwen) {
+      finalSystemPrompt += `
+
+CRITICAL SCORING RULES:
+- MUST call CELPIPWritingEvaluation function
+- BE STRICT: 12/12 = PERFECT (zero mistakes). ONE error = max 11/12
+- OFF-TOPIC = taskFulfillment 0-3/12, overall max 5/12
+- TOO SHORT = reduce all by 2-3 points
+- Average responses = 7-9/12, NOT 10-12
+- ALWAYS provide betterVersion (if off-topic, write NEW correct response)
+
+Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=Poor`;
+    }
+
+    // Call OpenRouter API with tool calling
+    const openRouterResponse = await withRetry(
       () =>
-        anthropic.messages.create({
-          model: "claude-3-7-sonnet-20250219",
-          max_tokens: 20000,
-          temperature: 1,
-          system: finalSystemPrompt,
-          tools: [
-            {
-              name: "CELPIPWritingEvaluation",
-              description:
-                "evaluating and providing feedback on a speaking sample and content analysis scores",
-              input_schema: {
-                type: "object",
-                properties: {
-                  overall: {
-                    type: "number",
-                    description: "Overall Score: (out of 12)",
-                  },
-                  contentAndCoherence: {
-                    type: "number",
-                    description: "Content & Coherence: (out of 12)",
-                  },
-                  vocabulary: {
-                    type: "number",
-                    description: "Vocabulary: (out of 12)",
-                  },
-                  readabilityAndGrammar: {
-                    type: "number",
-                    description: "Vocabulary: (out of 12)",
-                  },
-                  taskFulfillment: {
-                    type: "number",
-                    description:
-                      "Task Fulfillment: (out of 12). Strictly tied to TASK_TOPICS; off-topic => low score.",
-                  },
-                  feedback: {
-                    type: "string",
-                    description: task.antropicCommand?.systemPrompt ?? "",
-                  },
-                  grammarMistakes: {
-                    type: "array",
-                    description:
-                      "a list of grammar or vocabulary mistakes and the correct way for that mistake, build an array that consist all part of provided text, each part should consist original and improve part and if that part doesnt need improvement it should set null for improvement but original part should has value.",
-                  },
-                  betterVersion: {
-                    type: "string",
-                    description:
-                      "write a better version of this answer with all suggestion and improvement",
+        fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+            "HTTP-Referer": "https://celpippracticetest.com",
+            "X-Title": "CELPIP Practice Test",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: modelToUse,
+            max_tokens: 20000,
+            temperature: 1,
+            // Force specific providers that work well
+            provider: {
+              order: ["DeepInfra", "Together", "Fireworks"],
+              ignore: ["Hyperbolic"],
+            },
+            messages: [
+              {
+                role: "system",
+                content: finalSystemPrompt,
+              },
+              {
+                role: "user",
+                content: command,
+              },
+            ],
+            tools: [
+              {
+                type: "function",
+                function: {
+                  name: "CELPIPWritingEvaluation",
+                  description:
+                    "evaluating and providing feedback on a speaking sample and content analysis scores",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      overall: {
+                        type: "number",
+                        description: "Overall Score: (out of 12)",
+                      },
+                      contentAndCoherence: {
+                        type: "number",
+                        description: "Content & Coherence: (out of 12)",
+                      },
+                      vocabulary: {
+                        type: "number",
+                        description: "Vocabulary: (out of 12)",
+                      },
+                      readabilityAndGrammar: {
+                        type: "number",
+                        description: "Vocabulary: (out of 12)",
+                      },
+                      taskFulfillment: {
+                        type: "number",
+                        description:
+                          "Task Fulfillment: (out of 12). Strictly tied to TASK_TOPICS; off-topic => low score.",
+                      },
+                      feedback: {
+                        type: "string",
+                        description: task.antropicCommand?.systemPrompt ?? "",
+                      },
+                      grammarMistakes: {
+                        type: "array",
+                        description:
+                          "a list of grammar or vocabulary mistakes and the correct way for that mistake, build an array that consist all part of provided text, each part should consist original and improve part and if that part doesnt need improvement it should set null for improvement but original part should has value.",
+                        items: {
+                          type: "object",
+                          properties: {
+                            original: { type: "string" },
+                            improvement: { type: ["string", "null"] },
+                          },
+                        },
+                      },
+                      betterVersion: {
+                        type: "string",
+                        description:
+                          "write a better version of this answer with all suggestion and improvement",
+                      },
+                    },
+                    required: [
+                      "overall",
+                      "contentAndCoherence",
+                      "vocabulary",
+                      "readabilityAndGrammar",
+                      "taskFulfillment",
+                      "feedback",
+                      "grammarMistakes",
+                      "betterVersion",
+                    ],
                   },
                 },
-                required: [
-                  "overall",
-                  "contentAndCoherence",
-                  "vocabulary",
-                  "readabilityAndGrammar",
-                  "taskFulfillment",
-                  "feedback",
-                  "grammarMistakes",
-                ],
               },
-            },
-          ],
-          messages: [
-            {
-              role: "user",
-              content: [{ type: "text", text: command }],
-            },
-          ],
-        }) as Promise<AnthropicResponse>,
+            ],
+            tool_choice: { type: "function", function: { name: "CELPIPWritingEvaluation" } },
+          }),
+        }).then(async (res) => {
+          if (!res.ok) {
+            const errorData = await res.json();
+            console.error("OpenRouter API error:", errorData);
+            throw new Error(`OpenRouter API failed: ${res.status}`);
+          }
+          return res.json();
+        }),
       {
         retries: 3,
         shouldRetry: (e) => /429|5\d\d|ETIMEDOUT|ECONNRESET/i.test(e.message),
       }
     );
 
+    // Extract tool call result
+    const toolCall = openRouterResponse.choices?.[0]?.message?.tool_calls?.[0];
+    
+    if (!toolCall) {
+      console.error("No tool call! Full response:", JSON.stringify(openRouterResponse, null, 2));
+      
+      // Fallback: Try to parse structured content from message
+      const messageContent = openRouterResponse.choices?.[0]?.message?.content || "";
+      let parsedResult: any = null;
+      
+      // Strategy 1: Try direct JSON parse
+      try {
+        parsedResult = JSON.parse(messageContent);
+      } catch {
+        // Strategy 2: Try to find JSON in markdown code blocks
+        const jsonMatch = messageContent.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+        if (jsonMatch) {
+          try {
+            parsedResult = JSON.parse(jsonMatch[1]);
+          } catch (e) {
+            console.error("Failed to parse JSON from code block", e);
+          }
+        }
+      }
+      
+      if (!parsedResult || typeof parsedResult !== 'object') {
+        console.error("All parsing strategies failed!");
+        throw new Error(
+          `This model does not support tool calling properly. Please use a different model (e.g., Claude). Provider: ${openRouterResponse.provider}, Model: ${openRouterResponse.model}`
+        );
+      }
+      
+      // Validate that all required fields exist - NO DEFAULTS!
+      const requiredFields = [
+        'overall', 'contentAndCoherence', 'vocabulary', 
+        'readabilityAndGrammar', 'taskFulfillment', 'feedback', 
+        'grammarMistakes', 'betterVersion'
+      ];
+      
+      const missingFields = requiredFields.filter(field => 
+        parsedResult[field] === undefined || parsedResult[field] === null
+      );
+      
+      if (missingFields.length > 0) {
+        console.error("Missing required fields:", missingFields);
+        throw new Error(
+          `Model returned incomplete data. Missing fields: ${missingFields.join(', ')}. Please use Claude instead of ${openRouterResponse.model}`
+        );
+      }
+      
+      // Validate betterVersion is not empty
+      if (!parsedResult.betterVersion || parsedResult.betterVersion.trim().length < 50) {
+        console.error("betterVersion is empty or too short");
+        throw new Error(
+          `Model did not provide proper betterVersion (must be at least 50 characters). Please use Claude instead of ${openRouterResponse.model}`
+        );
+      }
+      
+      console.log("Successfully extracted complete data from content");
+      
+      const answerRepo = new WritingAnswerRepository(mongoClient);
+      const answer = await answerRepo.createOrUpdateAnswer({
+        audioUrl: location,
+        userId: user.id,
+        practiceId,
+        overalScore: parsedResult.overall,
+        type: "SPEAKING",
+        result: parsedResult,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      return NextResponse.json({
+        ...answer,
+        usage: {
+          prompt_tokens: openRouterResponse.usage?.prompt_tokens || 0,
+          completion_tokens: openRouterResponse.usage?.completion_tokens || 0,
+        },
+      });
+    }
+    
+    const msg: AnthropicResponse = {
+      content: [
+        {
+          type: "text",
+          text: openRouterResponse.choices?.[0]?.message?.content || "",
+        },
+        {
+          type: "tool_use",
+          name: "CELPIPWritingEvaluation",
+          input: toolCall?.function?.arguments
+            ? JSON.parse(toolCall.function.arguments)
+            : {},
+        },
+      ] as AnthropicContentBlock[],
+      usage: {
+        input_tokens: openRouterResponse.usage?.prompt_tokens || 0,
+        output_tokens: openRouterResponse.usage?.completion_tokens || 0,
+      },
+    };
+
     const evaluation = extractEvaluation(msg.content);
+    
+    if (!evaluation) {
+      throw new Error("Failed to extract evaluation from tool call response");
+    }
+    
+    // Validate betterVersion is not empty
+    if (!evaluation.betterVersion || evaluation.betterVersion.trim().length < 50) {
+      console.error("betterVersion is missing or too short");
+      throw new Error(
+        `Model did not provide proper betterVersion (must be at least 50 characters). Please use Claude instead of ${openRouterResponse.model}`
+      );
+    }
+    
     const stored = toStoredEvaluation(evaluation);
 
     const answerRepo = new WritingAnswerRepository(mongoClient);
