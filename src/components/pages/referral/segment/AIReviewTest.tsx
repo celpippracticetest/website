@@ -1,6 +1,6 @@
 import React from "react";
 import Image from "next/image";
-import { Microphone } from "@/components/icons";
+import Microphone from "@/components/icons/Microphone";
 
 const AIReview = () => {
   return (
