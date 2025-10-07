@@ -157,10 +157,11 @@ CRITICAL INSTRUCTIONS FOR SCORING:
 4. Even ONE vocabulary mistake = maximum 11/12 for vocabulary
 5. Even ONE grammar mistake = maximum 11/12 for readability
 6. Weak structure or missing transitions = reduce contentAndCoherence to 8-10
-7. Missing details or off-topic = reduce taskFulfillment to 6-9
-8. Average responses should get 7-9 out of 12, NOT 10-12
-9. If you give 12/12 in ANY category, you MUST explicitly state "This is PERFECT with zero issues"
-10. Default mindset: Look for problems, not perfection. Be a harsh critic.
+7. OFF-TOPIC OR IRRELEVANT = taskFulfillment 0-3/12, overall maximum 5/12
+8. MISSING WORD COUNT (less than 150 words) = reduce all scores by 2-3 points
+9. Average responses should get 7-9 out of 12, NOT 10-12
+10. If you give 12/12 in ANY category, you MUST explicitly state "This is PERFECT with zero issues"
+11. Default mindset: Look for problems, not perfection. Be a harsh critic.
 
 SCORING GUIDELINES:
 - 12/12 = Perfect, zero mistakes (VERY RARE)
