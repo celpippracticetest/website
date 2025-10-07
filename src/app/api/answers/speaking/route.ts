@@ -524,10 +524,11 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
         );
       }
       
-      // Validate that all required fields exist - NO DEFAULTS FOR SCORES!
+      // Validate that all required fields exist - NO DEFAULTS!
       const requiredFields = [
         'overall', 'contentAndCoherence', 'vocabulary', 
-        'readabilityAndGrammar', 'taskFulfillment', 'feedback', 'grammarMistakes'
+        'readabilityAndGrammar', 'taskFulfillment', 'feedback', 
+        'grammarMistakes', 'betterVersion'
       ];
       
       const missingFields = requiredFields.filter(field => 
@@ -541,9 +542,12 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
         );
       }
       
-      // betterVersion is optional but Zod requires it - provide empty string if missing
-      if (!parsedResult.betterVersion) {
-        parsedResult.betterVersion = "";
+      // Validate betterVersion is not empty
+      if (!parsedResult.betterVersion || parsedResult.betterVersion.trim().length < 50) {
+        console.error("betterVersion is empty or too short");
+        throw new Error(
+          `Model did not provide proper betterVersion (must be at least 50 characters). Please use Claude instead of ${openRouterResponse.model}`
+        );
       }
       
       console.log("Successfully extracted complete data from content");
@@ -595,9 +599,12 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
       throw new Error("Failed to extract evaluation from tool call response");
     }
     
-    // Ensure betterVersion exists
-    if (!evaluation.betterVersion) {
-      evaluation.betterVersion = "";
+    // Validate betterVersion is not empty
+    if (!evaluation.betterVersion || evaluation.betterVersion.trim().length < 50) {
+      console.error("betterVersion is missing or too short");
+      throw new Error(
+        `Model did not provide proper betterVersion (must be at least 50 characters). Please use Claude instead of ${openRouterResponse.model}`
+      );
     }
     
     const stored = toStoredEvaluation(evaluation);
