@@ -397,7 +397,7 @@ Remember: Your job is to HELP users IMPROVE, not to make them feel good with fak
         );
       }
       
-      // Validate that all required fields exist - NO DEFAULTS!
+      // Validate that all required fields exist - NO DEFAULTS FOR SCORES!
       const requiredFields = [
         'overall', 'contentAndCoherence', 'vocabulary', 
         'readabilityAndGrammar', 'taskFulfillment', 'feedback', 'grammarMistakes'
@@ -412,6 +412,11 @@ Remember: Your job is to HELP users IMPROVE, not to make them feel good with fak
         throw new Error(
           `Model returned incomplete data. Missing fields: ${missingFields.join(', ')}. Please use Claude instead of ${openRouterResponse.model}`
         );
+      }
+      
+      // betterVersion is optional but Zod requires it - provide empty string if missing
+      if (!parsedResult.betterVersion) {
+        parsedResult.betterVersion = "";
       }
       
       console.log("Successfully extracted complete data from content");
