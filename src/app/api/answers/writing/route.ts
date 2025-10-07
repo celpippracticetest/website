@@ -75,6 +75,14 @@ export const POST = async function (req: NextRequest) {
     
     console.log("Using model:", modelToUse);
 
+    // Enhance system prompt for models that don't support tool calling well
+    const isQwen = modelToUse?.includes('qwen');
+    let enhancedSystemPrompt = task.antropicCommand?.systemPrompt ?? "";
+    
+    if (isQwen) {
+      enhancedSystemPrompt += `\n\nCRITICAL: You MUST call the CELPIPWritingEvaluation function with your response. Do NOT return plain text feedback. Your response must be a structured function call with all required fields: overall, contentAndCoherence, vocabulary, readabilityAndGrammar, taskFulfillment, feedback, grammarMistakes, and betterVersion.`;
+    }
+
     // Call OpenRouter API with tool calling
     const openRouterResponse = await fetch(
       "https://openrouter.ai/api/v1/chat/completions",
@@ -93,7 +101,7 @@ export const POST = async function (req: NextRequest) {
           messages: [
             {
               role: "system",
-              content: task.antropicCommand?.systemPrompt ?? "",
+              content: enhancedSystemPrompt,
             },
             {
               role: "user",
@@ -206,12 +214,13 @@ export const POST = async function (req: NextRequest) {
       const messageContent = data.choices?.[0]?.message?.content || "";
       
       // Try to extract JSON-like structure from content
-      let parsedResult = null;
+      let parsedResult: any = null;
+      
+      // Strategy 1: Try direct JSON parse
       try {
-        // Try direct JSON parse
         parsedResult = JSON.parse(messageContent);
       } catch {
-        // Try to find JSON in markdown code blocks
+        // Strategy 2: Try to find JSON in markdown code blocks
         const jsonMatch = messageContent.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
         if (jsonMatch) {
           try {
@@ -223,15 +232,31 @@ export const POST = async function (req: NextRequest) {
       }
       
       if (!parsedResult || typeof parsedResult !== 'object') {
+        console.error("All parsing strategies failed!");
         throw new Error(
-          `Model did not return tool call and fallback parsing failed. Env: ${
-            process.env.VERCEL_ENV || "local"
-          }, Provider: ${data.provider}, Model: ${data.model}`
+          `This model does not support tool calling properly. Please use a different model (e.g., Claude). Provider: ${data.provider}, Model: ${data.model}`
+        );
+      }
+      
+      // Validate that all required fields exist - NO DEFAULTS!
+      const requiredFields = [
+        'overall', 'contentAndCoherence', 'vocabulary', 
+        'readabilityAndGrammar', 'taskFulfillment', 'feedback', 'grammarMistakes'
+      ];
+      
+      const missingFields = requiredFields.filter(field => 
+        parsedResult[field] === undefined || parsedResult[field] === null
+      );
+      
+      if (missingFields.length > 0) {
+        console.error("Missing required fields:", missingFields);
+        throw new Error(
+          `Model returned incomplete data. Missing fields: ${missingFields.join(', ')}. Please use Claude instead of ${data.model}`
         );
       }
       
       // Use parsed result as tool call
-      console.log("Successfully extracted data from content fallback");
+      console.log("Successfully extracted complete data from content");
       const msg: any = {
         content: [
           { type: "text", text: messageContent },
@@ -250,7 +275,7 @@ export const POST = async function (req: NextRequest) {
         text: answerBody.text,
         userId: user?.id,
         practiceId: answerBody.practiceId,
-        overalScore: parsedResult.overall || 0,
+        overalScore: parsedResult.overall,
         type: "WRITING",
         result: parsedResult,
         createdAt: new Date(),
