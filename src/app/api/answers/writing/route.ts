@@ -189,6 +189,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
                     "taskFulfillment",
                     "feedback",
                     "grammarMistakes",
+                    "betterVersion",
                   ],
                 },
               },
