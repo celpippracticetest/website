@@ -250,6 +250,7 @@ CRITICAL INSTRUCTIONS FOR SCORING:
 9. Average responses should get 7-9 out of 12, NOT 10-12
 10. If you give 12/12 in ANY category, you MUST explicitly state "This is PERFECT with zero issues"
 11. Default mindset: Look for problems, not perfection. Be a harsh critic.
+12. ALWAYS provide betterVersion: If off-topic, write a NEW correct response addressing the task.
 
 SCORING GUIDELINES:
 - 12/12 = Perfect, zero mistakes (VERY RARE)
@@ -478,6 +479,12 @@ Remember: Your job is to HELP users IMPROVE, not to make them feel good with fak
         output_tokens: openRouterResponse.usage?.completion_tokens || 0,
       },
     };
+
+    // Ensure betterVersion exists in tool call result
+    const toolInput = msg.content[1]?.input;
+    if (toolInput && !toolInput.betterVersion) {
+      toolInput.betterVersion = "";
+    }
 
     const answerRepo = new WritingAnswerRepository(mongoClient);
 

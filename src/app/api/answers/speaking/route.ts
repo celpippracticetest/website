@@ -381,6 +381,7 @@ CRITICAL INSTRUCTIONS FOR SCORING:
 9. Average responses should get 7-9 out of 12, NOT 10-12
 10. If you give 12/12 in ANY category, you MUST explicitly state "This is PERFECT with zero issues"
 11. Default mindset: Look for problems, not perfection. Be a harsh critic.
+12. ALWAYS provide betterVersion: If off-topic, write a NEW correct response addressing the task.
 
 SCORING GUIDELINES:
 - 12/12 = Perfect, zero mistakes (VERY RARE)
@@ -601,6 +602,11 @@ Remember: Your job is to HELP users IMPROVE, not to make them feel good with fak
     
     if (!evaluation) {
       throw new Error("Failed to extract evaluation from tool call response");
+    }
+    
+    // Ensure betterVersion exists
+    if (!evaluation.betterVersion) {
+      evaluation.betterVersion = "";
     }
     
     const stored = toStoredEvaluation(evaluation);

@@ -94,6 +94,7 @@ CRITICAL INSTRUCTIONS FOR SCORING:
 9. Average responses should get 7-9 out of 12, NOT 10-12
 10. If you give 12/12 in ANY category, you MUST explicitly state "This is PERFECT with zero issues"
 11. Default mindset: Look for problems, not perfection. Be a harsh critic.
+12. ALWAYS provide betterVersion: If off-topic, write a NEW correct response addressing the prompt.
 
 SCORING GUIDELINES:
 - 12/12 = Perfect, zero mistakes (VERY RARE)
@@ -159,7 +160,7 @@ Remember: Your job is to HELP users IMPROVE, not to make them feel good with fak
                     betterVersion: {
                       type: "string",
                       description:
-                        "Rewrite the entire user's email as a polished, formal business email. Highlight the most professional vocabulary choices using bold (e.g., grave concerns, numerous critical errors, translation inadequacies). Maintain the original paragraph structure (opening, body, conclusion, sign-off).",
+                        "ALWAYS provide a better version. If response is ON-TOPIC: Rewrite improving grammar, vocabulary, and structure. If response is OFF-TOPIC or IRRELEVANT: Write a complete NEW response that correctly addresses the prompt requirements (150-200 words, formal tone, all requirements covered). Never leave this field empty.",
                     },
                     grammarMistakes: {
                       type: "array",
@@ -333,6 +334,12 @@ Remember: Your job is to HELP users IMPROVE, not to make them feel good with fak
         output_tokens: data.usage?.completion_tokens || 0,
       },
     };
+
+    // Ensure betterVersion exists in tool call result
+    const toolInput = msg.content[1]?.input;
+    if (toolInput && !toolInput.betterVersion) {
+      toolInput.betterVersion = "";
+    }
 
     const answer = await answerRepo.createAnswer({
       text: answerBody.text,
