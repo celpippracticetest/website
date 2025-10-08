@@ -57,7 +57,7 @@ const Footer = () => {
             </div>
           </div>
 
-          <div className="mt-[20px] screen744:!mt-[85px] h-[126px] max-w-[236px] w-full self-center screen744:!self-start">
+          <div className="mt-[30px] screen744:!mt-[85px] h-[126px] max-w-[236px] w-full self-center screen744:!self-start">
             <h2 className="text-text1 font-semibold h-[19px] text-[16px]">
               Links
             </h2>
