@@ -33,12 +33,17 @@ export async function POST(req: Request) {
     const user = await clerkClient.users.getUser(userId);
     const userMetadata = user.publicMetadata as any;
 
+    // Check if user already has a referral discount or has used one
     if (
       userMetadata?.referralDiscountUsed ||
-      userMetadata?.referralActive === false
+      userMetadata?.referralActive === false ||
+      userMetadata?.referralPromotionId ||
+      userMetadata?.referralCode
     ) {
       return NextResponse.json(
-        { error: "User has already used a referral discount" },
+        {
+          error: "User has already used a referral discount or already has one",
+        },
         { status: 400 }
       );
     }
@@ -50,6 +55,14 @@ export async function POST(req: Request) {
     if (!referrer) {
       return NextResponse.json(
         { error: "Invalid referral code" },
+        { status: 400 }
+      );
+    }
+
+    // Prevent self-referral - user cannot use their own referral code
+    if (userId === referrer.userId) {
+      return NextResponse.json(
+        { error: "You cannot use your own referral code" },
         { status: 400 }
       );
     }
@@ -76,7 +89,7 @@ export async function POST(req: Request) {
       // because referral eligibility may be managed elsewhere (webhooks, limits, etc.)
     }
 
-    // Create a 10% discount coupon for the new user
+    // Create a 20% discount coupon for the new user
     const suffix = Math.random().toString(36).substring(2, 6).toUpperCase();
     const visibleCode = `REF-${suffix}`;
 
@@ -117,6 +130,8 @@ export async function POST(req: Request) {
         referralDiscountExpiry: new Date(
           Date.now() + 24 * 60 * 60 * 1000
         ).toISOString(),
+        referralActive: true, // Mark referral as active
+        referralDiscountActive: true, // Mark discount as active
       },
     });
 

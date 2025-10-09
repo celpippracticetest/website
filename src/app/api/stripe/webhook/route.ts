@@ -224,23 +224,41 @@ async function handleReferralRewards(
       );
 
       try {
+        // Determine if this was a referral discount or NEW discount
+        const isReferralDiscount = freshMeta?.referralPromotionId;
+        const isNewDiscount =
+          freshMeta?.promotionCodeId && !freshMeta?.referralPromotionId;
+
+        const updateData: any = {
+          ...freshMeta,
+          // Clear all discount identifiers to avoid accidental future matches
+          referralCode: null,
+          referralPromotionId: null,
+          promotionCodeId: null,
+          couponId: null,
+          couponCode: null,
+        };
+
+        if (isReferralDiscount) {
+          // This was a referral discount
+          updateData.referralDiscountUsed = true;
+          updateData.referralDiscountUsedAt = new Date().toISOString();
+          updateData.referralDiscountActive = false;
+          updateData.referralActive = false;
+          updateData.referralCodeUsed = true;
+          console.log(
+            `✅ Set referralActive=false and marked referral used for invitee: ${userIdToUse}`
+          );
+        } else if (isNewDiscount) {
+          // This was a NEW discount
+          updateData.newDiscountUsed = true;
+          updateData.newDiscountUsedAt = new Date().toISOString();
+          console.log(`✅ Marked NEW discount used for user: ${userIdToUse}`);
+        }
+
         await clerkClient.users.updateUserMetadata(userIdToUse as string, {
-          publicMetadata: {
-            ...freshMeta,
-            referralDiscountUsed: true,
-            referralDiscountUsedAt: new Date().toISOString(),
-            referralDiscountActive: false,
-            referralActive: false,
-            referralCodeUsed: true,
-            // Clear referral identifiers to avoid accidental future matches
-            referralCode: null,
-            referralPromotionId: null,
-            promotionCodeId: null,
-          },
+          publicMetadata: updateData,
         });
-        console.log(
-          `✅ Set referralActive=false and marked referral used for invitee: ${userIdToUse}`
-        );
       } catch (error) {
         console.log(
           `⚠️ Could not update invitee ${userIdToUse} metadata; continuing`

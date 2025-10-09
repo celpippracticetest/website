@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if user has referral discount (support both new and legacy metadata keys)
+    // Check if user has referral discount (prioritize referral over NEW discount)
     const userMetadata = user.publicMetadata as any;
     let promotionCode: string | null = null;
     let referralDiscountApplied = false;
@@ -33,14 +33,15 @@ export async function POST(req: NextRequest) {
     console.log("🔍 Checking referral discount for user:", user.id);
     console.log("🔍 User metadata:", JSON.stringify(userMetadata, null, 2));
 
-    // New key: referralPromotionId; Legacy key: promotionCodeId
-    const promotionCodeId =
-      userMetadata?.referralPromotionId ||
-      userMetadata?.promotionCodeId ||
-      null;
+    // First check for referral discount (referralPromotionId)
+    const referralPromotionId = userMetadata?.referralPromotionId;
+    const newUserPromotionId = userMetadata?.promotionCodeId;
 
+    // Prioritize referral discount over NEW discount
+    // Only apply referral discount if user actually signed up with a referral code
     if (
-      promotionCodeId &&
+      referralPromotionId &&
+      userMetadata?.referralCode && // User must have a referral code
       userMetadata?.referralActive === true &&
       userMetadata?.referralDiscountActive !== false &&
       !userMetadata?.referralDiscountUsed
@@ -53,10 +54,10 @@ export async function POST(req: NextRequest) {
         }
       }
       if (!isExpired) {
-        promotionCode = promotionCodeId;
+        promotionCode = referralPromotionId;
         referralDiscountApplied = true;
         console.log(
-          `✅ Applying referral promotion_code id: ${promotionCodeId}`
+          `✅ Applying referral promotion_code id: ${referralPromotionId} for user with referral code: ${userMetadata.referralCode}`
         );
       } else {
         console.log("❌ Referral discount has expired");
@@ -67,8 +68,20 @@ export async function POST(req: NextRequest) {
       console.log("❌ Referral discount is not active for this user");
     } else if (userMetadata?.referralActive === false) {
       console.log("❌ Referral code is not active (already used)");
+    } else if (!userMetadata?.referralCode) {
+      console.log(
+        "❌ User does not have a referral code - not eligible for referral discount"
+      );
     } else {
       console.log("❌ No usable referral promotion code found in metadata");
+    }
+
+    // Only apply NEW discount if no referral discount is available
+    if (!promotionCode && newUserPromotionId) {
+      promotionCode = newUserPromotionId;
+      console.log(
+        `✅ Applying NEW user promotion_code id: ${newUserPromotionId}`
+      );
     }
 
     // Create Checkout Sessions from body params.
