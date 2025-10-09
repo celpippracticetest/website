@@ -79,6 +79,7 @@ export async function POST(req: Request) {
         referralCode: referralCode,
         referralApplied: true,
         referralAppliedAt: new Date().toISOString(),
+        referralActive: true, // Mark referral as active
       },
     });
 
