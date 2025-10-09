@@ -343,9 +343,9 @@ export async function POST(req: Request) {
         // Get user metadata to check for any existing discounts
         const user = await clerkClient.users.getUser(metadata.user_id);
         const userMetadata = user.publicMetadata as any;
-        
+
         // Check if user has any discount fields that need to be cleared
-        const hasDiscountFields = 
+        const hasDiscountFields =
           userMetadata?.referralCode ||
           userMetadata?.referralPromotionId ||
           userMetadata?.promotionCodeId ||
@@ -376,7 +376,7 @@ export async function POST(req: Request) {
             purchaseDate: new Date().toISOString(),
           });
         }
-        
+
         console.log(
           `Cleared planCancelled for user ${metadata.user_id} on new purchase.`
         );

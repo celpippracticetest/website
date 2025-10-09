@@ -20,7 +20,7 @@ export async function POST(req: Request) {
 
     // Check if user already has a referral discount, has used any discount, or has ever purchased
     if (
-      userMetadata?.referralPromotionId || 
+      userMetadata?.referralPromotionId ||
       userMetadata?.referralCode ||
       userMetadata?.referralDiscountUsed ||
       userMetadata?.couponId ||
@@ -29,7 +29,10 @@ export async function POST(req: Request) {
       userMetadata?.hasEverPurchased
     ) {
       return NextResponse.json(
-        { error: "User already has a discount, has used one, or has made a purchase" },
+        {
+          error:
+            "User already has a discount, has used one, or has made a purchase",
+        },
         { status: 400 }
       );
     }

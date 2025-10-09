@@ -43,7 +43,8 @@ export async function POST(req: Request) {
     ) {
       return NextResponse.json(
         {
-          error: "User has already used a referral discount, already has one, or has made a purchase",
+          error:
+            "User has already used a referral discount, already has one, or has made a purchase",
         },
         { status: 400 }
       );
