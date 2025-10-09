@@ -88,15 +88,31 @@ export default function SignUpPage() {
   };
 
   useEffect(() => {
+    console.log(
+      "🔍 useEffect triggered - isSignedIn:",
+      isSignedIn,
+      "user:",
+      !!user
+    );
+
     if (isSignedIn && user) {
       const pendingReferralCode = localStorage.getItem("pendingReferralCode");
+      console.log(
+        "🔍 Pending referral code from localStorage:",
+        pendingReferralCode
+      );
+
       if (pendingReferralCode) {
-        console.log("Referral code found:", pendingReferralCode);
+        console.log("✅ Referral code found:", pendingReferralCode);
         applyReferralDiscount(pendingReferralCode);
         localStorage.removeItem("pendingReferralCode");
         localStorage.removeItem("pendingInviterName");
+      } else {
+        console.log("❌ No pending referral code found in localStorage");
       }
       router.push("/practice-overview");
+    } else {
+      console.log("❌ User not signed in or user not available");
     }
   }, [isSignedIn, user, router]);
 
