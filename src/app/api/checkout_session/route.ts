@@ -44,8 +44,7 @@ export async function POST(req: NextRequest) {
       userMetadata?.referralCode && // User must have a referral code
       userMetadata?.referralActive === true &&
       userMetadata?.referralDiscountActive !== false &&
-      !userMetadata?.referralDiscountUsed &&
-      !userMetadata?.hasEverPurchased // User must not have made any purchase before
+      !userMetadata?.referralDiscountUsed
     ) {
       let isExpired = false;
       if (userMetadata?.referralDiscountExpiry) {
