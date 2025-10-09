@@ -37,8 +37,7 @@ export async function POST(req: Request) {
     if (
       userMetadata?.referralDiscountUsed ||
       userMetadata?.referralActive === false ||
-      userMetadata?.referralPromotionId ||
-      userMetadata?.referralCode
+      userMetadata?.referralPromotionId
     ) {
       return NextResponse.json(
         {
