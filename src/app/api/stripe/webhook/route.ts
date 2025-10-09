@@ -340,9 +340,43 @@ export async function POST(req: Request) {
       console.log("🔍 Metadata:", JSON.stringify(metadata, null, 2));
 
       if (metadata?.user_id) {
-        await updateUserPublicMetadata(metadata.user_id, {
-          planCancelled: false,
-        });
+        // Get user metadata to check for any existing discounts
+        const user = await clerkClient.users.getUser(metadata.user_id);
+        const userMetadata = user.publicMetadata as any;
+        
+        // Check if user has any discount fields that need to be cleared
+        const hasDiscountFields = 
+          userMetadata?.referralCode ||
+          userMetadata?.referralPromotionId ||
+          userMetadata?.promotionCodeId ||
+          userMetadata?.couponId ||
+          userMetadata?.couponCode;
+
+        if (hasDiscountFields) {
+          // Clear all discount fields after any successful purchase
+          await updateUserPublicMetadata(metadata.user_id, {
+            planCancelled: false,
+            // Clear all discount identifiers to prevent future discounts
+            referralCode: null,
+            referralPromotionId: null,
+            promotionCodeId: null,
+            couponId: null,
+            couponCode: null,
+            // Mark that user has made a purchase (no more discounts)
+            hasEverPurchased: true,
+            purchaseDate: new Date().toISOString(),
+          });
+          console.log(
+            `✅ Cleared all discount fields for user ${metadata.user_id} after purchase`
+          );
+        } else {
+          await updateUserPublicMetadata(metadata.user_id, {
+            planCancelled: false,
+            hasEverPurchased: true,
+            purchaseDate: new Date().toISOString(),
+          });
+        }
+        
         console.log(
           `Cleared planCancelled for user ${metadata.user_id} on new purchase.`
         );

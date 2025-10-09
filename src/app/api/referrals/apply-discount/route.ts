@@ -33,16 +33,17 @@ export async function POST(req: Request) {
     const user = await clerkClient.users.getUser(userId);
     const userMetadata = user.publicMetadata as any;
 
-    // Check if user already has a referral discount or has used one
+    // Check if user already has a referral discount, has used one, or has ever purchased
     if (
       userMetadata?.referralDiscountUsed ||
       userMetadata?.referralActive === false ||
       userMetadata?.referralPromotionId ||
-      userMetadata?.referralCode
+      userMetadata?.referralCode ||
+      userMetadata?.hasEverPurchased
     ) {
       return NextResponse.json(
         {
-          error: "User has already used a referral discount or already has one",
+          error: "User has already used a referral discount, already has one, or has made a purchase",
         },
         { status: 400 }
       );
