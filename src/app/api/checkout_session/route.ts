@@ -30,20 +30,31 @@ export async function POST(req: NextRequest) {
     let promotionCode: string | null = null;
     let referralDiscountApplied = false;
 
-    console.log("🔍 Checking referral discount for user:", user.id);
-    console.log("🔍 User metadata:", JSON.stringify(userMetadata, null, 2));
-
     // First check for referral discount (referralPromotionId)
     const referralPromotionId = userMetadata?.referralPromotionId;
     const newUserPromotionId = userMetadata?.promotionCodeId;
+
+    console.log("🔍 Checking referral discount for user:", user.id);
+    console.log("🔍 User metadata:", JSON.stringify(userMetadata, null, 2));
+    console.log("🔍 Referral promotion ID:", referralPromotionId);
+    console.log("🔍 User referral code:", userMetadata?.referralCode);
+    console.log("🔍 Referral active:", userMetadata?.referralActive);
+    console.log(
+      "🔍 Referral discount active:",
+      userMetadata?.referralDiscountActive
+    );
+    console.log(
+      "🔍 Referral discount used:",
+      userMetadata?.referralDiscountUsed
+    );
 
     // Prioritize referral discount over NEW discount
     // Only apply referral discount if user actually signed up with a referral code
     if (
       referralPromotionId &&
       userMetadata?.referralCode && // User must have a referral code
-      userMetadata?.referralActive === true &&
-      userMetadata?.referralDiscountActive !== false &&
+      userMetadata?.referralActive !== false && // Allow undefined or true
+      userMetadata?.referralDiscountActive !== false && // Allow undefined or true
       !userMetadata?.referralDiscountUsed
     ) {
       let isExpired = false;
