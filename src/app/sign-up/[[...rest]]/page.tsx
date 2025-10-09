@@ -40,23 +40,39 @@ export default function SignUpPage() {
 
   const applyReferralDiscount = async (referralCode: string) => {
     try {
-      const response = await fetch("/api/referrals/apply-discount", {
+      // First establish referral relationship
+      const processResponse = await fetch("/api/referrals/process-signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           referralCode,
-          userId: user?.id,
-          userEmail: user?.primaryEmailAddress?.emailAddress,
         }),
       });
 
-      if (response.ok) {
-        console.log("Referral discount applied successfully");
+      if (processResponse.ok) {
+        console.log("Referral relationship established successfully");
+
+        // Then apply discount
+        const discountResponse = await fetch("/api/referrals/apply-discount", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            referralCode,
+            userId: user?.id,
+            userEmail: user?.primaryEmailAddress?.emailAddress,
+          }),
+        });
+
+        if (discountResponse.ok) {
+          console.log("Referral discount applied successfully");
+        } else {
+          console.error("Failed to apply referral discount");
+        }
       } else {
-        console.error("Failed to apply referral discount");
+        console.error("Failed to establish referral relationship");
       }
     } catch (error) {
-      console.error("Failed to apply referral discount:", error);
+      console.error("Failed to process referral:", error);
     }
   };
 

@@ -135,6 +135,14 @@ export async function POST(req: Request) {
       },
     });
 
+    console.log(`✅ Referral discount created for user ${userId}:`);
+    console.log(`   - Referral Code: ${referralCode}`);
+    console.log(`   - Promotion ID: ${promotionCode.id}`);
+    console.log(`   - Coupon ID: ${coupon.id}`);
+    console.log(`   - Discount Code: ${visibleCode}`);
+    console.log(`   - Referral Active: true`);
+    console.log(`   - Referral Discount Active: true`);
+
     // Send email to referrer about successful referral
     await sendReferralSuccessEmail({
       referrerEmail,
