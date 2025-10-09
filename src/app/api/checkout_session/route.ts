@@ -83,6 +83,53 @@ export async function POST(req: NextRequest) {
       console.log(
         "❌ User does not have a referral code - not eligible for referral discount"
       );
+    } else if (userMetadata?.referralCode && !referralPromotionId) {
+      // User has referral code but no promotion ID - try to apply discount
+      console.log(
+        "🔄 User has referral code but no promotion ID - attempting to apply discount"
+      );
+
+      try {
+        const applyDiscountResponse = await fetch(
+          `${origin}/api/referrals/apply-discount`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              referralCode: userMetadata.referralCode,
+              userId: user.id,
+              userEmail: email,
+            }),
+          }
+        );
+
+        if (applyDiscountResponse.ok) {
+          console.log("✅ Successfully applied referral discount");
+          // Refresh user metadata to get the new promotion ID
+          const updatedUser = await clerkClient.users.getUser(user.id);
+          const updatedMetadata = updatedUser.publicMetadata as any;
+          const newReferralPromotionId = updatedMetadata?.referralPromotionId;
+
+          if (newReferralPromotionId) {
+            promotionCode = newReferralPromotionId;
+            referralDiscountApplied = true;
+            console.log(
+              `✅ Now applying referral promotion_code id: ${newReferralPromotionId}`
+            );
+          } else {
+            console.log(
+              "❌ Still no referral promotion ID after applying discount"
+            );
+          }
+        } else {
+          const errorData = await applyDiscountResponse.json();
+          console.error("❌ Failed to apply referral discount:", errorData);
+        }
+      } catch (error) {
+        console.error("❌ Error applying referral discount:", error);
+      }
     } else {
       console.log("❌ No usable referral promotion code found in metadata");
     }
