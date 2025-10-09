@@ -224,23 +224,41 @@ async function handleReferralRewards(
       );
 
       try {
+        // Determine if this was a referral discount or NEW discount
+        const isReferralDiscount = freshMeta?.referralPromotionId;
+        const isNewDiscount =
+          freshMeta?.promotionCodeId && !freshMeta?.referralPromotionId;
+
+        const updateData: any = {
+          ...freshMeta,
+          // Clear all discount identifiers to avoid accidental future matches
+          referralCode: null,
+          referralPromotionId: null,
+          promotionCodeId: null,
+          couponId: null,
+          couponCode: null,
+        };
+
+        if (isReferralDiscount) {
+          // This was a referral discount
+          updateData.referralDiscountUsed = true;
+          updateData.referralDiscountUsedAt = new Date().toISOString();
+          updateData.referralDiscountActive = false;
+          updateData.referralActive = false;
+          updateData.referralCodeUsed = true;
+          console.log(
+            `✅ Set referralActive=false and marked referral used for invitee: ${userIdToUse}`
+          );
+        } else if (isNewDiscount) {
+          // This was a NEW discount
+          updateData.newDiscountUsed = true;
+          updateData.newDiscountUsedAt = new Date().toISOString();
+          console.log(`✅ Marked NEW discount used for user: ${userIdToUse}`);
+        }
+
         await clerkClient.users.updateUserMetadata(userIdToUse as string, {
-          publicMetadata: {
-            ...freshMeta,
-            referralDiscountUsed: true,
-            referralDiscountUsedAt: new Date().toISOString(),
-            referralDiscountActive: false,
-            referralActive: false,
-            referralCodeUsed: true,
-            // Clear referral identifiers to avoid accidental future matches
-            referralCode: null,
-            referralPromotionId: null,
-            promotionCodeId: null,
-          },
+          publicMetadata: updateData,
         });
-        console.log(
-          `✅ Set referralActive=false and marked referral used for invitee: ${userIdToUse}`
-        );
       } catch (error) {
         console.log(
           `⚠️ Could not update invitee ${userIdToUse} metadata; continuing`
@@ -322,9 +340,43 @@ export async function POST(req: Request) {
       console.log("🔍 Metadata:", JSON.stringify(metadata, null, 2));
 
       if (metadata?.user_id) {
-        await updateUserPublicMetadata(metadata.user_id, {
-          planCancelled: false,
-        });
+        // Get user metadata to check for any existing discounts
+        const user = await clerkClient.users.getUser(metadata.user_id);
+        const userMetadata = user.publicMetadata as any;
+
+        // Check if user has any discount fields that need to be cleared
+        const hasDiscountFields =
+          userMetadata?.referralCode ||
+          userMetadata?.referralPromotionId ||
+          userMetadata?.promotionCodeId ||
+          userMetadata?.couponId ||
+          userMetadata?.couponCode;
+
+        if (hasDiscountFields) {
+          // Clear all discount fields after any successful purchase
+          await updateUserPublicMetadata(metadata.user_id, {
+            planCancelled: false,
+            // Clear all discount identifiers to prevent future discounts
+            referralCode: null,
+            referralPromotionId: null,
+            promotionCodeId: null,
+            couponId: null,
+            couponCode: null,
+            // Mark that user has made a purchase (no more discounts)
+            hasEverPurchased: true,
+            purchaseDate: new Date().toISOString(),
+          });
+          console.log(
+            `✅ Cleared all discount fields for user ${metadata.user_id} after purchase`
+          );
+        } else {
+          await updateUserPublicMetadata(metadata.user_id, {
+            planCancelled: false,
+            hasEverPurchased: true,
+            purchaseDate: new Date().toISOString(),
+          });
+        }
+
         console.log(
           `Cleared planCancelled for user ${metadata.user_id} on new purchase.`
         );
