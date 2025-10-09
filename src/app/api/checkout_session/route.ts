@@ -44,7 +44,8 @@ export async function POST(req: NextRequest) {
       userMetadata?.referralCode && // User must have a referral code
       userMetadata?.referralActive === true &&
       userMetadata?.referralDiscountActive !== false &&
-      !userMetadata?.referralDiscountUsed
+      !userMetadata?.referralDiscountUsed &&
+      !userMetadata?.hasEverPurchased // User must not have made any purchase before
     ) {
       let isExpired = false;
       if (userMetadata?.referralDiscountExpiry) {
@@ -76,11 +77,19 @@ export async function POST(req: NextRequest) {
       console.log("❌ No usable referral promotion code found in metadata");
     }
 
-    // Only apply NEW discount if no referral discount is available
-    if (!promotionCode && newUserPromotionId) {
+    // Only apply NEW discount if no referral discount is available and user hasn't purchased before
+    if (
+      !promotionCode &&
+      newUserPromotionId &&
+      !userMetadata?.hasEverPurchased
+    ) {
       promotionCode = newUserPromotionId;
       console.log(
         `✅ Applying NEW user promotion_code id: ${newUserPromotionId}`
+      );
+    } else if (userMetadata?.hasEverPurchased) {
+      console.log(
+        "❌ User has already made a purchase - no discount available"
       );
     }
 
