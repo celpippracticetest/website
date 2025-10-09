@@ -148,7 +148,7 @@ export default clerkMiddleware(async (auth, req) => {
 
       if (referralCode) {
         // Store referral code in user metadata for later processing
-        console.log("Referral code found:", referralCode);
+        console.log("🔍 Middleware - Referral code found:", referralCode);
         await client.users.updateUserMetadata(authenticate.userId, {
           publicMetadata: {
             ...authenticate.sessionClaims?.metadata,
@@ -157,6 +157,45 @@ export default clerkMiddleware(async (auth, req) => {
             referralActive: true,
           },
         });
+
+        // Process referral discount directly in middleware
+        console.log("🔍 Middleware - Processing referral discount...");
+
+        // Apply referral discount
+        try {
+          const discountResponse = await fetch(
+            `${req.nextUrl.origin}/api/referrals/apply-discount`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                referralCode,
+                userId: authenticate.userId,
+                userEmail: (authenticate.sessionClaims as any)
+                  ?.email_addresses?.[0]?.email_address,
+              }),
+            }
+          );
+
+          if (discountResponse.ok) {
+            console.log(
+              "✅ Middleware - Referral discount applied successfully"
+            );
+          } else {
+            const errorData = await discountResponse.json();
+            console.error(
+              "❌ Middleware - Failed to apply referral discount:",
+              errorData
+            );
+          }
+        } catch (error) {
+          console.error(
+            "❌ Middleware - Error applying referral discount:",
+            error
+          );
+        }
 
         // Track the signup for the referrer
         try {
