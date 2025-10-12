@@ -79,21 +79,33 @@ export async function POST(req: Request) {
         referralCode: referralCode,
         referralApplied: true,
         referralAppliedAt: new Date().toISOString(),
+        referralActive: true, // Mark referral as active
       },
     });
 
     const invitationRepo = new ReferralInvitationRepository(mongoClient);
     await invitationRepo.ensureIndexes();
 
-    const invitation = await invitationRepo.createInvitation({
-      inviterId: referrer.userId,
-      inviteeId: userId,
-      referralCode: referralCode,
-      status: "pending",
-      invitedAt: new Date(),
-    });
+    // Check if invitation already exists
+    const existingInvitation =
+      await invitationRepo.findInvitationByCodeAndInvitee(referralCode, userId);
 
-    console.log(`✅ Created referral invitation: ${invitation._id}`);
+    let invitation;
+    if (existingInvitation) {
+      console.log(
+        `✅ Referral invitation already exists: ${existingInvitation._id}`
+      );
+      invitation = existingInvitation;
+    } else {
+      invitation = await invitationRepo.createInvitation({
+        inviterId: referrer.userId,
+        inviteeId: userId,
+        referralCode: referralCode,
+        status: "pending",
+        invitedAt: new Date(),
+      });
+      console.log(`✅ Created referral invitation: ${invitation._id}`);
+    }
 
     // Update referrer's metadata
     const currentMetadata = referrerUser.publicMetadata || {};

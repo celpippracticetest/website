@@ -139,6 +139,28 @@ export const POST = async function (req: NextRequest) {
       );
     }
 
+    // Determine which model to use
+    const modelToUse = process.env.OPENROUTER_MODEL ;
+    console.log("Using model:", modelToUse);
+
+    // Enhance system prompt for models that don't support tool calling well
+    const isQwen = modelToUse?.includes('qwen');
+    let enhancedSystemPrompt = system;
+    
+    if (isQwen) {
+      enhancedSystemPrompt += `
+
+CRITICAL SCORING RULES:
+- MUST call CELPIPWritingEvaluation function
+- BE STRICT: 12/12 = PERFECT (zero mistakes). ONE error = max 11/12
+- OFF-TOPIC = taskFulfillment 0-3/12, overall max 5/12
+- TOO SHORT (under 150 words) = reduce all by 2-3 points
+- Average responses = 7-9/12, NOT 10-12
+- ALWAYS provide betterVersion (if off-topic, write NEW correct response)
+
+Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=Poor`;
+    }
+
     // Call OpenRouter API with tool calling
     const openRouterResponse = await fetch(
       "https://openrouter.ai/api/v1/chat/completions",
@@ -151,13 +173,18 @@ export const POST = async function (req: NextRequest) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "qwen/qwen-2.5-7b-instruct",
+          model: modelToUse,
           max_tokens: 20000,
           temperature: 1,
+          // Force specific providers that work well with Qwen
+          provider: {
+            order: ["DeepInfra", "Together", "Fireworks"],
+            ignore: ["Hyperbolic"],
+          },
           messages: [
             {
               role: "system",
-              content: system,
+              content: enhancedSystemPrompt,
             },
             {
               role: "user",
@@ -230,12 +257,13 @@ export const POST = async function (req: NextRequest) {
                     "taskFulfillment",
                     "feedback",
                     "grammarMistakes",
+                    "betterVersion",
                   ],
                 },
               },
             },
           ],
-          tool_choice: "auto",
+          tool_choice: { type: "function", function: { name: "CELPIPWritingEvaluation" } },
         }),
       }
     );
@@ -250,6 +278,95 @@ export const POST = async function (req: NextRequest) {
 
     // Extract tool call result
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    const answerRepo = new WritingAnswerRepository(mongoClient);
+    
+    if (!toolCall) {
+      console.error("No tool call! Full response:", JSON.stringify(data, null, 2));
+      
+      // Fallback: Try to parse structured content from message
+      const messageContent = data.choices?.[0]?.message?.content || "";
+      let parsedResult: any = null;
+      
+      // Strategy 1: Try direct JSON parse
+      try {
+        parsedResult = JSON.parse(messageContent);
+      } catch {
+        // Strategy 2: Try to find JSON in markdown code blocks
+        const jsonMatch = messageContent.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+        if (jsonMatch) {
+          try {
+            parsedResult = JSON.parse(jsonMatch[1]);
+          } catch (e) {
+            console.error("Failed to parse JSON from code block", e);
+          }
+        }
+      }
+      
+      if (!parsedResult || typeof parsedResult !== 'object') {
+        console.error("All parsing strategies failed!");
+        throw new Error(
+          `This model does not support tool calling properly. Please use a different model (e.g., Claude). Provider: ${data.provider}, Model: ${data.model}`
+        );
+      }
+      
+      // Validate that all required fields exist - NO DEFAULTS!
+      const requiredFields = [
+        'overall', 'contentAndCoherence', 'vocabulary', 
+        'readabilityAndGrammar', 'taskFulfillment', 'feedback', 
+        'grammarMistakes', 'betterVersion'
+      ];
+      
+      const missingFields = requiredFields.filter(field => 
+        parsedResult[field] === undefined || parsedResult[field] === null
+      );
+      
+      if (missingFields.length > 0) {
+        console.error("Missing required fields:", missingFields);
+        throw new Error(
+          `Model returned incomplete data. Missing fields: ${missingFields.join(', ')}. Please use Claude instead of ${data.model}`
+        );
+      }
+      
+      // Validate betterVersion is not empty
+      if (!parsedResult.betterVersion || parsedResult.betterVersion.trim().length < 50) {
+        console.error("betterVersion is empty or too short");
+        throw new Error(
+          `Model did not provide proper betterVersion (must be at least 50 characters). Please use Claude instead of ${data.model}`
+        );
+      }
+      
+      console.log("Successfully extracted complete data from content");
+      const msg: any = {
+        content: [
+          { type: "text", text: messageContent },
+          { type: "tool_use", input: parsedResult },
+        ],
+        usage: {
+          input_tokens: data.usage?.prompt_tokens || 0,
+          output_tokens: data.usage?.completion_tokens || 0,
+        },
+      };
+
+      const answer = await answerRepo.createOrUpdateAnswer({
+        text: answerBody.text,
+        userId: user?.id,
+        examId: answerBody.examId,
+        partId: answerBody.partId,
+        overalScore: parsedResult.overall,
+        type: "WRITING",
+        result: parsedResult,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      return NextResponse.json({
+        ...answer,
+        usage: {
+          prompt_tokens: msg?.usage?.input_tokens || 0,
+          completion_tokens: msg?.usage?.output_tokens || 0,
+        },
+      });
+    }
+    
     const msg: any = {
       content: [
         { type: "text", text: data.choices?.[0]?.message?.content || "" },
@@ -266,7 +383,17 @@ export const POST = async function (req: NextRequest) {
       },
     };
 
-    const answerRepo = new WritingAnswerRepository(mongoClient);
+    // Validate betterVersion in tool call result
+    const toolInput = msg.content[1]?.input;
+    if (toolInput) {
+      if (!toolInput.betterVersion || toolInput.betterVersion.trim().length < 50) {
+        console.error("betterVersion is missing or too short");
+        throw new Error(
+          `Model did not provide proper betterVersion. Please use Claude instead of ${data.model}`
+        );
+      }
+    }
+
     const answer = await answerRepo.createOrUpdateAnswer({
       text: answerBody.text,
       userId: user?.id,

@@ -360,6 +360,26 @@ ${bulletForSystem}
 If the response is off-topic (i.e., does not address any topic above), sharply reduce "taskFulfillment" and lower "overall" accordingly.`;
     }
 
+    // Determine which model to use
+    const modelToUse = process.env.OPENROUTER_MODEL ;
+    console.log("Using model:", modelToUse);
+
+    // Enhance system prompt for models that don't support tool calling well
+    const isQwen = modelToUse?.includes('qwen');
+    if (isQwen) {
+      finalSystemPrompt += `
+
+CRITICAL SCORING RULES:
+- MUST call CELPIPWritingEvaluation function
+- BE STRICT: 12/12 = PERFECT (zero mistakes). ONE error = max 11/12
+- OFF-TOPIC = taskFulfillment 0-3/12, overall max 5/12
+- TOO SHORT = reduce all by 2-3 points
+- Average responses = 7-9/12, NOT 10-12
+- ALWAYS provide betterVersion (if off-topic, write NEW correct response)
+
+Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=Poor`;
+    }
+
     // Call OpenRouter API with tool calling
     const openRouterResponse = await withRetry(
       () =>
@@ -372,9 +392,14 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "qwen/qwen-2.5-7b-instruct",
+            model: modelToUse,
             max_tokens: 20000,
             temperature: 1,
+            // Force specific providers that work well
+            provider: {
+              order: ["DeepInfra", "Together", "Fireworks"],
+              ignore: ["Hyperbolic"],
+            },
             messages: [
               {
                 role: "system",
@@ -446,12 +471,13 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
                       "taskFulfillment",
                       "feedback",
                       "grammarMistakes",
+                      "betterVersion",
                     ],
                   },
                 },
               },
             ],
-            tool_choice: "auto",
+            tool_choice: { type: "function", function: { name: "CELPIPWritingEvaluation" } },
           }),
         }).then(async (res) => {
           if (!res.ok) {
@@ -469,6 +495,85 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
 
     // Extract tool call result
     const toolCall = openRouterResponse.choices?.[0]?.message?.tool_calls?.[0];
+    
+    if (!toolCall) {
+      console.error("No tool call! Full response:", JSON.stringify(openRouterResponse, null, 2));
+      
+      // Fallback: Try to parse structured content from message
+      const messageContent = openRouterResponse.choices?.[0]?.message?.content || "";
+      let parsedResult: any = null;
+      
+      // Strategy 1: Try direct JSON parse
+      try {
+        parsedResult = JSON.parse(messageContent);
+      } catch {
+        // Strategy 2: Try to find JSON in markdown code blocks
+        const jsonMatch = messageContent.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+        if (jsonMatch) {
+          try {
+            parsedResult = JSON.parse(jsonMatch[1]);
+          } catch (e) {
+            console.error("Failed to parse JSON from code block", e);
+          }
+        }
+      }
+      
+      if (!parsedResult || typeof parsedResult !== 'object') {
+        console.error("All parsing strategies failed!");
+        throw new Error(
+          `This model does not support tool calling properly. Please use a different model (e.g., Claude). Provider: ${openRouterResponse.provider}, Model: ${openRouterResponse.model}`
+        );
+      }
+      
+      // Validate that all required fields exist - NO DEFAULTS!
+      const requiredFields = [
+        'overall', 'contentAndCoherence', 'vocabulary', 
+        'readabilityAndGrammar', 'taskFulfillment', 'feedback', 
+        'grammarMistakes', 'betterVersion'
+      ];
+      
+      const missingFields = requiredFields.filter(field => 
+        parsedResult[field] === undefined || parsedResult[field] === null
+      );
+      
+      if (missingFields.length > 0) {
+        console.error("Missing required fields:", missingFields);
+        throw new Error(
+          `Model returned incomplete data. Missing fields: ${missingFields.join(', ')}. Please use Claude instead of ${openRouterResponse.model}`
+        );
+      }
+      
+      // Validate betterVersion is not empty
+      if (!parsedResult.betterVersion || parsedResult.betterVersion.trim().length < 50) {
+        console.error("betterVersion is empty or too short");
+        throw new Error(
+          `Model did not provide proper betterVersion (must be at least 50 characters). Please use Claude instead of ${openRouterResponse.model}`
+        );
+      }
+      
+      console.log("Successfully extracted complete data from content");
+      
+      const answerRepo = new WritingAnswerRepository(mongoClient);
+      const answer = await answerRepo.createOrUpdateAnswer({
+        audioUrl: location,
+        userId: user.id,
+        practiceId,
+        overalScore: parsedResult.overall,
+        type: "SPEAKING",
+        result: parsedResult,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      return NextResponse.json({
+        ...answer,
+        usage: {
+          prompt_tokens: openRouterResponse.usage?.prompt_tokens || 0,
+          completion_tokens: openRouterResponse.usage?.completion_tokens || 0,
+        },
+      });
+    }
+    
     const msg: AnthropicResponse = {
       content: [
         {
@@ -490,6 +595,19 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
     };
 
     const evaluation = extractEvaluation(msg.content);
+    
+    if (!evaluation) {
+      throw new Error("Failed to extract evaluation from tool call response");
+    }
+    
+    // Validate betterVersion is not empty
+    if (!evaluation.betterVersion || evaluation.betterVersion.trim().length < 50) {
+      console.error("betterVersion is missing or too short");
+      throw new Error(
+        `Model did not provide proper betterVersion (must be at least 50 characters). Please use Claude instead of ${openRouterResponse.model}`
+      );
+    }
+    
     const stored = toStoredEvaluation(evaluation);
 
     const answerRepo = new WritingAnswerRepository(mongoClient);

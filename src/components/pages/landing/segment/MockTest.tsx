@@ -10,8 +10,8 @@ const MockTest = () => {
     <>
       <h1 className="sr-only">Mock CELPIP Tests with AI Scoring</h1>
       <div className="text-text3  pt-[16px]  rounded-[8px] border-[1px] border-[#D5D6D8] min-h-[255px]">
-        <div className="flex gap-[27px]">
-          <div className="pl-[16px] ">
+        <div className="flex gap-[8px] screen744:!gap-[27px]">
+          <div className="pl-[16px] shrink-0  ">
             <Score />
           </div>
           <div className="flex flex-col  screen744:!gap-[16px]">

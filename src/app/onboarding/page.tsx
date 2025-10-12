@@ -24,13 +24,20 @@ export default function OnboardingPage() {
     }
 
     const pendingReferralCode = localStorage.getItem("pendingReferralCode");
+    console.log(
+      "🔍 Onboarding - Pending referral code from localStorage:",
+      pendingReferralCode
+    );
+
     if (pendingReferralCode) {
-      console.log("Referral code found:", pendingReferralCode);
-
+      console.log("✅ Onboarding - Referral code found:", pendingReferralCode);
       applyReferralDiscount(pendingReferralCode);
-
       localStorage.removeItem("pendingReferralCode");
       localStorage.removeItem("pendingInviterName");
+    } else {
+      console.log(
+        "❌ Onboarding - No pending referral code found in localStorage"
+      );
     }
 
     setLoading(false);
@@ -38,6 +45,11 @@ export default function OnboardingPage() {
 
   const applyReferralDiscount = async (referralCode: string) => {
     try {
+      console.log(
+        "🔄 Onboarding - Starting referral discount process for code:",
+        referralCode
+      );
+
       const processResponse = await fetch("/api/referrals/process-signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -47,8 +59,11 @@ export default function OnboardingPage() {
       });
 
       if (processResponse.ok) {
-        console.log("Referral relationship established successfully");
+        console.log(
+          "✅ Onboarding - Referral relationship established successfully"
+        );
 
+        console.log("🔄 Onboarding - Applying referral discount...");
         const discountResponse = await fetch("/api/referrals/apply-discount", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -60,15 +75,23 @@ export default function OnboardingPage() {
         });
 
         if (discountResponse.ok) {
-          console.log("Referral discount applied successfully");
+          console.log("✅ Onboarding - Referral discount applied successfully");
         } else {
-          console.error("Failed to apply referral discount");
+          const errorData = await discountResponse.json();
+          console.error(
+            "❌ Onboarding - Failed to apply referral discount:",
+            errorData
+          );
         }
       } else {
-        console.error("Failed to establish referral relationship");
+        const errorData = await processResponse.json();
+        console.error(
+          "❌ Onboarding - Failed to establish referral relationship:",
+          errorData
+        );
       }
     } catch (error) {
-      console.error("Failed to process referral:", error);
+      console.error("❌ Onboarding - Failed to process referral:", error);
     }
   };
 

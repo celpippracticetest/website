@@ -40,36 +40,79 @@ export default function SignUpPage() {
 
   const applyReferralDiscount = async (referralCode: string) => {
     try {
-      const response = await fetch("/api/referrals/apply-discount", {
+      console.log(
+        "🔄 Starting referral discount process for code:",
+        referralCode
+      );
+
+      // First establish referral relationship
+      const processResponse = await fetch("/api/referrals/process-signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           referralCode,
-          userId: user?.id,
-          userEmail: user?.primaryEmailAddress?.emailAddress,
         }),
       });
 
-      if (response.ok) {
-        console.log("Referral discount applied successfully");
+      if (processResponse.ok) {
+        console.log("✅ Referral relationship established successfully");
+
+        // Then apply discount
+        console.log("🔄 Applying referral discount...");
+        const discountResponse = await fetch("/api/referrals/apply-discount", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            referralCode,
+            userId: user?.id,
+            userEmail: user?.primaryEmailAddress?.emailAddress,
+          }),
+        });
+
+        if (discountResponse.ok) {
+          console.log("✅ Referral discount applied successfully");
+        } else {
+          const errorData = await discountResponse.json();
+          console.error("❌ Failed to apply referral discount:", errorData);
+        }
       } else {
-        console.error("Failed to apply referral discount");
+        const errorData = await processResponse.json();
+        console.error(
+          "❌ Failed to establish referral relationship:",
+          errorData
+        );
       }
     } catch (error) {
-      console.error("Failed to apply referral discount:", error);
+      console.error("❌ Failed to process referral:", error);
     }
   };
 
   useEffect(() => {
+    console.log(
+      "🔍 useEffect triggered - isSignedIn:",
+      isSignedIn,
+      "user:",
+      !!user
+    );
+
     if (isSignedIn && user) {
       const pendingReferralCode = localStorage.getItem("pendingReferralCode");
+      console.log(
+        "🔍 Pending referral code from localStorage:",
+        pendingReferralCode
+      );
+
       if (pendingReferralCode) {
-        console.log("Referral code found:", pendingReferralCode);
+        console.log("✅ Referral code found:", pendingReferralCode);
         applyReferralDiscount(pendingReferralCode);
         localStorage.removeItem("pendingReferralCode");
         localStorage.removeItem("pendingInviterName");
+      } else {
+        console.log("❌ No pending referral code found in localStorage");
       }
       router.push("/practice-overview");
+    } else {
+      console.log("❌ User not signed in or user not available");
     }
   }, [isSignedIn, user, router]);
 
