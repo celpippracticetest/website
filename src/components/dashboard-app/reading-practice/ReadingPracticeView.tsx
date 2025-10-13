@@ -26,6 +26,9 @@ import SvgArrowRight from "@/components/icons/ArrowRight";
 import SvgCircle from "@/components/icons/Circle";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
 import { ActivityLogger } from "@/lib/userActivity";
+import { useLeaguePoints } from "@/hooks/useLeaguePoints";
+import { useTrophySystem } from "@/hooks/useTrophySystem";
+import TrophyModal from "@/components/modal/TrophyModal";
 
 interface ReadingPracticeViewProps {
   practice: TPracticeDto;
@@ -49,11 +52,27 @@ const ReadingPracticeView = ({
 }: ReadingPracticeViewProps) => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { user, isLoaded, isSignedIn } = useUser();
+  const { addPoints } = useLeaguePoints();
+  const {
+    isModalOpen,
+    currentTrophy,
+    userPoints,
+    timeSpent,
+    closeTrophy,
+    checkTrophyAchievements,
+  } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
   const [showModal, setShowModal] = useState(false);
+  const [pointsAwarded, setPointsAwarded] = useState(false);
   const timerTime = practice.taskId === "67f168222f0ca7f9a751ed3d" ? 780 : 660;
   const router = useRouter();
+
+  // Reset pointsAwarded when practice changes
+  useEffect(() => {
+    console.log("Reading practice: Resetting pointsAwarded for practice:", selectedPracticeId);
+    setPointsAwarded(false);
+  }, [selectedPracticeId]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [page, setPage] = useState("question");
   const [passageIndex, setPassageIndex] = useState(0);
@@ -126,6 +145,13 @@ const ReadingPracticeView = ({
               result,
               time
             );
+
+            // Check for trophy achievements
+            await checkTrophyAchievements(
+              10,
+              "practiceSessions",
+              `${Math.floor(time / 60)}:${time % 60}`
+            );
           }
         } catch (error) {
           // Optionally handle error
@@ -136,6 +162,12 @@ const ReadingPracticeView = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, user]);
+
+
+
+
+
+
   const handleAnswerSelect = (questionId: number, answerId: string) => {
     setSelectedAnswers((prev) => ({
       ...prev,
@@ -315,6 +347,37 @@ const ReadingPracticeView = ({
                             answers: selectedAnswers,
                           }),
                         });
+                        
+                        // Add league points when practice is completed
+                        if (!pointsAwarded) {
+                          console.log("Reading practice: Adding league points on Next click...");
+                          
+                          // Log practice completed
+                          const attemptId = `practice_${practice.id}_${Date.now()}`;
+                          await ActivityLogger.practiceCompleted(
+                            attemptId,
+                            practice.id,
+                            "Reading",
+                            100, // Assuming 100% score for now
+                            { overall: 100 },
+                            time
+                          );
+                          
+                          const pointsResult = await addPoints(
+                            10,
+                            "practiceSessions",
+                            `${Math.floor(time / 60)} minutes`
+                          );
+                          console.log("Reading practice: Points result:", pointsResult);
+                          setPointsAwarded(true);
+                          
+                          // Check for trophy achievements
+                          await checkTrophyAchievements(
+                            10,
+                            "practiceSessions",
+                            `${Math.floor(time / 60)}:${time % 60}`
+                          );
+                        }
                       } catch (err) {
                         console.error(
                           "Failed to save answers before navigating:",
@@ -695,6 +758,15 @@ const ReadingPracticeView = ({
           </div>
         </div>
       </div>
+
+      {/* Trophy Modal */}
+      <TrophyModal
+        isOpen={isModalOpen}
+        onClose={closeTrophy}
+        trophy={currentTrophy}
+        userPoints={userPoints}
+        timeSpent={timeSpent}
+      />
     </>
   );
 };

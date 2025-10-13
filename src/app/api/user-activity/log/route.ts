@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
-import client from "@/lib/mongodb";
+import { getDb } from "@/lib/mongodb";
 
 function extractEmailFromClerkUser(user: any): string | null {
   const byId = user?.emailAddresses?.find?.(
@@ -16,14 +16,17 @@ function extractEmailFromClerkUser(user: any): string | null {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("User activity log API called");
     const user = await currentUser();
     if (!user) {
+      console.log("No user found in request");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const email = extractEmailFromClerkUser(user);
 
     const body = await request.json();
+    console.log("Request body:", body);
     const {
       eventType,
       context,
@@ -43,6 +46,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!eventType || !context) {
+      console.log("Missing required fields:", { eventType, context });
       return NextResponse.json(
         { error: "eventType and context are required" },
         { status: 400 }
@@ -58,12 +62,12 @@ export async function POST(request: NextRequest) {
     const clientUserAgent =
       userAgent || request.headers.get("user-agent") || "unknown";
 
-    const db = client.db();
+    const db = await getDb();
     const userActivityCollection = db.collection("useractivities");
 
     const activityLog = {
       userId: user.id,
-      email, // ← ایمیل از Clerk
+      email, 
       eventType,
       context,
       skill: skill || null,
@@ -85,7 +89,9 @@ export async function POST(request: NextRequest) {
       timestampUtc: new Date(),
     };
 
+    console.log("Inserting activity log:", activityLog);
     await userActivityCollection.insertOne(activityLog);
+    console.log("Activity logged successfully");
 
     return NextResponse.json({
       success: true,
@@ -120,7 +126,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const db = client.db();
+    const db = await getDb();
     const userActivityCollection = db.collection("useractivities");
 
     const clientIp =

@@ -138,7 +138,7 @@ const PlanCard = ({
         <ul className="flex flex-col gap-[6px] mt-[16px] screen1280:mt-[24px]">
           {features.map((item, index) => (
             <li className="flex gap-[8px] items-center" key={index}>
-              <SvgCheck />
+              <SvgCheck className="text-[0DAA94]"/>
               <span className="text-text2 font-normal text-[14px] screen1280:!text-[16px] leading-[16px]">
                 {item}
               </span>

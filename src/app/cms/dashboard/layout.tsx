@@ -212,6 +212,30 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                 </Link>
               </li>
 
+              {/* League Management */}
+              <li className="mt-3">
+                <Link
+                  href="/cms/dashboard/league"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center ${
+                    collapsed ? "justify-center" : "justify-start"
+                  } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    pathname.startsWith("/cms/dashboard/league")
+                      ? "bg-gray-100 text-gray-900"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                  aria-current={
+                    pathname.startsWith("/cms/dashboard/league")
+                      ? "page"
+                      : undefined
+                  }
+                  title="League Management"
+                >
+                  <span aria-hidden>🏆</span>
+                  {!collapsed && <span>League</span>}
+                </Link>
+              </li>
+
               {/* Exams group header */}
               <li className="mt-1 md:mt-3">
                 {!collapsed && (
