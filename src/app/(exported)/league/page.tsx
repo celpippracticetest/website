@@ -144,18 +144,18 @@ const Page = () => {
           const users = data.userGroup.users.map((u: any) => {
             console.log("Mapping user:", u.userId, "points:", u.points, "isCurrentUser:", u.userId === user?.id);
             return {
-              id: u.userId,
-              name:
-                u.userId === user?.id
-                  ? user?.firstName ||
-                    user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] ||
-                    "You"
-                  : `User ${u.userId.slice(-4)}`,
-              points: u.points,
-              league: data.currentLeague?.type || "bronze",
-              position: u.position,
-              tasksCompleted: data.userPoints?.tasksCompleted || [],
-              isCurrentUser: u.userId === user?.id,
+            id: u.userId,
+            name:
+              u.userId === user?.id
+                ? user?.firstName ||
+                  user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] ||
+                  "You"
+                : `User ${u.userId.slice(-4)}`,
+            points: u.points,
+            league: data.currentLeague?.type || "bronze",
+            position: u.position,
+            tasksCompleted: data.userPoints?.tasksCompleted || [],
+            isCurrentUser: u.userId === user?.id,
             };
           });
 
@@ -495,19 +495,19 @@ const Page = () => {
       return isCompleted ? `<span class="text-[#10B981]">${letter}</span>` : letter;
     }).join(", ") + ")";
 
-    return (
+      return (
       <div className="flex gap-[8px]">
         <div className={allCompleted ? "text-[#10B981]" : "text-[#979EA8]"}>
-          <CircleCheck />
-        </div>
-        <span
-          className={`text-[14px] ${
+            <CircleCheck />
+          </div>
+          <span
+            className={`text-[14px] ${
             allCompleted ? "text-[#10B981]" : "text-[#37465C]"
-          }`}
+            }`}
           dangerouslySetInnerHTML={{ __html: progressiveText }}
         />
-      </div>
-    );
+        </div>
+      );
   };
 
   // Render tasks for a specific league
@@ -694,23 +694,23 @@ const Page = () => {
     );
 
     return (
-      <div className="mb-[16px] p-[16px] bg-[#F8FAFC] rounded-[8px] border border-[#E2E8F0]">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-[16px] font-semibold text-[#212E42]">
+      <div className="mb-[16px] p-[12px] md:p-[16px] bg-[#F8FAFC] rounded-[8px] border border-[#E2E8F0]">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-[12px]">
+          <div className="flex-1">
+            <h3 className="text-[14px] md:text-[16px] font-semibold text-[#212E42]">
               {leagueData.currentLeague.charAt(0).toUpperCase() +
                 leagueData.currentLeague.slice(1)}{" "}
               League
             </h3>
-            <p className="text-[14px] text-[#64748B]">
+            <p className="text-[12px] md:text-[14px] text-[#64748B]">
               Season ends in {daysLeft} days, {hoursLeft} hours
             </p>
           </div>
           <div className="text-right">
-            <div className="text-[24px] font-bold text-[#4A7DFF]">
+            <div className="text-[20px] md:text-[24px] font-bold text-[#4A7DFF]">
               {leagueData.userPoints}
             </div>
-            <div className="text-[12px] text-[#64748B]">Your Points</div>
+            <div className="text-[10px] md:text-[12px] text-[#64748B]">Your Points</div>
           </div>
         </div>
       </div>
@@ -755,9 +755,9 @@ const Page = () => {
       }
 
       return (
-        <div className="min-h-[529px] bg-white border border-[#E0E7FF] rounded-[12px] p-[24px]">
+        <div className="min-h-[529px] bg-white border border-[#E0E7FF] rounded-[12px] p-[16px] md:p-[24px]">
           <LeagueStatusComponent />
-          <div className="space-y-[16px]">
+          <div className="space-y-[16px] overflow-x-auto">
             {/* Show all users in the group, sorted by points */}
             {sortedUsers.map((groupUser, index) => {
               // Determine zone for this user
@@ -781,10 +781,10 @@ const Page = () => {
               return (
                 <div
                   key={`user-${groupUser.id || 'unknown'}-${index}-${groupUser.points || 0}`}
-                  className={`flex items-center gap-[16px] py-[8px] ${zoneClass} ${
+                  className={`flex items-center gap-[12px] md:gap-[16px] py-[8px] ${zoneClass} ${
                     groupUser.isCurrentUser
-                      ? "bg-[#FED7AA] rounded-[8px] p-[12px]"
-                      : "rounded-[8px] p-[12px]"
+                      ? "bg-[#FED7AA] rounded-[8px] p-[8px] md:p-[12px]"
+                      : "rounded-[8px] p-[8px] md:p-[12px]"
                   }`}
                 >
                   <div className={`w-[8px] h-[8px] ${zoneIndicator} rounded-full`}></div>
@@ -799,14 +799,14 @@ const Page = () => {
                       <div className="w-[32px] h-[32px] bg-[#9CA3AF] rounded-full"></div>
                     )}
                   </div>
-                  <div className="">
-                    <div className="text-[#374151] font-medium">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[#374151] font-medium text-[14px] md:text-[16px] truncate">
                       {groupUser.name ||
                         (groupUser as any).email?.split("@")[0] ||
                         "User"}
                     </div>
                   </div>
-                  <div className="flex-1 text-[#374151] text-right font-medium">
+                  <div className="text-[#374151] text-right font-medium text-[14px] md:text-[16px] whitespace-nowrap">
                     {groupUser.points} XP
                   </div>
                 </div>
@@ -1271,10 +1271,10 @@ const Page = () => {
 
         <div className="flex h-full flex-col">
           <div className="flex-1 overflow-y-auto justify-center">
-            <div className="flex max-w-[1200px] mx-auto z-[1] text-center">
-              <div className="flex gap-[48px] w-full">
-                <div className="w-full">
-                  <div className="flex items-center gap-[24px] mt-[24px]">
+            <div className="flex max-w-[1200px] mx-auto z-[1] text-center px-4">
+              <div className="flex flex-col lg:flex-row gap-[24px] lg:gap-[48px] w-full">
+                <div className="w-full lg:w-1/2">
+                  <div className="flex items-center justify-center lg:justify-start gap-[16px] md:gap-[24px] mt-[24px]">
                     {currentLeague?.type === "gold" ? (
                       <>
                         <SvgBronz80 />
@@ -1289,22 +1289,22 @@ const Page = () => {
                       </>
                     ) : (
                       <>
-                        <SvgBronz96 />
-                        <SvgSilver80 />
-                        <SvgGold80 />
+                    <SvgBronz96 />
+                    <SvgSilver80 />
+                    <SvgGold80 />
                       </>
                     )}
                   </div>
 
-                  <div className="mt-[24px] flex">
-                    <span className="text-[18px] text-[#212E42] font-semibold leading-[28px]">
+                  <div className="mt-[24px] flex justify-center lg:justify-start">
+                    <span className="text-[16px] md:text-[18px] text-[#212E42] font-semibold leading-[24px] md:leading-[28px]">
                       {currentLeague?.type === "gold" ? "Gold League" : 
                        currentLeague?.type === "silver" ? "Silver League" : 
                        "Bronze League"}
                     </span>
                   </div>
-                  <div className="flex mt-[12px]">
-                    <span className="text-[14px] text-[#37465C] font-semibold text-justify">
+                  <div className="flex mt-[12px] justify-center lg:justify-start">
+                    <span className="text-[12px] md:text-[14px] text-[#37465C] font-semibold text-center lg:text-left">
                       {currentLeague?.type === "gold" ? 
                         "Elite league with gift card rewards! Compete with the best players and stay on top!" :
                        currentLeague?.type === "silver" ? 
@@ -1319,7 +1319,7 @@ const Page = () => {
                   </div>
                 </div>
 
-                <div className="w-full mt-[40px] max-w-[522px]">
+                <div className="w-full lg:w-1/2 mt-[24px] lg:mt-[40px]">
                   <div className="border gap-[16px] px-[16px] flex items-center rounded-[8px] justify-center border-[#0DAA94] bg-[#F0FFFD] h-[50px] text-[#0DAA94] text-[14px] font-medium leading-[24px]">
                     <SvgLeagueKados />
                     Users in the Gold League will enter a raffle for a $100 gift
@@ -1396,10 +1396,10 @@ const Page = () => {
 
       <div className="flex h-full flex-col">
         <div className="flex-1 overflow-y-auto  justify-center ">
-          <div className="flex max-w-[1200px] mx-auto z-[1]  text-center">
-            <div className="flex gap-[48px] w-full">
-              <div className="w-full">
-                <div className="flex items-center gap-[24px] mt-[24px]">
+          <div className="flex max-w-[1200px] mx-auto z-[1] text-center px-4">
+            <div className="flex flex-col lg:flex-row gap-[24px] lg:gap-[48px] w-full">
+              <div className="w-full lg:w-1/2">
+                <div className="flex items-center justify-center lg:justify-start gap-[16px] md:gap-[24px] mt-[24px]">
                   {currentLeague?.type === "gold" ? (
                     <>
                       <SvgBronz80 />
@@ -1414,22 +1414,22 @@ const Page = () => {
                     </>
                   ) : (
                     <>
-                      <SvgBronz96 />
-                      <SvgSilver80 />
-                      <SvgGold80 />
+                  <SvgBronz96 />
+                  <SvgSilver80 />
+                  <SvgGold80 />
                     </>
                   )}
                 </div>
 
-                <div className="mt-[24px] flex">
-                  <span className="text-[18px] text-[#212E42] font-semibold leading-[28px]">
+                <div className="mt-[24px] flex justify-center lg:justify-start">
+                  <span className="text-[16px] md:text-[18px] text-[#212E42] font-semibold leading-[24px] md:leading-[28px]">
                     {currentLeague?.type === "gold" ? "Gold League" : 
                      currentLeague?.type === "silver" ? "Silver League" : 
                      "Bronze League"}
                   </span>
                 </div>
-                <div className="flex mt-[12px] ">
-                  <span className="text-[14px] text-[#37465C] font-semibold text-justify">
+                <div className="flex mt-[12px] justify-center lg:justify-start">
+                  <span className="text-[12px] md:text-[14px] text-[#37465C] font-semibold text-center lg:text-left">
                     {currentLeague?.type === "gold" ? 
                       "Elite league with gift card rewards! Compete with the best players and stay on top!" :
                      currentLeague?.type === "silver" ? 
@@ -1467,24 +1467,24 @@ const Page = () => {
                 </div>
               </div>
 
-              <div className="w-full mt-[40px] max-w-[522px]">
+              <div className="w-full lg:w-1/2 mt-[24px] lg:mt-[40px]">
                 <div className="border gap-[16px]  px-[16px] flex items-center rounded-[8px] justify-center border-[#0DAA94] bg-[#F0FFFD] h-[50px] text-[#0DAA94] text-[14px] font-medium leading-[24px]">
                   <SvgLeagueKados />
                   Users in the Gold League will enter a raffle for a $100 gift
                   card.
                 </div>
 
-                <div className="mt-[24px] text-[18px] text-[#212E42] font-semibold leading-[28px]">
+                <div className="mt-[24px] text-[16px] md:text-[18px] text-[#212E42] font-semibold leading-[24px] md:leading-[28px] text-center lg:text-left">
                   League Focus Trophies & Tasks Requirement to Enter
                 </div>
 
                 {/* Show Bronze League if user is in Bronze League or has no points yet */}
                 {(!currentLeague || currentLeague?.type === "bronze") && (
-                <div className="min-h-[232px] rounded-[12px] p-[16px] bg-white mt-[24px]">
-                  <div className="flex justify-between">
+                <div className="min-h-[232px] rounded-[12px] p-[12px] md:p-[16px] bg-white mt-[24px]">
+                  <div className="flex flex-col sm:flex-row justify-between gap-[8px] sm:gap-0">
                       <div className="flex gap-[6px] items-center">
                         <Bronz40 />
-                        <span className="text-[16px] text-[#212E42] font-semibold">
+                        <span className="text-[14px] md:text-[16px] text-[#212E42] font-semibold">
                           Bronz League
                         </span>
                         {currentLeague?.type === "bronze" && (
@@ -1493,8 +1493,8 @@ const Page = () => {
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-[12px]">
-                        <div className="text-[14px]">
+                      <div className="flex items-center gap-[8px] sm:gap-[12px]">
+                        <div className="text-[12px] md:text-[14px]">
                           <span className="text-[#76808F]">Requirement: </span>
                           <span
                             className={
@@ -1508,13 +1508,13 @@ const Page = () => {
                         </div>
                       </div>
                   </div>
-                  <div className="mt-[24px] items-center flex gap-[16px]">
-                      <span className="text-[14px] text-[#76808F ]">
+                  <div className="mt-[24px] items-center flex flex-col sm:flex-row gap-[12px] sm:gap-[16px]">
+                      <span className="text-[12px] md:text-[14px] text-[#76808F]">
                         Progress
                       </span>
-                    <div className="w-full relative bg-[#E6E6E6] h-[12px] rounded-[16px]">
+                    <div className="w-full relative bg-[#E6E6E6] h-[10px] md:h-[12px] rounded-[16px]">
                         <div
-                          className="absolute left-0 bg-[#F26B3E] h-[12px] rounded-full transition-all duration-300"
+                          className="absolute left-0 bg-[#F26B3E] h-[10px] md:h-[12px] rounded-full transition-all duration-300"
                           style={{
                             width: `${Math.min(
                               100,
@@ -1525,7 +1525,7 @@ const Page = () => {
                     </div>
                     <div className="flex gap-[4px] items-center shrink-0">
                       <Silver24 />
-                        <span className=" text-[14px]">Silver League</span>
+                        <span className="text-[12px] md:text-[14px]">Silver League</span>
                     </div>
                   </div>
                   <div className="mt-[24px] flex flex-col gap-[8px]">
