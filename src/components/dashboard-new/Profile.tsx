@@ -19,46 +19,75 @@ import { useClerk } from "@clerk/nextjs";
 import { useDeleteUserEmail } from "@/hooks/useDeleteUserEmail";
 import SvgCloseCircle from "@/components/icons/CloseCircle";
 import Link from "next/link";
-export default function Profile({ prevCheckout }: any) {
+export default function Profile({ prevCheckout, subscriptionData }: any) {
   const [daysLeft, setDaysLeft] = useState<number>(0);
   const [totalDays, setTotalDays] = useState<number>(0);
+  const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!prevCheckout) return;
+    // Priority: Use subscription data if available, otherwise fallback to checkout data
+    if (subscriptionData && subscriptionData.currentPeriodStart && subscriptionData.currentPeriodEnd) {
+      // Use Stripe subscription data for accurate calculation
+      const start = new Date(subscriptionData.currentPeriodStart * 1000);
+      start.setHours(0, 0, 0, 0);
 
-    const start = new Date(prevCheckout.createdAt);
-    start.setHours(0, 0, 0, 0);
+      const end = new Date(subscriptionData.currentPeriodEnd * 1000);
+      end.setHours(0, 0, 0, 0);
 
-    const end = new Date(start);
-    const desc = prevCheckout.lineItems[0].description?.toLowerCase();
+      const millisPerDay = 1000 * 60 * 60 * 24;
+      const total = Math.floor((end.getTime() - start.getTime()) / millisPerDay);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const left = Math.max(
+        0,
+        Math.floor((end.getTime() - today.getTime()) / millisPerDay)
+      );
 
-    switch (desc) {
-      case "weekly":
-        end.setDate(end.getDate() + 7);
-        break;
-      case "monthly":
-        end.setDate(end.getDate() + 30);
-        break;
-      case "3month":
-        end.setDate(end.getDate() + 90);
-        break;
-      default:
-        end.setFullYear(end.getFullYear() + 1);
+      setTotalDays(total);
+      setDaysLeft(left);
+      setIsLoaded(true);
+    } else if (prevCheckout && prevCheckout.createdAt) {
+      // Fallback to checkout data for one-time purchases
+      const start = new Date(prevCheckout.createdAt);
+      start.setHours(0, 0, 0, 0);
+
+      const end = new Date(start);
+      const desc = prevCheckout.lineItems?.[0]?.description?.toLowerCase();
+
+      switch (desc) {
+        case "weekly":
+          end.setDate(end.getDate() + 7);
+          break;
+        case "monthly":
+          end.setDate(end.getDate() + 30);
+          break;
+        case "3month":
+          end.setDate(end.getDate() + 90);
+          break;  
+        default:
+          end.setFullYear(end.getFullYear() + 1);
+      }
+      end.setHours(0, 0, 0, 0);
+
+      const millisPerDay = 1000 * 60 * 60 * 24;
+      const total = Math.floor((end.getTime() - start.getTime()) / millisPerDay);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const left = Math.max(
+        0,
+        Math.floor((end.getTime() - today.getTime()) / millisPerDay)
+      );
+
+      setTotalDays(total);
+      setDaysLeft(left);
+      setIsLoaded(true);
+    } else {
+      // No valid data, set defaults
+      setTotalDays(0);
+      setDaysLeft(0);
+      setIsLoaded(true);
     }
-    end.setHours(0, 0, 0, 0);
-
-    const millisPerDay = 1000 * 60 * 60 * 24;
-    const total = Math.floor((end.getTime() - start.getTime()) / millisPerDay);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const left = Math.max(
-      0,
-      Math.floor((end.getTime() - today.getTime()) / millisPerDay)
-    );
-
-    setTotalDays(total);
-    setDaysLeft(left);
-  }, [prevCheckout]);
+  }, [prevCheckout, subscriptionData]);
 
   const [showSetPasswordModal, setShowSetPasswordModal] = useState(false);
   const [password, setPassword] = useState("");
@@ -412,7 +441,7 @@ export default function Profile({ prevCheckout }: any) {
 
               {user?.publicMetadata.plan == "premium" && (
                 <span className="text-[14px] font-semibold text-[#F27059]">
-                  {daysLeft}/{totalDays} Days
+                  {isLoaded ? `${daysLeft}/${totalDays} Days` : "Loading..."}
                 </span>
               )}
             </div>
