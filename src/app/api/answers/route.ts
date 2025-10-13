@@ -41,7 +41,18 @@ export async function POST(req: NextRequest) {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    return NextResponse.json({ result: createdAnswer });
+    
+    // Calculate overall score for league points system
+    const totalQuestions = practice.questions?.length || 1;
+    const correctAnswers = Object.values(parseResult.data.answers || {}).filter(
+      (answer: any) => answer && answer.isCorrect
+    ).length;
+    const overall = Math.round((correctAnswers / totalQuestions) * 100);
+    
+    return NextResponse.json({ 
+      result: createdAnswer,
+      overall: overall
+    });
   } else {
     return NextResponse.json(
       { message: parseResult.error.errors },

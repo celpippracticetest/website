@@ -9,7 +9,7 @@ const SvgCheck = (props: SVGProps<SVGSVGElement>) => (
     {...props}
   >
     <path
-      fill="#0DAA94"
+      fill="currentColor"
       fillRule="evenodd"
       d="M20.706 6.961a.75.75 0 0 1 0 1.061l-10.018 10a.75.75 0 0 1-1.06 0l-5-5a.75.75 0 1 1 1.06-1.061l4.47 4.47 9.488-9.47a.75.75 0 0 1 1.06 0"
       clipRule="evenodd"

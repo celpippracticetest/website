@@ -15,14 +15,20 @@ import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAnd
 import { currentUser } from "@clerk/nextjs/server";
 import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 
-const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
+const Exam = async ({ params }: { params: { slug: string[] } }) => {
   const resolvedParams = await params;
   const examId: string | undefined =
     resolvedParams?.slug?.[0]?.split("exam_")?.[1];
   const partNumber: string | undefined =
     resolvedParams?.slug?.[1]?.split("part")?.[1];
   const isResultPage: boolean = resolvedParams?.slug?.[1] === "results";
-  const user: any = await currentUser();
+  let user: any = null;
+  try {
+    user = await currentUser();
+  } catch (e) {
+    // Fallback: treat as unauthenticated
+    user = null;
+  }
   const plan: string | undefined = user?.publicMetadata?.plan as
     | string
     | undefined;

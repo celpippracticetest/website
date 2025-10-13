@@ -21,6 +21,9 @@ import SvgReadingPart from "@/components/icons/ReadingPart";
 import SvgChevronDownExam from "@/components/icons/ChevronDownExam";
 import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 import { ActivityLogger } from "@/lib/userActivity";
+import { useLeaguePoints } from "@/hooks/useLeaguePoints";
+import { useTrophySystem } from "@/hooks/useTrophySystem";
+import TrophyModal from "@/components/modal/TrophyModal";
 
 const parts = [
   "Problem Solving",
@@ -71,6 +74,15 @@ const SpeakingExamView = ({
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { user, isLoaded, isSignedIn } = useUser();
+  const { addPoints } = useLeaguePoints();
+  const {
+    isModalOpen,
+    currentTrophy,
+    userPoints,
+    timeSpent,
+    closeTrophy,
+    checkTrophyAchievements,
+  } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
   const [showModal, setShowModal] = useState(false);
@@ -182,6 +194,20 @@ const SpeakingExamView = ({
         undefined, // Score will be available later
         undefined, // Breakdown will be available later
         recordingTime
+      );
+
+      // Add league points for mock exam completion
+      await addPoints(
+        20,
+        "mockExams",
+        `${Math.floor(recordingTime / 60)} minutes`
+      );
+
+      // Check for trophy achievements
+      await checkTrophyAchievements(
+        20,
+        "mockExams",
+        `${Math.floor(recordingTime / 60)}:${recordingTime % 60}`
       );
 
       setIsSubmit(true);
@@ -765,6 +791,15 @@ const SpeakingExamView = ({
           </div>
         </div>
       </div>
+
+      {/* Trophy Modal */}
+      <TrophyModal
+        isOpen={isModalOpen}
+        onClose={closeTrophy}
+        trophy={currentTrophy}
+        userPoints={userPoints}
+        timeSpent={timeSpent}
+      />
     </div>
   );
 };

@@ -93,10 +93,9 @@ const Hero = ({
         <div
           ref={buttonRef}
           className={`flex relative z-[1] hover:!cursor-pointer 
-      hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] 
       bg-primary2 w-full max-w-[195px] sm:!max-w-[310px] 
       h-[48px] rounded-[24px] items-center justify-center
-      
+      transition-all duration-300 hover:bg-gradient-to-r hover:from-[#F79D65] hover:to-[#759CFF]
       `}
         >
           <SvgPlus className="text-white" />

@@ -20,6 +20,9 @@ import LoginModal from "@/components/modal/LoginModal";
 import SvgRecording from "@/components/icons/Recording";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 import { ActivityLogger } from "@/lib/userActivity";
+import { useLeaguePoints } from "@/hooks/useLeaguePoints";
+import { useTrophySystem } from "@/hooks/useTrophySystem";
+import TrophyModal from "@/components/modal/TrophyModal";
 
 interface SpeakingPracticeViewProps {
   practice: TPracticeDto;
@@ -70,7 +73,18 @@ const SpeakingPracticeView = ({
   };
 
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [pointsAwarded, setPointsAwarded] = useState(false);
+  const [aiFeedbackPointsAwarded, setAiFeedbackPointsAwarded] = useState(false);
   const { user, isLoaded, isSignedIn } = useUser();
+  const { addPoints } = useLeaguePoints();
+  const {
+    isModalOpen,
+    currentTrophy,
+    userPoints,
+    timeSpent,
+    closeTrophy,
+    checkTrophyAchievements,
+  } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
   const [showModal, setShowModal] = useState(false);
@@ -177,6 +191,8 @@ const SpeakingPracticeView = ({
     setText("");
     setProgressBar(0);
     setIsSubmit(false);
+    setPointsAwarded(false);
+    setAiFeedbackPointsAwarded(false);
     if (isRecording) {
       cancelRecording();
     }
@@ -290,6 +306,16 @@ const SpeakingPracticeView = ({
               recordingTime
             );
 
+            // Add league points for practice completion (only once)
+            if (!pointsAwarded) {
+              await addPoints(
+                10,
+                "practiceSessions",
+                `${Math.floor(recordingTime / 60)} minutes`
+              );
+              setPointsAwarded(true);
+            }
+
             // Log AI feedback generation
             if (data.usage) {
               await ActivityLogger.aiFeedbackGenerated(
@@ -299,7 +325,20 @@ const SpeakingPracticeView = ({
                 data.usage.completion_tokens || 0,
                 attemptId
               );
+
+              // Add league points for AI feedback (only once)
+              if (!aiFeedbackPointsAwarded) {
+                await addPoints(5, "aiFeedback");
+                setAiFeedbackPointsAwarded(true);
+              }
             }
+
+            // Check for trophy achievements
+            await checkTrophyAchievements(
+              10,
+              "practiceSessions",
+              `${Math.floor(recordingTime / 60)}:${recordingTime % 60}`
+            );
 
             setIsSubmit(false);
             onAnswerButtonClick(practice, data);
@@ -924,6 +963,15 @@ const SpeakingPracticeView = ({
           )}
         </div>
       </div>
+
+      {/* Trophy Modal */}
+      <TrophyModal
+        isOpen={isModalOpen}
+        onClose={closeTrophy}
+        trophy={currentTrophy}
+        userPoints={userPoints}
+        timeSpent={timeSpent}
+      />
     </div>
   );
 };

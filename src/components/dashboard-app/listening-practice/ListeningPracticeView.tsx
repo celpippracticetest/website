@@ -20,6 +20,9 @@ import LoginModal from "@/components/modal/LoginModal";
 import SvgChevronRight from "@/components/icons/ChevronRight";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 import { ActivityLogger } from "@/lib/userActivity";
+import { useLeaguePoints } from "@/hooks/useLeaguePoints";
+import { useTrophySystem } from "@/hooks/useTrophySystem";
+import TrophyModal from "@/components/modal/TrophyModal";
 
 interface ListeningPracticeViewProps {
   practice: TPracticeDto;
@@ -52,7 +55,17 @@ const ListeningPracticeView = ({
   const useDropdownForQuestions = true;
 
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [pointsAwarded, setPointsAwarded] = useState(false);
   const { user, isSignedIn, isLoaded } = useUser();
+  const { addPoints } = useLeaguePoints();
+  const {
+    isModalOpen,
+    currentTrophy,
+    userPoints,
+    timeSpent,
+    closeTrophy,
+    checkTrophyAchievements,
+  } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
   const [showModal, setShowModal] = useState(false);
@@ -146,6 +159,26 @@ const ListeningPracticeView = ({
               result,
               time
             );
+
+            // Add league points (only once) and confirm success
+            if (!pointsAwarded) {
+              const res = await addPoints(
+                10,
+                "practiceSessions",
+                `${Math.floor(time / 60)} minutes`
+              );
+              if (res && (res as any).success) {
+                setPointsAwarded(true);
+                // Check for trophy achievements only after success
+                await checkTrophyAchievements(
+                  10,
+                  "practiceSessions",
+                  `${Math.floor(time / 60)}:${time % 60}`
+                );
+              } else {
+                console.warn("addPoints failed; skipping trophy check and award flag");
+              }
+            }
           }
         } catch (error) {
           // Optionally handle error
@@ -308,7 +341,7 @@ const ListeningPracticeView = ({
                         : 30
                     );
                   }}
-                  className="cursor-pointer w-[40px] h-[40px] border flex items-center justify-center border-[#37465C] rounded-[100%]"
+                  className="cursor-pointer shrink-0 w-[40px] h-[40px] border flex items-center justify-center border-[#37465C] rounded-[100%]"
                 >
                   <ArrowLeft size={18} strokeWidth={1.7}></ArrowLeft>
                 </button>
@@ -606,6 +639,15 @@ const ListeningPracticeView = ({
           )} */}
         </Card>
       </div>
+
+      {/* Trophy Modal */}
+      <TrophyModal
+        isOpen={isModalOpen}
+        onClose={closeTrophy}
+        trophy={currentTrophy}
+        userPoints={userPoints}
+        timeSpent={timeSpent}
+      />
     </div>
   );
 };

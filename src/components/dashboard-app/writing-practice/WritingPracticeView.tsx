@@ -28,6 +28,9 @@ import UpgradeModal from "@/components/modal/UpgradeModal";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 import { ActivityLogger } from "@/lib/userActivity";
+import { useLeaguePoints } from "@/hooks/useLeaguePoints";
+import { useTrophySystem } from "@/hooks/useTrophySystem";
+import TrophyModal from "@/components/modal/TrophyModal";
 const SvgBestValuePlan = dynamic(
   () => import("../../../components/icons/BestValuePlan"),
   {
@@ -76,7 +79,17 @@ const WritingPracticeView = ({
   const router = useRouter();
 
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [pointsAwarded, setPointsAwarded] = useState(false);
   const { user, isLoaded, isSignedIn } = useUser();
+  const { addPoints } = useLeaguePoints();
+  const {
+    isModalOpen,
+    currentTrophy,
+    userPoints,
+    timeSpent,
+    closeTrophy,
+    checkTrophyAchievements,
+  } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
   const [showModal, setShowModal] = useState(false);
@@ -205,6 +218,16 @@ const WritingPracticeView = ({
         time
       );
 
+      // Add league points for practice completion (only once)
+      if (!pointsAwarded) {
+        await addPoints(
+          10,
+          "practiceSessions",
+          `${Math.floor(time / 60)} minutes`
+        );
+        setPointsAwarded(true);
+      }
+
       // Log AI feedback generation
       if (result.usage) {
         await ActivityLogger.aiFeedbackGenerated(
@@ -214,9 +237,22 @@ const WritingPracticeView = ({
           result.usage.completion_tokens || 0,
           attemptId
         );
+
+        // Add league points for AI feedback
+        await addPoints(5, "aiFeedback");
       }
 
-      onAnswerButtonClick(practice, result);
+      // Check for trophy achievements
+      await checkTrophyAchievements(
+        10,
+        "practiceSessions",
+        `${Math.floor(time / 60)}:${time % 60}`
+      );
+
+      // Allow trophy modal to render before navigation to results
+      setTimeout(() => {
+        onAnswerButtonClick(practice, result);
+      }, 800);
       setProgressBar(0);
       setTryToSubmit(false);
       setIsSubmit(false);
@@ -240,7 +276,9 @@ const WritingPracticeView = ({
     // Log practice started
     if (user && selectedPracticeId) {
       const attemptId = `practice_${selectedPracticeId}_${Date.now()}`;
-      ActivityLogger.practiceStarted(attemptId, selectedPracticeId, "Writing");
+      ActivityLogger.practiceStarted(attemptId, selectedPracticeId, "Writing").catch(error => {
+        console.error("Error logging practice started:", error);
+      });
     }
   }, [selectedPracticeId, user]);
   // const {
@@ -467,7 +505,7 @@ const WritingPracticeView = ({
                       <h3 className="text-[14px] text-[#212E42] font-semibold mb-2">
                         Write to See your Score
                       </h3>
-                      <div className="text-[14px] flex items-center rounded-[28px] min-h-[36px] pb-[10px] bg-[#E6E6E6] px-[16px]">
+                      <div className="text-[14px] flex items-center justify-center rounded-[28px] min-h-[36px]  bg-[#E6E6E6] px-[16px]">
                         Words: {wordCount}
                       </div>
                     </div>
@@ -549,7 +587,7 @@ const WritingPracticeView = ({
                         (freeAttempts === null || freeAttempts > 0) && (
                           <button
                             disabled={progressBar > 0}
-                            className="flex h-[40px] items-center justify-center text-white text-[14px] font-normal  rounded-[24px] bg-[#4A7DFF] w-full"
+                            className="cursor-pointer flex h-[40px] items-center justify-center text-white text-[14px] font-normal  rounded-[24px] bg-[#4A7DFF] w-full"
                             onClick={() => {
                               if (!user) {
                                 setPremiumPlanModalState();
@@ -738,6 +776,15 @@ const WritingPracticeView = ({
           )}
         </div>
       </div>
+
+      {/* Trophy Modal */}
+      <TrophyModal
+        isOpen={isModalOpen}
+        onClose={closeTrophy}
+        trophy={currentTrophy}
+        userPoints={userPoints}
+        timeSpent={timeSpent}
+      />
     </div>
   );
 };

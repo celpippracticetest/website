@@ -197,12 +197,10 @@ export const POST = async function (req: Request) {
       const hasTOPIC = command.includes("{{TOPIC}}");
 
       if (hasTD || hasTOPIC) {
-        // همه placeholderهای موجود را با رشته‌ی خطی پر کن
         command = command
           .replaceAll("{{TASK_DESCRIPTION}}", inlineTopics)
           .replaceAll("{{TOPIC}}", inlineTopics);
       } else {
-        // اگر placeholder نیست، بلاک موضوع/قوانین را اضافه کن (یک بار)
         const marker = "\n---\nTASK_TOPICS:";
         if (!command.includes(marker)) {
           const bulletTopics = topics.map((t) => `- ${t}`).join("\n");
