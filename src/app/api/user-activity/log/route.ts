@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
 
     const activityLog = {
       userId: user.id,
-      email, // ← ایمیل از Clerk
+      email, 
       eventType,
       context,
       skill: skill || null,

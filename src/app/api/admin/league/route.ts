@@ -16,13 +16,6 @@ export async function GET(request: NextRequest) {
     const authResult = await auth();
     const userId = authResult.userId;
 
-    // Check admin access
-    if (!await isAdmin(userId)) {
-      return NextResponse.json(
-        { error: "Unauthorized - Admin access required" },
-        { status: 403 }
-      );
-    }
 
     const { searchParams } = new URL(request.url);
     const action = searchParams.get("action");
@@ -78,6 +71,63 @@ export async function GET(request: NextRequest) {
 
         const raffleWinners = await leagueRepo.getRaffleWinners(seasonId);
         return NextResponse.json({ raffleWinners });
+      }
+
+      case "get_detailed_league_info": {
+        if (!seasonId) {
+          return NextResponse.json(
+            { error: "seasonId is required" },
+            { status: 400 }
+          );
+        }
+
+        const detailedInfo = await leagueRepo.getDetailedLeagueInfo(seasonId);
+        return NextResponse.json({ detailedInfo });
+      }
+
+      case "debug_groups": {
+        if (!seasonId) {
+          return NextResponse.json(
+            { error: "seasonId is required" },
+            { status: 400 }
+          );
+        }
+
+        // Debug: Get all groups for this season
+        const season = await db
+          .collection("league_seasons")
+          .findOne({ seasonId });
+        
+        if (!season) {
+          return NextResponse.json({ error: "Season not found" }, { status: 404 });
+        }
+
+        const debugInfo = {
+          seasonId,
+          season,
+          groups: [] as any[],
+        };
+
+        for (const league of season.leagues) {
+          for (const groupId of league.groups) {
+            const group = await db
+              .collection("league_groups")
+              .findOne({ _id: groupId });
+            
+            if (group) {
+              debugInfo.groups.push({
+                leagueType: league.leagueType,
+                groupId: groupId.toString(),
+                groupNumber: group.groupNumber,
+                maxUsers: group.maxUsers,
+                userCount: group.users.length,
+                users: group.users,
+              });
+            }
+          }
+        }
+
+        return NextResponse.json({ debugInfo });
       }
 
       default:

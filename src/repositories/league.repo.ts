@@ -1367,6 +1367,80 @@ export class LeagueRepository {
     return winners;
   }
 
+  // Get detailed league information for admin panel
+  async getDetailedLeagueInfo(seasonId: string): Promise<any> {
+    console.log("Getting detailed league info for season:", seasonId);
+    
+    const season = await this.db
+      .collection(this.leagueSeasonsCollection)
+      .findOne({ seasonId });
+    
+    if (!season) {
+      console.log("Season not found:", seasonId);
+      return null;
+    }
+
+    console.log("Season found:", season);
+
+    const detailedInfo = {
+      seasonId,
+      startDate: season.startDate,
+      endDate: season.endDate,
+      isActive: season.isActive,
+      leagues: [] as any[],
+    };
+
+    for (const league of season.leagues) {
+      console.log("Processing league:", league.leagueType);
+      const leagueDetails = await this.getLeagueByType(league.leagueType);
+      if (!leagueDetails) {
+        console.log("League details not found for:", league.leagueType);
+        continue;
+      }
+
+      const leagueInfo = {
+        type: league.leagueType,
+        name: leagueDetails.name,
+        description: leagueDetails.description,
+        groups: [] as any[],
+        totalUsers: 0,
+      };
+
+      console.log("League groups:", league.groups);
+
+      for (const groupId of league.groups) {
+        console.log("Processing group:", groupId.toString());
+        const group = await this.getGroupLeaderboard(groupId.toString());
+        if (!group) {
+          console.log("Group not found:", groupId.toString());
+          continue;
+        }
+
+        console.log("Group found:", group.groupNumber, "with", group.users.length, "users");
+        const sortedUsers = [...group.users].sort((a, b) => b.points - a.points);
+        leagueInfo.totalUsers += sortedUsers.length;
+
+        leagueInfo.groups.push({
+          groupId: groupId.toString(),
+          groupNumber: group.groupNumber,
+          maxUsers: group.maxUsers,
+          userCount: sortedUsers.length,
+          users: sortedUsers.map((user, index) => ({
+            userId: user.userId,
+            points: user.points,
+            position: index + 1,
+            joinedAt: user.joinedAt,
+          })),
+        });
+      }
+
+      detailedInfo.leagues.push(leagueInfo);
+    }
+
+    console.log("Final detailed info:", detailedInfo);
+    return detailedInfo;
+  }
+
   // Select 3 random winners from Gold League top performers
   async selectGoldLeagueWinners(seasonId: string): Promise<string[]> {
     const currentSeason = await this.getCurrentSeason();
