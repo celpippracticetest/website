@@ -1066,7 +1066,7 @@ const LayoutClient = ({ children, showSurvey }: any) => {
                     <div onClick={() => router.push("/league")} className="cursor-pointer w-[40px] shrink-0 h-[40px] rounded-full border border-[#D5D6D8] bg-transparent flex items-center mr-[16px] justify-center">
                       <SvgLeagueLogo />
                     </div>
-                    
+
                     {proUser || hasEverPurchased ? (
                       <>
                         <button
@@ -1207,6 +1207,13 @@ const LayoutClient = ({ children, showSurvey }: any) => {
                         </a>
                       )}
 
+           
+<Link
+                  href="/league"
+                  className="block text-left px-4 py-2 text-[14px] text-gray-700"
+                >
+                  League
+                </Link>
                     <a
                       href="/profile"
                       className="block px-4 py-2 text-[14px] text-gray-700"
