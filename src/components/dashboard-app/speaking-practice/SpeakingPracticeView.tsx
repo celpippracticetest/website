@@ -74,6 +74,7 @@ const SpeakingPracticeView = ({
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [pointsAwarded, setPointsAwarded] = useState(false);
+  const [aiFeedbackPointsAwarded, setAiFeedbackPointsAwarded] = useState(false);
   const { user, isLoaded, isSignedIn } = useUser();
   const { addPoints } = useLeaguePoints();
   const {
@@ -190,6 +191,8 @@ const SpeakingPracticeView = ({
     setText("");
     setProgressBar(0);
     setIsSubmit(false);
+    setPointsAwarded(false);
+    setAiFeedbackPointsAwarded(false);
     if (isRecording) {
       cancelRecording();
     }
@@ -323,8 +326,11 @@ const SpeakingPracticeView = ({
                 attemptId
               );
 
-              // Add league points for AI feedback
-              await addPoints(5, "aiFeedback");
+              // Add league points for AI feedback (only once)
+              if (!aiFeedbackPointsAwarded) {
+                await addPoints(5, "aiFeedback");
+                setAiFeedbackPointsAwarded(true);
+              }
             }
 
             // Check for trophy achievements

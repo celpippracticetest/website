@@ -124,6 +124,10 @@ export class LeagueRepository {
         return false;
       }
 
+      // Get user's current points
+      const userPoints = await this.getUserOverallPoints(userId);
+      console.log("User points for group assignment:", userPoints);
+
       // Add user to group
       console.log("Adding user to group...");
       const result = await this.db
@@ -134,7 +138,7 @@ export class LeagueRepository {
             $push: {
               users: {
                 userId,
-                points: 0,
+                points: userPoints, // Use actual user points instead of 0
                 position: group.users.length + 1,
                 status: "safe" as const,
                 joinedAt: new Date(),
@@ -658,6 +662,51 @@ export class LeagueRepository {
     }
   }
 
+  // Check if user meets league requirements
+  async checkUserMeetsLeagueRequirements(userId: string, league: any): Promise<boolean> {
+    try {
+      // Get user's league points to check requirements
+      const userPoints = await this.db
+        .collection(this.userLeaguePointsCollection)
+        .findOne({ userId });
+
+      if (!userPoints) {
+        console.log("No user points found for requirement check");
+        return false;
+      }
+
+      // For bronze league, only check if user has any points (bronze is entry level)
+      if (league.type === "bronze") {
+        return userPoints.overallPoints > 0;
+      }
+
+      // Check minimum trophies requirement for higher leagues
+      const requiredTrophies = league.requirements?.minTrophies || 0;
+      const userTrophies = Math.floor(userPoints.overallPoints / 50); // Assuming 50 points = 1 trophy
+      
+      if (userTrophies < requiredTrophies) {
+        console.log(`User has ${userTrophies} trophies, needs ${requiredTrophies}`);
+        return false;
+      }
+
+      // Check specific task requirements for higher leagues
+      const requiredTasks = league.requirements?.tasks || [];
+      const completedTasks = userPoints.tasksCompleted || [];
+
+      for (const task of requiredTasks) {
+        if (!completedTasks.includes(task.id)) {
+          console.log(`User has not completed required task: ${task.id}`);
+          return false;
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error checking league requirements:", error);
+      return false;
+    }
+  }
+
   // Auto assign user to appropriate league
   async autoAssignUserToLeague(userId: string): Promise<boolean> {
     try {
@@ -698,6 +747,27 @@ export class LeagueRepository {
       const targetLeague = await this.getLeagueByType(targetLeagueType as any);
       if (!targetLeague) return false;
 
+      // Check if user meets league requirements
+      const meetsRequirements = await this.checkUserMeetsLeagueRequirements(userId, targetLeague);
+      if (!meetsRequirements) {
+        console.log(`User does not meet requirements for ${targetLeagueType} league`);
+        // Try bronze league instead
+        if (targetLeagueType !== "bronze") {
+          const bronzeLeague = await this.getLeagueByType("bronze");
+          if (!bronzeLeague) return false;
+          const bronzeMeetsRequirements = await this.checkUserMeetsLeagueRequirements(userId, bronzeLeague);
+          if (!bronzeMeetsRequirements) {
+            console.log("User does not meet requirements for bronze league either");
+            return false;
+          }
+          targetLeagueType = "bronze";
+        } else {
+          // For bronze league, if user has points but doesn't meet requirements,
+          // still assign them to bronze (bronze is entry level)
+          console.log("User has points but doesn't meet bronze requirements, assigning anyway (bronze is entry level)");
+        }
+      }
+
       const seasonLeague = currentSeason.leagues.find(
         (l) => l.leagueType === targetLeagueType
       );
@@ -711,6 +781,7 @@ export class LeagueRepository {
         targetLeagueType as any
       );
       if (bestGroupId) {
+        console.log("Found best group for user:", bestGroupId);
         added = await this.addUserToGroup(
           userId,
           bestGroupId,
@@ -718,7 +789,12 @@ export class LeagueRepository {
         );
         if (added) {
           groupId = bestGroupId;
+          console.log("User successfully added to group:", groupId);
+        } else {
+          console.log("Failed to add user to group:", bestGroupId);
         }
+      } else {
+        console.log("No available group found, will create new group");
       }
 
       if (!added) {
@@ -734,7 +810,7 @@ export class LeagueRepository {
           users: [
             {
               userId,
-              points: 0,
+              points: overallPoints, // Use actual user points instead of 0
               position: 1,
               status: "safe" as const,
               joinedAt: new Date(),

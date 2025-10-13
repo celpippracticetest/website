@@ -27,8 +27,11 @@ import SvgLeagueKados24 from "@/components/icons/LeagueKados24";
 import SvgCheck from "@/components/icons/Check";
 import SvgBronz96 from "@/components/icons/Bronz96";
 import SvgGold80 from "@/components/icons/Gold80";
+import SvgGold96 from "@/components/icons/Gold96";
 import SvgSilver80 from "@/components/icons/Silver80";
+import SvgSilver96 from "@/components/icons/Silver96";
 import { useRouter, usePathname } from "next/navigation";
+import SvgBronz80 from "@/components/icons/Bronz80";
 
 type Skill = {
   label: string;
@@ -85,6 +88,7 @@ interface LeagueData {
   userPoints: number;
   pointsBreakdown?: any;
   tasksCompleted?: string[];
+  skillsTried?: string[];
 }
 
 const Page = () => {
@@ -128,6 +132,7 @@ const Page = () => {
       console.log("League API response:", data);
       console.log("User signed in:", isSignedIn);
       console.log("User ID:", user?.id);
+      console.log("Debug info:", data.debug);
 
       if (response.ok) {
         setCurrentLeague(data.currentLeague);
@@ -136,20 +141,23 @@ const Page = () => {
 
         if (data.userGroup) {
           // User is in a league group
-          const users = data.userGroup.users.map((u: any) => ({
-            id: u.userId,
-            name:
-              u.userId === user?.id
-                ? user?.firstName ||
-                  user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] ||
-                  "You"
-                : `User ${u.userId.slice(-4)}`,
-            points: u.points,
-            league: data.currentLeague?.type || "bronze",
-            position: u.position,
-            tasksCompleted: data.userPoints?.tasksCompleted || [],
-            isCurrentUser: u.userId === user?.id,
-          }));
+          const users = data.userGroup.users.map((u: any) => {
+            console.log("Mapping user:", u.userId, "points:", u.points, "isCurrentUser:", u.userId === user?.id);
+            return {
+              id: u.userId,
+              name:
+                u.userId === user?.id
+                  ? user?.firstName ||
+                    user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] ||
+                    "You"
+                  : `User ${u.userId.slice(-4)}`,
+              points: u.points,
+              league: data.currentLeague?.type || "bronze",
+              position: u.position,
+              tasksCompleted: data.userPoints?.tasksCompleted || [],
+              isCurrentUser: u.userId === user?.id,
+            };
+          });
 
           const tasks =
             data.currentLeague?.requirements?.tasks?.map((task: any) => ({
@@ -169,6 +177,7 @@ const Page = () => {
             userPoints: data.userPoints?.totalPoints || 0,
             pointsBreakdown: data.pointsBreakdown || {},
             tasksCompleted: data.tasksCompleted || [],
+            skillsTried: data.skillsTried || [],
           });
         } else {
           // User not in league yet - show empty state
@@ -187,6 +196,7 @@ const Page = () => {
             userPoints: 0,
             pointsBreakdown: data.pointsBreakdown || {},
             tasksCompleted: data.tasksCompleted || [],
+            skillsTried: data.skillsTried || [],
           });
         }
       }
@@ -333,8 +343,8 @@ const Page = () => {
         id: task.id,
         title: task.title,
         points: task.points,
-        completed: leagueData?.userPoints
-          ? (leagueData as any).tasksCompleted?.includes(task.id) || false
+        completed: leagueData?.userPoints && leagueData.userPoints > 0
+          ? isTaskCompleted(task.title, leagueType)
           : false,
         description: task.description,
       })) || []
@@ -344,6 +354,11 @@ const Page = () => {
   // Check if a task is completed based on user data
   const isTaskCompleted = (taskTitle: string, leagueType: string) => {
     if (!leagueData) return false;
+
+    // If user has no points at all, no tasks should be completed
+    if (leagueData.userPoints === 0) return false;
+
+    console.log("Checking task completion:", { taskTitle, leagueType, userPoints: leagueData.userPoints, skillsTried: leagueData.skillsTried });
 
     // Get user's points breakdown from leagueData
     const pointsBreakdown = leagueData.pointsBreakdown || {};
@@ -359,13 +374,38 @@ const Page = () => {
     }
 
     // Skills tried check - check if user has tried all 4 skills
-    if (taskTitle.includes("Skills Tried")) {
-      // Check if user has tried all 4 skills (L, R, W, S)
-      // We'll check if they have points from different skill types
-      const skillsTriedPoints = pointsBreakdown.skillsTried || 0;
-      const practicePoints = pointsBreakdown.practiceSessions || 0;
-      // If they have points from skills tried or practice sessions, they've tried skills
-      return skillsTriedPoints >= 10 || practicePoints >= 10; // At least 10 points means they tried
+    if (taskTitle.includes("Skills Tried") && taskTitle.includes("(L, R, W, S)")) {
+      // Check if user has completed practice sessions in all 4 skills
+      const skillsTried = leagueData.skillsTried || [];
+      const requiredSkills = ["Listening", "Reading", "Writing", "Speaking"];
+      const completedSkills = requiredSkills.filter(skill => skillsTried.includes(skill));
+      console.log("Skills Tried check:", { skillsTried, requiredSkills, completedSkills, completed: completedSkills.length >= 4 });
+      return completedSkills.length >= 4;
+    }
+
+    // Individual skill checks - only for specific skill tasks, not the general "Skills Tried" task
+    if (taskTitle.includes("Listening") && !taskTitle.includes("Skills Tried")) {
+      const skillsTried = leagueData.skillsTried || [];
+      console.log("Listening skill check:", { skillsTried, hasListening: skillsTried.includes("Listening") });
+      return skillsTried.includes("Listening");
+    }
+
+    if (taskTitle.includes("Reading") && !taskTitle.includes("Skills Tried")) {
+      const skillsTried = leagueData.skillsTried || [];
+      console.log("Reading skill check:", { skillsTried, hasReading: skillsTried.includes("Reading") });
+      return skillsTried.includes("Reading");
+    }
+
+    if (taskTitle.includes("Writing") && !taskTitle.includes("Skills Tried")) {
+      const skillsTried = leagueData.skillsTried || [];
+      console.log("Writing skill check:", { skillsTried, hasWriting: skillsTried.includes("Writing") });
+      return skillsTried.includes("Writing");
+    }
+
+    if (taskTitle.includes("Speaking") && !taskTitle.includes("Skills Tried")) {
+      const skillsTried = leagueData.skillsTried || [];
+      console.log("Speaking skill check:", { skillsTried, hasSpeaking: skillsTried.includes("Speaking") });
+      return skillsTried.includes("Speaking");
     }
 
     // AI Feedback check
@@ -406,36 +446,15 @@ const Page = () => {
     return false;
   };
 
-  // Render tasks for a specific league
-  const renderLeagueTasks = (leagueType: string, staticTasks: any[]) => {
-    // If user is in this league, show dynamic tasks
-    if (currentLeague?.type === leagueType && leagueData?.tasks) {
-      return leagueData.tasks.map((task) => (
-        <div key={task.id} className="flex gap-[8px]">
-          <div
-            className={`cursor-pointer ${
-              task.completed ? "text-[#10B981]" : "text-[#979EA8]"
-            }`}
-            onClick={() => !task.completed && handleTaskCompletion(task.id)}
-          >
-            <CircleCheck />
-          </div>
-          <span
-            className={`text-[14px] ${
-              task.completed ? "text-[#10B981]" : "text-[#37465C]"
-            }`}
-          >
-            {task.title}
-          </span>
-        </div>
-      ));
-    }
-
-    // Otherwise show static tasks with completion status
-    return staticTasks.map((task, index) => {
-      const completed = isTaskCompleted(task, leagueType);
+  // Render skills tried task with progressive completion
+  const renderSkillsTriedTask = (task: string) => {
+    if (!task.includes("Skills Tried") || !task.includes("(L, R, W, S)")) {
+      // Regular task
+      const completed = leagueData?.userPoints && leagueData.userPoints > 0 
+        ? isTaskCompleted(task, currentLeague?.type || "bronze") 
+        : false;
       return (
-        <div key={index} className="flex gap-[8px]">
+        <div className="flex gap-[8px]">
           <div className={completed ? "text-[#10B981]" : "text-[#979EA8]"}>
             <CircleCheck />
           </div>
@@ -448,7 +467,58 @@ const Page = () => {
           </span>
         </div>
       );
+    }
+
+    // Skills Tried task with progressive completion
+    const skillsTried = leagueData?.skillsTried || [];
+    const requiredSkills = ["Listening", "Reading", "Writing", "Speaking"];
+    const completedSkills = requiredSkills.filter(skill => skillsTried.includes(skill));
+    const allCompleted = completedSkills.length >= 4;
+
+    console.log("Skills Tried task rendering:", { 
+      skillsTried, 
+      requiredSkills, 
+      completedSkills, 
+      allCompleted,
+      leagueData: leagueData?.skillsTried 
     });
+
+    // Create progressive text
+    const baseText = "4 Skills Tried (";
+    const skillLetters = ["L", "R", "W", "S"];
+    const skillNames = ["Listening", "Reading", "Writing", "Speaking"];
+    
+    const progressiveText = baseText + skillLetters.map((letter, index) => {
+      const skillName = skillNames[index];
+      const isCompleted = skillsTried.includes(skillName);
+      console.log(`Skill ${skillName} (${letter}):`, { isCompleted, skillsTried });
+      return isCompleted ? `<span class="text-[#10B981]">${letter}</span>` : letter;
+    }).join(", ") + ")";
+
+    return (
+      <div className="flex gap-[8px]">
+        <div className={allCompleted ? "text-[#10B981]" : "text-[#979EA8]"}>
+          <CircleCheck />
+        </div>
+        <span
+          className={`text-[14px] ${
+            allCompleted ? "text-[#10B981]" : "text-[#37465C]"
+          }`}
+          dangerouslySetInnerHTML={{ __html: progressiveText }}
+        />
+      </div>
+    );
+  };
+
+  // Render tasks for a specific league
+  const renderLeagueTasks = (leagueType: string, staticTasks: any[]) => {
+    // Always show static tasks with completion status for now
+    // TODO: Implement dynamic tasks from API later
+    return staticTasks.map((task, index) => (
+      <div key={index}>
+        {renderSkillsTriedTask(task)}
+      </div>
+    ));
   };
 
   // League progression logic
@@ -654,23 +724,70 @@ const Page = () => {
     
     // If user has points and is in a league, show league table
     if (currentLeague && userGroup && leagueData.users.length > 0) {
+      const sortedUsers = [...leagueData.users].sort((a, b) => b.points - a.points);
+      const totalUsers = sortedUsers.length;
+      
+      // Calculate zones based on current league
+      let promotionZone: number;
+      let demotionZone: number;
+      let safeZone: number;
+
+      switch (currentLeague.type) {
+        case "bronze":
+          promotionZone = Math.ceil(totalUsers * 0.3); // Top 30% promote to Silver
+          demotionZone = 0; // No demotion from Bronze
+          safeZone = totalUsers - promotionZone; // Remaining 70% stay in Bronze
+          break;
+        case "silver":
+          promotionZone = Math.ceil(totalUsers * 0.25); // Top 25% promote to Gold
+          demotionZone = Math.floor(totalUsers * 0.3); // Bottom 30% demote to Bronze
+          safeZone = totalUsers - promotionZone - demotionZone; // Middle 45% stay in Silver
+          break;
+        case "gold":
+          promotionZone = 0; // No promotion from Gold
+          demotionZone = Math.floor(totalUsers * 0.4); // Bottom 40% demote to Silver
+          safeZone = totalUsers - demotionZone; // Top 60% stay in Gold
+          break;
+        default:
+          promotionZone = 0;
+          demotionZone = 0;
+          safeZone = totalUsers;
+      }
+
       return (
         <div className="min-h-[529px] bg-white border border-[#E0E7FF] rounded-[12px] p-[24px]">
           <LeagueStatusComponent />
           <div className="space-y-[16px]">
             {/* Show all users in the group, sorted by points */}
-            {leagueData.users
-              .sort((a, b) => b.points - a.points)
-              .map((groupUser, index) => (
+            {sortedUsers.map((groupUser, index) => {
+              // Determine zone for this user
+              let zoneClass = "";
+              let zoneIndicator = "";
+              
+              if (index < promotionZone && currentLeague.type !== "gold") {
+                // Promotion zone - Green
+                zoneClass = "bg-green-50 border-l-4 border-green-500";
+                zoneIndicator = "bg-green-500";
+              } else if (index >= totalUsers - demotionZone && currentLeague.type !== "bronze") {
+                // Demotion zone - Red
+                zoneClass = "bg-red-50 border-l-4 border-red-500";
+                zoneIndicator = "bg-red-500";
+              } else {
+                // Safe zone - Gray
+                zoneClass = "bg-gray-50 border-l-4 border-gray-300";
+                zoneIndicator = "bg-gray-400";
+              }
+
+              return (
                 <div
                   key={`user-${groupUser.id || 'unknown'}-${index}-${groupUser.points || 0}`}
-                  className={`flex items-center gap-[16px] py-[8px] ${
+                  className={`flex items-center gap-[16px] py-[8px] ${zoneClass} ${
                     groupUser.isCurrentUser
                       ? "bg-[#FED7AA] rounded-[8px] p-[12px]"
-                      : ""
+                      : "rounded-[8px] p-[12px]"
                   }`}
                 >
-                  <div className="w-[8px] h-[8px] bg-[#E5E7EB] rounded-full"></div>
+                  <div className={`w-[8px] h-[8px] ${zoneIndicator} rounded-full`}></div>
                   <div className="w-[40px] h-[40px] bg-[#E5E7EB] rounded-full flex items-center justify-center">
                     {groupUser.avatar ? (
                       <img
@@ -689,11 +806,12 @@ const Page = () => {
                         "User"}
                     </div>
                   </div>
-                  <div className="  flex-1 text-[#374151] text-right font-medium">
+                  <div className="flex-1 text-[#374151] text-right font-medium">
                     {groupUser.points} XP
                   </div>
                 </div>
-              ))}
+              );
+            })}
           </div>
         </div>
       );
@@ -1157,20 +1275,41 @@ const Page = () => {
               <div className="flex gap-[48px] w-full">
                 <div className="w-full">
                   <div className="flex items-center gap-[24px] mt-[24px]">
-                    <SvgBronz96 />
-                    <SvgSilver80 />
-                    <SvgGold80 />
+                    {currentLeague?.type === "gold" ? (
+                      <>
+                        <SvgBronz80 />
+                        <SvgSilver80 />
+                        <SvgGold96 />
+                      </>
+                    ) : currentLeague?.type === "silver" ? (
+                      <>
+                        <SvgBronz80 />
+                        <SvgSilver96 />
+                        <SvgGold80 />
+                      </>
+                    ) : (
+                      <>
+                        <SvgBronz96 />
+                        <SvgSilver80 />
+                        <SvgGold80 />
+                      </>
+                    )}
                   </div>
 
                   <div className="mt-[24px] flex">
                     <span className="text-[18px] text-[#212E42] font-semibold leading-[28px]">
-                      ‌Bronze League
+                      {currentLeague?.type === "gold" ? "Gold League" : 
+                       currentLeague?.type === "silver" ? "Silver League" : 
+                       "Bronze League"}
                     </span>
                   </div>
                   <div className="flex mt-[12px]">
                     <span className="text-[14px] text-[#37465C] font-semibold text-justify">
-                      Unlock this league by completing the tasks and earning
-                      trophies along the way!
+                      {currentLeague?.type === "gold" ? 
+                        "Elite league with gift card rewards! Compete with the best players and stay on top!" :
+                       currentLeague?.type === "silver" ? 
+                        "Intermediate league for experienced players. Work hard to reach the Gold League!" :
+                       "Unlock this league by completing the tasks and earning trophies along the way!"}
                     </span>
                   </div>
 
@@ -1261,20 +1400,41 @@ const Page = () => {
             <div className="flex gap-[48px] w-full">
               <div className="w-full">
                 <div className="flex items-center gap-[24px] mt-[24px]">
-                  <SvgBronz96 />
-                  <SvgSilver80 />
-                  <SvgGold80 />
+                  {currentLeague?.type === "gold" ? (
+                    <>
+                      <SvgBronz80 />
+                      <SvgSilver80 />
+                      <SvgGold96 />
+                    </>
+                  ) : currentLeague?.type === "silver" ? (
+                    <>
+                      <SvgBronz80 />
+                      <SvgSilver96 />
+                      <SvgGold80 />
+                    </>
+                  ) : (
+                    <>
+                      <SvgBronz96 />
+                      <SvgSilver80 />
+                      <SvgGold80 />
+                    </>
+                  )}
                 </div>
 
                 <div className="mt-[24px] flex">
                   <span className="text-[18px] text-[#212E42] font-semibold leading-[28px]">
-                    ‌Bronze League
+                    {currentLeague?.type === "gold" ? "Gold League" : 
+                     currentLeague?.type === "silver" ? "Silver League" : 
+                     "Bronze League"}
                   </span>
                 </div>
                 <div className="flex mt-[12px] ">
                   <span className="text-[14px] text-[#37465C] font-semibold text-justify">
-                    Unlock this league by completing the tasks and earning
-                    trophies along the way!
+                    {currentLeague?.type === "gold" ? 
+                      "Elite league with gift card rewards! Compete with the best players and stay on top!" :
+                     currentLeague?.type === "silver" ? 
+                      "Intermediate league for experienced players. Work hard to reach the Gold League!" :
+                     "Unlock this league by completing the tasks and earning trophies along the way!"}
                   </span>
                 </div>
 

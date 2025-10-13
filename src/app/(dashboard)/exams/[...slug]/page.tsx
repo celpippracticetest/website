@@ -16,7 +16,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 
 const Exam = async ({ params }: { params: { slug: string[] } }) => {
-  const resolvedParams = params;
+  const resolvedParams = await params;
   const examId: string | undefined =
     resolvedParams?.slug?.[0]?.split("exam_")?.[1];
   const partNumber: string | undefined =

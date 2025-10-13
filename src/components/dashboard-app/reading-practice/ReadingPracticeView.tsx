@@ -67,6 +67,12 @@ const ReadingPracticeView = ({
   const [pointsAwarded, setPointsAwarded] = useState(false);
   const timerTime = practice.taskId === "67f168222f0ca7f9a751ed3d" ? 780 : 660;
   const router = useRouter();
+
+  // Reset pointsAwarded when practice changes
+  useEffect(() => {
+    console.log("Reading practice: Resetting pointsAwarded for practice:", selectedPracticeId);
+    setPointsAwarded(false);
+  }, [selectedPracticeId]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [page, setPage] = useState("question");
   const [passageIndex, setPassageIndex] = useState(0);
@@ -140,16 +146,6 @@ const ReadingPracticeView = ({
               time
             );
 
-            // Add league points (only once)
-            if (!pointsAwarded) {
-              await addPoints(
-                10,
-                "practiceSessions",
-                `${Math.floor(time / 60)} minutes`
-              );
-              setPointsAwarded(true);
-            }
-
             // Check for trophy achievements
             await checkTrophyAchievements(
               10,
@@ -166,6 +162,12 @@ const ReadingPracticeView = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, user]);
+
+
+
+
+
+
   const handleAnswerSelect = (questionId: number, answerId: string) => {
     setSelectedAnswers((prev) => ({
       ...prev,
@@ -345,6 +347,37 @@ const ReadingPracticeView = ({
                             answers: selectedAnswers,
                           }),
                         });
+                        
+                        // Add league points when practice is completed
+                        if (!pointsAwarded) {
+                          console.log("Reading practice: Adding league points on Next click...");
+                          
+                          // Log practice completed
+                          const attemptId = `practice_${practice.id}_${Date.now()}`;
+                          await ActivityLogger.practiceCompleted(
+                            attemptId,
+                            practice.id,
+                            "Reading",
+                            100, // Assuming 100% score for now
+                            { overall: 100 },
+                            time
+                          );
+                          
+                          const pointsResult = await addPoints(
+                            10,
+                            "practiceSessions",
+                            `${Math.floor(time / 60)} minutes`
+                          );
+                          console.log("Reading practice: Points result:", pointsResult);
+                          setPointsAwarded(true);
+                          
+                          // Check for trophy achievements
+                          await checkTrophyAchievements(
+                            10,
+                            "practiceSessions",
+                            `${Math.floor(time / 60)}:${time % 60}`
+                          );
+                        }
                       } catch (err) {
                         console.error(
                           "Failed to save answers before navigating:",

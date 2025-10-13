@@ -210,6 +210,45 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Get skills tried by user (if authenticated)
+    let skillsTried: string[] = [];
+    if (userId) {
+      try {
+        // Query user activities to find which skills they've practiced
+        // Only get activities from the current season to avoid old data
+        const currentSeasonStart = currentSeason?.startDate ? new Date(currentSeason.startDate) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days ago as fallback
+        
+        const userActivities = await db.collection("useractivities").find({
+          userId: userId,
+          eventType: "practice_attempt_completed",
+          status: "completed",
+          timestampUtc: { $gte: currentSeasonStart }
+        }).sort({ timestampUtc: -1 }).toArray();
+        
+        console.log("User activities found (current season):", userActivities.length);
+        console.log("Activities:", userActivities.map(a => ({ 
+          skill: a.skill, 
+          eventType: a.eventType, 
+          status: a.status,
+          timestamp: a.timestampUtc,
+          contentId: a.contentId
+        })));
+        
+        // Extract unique skills from completed practice sessions in current season
+        const skillsSet = new Set();
+        userActivities.forEach(activity => {
+          if (activity.skill) {
+            skillsSet.add(activity.skill);
+          }
+        });
+        skillsTried = Array.from(skillsSet) as string[];
+        console.log("Skills tried extracted (current season):", skillsTried);
+      } catch (error) {
+        console.error("Error fetching skills tried:", error);
+        skillsTried = [];
+      }
+    }
+
     return NextResponse.json({
       currentSeason,
       leagues,
@@ -218,6 +257,18 @@ export async function GET(request: NextRequest) {
       userGroup,
       pointsBreakdown: userPoints?.pointsBreakdown || {},
       tasksCompleted: userPoints?.tasksCompleted || [],
+      skillsTried: skillsTried,
+      debug: {
+        skillsTriedCount: skillsTried.length,
+        skillsTriedArray: skillsTried,
+        currentSeasonStart: currentSeason?.startDate,
+        userActivitiesCount: userId ? (await db.collection("useractivities").countDocuments({
+          userId: userId,
+          eventType: "practice_attempt_completed",
+          status: "completed",
+          timestampUtc: { $gte: currentSeason?.startDate ? new Date(currentSeason.startDate) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+        })) : 0
+      }
     });
   } catch (error: any) {
     console.error("Error fetching league data:", error);
@@ -395,6 +446,17 @@ export async function POST(request: NextRequest) {
       );
 
       console.log("Add points result:", success);
+
+      // After adding points, try to auto-assign user to league if not already assigned
+      if (success) {
+        console.log("Points added successfully, checking for league assignment...");
+        const currentLeague = await leagueRepo.getUserCurrentLeague(userId);
+        if (!currentLeague) {
+          console.log("User not in league, attempting auto-assignment...");
+          const autoAssignResult = await leagueRepo.autoAssignUserToLeague(userId);
+          console.log("Auto-assignment result after points:", autoAssignResult);
+        }
+      }
 
       if (!success) {
         console.error("addPointsToUser returned false - checking user league status...");

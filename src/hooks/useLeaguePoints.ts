@@ -9,7 +9,12 @@ export const useLeaguePoints = () => {
     pointsType: 'mockExams' | 'practiceSessions' | 'aiFeedback' | 'skillsTried' | 'timeSpent',
     timeSpent?: string
   ) => {
-    if (!user) return;
+    if (!user) {
+      console.log("useLeaguePoints: No user found");
+      return;
+    }
+
+    console.log("useLeaguePoints: Adding points:", { points, pointsType, timeSpent });
 
     try {
       const response = await fetch('/api/league', {
@@ -22,7 +27,11 @@ export const useLeaguePoints = () => {
         })
       });
 
+      console.log("useLeaguePoints: API response status:", response.status);
+
       if (response.ok) {
+        const responseData = await response.json();
+        console.log("useLeaguePoints: API response data:", responseData);
         // Return points data for medal display
         return {
           points,
