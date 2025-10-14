@@ -518,38 +518,19 @@ export async function POST(request: NextRequest) {
 
       // Check if user is already in the correct league
       const currentLeague = await leagueRepo.getUserCurrentLeague(userId);
-      const leagueChange = currentLeague && currentLeague.type !== targetLeagueType;
-      
-      if (leagueChange) {
-        if (targetLeagueType === "none") {
-          // User should be removed from all leagues (demotion to no league)
-          console.log(`User should be demoted from ${currentLeague?.type} to no league`);
-          const demotionResult = await leagueRepo.removeUserFromLeague(userId);
-          console.log("Demotion result:", demotionResult);
-        } else {
-          // User should be moved to different league
-          const isPromotion = getLeagueLevel(currentLeague.type) < getLeagueLevel(targetLeagueType);
-          const action = isPromotion ? "promoted" : "demoted";
-          
-          console.log(`User should be ${action} from ${currentLeague?.type} to ${targetLeagueType}`);
-          const changeResult = await leagueRepo.promoteUserToLeague(
-            userId,
-            targetLeagueType as "bronze" | "silver" | "gold",
-            currentSeason.seasonId
-          );
-          console.log("League change result:", changeResult);
-        }
-      }
+      // NO IMMEDIATE LEAGUE CHANGES - Users stay in their current league until season end
+      // League progression only happens at season end (every 7 days)
+      console.log("Points added successfully. League changes will be processed at season end.");
 
       return NextResponse.json({ 
         success: true, 
         message: "Points added successfully",
         points: points,
         pointsType: pointsType,
-        leagueChanged: leagueChange,
-        action: leagueChange ? (targetLeagueType === "none" ? "demoted" : (getLeagueLevel(currentLeague?.type || "") < getLeagueLevel(targetLeagueType) ? "promoted" : "demoted")) : null,
-        newLeague: leagueChange ? (targetLeagueType === "none" ? null : targetLeagueType) : null,
-        previousLeague: leagueChange ? currentLeague?.type : null
+        leagueChanged: false, // No immediate league changes
+        action: null, // No immediate action
+        newLeague: null, // No immediate league change
+        previousLeague: currentLeague?.type || null
       });
     } else if (action === "complete_task") {
       if (!userId) {
