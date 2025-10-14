@@ -732,9 +732,16 @@ export class LeagueRepository {
   // Check if user completed league tasks
   async checkUserCompletedLeagueTasks(userId: string, leagueType: string): Promise<boolean> {
     try {
+      // Get current season to check tasks for current season only
+      const currentSeason = await this.getCurrentSeason();
+      if (!currentSeason) return false;
+
       const userPoints = await this.db
         .collection(this.userLeaguePointsCollection)
-        .findOne({ userId });
+        .findOne({ 
+          userId, 
+          seasonId: currentSeason.seasonId 
+        });
 
       if (!userPoints) return false;
 
