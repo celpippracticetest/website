@@ -605,7 +605,29 @@ export class LeagueRepository {
       const currentSeason = await this.getCurrentSeason();
       if (!currentSeason) return null;
 
-      // Check all leagues to find where user is currently assigned
+      // First check user_league_points to see their assigned league
+      const userPoints = await this.db
+        .collection(this.userLeaguePointsCollection)
+        .findOne({ 
+          userId, 
+          seasonId: currentSeason.seasonId 
+        });
+
+      if (userPoints && (userPoints as any).leagueId) {
+        // Get league type from leagueId
+        const league = await this.db
+          .collection(this.leaguesCollection)
+          .findOne({ _id: (userPoints as any).leagueId });
+        
+        if (league) {
+          return {
+            type: league.type,
+            groupId: (userPoints as any).groupId?.toString() || null
+          };
+        }
+      }
+
+      // Fallback: Check all leagues to find where user is currently assigned in groups
       for (const seasonLeague of currentSeason.leagues) {
         for (const groupId of seasonLeague.groups) {
           const group = await this.db
@@ -707,6 +729,143 @@ export class LeagueRepository {
     }
   }
 
+  // Check if user completed league tasks
+  async checkUserCompletedLeagueTasks(userId: string, leagueType: string): Promise<boolean> {
+    try {
+      const userPoints = await this.db
+        .collection(this.userLeaguePointsCollection)
+        .findOne({ userId });
+
+      if (!userPoints) return false;
+
+      // Define tasks for each league (based on current system)
+      const leagueTasks = {
+        bronze: [
+          "1 Mock Exam Completed", 
+          "4 Skills Tried (L, R, W, S)", 
+          "1 Writing or Speaking with AI Feedback"
+        ],
+        silver: [
+          "2 Mock Exams Completed", 
+          "8 Skills Tried (L, R, W, S)", 
+          "2 Writing or Speaking with AI Feedback"
+        ],
+        gold: [
+          "3 Mock Exams Completed", 
+          "12 Skills Tried (L, R, W, S)", 
+          "3 Writing or Speaking with AI Feedback"
+        ]
+      };
+
+      const requiredTasks = leagueTasks[leagueType as keyof typeof leagueTasks] || [];
+      const completedTasks = userPoints.tasksCompleted || [];
+
+      console.log(`Checking tasks for user ${userId} in ${leagueType} league:`, {
+        requiredTasks,
+        completedTasks,
+        hasAllTasks: requiredTasks.every(task => completedTasks.includes(task))
+      });
+
+      // Check if all required tasks are completed
+      const hasAllTasks = requiredTasks.every(task => completedTasks.includes(task));
+      
+      return hasAllTasks;
+    } catch (error) {
+      console.error("Error checking league tasks:", error);
+      return false;
+    }
+  }
+
+  // Get minimum points required for league progression
+  getMinimumPointsForLeague(leagueType: string): number {
+    const minimumPoints = {
+      bronze: 50,   // Minimum points to progress from Bronze
+      silver: 100,  // Minimum points to progress from Silver
+      gold: 150     // Minimum points to stay in Gold
+    };
+
+    return minimumPoints[leagueType as keyof typeof minimumPoints] || 0;
+  }
+
+  // Reset all users to Bronze League (for new season)
+  async resetAllUsersToBronzeLeague(): Promise<boolean> {
+    try {
+      console.log("Resetting all users to Bronze League...");
+      
+      const currentSeason = await this.getCurrentSeason();
+      if (!currentSeason) {
+        console.log("No current season found");
+        return false;
+      }
+
+      // Get Bronze League
+      const bronzeLeague = await this.getLeagueByType("bronze");
+      if (!bronzeLeague) {
+        console.log("Bronze League not found");
+        return false;
+      }
+
+      // Get all users currently in Silver and Gold leagues
+      const silverLeague = await this.getLeagueByType("silver");
+      const goldLeague = await this.getLeagueByType("gold");
+      
+      const allUsersToMove = [];
+      
+      if (silverLeague) {
+        const silverUsers = await this.db.collection(this.userLeaguePointsCollection).find({
+          leagueId: silverLeague._id,
+          seasonId: currentSeason.seasonId
+        }).toArray();
+        allUsersToMove.push(...silverUsers);
+      }
+      
+      if (goldLeague) {
+        const goldUsers = await this.db.collection(this.userLeaguePointsCollection).find({
+          leagueId: goldLeague._id,
+          seasonId: currentSeason.seasonId
+        }).toArray();
+        allUsersToMove.push(...goldUsers);
+      }
+
+      console.log(`Found ${allUsersToMove.length} users to move to Bronze League`);
+
+      // Move all users to Bronze League
+      for (const user of allUsersToMove) {
+        // Remove from current group
+        await this.db.collection(this.leagueGroupsCollection).updateOne(
+          { _id: new ObjectId(user.groupId.toString()) },
+          { $pull: { users: user.userId } }
+        );
+
+        // Add to Bronze League group
+        const bronzeGroup = await this.getAvailableGroup(bronzeLeague._id.toString(), currentSeason.seasonId);
+        if (bronzeGroup) {
+          await this.db.collection(this.leagueGroupsCollection).updateOne(
+            { _id: new ObjectId(bronzeGroup._id.toString()) },
+            { $push: { users: user.userId } }
+          );
+
+          // Update user's league and group
+          await this.db.collection(this.userLeaguePointsCollection).updateOne(
+            { _id: user._id },
+            { 
+              $set: { 
+                leagueId: bronzeLeague._id,
+                groupId: bronzeGroup._id
+              }
+            }
+          );
+        }
+      }
+
+      console.log("Successfully moved all users to Bronze League");
+      return true;
+    } catch (error) {
+      console.error("Error resetting users to Bronze League:", error);
+      return false;
+    }
+  }
+
   // Auto assign user to appropriate league
   async autoAssignUserToLeague(userId: string): Promise<boolean> {
     try {
@@ -721,7 +880,7 @@ export class LeagueRepository {
 
       // Check if user is already in any league group
       const currentLeague = await this.getUserCurrentLeague(userId);
-      if (currentLeague) {
+      if (currentLeague && currentLeague.groupId && currentLeague.groupId !== null && currentLeague.groupId !== "" && currentLeague.groupId !== "null") {
         console.log("User already in league group:", currentLeague.groupId);
         return true;
       }
@@ -736,36 +895,19 @@ export class LeagueRepository {
         return false;
       }
       
+      // Determine target league based on user's current assignment or default to Bronze
       let targetLeagueType = "bronze";
-      if (overallPoints >= 150) {
-        targetLeagueType = "gold";
-      } else if (overallPoints >= 100) {
-        targetLeagueType = "silver";
+      if (currentLeague) {
+        targetLeagueType = currentLeague.type;
+        console.log("User already assigned to league:", targetLeagueType);
+      } else {
+        console.log("New user - assigning to Bronze League (entry level for all users)");
       }
 
-      // Find target league
       const targetLeague = await this.getLeagueByType(targetLeagueType as any);
-      if (!targetLeague) return false;
-
-      // Check if user meets league requirements
-      const meetsRequirements = await this.checkUserMeetsLeagueRequirements(userId, targetLeague);
-      if (!meetsRequirements) {
-        console.log(`User does not meet requirements for ${targetLeagueType} league`);
-        // Try bronze league instead
-        if (targetLeagueType !== "bronze") {
-          const bronzeLeague = await this.getLeagueByType("bronze");
-          if (!bronzeLeague) return false;
-          const bronzeMeetsRequirements = await this.checkUserMeetsLeagueRequirements(userId, bronzeLeague);
-          if (!bronzeMeetsRequirements) {
-            console.log("User does not meet requirements for bronze league either");
-            return false;
-          }
-          targetLeagueType = "bronze";
-        } else {
-          // For bronze league, if user has points but doesn't meet requirements,
-          // still assign them to bronze (bronze is entry level)
-          console.log("User has points but doesn't meet bronze requirements, assigning anyway (bronze is entry level)");
-        }
+      if (!targetLeague) {
+        console.log("Target League not found:", targetLeagueType);
+        return false;
       }
 
       const seasonLeague = currentSeason.leagues.find(
@@ -855,6 +997,36 @@ export class LeagueRepository {
     } catch (error) {
       console.error("Error auto assigning user to league:", error);
       return false;
+    }
+  }
+
+  // Get available group for a league
+  async getAvailableGroup(leagueId: string, seasonId: string): Promise<TLeagueGroup | null> {
+    try {
+      const currentSeason = await this.getCurrentSeason();
+      if (!currentSeason) return null;
+
+      // Find the league by ID
+      const league = await this.db.collection(this.leaguesCollection).findOne({ _id: new ObjectId(leagueId) });
+      if (!league) return null;
+
+      const seasonLeague = currentSeason.leagues.find(
+        (l) => l.leagueType === league.type
+      );
+      if (!seasonLeague) return null;
+
+      // Find groups that are not full
+      for (const groupId of seasonLeague.groups) {
+        const group = await this.getGroupLeaderboard(groupId.toString());
+        if (group && group.users.length < group.maxUsers) {
+          return group;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error getting available group:", error);
+      return null;
     }
   }
 
@@ -1326,7 +1498,7 @@ export class LeagueRepository {
     const currentSeason = await this.getCurrentSeason();
     if (!currentSeason) return false;
 
-    // Process league promotions/demotions
+    // Process league promotions/demotions and move users
     await this.processSeasonEnd(currentSeason);
 
     // Mark current season as ended
@@ -1356,6 +1528,20 @@ export class LeagueRepository {
     };
 
     await this.createSeason(newSeason);
+    
+    // Update all user_league_points records to use new season
+    await this.db.collection(this.userLeaguePointsCollection).updateMany(
+      { seasonId: currentSeason.seasonId },
+      {
+        $set: {
+          seasonId: newSeasonId,
+          totalPoints: 0, // Reset season points for new season
+          groupId: null, // Reset group assignment for new season
+          updatedAt: new Date(),
+        },
+      }
+    );
+    
     return true;
   }
 
@@ -1545,16 +1731,23 @@ export class LeagueRepository {
           let newStatus: "promotion" | "safe" | "demotion" = "safe";
           let targetLeague = league.leagueType;
 
+          // Check if user completed league tasks and has minimum points
+          const hasCompletedTasks = await this.checkUserCompletedLeagueTasks(user.userId, league.leagueType);
+          const hasMinimumPoints = user.points >= this.getMinimumPointsForLeague(league.leagueType);
+
           // Determine status and target league
-          if (i < promotionCount && league.leagueType !== "gold") {
+          if (i < promotionCount && league.leagueType !== "gold" && hasCompletedTasks && hasMinimumPoints) {
+            // Promote only if tasks completed + minimum points
             newStatus = "promotion";
             targetLeague = league.leagueType === "bronze" ? "silver" : "gold";
           } else if (i >= totalUsers - demotionCount && league.leagueType !== "bronze") {
+            // Demote if in demotion zone (regardless of tasks)
             newStatus = "demotion";
             targetLeague = league.leagueType === "gold" ? "silver" : "bronze";
           } else {
+            // Stay in same league
             newStatus = "safe";
-            targetLeague = league.leagueType; // Stay in same league
+            targetLeague = league.leagueType;
           }
 
           // Update user status in current group
@@ -1580,6 +1773,36 @@ export class LeagueRepository {
             {
               $set: {
                 totalPoints: 0, // Reset season points
+                updatedAt: new Date(),
+              },
+            }
+          );
+        }
+      }
+    }
+
+    // Step 2: Move users to their new leagues for next season
+    console.log(`Moving ${usersToMove.length} users to new leagues...`);
+    
+    for (const userMove of usersToMove) {
+      if (userMove.currentLeague !== userMove.targetLeague) {
+        console.log(`Moving user ${userMove.userId} from ${userMove.currentLeague} to ${userMove.targetLeague}`);
+        
+        // Remove user from current league group
+        await this.db.collection(this.leagueGroupsCollection).updateMany(
+          { "users.userId": userMove.userId },
+          { $pull: { users: { userId: userMove.userId } } }
+        );
+        
+        // Update user's league assignment in user_league_points
+        const targetLeague = await this.getLeagueByType(userMove.targetLeague);
+        if (targetLeague) {
+          await this.db.collection(this.userLeaguePointsCollection).updateOne(
+            { userId: userMove.userId },
+            {
+              $set: {
+                leagueId: targetLeague._id,
+                groupId: null, // Will be assigned to group when they earn points
                 updatedAt: new Date(),
               },
             }
