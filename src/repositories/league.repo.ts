@@ -732,28 +732,38 @@ export class LeagueRepository {
   // Check if user completed league tasks
   async checkUserCompletedLeagueTasks(userId: string, leagueType: string): Promise<boolean> {
     try {
+      // Get current season to check tasks for current season only
+      const currentSeason = await this.getCurrentSeason();
+      if (!currentSeason) return false;
+
       const userPoints = await this.db
         .collection(this.userLeaguePointsCollection)
-        .findOne({ userId });
+        .findOne({ 
+          userId, 
+          seasonId: currentSeason.seasonId 
+        });
 
       if (!userPoints) return false;
 
-      // Define tasks for each league (based on current system)
+      // Define tasks for each league (using task IDs that match the league requirements)
       const leagueTasks = {
         bronze: [
-          "1 Mock Exam Completed", 
-          "4 Skills Tried (L, R, W, S)", 
-          "1 Writing or Speaking with AI Feedback"
+          "mock-exam", 
+          "skills-tried", 
+          "ai-feedback"
         ],
         silver: [
-          "2 Mock Exams Completed", 
-          "8 Skills Tried (L, R, W, S)", 
-          "2 Writing or Speaking with AI Feedback"
+          "mock-exams-5", 
+          "clb-improvement", 
+          "writing-feedback-3",
+          "speaking-feedback-3"
         ],
         gold: [
-          "3 Mock Exams Completed", 
-          "12 Skills Tried (L, R, W, S)", 
-          "3 Writing or Speaking with AI Feedback"
+          "mock-exams-10", 
+          "clb-improvement-3-skills", 
+          "practice-consistency",
+          "referral",
+          "celpip-champion"
         ]
       };
 
@@ -895,14 +905,10 @@ export class LeagueRepository {
         return false;
       }
       
-      // Determine target league based on user's current assignment or default to Bronze
+      // ALL users start in Bronze League regardless of previous assignments
+      // This is the fundamental rule - everyone starts from Bronze
       let targetLeagueType = "bronze";
-      if (currentLeague) {
-        targetLeagueType = currentLeague.type;
-        console.log("User already assigned to league:", targetLeagueType);
-      } else {
-        console.log("New user - assigning to Bronze League (entry level for all users)");
-      }
+      console.log("Assigning user to Bronze League (entry level for all users)");
 
       const targetLeague = await this.getLeagueByType(targetLeagueType as any);
       if (!targetLeague) {
