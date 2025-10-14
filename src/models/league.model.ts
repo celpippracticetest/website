@@ -48,6 +48,8 @@ const LeagueGroupSchema = z.object({
   maxUsers: z.number().default(10), // Maximum users per group
   users: z.array(z.object({
     userId: z.string(),
+    name: z.string().optional(),
+    email: z.string().optional(),
     points: z.number().default(0),
     position: z.number(),
     status: UserLeagueStatusSchema.default("safe"),
@@ -148,6 +150,22 @@ type TLeagueType = z.infer<typeof LeagueTypeSchema>;
 type TGroupStatus = z.infer<typeof GroupStatusSchema>;
 type TUserLeagueStatus = z.infer<typeof UserLeagueStatusSchema>;
 
+export type {
+  TLeague,
+  TLeagueDto,
+  TLeagueGroup,
+  TLeagueGroupDto,
+  TUserLeaguePoints,
+  TUserLeaguePointsDto,
+  TLeagueSeason, 
+  TLeagueSeasonDto,
+  TLeagueRaffleWinners,
+  TLeagueRaffleWinnersDto,
+  TLeagueType,
+  TGroupStatus,
+  TUserLeagueStatus,
+};
+
 export {
   LeagueSchema,
   LeagueSchemaDto,
@@ -162,17 +180,4 @@ export {
   LeagueTypeSchema,
   GroupStatusSchema,
   UserLeagueStatusSchema,
-  TLeague,
-  TLeagueDto,
-  TLeagueGroup,
-  TLeagueGroupDto,
-  TUserLeaguePoints,
-  TUserLeaguePointsDto,
-  TLeagueSeason, 
-  TLeagueSeasonDto,
-  TLeagueRaffleWinners,
-  TLeagueRaffleWinnersDto,
-  TLeagueType,
-  TGroupStatus,
-  TUserLeagueStatus,
 };
