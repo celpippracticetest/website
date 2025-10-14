@@ -344,7 +344,7 @@ export class LeagueRepository {
     console.log("Getting group leaderboard for group:", groupId);
     console.log("Current season:", currentSeason.seasonId);
 
-    // Update user points from UserLeaguePoints collection
+    // Update user points from UserLeaguePoints collection and fetch user names
     const updatedUsers = [];
     for (const user of group.users) {
       console.log("Checking user:", user.userId);
@@ -366,6 +366,21 @@ export class LeagueRepository {
         console.log("No user points found for:", user.userId);
         // Keep user in group even if no points found
         user.points = user.points || 0;
+      }
+
+      // Fetch user name from Clerk
+      try {
+        const { clerkClient } = await import("@clerk/nextjs/server");
+        const client = await clerkClient();
+        const clerkUser = await client.users.getUser(user.userId);
+        user.name = clerkUser.firstName && clerkUser.lastName 
+          ? `${clerkUser.firstName} ${clerkUser.lastName}`.trim()
+          : clerkUser.firstName || clerkUser.emailAddresses[0]?.emailAddress?.split('@')[0] || 'User';
+        user.email = clerkUser.emailAddresses[0]?.emailAddress;
+      } catch (error) {
+        console.log("Error fetching user name for:", user.userId, error);
+        user.name = user.userId.slice(-8); // Fallback to last 8 chars of userId
+        user.email = null;
       }
 
       updatedUsers.push(user);
@@ -1619,6 +1634,8 @@ export class LeagueRepository {
           userCount: sortedUsers.length,
           users: sortedUsers.map((user, index) => ({
             userId: user.userId,
+            name: user.name || user.userId.slice(-8),
+            email: user.email,
             points: user.points,
             position: index + 1,
             joinedAt: user.joinedAt,
@@ -1797,7 +1814,7 @@ export class LeagueRepository {
         // Remove user from current league group
         await this.db.collection(this.leagueGroupsCollection).updateMany(
           { "users.userId": userMove.userId },
-          { $pull: { users: { userId: userMove.userId } } }
+          { $pull: { users: { userId: userMove.userId } } } as any
         );
         
         // Update user's league assignment in user_league_points

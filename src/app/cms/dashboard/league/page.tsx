@@ -747,8 +747,8 @@ export default function AdminLeaguePage() {
                                           {userIndex + 1}
                                         </span>
                                       </td>
-                                      <td className="px-3 py-2 font-mono text-gray-700">
-                                        {user.userId.slice(-12)}
+                                      <td className="px-3 py-2 text-gray-700">
+                                        {user.name || user.userId.slice(-12)}
                                       </td>
                                       <td className="px-3 py-2">
                                         <span className="font-medium text-blue-600">
