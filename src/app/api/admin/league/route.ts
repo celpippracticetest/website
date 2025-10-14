@@ -115,13 +115,38 @@ export async function GET(request: NextRequest) {
               .findOne({ _id: groupId });
             
             if (group) {
+              // Fetch user names from Clerk
+              const usersWithNames = await Promise.all(
+                group.users.map(async (user: any) => {
+                  try {
+                    const { clerkClient } = await import("@clerk/nextjs/server");
+                    const client = await clerkClient();
+                    const clerkUser = await client.users.getUser(user.userId);
+                    return {
+                      ...user,
+                      name: clerkUser.firstName && clerkUser.lastName 
+                        ? `${clerkUser.firstName} ${clerkUser.lastName}`.trim()
+                        : clerkUser.firstName || clerkUser.emailAddresses[0]?.emailAddress?.split('@')[0] || 'User',
+                      email: clerkUser.emailAddresses[0]?.emailAddress,
+                    };
+                  } catch (error) {
+                    console.log("Error fetching user name for:", user.userId, error);
+                    return {
+                      ...user,
+                      name: user.userId.slice(-8),
+                      email: null,
+                    };
+                  }
+                })
+              );
+
               debugInfo.groups.push({
                 leagueType: league.leagueType,
                 groupId: groupId.toString(),
                 groupNumber: group.groupNumber,
                 maxUsers: group.maxUsers,
                 userCount: group.users.length,
-                users: group.users,
+                users: usersWithNames,
               });
             }
           }
