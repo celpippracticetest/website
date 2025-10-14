@@ -748,7 +748,16 @@ export default function AdminLeaguePage() {
                                         </span>
                                       </td>
                                       <td className="px-3 py-2 text-gray-700">
-                                        {user.name || user.userId.slice(-12)}
+                                        <div>
+                                          <div className="font-medium">
+                                            {user.name || user.userId.slice(-12)}
+                                          </div>
+                                          {user.email && (
+                                            <div className="text-xs text-gray-500">
+                                              {user.email}
+                                            </div>
+                                          )}
+                                        </div>
                                       </td>
                                       <td className="px-3 py-2">
                                         <span className="font-medium text-blue-600">
