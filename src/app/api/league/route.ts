@@ -144,13 +144,6 @@ export async function GET(request: NextRequest) {
       // Only assign users to leagues if they have points
       if (overallPoints > 0) {
         let targetLeagueType = "bronze";
-        if (overallPoints >= 150) {
-          // 3+ trophies
-          targetLeagueType = "gold";
-        } else if (overallPoints >= 100) {
-          // 2+ trophies
-          targetLeagueType = "silver";
-        }
 
         console.log("Target league type:", targetLeagueType);
         // Use the improved auto-assignment method
