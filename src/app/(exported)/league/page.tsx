@@ -163,6 +163,7 @@ const Page = () => {
               id: u.userId,
               name: displayName,
               email: u.email,
+              avatar: u.avatar || (isMe ? (user as any)?.imageUrl : undefined),
               points: u.points,
               league: (data.currentLeague?.type || data.sampleLeagueType || selectedLeague || "bronze") as any,
               position: u.position,
@@ -253,6 +254,7 @@ const Page = () => {
             id: u.userId,
             name: displayName,
             email: u.email,
+            avatar: u.avatar || (isMe ? (user as any)?.imageUrl : undefined),
             points: u.points,
             league: selectedType as any,
             position: u.position,
@@ -1666,8 +1668,8 @@ const Page = () => {
                   League Focus Trophies & Tasks Requirement to Enter
                 </div>
 
-                {/* Show Bronze League if user is in Bronze League or has no points yet */}
-                {(
+                {/* Right panel: guests see all leagues; signed-in users see only their current league */}
+                {(noUser || currentLeague?.type === "bronze") && (
                 <div className="min-h-[232px] rounded-[12px] p-[12px] md:p-[16px] bg-white mt-[24px] cursor-pointer" onClick={() => setSelectedLeague("bronze")}>
                   <div className="flex flex-col sm:flex-row justify-between gap-[8px] sm:gap-0">
                       <div className="flex gap-[6px] items-center">
@@ -1721,8 +1723,7 @@ const Page = () => {
                     </div>
                  )}
 
-                {/* Show Silver League if user is in Silver League or has no points yet */}
-                {(
+                {(noUser || currentLeague?.type === "silver") && (
                     <div className="min-h-[232px] rounded-[12px] mt-[24px] p-[16px] bg-white cursor-pointer" onClick={() => setSelectedLeague("silver")}>
                       <div className="flex justify-between">
                         <div className="flex gap-[6px] items-center">
@@ -1782,8 +1783,7 @@ const Page = () => {
                     </div>
                   )}
 
-                {/* Show Gold League if user is in Gold League or has no points yet */}
-                {(
+                {(noUser || currentLeague?.type === "gold") && (
                     <div className="min-h-[232px] rounded-[12px] mt-[24px] p-[16px] bg-white cursor-pointer" onClick={() => setSelectedLeague("gold")}>
                       <div className="flex justify-between">
                         <div className="flex gap-[6px] items-center">

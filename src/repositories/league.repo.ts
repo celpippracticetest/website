@@ -417,6 +417,7 @@ export class LeagueRepository {
           ? `${clerkUser.firstName} ${clerkUser.lastName}`.trim()
           : clerkUser.firstName || clerkUser.emailAddresses[0]?.emailAddress?.split('@')[0] || 'User';
         user.email = clerkUser.emailAddresses[0]?.emailAddress;
+        user.avatar = clerkUser.imageUrl;
       } catch (error) {
         console.log("Error fetching user name for:", user.userId, error);
         user.name = user.userId.slice(-8); // Fallback to last 8 chars of userId
