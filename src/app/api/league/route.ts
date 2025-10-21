@@ -203,6 +203,45 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Prepare sample groups for public view (one per league type)
+    let sampleGroup: any = null; // kept for backward compatibility
+    let sampleLeagueType: string | null = null; // kept for backward compatibility
+    const sampleGroupsByType: Record<string, any> = {};
+    try {
+      if (currentSeason && Array.isArray(currentSeason.leagues)) {
+        for (const league of currentSeason.leagues) {
+          if (!league || !Array.isArray(league.groups)) continue;
+          // If we already found a sample for this type, skip
+          if (sampleGroupsByType[league.leagueType]) continue;
+          // Gather candidate groups (consider all, prefer most populated)
+          const candidates: any[] = [];
+          for (const groupId of league.groups) {
+            const group = await leagueRepo.getGroupLeaderboard(groupId.toString());
+            if (group) candidates.push(group);
+          }
+
+          // Prefer completed groups; else pick the one with most users
+          let chosen: any = null;
+          if (candidates.length > 0) {
+            candidates.sort((a: any, b: any) => (b.users?.length || 0) - (a.users?.length || 0));
+            chosen = candidates[0];
+          }
+
+          if (chosen) {
+            sampleGroupsByType[league.leagueType] = chosen;
+            if (!sampleGroup) {
+              sampleGroup = chosen;
+              sampleLeagueType = league.leagueType;
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error finding sample group for public view:", err);
+      sampleGroup = null;
+      sampleLeagueType = null;
+    }
+
     // Get skills tried by user (if authenticated)
     let skillsTried: string[] = [];
     if (userId) {
@@ -248,6 +287,9 @@ export async function GET(request: NextRequest) {
       userPoints,
       currentLeague,
       userGroup,
+      sampleGroupsByType,
+      sampleGroup,
+      sampleLeagueType,
       pointsBreakdown: userPoints?.pointsBreakdown || {},
       tasksCompleted: userPoints?.tasksCompleted || [],
       skillsTried: skillsTried,
