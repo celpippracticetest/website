@@ -210,10 +210,66 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Use the standardized flow: end current season and start a new one
-        // This internally calls processSeasonEnd and then creates the next season
-        const success = await leagueRepo.endCurrentSeason();
-        return NextResponse.json({ success });
+        const season = await db
+          .collection("league_seasons")
+          .findOne({ seasonId });
+
+        if (!season) {
+          return NextResponse.json(
+            { error: "Season not found" },
+            { status: 404 }
+          );
+        }
+
+        // 1) Process promotions/demotions on the selected season exactly
+        await leagueRepo.processSeasonEnd(season as any);
+
+        // 2) Mark this season as ended (idempotent)
+        await db.collection("league_seasons").updateOne(
+          { seasonId },
+          { $set: { isActive: false, endedAt: new Date() } }
+        );
+
+        // 3) If there is no other active season, create a fresh one (7 days)
+        const activeExists = await db
+          .collection("league_seasons")
+          .findOne({ isActive: true });
+
+        if (!activeExists) {
+          const newSeasonId = `season_${Date.now()}`;
+          const startDate = new Date();
+          const endDate = new Date();
+          endDate.setDate(endDate.getDate() + 7);
+
+          // Keep same league types; start with empty groups, users join on-demand
+          const seasonLeagues = (season as any).leagues.map((l: any) => ({
+            leagueType: l.leagueType,
+            groups: [],
+          }));
+
+          await leagueRepo.createSeason({
+            seasonId: newSeasonId,
+            startDate,
+            endDate,
+            isActive: true,
+            leagues: seasonLeagues,
+          });
+
+          // Migrate user points records to the new season
+          await db.collection("user_league_points").updateMany(
+            { seasonId },
+            {
+              $set: {
+                seasonId: newSeasonId,
+                totalPoints: 0,
+                groupId: null,
+                updatedAt: new Date(),
+              },
+            }
+          );
+        }
+
+        return NextResponse.json({ success: true });
       }
 
       default:
