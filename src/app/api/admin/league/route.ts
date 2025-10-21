@@ -230,18 +230,17 @@ export async function POST(request: NextRequest) {
           { $set: { isActive: false, endedAt: new Date() } }
         );
 
-        // 3) If there is no other active season, create a fresh one (7 days)
-        const activeExists = await db
+        // 3) Ensure there is an active season to migrate INTO
+        let targetSeason = await db
           .collection("league_seasons")
           .findOne({ isActive: true });
 
-        if (!activeExists) {
+        if (!targetSeason) {
           const newSeasonId = `season_${Date.now()}`;
           const startDate = new Date();
           const endDate = new Date();
           endDate.setDate(endDate.getDate() + 7);
 
-          // Keep same league types; start with empty groups, users join on-demand
           const seasonLeagues = (season as any).leagues.map((l: any) => ({
             leagueType: l.leagueType,
             groups: [],
@@ -255,12 +254,18 @@ export async function POST(request: NextRequest) {
             leagues: seasonLeagues,
           });
 
-          // Migrate user points records to the new season
+          targetSeason = await db
+            .collection("league_seasons")
+            .findOne({ seasonId: newSeasonId });
+        }
+
+        // 4) Migrate all user_league_points records from ENDED season → ACTIVE target season
+        if (targetSeason && (targetSeason as any).seasonId !== seasonId) {
           await db.collection("user_league_points").updateMany(
             { seasonId },
             {
               $set: {
-                seasonId: newSeasonId,
+                seasonId: (targetSeason as any).seasonId,
                 totalPoints: 0,
                 groupId: null,
                 updatedAt: new Date(),
