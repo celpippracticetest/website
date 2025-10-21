@@ -270,6 +270,15 @@ export default function AdminLeaguePage() {
             <label className="block text-sm font-medium text-gray-700">
               Select Season
           </label>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleEndSeason}
+                disabled={!selectedSeasonId}
+                className="px-4 py-2 rounded-lg text-sm bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-400"
+              >
+                End Season Now
+              </button>
+            </div>
             <button
               onClick={() => {
                 fetchDebugInfo();
