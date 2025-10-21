@@ -210,19 +210,10 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const season = await db
-          .collection("league_seasons")
-          .findOne({ seasonId });
-
-        if (!season) {
-          return NextResponse.json(
-            { error: "Season not found" },
-            { status: 404 }
-          );
-        }
-
-        await leagueRepo.processSeasonEnd(season as any);
-        return NextResponse.json({ success: true });
+        // Use the standardized flow: end current season and start a new one
+        // This internally calls processSeasonEnd and then creates the next season
+        const success = await leagueRepo.endCurrentSeason();
+        return NextResponse.json({ success });
       }
 
       default:
