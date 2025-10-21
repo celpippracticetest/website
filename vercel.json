@@ -49,6 +49,10 @@
     {
       "path": "/api/cron/downgrade-one-payment",
       "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/end-season?token=Z3x!9pTq@L1mN8",
+      "schedule": "0 0 * * *"
     }
   ]
 }

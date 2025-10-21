@@ -6,9 +6,14 @@ export async function GET(request: NextRequest) {
   try {
     // Verify this is a cron job request
     const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { searchParams } = new URL(request.url);
+    const token = searchParams.get('token');
+    const secret = process.env.CRON_SECRET;
+    const authorized = (
+      (authHeader && secret && authHeader === `Bearer ${secret}`) ||
+      (token && secret && token === secret)
+    );
+    if (!authorized) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const db = await getDb();
     const leagueRepo = new LeagueRepository(db);
