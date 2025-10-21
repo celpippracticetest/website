@@ -115,6 +115,8 @@ const Page = () => {
   const [userGroup, setUserGroup] = useState<any>(null);
   const [currentLeague, setCurrentLeague] = useState<any>(null);
   const [allLeagues, setAllLeagues] = useState<any[]>([]);
+  const [sampleGroupsByType, setSampleGroupsByType] = useState<Record<string, any>>({});
+  const [selectedLeague, setSelectedLeague] = useState<"bronze" | "silver" | "gold">("bronze");
 
   // Check if user is free or premium
   const isFreeUser = user?.publicMetadata?.plan === "free";
@@ -135,32 +137,45 @@ const Page = () => {
       console.log("Debug info:", data.debug);
 
       if (response.ok) {
-        setCurrentLeague(data.currentLeague);
-        setUserGroup(data.userGroup);
+        setCurrentLeague(data.currentLeague || (data.sampleLeagueType ? { type: data.sampleLeagueType } : null));
+        setUserGroup(data.userGroup || null);
         setAllLeagues(data.leagues || []);
+        setSampleGroupsByType(data.sampleGroupsByType || {});
 
-        if (data.userGroup) {
+        // Default selected league: user's current league if present else bronze
+        const defaultSelected = (data.currentLeague?.type || data.sampleLeagueType || "bronze") as any;
+        setSelectedLeague(defaultSelected);
+
+        const baseGroup = data.userGroup || data.sampleGroup || data.sampleGroupsByType?.[selectedLeague] || null;
+        if (baseGroup) {
           // User is in a league group
-          const users = data.userGroup.users.map((u: any) => {
-            console.log("Mapping user:", u.userId, "points:", u.points, "isCurrentUser:", u.userId === user?.id);
+          const users = baseGroup.users.map((u: any) => {
+            const isMe = u.userId === user?.id;
+            const emailLocal = (u.email || "").split("@")[0] || "";
+            const emailShort = emailLocal ? emailLocal.slice(0, 3) : "";
+            const apiName = (u.name || "").trim();
+            const myFullName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
+            const displayName = isMe
+              ? (myFullName || emailShort || "User")
+              : (apiName || emailShort || "User");
+
             return {
-            id: u.userId,
-            name:
-              u.userId === user?.id
-                ? user?.firstName ||
-                  user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] ||
-                  "You"
-                : `User ${u.userId.slice(-4)}`,
-            points: u.points,
-            league: data.currentLeague?.type || "bronze",
-            position: u.position,
-            tasksCompleted: data.userPoints?.tasksCompleted || [],
-            isCurrentUser: u.userId === user?.id,
+              id: u.userId,
+              name: displayName,
+              email: u.email,
+              avatar: u.avatar || (isMe ? (user as any)?.imageUrl : undefined),
+              points: u.points,
+              league: (data.currentLeague?.type || data.sampleLeagueType || selectedLeague || "bronze") as any,
+              position: u.position,
+              tasksCompleted: data.userPoints?.tasksCompleted || [],
+              isCurrentUser: isMe,
             };
           });
 
+          // Do not append current user to sample groups; preview should not modify membership
+
           const tasks =
-            data.currentLeague?.requirements?.tasks?.map((task: any) => ({
+            (data.currentLeague?.requirements?.tasks || (data.leagues?.find((l: any) => l.type === (data.currentLeague?.type || data.sampleLeagueType || selectedLeague || "bronze"))?.requirements?.tasks) || []).map((task: any) => ({
               id: task.id,
               title: task.title,
               points: task.points,
@@ -172,7 +187,7 @@ const Page = () => {
           setLeagueData({
             users,
             tasks,
-            currentLeague: data.currentLeague?.type || "bronze",
+            currentLeague: (data.currentLeague?.type || data.sampleLeagueType || selectedLeague || "bronze") as any,
             seasonEndDate: new Date(data.currentSeason?.endDate),
             userPoints: data.userPoints?.totalPoints || 0,
             pointsBreakdown: data.pointsBreakdown || {},
@@ -213,6 +228,65 @@ const Page = () => {
       fetchLeagueData();
     }
   }, [isLoaded, user?.id]);
+
+  // Recompute league view when selectedLeague changes
+  useEffect(() => {
+    if (!allLeagues || Object.keys(allLeagues).length === 0) return;
+    // Use user's group only if it matches the selectedLeague; otherwise use sample
+    const selectedType = selectedLeague;
+    // Always prefer the most-populated sample group for browsing; fall back to user's group only if no sample
+    const baseGroup = sampleGroupsByType?.[selectedType] || (currentLeague?.type === selectedType ? userGroup : null);
+
+    if (!baseGroup && !leagueData) return; // nothing to show yet
+
+    const mappedUsers = baseGroup
+      ? baseGroup.users.map((u: any) => {
+          const isMe = u.userId === user?.id;
+          const emailLocal = (u.email || "").split("@")[0] || "";
+          const emailShort = emailLocal ? emailLocal.slice(0, 3) : "";
+          const apiName = (u.name || "").trim();
+          const myFullName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
+          const displayName = isMe
+            ? (myFullName || emailShort || "User")
+            : (apiName || emailShort || "User");
+
+          return {
+            id: u.userId,
+            name: displayName,
+            email: u.email,
+            avatar: u.avatar || (isMe ? (user as any)?.imageUrl : undefined),
+            points: u.points,
+            league: selectedType as any,
+            position: u.position,
+            tasksCompleted: leagueData?.tasksCompleted || [],
+            isCurrentUser: isMe,
+          };
+        })
+      : [];
+
+    // Do not append current user when previewing other leagues
+
+    const tasks = (allLeagues.find((l: any) => l.type === selectedType)?.requirements?.tasks || []).map(
+      (task: any) => ({
+        id: task.id,
+        title: task.title,
+        points: task.points,
+        completed: (leagueData?.tasksCompleted || []).includes(task.id) || false,
+        description: task.description,
+      })
+    );
+
+    setLeagueData((prev) => ({
+      users: mappedUsers,
+      tasks,
+      currentLeague: selectedType as any,
+      seasonEndDate: prev?.seasonEndDate || new Date(),
+      userPoints: prev?.userPoints || 0,
+      pointsBreakdown: prev?.pointsBreakdown || {},
+      tasksCompleted: prev?.tasksCompleted || [],
+      skillsTried: prev?.skillsTried || [],
+    }));
+  }, [selectedLeague, userGroup, currentLeague, sampleGroupsByType, allLeagues, user?.id]);
 
   // Handle points earned
   const handlePointsEarned = async (
@@ -720,7 +794,7 @@ const Page = () => {
   // League Table Component
   const LeagueTableComponent = () => {
     if (isLoadingLeague) return <SkeletonLoadingComponent />;
-    if (!leagueData) return <EmptyStateComponent />;
+    if (!leagueData) return noUser ? <SkeletonLoadingComponent /> : <EmptyStateComponent />;
     
     // If user has points and is in a league, show league table
     if (currentLeague && userGroup && leagueData.users.length > 0) {
@@ -799,14 +873,10 @@ const Page = () => {
                       <div className="w-[32px] h-[32px] bg-[#9CA3AF] rounded-full"></div>
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[#374151] font-medium text-[14px] md:text-[16px] truncate">
-                      {groupUser.name ||
-                        (groupUser as any).email?.split("@")[0] ||
-                        "User"}
-                    </div>
+                  <div className=" min-w-0">
+                  {groupUser.name || (((groupUser as any).email?.split("@")[0] || "").slice(0,3)) || "User"}
                   </div>
-                  <div className="text-[#374151] text-right font-medium text-[14px] md:text-[16px] whitespace-nowrap">
+                  <div className="flex-1 text-[#374151] text-right font-medium text-[14px] md:text-[16px] whitespace-nowrap">
                     {groupUser.points} XP
                   </div>
                 </div>
@@ -817,7 +887,86 @@ const Page = () => {
       );
     }
     
-    // If user has no points, show empty state (placeholder table)
+    // If there are users from sample group, render them as table even if current user has 0 points
+    if (leagueData.users && leagueData.users.length > 0) {
+      const sortedUsers = [...leagueData.users].sort((a, b) => b.points - a.points);
+      const totalUsers = sortedUsers.length;
+
+      const leagueType = (currentLeague?.type || leagueData.currentLeague || "bronze") as any;
+
+      let promotionZone = 0;
+      let demotionZone = 0;
+      switch (leagueType) {
+        case "bronze":
+          promotionZone = Math.ceil(totalUsers * 0.3);
+          demotionZone = 0;
+          break;
+        case "silver":
+          promotionZone = Math.ceil(totalUsers * 0.25);
+          demotionZone = Math.floor(totalUsers * 0.3);
+          break;
+        case "gold":
+          promotionZone = 0;
+          demotionZone = Math.floor(totalUsers * 0.4);
+          break;
+      }
+
+      return (
+        <div className="min-h-[529px] bg-white border border-[#E0E7FF] rounded-[12px] p-[16px] md:p-[24px]">
+          <LeagueStatusComponent />
+          <div className="space-y-[16px] overflow-x-auto">
+            {sortedUsers.map((groupUser, index) => {
+              let zoneClass = "";
+              let zoneIndicator = "";
+              if (index < promotionZone && leagueType !== "gold") {
+                zoneClass = "bg-green-50 border-l-4 border-green-500";
+                zoneIndicator = "bg-green-500";
+              } else if (index >= totalUsers - demotionZone && leagueType !== "bronze") {
+                zoneClass = "bg-red-50 border-l-4 border-red-500";
+                zoneIndicator = "bg-red-500";
+              } else {
+                zoneClass = "bg-gray-50 border-l-4 border-gray-300";
+                zoneIndicator = "bg-gray-400";
+              }
+
+              return (
+                <div
+                  key={`user-${groupUser.id || 'unknown'}-${index}-${groupUser.points || 0}`}
+                  className={`flex items-center gap-[12px] md:gap-[16px] py-[8px] ${zoneClass} ${
+                    groupUser.isCurrentUser
+                      ? "bg-[#FED7AA] rounded-[8px] p-[8px] md:p-[12px]"
+                      : "rounded-[8px] p-[8px] md:p-[12px]"
+                  }`}
+                >
+                  <div className={`w-[8px] h-[8px] ${zoneIndicator} rounded-full`}></div>
+                  <div className="w-[40px] h-[40px] bg-[#E5E7EB] rounded-full flex items-center justify-center">
+                    {groupUser.avatar ? (
+                      <img
+                        src={groupUser.avatar}
+                        alt={groupUser.name}
+                        className="w-[32px] h-[32px] rounded-full"
+                      />
+                    ) : (
+                      <div className="w-[32px] h-[32px] bg-[#9CA3AF] rounded-full"></div>
+                    )}
+                  </div>
+                  <div className=" min-w-0">
+                    <div className="text-[#374151] font-medium text-[14px] md:text-[16px] truncate">
+                      {groupUser.name || (((groupUser as any).email?.split("@")[0] || "").slice(0,3)) || "User"}
+                    </div>
+                  </div>
+                  <div className="flex-1 text-[#374151] text-right font-medium text-[14px] md:text-[16px] whitespace-nowrap">
+                    {groupUser.points} XP
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    // If user has no points and no sample users, show empty state (or skeleton for guests handled above)
     return <EmptyStateComponent />;
   };
 
@@ -930,7 +1079,7 @@ const Page = () => {
       ),
       description: [
         "How do I get better at managing time in Speaking tasks?",
-        "Can you give me a sample answer for “Describe a place you visited”?",
+        "Can you give me a sample answer for \"Describe a place you visited\"?",
         "How can I improve my fluency and avoid pauses?",
         "Based on my last Speaking test, what is my weakest area?",
       ],
@@ -953,7 +1102,7 @@ const Page = () => {
         <LearningReading className="text-[#EE4266] group-hover:!text-white" />
       ),
       description: [
-        "	What strategies help answer “fill in the blank” questions faster?",
+        "\tWhat strategies help answer \"fill in the blank\" questions faster?",
         "How can I improve my reading speed for CELPIP passages?",
         "Which type of questions are hardest in Reading, and how do I tackle them?",
         "Based on my Reading results, what should I practice more?",
@@ -1400,39 +1549,80 @@ const Page = () => {
             <div className="flex flex-col lg:flex-row gap-[24px] lg:gap-[48px] w-full">
               <div className="w-full lg:w-1/2">
                 <div className="flex items-center justify-center lg:justify-start gap-[16px] md:gap-[24px] mt-[24px]">
-                  {currentLeague?.type === "gold" ? (
+                  {selectedLeague === "gold" ? (
                     <>
-                      <SvgBronz80 />
-                      <SvgSilver80 />
-                      <SvgGold96 />
+                      <span
+                        className={`cursor-pointer ${currentLeague?.type && currentLeague.type !== "bronze" ? "" : ""}`}
+                        onClick={() => {
+                          // Allow switching to bronze only if user isn't in a higher league OR always allow preview for guests
+                          if (!currentLeague || currentLeague.type === "bronze" || noUser) {
+                            if (sampleGroupsByType?.bronze) setSelectedLeague("bronze");
+                          }
+                        }}
+                      >
+                        <SvgBronz80 />
+                      </span>
+                      <span
+                        className="cursor-pointer"
+                        onClick={() => { if (sampleGroupsByType?.silver) setSelectedLeague("silver"); }}
+                      >
+                        <SvgSilver80 />
+                      </span>
+                      <span className="cursor-pointer" onClick={() => { if (sampleGroupsByType?.gold) setSelectedLeague("gold"); }}>
+                        <SvgGold96 />
+                      </span>
                     </>
-                  ) : currentLeague?.type === "silver" ? (
+                  ) : selectedLeague === "silver" ? (
                     <>
-                      <SvgBronz80 />
-                      <SvgSilver96 />
-                      <SvgGold80 />
+                      <span className="cursor-pointer" onClick={() => { if (sampleGroupsByType?.bronze) setSelectedLeague("bronze"); }}>
+                        <SvgBronz80 />
+                      </span>
+                      <span className="cursor-pointer" onClick={() => { if (sampleGroupsByType?.silver) setSelectedLeague("silver"); }}>
+                        <SvgSilver96 />
+                      </span>
+                      <span className="cursor-pointer" onClick={() => { if (sampleGroupsByType?.gold) setSelectedLeague("gold"); }}>
+                        <SvgGold80 />
+                      </span>
                     </>
                   ) : (
                     <>
-                  <SvgBronz96 />
-                  <SvgSilver80 />
-                  <SvgGold80 />
+                      <span className="cursor-pointer" onClick={() => { if (sampleGroupsByType?.bronze) setSelectedLeague("bronze"); }}>
+                        <SvgBronz96 />
+                      </span>
+                      <span className="cursor-pointer" onClick={() => { if (sampleGroupsByType?.silver) setSelectedLeague("silver"); }}>
+                        <SvgSilver80 />
+                      </span>
+                      <span className="cursor-pointer" onClick={() => { if (sampleGroupsByType?.gold) setSelectedLeague("gold"); }}>
+                        <SvgGold80 />
+                      </span>
                     </>
                   )}
                 </div>
 
                 <div className="mt-[24px] flex justify-center lg:justify-start">
-                  <span className="text-[16px] md:text-[18px] text-[#212E42] font-semibold leading-[24px] md:leading-[28px]">
-                    {currentLeague?.type === "gold" ? "Gold League" : 
-                     currentLeague?.type === "silver" ? "Silver League" : 
+                  <span
+                    className="text-[16px] md:text-[18px] text-[#212E42] font-semibold leading-[24px] md:leading-[28px] cursor-pointer"
+                    onClick={() => {
+                      // Clicking label cycles only through allowed leagues and only if a sample exists
+                      const order = ["bronze", "silver", "gold"] as const;
+                      const currentIdx = order.indexOf(selectedLeague);
+                      for (let i = 1; i <= order.length; i++) {
+                        const next = order[(currentIdx + i) % order.length];
+                        // Allow preview of silver and gold as long as sample exists
+                        if (sampleGroupsByType?.[next]) { setSelectedLeague(next as any); break; }
+                      }
+                    }}
+                  >
+                    {selectedLeague === "gold" ? "Gold League" : 
+                     selectedLeague === "silver" ? "Silver League" : 
                      "Bronze League"}
                   </span>
                 </div>
                 <div className="flex mt-[12px] justify-center lg:justify-start">
                   <span className="text-[12px] md:text-[14px] text-[#37465C] font-semibold text-center lg:text-left">
-                    {currentLeague?.type === "gold" ? 
+                    {selectedLeague === "gold" ? 
                       "Elite league with gift card rewards! Compete with the best players and stay on top!" :
-                     currentLeague?.type === "silver" ? 
+                     selectedLeague === "silver" ? 
                       "Intermediate league for experienced players. Work hard to reach the Gold League!" :
                      "Unlock this league by completing the tasks and earning trophies along the way!"}
                   </span>
@@ -1478,20 +1668,15 @@ const Page = () => {
                   League Focus Trophies & Tasks Requirement to Enter
                 </div>
 
-                {/* Show Bronze League if user is in Bronze League or has no points yet */}
-                {(!currentLeague || currentLeague?.type === "bronze") && (
-                <div className="min-h-[232px] rounded-[12px] p-[12px] md:p-[16px] bg-white mt-[24px]">
+                {/* Right panel: guests see all leagues; signed-in users see only their current league */}
+                {(noUser || currentLeague?.type === "bronze") && (
+                <div className="min-h-[232px] rounded-[12px] p-[12px] md:p-[16px] bg-white mt-[24px] cursor-pointer" onClick={() => setSelectedLeague("bronze")}>
                   <div className="flex flex-col sm:flex-row justify-between gap-[8px] sm:gap-0">
                       <div className="flex gap-[6px] items-center">
                         <Bronz40 />
                         <span className="text-[14px] md:text-[16px] text-[#212E42] font-semibold">
                           Bronz League
                         </span>
-                        {currentLeague?.type === "bronze" && (
-                          <span className="bg-[#10B981] text-white px-[8px] py-[2px] rounded-[4px] text-[12px] font-medium">
-                            Current League
-                          </span>
-                        )}
                       </div>
                       <div className="flex items-center gap-[8px] sm:gap-[12px]">
                         <div className="text-[12px] md:text-[14px]">
@@ -1536,27 +1721,21 @@ const Page = () => {
                       ])}
                     </div>
                     </div>
-                )}
+                 )}
 
-                {/* Show Silver League if user is in Silver League or has no points yet */}
-                {(!currentLeague || currentLeague?.type === "silver") && (
-                    <div className="min-h-[232px] rounded-[12px] mt-[24px] p-[16px] bg-white">
+                {(noUser || currentLeague?.type === "silver") && (
+                    <div className="min-h-[232px] rounded-[12px] mt-[24px] p-[16px] bg-white cursor-pointer" onClick={() => setSelectedLeague("silver")}>
                       <div className="flex justify-between">
                         <div className="flex gap-[6px] items-center">
                           <Silver40 />
                           <span className="text-[16px] text-[#212E42] font-semibold">
                             Silver League
                           </span>
-                          {currentLeague?.type === "silver" && (
-                            <span className="bg-[#10B981] text-white px-[8px] py-[2px] rounded-[4px] text-[12px] font-medium">
-                              Current League
-                            </span>
-                          )}
-                    </div>
+                        </div>
                         <div className="flex items-center gap-[12px]">
                           <div className="text-[14px]">
                             <span className="text-[#76808F]">
-                              Requirement:{" "}
+                              Requirement: {" "}
                             </span>
                             <span
                               className={
@@ -1604,25 +1783,19 @@ const Page = () => {
                     </div>
                   )}
 
-                {/* Show Gold League if user is in Gold League or has no points yet */}
-                {(!currentLeague || currentLeague?.type === "gold") && (
-                    <div className="min-h-[232px] rounded-[12px] mt-[24px] p-[16px] bg-white">
+                {(noUser || currentLeague?.type === "gold") && (
+                    <div className="min-h-[232px] rounded-[12px] mt-[24px] p-[16px] bg-white cursor-pointer" onClick={() => setSelectedLeague("gold")}>
                       <div className="flex justify-between">
                         <div className="flex gap-[6px] items-center">
                           <Gold40 />
                           <span className="text-[16px] text-[#212E42] font-semibold">
                             Gold League
                           </span>
-                          {currentLeague?.type === "gold" && (
-                            <span className="bg-[#10B981] text-white px-[8px] py-[2px] rounded-[4px] text-[12px] font-medium">
-                              Current League
-                            </span>
-                          )}
-                    </div>
+                        </div>
                         <div className="flex items-center gap-[12px]">
                           <div className="text-[14px]">
                             <span className="text-[#76808F]">
-                              Requirement:{" "}
+                              Requirement: {" "}
                             </span>
                             <span
                               className={
@@ -1633,8 +1806,8 @@ const Page = () => {
                             >
                               3+ trophy
                             </span>
-                    </div>
                   </div>
+                </div>
                   </div>
                   <div className="mt-[24px] items-center flex gap-[16px]">
                         <span className="text-[14px] text-[#76808F ]">
@@ -1673,7 +1846,7 @@ const Page = () => {
                     <div className="flex gap-[8px]">
                       <CircleCheck />
                             <span className="text-[#F27059] text-[14px]">
-                              CELPIP Champion:{" "}
+                              CELPIP Champion: {" "}
                             </span>
                     </div>
 
