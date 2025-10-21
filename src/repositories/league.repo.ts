@@ -1763,7 +1763,7 @@ export class LeagueRepository {
       userId: string;
       currentLeague: TLeagueType;
       targetLeague: TLeagueType;
-      status: "promotion" | "safe" | "demotion";
+      status: "promoted" | "safe" | "demoted";
       isRaffleWinner: boolean;
     }> = [];
 
@@ -1800,7 +1800,7 @@ export class LeagueRepository {
 
         for (let i = 0; i < totalUsers; i++) {
           const user = sortedUsers[i];
-          let newStatus: "promotion" | "safe" | "demotion" = "safe";
+          let newStatus: "promoted" | "safe" | "demoted" = "safe";
           let targetLeague = league.leagueType;
 
           // Check if user completed league tasks and has minimum points
@@ -1810,11 +1810,11 @@ export class LeagueRepository {
           // Determine status and target league
           if (i < promotionCount && league.leagueType !== "gold" && hasCompletedTasks && hasMinimumPoints) {
             // Promote only if tasks completed + minimum points
-            newStatus = "promotion";
+            newStatus = "promoted";
             targetLeague = league.leagueType === "bronze" ? "silver" : "gold";
           } else if (i >= totalUsers - demotionCount && league.leagueType !== "bronze") {
             // Demote if in demotion zone (regardless of tasks)
-            newStatus = "demotion";
+            newStatus = "demoted";
             targetLeague = league.leagueType === "gold" ? "silver" : "bronze";
           } else {
             // Stay in same league
