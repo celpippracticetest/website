@@ -3,18 +3,9 @@ import { getDb } from "@/lib/mongodb";
 import { LeagueRepository } from "@/repositories/league.repo";
 import { auth } from "@clerk/nextjs/server";
 
-async function isAdmin(userId: string | null): Promise<boolean> {
-  if (!userId) return false;
-  
-  const db = await getDb();
-  const adminUser = await db.collection("admins").findOne({ clerkUserId: userId });
-  return !!adminUser;
-}
 
 export async function GET(request: NextRequest) {
   try {
-    const authResult = await auth();
-    const userId = authResult.userId;
 
 
     const { searchParams } = new URL(request.url);
@@ -173,15 +164,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const authResult = await auth();
-    const userId = authResult.userId;
 
-    // Check admin access
-    if (!await isAdmin(userId)) {
-      return NextResponse.json(
-        { error: "Unauthorized - Admin access required" },
-        { status: 403 }
-      );
-    }
+
 
     const body = await request.json();
     const { action, seasonId, winnerUserIds, updates } = body;
