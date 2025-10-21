@@ -15,9 +15,49 @@ export class LeagueRepository {
   private leagueGroupsCollection = "league_groups";
   private userLeaguePointsCollection = "user_league_points";
   private leagueSeasonsCollection = "league_seasons";
+  private leagueGroupCountersCollection = "league_group_counters";
 
   constructor(db: Db) {
     this.db = db;
+  }
+
+  // Atomic group numbering to avoid duplicates under concurrency
+  private async getNextGroupNumber(
+    seasonId: string,
+    leagueType: TLeagueType
+  ): Promise<number> {
+    const result = await this.db
+      .collection(this.leagueGroupCountersCollection)
+      .findOneAndUpdate(
+        { seasonId, leagueType },
+        {
+          $inc: { seq: 1 },
+          $setOnInsert: { seasonId, leagueType, createdAt: new Date() },
+          $set: { updatedAt: new Date() },
+        },
+        { upsert: true, returnDocument: "after" as any }
+      );
+    const doc: any = (result && (result as any).value) ? (result as any).value : null;
+    const seq = doc && typeof doc.seq === "number" ? doc.seq : 1;
+    return seq;
+  }
+
+  private async ensureGroupCounterAtLeast(
+    seasonId: string,
+    leagueType: TLeagueType,
+    minValue: number
+  ): Promise<void> {
+    await this.db
+      .collection(this.leagueGroupCountersCollection)
+      .updateOne(
+        { seasonId, leagueType },
+        {
+          $max: { seq: minValue },
+          $setOnInsert: { seasonId, leagueType, createdAt: new Date() },
+          $set: { updatedAt: new Date() },
+        } as any,
+        { upsert: true }
+      );
   }
 
   // League Management
@@ -962,9 +1002,13 @@ export class LeagueRepository {
 
       if (!added) {
         // Create new group
+        const nextNumber = await this.getNextGroupNumber(
+          currentSeason.seasonId,
+          targetLeagueType as any
+        );
         const newGroup = {
           leagueId: new ObjectId(targetLeague._id),
-          groupNumber: seasonLeague.groups.length + 1,
+          groupNumber: nextNumber,
           seasonId: currentSeason.seasonId,
           startDate: new Date(),
           endDate: currentSeason.endDate,
@@ -1136,9 +1180,13 @@ export class LeagueRepository {
 
     if (!added) {
       // Create new group
+      const nextNumber = await this.getNextGroupNumber(
+        currentSeason.seasonId,
+        targetLeagueType
+      );
       const newGroup = {
         leagueId: new ObjectId(targetLeague._id),
-        groupNumber: seasonLeague.groups.length + 1,
+        groupNumber: nextNumber,
         seasonId: currentSeason.seasonId,
         startDate: new Date(),
         endDate: currentSeason.endDate,
