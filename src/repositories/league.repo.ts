@@ -1688,6 +1688,7 @@ export class LeagueRepository {
             points: user.points,
             position: index + 1,
             joinedAt: user.joinedAt,
+            status: user.status || "safe",
           })),
         });
       }
