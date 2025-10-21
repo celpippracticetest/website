@@ -83,6 +83,15 @@ export async function GET(request: NextRequest) {
 
     // Get current season or create one
     let currentSeason = await leagueRepo.getCurrentSeason();
+    // Failsafe: if season passed endDate but still active (cron missed), end it now
+    if (currentSeason && currentSeason.endDate && new Date() >= new Date(currentSeason.endDate)) {
+      try {
+        await leagueRepo.endCurrentSeason();
+      } catch (e) {
+        console.error("Auto endCurrentSeason failed in GET /api/league:", e);
+      }
+      currentSeason = await leagueRepo.getCurrentSeason();
+    }
     if (!currentSeason) {
       // Auto-create season
       const seasonId = `season_${Date.now()}`;
