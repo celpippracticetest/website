@@ -874,7 +874,7 @@ const Page = () => {
                     )}
                   </div>
                   <div className=" min-w-0">
-                  {groupUser.name || (groupUser as any).email?.split("@")[0] || "User"}
+                  {groupUser.name || (((groupUser as any).email?.split("@")[0] || "").slice(0,3)) || "User"}
                   </div>
                   <div className="flex-1 text-[#374151] text-right font-medium text-[14px] md:text-[16px] whitespace-nowrap">
                     {groupUser.points} XP
@@ -952,7 +952,7 @@ const Page = () => {
                   </div>
                   <div className=" min-w-0">
                     <div className="text-[#374151] font-medium text-[14px] md:text-[16px] truncate">
-                      {groupUser.name || (groupUser as any).email?.split("@")[0] || "User"}
+                      {groupUser.name || (((groupUser as any).email?.split("@")[0] || "").slice(0,3)) || "User"}
                     </div>
                   </div>
                   <div className="flex-1 text-[#374151] text-right font-medium text-[14px] md:text-[16px] whitespace-nowrap">
