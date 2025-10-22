@@ -1565,11 +1565,17 @@ export class LeagueRepository {
 
   // End current season and start new one
   async endCurrentSeason(): Promise<boolean> {
-    const currentSeason = await this.getCurrentSeason();
-    if (!currentSeason) return false;
+    try {
+      const currentSeason = await this.getCurrentSeason();
+      if (!currentSeason) {
+        console.log("No current season found");
+        return false;
+      }
 
-    // Process league promotions/demotions and move users
-    await this.processSeasonEnd(currentSeason);
+      console.log(`Ending season: ${currentSeason.seasonId}`);
+      
+      // Process league promotions/demotions and move users
+      await this.processSeasonEnd(currentSeason);
 
     // Mark current season as ended
     await this.db.collection(this.leagueSeasonsCollection).updateOne(
@@ -1597,29 +1603,41 @@ export class LeagueRepository {
       })),
     };
 
+    console.log(`Creating new season: ${newSeasonId}`);
     await this.createSeason(newSeason);
     
     // Update all user_league_points records to use new season
     // Only update users who were processed in processSeasonEnd
+    console.log(`Migrating users from season ${currentSeason.seasonId} to ${newSeasonId}`);
     const processedUsers = await this.db.collection(this.userLeaguePointsCollection)
       .find({ seasonId: currentSeason.seasonId })
       .toArray();
     
+    console.log(`Found ${processedUsers.length} users to migrate`);
+    
     for (const user of processedUsers) {
-      await this.db.collection(this.userLeaguePointsCollection).updateOne(
-        { _id: user._id },
-        {
-          $set: {
-            seasonId: newSeasonId,
-            totalPoints: 0, // Reset season points for new season
-            groupId: null, // Reset group assignment for new season
-            updatedAt: new Date(),
-          },
-        }
-      );
+      try {
+        await this.db.collection(this.userLeaguePointsCollection).updateOne(
+          { _id: user._id },
+          {
+            $set: {
+              seasonId: newSeasonId,
+              totalPoints: 0, // Reset season points for new season
+              groupId: null, // Reset group assignment for new season
+              updatedAt: new Date(),
+            },
+          }
+        );
+      } catch (userError) {
+        console.error(`Failed to migrate user ${user.userId}:`, userError);
+      }
     }
     
     return true;
+    } catch (error) {
+      console.error("Error in endCurrentSeason:", error);
+      return false;
+    }
   }
 
   // Get raffle winners for a season
@@ -1886,6 +1904,8 @@ export class LeagueRepository {
             },
           }
         );
+      } else {
+        console.error(`Target league not found: ${userMove.targetLeague} for user ${userMove.userId}`);
       }
     }
 
