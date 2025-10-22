@@ -68,6 +68,7 @@ const UserLeaguePointsSchema = z.object({
   seasonId: z.string(),
   totalPoints: z.number().default(0), // Season points (reset each season)
   overallPoints: z.number().default(0), // Overall points (never reset)
+  status: UserLeagueStatusSchema.optional(), // User's status: promoted, demoted, safe
   pointsBreakdown: z.object({
     mockExams: z.number().default(0),
     practiceSessions: z.number().default(0),

@@ -1865,11 +1865,12 @@ export class LeagueRepository {
             isRaffleWinner: false, // Admin will select raffle winners manually
           });
 
-          // Reset season points for next season (but keep overall points)
+          // Update user status in user_league_points as well
           await this.db.collection(this.userLeaguePointsCollection).updateOne(
             { userId: user.userId, seasonId: season.seasonId },
             {
               $set: {
+                status: newStatus, // Store the calculated status
                 totalPoints: 0, // Reset season points
                 updatedAt: new Date(),
               },
