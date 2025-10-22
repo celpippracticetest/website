@@ -1600,17 +1600,24 @@ export class LeagueRepository {
     await this.createSeason(newSeason);
     
     // Update all user_league_points records to use new season
-    await this.db.collection(this.userLeaguePointsCollection).updateMany(
-      { seasonId: currentSeason.seasonId },
-      {
-        $set: {
-          seasonId: newSeasonId,
-          totalPoints: 0, // Reset season points for new season
-          groupId: null, // Reset group assignment for new season
-          updatedAt: new Date(),
-        },
-      }
-    );
+    // Only update users who were processed in processSeasonEnd
+    const processedUsers = await this.db.collection(this.userLeaguePointsCollection)
+      .find({ seasonId: currentSeason.seasonId })
+      .toArray();
+    
+    for (const user of processedUsers) {
+      await this.db.collection(this.userLeaguePointsCollection).updateOne(
+        { _id: user._id },
+        {
+          $set: {
+            seasonId: newSeasonId,
+            totalPoints: 0, // Reset season points for new season
+            groupId: null, // Reset group assignment for new season
+            updatedAt: new Date(),
+          },
+        }
+      );
+    }
     
     return true;
   }
@@ -1858,29 +1865,27 @@ export class LeagueRepository {
     console.log(`Moving ${usersToMove.length} users to new leagues...`);
     
     for (const userMove of usersToMove) {
-      if (userMove.currentLeague !== userMove.targetLeague) {
-        console.log(`Moving user ${userMove.userId} from ${userMove.currentLeague} to ${userMove.targetLeague}`);
-        
-        // Remove user from current league group
-        await this.db.collection(this.leagueGroupsCollection).updateMany(
-          { "users.userId": userMove.userId },
-          { $pull: { users: { userId: userMove.userId } } } as any
+      console.log(`Processing user ${userMove.userId}: ${userMove.currentLeague} -> ${userMove.targetLeague} (${userMove.status})`);
+      
+      // Remove user from current league group (regardless of league change)
+      await this.db.collection(this.leagueGroupsCollection).updateMany(
+        { "users.userId": userMove.userId },
+        { $pull: { users: { userId: userMove.userId } } } as any
+      );
+      
+      // Update user's league assignment in user_league_points
+      const targetLeague = await this.getLeagueByType(userMove.targetLeague);
+      if (targetLeague) {
+        await this.db.collection(this.userLeaguePointsCollection).updateOne(
+          { userId: userMove.userId },
+          {
+            $set: {
+              leagueId: targetLeague._id,
+              groupId: null, // Will be assigned to group when they earn points
+              updatedAt: new Date(),
+            },
+          }
         );
-        
-        // Update user's league assignment in user_league_points
-        const targetLeague = await this.getLeagueByType(userMove.targetLeague);
-        if (targetLeague) {
-          await this.db.collection(this.userLeaguePointsCollection).updateOne(
-            { userId: userMove.userId },
-            {
-              $set: {
-                leagueId: targetLeague._id,
-                groupId: null, // Will be assigned to group when they earn points
-                updatedAt: new Date(),
-              },
-            }
-          );
-        }
       }
     }
 

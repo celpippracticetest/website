@@ -221,60 +221,20 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // 1) Process promotions/demotions on the selected season exactly
-        await leagueRepo.processSeasonEnd(season as any);
-
-        // 2) Mark this season as ended (idempotent)
-        await db.collection("league_seasons").updateOne(
-          { seasonId },
-          { $set: { isActive: false, endedAt: new Date() } }
-        );
-
-        // 3) Ensure there is an active season to migrate INTO
-        let targetSeason = await db
-          .collection("league_seasons")
-          .findOne({ isActive: true });
-
-        if (!targetSeason) {
-          const newSeasonId = `season_${Date.now()}`;
-          const startDate = new Date();
-          const endDate = new Date();
-          endDate.setDate(endDate.getDate() + 7);
-
-          const seasonLeagues = (season as any).leagues.map((l: any) => ({
-            leagueType: l.leagueType,
-            groups: [],
-          }));
-
-          await leagueRepo.createSeason({
-            seasonId: newSeasonId,
-            startDate,
-            endDate,
-            isActive: true,
-            leagues: seasonLeagues,
-          });
-
-          targetSeason = await db
-            .collection("league_seasons")
-            .findOne({ seasonId: newSeasonId });
-        }
-
-        // 4) Migrate all user_league_points records from ENDED season → ACTIVE target season
-        if (targetSeason && (targetSeason as any).seasonId !== seasonId) {
-          await db.collection("user_league_points").updateMany(
-            { seasonId },
-            {
-              $set: {
-                seasonId: (targetSeason as any).seasonId,
-                totalPoints: 0,
-                groupId: null,
-                updatedAt: new Date(),
-              },
-            }
+        // Use endCurrentSeason to handle the complete season end process
+        const success = await leagueRepo.endCurrentSeason();
+        
+        if (!success) {
+          return NextResponse.json(
+            { error: "Failed to end season" },
+            { status: 500 }
           );
         }
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ 
+          success: true, 
+          message: "Season ended successfully and new season created" 
+        });
       }
 
       default:
