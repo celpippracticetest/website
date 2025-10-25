@@ -58,12 +58,34 @@ export async function POST(req: NextRequest) {
       !userMetadata?.referralDiscountUsed
     ) {
       let isExpired = false;
+      
+      // Check both metadata expiry and actual Stripe coupon expiry
       if (userMetadata?.referralDiscountExpiry) {
         const expiryDate = new Date(userMetadata.referralDiscountExpiry);
         if (expiryDate <= new Date()) {
           isExpired = true;
         }
       }
+      
+      // Double-check with Stripe to ensure the coupon is still valid
+      if (!isExpired) {
+        try {
+          const promotionCodeDetails = await stripe.promotionCodes.retrieve(referralPromotionId);
+          const couponDetails = typeof promotionCodeDetails.coupon === 'string' 
+            ? await stripe.coupons.retrieve(promotionCodeDetails.coupon)
+            : promotionCodeDetails.coupon;
+          
+          // Check if coupon has expired
+          if (couponDetails.redeem_by && couponDetails.redeem_by < Math.floor(Date.now() / 1000)) {
+            isExpired = true;
+            console.log("❌ Referral discount has expired (verified via Stripe)");
+          }
+        } catch (error) {
+          console.log("❌ Error checking referral discount validity:", error);
+          isExpired = true;
+        }
+      }
+      
       if (!isExpired) {
         promotionCode = referralPromotionId;
         referralDiscountApplied = true;
@@ -71,7 +93,7 @@ export async function POST(req: NextRequest) {
           `✅ Applying referral promotion_code id: ${referralPromotionId} for user with referral code: ${userMetadata.referralCode}`
         );
       } else {
-        console.log("❌ Referral discount has expired");
+        console.log("❌ Referral discount has expired - proceeding without discount");
       }
     } else if (userMetadata?.referralDiscountUsed) {
       console.log("❌ Referral discount already used by this user");
@@ -140,10 +162,34 @@ export async function POST(req: NextRequest) {
       newUserPromotionId &&
       !userMetadata?.hasEverPurchased
     ) {
-      promotionCode = newUserPromotionId;
-      console.log(
-        `✅ Applying NEW user promotion_code id: ${newUserPromotionId}`
-      );
+      // Check if NEW user discount is still valid (not expired)
+      let isNewDiscountExpired = false;
+      
+      // Check if the promotion code is still valid by retrieving it from Stripe
+      try {
+        const promotionCodeDetails = await stripe.promotionCodes.retrieve(newUserPromotionId);
+        const couponDetails = typeof promotionCodeDetails.coupon === 'string' 
+          ? await stripe.coupons.retrieve(promotionCodeDetails.coupon)
+          : promotionCodeDetails.coupon;
+        
+        // Check if coupon has expired
+        if (couponDetails.redeem_by && couponDetails.redeem_by < Math.floor(Date.now() / 1000)) {
+          isNewDiscountExpired = true;
+          console.log("❌ NEW user discount has expired");
+        }
+      } catch (error) {
+        console.log("❌ Error checking NEW user discount validity:", error);
+        isNewDiscountExpired = true;
+      }
+      
+      if (!isNewDiscountExpired) {
+        promotionCode = newUserPromotionId;
+        console.log(
+          `✅ Applying NEW user promotion_code id: ${newUserPromotionId}`
+        );
+      } else {
+        console.log("❌ NEW user discount has expired - proceeding without discount");
+      }
     } else if (userMetadata?.hasEverPurchased) {
       console.log(
         "❌ User has already made a purchase - no discount available"
