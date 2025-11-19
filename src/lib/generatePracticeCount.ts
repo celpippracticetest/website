@@ -1,11 +1,12 @@
 /**
  * Generates a dynamic count for practice statistics based on Vancouver timezone
- * Count starts at 0.5k in the morning and increases to 5k by 12pm (noon)
+ * Different tasks have different max counts (0.5k, 1.3k, 2k, 2.7k, 5k, etc.)
+ * Some tasks peak at noon, some at night, some stay low throughout
  * Unique for each practice/task combination, consistent for same time
  * 
  * @param taskId - The task ID (can be any string)
  * @param practiceId - The practice ID (can be any string)
- * @returns A formatted count string (e.g., "0.5k", "1.2k", "2.5k", "5.0k")
+ * @returns A formatted count string (e.g., "0.5k", "1.3k", "2.0k", "2.7k", "5.0k")
  */
 
 export function generatePracticeCount(
@@ -16,41 +17,88 @@ export function generatePracticeCount(
   const hours = vancouverTime.getHours();
   const minutes = vancouverTime.getMinutes();
   
-  const morningHour = 6;
-  const noonHour = 12;
-  
-  let timeOfDay: number;
-  if (hours < morningHour) {
-    timeOfDay = 0;
-  } else if (hours >= noonHour) {
-    timeOfDay = 1.0;
-  } else {
-    const totalMinutes = (hours - morningHour) * 60 + minutes;
-    const totalRangeMinutes = (noonHour - morningHour) * 60;
-    timeOfDay = totalMinutes / totalRangeMinutes;
-  }
-  
   const taskHash = hashString(taskId);
   const practiceHash = hashString(practiceId);
   const taskFirstChar = taskId.length > 0 ? taskId.charCodeAt(0) : 0;
-  const seed = (taskHash + practiceHash + taskFirstChar) % 10000;
+  const combinedSeed = (taskHash + practiceHash + taskFirstChar) % 100000;
   
-  const minCount = 500;
-  const maxCount = 5000;
-  const practiceVariation = (seed % 1000);
+  // Determine task behavior pattern (0-6 for different patterns)
+  const patternType = combinedSeed % 7;
   
-  // Each practice has a slightly different min/max based on seed to create uniqueness
-  const practiceMin = minCount + (practiceVariation * 0.3);
-  const practiceMax = maxCount - (practiceVariation * 0.1);
+  // Different max counts for different tasks: 0.5k, 1.3k, 2k, 2.7k, 5k, etc.
+  const maxCountOptions = [500, 1300, 2000, 2700, 3500, 4500, 5000];
+  const maxCountIndex = (taskHash % maxCountOptions.length);
+  const maxCount = maxCountOptions[maxCountIndex];
   
-  // Uses ease-in-out curve for smooth, natural growth progression
+  // Different min counts based on task
+  const minCountOptions = [300, 400, 500, 600, 700, 800, 1000];
+  const minCountIndex = (practiceHash % minCountOptions.length);
+  const minCount = minCountOptions[minCountIndex];
+  
+  let timeOfDay: number;
+  
+  // Different time patterns for different tasks
+  if (patternType === 0 || patternType === 1) {
+    // Pattern 0-1: Peak at noon (6am to 12pm growth)
+    const morningHour = 6;
+    const noonHour = 12;
+    if (hours < morningHour) {
+      timeOfDay = 0;
+    } else if (hours >= noonHour) {
+      timeOfDay = 1.0;
+    } else {
+      const totalMinutes = (hours - morningHour) * 60 + minutes;
+      const totalRangeMinutes = (noonHour - morningHour) * 60;
+      timeOfDay = totalMinutes / totalRangeMinutes;
+    }
+  } else if (patternType === 2 || patternType === 3) {
+    // Pattern 2-3: Peak at night (6pm to 12am growth)
+    const eveningHour = 18;
+    const midnightHour = 24;
+    const adjustedHours = hours < 6 ? hours + 24 : hours;
+    if (adjustedHours < eveningHour) {
+      timeOfDay = 0;
+    } else if (adjustedHours >= midnightHour) {
+      timeOfDay = 1.0;
+    } else {
+      const totalMinutes = (adjustedHours - eveningHour) * 60 + minutes;
+      const totalRangeMinutes = (midnightHour - eveningHour) * 60;
+      timeOfDay = totalMinutes / totalRangeMinutes;
+    }
+  } else if (patternType === 4) {
+    // Pattern 4: Reverse pattern (high in morning, low at night)
+    const morningHour = 6;
+    const noonHour = 12;
+    if (hours < morningHour) {
+      timeOfDay = 1.0;
+    } else if (hours >= noonHour) {
+      timeOfDay = 0;
+    } else {
+      const totalMinutes = (hours - morningHour) * 60 + minutes;
+      const totalRangeMinutes = (noonHour - morningHour) * 60;
+      timeOfDay = 1.0 - (totalMinutes / totalRangeMinutes);
+    }
+  } else {
+    // Pattern 5-6: Low constant or slight variation (stays low even at night)
+    // Use a very small time variation
+    const hourProgress = hours / 24;
+    timeOfDay = hourProgress * 0.3; // Only 30% variation max
+  }
+  
+  // Practice variation for uniqueness within same task
+  const practiceVariation = (practiceHash % 500);
+  const practiceMin = minCount + (practiceVariation * 0.2);
+  const practiceMax = maxCount - (practiceVariation * 0.15);
+  
+  // Apply easing for smooth progression
   const easedProgress = easeInOut(timeOfDay);
   let count = practiceMin + (practiceMax - practiceMin) * easedProgress;
   
-  // Add minute-based variation for organic feel while maintaining consistency within same hour
+  // Add minute-based variation for organic feel
   const minuteVariation = (minutes % 10) * 2;
   count += minuteVariation;
   
+  // Ensure count stays within bounds
   count = Math.max(minCount, Math.min(maxCount, count));
   
   return formatCount(count);
@@ -135,30 +183,68 @@ export function generatePracticeCountForDate(
   const hoursVancouver = getPart("hour");
   const minutesVancouver = getPart("minute");
   
-  const morningHour = 6;
-  const noonHour = 12;
-  
-  let timeOfDay: number;
-  if (hoursVancouver < morningHour) {
-    timeOfDay = 0;
-  } else if (hoursVancouver >= noonHour) {
-    timeOfDay = 1.0;
-  } else {
-    const totalMinutes = (hoursVancouver - morningHour) * 60 + minutesVancouver;
-    const totalRangeMinutes = (noonHour - morningHour) * 60;
-    timeOfDay = totalMinutes / totalRangeMinutes;
-  }
-  
   const taskHash = hashString(taskId);
   const practiceHash = hashString(practiceId);
   const taskFirstChar = taskId.length > 0 ? taskId.charCodeAt(0) : 0;
-  const seed = (taskHash + practiceHash + taskFirstChar) % 10000;
+  const combinedSeed = (taskHash + practiceHash + taskFirstChar) % 100000;
   
-  const minCount = 500;
-  const maxCount = 5000;
-  const practiceVariation = (seed % 1000);
-  const practiceMin = minCount + (practiceVariation * 0.3);
-  const practiceMax = maxCount - (practiceVariation * 0.1);
+  const patternType = combinedSeed % 7;
+  
+  const maxCountOptions = [500, 1300, 2000, 2700, 3500, 4500, 5000];
+  const maxCountIndex = (taskHash % maxCountOptions.length);
+  const maxCount = maxCountOptions[maxCountIndex];
+  
+  const minCountOptions = [300, 400, 500, 600, 700, 800, 1000];
+  const minCountIndex = (practiceHash % minCountOptions.length);
+  const minCount = minCountOptions[minCountIndex];
+  
+  let timeOfDay: number;
+  
+  if (patternType === 0 || patternType === 1) {
+    const morningHour = 6;
+    const noonHour = 12;
+    if (hoursVancouver < morningHour) {
+      timeOfDay = 0;
+    } else if (hoursVancouver >= noonHour) {
+      timeOfDay = 1.0;
+    } else {
+      const totalMinutes = (hoursVancouver - morningHour) * 60 + minutesVancouver;
+      const totalRangeMinutes = (noonHour - morningHour) * 60;
+      timeOfDay = totalMinutes / totalRangeMinutes;
+    }
+  } else if (patternType === 2 || patternType === 3) {
+    const eveningHour = 18;
+    const midnightHour = 24;
+    const adjustedHours = hoursVancouver < 6 ? hoursVancouver + 24 : hoursVancouver;
+    if (adjustedHours < eveningHour) {
+      timeOfDay = 0;
+    } else if (adjustedHours >= midnightHour) {
+      timeOfDay = 1.0;
+    } else {
+      const totalMinutes = (adjustedHours - eveningHour) * 60 + minutesVancouver;
+      const totalRangeMinutes = (midnightHour - eveningHour) * 60;
+      timeOfDay = totalMinutes / totalRangeMinutes;
+    }
+  } else if (patternType === 4) {
+    const morningHour = 6;
+    const noonHour = 12;
+    if (hoursVancouver < morningHour) {
+      timeOfDay = 1.0;
+    } else if (hoursVancouver >= noonHour) {
+      timeOfDay = 0;
+    } else {
+      const totalMinutes = (hoursVancouver - morningHour) * 60 + minutesVancouver;
+      const totalRangeMinutes = (noonHour - morningHour) * 60;
+      timeOfDay = 1.0 - (totalMinutes / totalRangeMinutes);
+    }
+  } else {
+    const hourProgress = hoursVancouver / 24;
+    timeOfDay = hourProgress * 0.3;
+  }
+  
+  const practiceVariation = (practiceHash % 500);
+  const practiceMin = minCount + (practiceVariation * 0.2);
+  const practiceMax = maxCount - (practiceVariation * 0.15);
   
   const easedProgress = easeInOut(timeOfDay);
   let count = practiceMin + (practiceMax - practiceMin) * easedProgress;
