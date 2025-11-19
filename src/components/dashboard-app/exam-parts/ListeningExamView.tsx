@@ -21,29 +21,8 @@ import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
+import { PRACTICE_PARTS } from "@/constants";
 
-const parts = [
-  "Problem Solving",
-  "A Daily life conversation",
-  "Information",
-  "News Item",
-  "Discussion",
-  "Viewpoints",
-  "Correspondence",
-  "Apply a Diagram",
-  "Information",
-  "Viewpoints",
-  "Writing an Email",
-  "Survey Questions",
-  "Giving Advice",
-  "Talking about personal experience",
-  "Describing a Scene",
-  "Making predictions",
-  "Comparing and Persuading",
-  "Dealing with a difficult situation",
-  "Expressing opinions",
-  "Describing an unusual situation",
-];
 interface ListeningExamViewProps {
   practice: TPracticeDto;
   partId: number;
@@ -256,7 +235,7 @@ const ListeningExamView = ({
   const getPartsForSection = (route: string) => {
     const range = sectionRanges[route];
     if (!range) return [] as { title: string; index: number }[];
-    const slice = parts.slice(range.start, range.end);
+    const slice = PRACTICE_PARTS.slice(range.start, range.end);
     return slice.map((title, i) => ({ title, index: range.start + i + 1 }));
   };
   return (
@@ -336,7 +315,7 @@ const ListeningExamView = ({
         >
           <div className="text-[#37465C] text-[16px]">
             <span className="font-normal">Listening Part{partId}:</span>
-            <span className="font-bold">{parts[partId - 1]}</span>
+            <span className="font-bold">{PRACTICE_PARTS[partId - 1]}</span>
           </div>
           <SvgChevronDownExam className="text-[#37465C]" />
         </div>
@@ -346,7 +325,7 @@ const ListeningExamView = ({
           <div className="flex justify-between rounded-lg lg:items-center gap-2 lg:gap-0 pb-[10px]  px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
             <div className="flex flex-col-reverse  screen744:!flex-row flex-wrap gap-[16px] max-w-[635px] w-full">
               <div className="text-[14px] flex flex-col font-semibold shrink screen1280:!shrink-0">
-                <span>{parts[partId - 1]}</span>
+                <span>{PRACTICE_PARTS[partId - 1]}</span>
                 <span className="font-normal text-[14px] text-[#37465C]">
                   Listening Task {partId}
                 </span>
