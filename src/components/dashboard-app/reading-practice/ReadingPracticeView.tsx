@@ -29,6 +29,8 @@ import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
+import StatBadge from "@/components/shared/StatBadge";
+import { usePracticeCount } from "@/hooks/usePracticeCount";
 
 interface ReadingPracticeViewProps {
   practice: TPracticeDto;
@@ -50,6 +52,7 @@ const ReadingPracticeView = ({
   completedPractice,
   onBackClick,
 }: ReadingPracticeViewProps) => {
+  const practiceCount = usePracticeCount(task.id, practice.id);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { user, isLoaded, isSignedIn } = useUser();
   const { addPoints } = useLeaguePoints();
@@ -212,9 +215,15 @@ const ReadingPracticeView = ({
         <div className="bg-white rounded-xl flex flex-col screen1280:!h-[920px] overflow-scroll border border-[#D5D6D8] w-full">
           <div className="flex justify-between  gap-2 p-[16px] border-b border-[#D5D6D8]  flex-col screen1280:!flex-row w-full  h-auto bg-[#FFEBD6]">
             <div className="flex flex-col-reverse screen744:!flex-row items-start screen744:!items-center gap-[16px] flex-wrap screen744:!flex-nowrap">
-              <h1 className="w-full max-w-[330px] text-[18px] font-bold text-[#212E42]">
-                {practice.passages[passageIndex].title}
-              </h1>
+              <div className="flex flex-col gap-2 w-full items-start">
+                <h1 className="w-full max-w-[330px] text-[18px] font-bold text-[#212E42]">
+                  {practice.passages[passageIndex].title}
+                </h1>
+                <StatBadge 
+                  count={practiceCount} 
+                  label="answered today" 
+                />
+              </div>
               {page !== "answer" && shouldShowPractice && (
                 <>
                   <button

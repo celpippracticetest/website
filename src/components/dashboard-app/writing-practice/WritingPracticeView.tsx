@@ -31,6 +31,8 @@ import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
+import StatBadge from "@/components/shared/StatBadge";
+import { usePracticeCount } from "@/hooks/usePracticeCount";
 const SvgBestValuePlan = dynamic(
   () => import("../../../components/icons/BestValuePlan"),
   {
@@ -76,6 +78,7 @@ const WritingPracticeView = ({
   onBackClick,
   onAnswerButtonClick,
 }: WritingPracticeViewProps) => {
+  const practiceCount = usePracticeCount(task.id, practice.id);
   const router = useRouter();
 
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -331,6 +334,10 @@ const WritingPracticeView = ({
             <h1 className="text-[18px] font-bold text-[#212E42]">
               {practice.passages[passageIndex].title}
             </h1>
+            <StatBadge 
+              count={practiceCount} 
+              label="answered today" 
+            />
           </div>
           {
             <div className="flex items-center gap-2 justify-end pb-[10px] ">
