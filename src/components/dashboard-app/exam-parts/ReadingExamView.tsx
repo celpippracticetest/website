@@ -26,6 +26,7 @@ import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
+import { PRACTICE_PARTS } from "@/constants";
 
 interface ReadingExamViewProps {
   practice: TPracticeDto;
@@ -34,29 +35,6 @@ interface ReadingExamViewProps {
   examName?: string;
   partNumber?: string;
 }
-
-const parts = [
-  "Problem Solving",
-  "A Daily life conversation",
-  "Information",
-  "News Item",
-  "Discussion",
-  "Viewpoints",
-  "Correspondence",
-  "Apply a Diagram",
-  "Information",
-  "Viewpoints",
-  "Writing an Email",
-  "Survey Questions",
-  "Giving Advice",
-  "Talking about personal experience",
-  "Describing a Scene",
-  "Making predictions",
-  "Comparing and Persuading",
-  "Dealing with a difficult situation",
-  "Expressing opinions",
-  "Describing an unusual situation",
-];
 
 const ReadingExamView = ({
   practice,
@@ -256,7 +234,7 @@ const ReadingExamView = ({
   const getPartsForSection = (route: string) => {
     const range = sectionRanges[route];
     if (!range) return [] as { title: string; index: number }[];
-    const slice = parts.slice(range.start, range.end);
+    const slice = PRACTICE_PARTS.slice(range.start, range.end);
     return slice.map((title, i) => ({ title, index: range.start + i + 1 }));
   };
 
@@ -345,10 +323,10 @@ const ReadingExamView = ({
             onClick={() => setMenuShowModal(true)}
             className="max-w-[442px] justify-between cursor-pointer border px-[16px] border-[#D5D6D8] rounded-[12px] gap-[4px] w-full flex items-center h-[56px]"
           >
-            <div className="text-[#37465C] text-[16px]">
-              <span className="font-normal">Reading Part{partId}:</span>
-              <span className="font-bold">{parts[partId - 1]}</span>
-            </div>
+          <div className="text-[#37465C] text-[16px]">
+            <span className="font-normal">Reading Part{partId}:</span>
+            <span className="font-bold">{PRACTICE_PARTS[partId - 1]}</span>
+          </div>
             <SvgChevronDownExam className="text-[#37465C]" />
           </div>
         </div>
@@ -356,7 +334,7 @@ const ReadingExamView = ({
           <div className="flex justify-between pb-[21px]  lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
             <div className="flex screen744:!items-center flex-col-reverse screen744:!flex-row gap-[16px]">
               <div className="flex gap-2 flex-col screen744:!shrink-0 shrink-0">
-                <span>{parts[partId - 1]}</span>
+                <span>{PRACTICE_PARTS[partId - 1]}</span>
                 <span className="font-normal text-[14px] text-[#37465C]">
                   Reading Task {partId - 6}
                 </span>

@@ -2,6 +2,7 @@ import React from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Filter } from "lucide-react";
 import { TExamSchemaDto } from "@/models/exam.model";
+import { PRACTICE_PARTS } from "@/constants";
 
 interface PracticeTypeFilterProps {
   selectedType: string | null;
@@ -82,28 +83,6 @@ export function ExamPartIdFilter({
   selectedType: string | null;
   onTypeChange: (type: string | null) => void;
 }) {
-  const parts = [
-    "Problem Solving",
-    "A Daily life conversation",
-    "Information",
-    "News Item",
-    "Discussion",
-    "Viewpoints",
-    "Correspondence",
-    "Apply a Diagram",
-    "Information",
-    "Viewpoints",
-    "Writing an Email",
-    "Survey Questions",
-    "Giving Advice",
-    "Talking about personal experience",
-    "Describing a Scene",
-    "Making predictions",
-    "Comparing and Persuading",
-    "Dealing with a difficult situation",
-    "Expressing opinions",
-    "Describing an unusual situation"
-  ]
   const handleTypeChange = (value: string) => {
     if (value === "all") {
       onTypeChange(null);
@@ -124,7 +103,7 @@ export function ExamPartIdFilter({
           <SelectItem value="all">All Parts</SelectItem>
           {Array.from({ length: 20 }, (_, i) => (
             <SelectItem key={i + 1} value={(i + 1).toString()}>
-              Part {i + 1} - {parts[i]}
+              Part {i + 1} - {PRACTICE_PARTS[i]}
             </SelectItem>
           ))}
         </SelectContent>

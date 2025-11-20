@@ -36,29 +36,8 @@ import { ListeningPracticeInput } from "./ListeningPractice";
 import { S3Client } from "@aws-sdk/client-s3";
 import { useSearchParams } from "next/navigation";
 import { TExamSchemaDto } from "@/models/exam.model";
+import { PRACTICE_PARTS } from "@/constants";
 
-const parts = [
-  "Problem Solving",
-  "A Daily life conversation",
-  "Information",
-  "News Item",
-  "Discussion",
-  "Viewpoints",
-  "Correspondence",
-  "Apply a Diagram",
-  "Information",
-  "Viewpoints",
-  "Writing an Email",
-  "Survey Questions",
-  "Giving Advice",
-  "Talking about personal experience",
-  "Describing a Scene",
-  "Making predictions",
-  "Comparing and Persuading",
-  "Dealing with a difficult situation",
-  "Expressing opinions",
-  "Describing an unusual situation",
-];
 // Schema for form validation
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -466,7 +445,7 @@ export default function ListeningPracticeInputForm() {
                       <SelectContent>
                         {Array.from({ length: 6 }, (_, i) => (
                           <SelectItem key={i + 1} value={(i + 1).toString()}>
-                            Part {i + 1} - {parts[i]}
+                            Part {i + 1} - {PRACTICE_PARTS[i]}
                           </SelectItem>
                         ))}
                       </SelectContent>

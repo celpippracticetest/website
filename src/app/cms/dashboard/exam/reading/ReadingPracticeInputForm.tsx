@@ -38,29 +38,7 @@ import { ReadingPracticeInput } from "./ReadingPractice";
 import { useSearchParams } from "next/navigation";
 import RichTextEditor from "@/components/dashboard-app/cms/RichTextEditor";
 import { useRouter } from "nextjs-toploader/app";
-
-const parts = [
-  "Problem Solving",
-  "A Daily life conversation",
-  "Information",
-  "News Item",
-  "Discussion",
-  "Viewpoints",
-  "Correspondence",
-  "Apply a Diagram",
-  "Information",
-  "Viewpoints",
-  "Writing an Email",
-  "Survey Questions",
-  "Giving Advice",
-  "Talking about personal experience",
-  "Describing a Scene",
-  "Making predictions",
-  "Comparing and Persuading",
-  "Dealing with a difficult situation",
-  "Expressing opinions",
-  "Describing an unusual situation",
-];
+import { PRACTICE_PARTS } from "@/constants";
 
 // Schema for form validation
 const formSchema = z.object({
@@ -436,7 +414,7 @@ export default function ReadingPracticeInputForm() {
                       <SelectContent>
                         {Array.from({ length: 4 }, (_, i) => (
                           <SelectItem key={i + 7} value={(i + 7).toString()}>
-                            Part {i + 7} - {parts[i + 6]}
+                            Part {i + 7} - {PRACTICE_PARTS[i + 6]}
                           </SelectItem>
                         ))}
                       </SelectContent>

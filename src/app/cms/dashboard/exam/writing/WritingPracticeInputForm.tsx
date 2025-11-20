@@ -37,28 +37,8 @@ import { WritingPracticeInput } from "./WritingPractice";
 import { useSearchParams } from "next/navigation";
 import RichTextEditor from "@/components/dashboard-app/cms/RichTextEditor";
 import { useRouter } from "nextjs-toploader/app";
-const parts = [
-  "Problem Solving",
-  "A Daily life conversation",
-  "Information",
-  "News Item",
-  "Discussion",
-  "Viewpoints",
-  "Correspondence",
-  "Apply a Diagram",
-  "Information",
-  "Viewpoints",
-  "Writing an Email",
-  "Survey Questions",
-  "Giving Advice",
-  "Talking about personal experience",
-  "Describing a Scene",
-  "Making predictions",
-  "Comparing and Persuading",
-  "Dealing with a difficult situation",
-  "Expressing opinions",
-  "Describing an unusual situation",
-];
+import { PRACTICE_PARTS } from "@/constants";
+
 // Schema for form validation
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -429,7 +409,7 @@ export default function WritingPracticeInputForm() {
                       <SelectContent>
                         {Array.from({ length: 2 }, (_, i) => (
                           <SelectItem key={i + 11} value={(i + 11).toString()}>
-                            Part {i + 11} - {parts[i + 10]}
+                            Part {i + 11} - {PRACTICE_PARTS[i + 10]}
                           </SelectItem>
                         ))}
                       </SelectContent>

@@ -23,6 +23,8 @@ import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
+import StatBadge from "@/components/shared/StatBadge";
+import { usePracticeCount } from "@/hooks/usePracticeCount";
 
 interface SpeakingPracticeViewProps {
   practice: TPracticeDto;
@@ -51,6 +53,7 @@ const SpeakingPracticeView = ({
   onBackClick,
   onAnswerButtonClick,
 }: SpeakingPracticeViewProps) => {
+  const practiceCount = usePracticeCount(task.id, practice.id, task.taskNumber);
   const preparationTime: { [key: string]: number } = {
     "67f454ba16846d97ecbde9f0": 30,
     "67f454d316846d97ecbde9f1": 30,
@@ -416,6 +419,10 @@ const SpeakingPracticeView = ({
             <h1 className="text-[18px] font-bold text-[#212E42]">
               {practice.passages[passageIndex].title}
             </h1>
+            <StatBadge 
+              count={practiceCount} 
+              label="answered today" 
+            />
           </div>
           {
             <div className="flex items-center gap-2 justify-end pb-[10px] ">

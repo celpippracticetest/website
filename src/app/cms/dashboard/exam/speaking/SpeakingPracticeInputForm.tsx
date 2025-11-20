@@ -35,29 +35,7 @@ import { SpeakingPracticeInput } from "./SpeakingPractice";
 import { useSearchParams } from "next/navigation";
 import RichTextEditor from "@/components/dashboard-app/cms/RichTextEditor";
 import { TExamSchemaDto } from "@/models/exam.model";
-
-const parts = [
-  "Problem Solving",
-  "A Daily life conversation",
-  "Information",
-  "News Item",
-  "Discussion",
-  "Viewpoints",
-  "Correspondence",
-  "Apply a Diagram",
-  "Information",
-  "Viewpoints",
-  "Writing an Email",
-  "Survey Questions",
-  "Giving Advice",
-  "Talking about personal experience",
-  "Describing a Scene",
-  "Making predictions",
-  "Comparing and Persuading",
-  "Dealing with a difficult situation",
-  "Expressing opinions",
-  "Describing an unusual situation",
-];
+import { PRACTICE_PARTS } from "@/constants";
 
 // Schema for form validation
 const formSchema = z.object({
@@ -434,7 +412,7 @@ export default function SpeakingPracticeInputForm() {
                       <SelectContent>
                         {Array.from({ length: 8 }, (_, i) => (
                           <SelectItem key={i + 13} value={(i + 13).toString()}>
-                            Part {i + 13} - {parts[i + 12]}
+                            Part {i + 13} - {PRACTICE_PARTS[i + 12]}
                           </SelectItem>
                         ))}
                       </SelectContent>

@@ -23,6 +23,8 @@ import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
+import StatBadge from "@/components/shared/StatBadge";
+import { usePracticeCount } from "@/hooks/usePracticeCount";
 
 interface ListeningPracticeViewProps {
   practice: TPracticeDto;
@@ -51,6 +53,7 @@ const ListeningPracticeView = ({
   setIsFromFirstPage,
   onBackClick,
 }: ListeningPracticeViewProps) => {
+  const practiceCount = usePracticeCount(task.id, practice.id, task.taskNumber);
   const task5or6 = ["67ebeffe187829d27daac3c8", "67ebf003187829d27daac3c9"];
   const useDropdownForQuestions = true;
 
@@ -278,12 +281,16 @@ const ListeningPracticeView = ({
         />
         <Card className="bg-white/90 flex flex-col overflow-scroll border border-[#D5D6D8] w-full">
           <div className="flex justify-between lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row  w-full  h-auto bg-[#FFEBD6]">
-            <div className="flex gap-2 w-full  items-center justify-between">
+            <div className="flex gap-2 w-full items-start justify-between flex-col">
               <h1 className="text-[18px] font-bold text-[#212E42]">
                 {page === "instructions"
                   ? "Instruction"
                   : practice.passages[passageIndex].title}
               </h1>
+              <StatBadge 
+                count={practiceCount} 
+                label="answered today" 
+              />
             </div>
 
             {page !== "instructions" &&
