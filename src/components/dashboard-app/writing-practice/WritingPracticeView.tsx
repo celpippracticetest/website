@@ -78,7 +78,7 @@ const WritingPracticeView = ({
   onBackClick,
   onAnswerButtonClick,
 }: WritingPracticeViewProps) => {
-  const practiceCount = usePracticeCount(task.id, practice.id);
+  const practiceCount = usePracticeCount(task.id, practice.id, task.taskNumber);
   const router = useRouter();
 
   const [showLoginModal, setShowLoginModal] = useState(false);

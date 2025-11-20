@@ -53,7 +53,7 @@ const SpeakingPracticeView = ({
   onBackClick,
   onAnswerButtonClick,
 }: SpeakingPracticeViewProps) => {
-  const practiceCount = usePracticeCount(task.id, practice.id);
+  const practiceCount = usePracticeCount(task.id, practice.id, task.taskNumber);
   const preparationTime: { [key: string]: number } = {
     "67f454ba16846d97ecbde9f0": 30,
     "67f454d316846d97ecbde9f1": 30,

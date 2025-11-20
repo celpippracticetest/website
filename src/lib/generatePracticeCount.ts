@@ -1,21 +1,32 @@
 /**
  * Generates a dynamic count for practice statistics based on Vancouver timezone
- * Different tasks have different max counts (0.5k, 1.3k, 2k, 2.7k, 5k, etc.)
+ * Task 1 has highest count, Task 2 has lower, Task 3 even lower, etc.
+ * This reflects that people must complete earlier tasks before later ones
  * Some tasks peak at noon, some at night, some stay low throughout
- * Unique for each practice/task combination, consistent for same time
  * 
  * @param taskId - The task ID (can be any string)
  * @param practiceId - The practice ID (can be any string)
+ * @param taskNumber - Task number string (e.g., "Task #1", "1") to ensure proper ordering
  * @returns A formatted count string (e.g., "0.5k", "1.3k", "2.0k", "2.7k", "5.0k")
  */
 
 export function generatePracticeCount(
   taskId: string,
-  practiceId: string
+  practiceId: string,
+  taskNumber?: string
 ): string {
   const vancouverTime = getVancouverTime();
   const hours = vancouverTime.getHours();
   const minutes = vancouverTime.getMinutes();
+  
+  // Extract numeric task number (e.g., "Task #1" -> 1, "1" -> 1)
+  let taskNum = 99; // Default to high number (lowest count) if not provided
+  if (taskNumber) {
+    const numMatch = taskNumber.match(/\d+/);
+    if (numMatch) {
+      taskNum = parseInt(numMatch[0], 10);
+    }
+  }
   
   const taskHash = hashString(taskId);
   const practiceHash = hashString(practiceId);
@@ -25,15 +36,23 @@ export function generatePracticeCount(
   // Determine task behavior pattern (0-6 for different patterns)
   const patternType = combinedSeed % 7;
   
-  // Different max counts for different tasks: 0.5k, 1.3k, 2k, 2.7k, 5k, etc.
-  const maxCountOptions = [500, 1300, 2000, 2700, 3500, 4500, 5000];
-  const maxCountIndex = (taskHash % maxCountOptions.length);
-  const maxCount = maxCountOptions[maxCountIndex];
+  // Base max counts ordered by task number: Task 1 highest, Task 2 lower, etc.
+  const baseMaxCounts = [5000, 4200, 3600, 3000, 2500, 2000, 1500, 1200, 900, 600];
+  const taskIndex = Math.min(taskNum - 1, baseMaxCounts.length - 1);
+  const baseMax = baseMaxCounts[taskIndex];
   
-  // Different min counts based on task
-  const minCountOptions = [300, 400, 500, 600, 700, 800, 1000];
-  const minCountIndex = (practiceHash % minCountOptions.length);
-  const minCount = minCountOptions[minCountIndex];
+  // Add small variation based on practice hash, but keep ordering intact
+  const maxVariation = (practiceHash % 150) - 75; // -75 to +75 variation
+  const maxCount = Math.max(500, Math.min(baseMax + 100, baseMax + maxVariation));
+  
+  // Base min counts also ordered by task number
+  const baseMinCounts = [500, 450, 400, 350, 300, 250, 200, 150, 100, 50];
+  const minTaskIndex = Math.min(taskNum - 1, baseMinCounts.length - 1);
+  const baseMin = baseMinCounts[minTaskIndex];
+  
+  // Add small variation
+  const minVariation = (practiceHash % 80) - 40; // -40 to +40 variation
+  const minCount = Math.max(50, Math.min(baseMin + 50, baseMin + minVariation));
   
   let timeOfDay: number;
   
@@ -161,7 +180,8 @@ function formatCount(count: number): string {
 export function generatePracticeCountForDate(
   taskId: string,
   practiceId: string,
-  targetDate: Date
+  targetDate: Date,
+  taskNumber?: string
 ): string {
   const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Vancouver",
@@ -183,6 +203,14 @@ export function generatePracticeCountForDate(
   const hoursVancouver = getPart("hour");
   const minutesVancouver = getPart("minute");
   
+  let taskNum = 99;
+  if (taskNumber) {
+    const numMatch = taskNumber.match(/\d+/);
+    if (numMatch) {
+      taskNum = parseInt(numMatch[0], 10);
+    }
+  }
+  
   const taskHash = hashString(taskId);
   const practiceHash = hashString(practiceId);
   const taskFirstChar = taskId.length > 0 ? taskId.charCodeAt(0) : 0;
@@ -190,13 +218,19 @@ export function generatePracticeCountForDate(
   
   const patternType = combinedSeed % 7;
   
-  const maxCountOptions = [500, 1300, 2000, 2700, 3500, 4500, 5000];
-  const maxCountIndex = (taskHash % maxCountOptions.length);
-  const maxCount = maxCountOptions[maxCountIndex];
+  const baseMaxCounts = [5000, 4200, 3600, 3000, 2500, 2000, 1500, 1200, 900, 600];
+  const taskIndex = Math.min(taskNum - 1, baseMaxCounts.length - 1);
+  const baseMax = baseMaxCounts[taskIndex];
   
-  const minCountOptions = [300, 400, 500, 600, 700, 800, 1000];
-  const minCountIndex = (practiceHash % minCountOptions.length);
-  const minCount = minCountOptions[minCountIndex];
+  const maxVariation = (practiceHash % 150) - 75;
+  const maxCount = Math.max(500, Math.min(baseMax + 100, baseMax + maxVariation));
+  
+  const baseMinCounts = [500, 450, 400, 350, 300, 250, 200, 150, 100, 50];
+  const minTaskIndex = Math.min(taskNum - 1, baseMinCounts.length - 1);
+  const baseMin = baseMinCounts[minTaskIndex];
+  
+  const minVariation = (practiceHash % 80) - 40;
+  const minCount = Math.max(50, Math.min(baseMin + 50, baseMin + minVariation));
   
   let timeOfDay: number;
   

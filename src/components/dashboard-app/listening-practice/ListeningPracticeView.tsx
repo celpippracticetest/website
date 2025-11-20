@@ -53,7 +53,7 @@ const ListeningPracticeView = ({
   setIsFromFirstPage,
   onBackClick,
 }: ListeningPracticeViewProps) => {
-  const practiceCount = usePracticeCount(task.id, practice.id);
+  const practiceCount = usePracticeCount(task.id, practice.id, task.taskNumber);
   const task5or6 = ["67ebeffe187829d27daac3c8", "67ebf003187829d27daac3c9"];
   const useDropdownForQuestions = true;
 

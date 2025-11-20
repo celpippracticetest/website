@@ -52,7 +52,7 @@ const ReadingPracticeView = ({
   completedPractice,
   onBackClick,
 }: ReadingPracticeViewProps) => {
-  const practiceCount = usePracticeCount(task.id, practice.id);
+  const practiceCount = usePracticeCount(task.id, practice.id, task.taskNumber);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { user, isLoaded, isSignedIn } = useUser();
   const { addPoints } = useLeaguePoints();
