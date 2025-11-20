@@ -2,12 +2,13 @@
  * Generates a dynamic count for practice statistics based on Vancouver timezone
  * Task 1 has highest count, Task 2 has lower, Task 3 even lower, etc.
  * This reflects that people must complete earlier tasks before later ones
- * Some tasks peak at noon, some at night, some stay low throughout
+ * All tasks follow a "Morning Low -> Night High" pattern
+ * All counts are guaranteed to be >= 1.0k
  * 
  * @param taskId - The task ID (can be any string)
  * @param practiceId - The practice ID (can be any string)
  * @param taskNumber - Task number string (e.g., "Task #1", "1") to ensure proper ordering
- * @returns A formatted count string (e.g., "0.5k", "1.3k", "2.0k", "2.7k", "5.0k")
+ * @returns A formatted count string (e.g., "1.2k", "1.5k", "5.0k")
  */
 
 export function generatePracticeCount(
@@ -30,110 +31,80 @@ export function generatePracticeCount(
 
   const taskHash = hashString(taskId);
   const practiceHash = hashString(practiceId);
-  const taskFirstChar = taskId.length > 0 ? taskId.charCodeAt(0) : 0;
-  const combinedSeed = (taskHash + practiceHash + taskFirstChar) % 100000;
 
-  // Determine task behavior pattern (0-6 for different patterns)
-  const patternType = combinedSeed % 7;
-
-  // STRICT RANGES to ensure Task 1 > Task 2 > Task 3 always
-  // We define non-overlapping ranges for the first 10 tasks
+  // Define Morning (06:00) and Night (24:00) ranges for each task
   // Format: [min, max]
-  const ranges = [
-    [4500, 5500], // Task 1
-    [3500, 4400], // Task 2
-    [2800, 3400], // Task 3
-    [2200, 2700], // Task 4
-    [1700, 2100], // Task 5
-    [1300, 1600], // Task 6
-    [1000, 1250], // Task 7
-    [750, 950],   // Task 8
-    [500, 700],   // Task 9
-    [250, 450],   // Task 10
+  // Guaranteed: MorningMin(Task N) > MorningMax(Task N+1) to ensure no overlap even at same time
+  // Guaranteed: NightMin(Task N) > NightMax(Task N+1)
+
+  const morningRanges = [
+    [1250, 1500], // Task 1: 1.25k - 1.5k (Matches user req: ~1.2k/1.4k)
+    [1100, 1200], // Task 2: 1.1k - 1.2k (Strictly < Task 1)
+    [1060, 1090], // Task 3: 1.06k - 1.09k
+    [1030, 1050], // Task 4: 1.03k - 1.05k
+    [1010, 1025], // Task 5: 1.01k - 1.025k
+    [1000, 1005], // Task 6+: Flat 1k baseline
   ];
 
-  const rangeIndex = Math.min(taskNum - 1, ranges.length - 1);
-  // If taskNum is very large (fallback), use a low range
-  const [rangeMin, rangeMax] = taskNum > ranges.length
-    ? [50, 200]
-    : ranges[rangeIndex];
+  const nightRanges = [
+    [5000, 6000], // Task 1: Peaks high
+    [4000, 4800], // Task 2
+    [3000, 3800], // Task 3
+    [2200, 2800], // Task 4
+    [1600, 2000], // Task 5
+    [1200, 1500], // Task 6+
+  ];
 
-  // Calculate the spread for this specific task/practice combo within its allowed range
-  // We want to use the full range but keep it bounded
+  const rangeIndex = Math.min(taskNum - 1, morningRanges.length - 1);
+  // Use the last defined range for any task number exceeding the list
+  const morningRange = taskNum > morningRanges.length
+    ? [1000, 1005]
+    : morningRanges[rangeIndex];
 
-  let timeOfDay: number;
+  const nightRange = taskNum > nightRanges.length
+    ? [1000, 1100]
+    : nightRanges[rangeIndex];
 
-  // Different time patterns for different tasks
-  if (patternType === 0 || patternType === 1) {
-    // Pattern 0-1: Peak at noon (6am to 12pm growth)
-    const morningHour = 6;
-    const noonHour = 12;
-    if (hours < morningHour) {
-      timeOfDay = 0;
-    } else if (hours >= noonHour) {
-      timeOfDay = 1.0;
-    } else {
-      const totalMinutes = (hours - morningHour) * 60 + minutes;
-      const totalRangeMinutes = (noonHour - morningHour) * 60;
-      timeOfDay = totalMinutes / totalRangeMinutes;
-    }
-  } else if (patternType === 2 || patternType === 3) {
-    // Pattern 2-3: Peak at night (6pm to 12am growth)
-    const eveningHour = 18;
-    const midnightHour = 24;
-    const adjustedHours = hours < 6 ? hours + 24 : hours;
-    if (adjustedHours < eveningHour) {
-      timeOfDay = 0;
-    } else if (adjustedHours >= midnightHour) {
-      timeOfDay = 1.0;
-    } else {
-      const totalMinutes = (adjustedHours - eveningHour) * 60 + minutes;
-      const totalRangeMinutes = (midnightHour - eveningHour) * 60;
-      timeOfDay = totalMinutes / totalRangeMinutes;
-    }
-  } else if (patternType === 4) {
-    // Pattern 4: Reverse pattern (high in morning, low at night)
-    const morningHour = 6;
-    const noonHour = 12;
-    if (hours < morningHour) {
-      timeOfDay = 1.0;
-    } else if (hours >= noonHour) {
-      timeOfDay = 0;
-    } else {
-      const totalMinutes = (hours - morningHour) * 60 + minutes;
-      const totalRangeMinutes = (noonHour - morningHour) * 60;
-      timeOfDay = 1.0 - (totalMinutes / totalRangeMinutes);
-    }
+  // UNIFIED TIME PATTERN: Morning Low -> Night High
+  // Starts growing from 6 AM, peaks at midnight
+  const startHour = 6;
+  const endHour = 24;
+
+  let timeProgress: number;
+
+  if (hours < startHour) {
+    // 00:00 - 06:00: Stay at morning baseline
+    timeProgress = 0.0;
   } else {
-    // Pattern 5-6: Low constant or slight variation
-    const hourProgress = hours / 24;
-    timeOfDay = hourProgress * 0.5; // Up to 50% of range
+    // 06:00 - 24:00: Linear progress
+    const totalMinutes = (hours - startHour) * 60 + minutes;
+    const totalRangeMinutes = (endHour - startHour) * 60;
+    timeProgress = totalMinutes / totalRangeMinutes;
   }
 
   // Apply easing for smooth progression
-  const easedProgress = easeInOut(timeOfDay);
+  const easedProgress = easeInOut(timeProgress);
 
-  // Calculate base count within the range based on time
-  // We use a subset of the range for time variation so we have room for practice variation
-  // Let's say time accounts for 70% of the variation, practice hash for 30%
+  // Interpolate ranges based on time
+  // CurrentMin = Lerp(MorningMin, NightMin, progress)
+  // CurrentMax = Lerp(MorningMax, NightMax, progress)
 
-  const rangeSize = rangeMax - rangeMin;
-  const timeComponent = easedProgress * (rangeSize * 0.7);
+  const currentMin = lerp(morningRange[0], nightRange[0], easedProgress);
+  const currentMax = lerp(morningRange[1], nightRange[1], easedProgress);
 
-  // Practice variation (static per practice)
-  // Use practiceHash to determine where in the remaining 30% this practice sits
+  // Calculate count within the current interpolated range
+  // Practice hash determines position within the range (0% to 100%)
   const practiceVariationPct = (practiceHash % 100) / 100;
-  const practiceComponent = practiceVariationPct * (rangeSize * 0.3);
+  const rangeSize = currentMax - currentMin;
 
-  // Combine components
-  let count = rangeMin + timeComponent + practiceComponent;
+  let count = currentMin + (practiceVariationPct * rangeSize);
 
-  // Add minute-based variation for organic feel (very small, +/- 5)
+  // Add minute-based variation for organic feel (very small, +/- 3)
   const minuteVariation = ((minutes % 10) - 5);
   count += minuteVariation;
 
-  // Ensure count stays within strict bounds
-  count = Math.max(rangeMin, Math.min(rangeMax, count));
+  // Ensure count stays within strict bounds and >= 1000
+  count = Math.max(1000, Math.max(currentMin, Math.min(currentMax, count)));
 
   return formatCount(count);
 }
@@ -174,6 +145,10 @@ function easeInOut(t: number): number {
     : 1 - Math.pow(-2 * t + 2, 2) / 2;
 }
 
+function lerp(start: number, end: number, t: number): number {
+  return start * (1 - t) + end * t;
+}
+
 function hashString(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -189,7 +164,10 @@ function formatCount(count: number): string {
   const thousands = cappedCount / 1000;
   const rounded = Math.round(thousands * 10) / 10;
 
-  return `${rounded}k`;
+  // Ensure we always show at least 1.0k
+  if (rounded < 1.0) return "1.0k";
+
+  return `${rounded.toFixed(1)}k`;
 }
 
 export function generatePracticeCountForDate(
@@ -228,89 +206,61 @@ export function generatePracticeCountForDate(
 
   const taskHash = hashString(taskId);
   const practiceHash = hashString(practiceId);
-  const taskFirstChar = taskId.length > 0 ? taskId.charCodeAt(0) : 0;
-  const combinedSeed = (taskHash + practiceHash + taskFirstChar) % 100000;
 
-  const patternType = combinedSeed % 7;
-
-  // STRICT RANGES (Same as above)
-  const ranges = [
-    [4500, 5500], // Task 1
-    [3500, 4400], // Task 2
-    [2800, 3400], // Task 3
-    [2200, 2700], // Task 4
-    [1700, 2100], // Task 5
-    [1300, 1600], // Task 6
-    [1000, 1250], // Task 7
-    [750, 950],   // Task 8
-    [500, 700],   // Task 9
-    [250, 450],   // Task 10
+  const morningRanges = [
+    [1250, 1500], // Task 1
+    [1100, 1200], // Task 2
+    [1060, 1090], // Task 3
+    [1030, 1050], // Task 4
+    [1010, 1025], // Task 5
+    [1000, 1005], // Task 6+
   ];
 
-  const rangeIndex = Math.min(taskNum - 1, ranges.length - 1);
-  const [rangeMin, rangeMax] = taskNum > ranges.length
-    ? [50, 200]
-    : ranges[rangeIndex];
+  const nightRanges = [
+    [5000, 6000], // Task 1
+    [4000, 4800], // Task 2
+    [3000, 3800], // Task 3
+    [2200, 2800], // Task 4
+    [1600, 2000], // Task 5
+    [1200, 1500], // Task 6+
+  ];
 
-  let timeOfDay: number;
+  const rangeIndex = Math.min(taskNum - 1, morningRanges.length - 1);
+  const morningRange = taskNum > morningRanges.length
+    ? [1000, 1005]
+    : morningRanges[rangeIndex];
 
-  if (patternType === 0 || patternType === 1) {
-    const morningHour = 6;
-    const noonHour = 12;
-    if (hoursVancouver < morningHour) {
-      timeOfDay = 0;
-    } else if (hoursVancouver >= noonHour) {
-      timeOfDay = 1.0;
-    } else {
-      const totalMinutes = (hoursVancouver - morningHour) * 60 + minutesVancouver;
-      const totalRangeMinutes = (noonHour - morningHour) * 60;
-      timeOfDay = totalMinutes / totalRangeMinutes;
-    }
-  } else if (patternType === 2 || patternType === 3) {
-    const eveningHour = 18;
-    const midnightHour = 24;
-    const adjustedHours = hoursVancouver < 6 ? hoursVancouver + 24 : hoursVancouver;
-    if (adjustedHours < eveningHour) {
-      timeOfDay = 0;
-    } else if (adjustedHours >= midnightHour) {
-      timeOfDay = 1.0;
-    } else {
-      const totalMinutes = (adjustedHours - eveningHour) * 60 + minutesVancouver;
-      const totalRangeMinutes = (midnightHour - eveningHour) * 60;
-      timeOfDay = totalMinutes / totalRangeMinutes;
-    }
-  } else if (patternType === 4) {
-    const morningHour = 6;
-    const noonHour = 12;
-    if (hoursVancouver < morningHour) {
-      timeOfDay = 1.0;
-    } else if (hoursVancouver >= noonHour) {
-      timeOfDay = 0;
-    } else {
-      const totalMinutes = (hoursVancouver - morningHour) * 60 + minutesVancouver;
-      const totalRangeMinutes = (noonHour - morningHour) * 60;
-      timeOfDay = 1.0 - (totalMinutes / totalRangeMinutes);
-    }
+  const nightRange = taskNum > nightRanges.length
+    ? [1000, 1100]
+    : nightRanges[rangeIndex];
+
+  const startHour = 6;
+  const endHour = 24;
+
+  let timeProgress: number;
+
+  if (hoursVancouver < startHour) {
+    timeProgress = 0.0;
   } else {
-    const hourProgress = hoursVancouver / 24;
-    timeOfDay = hourProgress * 0.5;
+    const totalMinutes = (hoursVancouver - startHour) * 60 + minutesVancouver;
+    const totalRangeMinutes = (endHour - startHour) * 60;
+    timeProgress = totalMinutes / totalRangeMinutes;
   }
 
-  const easedProgress = easeInOut(timeOfDay);
+  const easedProgress = easeInOut(timeProgress);
 
-  const rangeSize = rangeMax - rangeMin;
-  const timeComponent = easedProgress * (rangeSize * 0.7);
+  const currentMin = lerp(morningRange[0], nightRange[0], easedProgress);
+  const currentMax = lerp(morningRange[1], nightRange[1], easedProgress);
 
   const practiceVariationPct = (practiceHash % 100) / 100;
-  const practiceComponent = practiceVariationPct * (rangeSize * 0.3);
+  const rangeSize = currentMax - currentMin;
 
-  let count = rangeMin + timeComponent + practiceComponent;
+  let count = currentMin + (practiceVariationPct * rangeSize);
 
   const minuteVariation = ((minutesVancouver % 10) - 5);
   count += minuteVariation;
 
-  count = Math.max(rangeMin, Math.min(rangeMax, count));
+  count = Math.max(1000, Math.max(currentMin, Math.min(currentMax, count)));
 
   return formatCount(count);
 }
-
