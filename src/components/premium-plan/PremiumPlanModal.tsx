@@ -52,6 +52,51 @@ const TestimonialCard = ({ name, comment, source }: { name: string; comment: str
     );
 };
 
+const AvatarCarousel = () => {
+    const avatars = [
+        "Carlos.png", "Li.png", "Tatiana.png", "Ahmed.png", "Dalia.png"
+    ];
+    const [currentIndex, setCurrentIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentIndex((prev) => (prev + 1) % avatars.length);
+        }, 2000);
+        return () => clearInterval(interval);
+    }, [avatars.length]);
+
+    const visibleAvatars = [
+        avatars[currentIndex],
+        avatars[(currentIndex + 1) % avatars.length],
+        avatars[(currentIndex + 2) % avatars.length],
+    ];
+
+    return (
+        <div className="flex -space-x-2 overflow-hidden w-[80px] h-8 relative">
+            <AnimatePresence mode="popLayout">
+                {visibleAvatars.map((src, i) => (
+                    <motion.div
+                        key={`${src}-${i}`}
+                        initial={{ x: 20, opacity: 0, scale: 0.8 }}
+                        animate={{ x: 0, opacity: 1, scale: 1 }}
+                        exit={{ x: -20, opacity: 0, scale: 0.8 }}
+                        transition={{ duration: 0.5 }}
+                        className="relative w-8 h-8 rounded-full border-2 border-white overflow-hidden shrink-0"
+                        style={{ zIndex: 3 - i }}
+                    >
+                        <Image
+                            src={`/images/${src}`}
+                            alt="User Avatar"
+                            fill
+                            className="object-cover"
+                        />
+                    </motion.div>
+                ))}
+            </AnimatePresence>
+        </div>
+    );
+};
+
 const PremiumPlanModal = () => {
     const { isPremiumPlanModalOpen, setPremiumPlanModalState } = useStore();
 
@@ -91,21 +136,6 @@ const PremiumPlanModal = () => {
             name: "Dalia Haddad",
             comment: "So many useful tips that I learned from the reading section. Mock tests are challenging but true to life. Assisted to calm down fears.",
             source: "Dalia.png",
-        },
-        {
-            name: "Ravi",
-            comment: "The timed practice tests were identical to the real test. That practice enabled me to manage stress and finish each section within the allotted time.",
-            source: "Ravi.png",
-        },
-        {
-            name: "Sofia",
-            comment: "I adored the way the feedback was individualized. It pointed out my weak points in writing and speaking, and I could notice clear improvement week by week.",
-            source: "Sofia.png",
-        },
-        {
-            name: "Mark",
-            comment: "Honestly, the variety of practice questions kept me engaged. I enjoyed it and never got bored, and on the day of the test, everything was comfortable and familiar.",
-            source: "Mark.png",
         },
     ];
 
@@ -147,14 +177,14 @@ const PremiumPlanModal = () => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[9999] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm p-0 md:p-4 overflow-y-auto"
+                    className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/60 backdrop-blur-sm p-0 overflow-y-auto"
                 >
                     <motion.div
                         initial={{ y: "100%" }}
                         animate={{ y: 0 }}
                         exit={{ y: "100%" }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                        className="bg-[#F4F7FF] w-full max-w-7xl rounded-t-3xl md:rounded-3xl shadow-2xl relative flex flex-col h-[90vh] md:max-h-[95vh] overflow-hidden"
+                        className="bg-[#F4F7FF] w-full rounded-t-3xl shadow-2xl relative flex flex-col h-[90vh] overflow-hidden"
                     >
 
                         {/* Close Button */}
@@ -178,12 +208,7 @@ const PremiumPlanModal = () => {
                                     Choose Your Right Plan!
                                 </h2>
                                 <div className="flex items-center justify-center gap-2 text-gray-700 font-medium mb-8">
-                                    <div className="flex -space-x-2">
-                                        {/* Placeholder avatars */}
-                                        <div className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white"></div>
-                                        <div className="w-8 h-8 rounded-full bg-gray-400 border-2 border-white"></div>
-                                        <div className="w-8 h-8 rounded-full bg-gray-500 border-2 border-white"></div>
-                                    </div>
+                                    <AvatarCarousel />
                                     <span>Trusted by 40k+ test-takers</span>
                                 </div>
 
@@ -206,7 +231,7 @@ const PremiumPlanModal = () => {
 
                             {/* Pricing Cards */}
                             <div className="flex flex-wrap justify-center gap-6 mb-16">
-                                {planDetailsLanding.map((item, index) => (
+                                {[planDetailsLanding[2], planDetailsLanding[1], planDetailsLanding[0]].map((item, index) => (
                                     <div key={index} className="w-full md:w-[300px] lg:w-[320px]">
                                         <PlanCard
                                             id={index}

@@ -20,11 +20,7 @@ const SvgDiamond = dynamic(() => import("../../icons/Diamond"), { ssr: true });
 const SvgHamburger = dynamic(() => import("../../icons/Hamburger"), {
   ssr: true,
 });
-interface ITopHeader {
-  planRef?: React.RefObject<HTMLDivElement | null>;
-}
-
-const TopHeader = ({ planRef }: ITopHeader) => {
+const TopHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const setPremiumPlanModalState = useStore((state) => state.setPremiumPlanModalState);
 

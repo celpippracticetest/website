@@ -31,11 +31,7 @@ const SvgMockExamsColorful = dynamic(
   { ssr: false }
 );
 
-const Hero = ({
-  planRef,
-}: {
-  planRef: React.RefObject<HTMLDivElement | null>;
-}) => {
+const Hero = () => {
   const buttonRef = useRef<HTMLDivElement | null>(null);
   const { ref, inView } = useInView();
   const { setVisible, isVisible, isInFooter } = useButtonVisibleStore(
@@ -58,7 +54,7 @@ const Hero = ({
     return () => window.removeEventListener("scroll", onScroll);
   }, [isInFooter]);
 
-  useEffect(() => {}, [isInFooter]);
+  useEffect(() => { }, [isInFooter]);
 
   useEffect(() => {
     if (window.location.hash === "#plans") {
@@ -81,11 +77,10 @@ const Hero = ({
     flex bg-[linear-gradient(180deg,_rgba(255,_255,_255,_0.4)_0%,_rgba(255,_255,_255,_0.8)_100%)] 
     backdrop-blur-[1px] 
     shadow-[0_0_100px_0px_rgba(255,255,255,0.8)] 
-    ${
-      isVisible
-        ? "opacity-100 translate-y-0"
-        : "opacity-0 translate-y-[12px] pointer-events-none"
-    } 
+    ${isVisible
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 translate-y-[12px] pointer-events-none"
+          } 
     flex justify-center fixed z-[10] h-[128px] items-center 
     left-1/2 -translate-x-1/2 transition-all duration-500 
     ease-in-out transform bottom-0`}
@@ -117,7 +112,7 @@ const Hero = ({
         }}
         className="relative h-[508px] screen744:!h-[656px] screen1280:!h-[693px] pt-[80px] justify-center transition-all duration-300 w-full background-animate shadow-[inset_0px_-80px_96px_-4px_#F4F7FF]"
       >
-        <TopHeader planRef={planRef} />
+        <TopHeader />
         <div className="flex max-w-[1440px] w-full justify-center mx-auto ">
           <div className="flex flex-col screen744:!flex-row   w-full  justify-between px-[16px] screen744:!px-[40px] flex-wrap screen744:!flex-nowrap">
             <div className="flex flex-col ">
