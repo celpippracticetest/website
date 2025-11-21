@@ -42,3 +42,4 @@ export { default as SvgTeacher } from "./teacher";
 export { default as SvgPresenceAbsence } from "./presenceAbsence";
 export { default as SvgTaskSquare } from "./taskSquare";
 export { default as SvgBot } from "./bot";
+export { default as SvgBottomNavigationMobile } from "./SvgBottomNavigationMobile";
