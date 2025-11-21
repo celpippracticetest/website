@@ -72,7 +72,7 @@ const AuthButtons = () => {
                     </a>
                   )}
 
-<Link
+                <Link
                   href="/league"
                   className="block text-left px-4 py-2 text-[14px] text-gray-700"
                 >

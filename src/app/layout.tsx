@@ -1,4 +1,5 @@
-import PremiumPlanDrawer from "./premiumPlanDrawer";
+import PremiumPlanModal from "@/components/premium-plan/PremiumPlanModal";
+import "./globals.css";
 import NextTopLoader from "nextjs-toploader";
 import { Analytics } from "@vercel/analytics/react";
 import { ClerkProvider } from "@clerk/nextjs";
@@ -209,11 +210,12 @@ export default async function RootLayout({
 
           <NextTopLoader />
           <ReactQueryProvider>{children}</ReactQueryProvider>
-          <PremiumPlanDrawer />
+          <PremiumPlanModal />
           <LazyIntercom />
           <PerformanceMonitor />
           <CriticalCSS />
           <Analytics />
+
 
           {enableGtm && (
             <Script
