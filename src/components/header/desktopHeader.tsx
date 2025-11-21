@@ -248,7 +248,7 @@ const DesktopHeader = (props: {
               tabIndex={-1}
               id="menu-item-0"
             >
-              Supporttttt
+              Support
             </button>
             {user &&
               user.publicMetadata.roles &&

@@ -38,4 +38,7 @@ export { default as SvgPracticeBlueHover } from "./SvgPracticeBlueHover";
 export { default as SvgRefferalMobileNavigation } from "./SvgRefferalMobileNavigation";
 export { default as SvgSpeaker } from "./Speaker";
 export { default as SvgTrianglePlay } from "./TrianglePlay";
-export { default as SvgBottomNavigationMobile } from "./SvgBottomNavigationMobile";
+export { default as SvgTeacher } from "./teacher";
+export { default as SvgPresenceAbsence } from "./presenceAbsence";
+export { default as SvgTaskSquare } from "./taskSquare";
+export { default as SvgBot } from "./bot";

@@ -7,6 +7,16 @@ import { planDetailsLanding } from "@/components/dashboard-new/PlansLanding";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
+import { SvgTeacher, SvgPresenceAbsence, SvgBot, SvgTaskSquare } from "@/components/icons";
+import img1 from "@/images/attachment.png";
+import img2 from "@/images/attachment2.png";
+import img3 from "@/images/attachment3.png";
+import img5 from "@/images/attachment5.png";
+import img6 from "@/images/attachment6.png";
+import img7 from "@/images/attachment7.png";
+import img8 from "@/images/attachment8.png";
+import img9 from "@/images/attachment9.png";
+import SvgDiamond from "../icons/Diamond";
 
 const Svg5Star = dynamic(() => import("@/components/icons/5Star"), { ssr: false });
 
@@ -197,87 +207,97 @@ const PremiumPlanModal = () => {
 
                         {/* Scrollable Content */}
                         <div className="overflow-y-auto flex-1 p-6 md:p-10 custom-scrollbar">
+                            <div className="max-w-5xl mx-auto w-full">
+                                {/* Header Section */}
+                                <div className="text-center mb-10">
+                                    <div className="flex flex-row justify-center gap-1">
+                                        <SvgDiamond className="-rotate-30" />
+                                        <h3
+                                            className="text-[32px] font-medium text-blue-950 mb-3 text-center leading-[100%] tracking-[0%]"
+                                            style={{ fontFamily: 'Inter, sans-serif' }}
+                                        >
+                                            Choose Your Right Plan!
+                                        </h3>
+                                    </div>
+                                    <div className="flex items-center justify-center gap-2 text-gray-700 font-medium mb-8">
+                                        <AvatarCarousel />
+                                        <span>Trusted by 40k+ test-takers</span>
+                                    </div>
 
-                            {/* Header Section */}
-                            <div className="text-center mb-10">
-                                <div className="flex items-center justify-center gap-2 mb-4">
-                                    <Image src="/images/logo.png" alt="CELPIP Logo" width={100} height={30} className="h-8 w-auto" />
-                                    {/* Add other header elements if needed from design */}
+                                    {/* Features Bar */}
+                                    <div className="flex flex-wrap justify-center gap-4 md:gap-8 text-sm font-medium text-gray-700 mb-10">
+                                        <div className="flex items-center gap-2">
+                                            <SvgPresenceAbsence /> 40 mock exams
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <SvgTeacher /> Guide & Tips
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <SvgTaskSquare /> 3,000+ sample tests
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <SvgBot /> Instant AI Feedback
+                                        </div>
+                                    </div>
                                 </div>
-                                <h2 className="text-3xl md:text-4xl font-bold text-blue-950 mb-3">
-                                    Choose Your Right Plan!
-                                </h2>
-                                <div className="flex items-center justify-center gap-2 text-gray-700 font-medium mb-8">
-                                    <AvatarCarousel />
-                                    <span>Trusted by 40k+ test-takers</span>
+
+                                {/* Pricing Cards */}
+                                <div className="flex flex-wrap justify-center gap-6 mb-16">
+                                    {[planDetailsLanding[2], planDetailsLanding[1], planDetailsLanding[0]].map((item, index) => (
+                                        <div key={index} className="w-full md:w-[300px] lg:w-[320px]">
+                                            <PlanCard
+                                                id={index}
+                                                title={item.title}
+                                                type={item.type}
+                                                oldPrice={item.oldPrice}
+                                                price={item.price}
+                                                discount={item.discount}
+                                                buttonTitle={item.buttonTitle}
+                                                features={item.features}
+                                                icon={item.icon}
+                                                iconWrapperColor={item.iconWrapperColor}
+                                                isModal={true}
+                                            />
+                                        </div>
+                                    ))}
                                 </div>
 
-                                {/* Features Bar */}
-                                <div className="flex flex-wrap justify-center gap-4 md:gap-8 text-sm font-medium text-gray-700 mb-10">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-orange-500">📅</span> 40 mock exams
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-orange-500">🎓</span> Guide & Tips
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-orange-500">📝</span> 3,000+ sample tests
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-orange-500">📥</span> Instant AI Feedback
+                                {/* Trusted By Section */}
+                                <div className="mb-16 flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">
+                                    <h3 className="text-xl md:text-2xl font-semibold text-blue-950 text-center md:text-left max-w-[300px]">Trusted by students from top universities</h3>
+                                    <div className="flex flex-wrap justify-center md:justify-end gap-3 md:gap-4">
+                                        {[img1, img2, img3, img5, img6, img7, img8, img9].map((src, index) => (
+                                            <div
+                                                key={index}
+                                                className="relative bg-white p-2 rounded-xl border border-gray-100 w-14 h-14 flex items-center justify-center hover:-translate-y-1 transition-transform duration-300 cursor-pointer before:absolute before:inset-0 before:rounded-xl before:content-[''] before:transition-shadow before:duration-300 before:ease before:transform before:translate-z-[-1px] before:shadow-[6px_4px_16px_0px_#FC7A5066,_-6px_-4px_16px_0px_#4A7DFF66]"
+                                            >
+                                                <Image
+                                                    src={src}
+                                                    alt={`University logo ${index + 1}`}
+                                                    width={40}
+                                                    height={40}
+                                                    className="w-full h-full object-contain relative z-10"
+                                                />
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Pricing Cards */}
-                            <div className="flex flex-wrap justify-center gap-6 mb-16">
-                                {[planDetailsLanding[2], planDetailsLanding[1], planDetailsLanding[0]].map((item, index) => (
-                                    <div key={index} className="w-full md:w-[300px] lg:w-[320px]">
-                                        <PlanCard
-                                            id={index}
-                                            title={item.title}
-                                            type={item.type}
-                                            oldPrice={item.oldPrice}
-                                            price={item.price}
-                                            discount={item.discount}
-                                            buttonTitle={item.buttonTitle}
-                                            features={item.features}
-                                            icon={item.icon}
-                                            iconWrapperColor={item.iconWrapperColor}
-                                            isModal={true}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
+                                {/* Testimonials Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-16">
+                                    {testimonials.map((t, i) => (
+                                        <TestimonialCard key={i} {...t} />
+                                    ))}
+                                </div>
 
-                            {/* Trusted By Section */}
-                            <div className="mb-16">
-                                <h3 className="text-xl font-semibold text-blue-950 mb-6 text-center">Trusted by students from top universities</h3>
-                                <div className="flex flex-wrap justify-center gap-4 opacity-70 grayscale hover:grayscale-0 transition-all duration-500">
-                                    {/* Placeholder for university logos - using text or generic placeholders if images not available */}
-                                    <div className="h-10 w-24 bg-white rounded-md shadow-sm flex items-center justify-center text-xs font-bold text-gray-400">UBC</div>
-                                    <div className="h-10 w-24 bg-white rounded-md shadow-sm flex items-center justify-center text-xs font-bold text-gray-400">UofT</div>
-                                    <div className="h-10 w-24 bg-white rounded-md shadow-sm flex items-center justify-center text-xs font-bold text-gray-400">McGill</div>
-                                    <div className="h-10 w-24 bg-white rounded-md shadow-sm flex items-center justify-center text-xs font-bold text-gray-400">Waterloo</div>
-                                    <div className="h-10 w-24 bg-white rounded-md shadow-sm flex items-center justify-center text-xs font-bold text-gray-400">Alberta</div>
+                                {/* FAQs */}
+                                <div className="w-full">
+                                    <h3 className="text-2xl font-bold text-blue-950 mb-6 text-center">FAQs</h3>
+                                    {faqs.map((faq, i) => (
+                                        <FAQItem key={i} {...faq} />
+                                    ))}
                                 </div>
                             </div>
-
-                            {/* Testimonials Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-16">
-                                {testimonials.map((t, i) => (
-                                    <TestimonialCard key={i} {...t} />
-                                ))}
-                            </div>
-
-                            {/* FAQs */}
-                            <div className="max-w-3xl mx-auto">
-                                <h3 className="text-2xl font-bold text-blue-950 mb-6 text-center">FAQs</h3>
-                                {faqs.map((faq, i) => (
-                                    <FAQItem key={i} {...faq} />
-                                ))}
-                            </div>
-
                         </div>
                     </motion.div>
                 </motion.div>
