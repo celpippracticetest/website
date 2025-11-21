@@ -219,6 +219,7 @@ const PremiumPlanModal = () => {
                                             features={item.features}
                                             icon={item.icon}
                                             iconWrapperColor={item.iconWrapperColor}
+                                            isModal={true}
                                         />
                                     </div>
                                 ))}
