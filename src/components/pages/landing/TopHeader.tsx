@@ -13,18 +13,16 @@ import {
   SvgMockTestTopNavigationHover,
   SvgPracticeBlueHover,
 } from "@/components/icons";
+import useStore from "@/store";
 
 const SvgClose = dynamic(() => import("../../icons/Close"), { ssr: false });
 const SvgDiamond = dynamic(() => import("../../icons/Diamond"), { ssr: true });
 const SvgHamburger = dynamic(() => import("../../icons/Hamburger"), {
   ssr: true,
 });
-interface ITopHeader {
-  planRef?: React.RefObject<HTMLDivElement | null>;
-}
-
-const TopHeader = ({ planRef }: ITopHeader) => {
+const TopHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const setPremiumPlanModalState = useStore((state) => state.setPremiumPlanModalState);
 
   const hrefs = ["/exam-overview", "/practice-overview", "/learning"];
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -186,35 +184,18 @@ const TopHeader = ({ planRef }: ITopHeader) => {
           )}
         </nav>
         <div className="flex gap-[8px] screen1280:!gap-[28px]">
-          {planRef ? (
-            <div
-              role="button"
-              tabIndex={0}
-              aria-label="Scroll to Plans Section"
-              onClick={() => {
-                if (planRef.current) {
-                  planRef.current.scrollIntoView({ behavior: "smooth" });
-                }
-              }}
-              className="ml-[14px] hover:cursor-pointer screen744:!ml-0 relative w-[40px] h-[40px] border-[1px] border-neutral2 rounded-[24px] flex items-center justify-center"
-            >
-              <SvgDiamond />
-              <div className="absolute leading-[16px] font-semibold    flex text-white items-center justify-center bg-error1 rounded-[16px] w-[34px] h-[20px] -top-[12px] -right-[12px] rotate-[10px] text-[10px]">
-                PRO
-              </div>
+          <div
+            role="button"
+            tabIndex={0}
+            aria-label="Open Premium Plans"
+            onClick={() => setPremiumPlanModalState()}
+            className="ml-[14px] hover:cursor-pointer screen744:!ml-0 relative w-[40px] h-[40px] border-[1px] border-neutral2 rounded-[24px] flex items-center justify-center"
+          >
+            <SvgDiamond />
+            <div className="absolute leading-[16px] font-semibold    flex text-white items-center justify-center bg-error1 rounded-[16px] w-[34px] h-[20px] -top-[12px] -right-[12px] rotate-[10px] text-[10px]">
+              PRO
             </div>
-          ) : (
-            <Link
-              className="ml-[14px] hover:cursor-pointer screen744:!ml-0 relative w-[40px] h-[40px] border-[1px] border-neutral2 rounded-[24px] flex items-center justify-center"
-              href="/#plans"
-            >
-              {" "}
-              <SvgDiamond />
-              <div className="absolute leading-[16px] font-semibold    flex text-white items-center justify-center bg-error1 rounded-[16px] w-[34px] h-[20px] -top-[12px] -right-[12px] rotate-[10px] text-[10px]">
-                PRO
-              </div>
-            </Link>
-          )}
+          </div>
           <div className="h-[40px]  w-[149px]  flex items-center justify-center">
             <AuthButtons />
           </div>

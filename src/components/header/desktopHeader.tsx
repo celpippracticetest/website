@@ -61,9 +61,8 @@ const DesktopHeader = (props: {
     headerButton = (
       <div className="lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2 lg:top-2">
         <div
-          className={`toggle-container border-2 border-gray-200 p-1 rounded-full shadow-sm ${
-            isMobile ? "scale-[0.85]" : "scale-[0.85]"
-          } origin-center`}
+          className={`toggle-container border-2 border-gray-200 p-1 rounded-full shadow-sm ${isMobile ? "scale-[0.85]" : "scale-[0.85]"
+            } origin-center`}
         >
           <div className="toggle-pulse-border"></div>
           <ToggleGroup
@@ -126,27 +125,10 @@ const DesktopHeader = (props: {
 
           {/* Navigation Links */}
           {headerButton}
-          {/* <div className="absolute left-1/2 transform -translate-x-1/2 top-2">
-        <div className={`toggle-container border-2 border-gray-200 p-1 rounded-full shadow-sm scale-[0.85] origin-center`}>
-          <div className="toggle-pulse-border"></div>
-          <ToggleGroup type="single" value={props.viewMode || undefined} onValueChange={()=>{}} className="pill-toggle-group">
-            <ToggleGroupItem value="practice" className="px-5 py-1.5 text-[14px] rounded-full data-[state=on]:bg-[#3ebbf3] data-[state=on]:text-white transition-all duration-300">
-              Practice
-            </ToggleGroupItem>
-            <ToggleGroupItem value="exams" className="px-5 py-1.5 text-[14px] rounded-full data-[state=on]:bg-[#3ebbf3] data-[state=on]:text-white transition-all duration-300">
-              Mock Exams
-            </ToggleGroupItem>
-          </ToggleGroup>
-        </div>
-      </div> */}
 
           {/* Auth buttons */}
           <div className="flex items-right gap-4 lg:gap-5 md:gap-3 ">
-            {(!user ||
-              (user && !user.publicMetadata.plan) ||
-              (user &&
-                user.publicMetadata.plan &&
-                user.publicMetadata.plan !== "premium")) && (
+            {user?.publicMetadata.plan !== "premium" && (
               <div
                 onClick={() => {
                   setPremiumPlanModalState();
