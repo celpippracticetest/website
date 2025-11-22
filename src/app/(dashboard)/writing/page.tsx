@@ -10,6 +10,8 @@ import { WritingAnswerRepository } from "@/repositories/writingAnswers";
 import { currentUser } from "@clerk/nextjs/server";
 import { ObjectId } from "mongodb";
 import { redirect, RedirectType } from "next/navigation";
+import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
+import { skillPagesContent } from "@/data/skill-pages-content";
 interface PracticeTask {
   taskNumber: string;
   name: string;
@@ -57,6 +59,11 @@ const WritingPage = async ({
     },
   ];
 
+  const user = await currentUser();
+  if (!user) {
+    return <SkillLandingPage content={skillPagesContent.writing} skillType="writing" />;
+  }
+
   if (!selectedPracticeId && !taskId) {
     return (
       <ShowTaskHeader>
@@ -88,14 +95,14 @@ const WritingPage = async ({
   const practices = await practiceRepo.getAllPractice(
     {
       type: "WRITING",
-      taskId: taskId ? new ObjectId(taskId) : undefined,
+      taskId: taskId ? (new ObjectId(taskId) as any) : undefined,
     },
     0,
     200
   );
   let selectedPractice = null;
   let completedPracticeId: string[] = [];
-  const user = await currentUser();
+
   if (selectedPracticeId) {
     selectedPractice = await practiceRepo.findPractice(selectedPracticeId);
 
