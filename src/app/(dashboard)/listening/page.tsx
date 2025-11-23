@@ -62,8 +62,20 @@ const DashboardApp = async ({
   ];
 
   const user = await currentUser();
-  if (!user) {
-    return <SkillLandingPage content={skillPagesContent.listening} skillType="listening" />;
+  if (!user && !taskId && !selectedPracticeId) {
+    const availableTasks = tasks.items
+      .filter((taskItem) => taskItem.category === "listening")
+      .sort((a, b) => {
+        const numA = parseInt(a.taskNumber.replace(/\D/g, ""));
+        const numB = parseInt(b.taskNumber.replace(/\D/g, ""));
+        return numA - numB;
+      })
+      .map((taskItem) => ({
+        id: taskItem.id,
+        taskNumber: taskItem.taskNumber,
+      }));
+
+    return <SkillLandingPage content={skillPagesContent.listening} skillType="listening" availableTasks={availableTasks} />;
   }
 
   if (!selectedPracticeId && !taskId) {

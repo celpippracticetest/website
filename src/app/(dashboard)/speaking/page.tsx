@@ -59,8 +59,20 @@ const SpeakingPage = async ({
   ];
 
   const user = await currentUser();
-  if (!user) {
-    return <SkillLandingPage content={skillPagesContent.speaking} skillType="speaking" />;
+  if (!user && !taskId && !selectedPracticeId) {
+    const availableTasks = tasks.items
+      .filter((taskItem) => taskItem.category === "speaking")
+      .sort((a, b) => {
+        const numA = parseInt(a.taskNumber.replace(/\D/g, ""));
+        const numB = parseInt(b.taskNumber.replace(/\D/g, ""));
+        return numA - numB;
+      })
+      .map((taskItem) => ({
+        id: taskItem.id,
+        taskNumber: taskItem.taskNumber,
+      }));
+
+    return <SkillLandingPage content={skillPagesContent.speaking} skillType="speaking" availableTasks={availableTasks} />;
   }
 
   if (!selectedPracticeId && !taskId) {

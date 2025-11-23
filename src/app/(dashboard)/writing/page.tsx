@@ -60,8 +60,20 @@ const WritingPage = async ({
   ];
 
   const user = await currentUser();
-  if (!user) {
-    return <SkillLandingPage content={skillPagesContent.writing} skillType="writing" />;
+  if (!user && !taskId && !selectedPracticeId) {
+    const availableTasks = tasks.items
+      .filter((taskItem) => taskItem.category === "writing")
+      .sort((a, b) => {
+        const numA = parseInt(a.taskNumber.replace(/\D/g, ""));
+        const numB = parseInt(b.taskNumber.replace(/\D/g, ""));
+        return numA - numB;
+      })
+      .map((taskItem) => ({
+        id: taskItem.id,
+        taskNumber: taskItem.taskNumber,
+      }));
+
+    return <SkillLandingPage content={skillPagesContent.writing} skillType="writing" availableTasks={availableTasks} />;
   }
 
   if (!selectedPracticeId && !taskId) {

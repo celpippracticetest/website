@@ -19,11 +19,13 @@ const SvgLearning = dynamic(() => import("../icons/Learning"), { ssr: false });
 interface SkillLandingPageProps {
     content: SkillPageContent;
     skillType: "listening" | "reading" | "writing" | "speaking";
+    availableTasks?: { id: string; taskNumber: string }[];
 }
 
 const SkillLandingPage: React.FC<SkillLandingPageProps> = ({
     content,
     skillType,
+    availableTasks = [],
 }) => {
     const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
@@ -54,20 +56,32 @@ const SkillLandingPage: React.FC<SkillLandingPageProps> = ({
 
                 {/* Tasks Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-16">
-                    {content.tasks.map((task) => (
-                        <Link
-                            key={task.id}
-                            href={`/${skillType}?taskId=${task.id}`}
-                            className="bg-[#FFF9F0] border border-[#FFEBD6] rounded-xl p-6 flex flex-col gap-2 hover:shadow-md transition-shadow cursor-pointer"
-                        >
-                            <span className="text-[#76808F] text-sm font-medium">
-                                {task.title}
-                            </span>
-                            <span className="text-[#212E42] text-lg font-semibold">
-                                {task.description}
-                            </span>
-                        </Link>
-                    ))}
+                    {content.tasks.map((task, index) => {
+                        // Match real task by taskNumber (e.g. "Task 1" -> "1")
+                        const realTask = availableTasks.find(t => {
+                            const num = t.taskNumber.replace(/\D/g, "");
+                            return num === task.id;
+                        });
+
+                        const href = realTask
+                            ? `/${skillType}?taskId=${realTask.id}`
+                            : `/${skillType}?taskId=${task.id}`; // Fallback
+
+                        return (
+                            <Link
+                                key={task.id}
+                                href={href}
+                                className="bg-[#FFF9F0] border border-[#FFEBD6] rounded-xl p-6 flex flex-col gap-2 hover:shadow-md transition-shadow cursor-pointer"
+                            >
+                                <span className="text-[#76808F] text-sm font-medium">
+                                    {task.title}
+                                </span>
+                                <span className="text-[#212E42] text-lg font-semibold">
+                                    {task.description}
+                                </span>
+                            </Link>
+                        )
+                    })}
                 </div>
 
                 {/* Content Section with Mascot */}
