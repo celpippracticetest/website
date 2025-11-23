@@ -178,8 +178,8 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
                 description: "Information",
             },
             {
-                id: "5",
-                title: "Task #5",
+                id: "4",
+                title: "Task #4",
                 description: "Viewpoints",
             },
         ],
