@@ -20,6 +20,77 @@ export interface SkillPageContent {
 }
 
 export const skillPagesContent: Record<string, SkillPageContent> = {
+    writing: {
+        title: "Writing Practice",
+        description:
+            "Writing is a crucial part of the CELPIP test, since it shows how well you're capable of conveying ideas clearly and properly in written English. With our CELPIP Writing Practice Test, you'll get to practice real test-type email and survey questions so that you feel confident and ready. We'll provide you with CELPIP practice test questions and instructions in the following.",
+        tasks: [
+            {
+                id: "1",
+                title: "Task #1",
+                description: "Writing an Email",
+            },
+            {
+                id: "2",
+                title: "Task #2",
+                description: "Survey Questions",
+            },
+        ],
+        tipsTitle: "Tips to Improve Your CELPIP Writing Score",
+        tips: [
+            "Plan ahead before you write",
+            "Take a few minutes to sketch out your ideas and framework",
+            "Maintain a topic and cover all aspects of the task completely",
+            "Practice under timing so that you finish both tasks within the given time frame",
+            "Write in paragraphs. One idea per paragraph with supporting details. This is easier to read",
+            "Get your tone right. Formal for work or complaint emails, less formal or friendly for personal emails.",
+            "Proofread and edit",
+            "Just check through your work for grammar, spelling, and punctuation errors if you can, as tiny improvements will boost your score",
+            "Practice frequent themes. Complaint, request, and survey response emails about community or lifestyle problems are very frequent, so practicing such themes gives confidence.",
+        ],
+        format: {
+            title: "CELPIP Writing Test Format (Quick Overview)",
+            description:
+                "It takes 53 minutes for the total Writing section in the CELPIP General writing Test. There are 2 tasks:",
+            points: [
+                "Task 1: Email Writing, write an email from a situation. You have ~27 minutes.",
+                "Task 2: Answering Survey Questions, choose one option, say why, give reasons/examples. You have ~26 minutes. ~150-200 words.",
+            ],
+        },
+        faqs: [
+            {
+                question: "Where can I practice CELPIP writing with sample answers?",
+                answer:
+                    "Our platform provides numerous writing prompts with sample answers to help you guide your practice.",
+            },
+            {
+                question: "Do you have AI feedback on writing exercises?",
+                answer:
+                    "Yes. Writing is automatically scored by our AI engine with feedback on grammar, coherence, and vocabulary.",
+            },
+            {
+                question:
+                    "Are the practice tests identical to the CELPIP writing test?",
+                answer:
+                    "They are designed to be as close as possible to the real test format and difficulty.",
+            },
+            {
+                question: "How do I improve my CELPIP writing score?",
+                answer:
+                    "Regular practice, reviewing sample high-scoring answers, and getting feedback are essential.",
+            },
+            {
+                question: "What is the best platform for CELPIP writing practice?",
+                answer:
+                    "Our platform offers AI-powered feedback and realistic practice tasks to help you succeed.",
+            },
+            {
+                question: "How do I organize my time for writing?",
+                answer:
+                    "Allocate time for planning, writing, and reviewing. Stick to the recommended time limits for each task.",
+            },
+        ],
+    },
     listening: {
         title: "Listening Practice",
         description:
@@ -169,77 +240,6 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
                     "How is it possible to improve the Reading score in the CELPIP test?",
                 answer:
                     "Consistent practice, expanding your vocabulary, and learning time management strategies are key.",
-            },
-        ],
-    },
-    writing: {
-        title: "Writing Practice",
-        description:
-            "Writing is a crucial part of the CELPIP test, since it shows how well you're capable of conveying ideas clearly and properly in written English. With our CELPIP Writing Practice Test, you'll get to practice real test-type email and survey questions so that you feel confident and ready. We'll provide you with CELPIP practice test questions and instructions in the following.",
-        tasks: [
-            {
-                id: "1",
-                title: "Task #1",
-                description: "Writing an Email",
-            },
-            {
-                id: "2",
-                title: "Task #2",
-                description: "Survey Questions",
-            },
-        ],
-        tipsTitle: "Tips to Improve Your CELPIP Writing Score",
-        tips: [
-            "Plan ahead before you write",
-            "Take a few minutes to sketch out your ideas and framework",
-            "Maintain a topic and cover all aspects of the task completely",
-            "Practice under timing so that you finish both tasks within the given time frame",
-            "Write in paragraphs. One idea per paragraph with supporting details. This is easier to read",
-            "Get your tone right. Formal for work or complaint emails, less formal or friendly for personal emails.",
-            "Proofread and edit",
-            "Just check through your work for grammar, spelling, and punctuation errors if you can, as tiny improvements will boost your score",
-            "Practice frequent themes. Complaint, request, and survey response emails about community or lifestyle problems are very frequent, so practicing such themes gives confidence.",
-        ],
-        format: {
-            title: "CELPIP Writing Test Format (Quick Overview)",
-            description:
-                "It takes 53 minutes for the total Writing section in the CELPIP General writing Test. There are 2 tasks:",
-            points: [
-                "Task 1: Email Writing, write an email from a situation. You have ~27 minutes.",
-                "Task 2: Answering Survey Questions, choose one option, say why, give reasons/examples. You have ~26 minutes. ~150-200 words.",
-            ],
-        },
-        faqs: [
-            {
-                question: "Where can I practice CELPIP writing with sample answers?",
-                answer:
-                    "Our platform provides numerous writing prompts with sample answers to help you guide your practice.",
-            },
-            {
-                question: "Do you have AI feedback on writing exercises?",
-                answer:
-                    "Yes. Writing is automatically scored by our AI engine with feedback on grammar, coherence, and vocabulary.",
-            },
-            {
-                question:
-                    "Are the practice tests identical to the CELPIP writing test?",
-                answer:
-                    "They are designed to be as close as possible to the real test format and difficulty.",
-            },
-            {
-                question: "How do I improve my CELPIP writing score?",
-                answer:
-                    "Regular practice, reviewing sample high-scoring answers, and getting feedback are essential.",
-            },
-            {
-                question: "What is the best platform for CELPIP writing practice?",
-                answer:
-                    "Our platform offers AI-powered feedback and realistic practice tasks to help you succeed.",
-            },
-            {
-                question: "How do I organize my time for writing?",
-                answer:
-                    "Allocate time for planning, writing, and reviewing. Stick to the recommended time limits for each task.",
             },
         ],
     },

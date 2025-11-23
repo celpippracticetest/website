@@ -10,6 +10,8 @@ import { WritingAnswerRepository } from "@/repositories/writingAnswers";
 import { currentUser } from "@clerk/nextjs/server";
 import { ObjectId } from "mongodb";
 import { redirect, RedirectType } from "next/navigation";
+import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
+import { skillPagesContent } from "@/data/skill-pages-content";
 
 export const metadata = {
   title:
@@ -56,6 +58,11 @@ const SpeakingPage = async ({
     },
   ];
 
+  const user = await currentUser();
+  if (!user) {
+    return <SkillLandingPage content={skillPagesContent.speaking} skillType="speaking" />;
+  }
+
   if (!selectedPracticeId && !taskId) {
     return (
       <ShowTaskHeader>
@@ -87,14 +94,14 @@ const SpeakingPage = async ({
   const practices = await practiceRepo.getAllPractice(
     {
       type: "SPEAKING",
-      taskId: taskId ? new ObjectId(taskId) : undefined,
+      taskId: taskId ? (new ObjectId(taskId) as any) : undefined,
     },
     0,
     200
   );
   let selectedPractice = null;
   let completedPracticeId: string[] = [];
-  const user = await currentUser();
+
   if (selectedPracticeId) {
     selectedPractice = await practiceRepo.findPractice(selectedPracticeId);
 
