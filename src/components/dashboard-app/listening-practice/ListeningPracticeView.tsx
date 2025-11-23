@@ -55,7 +55,8 @@ const ListeningPracticeView = ({
 }: ListeningPracticeViewProps) => {
   const practiceCount = usePracticeCount(task.id, practice.id, task.taskNumber);
   const task5or6 = ["67ebeffe187829d27daac3c8", "67ebf003187829d27daac3c9"];
-  const useDropdownForQuestions = true;
+  const taskNum = parseInt(task.taskNumber.replace(/\D/g, "") || "0", 10);
+  const useDropdownForQuestions = false;
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [pointsAwarded, setPointsAwarded] = useState(false);
@@ -94,8 +95,8 @@ const ListeningPracticeView = ({
     practice.totalQuestion !== undefined
       ? practice.totalQuestion
       : practice.passages.reduce((sum: number, p: TPassage) => {
-          return sum + (p.questions?.length ?? 0);
-        }, 0);
+        return sum + (p.questions?.length ?? 0);
+      }, 0);
 
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
@@ -287,23 +288,22 @@ const ListeningPracticeView = ({
                   ? "Instruction"
                   : practice.passages[passageIndex].title}
               </h1>
-              <StatBadge 
-                count={practiceCount} 
-                label="answered today" 
+              <StatBadge
+                count={practiceCount}
+                label="answered today"
               />
             </div>
 
             {page !== "instructions" &&
-            !(page == "answer" && practiceIndex >= allPractices.length - 1) ? (
+              !(page == "answer" && practiceIndex >= allPractices.length - 1) ? (
               <div className="flex items-center gap-2 justify-end pb-[10px] ">
                 {page === "question" && (
                   <div className="flex justify-center items-center lg:flex-row flex-col">
                     <div className="text-[14px] font-semibold gap-2 text-center text-[#EE4266] flex items-center">
                       <p>
                         {time > 0
-                          ? `${Math.floor(time / 60)}:${
-                              time % 60 < 10 ? `0${time % 60}` : time % 60
-                            }`
+                          ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
+                          }`
                           : "Time's Up!"}
                       </p>
                     </div>
@@ -320,7 +320,7 @@ const ListeningPracticeView = ({
                         Math.max(
                           0,
                           (practice.passages[passageIndex - 1].questions?.length ?? 1) -
-                            1
+                          1
                         )
                       );
                       // setQuestionIndexInPractice(questionIndexInPractice - 1);
@@ -337,7 +337,7 @@ const ListeningPracticeView = ({
                         Math.max(
                           0,
                           (practice.passages[passageIndex].questions?.length ?? 1) -
-                            1
+                          1
                         )
                       );
                       setPassageIndex(practice.passages.length - 1);
@@ -368,7 +368,7 @@ const ListeningPracticeView = ({
                     } else if (
                       page == "question" &&
                       questionIndex <
-                        (practice.passages[passageIndex].questions?.length ?? 0) - 1 &&
+                      (practice.passages[passageIndex].questions?.length ?? 0) - 1 &&
                       !useDropdownForQuestions
                     ) {
                       setQuestionIndex(questionIndex + 1);
@@ -396,8 +396,8 @@ const ListeningPracticeView = ({
                         setPassageIndex(0);
                         router.push(
                           "/listening?selectedPracticeId=" +
-                            allPractices[practiceIndex + 1].id +
-                            taskUrl
+                          allPractices[practiceIndex + 1].id +
+                          taskUrl
                         );
                       } else {
                         setPage("finish");
@@ -409,11 +409,10 @@ const ListeningPracticeView = ({
                         : 30
                     );
                   }}
-                  className={`cursor-pointer text-[14px] font-normal  inline-flex items-center justify-center rounded-[24px] ${
-                    page !== "answer"
-                      ? "bg-white"
-                      : "bg-green-100 text-gray-900 "
-                  } bg-white w-[96px] h-[40px]`}
+                  className={`cursor-pointer text-[14px] font-normal  inline-flex items-center justify-center rounded-[24px] ${page !== "answer"
+                    ? "bg-white"
+                    : "bg-green-100 text-gray-900 "
+                    } bg-white w-[96px] h-[40px]`}
                 >
                   {page !== "answer" ? "Next" : "Next"}
                   <ArrowRight size={18} strokeWidth={1.7}></ArrowRight>
@@ -438,10 +437,10 @@ const ListeningPracticeView = ({
                   )}
                 </div>
                 {practice.isFree ||
-                (!practice.isFree &&
-                  user &&
-                  user.publicMetadata.plan &&
-                  user.publicMetadata.plan === "premium") ? (
+                  (!practice.isFree &&
+                    user &&
+                    user.publicMetadata.plan &&
+                    user.publicMetadata.plan === "premium") ? (
                   <div>
                     {completedPractice.includes(practice.id) ? (
                       <div className="flex flex-col gap-[16px] mt-[23px]">
@@ -522,9 +521,8 @@ const ListeningPracticeView = ({
                     <div className="flex items-center flex-col mt-6 max-w-[450px] mx-auto">
                       <button
                         onClick={() => setIsOpen(!isOpen)}
-                        className={`${
-                          isOpen ? "!bg-[#F2F6FF] " : " bg-white "
-                        } w-full border flex justify-center border-[#76808F] items-center rounded-[24px] borderitems-center cursor-pointer max-w-[153px] h-[40px] text-[14px] font-medium text-[#212E42]`}
+                        className={`${isOpen ? "!bg-[#F2F6FF] " : " bg-white "
+                          } w-full border flex justify-center border-[#76808F] items-center rounded-[24px] borderitems-center cursor-pointer max-w-[153px] h-[40px] text-[14px] font-medium text-[#212E42]`}
                       >
                         {isOpen ? "Hide Transcript" : "Show Transcript"}
                       </button>
@@ -539,11 +537,10 @@ const ListeningPracticeView = ({
                                 return (
                                   <div key={index}>
                                     <span
-                                      className={`${
-                                        index % 2 == 0
-                                          ? "bg-[#FFEBD6]"
-                                          : "bg-[#D1DEFF]"
-                                      }   inline-block leading-[16px] mr-[8px] p-[8px] rounded-[8px]  text-black h-[32px] text-[14px]  font-normal `}
+                                      className={`${index % 2 == 0
+                                        ? "bg-[#FFEBD6]"
+                                        : "bg-[#D1DEFF]"
+                                        }   inline-block leading-[16px] mr-[8px] p-[8px] rounded-[8px]  text-black h-[32px] text-[14px]  font-normal `}
                                     >
                                       {con.name}:
                                     </span>
