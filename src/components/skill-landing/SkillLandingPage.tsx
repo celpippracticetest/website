@@ -41,7 +41,7 @@ const SkillLandingPage: React.FC<SkillLandingPageProps> = ({
     };
 
     return (
-        <div className="w-full bg-[#F2F6FF] min-h-screen pb-20">
+        <div className="w-full bg-[#F2F6FF] min-h-screen pb-[120px]">
             {/* Hero Section */}
             <div className="max-w-[1200px] mx-auto px-4 pt-8">
                 <div className="flex items-center gap-2 mb-8">
@@ -55,9 +55,10 @@ const SkillLandingPage: React.FC<SkillLandingPageProps> = ({
                 {/* Tasks Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-16">
                     {content.tasks.map((task) => (
-                        <div
+                        <Link
                             key={task.id}
-                            className="bg-[#FFF9F0] border border-[#FFEBD6] rounded-xl p-6 flex flex-col gap-2 hover:shadow-md transition-shadow"
+                            href={`/${skillType}?taskId=${task.id}`}
+                            className="bg-[#FFF9F0] border border-[#FFEBD6] rounded-xl p-6 flex flex-col gap-2 hover:shadow-md transition-shadow cursor-pointer"
                         >
                             <span className="text-[#76808F] text-sm font-medium">
                                 {task.title}
@@ -65,7 +66,7 @@ const SkillLandingPage: React.FC<SkillLandingPageProps> = ({
                             <span className="text-[#212E42] text-lg font-semibold">
                                 {task.description}
                             </span>
-                        </div>
+                        </Link>
                     ))}
                 </div>
 
@@ -144,7 +145,7 @@ const SkillLandingPage: React.FC<SkillLandingPageProps> = ({
 
                 {/* Bottom Navigation Cards */}
 
-                <div className="flex flex-wrap screen1280:flex-nowrap gap-[16px] screen1280:gap-[24px] w-full max-w-[1440px] mx-auto justify-center">
+                <div className="flex flex-wrap screen1280:flex-nowrap gap-[16px] screen1280:gap-[24px] w-full max-w-[1440px] mx-auto justify-center z-0 relative">
                     {[
                         {
                             title: "Listening",
