@@ -12,6 +12,9 @@ const UserResponseReview = dynamic(() => import("./UserResponseReview"), {
   ssr: false,
 });
 const Footer = dynamic(() => import("./Footer"), { ssr: true });
+const AskBeavoButton = dynamic(() => import("../../AskBeavo/AskBeavoButton"), {
+  ssr: false,
+});
 
 function ErrorFallback() {
   return (
@@ -53,7 +56,9 @@ export default function HomePageClient() {
         <UserResponseReview />
         <Comments />
         <Practice />
+        <Practice />
         <Footer />
+        <AskBeavoButton />
       </div>
     </ErrorBoundary>
   );
