@@ -874,9 +874,13 @@ const Page = () => {
                       <img
                         src={groupUser.avatar}
                         alt={groupUser.name}
-                        className="w-[32px] h-[32px] rounded-full"
+                        className="w-[32px] h-[32px] rounded-full object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = 'none';
+                        }}
                       />
-                    ) : (
+                    ) : null}
+                    {(!groupUser.avatar || false) && (
                       <div className="w-[32px] h-[32px] bg-[#9CA3AF] rounded-full"></div>
                     )}
                   </div>
@@ -950,9 +954,13 @@ const Page = () => {
                       <img
                         src={groupUser.avatar}
                         alt={groupUser.name}
-                        className="w-[32px] h-[32px] rounded-full"
+                        className="w-[32px] h-[32px] rounded-full object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = 'none';
+                        }}
                       />
-                    ) : (
+                    ) : null}
+                    {(!groupUser.avatar || false) && (
                       <div className="w-[32px] h-[32px] bg-[#9CA3AF] rounded-full"></div>
                     )}
                   </div>

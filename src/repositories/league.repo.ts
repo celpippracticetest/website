@@ -2174,37 +2174,69 @@ export class LeagueRepository {
         const existingUserIds = new Set(topUsers.map(u => u.userId));
         const needed = limit - topUsers.length;
 
-        // Generate fake users to fill the gap
-        const adjectives = ["Happy", "Lucky", "Sunny", "Clever", "Bright", "Swift", "Calm", "Brave", "Kind", "Wise"];
-        const nouns = ["Learner", "Student", "Master", "Expert", "Guide", "Star", "Hero", "Champ", "Pro", "Ace"];
+        // Generate fake users to fill the gap with realistic names
+        const firstNames = ["Alex", "Jordan", "Sam", "Taylor", "Casey", "Morgan", "Riley", "Avery", "Quinn", "Dakota", "Jamie", "Skyler", "Charlie", "Drew", "Reese"];
+        const lastNames = ["Chen", "Smith", "Kim", "Lee", "Garcia", "Patel", "Johnson", "Martinez", "Singh", "Wong", "Davis", "Rodriguez", "Brown", "Wilson", "Lopez"];
 
+        // Generic avatar URLs (using DiceBear API for consistent, diverse avatars)
+        const avatarStyles = ["avataaars", "bottts", "shapes", "beam", "pixel-art"];
+
+        // Create a seeded random number generator for consistency across refreshes
+        // Seed based on league type and season ID to ensure same users for same league/season
+        const seedString = `${leagueType}_${currentSeason.seasonId}`;
+        let seedValue = 0;
+        for (let i = 0; i < seedString.length; i++) {
+          seedValue = ((seedValue << 5) - seedValue) + seedString.charCodeAt(i);
+          seedValue = seedValue & seedValue; // Convert to 32bit integer
+        }
+
+        // Simple seeded random function (mulberry32 algorithm)
+        const seededRandom = (seed: number) => {
+          return () => {
+            seed = (seed + 0x6D2B79F5) | 0;
+            let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        };
+
+        const random = seededRandom(seedValue);
+
+        let fakeUserIndex = 0;
         while (topUsers.length < limit) {
-          const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-          const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
-          const randomNum = Math.floor(Math.random() * 1000);
-          const fakeName = `${randomAdjective}${randomNoun}${randomNum}`;
+          const firstName = firstNames[Math.floor(random() * firstNames.length)];
+          const lastName = lastNames[Math.floor(random() * lastNames.length)];
+          const fullName = `${firstName} ${lastName}`; // Use proper name format with space
 
-          // Generate realistic points based on league type
+          // Generate realistic points based on league type (ensure non-zero)
           let basePoints = 0;
-          if (leagueType === "bronze") basePoints = Math.floor(Math.random() * 500) + 100;
-          else if (leagueType === "silver") basePoints = Math.floor(Math.random() * 1000) + 500;
-          else if (leagueType === "gold") basePoints = Math.floor(Math.random() * 2000) + 1000;
+          if (leagueType === "bronze") basePoints = Math.floor(random() * 400) + 5; // 5-405
+          else if (leagueType === "silver") basePoints = Math.floor(random() * 800) + 600; // 600-1400
+          else if (leagueType === "gold") basePoints = Math.floor(random() * 1500) + 1200; // 1200-2700
 
           // Ensure points are somewhat sorted (less than the last user)
           const lastPoints = topUsers.length > 0 ? topUsers[topUsers.length - 1].points : basePoints + 100;
-          const fakePoints = Math.min(basePoints, Math.max(0, lastPoints - Math.floor(Math.random() * 50)));
+          const fakePoints = Math.min(basePoints, Math.max(50, lastPoints - Math.floor(random() * 50))); // Minimum 50 XP
+
+          // 60% of users have avatars, 40% don't (will show default)
+          const hasAvatar = random() < 0.6;
+          const avatarStyle = avatarStyles[Math.floor(random() * avatarStyles.length)];
+          // Use consistent seed for avatar based on name and league
+          const avatarSeed = `${fullName.replace(' ', '')}_${leagueType}_${fakeUserIndex}`;
+          const avatarUrl = hasAvatar ? `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${avatarSeed}` : null;
 
           const fakeUser = {
-            userId: `fake_${Date.now()}_${topUsers.length}`,
+            userId: `user_${leagueType}_${currentSeason.seasonId}_${fakeUserIndex}`,
             points: fakePoints,
             league: leagueType,
-            name: fakeName,
-            avatar: null,
+            name: fullName,
+            avatar: avatarUrl,
             email: null,
             isFake: true
           };
 
           topUsers.push(fakeUser);
+          fakeUserIndex++;
         }
       }
 
@@ -2221,13 +2253,18 @@ export class LeagueRepository {
 
         try {
           const clerkUser = await client.users.getUser(u.userId);
-          // Strictly use username or first name, never full name
-          const displayName = clerkUser.username || clerkUser.firstName || "User";
+          // Use full name (firstName + lastName), fallback to firstName, then "User"
+          let displayName = "User";
+          if (clerkUser.firstName && clerkUser.lastName) {
+            displayName = `${clerkUser.firstName} ${clerkUser.lastName}`;
+          } else if (clerkUser.firstName) {
+            displayName = clerkUser.firstName;
+          }
 
           enrichedUsers.push({
             ...u,
             name: displayName,
-            avatar: clerkUser.imageUrl,
+            avatar: clerkUser.imageUrl || null,
             email: null // Never expose email
           });
         } catch (e) {
