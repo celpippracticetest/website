@@ -114,7 +114,7 @@ const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
                   <p className=" text-[#37465C]  font-medium text-center w-full">
                     {exam.name}
                   </p>
-                  <div className="w-[112px] text-[14px] font-[14px] hover:!bg-[#4A7DFF] hover:!text-white flex items-center justify-center text-[#76808F] h-[40px] bg-[#F3F2F2] rounded-[24px]">
+                  <div className="w-[112px] text-[14px] font-[14px] hover:!bg-[#4A7DFF] hover:!text-white flex items-center justify-center text-[#76808F] h-[40px] bg-[#F3F2F2] rounded-[24px] transition-colors">
                     Take Test
                   </div>
                 </div>
