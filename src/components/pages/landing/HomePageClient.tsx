@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import dynamic from "next/dynamic";
 import Practice from "./Practice";
@@ -38,17 +37,6 @@ function ErrorFallback() {
 }
 
 export default function HomePageClient() {
-  useEffect(() => {
-    if (typeof window !== "undefined" && (window as any).Intercom) {
-      (window as any).Intercom("show");
-    }
-    return () => {
-      if (typeof window !== "undefined" && (window as any).Intercom) {
-        (window as any).Intercom("hide");
-      }
-    };
-  }, []);
-
   const shouldReload = useChunkErrorHandler();
   if (shouldReload) return null;
   return (

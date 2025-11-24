@@ -18,7 +18,8 @@ const FloatingChatIcon: React.FC<FloatingChatIconProps> = ({ autoOpen = false })
         }
     }, [autoOpen]);
 
-    const handleClick = () => {
+    const handleClick = (e: React.MouseEvent) => {
+        e.preventDefault();
         if (typeof window !== "undefined" && (window as any).Intercom) {
             (window as any).Intercom("show");
         }
@@ -27,6 +28,7 @@ const FloatingChatIcon: React.FC<FloatingChatIconProps> = ({ autoOpen = false })
     return (
         <div className="fixed bottom-6 right-6 z-50">
             <button
+                id="support-button"
                 onClick={handleClick}
                 className="relative flex items-center justify-center w-[64px] h-[64px] rounded-full cursor-pointer
               overflow-hidden shadow-lg hover:scale-110 transition-transform duration-200
