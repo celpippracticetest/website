@@ -18,7 +18,7 @@ import { TUserLeaguePoints } from "@/models/league.model";
 export async function GET(request: NextRequest) {
   try {
     console.log("League API GET request received");
-    
+
     let userId;
     try {
       const authResult = await auth();
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
     } catch (bootstrapErr) {
       console.error("Failed to ensure active season in POST /api/league:", bootstrapErr);
     }
-    
+
     // Clean up any duplicate users in groups
     await leagueRepo.cleanupDuplicateUsers();
 
@@ -132,6 +132,44 @@ export async function GET(request: NextRequest) {
       currentSeason = await leagueRepo.getCurrentSeason();
     }
 
+    // Ensure current season has all leagues (Bronze, Silver, Gold)
+    // This fixes the issue where seasons created before all leagues existed are missing some
+    if (currentSeason) {
+      const allLeagues = await leagueRepo.getAllLeagues();
+      const existingTypes = new Set(currentSeason.leagues.map(l => l.leagueType));
+      let seasonUpdated = false;
+
+      for (const league of allLeagues) {
+        if (!existingTypes.has(league.type as any)) {
+          console.log(`Adding missing league ${league.type} to season ${currentSeason.seasonId}`);
+          // Create a group for this missing league
+          const groupId = await leagueRepo.createLeagueGroup({
+            leagueId: league._id,
+            groupNumber: 1,
+            seasonId: currentSeason.seasonId,
+            startDate: new Date(currentSeason.startDate),
+            endDate: new Date(currentSeason.endDate),
+            status: "active",
+            maxUsers: 10,
+            users: [],
+          });
+
+          currentSeason.leagues.push({
+            leagueType: league.type as any,
+            groups: [new ObjectId(groupId)],
+          });
+          seasonUpdated = true;
+        }
+      }
+
+      if (seasonUpdated) {
+        await db.collection("league_seasons").updateOne(
+          { seasonId: currentSeason.seasonId },
+          { $set: { leagues: currentSeason.leagues } }
+        );
+      }
+    }
+
     // Get user's league points (only if user is authenticated)
     let userPoints = null;
     if (userId) {
@@ -149,7 +187,7 @@ export async function GET(request: NextRequest) {
       console.log("User not in league, checking for auto-assignment...");
       const overallPoints = await leagueRepo.getUserOverallPoints(userId);
       console.log("User overall points:", overallPoints);
-      
+
       // Only assign users to leagues if they have points
       if (overallPoints > 0) {
         let targetLeagueType = "bronze";
@@ -158,7 +196,7 @@ export async function GET(request: NextRequest) {
         // Use the improved auto-assignment method
         const autoAssignResult = await leagueRepo.autoAssignUserToLeague(userId);
         console.log("Auto-assignment result:", autoAssignResult);
-        
+
         if (autoAssignResult) {
           // Refresh user points after assignment
           userPoints = await leagueRepo.getUserLeaguePoints(
@@ -193,7 +231,7 @@ export async function GET(request: NextRequest) {
           }
         }
       }
-      
+
       // Fallback: search all groups if not found above
       if (!currentLeague) {
         for (const league of currentSeason!.leagues) {
@@ -222,6 +260,7 @@ export async function GET(request: NextRequest) {
           if (!league || !Array.isArray(league.groups)) continue;
           // If we already found a sample for this type, skip
           if (sampleGroupsByType[league.leagueType]) continue;
+
           // Gather candidate groups (consider all, prefer most populated)
           const candidates: any[] = [];
           for (const groupId of league.groups) {
@@ -234,6 +273,44 @@ export async function GET(request: NextRequest) {
           if (candidates.length > 0) {
             candidates.sort((a: any, b: any) => (b.users?.length || 0) - (a.users?.length || 0));
             chosen = candidates[0];
+          }
+
+          // If chosen group is small (less than 5 users), fetch top users to fill it
+          if (chosen && chosen.users.length < 5) {
+            const topUsers = await leagueRepo.getTopUsersForLeague(league.leagueType, 10);
+            // Merge top users into the group, avoiding duplicates
+            const existingIds = new Set(chosen.users.map((u: any) => u.userId));
+            for (const user of topUsers) {
+              if (!existingIds.has(user.userId)) {
+                chosen.users.push({
+                  ...user,
+                  position: chosen.users.length + 1,
+                  status: "safe"
+                });
+                existingIds.add(user.userId);
+              }
+            }
+            // Re-sort and re-position
+            chosen.users.sort((a: any, b: any) => b.points - a.points);
+            chosen.users.forEach((u: any, i: number) => u.position = i + 1);
+          } else if (!chosen) {
+            // If no group found at all, create a virtual group from top users
+            const topUsers = await leagueRepo.getTopUsersForLeague(league.leagueType, 10);
+            if (topUsers.length > 0) {
+              chosen = {
+                _id: "virtual_sample",
+                leagueId: "virtual",
+                groupNumber: 1,
+                seasonId: currentSeason.seasonId,
+                status: "active",
+                maxUsers: 10,
+                users: topUsers.map((u, i) => ({
+                  ...u,
+                  position: i + 1,
+                  status: "safe"
+                }))
+              };
+            }
           }
 
           if (chosen) {
@@ -258,23 +335,23 @@ export async function GET(request: NextRequest) {
         // Query user activities to find which skills they've practiced
         // Only get activities from the current season to avoid old data
         const currentSeasonStart = currentSeason?.startDate ? new Date(currentSeason.startDate) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days ago as fallback
-        
+
         const userActivities = await db.collection("useractivities").find({
           userId: userId,
           eventType: "practice_attempt_completed",
           status: "completed",
           timestampUtc: { $gte: currentSeasonStart }
         }).sort({ timestampUtc: -1 }).toArray();
-        
+
         console.log("User activities found (current season):", userActivities.length);
-        console.log("Activities:", userActivities.map(a => ({ 
-          skill: a.skill, 
-          eventType: a.eventType, 
+        console.log("Activities:", userActivities.map(a => ({
+          skill: a.skill,
+          eventType: a.eventType,
           status: a.status,
           timestamp: a.timestampUtc,
           contentId: a.contentId
         })));
-        
+
         // Extract unique skills from completed practice sessions in current season
         const skillsSet = new Set();
         userActivities.forEach(activity => {
@@ -327,7 +404,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     console.log("League API POST request received");
-    
+
     let userId;
     try {
       const authResult = await auth();
@@ -350,7 +427,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     const { action, leagueType, points, pointsType } = body;
     console.log("Extracted parameters:", { action, leagueType, points, pointsType });
 
@@ -365,7 +442,7 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-    
+
     const leagueRepo = new LeagueRepository(db);
 
     // Initialize default leagues if they don't exist
@@ -405,11 +482,11 @@ export async function POST(request: NextRequest) {
 
       // Use the improved auto-assignment method
       const autoAssignResult = await leagueRepo.autoAssignUserToLeague(userId);
-      
+
       if (autoAssignResult) {
-        return NextResponse.json({ 
-          success: true, 
-          message: "User assigned to league successfully" 
+        return NextResponse.json({
+          success: true,
+          message: "User assigned to league successfully"
         });
       } else {
         return NextResponse.json({
@@ -424,9 +501,9 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      
+
       console.log("Adding points:", { userId, points, pointsType });
-      
+
       // Validate required parameters
       if (points === undefined || points === null) {
         console.error("Points is undefined or null");
@@ -435,7 +512,7 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      
+
       if (typeof points !== 'number' || points <= 0) {
         console.error("Invalid points value:", points, "type:", typeof points);
         return NextResponse.json(
@@ -481,7 +558,7 @@ export async function POST(request: NextRequest) {
         pointsType,
         points
       });
-      
+
       const success = await leagueRepo.addPointsToUser(
         userId,
         currentSeason.seasonId,
@@ -504,18 +581,18 @@ export async function POST(request: NextRequest) {
 
       if (!success) {
         console.error("addPointsToUser returned false - checking user league status...");
-        
+
         // Check if user has any league record
         const userPoints = await leagueRepo.getUserLeaguePoints(userId, currentSeason.seasonId);
         console.log("User league points record:", userPoints);
-        
+
         // Check if user has overall points
         const overallPoints = await leagueRepo.getUserOverallPoints(userId);
         console.log("User overall points:", overallPoints);
-        
+
         return NextResponse.json(
-          { 
-            error: "Failed to add points", 
+          {
+            error: "Failed to add points",
             details: {
               hasLeagueRecord: !!userPoints,
               overallPoints,
@@ -553,7 +630,7 @@ export async function POST(request: NextRequest) {
       // Check if user should change league based on overall points
       const overallPoints = await leagueRepo.getUserOverallPoints(userId);
       console.log("Checking for league change. Overall points:", overallPoints);
-      
+
       // Determine target league based on overall points
       // Align thresholds with autoAssignUserToLeague to prevent immediate demotion
       let targetLeagueType = "bronze";
@@ -573,8 +650,8 @@ export async function POST(request: NextRequest) {
       // League progression only happens at season end (every 7 days)
       console.log("Points added successfully. League changes will be processed at season end.");
 
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         message: "Points added successfully",
         points: points,
         pointsType: pointsType,

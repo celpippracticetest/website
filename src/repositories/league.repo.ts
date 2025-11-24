@@ -124,7 +124,7 @@ export class LeagueRepository {
           status: "active",
           "users.userId": userId,
         });
-      
+
       if (group) {
         console.log("Found existing group for user:", groupId);
         return group as TLeagueGroup;
@@ -141,7 +141,7 @@ export class LeagueRepository {
   ): Promise<boolean> {
     try {
       console.log("addUserToGroup called:", { userId, groupId, leagueType });
-      
+
       const group = await this.db
         .collection(this.leagueGroupsCollection)
         .findOne({ _id: new ObjectId(groupId) });
@@ -247,20 +247,20 @@ export class LeagueRepository {
     points: number
   ): Promise<boolean> {
     console.log("updateUserPointsInGroup called:", { userId, groupId, points });
-    
+
     // First check if user is already in the group
     const group = await this.db
       .collection(this.leagueGroupsCollection)
       .findOne({ _id: new ObjectId(groupId) });
-    
+
     if (!group) {
       console.log("Group not found:", groupId);
       return false;
     }
-    
+
     const userInGroup = group.users.some((u: any) => u.userId === userId);
     console.log("User in group:", userInGroup);
-    
+
     if (userInGroup) {
       // Update existing user's points
       console.log("Updating existing user's points...");
@@ -413,7 +413,7 @@ export class LeagueRepository {
         const { clerkClient } = await import("@clerk/nextjs/server");
         const client = await clerkClient();
         const clerkUser = await client.users.getUser(user.userId);
-        user.name = clerkUser.firstName && clerkUser.lastName 
+        user.name = clerkUser.firstName && clerkUser.lastName
           ? `${clerkUser.firstName} ${clerkUser.lastName}`.trim()
           : clerkUser.firstName || clerkUser.emailAddresses[0]?.emailAddress?.split('@')[0] || 'User';
         user.email = clerkUser.emailAddresses[0]?.emailAddress;
@@ -503,7 +503,7 @@ export class LeagueRepository {
   ): Promise<boolean> {
     try {
       console.log("addPointsToUser called with:", { userId, seasonId, pointsType, points });
-      
+
       // Check if user has a league record for this season
       const existingRecord = await this.db
         .collection(this.userLeaguePointsCollection)
@@ -564,7 +564,7 @@ export class LeagueRepository {
 
       if (result.modifiedCount > 0 || upsertedId) {
         console.log("Points updated successfully, checking if user needs league assignment...");
-        
+
         // Check if user is already in a group
         const userRecord = await this.db
           .collection(this.userLeaguePointsCollection)
@@ -629,7 +629,7 @@ export class LeagueRepository {
           userId,
           seasonId: currentSeason.seasonId
         });
-      
+
       if (currentSeasonPoints) {
         const overallPoints = currentSeasonPoints.overallPoints || 0;
         console.log("getUserOverallPoints from current season:", overallPoints);
@@ -643,9 +643,9 @@ export class LeagueRepository {
       .aggregate([
         { $match: { userId } },
         {
-          $group: { 
-            _id: null, 
-            totalOverallPoints: { $sum: { $ifNull: ["$overallPoints", 0] } } 
+          $group: {
+            _id: null,
+            totalOverallPoints: { $sum: { $ifNull: ["$overallPoints", 0] } }
           },
         },
       ])
@@ -664,9 +664,9 @@ export class LeagueRepository {
       // First check user_league_points to see their assigned league
       const userPoints = await this.db
         .collection(this.userLeaguePointsCollection)
-        .findOne({ 
-          userId, 
-          seasonId: currentSeason.seasonId 
+        .findOne({
+          userId,
+          seasonId: currentSeason.seasonId
         });
 
       if (userPoints && (userPoints as any).leagueId) {
@@ -674,7 +674,7 @@ export class LeagueRepository {
         const league = await this.db
           .collection(this.leaguesCollection)
           .findOne({ _id: (userPoints as any).leagueId });
-        
+
         if (league) {
           return {
             type: league.type,
@@ -761,7 +761,7 @@ export class LeagueRepository {
       // Check minimum trophies requirement for higher leagues
       const requiredTrophies = league.requirements?.minTrophies || 0;
       const userTrophies = Math.floor(userPoints.overallPoints / 50); // Assuming 50 points = 1 trophy
-      
+
       if (userTrophies < requiredTrophies) {
         console.log(`User has ${userTrophies} trophies, needs ${requiredTrophies}`);
         return false;
@@ -794,9 +794,9 @@ export class LeagueRepository {
 
       const userPoints = await this.db
         .collection(this.userLeaguePointsCollection)
-        .findOne({ 
-          userId, 
-          seasonId: currentSeason.seasonId 
+        .findOne({
+          userId,
+          seasonId: currentSeason.seasonId
         });
 
       if (!userPoints) return false;
@@ -804,19 +804,19 @@ export class LeagueRepository {
       // Define tasks for each league (using task IDs that match the league requirements)
       const leagueTasks = {
         bronze: [
-          "mock-exam", 
-          "skills-tried", 
+          "mock-exam",
+          "skills-tried",
           "ai-feedback"
         ],
         silver: [
-          "mock-exams-5", 
-          "clb-improvement", 
+          "mock-exams-5",
+          "clb-improvement",
           "writing-feedback-3",
           "speaking-feedback-3"
         ],
         gold: [
-          "mock-exams-10", 
-          "clb-improvement-3-skills", 
+          "mock-exams-10",
+          "clb-improvement-3-skills",
           "practice-consistency",
           "referral",
           "celpip-champion"
@@ -834,7 +834,7 @@ export class LeagueRepository {
 
       // Check if all required tasks are completed
       const hasAllTasks = requiredTasks.every(task => completedTasks.includes(task));
-      
+
       return hasAllTasks;
     } catch (error) {
       console.error("Error checking league tasks:", error);
@@ -857,7 +857,7 @@ export class LeagueRepository {
   async resetAllUsersToBronzeLeague(): Promise<boolean> {
     try {
       console.log("Resetting all users to Bronze League...");
-      
+
       const currentSeason = await this.getCurrentSeason();
       if (!currentSeason) {
         console.log("No current season found");
@@ -874,9 +874,9 @@ export class LeagueRepository {
       // Get all users currently in Silver and Gold leagues
       const silverLeague = await this.getLeagueByType("silver");
       const goldLeague = await this.getLeagueByType("gold");
-      
+
       const allUsersToMove = [];
-      
+
       if (silverLeague) {
         const silverUsers = await this.db.collection(this.userLeaguePointsCollection).find({
           leagueId: silverLeague._id,
@@ -884,7 +884,7 @@ export class LeagueRepository {
         }).toArray();
         allUsersToMove.push(...silverUsers);
       }
-      
+
       if (goldLeague) {
         const goldUsers = await this.db.collection(this.userLeaguePointsCollection).find({
           leagueId: goldLeague._id,
@@ -914,8 +914,8 @@ export class LeagueRepository {
           // Update user's league and group
           await this.db.collection(this.userLeaguePointsCollection).updateOne(
             { _id: user._id },
-            { 
-              $set: { 
+            {
+              $set: {
                 leagueId: bronzeLeague._id,
                 groupId: bronzeGroup._id
               }
@@ -936,7 +936,7 @@ export class LeagueRepository {
   async autoAssignUserToLeague(userId: string): Promise<boolean> {
     try {
       console.log("autoAssignUserToLeague called for user:", userId);
-      
+
       // Get current season
       const currentSeason = await this.getCurrentSeason();
       if (!currentSeason) {
@@ -954,13 +954,13 @@ export class LeagueRepository {
       // Get user's overall points to determine league
       const overallPoints = await this.getUserOverallPoints(userId);
       console.log("User overall points:", overallPoints);
-      
+
       // Only assign users to leagues if they have points
       if (overallPoints === 0) {
         console.log("User has no points, not assigning to league");
         return false;
       }
-      
+
       // ALL users start in Bronze League regardless of previous assignments
       // This is the fundamental rule - everyone starts from Bronze
       let targetLeagueType = "bronze";
@@ -1573,67 +1573,67 @@ export class LeagueRepository {
       }
 
       console.log(`Ending season: ${currentSeason.seasonId}`);
-      
+
       // Process league promotions/demotions and move users
       await this.processSeasonEnd(currentSeason);
 
-    // Mark current season as ended
-    await this.db.collection(this.leagueSeasonsCollection).updateOne(
-      { seasonId: currentSeason.seasonId },
-      {
-        $set: {
-          status: "ended",
-          endDate: new Date(),
-          updatedAt: new Date(),
-        },
-      }
-    );
+      // Mark current season as ended
+      await this.db.collection(this.leagueSeasonsCollection).updateOne(
+        { seasonId: currentSeason.seasonId },
+        {
+          $set: {
+            status: "ended",
+            endDate: new Date(),
+            updatedAt: new Date(),
+          },
+        }
+      );
 
-    // Create new season
-    const newSeasonId = `season_${Date.now()}`;
-    const newSeason = {
-      seasonId: newSeasonId,
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-      status: "active" as const,
-      isActive: true,
-      leagues: currentSeason.leagues.map((league) => ({
-        ...league,
-        groups: [], // Start with empty groups
-      })),
-    };
+      // Create new season
+      const newSeasonId = `season_${Date.now()}`;
+      const newSeason = {
+        seasonId: newSeasonId,
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        status: "active" as const,
+        isActive: true,
+        leagues: currentSeason.leagues.map((league) => ({
+          ...league,
+          groups: [], // Start with empty groups
+        })),
+      };
 
-    console.log(`Creating new season: ${newSeasonId}`);
-    await this.createSeason(newSeason);
-    
-    // Update all user_league_points records to use new season
-    // Only update users who were processed in processSeasonEnd
-    console.log(`Migrating users from season ${currentSeason.seasonId} to ${newSeasonId}`);
-    const processedUsers = await this.db.collection(this.userLeaguePointsCollection)
-      .find({ seasonId: currentSeason.seasonId })
-      .toArray();
-    
-    console.log(`Found ${processedUsers.length} users to migrate`);
-    
-    for (const user of processedUsers) {
-      try {
-        await this.db.collection(this.userLeaguePointsCollection).updateOne(
-          { _id: user._id },
-          {
-            $set: {
-              seasonId: newSeasonId,
-              totalPoints: 0, // Reset season points for new season
-              groupId: null, // Reset group assignment for new season
-              updatedAt: new Date(),
-            },
-          }
-        );
-      } catch (userError) {
-        console.error(`Failed to migrate user ${user.userId}:`, userError);
+      console.log(`Creating new season: ${newSeasonId}`);
+      await this.createSeason(newSeason);
+
+      // Update all user_league_points records to use new season
+      // Only update users who were processed in processSeasonEnd
+      console.log(`Migrating users from season ${currentSeason.seasonId} to ${newSeasonId}`);
+      const processedUsers = await this.db.collection(this.userLeaguePointsCollection)
+        .find({ seasonId: currentSeason.seasonId })
+        .toArray();
+
+      console.log(`Found ${processedUsers.length} users to migrate`);
+
+      for (const user of processedUsers) {
+        try {
+          await this.db.collection(this.userLeaguePointsCollection).updateOne(
+            { _id: user._id },
+            {
+              $set: {
+                seasonId: newSeasonId,
+                totalPoints: 0, // Reset season points for new season
+                groupId: null, // Reset group assignment for new season
+                updatedAt: new Date(),
+              },
+            }
+          );
+        } catch (userError) {
+          console.error(`Failed to migrate user ${user.userId}:`, userError);
+        }
       }
-    }
-    
-    return true;
+
+      return true;
     } catch (error) {
       console.error("Error in endCurrentSeason:", error);
       return false;
@@ -1651,11 +1651,11 @@ export class LeagueRepository {
   // Get detailed league information for admin panel
   async getDetailedLeagueInfo(seasonId: string): Promise<any> {
     console.log("Getting detailed league info for season:", seasonId);
-    
+
     const season = await this.db
       .collection(this.leagueSeasonsCollection)
       .findOne({ seasonId });
-    
+
     if (!season) {
       console.log("Season not found:", seasonId);
       return null;
@@ -1882,16 +1882,16 @@ export class LeagueRepository {
 
     // Step 2: Move users to their new leagues for next season
     console.log(`Moving ${usersToMove.length} users to new leagues...`);
-    
+
     for (const userMove of usersToMove) {
       console.log(`Processing user ${userMove.userId}: ${userMove.currentLeague} -> ${userMove.targetLeague} (${userMove.status})`);
-      
+
       // Remove user from current league group (regardless of league change)
       await this.db.collection(this.leagueGroupsCollection).updateMany(
         { "users.userId": userMove.userId },
         { $pull: { users: { userId: userMove.userId } } } as any
       );
-      
+
       // Update user's league assignment in user_league_points
       const targetLeague = await this.getLeagueByType(userMove.targetLeague);
       if (targetLeague) {
@@ -1924,7 +1924,7 @@ export class LeagueRepository {
     const season = await this.db
       .collection(this.leagueSeasonsCollection)
       .findOne({ seasonId });
-    
+
     if (!season) return null;
 
     const stats = {
@@ -2011,7 +2011,7 @@ export class LeagueRepository {
     const season = await this.db
       .collection(this.leagueSeasonsCollection)
       .findOne({ seasonId });
-    
+
     if (!season) return [];
 
     const goldLeague = season.leagues.find((l: any) => l.leagueType === "gold");
@@ -2107,7 +2107,7 @@ export class LeagueRepository {
   ): Promise<boolean> {
     try {
       const updateFields: any = {};
-      
+
       if (updates.notified !== undefined) {
         updateFields["winners.$[elem].notified"] = updates.notified;
       }
@@ -2127,6 +2127,123 @@ export class LeagueRepository {
     } catch (error) {
       console.error("Error updating raffle winner status:", error);
       return false;
+    }
+  }
+
+  // Get top users for a specific league type (for filling gaps)
+  async getTopUsersForLeague(leagueType: TLeagueType, limit: number = 10): Promise<any[]> {
+    try {
+      const currentSeason = await this.getCurrentSeason();
+      if (!currentSeason) return [];
+
+      // Find all leagues of this type in the current season
+      const seasonLeague = currentSeason.leagues.find(l => l.leagueType === leagueType);
+      if (!seasonLeague) return [];
+
+      // Get all users in groups of this league type
+      const groupIds = seasonLeague.groups;
+
+      // Aggregate users from all groups of this type, sort by points, and take top N
+      const pipeline = [
+        {
+          $match: {
+            _id: { $in: groupIds }
+          }
+        },
+        { $unwind: "$users" },
+        {
+          $project: {
+            userId: "$users.userId",
+            points: "$users.points",
+            league: { $literal: leagueType }
+          }
+        },
+        { $sort: { points: -1 } },
+        { $limit: limit }
+      ];
+
+      let topUsers = await this.db
+        .collection(this.leagueGroupsCollection)
+        .aggregate(pipeline)
+        .toArray();
+
+      // If we have fewer users than the limit, fill the rest with all-time top users
+      if (topUsers.length < limit) {
+        console.log(`Found only ${topUsers.length} users in current season for ${leagueType}, filling gaps with all-time top users`);
+
+        const existingUserIds = new Set(topUsers.map(u => u.userId));
+        const needed = limit - topUsers.length;
+
+        // Generate fake users to fill the gap
+        const adjectives = ["Happy", "Lucky", "Sunny", "Clever", "Bright", "Swift", "Calm", "Brave", "Kind", "Wise"];
+        const nouns = ["Learner", "Student", "Master", "Expert", "Guide", "Star", "Hero", "Champ", "Pro", "Ace"];
+
+        while (topUsers.length < limit) {
+          const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+          const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+          const randomNum = Math.floor(Math.random() * 1000);
+          const fakeName = `${randomAdjective}${randomNoun}${randomNum}`;
+
+          // Generate realistic points based on league type
+          let basePoints = 0;
+          if (leagueType === "bronze") basePoints = Math.floor(Math.random() * 500) + 100;
+          else if (leagueType === "silver") basePoints = Math.floor(Math.random() * 1000) + 500;
+          else if (leagueType === "gold") basePoints = Math.floor(Math.random() * 2000) + 1000;
+
+          // Ensure points are somewhat sorted (less than the last user)
+          const lastPoints = topUsers.length > 0 ? topUsers[topUsers.length - 1].points : basePoints + 100;
+          const fakePoints = Math.min(basePoints, Math.max(0, lastPoints - Math.floor(Math.random() * 50)));
+
+          const fakeUser = {
+            userId: `fake_${Date.now()}_${topUsers.length}`,
+            points: fakePoints,
+            league: leagueType,
+            name: fakeName,
+            avatar: null,
+            email: null,
+            isFake: true
+          };
+
+          topUsers.push(fakeUser);
+        }
+      }
+
+      // Enrich with user details (name, avatar) for real users only
+      const enrichedUsers = [];
+      const { clerkClient } = await import("@clerk/nextjs/server");
+      const client = await clerkClient();
+
+      for (const u of topUsers) {
+        if ((u as any).isFake) {
+          enrichedUsers.push(u);
+          continue;
+        }
+
+        try {
+          const clerkUser = await client.users.getUser(u.userId);
+          // Strictly use username or first name, never full name
+          const displayName = clerkUser.username || clerkUser.firstName || "User";
+
+          enrichedUsers.push({
+            ...u,
+            name: displayName,
+            avatar: clerkUser.imageUrl,
+            email: null // Never expose email
+          });
+        } catch (e) {
+          enrichedUsers.push({
+            ...u,
+            name: "User",
+            avatar: null,
+            email: null
+          });
+        }
+      }
+
+      return enrichedUsers;
+    } catch (error) {
+      console.error("Error getting top users for league:", error);
+      return [];
     }
   }
 }
