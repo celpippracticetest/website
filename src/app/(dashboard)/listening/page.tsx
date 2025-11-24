@@ -11,6 +11,8 @@ import { TaskRepository } from "@/repositories/tasks.repo";
 import { currentUser } from "@clerk/nextjs/server";
 import { ObjectId } from "mongodb";
 import { redirect, RedirectType } from "next/navigation";
+import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
+import { skillPagesContent } from "@/data/skill-pages-content";
 
 interface PracticeTask {
   taskNumber: string;
@@ -59,6 +61,23 @@ const DashboardApp = async ({
     },
   ];
 
+  const user = await currentUser();
+  if (!user && !taskId && !selectedPracticeId) {
+    const availableTasks = tasks.items
+      .filter((taskItem) => taskItem.category === "listening")
+      .sort((a, b) => {
+        const numA = parseInt(a.taskNumber.replace(/\D/g, ""));
+        const numB = parseInt(b.taskNumber.replace(/\D/g, ""));
+        return numA - numB;
+      })
+      .map((taskItem) => ({
+        id: taskItem.id,
+        taskNumber: taskItem.taskNumber,
+      }));
+
+    return <SkillLandingPage content={skillPagesContent.listening} skillType="listening" availableTasks={availableTasks} />;
+  }
+
   if (!selectedPracticeId && !taskId) {
     return (
       <ShowTaskHeader>
@@ -73,7 +92,7 @@ const DashboardApp = async ({
         <div className="flex items-center mt-[16px]  screen744:!mt-[0] justify-center gap-[8px] max-w-[1200px] w-full h-[60px] rounded-[12px] bg-[#D1DEFF]">
           <SvgListeningPart className="text-[#316BFF]" />
           <span className="text-[#37465C] font-semibold text-[20px]">
-              Listening Practice
+            Listening Practice
           </span>
         </div>
         <ShowTasks tasks={listeningTasks} />
@@ -90,7 +109,7 @@ const DashboardApp = async ({
   const practices = await practiceRepo.getAllPractice(
     {
       type: "LISTENING",
-      taskId: taskId ? new ObjectId(taskId) : undefined,
+      taskId: taskId ? (new ObjectId(taskId) as any) : undefined,
     },
     0,
     200
@@ -99,7 +118,7 @@ const DashboardApp = async ({
   if (selectedPracticeId) {
     selectedPractice = await practiceRepo.findPractice(selectedPracticeId);
   }
-  const user = await currentUser();
+
   if (
     (!user ||
       !user.publicMetadata.plan ||

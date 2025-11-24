@@ -11,6 +11,8 @@ import { TaskRepository } from "@/repositories/tasks.repo";
 import { currentUser } from "@clerk/nextjs/server";
 import { ObjectId } from "mongodb";
 import { redirect, RedirectType } from "next/navigation";
+import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
+import { skillPagesContent } from "@/data/skill-pages-content";
 
 export const metadata = {
   title: "Free CELPIP Reading Practice Tests & Mock Exams | CELPIPPRACTICETEST",
@@ -59,6 +61,23 @@ const ReadingPage = async ({
     },
   ];
 
+  const user = await currentUser();
+  if (!user && !taskId && !selectedPracticeId) {
+    const availableTasks = tasks.items
+      .filter((taskItem) => taskItem.category === "reading")
+      .sort((a, b) => {
+        const numA = parseInt(a.taskNumber.replace(/\D/g, ""));
+        const numB = parseInt(b.taskNumber.replace(/\D/g, ""));
+        return numA - numB;
+      })
+      .map((taskItem) => ({
+        id: taskItem.id,
+        taskNumber: taskItem.taskNumber,
+      }));
+
+    return <SkillLandingPage content={skillPagesContent.reading} skillType="reading" availableTasks={availableTasks} />;
+  }
+
   if (!selectedPracticeId && !taskId) {
     return (
       <ShowTaskHeader>
@@ -91,7 +110,7 @@ const ReadingPage = async ({
   const practices = await practiceRepo.getAllPractice(
     {
       type: "READING",
-      taskId: taskId ? new ObjectId(taskId) : undefined,
+      taskId: taskId ? (new ObjectId(taskId) as any) : undefined,
     },
     0,
     200
@@ -100,7 +119,7 @@ const ReadingPage = async ({
   if (selectedPracticeId) {
     selectedPractice = await practiceRepo.findPractice(selectedPracticeId);
   }
-  const user = await currentUser();
+
   if (
     (!user ||
       !user.publicMetadata.plan ||
@@ -132,6 +151,7 @@ const ReadingPage = async ({
         user.id
       );
   }
+
   return (
     <main className=" bg-[#F2F6FF] min-h-screen flex w-full justify-center   ">
       <ReadingPractice

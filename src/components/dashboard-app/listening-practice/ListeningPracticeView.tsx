@@ -56,7 +56,7 @@ const ListeningPracticeView = ({
   const practiceCount = usePracticeCount(task.id, practice.id, task.taskNumber);
   const task5or6 = ["67ebeffe187829d27daac3c8", "67ebf003187829d27daac3c9"];
   const taskNum = parseInt(task.taskNumber.replace(/\D/g, "") || "0", 10);
-  const useDropdownForQuestions = false;
+  const useDropdownForQuestions = taskNum >= 3;
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [pointsAwarded, setPointsAwarded] = useState(false);
