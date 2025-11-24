@@ -75,12 +75,12 @@ const PracticeOverview = ({
 
       setRedirectUrl(
         task.category +
-          "?selectedPracticeId=" +
-          data.items[0].id +
-          "&taskId=" +
-          task.id
+        "?selectedPracticeId=" +
+        data.items[0].id +
+        "&taskId=" +
+        task.id
       );
-    } catch (error) {}
+    } catch (error) { }
   };
 
   const practiceSections: PracticeSection[] = [
@@ -171,7 +171,7 @@ const PracticeOverview = ({
                   }
                   setSelectedTask(task as TTaskSchemaDto);
                 }}
-                className="flex flex-col basis-[50%] screen744:!w-full items-end relative p-[16px] cursor-pointer bg-white  h-auto min-h-[96px] rounded-[12px]"
+                className="flex flex-col basis-[50%] screen744:!w-full items-end relative p-[16px] cursor-pointer bg-white  h-auto min-h-[96px] rounded-[12px] hover:shadow-md transition-shadow"
               >
                 {selectedTask?.id == task?.id && (
                   <div className="absolute inset-0 bg-white/80 rounded-xl flex items-center justify-center z-10">

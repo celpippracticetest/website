@@ -97,7 +97,7 @@ const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
             return (
               <div
                 key={i}
-                className="flex grow basis-0 min-w-[calc(50%-8px)] screen744:min-w-[calc(25%-12px)] max-w-full screen744:max-w-[calc(25%-12px)] rounded-[12px] h-[124px] bg-white overflow-hidden cursor-pointer items-center justify-center flex-col"
+                className="flex grow basis-0 min-w-[calc(50%-8px)] screen744:min-w-[calc(25%-12px)] max-w-full screen744:max-w-[calc(25%-12px)] rounded-[12px] h-[124px] bg-white overflow-hidden cursor-pointer items-center justify-center flex-col hover:shadow-md transition-shadow"
                 onClick={() => {
                   if (freeUser) {
                     setShowUpgradeModal(true);

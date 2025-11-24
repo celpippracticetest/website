@@ -46,7 +46,7 @@ export default function HomePageClient() {
         <UserResponseReview />
         <Comments />
         <Practice />
-        <Blog />
+        {/* <Blog /> */}
         <FAQ />
         <Footer />
         <FloatingChatIcon autoOpen={false} />
