@@ -37,7 +37,7 @@ const AuthButtons = () => {
   return (
     <>
       <SignedIn>
-        <div className="relative mr-[24px]" ref={dropdownRef}>
+        <div className="mr-[24px]" ref={dropdownRef}>
           <button
             onClick={() => setUserDropDownOpen(!isUserDropDownOpen)}
             className="cursor-pointer"

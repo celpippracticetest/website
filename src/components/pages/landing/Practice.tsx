@@ -12,7 +12,7 @@ const Practice = () => {
             id="practice-heading"
             className="max-w-[311px] screen1280:!max-w-[480px] font-medium text-[20px] screen1280:!text-[32px]  text-white"
           >
-            The Best Practice Exercises for CELPIP Exam Preparation
+            Effective Practice Approaches for CELPIP Preparation
           </h2>
           <div className="mt-[32px] screen1280:!mt-[40px] flex flex-col screen1280:!flex-row items-center screen744:!items-start screen1280:!items-center gap-[16px] screen1280:!gap-[24px] ">
             <div className="group hover:cursor-pointer hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] shadow-startButton flex gap-[8px] pl-[16px] bg-white max-w-[311px] screen1280:!max-w-[223px] h-[40px] rounded-[24px] items-center justify-center">

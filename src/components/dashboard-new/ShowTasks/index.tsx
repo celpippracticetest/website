@@ -51,12 +51,12 @@ const ShowTasks = ({ tasks }: any) => {
 
       setRedirectUrl(
         task.category +
-          "?selectedPracticeId=" +
-          data.items[0].id +
-          "&taskId=" +
-          task.id
+        "?selectedPracticeId=" +
+        data.items[0].id +
+        "&taskId=" +
+        task.id
       );
-    } catch (error) {}
+    } catch (error) { }
   };
   return (
     <div className="gap-[16px] bg-[#F4F7FF] pt-[16px] max-w-[1200px] w-full">
@@ -74,7 +74,7 @@ const ShowTasks = ({ tasks }: any) => {
                 }
                 setSelectedTask(task as TTaskSchemaDto);
               }}
-              className="flex flex-col relative p-[16px] justify-center cursor-pointer bg-white h-auto min-h-[96px] rounded-[12px]"
+              className="flex flex-col relative p-[16px] justify-center cursor-pointer bg-white h-auto min-h-[96px] rounded-[12px] hover:shadow-md transition-shadow"
             >
               {selectedTask?.id == task.id && (
                 <div className="absolute inset-0 bg-white/80 rounded-xl flex items-center justify-center z-10">

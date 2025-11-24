@@ -1,17 +1,21 @@
 "use client";
 
-import { useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import dynamic from "next/dynamic";
+import Practice from "./Practice";
+import Blog from "./Blog";
+import FAQ from "./FAQ";
 import { useChunkErrorHandler } from "@/hooks/useChunkErrorHandler";
 
 const Hero = dynamic(() => import("./Hero"), { ssr: true });
-const Practice = dynamic(() => import("./Practice"), { ssr: false });
 const Comments = dynamic(() => import("./Comments"), { ssr: false });
 const UserResponseReview = dynamic(() => import("./UserResponseReview"), {
   ssr: false,
 });
 const Footer = dynamic(() => import("./Footer"), { ssr: true });
+const FloatingChatIcon = dynamic(() => import("../../AskBeavo/FloatingChatIcon"), {
+  ssr: false,
+});
 
 function ErrorFallback() {
   return (
@@ -33,17 +37,6 @@ function ErrorFallback() {
 }
 
 export default function HomePageClient() {
-  useEffect(() => {
-    if (typeof window !== "undefined" && (window as any).Intercom) {
-      (window as any).Intercom("show");
-    }
-    return () => {
-      if (typeof window !== "undefined" && (window as any).Intercom) {
-        (window as any).Intercom("hide");
-      }
-    };
-  }, []);
-
   const shouldReload = useChunkErrorHandler();
   if (shouldReload) return null;
   return (
@@ -53,7 +46,10 @@ export default function HomePageClient() {
         <UserResponseReview />
         <Comments />
         <Practice />
+        {/* <Blog /> */}
+        <FAQ />
         <Footer />
+        <FloatingChatIcon autoOpen={false} />
       </div>
     </ErrorBoundary>
   );

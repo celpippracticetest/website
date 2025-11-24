@@ -45,27 +45,21 @@ const AskBeavoButton: React.FC = () => {
           context: {
             targetCLB: userContext.targetCLB || "Not specified",
             currentScores: userContext.mockScores
-              ? `L:${userContext.mockScores.listening || "N/A"} R:${
-                  userContext.mockScores.reading || "N/A"
-                } W:${userContext.mockScores.writing || "N/A"} S:${
-                  userContext.mockScores.speaking || "N/A"
-                }`
+              ? `L:${userContext.mockScores.listening || "N/A"} R:${userContext.mockScores.reading || "N/A"
+              } W:${userContext.mockScores.writing || "N/A"} S:${userContext.mockScores.speaking || "N/A"
+              }`
               : "Not available",
             scoreSource: userContext.scoreSource || "Not available",
             answerCounts: userContext.answerCounts
-              ? `Writing: ${userContext.answerCounts.writing || 0}, Speaking: ${
-                  userContext.answerCounts.speaking || 0
-                }, Listening: ${
-                  userContext.answerCounts.listening || 0
-                }, Reading: ${userContext.answerCounts.reading || 0}`
+              ? `Writing: ${userContext.answerCounts.writing || 0}, Speaking: ${userContext.answerCounts.speaking || 0
+              }, Listening: ${userContext.answerCounts.listening || 0
+              }, Reading: ${userContext.answerCounts.reading || 0}`
               : "No answers available",
             weakAreas: userContext.weakAreas?.join(", ") || "Not identified",
             practiceHistory: userContext.practiceHistory
-              ? `${
-                  userContext.practiceHistory.totalPractices
-                } practices, avg: ${
-                  userContext.practiceHistory.averageScore || "N/A"
-                }`
+              ? `${userContext.practiceHistory.totalPractices
+              } practices, avg: ${userContext.practiceHistory.averageScore || "N/A"
+              }`
               : "Not available",
           },
           conversationHistory: messages,
@@ -109,14 +103,14 @@ const AskBeavoButton: React.FC = () => {
 
   return (
     <>
-      <div className=" screen1280:!fixed   screen1280:!top-auto  screen1280:!right-auto screen1280:!bottom-6 screen1280:!left-1/2 screen1280:!-translate-x-1/2 z-50">
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="relative flex items-center cursor-pointer justify-center text-[#212E42] text-[14px] h-[40px] w-[70px] screen1280:!w-[134px]  gap-[8px] rounded-[24px] px-[16px] pl-[8px] font-normal
-                bg-white overflow-hidden"
+          className="relative flex items-center cursor-pointer justify-center text-[#212E42] text-[14px] h-[40px] w-[134px] gap-[8px] rounded-[24px] px-[16px] pl-[8px] font-normal
+                bg-white overflow-hidden shadow-lg hover:scale-105 transition-transform duration-200"
         >
           <span
-            className="absolute  inset-0 rounded-[24px] p-[1px] bg-[length:200%_200%] animate-gradientBorder 
+            className="absolute inset-0 rounded-[24px] p-[1px] bg-[length:200%_200%] animate-gradientBorder 
                      bg-gradient-to-r from-[#F79D65] via-[#759CFF] to-[#F79D65]"
           >
             <span className="block w-full h-full rounded-[24px] bg-white"></span>
@@ -125,10 +119,7 @@ const AskBeavoButton: React.FC = () => {
           <div className="relative text-lg z-50">
             <SvgBeavo />
           </div>
-          <span className="relative">
-            <span className="flex screen1280:!hidden">Ask </span>
-            <span className="hidden screen1280:!flex">Ask Beavo</span>
-          </span>
+          <span className="relative flex">Ask Beavo</span>
         </button>
       </div>
 
@@ -217,16 +208,14 @@ const AskBeavoButton: React.FC = () => {
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`flex ${
-                    message.type === "user" ? "justify-end" : "justify-start"
-                  }`}
+                  className={`flex ${message.type === "user" ? "justify-end" : "justify-start"
+                    }`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                      message.type === "user"
+                    className={`max-w-[80%] rounded-2xl px-4 py-3 ${message.type === "user"
                         ? "bg-gradient-to-r from-[#F79D65] to-[#759CFF] text-white"
                         : "bg-gray-100 text-gray-900"
-                    }`}
+                      }`}
                   >
                     <p className="text-sm whitespace-pre-wrap">
                       {message.content}
@@ -274,11 +263,10 @@ const AskBeavoButton: React.FC = () => {
                 <button
                   onClick={handleSendMessage}
                   disabled={!inputText.trim() || isLoading}
-                  className={`cursor-pointer px-3 py-2 absolute right-3 top-1/2 -translate-y-1/2 rounded-xl font-medium transition-colors ${
-                    inputText.trim() && !isLoading
+                  className={`cursor-pointer px-3 py-2 absolute right-3 top-1/2 -translate-y-1/2 rounded-xl font-medium transition-colors ${inputText.trim() && !isLoading
                       ? " from-[#F79D65] to-[#759CFF] text-white"
                       : " text-gray-400 cursor-not-allowed"
-                  }`}
+                    }`}
                 >
                   {isLoading ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

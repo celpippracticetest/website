@@ -130,7 +130,7 @@ const Page = () => {
 
       const response = await fetch("/api/league");
       const data = await response.json();
-      
+
       console.log("League API response:", data);
       console.log("User signed in:", isSignedIn);
       console.log("User ID:", user?.id);
@@ -224,9 +224,8 @@ const Page = () => {
 
   // Initialize league data
   useEffect(() => {
-    if (isLoaded) {
-      fetchLeagueData();
-    }
+    // Fetch league data for everyone, including guests
+    fetchLeagueData();
   }, [isLoaded, user?.id]);
 
   // Recompute league view when selectedLeague changes
@@ -241,27 +240,38 @@ const Page = () => {
 
     const mappedUsers = baseGroup
       ? baseGroup.users.map((u: any) => {
-          const isMe = u.userId === user?.id;
-          const emailLocal = (u.email || "").split("@")[0] || "";
-          const emailShort = emailLocal ? emailLocal.slice(0, 3) : "";
-          const apiName = (u.name || "").trim();
-          const myFullName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
-          const displayName = isMe
-            ? (myFullName || emailShort || "User")
-            : (apiName || emailShort || "User");
+        const isMe = u.userId === user?.id;
+        const emailLocal = (u.email || "").split("@")[0] || "";
+        const emailShort = emailLocal ? `${emailLocal.slice(0, 3)}***` : "User";
 
-          return {
-            id: u.userId,
-            name: displayName,
-            email: u.email,
-            avatar: u.avatar || (isMe ? (user as any)?.imageUrl : undefined),
-            points: u.points,
-            league: selectedType as any,
-            position: u.position,
-            tasksCompleted: leagueData?.tasksCompleted || [],
-            isCurrentUser: isMe,
-          };
-        })
+        // Privacy-preserving name logic
+        let displayName = "User";
+        if (isMe) {
+          displayName = user?.username || user?.firstName || emailShort;
+        } else {
+          // For others, prefer username, then first name, then masked email
+          // The API now returns 'name' as username/firstname or "User"
+          // If u.name looks like an email, mask it
+          if (u.name && u.name.includes("@")) {
+            const parts = u.name.split("@");
+            displayName = `${parts[0].slice(0, 3)}***`;
+          } else {
+            displayName = u.name || emailShort;
+          }
+        }
+
+        return {
+          id: u.userId,
+          name: displayName,
+          email: null, // Don't expose email in state
+          avatar: u.avatar || (isMe ? (user as any)?.imageUrl : undefined),
+          points: u.points,
+          league: selectedType as any,
+          position: u.position,
+          tasksCompleted: leagueData?.tasksCompleted || [],
+          isCurrentUser: isMe,
+        };
+      })
       : [];
 
     // Do not append current user when previewing other leagues
@@ -307,7 +317,7 @@ const Page = () => {
 
       if (response.ok) {
         const result = await response.json();
-        
+
         // Show appropriate modal based on league change
         if (result.leagueChanged) {
           if (result.action === "promoted") {
@@ -345,7 +355,7 @@ const Page = () => {
             timeSpent,
           });
         }
-        
+
         setShowMedalModal(true);
 
         // Refresh league data
@@ -524,8 +534,8 @@ const Page = () => {
   const renderSkillsTriedTask = (task: string) => {
     if (!task.includes("Skills Tried") || !task.includes("(L, R, W, S)")) {
       // Regular task
-      const completed = leagueData?.userPoints && leagueData.userPoints > 0 
-        ? isTaskCompleted(task, currentLeague?.type || "bronze") 
+      const completed = leagueData?.userPoints && leagueData.userPoints > 0
+        ? isTaskCompleted(task, currentLeague?.type || "bronze")
         : false;
       return (
         <div className="flex gap-[8px]">
@@ -533,9 +543,8 @@ const Page = () => {
             <CircleCheck />
           </div>
           <span
-            className={`text-[14px] ${
-              completed ? "text-[#10B981]" : "text-[#37465C]"
-            }`}
+            className={`text-[14px] ${completed ? "text-[#10B981]" : "text-[#37465C]"
+              }`}
           >
             {task}
           </span>
@@ -549,19 +558,19 @@ const Page = () => {
     const completedSkills = requiredSkills.filter(skill => skillsTried.includes(skill));
     const allCompleted = completedSkills.length >= 4;
 
-    console.log("Skills Tried task rendering:", { 
-      skillsTried, 
-      requiredSkills, 
-      completedSkills, 
+    console.log("Skills Tried task rendering:", {
+      skillsTried,
+      requiredSkills,
+      completedSkills,
       allCompleted,
-      leagueData: leagueData?.skillsTried 
+      leagueData: leagueData?.skillsTried
     });
 
     // Create progressive text
     const baseText = "4 Skills Tried (";
     const skillLetters = ["L", "R", "W", "S"];
     const skillNames = ["Listening", "Reading", "Writing", "Speaking"];
-    
+
     const progressiveText = baseText + skillLetters.map((letter, index) => {
       const skillName = skillNames[index];
       const isCompleted = skillsTried.includes(skillName);
@@ -569,19 +578,18 @@ const Page = () => {
       return isCompleted ? `<span class="text-[#10B981]">${letter}</span>` : letter;
     }).join(", ") + ")";
 
-      return (
+    return (
       <div className="flex gap-[8px]">
         <div className={allCompleted ? "text-[#10B981]" : "text-[#979EA8]"}>
-            <CircleCheck />
-          </div>
-          <span
-            className={`text-[14px] ${
-            allCompleted ? "text-[#10B981]" : "text-[#37465C]"
+          <CircleCheck />
+        </div>
+        <span
+          className={`text-[14px] ${allCompleted ? "text-[#10B981]" : "text-[#37465C]"
             }`}
           dangerouslySetInnerHTML={{ __html: progressiveText }}
         />
-        </div>
-      );
+      </div>
+    );
   };
 
   // Render tasks for a specific league
@@ -795,12 +803,12 @@ const Page = () => {
   const LeagueTableComponent = () => {
     if (isLoadingLeague) return <SkeletonLoadingComponent />;
     if (!leagueData) return noUser ? <SkeletonLoadingComponent /> : <EmptyStateComponent />;
-    
+
     // If user has points and is in a league, show league table
     if (currentLeague && userGroup && leagueData.users.length > 0) {
       const sortedUsers = [...leagueData.users].sort((a, b) => b.points - a.points);
       const totalUsers = sortedUsers.length;
-      
+
       // Calculate zones based on current league
       let promotionZone: number;
       let demotionZone: number;
@@ -837,7 +845,7 @@ const Page = () => {
               // Determine zone for this user
               let zoneClass = "";
               let zoneIndicator = "";
-              
+
               if (index < promotionZone && currentLeague.type !== "gold") {
                 // Promotion zone - Green
                 zoneClass = "bg-green-50 border-l-4 border-green-500";
@@ -855,11 +863,10 @@ const Page = () => {
               return (
                 <div
                   key={`user-${groupUser.id || 'unknown'}-${index}-${groupUser.points || 0}`}
-                  className={`flex items-center gap-[12px] md:gap-[16px] py-[8px] ${zoneClass} ${
-                    groupUser.isCurrentUser
-                      ? "bg-[#FED7AA] rounded-[8px] p-[8px] md:p-[12px]"
-                      : "rounded-[8px] p-[8px] md:p-[12px]"
-                  }`}
+                  className={`flex items-center gap-[12px] md:gap-[16px] py-[8px] ${zoneClass} ${groupUser.isCurrentUser
+                    ? "bg-[#FED7AA] rounded-[8px] p-[8px] md:p-[12px]"
+                    : "rounded-[8px] p-[8px] md:p-[12px]"
+                    }`}
                 >
                   <div className={`w-[8px] h-[8px] ${zoneIndicator} rounded-full`}></div>
                   <div className="w-[40px] h-[40px] bg-[#E5E7EB] rounded-full flex items-center justify-center">
@@ -867,14 +874,18 @@ const Page = () => {
                       <img
                         src={groupUser.avatar}
                         alt={groupUser.name}
-                        className="w-[32px] h-[32px] rounded-full"
+                        className="w-[32px] h-[32px] rounded-full object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = 'none';
+                        }}
                       />
-                    ) : (
+                    ) : null}
+                    {(!groupUser.avatar || false) && (
                       <div className="w-[32px] h-[32px] bg-[#9CA3AF] rounded-full"></div>
                     )}
                   </div>
                   <div className=" min-w-0">
-                  {groupUser.name || (((groupUser as any).email?.split("@")[0] || "").slice(0,3)) || "User"}
+                    {groupUser.name || (((groupUser as any).email?.split("@")[0] || "").slice(0, 3)) || "User"}
                   </div>
                   <div className="flex-1 text-[#374151] text-right font-medium text-[14px] md:text-[16px] whitespace-nowrap">
                     {groupUser.points} XP
@@ -886,7 +897,7 @@ const Page = () => {
         </div>
       );
     }
-    
+
     // If there are users from sample group, render them as table even if current user has 0 points
     if (leagueData.users && leagueData.users.length > 0) {
       const sortedUsers = [...leagueData.users].sort((a, b) => b.points - a.points);
@@ -932,11 +943,10 @@ const Page = () => {
               return (
                 <div
                   key={`user-${groupUser.id || 'unknown'}-${index}-${groupUser.points || 0}`}
-                  className={`flex items-center gap-[12px] md:gap-[16px] py-[8px] ${zoneClass} ${
-                    groupUser.isCurrentUser
-                      ? "bg-[#FED7AA] rounded-[8px] p-[8px] md:p-[12px]"
-                      : "rounded-[8px] p-[8px] md:p-[12px]"
-                  }`}
+                  className={`flex items-center gap-[12px] md:gap-[16px] py-[8px] ${zoneClass} ${groupUser.isCurrentUser
+                    ? "bg-[#FED7AA] rounded-[8px] p-[8px] md:p-[12px]"
+                    : "rounded-[8px] p-[8px] md:p-[12px]"
+                    }`}
                 >
                   <div className={`w-[8px] h-[8px] ${zoneIndicator} rounded-full`}></div>
                   <div className="w-[40px] h-[40px] bg-[#E5E7EB] rounded-full flex items-center justify-center">
@@ -944,15 +954,19 @@ const Page = () => {
                       <img
                         src={groupUser.avatar}
                         alt={groupUser.name}
-                        className="w-[32px] h-[32px] rounded-full"
+                        className="w-[32px] h-[32px] rounded-full object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = 'none';
+                        }}
                       />
-                    ) : (
+                    ) : null}
+                    {(!groupUser.avatar || false) && (
                       <div className="w-[32px] h-[32px] bg-[#9CA3AF] rounded-full"></div>
                     )}
                   </div>
                   <div className=" min-w-0">
                     <div className="text-[#374151] font-medium text-[14px] md:text-[16px] truncate">
-                      {groupUser.name || (((groupUser as any).email?.split("@")[0] || "").slice(0,3)) || "User"}
+                      {groupUser.name || (((groupUser as any).email?.split("@")[0] || "").slice(0, 3)) || "User"}
                     </div>
                   </div>
                   <div className="flex-1 text-[#374151] text-right font-medium text-[14px] md:text-[16px] whitespace-nowrap">
@@ -977,22 +991,21 @@ const Page = () => {
     // Determine if we're on a practice page or exam page
     const isPracticePage = pathname.includes('/practice') || pathname.includes('/listening') || pathname.includes('/reading') || pathname.includes('/writing') || pathname.includes('/speaking');
     const isExamPage = pathname.includes('/exam') || pathname.includes('/mock');
-    
+
     const buttonText = isExamPage ? 'Back to Exam' : 'Back to Practice';
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-[16px] p-[32px] max-w-[400px] w-full mx-4 text-center">
           <div className="mb-[24px]">
-            <div className={`w-[80px] h-[80px] rounded-full flex items-center justify-center mx-auto mb-[16px] ${
-              medalData.type === "promotion" ? "bg-[#10B981]" :
+            <div className={`w-[80px] h-[80px] rounded-full flex items-center justify-center mx-auto mb-[16px] ${medalData.type === "promotion" ? "bg-[#10B981]" :
               medalData.type === "demotion" ? "bg-[#EF4444]" :
-              "bg-[#FED7AA]"
-            }`}>
+                "bg-[#FED7AA]"
+              }`}>
               <span className="text-[32px]">
                 {medalData.type === "promotion" ? "🎉" :
-                 medalData.type === "demotion" ? "📉" :
-                 "🏆"}
+                  medalData.type === "demotion" ? "📉" :
+                    "🏆"}
               </span>
             </div>
             <h3 className="text-[24px] font-bold text-[#212E42] mb-[8px]">
@@ -1320,26 +1333,20 @@ const Page = () => {
           context: {
             targetCLB: userContext.targetCLB || "Not specified",
             currentScores: userContext.mockScores
-              ? `L:${userContext.mockScores.listening || "N/A"} R:${
-                  userContext.mockScores.reading || "N/A"
-                } W:${userContext.mockScores.writing || "N/A"} S:${
-                  userContext.mockScores.speaking || "N/A"
+              ? `L:${userContext.mockScores.listening || "N/A"} R:${userContext.mockScores.reading || "N/A"
+              } W:${userContext.mockScores.writing || "N/A"} S:${userContext.mockScores.speaking || "N/A"
               }`
               : "Not available",
             scoreSource: userContext.scoreSource || "Not available",
             answerCounts: userContext.answerCounts
-              ? `Writing: ${userContext.answerCounts.writing || 0}, Speaking: ${
-                  userContext.answerCounts.speaking || 0
-                }, Listening: ${
-                  userContext.answerCounts.listening || 0
+              ? `Writing: ${userContext.answerCounts.writing || 0}, Speaking: ${userContext.answerCounts.speaking || 0
+              }, Listening: ${userContext.answerCounts.listening || 0
               }, Reading: ${userContext.answerCounts.reading || 0}`
               : "No answers available",
             weakAreas: userContext.weakAreas?.join(", ") || "Not identified",
             practiceHistory: userContext.practiceHistory
-              ? `${
-                  userContext.practiceHistory.totalPractices
-                } practices, avg: ${
-                  userContext.practiceHistory.averageScore || "N/A"
+              ? `${userContext.practiceHistory.totalPractices
+              } practices, avg: ${userContext.practiceHistory.averageScore || "N/A"
               }`
               : "Not available",
           },
@@ -1438,27 +1445,27 @@ const Page = () => {
                       </>
                     ) : (
                       <>
-                    <SvgBronz96 />
-                    <SvgSilver80 />
-                    <SvgGold80 />
+                        <SvgBronz96 />
+                        <SvgSilver80 />
+                        <SvgGold80 />
                       </>
                     )}
                   </div>
 
                   <div className="mt-[24px] flex justify-center lg:justify-start">
                     <span className="text-[16px] md:text-[18px] text-[#212E42] font-semibold leading-[24px] md:leading-[28px]">
-                      {currentLeague?.type === "gold" ? "Gold League" : 
-                       currentLeague?.type === "silver" ? "Silver League" : 
-                       "Bronze League"}
+                      {currentLeague?.type === "gold" ? "Gold League" :
+                        currentLeague?.type === "silver" ? "Silver League" :
+                          "Bronze League"}
                     </span>
                   </div>
                   <div className="flex mt-[12px] justify-center lg:justify-start">
                     <span className="text-[12px] md:text-[14px] text-[#37465C] font-semibold text-center lg:text-left">
-                      {currentLeague?.type === "gold" ? 
+                      {currentLeague?.type === "gold" ?
                         "Elite league with gift card rewards! Compete with the best players and stay on top!" :
-                       currentLeague?.type === "silver" ? 
-                        "Intermediate league for experienced players. Work hard to reach the Gold League!" :
-                       "Unlock this league by completing the tasks and earning trophies along the way!"}
+                        currentLeague?.type === "silver" ?
+                          "Intermediate league for experienced players. Work hard to reach the Gold League!" :
+                          "Unlock this league by completing the tasks and earning trophies along the way!"}
                     </span>
                   </div>
 
@@ -1556,7 +1563,7 @@ const Page = () => {
                         onClick={() => {
                           // Allow switching to bronze only if user isn't in a higher league OR always allow preview for guests
                           if (!currentLeague || currentLeague.type === "bronze" || noUser) {
-                            if (sampleGroupsByType?.bronze) setSelectedLeague("bronze");
+                            setSelectedLeague("bronze");
                           }
                         }}
                       >
@@ -1564,35 +1571,35 @@ const Page = () => {
                       </span>
                       <span
                         className="cursor-pointer"
-                        onClick={() => { if (sampleGroupsByType?.silver) setSelectedLeague("silver"); }}
+                        onClick={() => { setSelectedLeague("silver"); }}
                       >
                         <SvgSilver80 />
                       </span>
-                      <span className="cursor-pointer" onClick={() => { if (sampleGroupsByType?.gold) setSelectedLeague("gold"); }}>
+                      <span className="cursor-pointer" onClick={() => { setSelectedLeague("gold"); }}>
                         <SvgGold96 />
                       </span>
                     </>
                   ) : selectedLeague === "silver" ? (
                     <>
-                      <span className="cursor-pointer" onClick={() => { if (sampleGroupsByType?.bronze) setSelectedLeague("bronze"); }}>
+                      <span className="cursor-pointer" onClick={() => { setSelectedLeague("bronze"); }}>
                         <SvgBronz80 />
                       </span>
-                      <span className="cursor-pointer" onClick={() => { if (sampleGroupsByType?.silver) setSelectedLeague("silver"); }}>
+                      <span className="cursor-pointer" onClick={() => { setSelectedLeague("silver"); }}>
                         <SvgSilver96 />
                       </span>
-                      <span className="cursor-pointer" onClick={() => { if (sampleGroupsByType?.gold) setSelectedLeague("gold"); }}>
+                      <span className="cursor-pointer" onClick={() => { setSelectedLeague("gold"); }}>
                         <SvgGold80 />
                       </span>
                     </>
                   ) : (
                     <>
-                      <span className="cursor-pointer" onClick={() => { if (sampleGroupsByType?.bronze) setSelectedLeague("bronze"); }}>
+                      <span className="cursor-pointer" onClick={() => { setSelectedLeague("bronze"); }}>
                         <SvgBronz96 />
                       </span>
-                      <span className="cursor-pointer" onClick={() => { if (sampleGroupsByType?.silver) setSelectedLeague("silver"); }}>
+                      <span className="cursor-pointer" onClick={() => { setSelectedLeague("silver"); }}>
                         <SvgSilver80 />
                       </span>
-                      <span className="cursor-pointer" onClick={() => { if (sampleGroupsByType?.gold) setSelectedLeague("gold"); }}>
+                      <span className="cursor-pointer" onClick={() => { setSelectedLeague("gold"); }}>
                         <SvgGold80 />
                       </span>
                     </>
@@ -1613,18 +1620,18 @@ const Page = () => {
                       }
                     }}
                   >
-                    {selectedLeague === "gold" ? "Gold League" : 
-                     selectedLeague === "silver" ? "Silver League" : 
-                     "Bronze League"}
+                    {selectedLeague === "gold" ? "Gold League" :
+                      selectedLeague === "silver" ? "Silver League" :
+                        "Bronze League"}
                   </span>
                 </div>
                 <div className="flex mt-[12px] justify-center lg:justify-start">
                   <span className="text-[12px] md:text-[14px] text-[#37465C] font-semibold text-center lg:text-left">
-                    {selectedLeague === "gold" ? 
+                    {selectedLeague === "gold" ?
                       "Elite league with gift card rewards! Compete with the best players and stay on top!" :
-                     selectedLeague === "silver" ? 
-                      "Intermediate league for experienced players. Work hard to reach the Gold League!" :
-                     "Unlock this league by completing the tasks and earning trophies along the way!"}
+                      selectedLeague === "silver" ?
+                        "Intermediate league for experienced players. Work hard to reach the Gold League!" :
+                        "Unlock this league by completing the tasks and earning trophies along the way!"}
                   </span>
                 </div>
 
@@ -1634,7 +1641,7 @@ const Page = () => {
                     className="mt-[12px] flex items-center justify-center h-[40px] max-w-[136px] bg-[#4A7DFF] gap-[8px] flex-items-center rounded-[24px] cursor-pointer hover:bg-[#3B6BFF] transition-colors"
                     onClick={handleGetTrophy}
                   >
-                  <span className="text-white">+</span>
+                    <span className="text-white">+</span>
                     <span className="text-[16px] font-normal text-white">
                       Get trophy
                     </span>
@@ -1670,8 +1677,8 @@ const Page = () => {
 
                 {/* Right panel: guests see all leagues; signed-in users see only their current league */}
                 {(noUser || currentLeague?.type === "bronze") && (
-                <div className="min-h-[232px] rounded-[12px] p-[12px] md:p-[16px] bg-white mt-[24px] cursor-pointer" onClick={() => setSelectedLeague("bronze")}>
-                  <div className="flex flex-col sm:flex-row justify-between gap-[8px] sm:gap-0">
+                  <div className="min-h-[232px] rounded-[12px] p-[12px] md:p-[16px] bg-white mt-[24px] cursor-pointer" onClick={() => setSelectedLeague("bronze")}>
+                    <div className="flex flex-col sm:flex-row justify-between gap-[8px] sm:gap-0">
                       <div className="flex gap-[6px] items-center">
                         <Bronz40 />
                         <span className="text-[14px] md:text-[16px] text-[#212E42] font-semibold">
@@ -1692,12 +1699,12 @@ const Page = () => {
                           </span>
                         </div>
                       </div>
-                  </div>
-                  <div className="mt-[24px] items-center flex flex-col sm:flex-row gap-[12px] sm:gap-[16px]">
+                    </div>
+                    <div className="mt-[24px] items-center flex flex-col sm:flex-row gap-[12px] sm:gap-[16px]">
                       <span className="text-[12px] md:text-[14px] text-[#76808F]">
                         Progress
                       </span>
-                    <div className="w-full relative bg-[#E6E6E6] h-[10px] md:h-[12px] rounded-[16px]">
+                      <div className="w-full relative bg-[#E6E6E6] h-[10px] md:h-[12px] rounded-[16px]">
                         <div
                           className="absolute left-0 bg-[#F26B3E] h-[10px] md:h-[12px] rounded-full transition-all duration-300"
                           style={{
@@ -1707,178 +1714,178 @@ const Page = () => {
                             )}%`,
                           }}
                         ></div>
-                    </div>
-                    <div className="flex gap-[4px] items-center shrink-0">
-                      <Silver24 />
+                      </div>
+                      <div className="flex gap-[4px] items-center shrink-0">
+                        <Silver24 />
                         <span className="text-[12px] md:text-[14px]">Silver League</span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="mt-[24px] flex flex-col gap-[8px]">
+                    <div className="mt-[24px] flex flex-col gap-[8px]">
                       {renderLeagueTasks("bronze", [
                         "1 Mock Exam Completed",
                         "4 Skills Tried (L, R, W, S)",
                         "1 Writing or Speaking with AI Feedback",
                       ])}
                     </div>
-                    </div>
-                 )}
+                  </div>
+                )}
 
                 {(noUser || currentLeague?.type === "silver") && (
-                    <div className="min-h-[232px] rounded-[12px] mt-[24px] p-[16px] bg-white cursor-pointer" onClick={() => setSelectedLeague("silver")}>
-                      <div className="flex justify-between">
-                        <div className="flex gap-[6px] items-center">
-                          <Silver40 />
-                          <span className="text-[16px] text-[#212E42] font-semibold">
-                            Silver League
+                  <div className="min-h-[232px] rounded-[12px] mt-[24px] p-[16px] bg-white cursor-pointer" onClick={() => setSelectedLeague("silver")}>
+                    <div className="flex justify-between">
+                      <div className="flex gap-[6px] items-center">
+                        <Silver40 />
+                        <span className="text-[16px] text-[#212E42] font-semibold">
+                          Silver League
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-[12px]">
+                        <div className="text-[14px]">
+                          <span className="text-[#76808F]">
+                            Requirement: {" "}
+                          </span>
+                          <span
+                            className={
+                              checkLeagueRequirements("silver")
+                                ? "text-[#10B981]"
+                                : "text-[#F59E0B]"
+                            }
+                          >
+                            2+ trophy
                           </span>
                         </div>
-                        <div className="flex items-center gap-[12px]">
-                          <div className="text-[14px]">
-                            <span className="text-[#76808F]">
-                              Requirement: {" "}
-                            </span>
-                            <span
-                              className={
-                                checkLeagueRequirements("silver")
-                                  ? "text-[#10B981]"
-                                  : "text-[#F59E0B]"
-                              }
-                            >
-                              2+ trophy
-                            </span>
-                  </div>
-                </div>
-                  </div>
-                  <div className="mt-[24px] items-center flex gap-[16px]">
-                        <span className="text-[14px] text-[#76808F ]">
-                          Progress
-                        </span>
-                    <div className="w-full relative bg-[#E6E6E6] h-[12px] rounded-[16px]">
-                          <div
-                            className="absolute left-0 bg-[#F26B3E] h-[12px] rounded-full transition-all duration-300"
-                            style={{
-                              width: `${Math.min(
-                                100,
-                                Math.max(
-                                  0,
-                                  ((leagueData?.userPoints || 0) - 50) / 50
-                                ) * 50
-                              )}%`,
-                            }}
-                          ></div>
+                      </div>
                     </div>
-                    <div className="flex gap-[4px] items-center shrink-0">
-                      <Gold24 />
-                          <span className="text-[14px]">Gold League</span>
+                    <div className="mt-[24px] items-center flex gap-[16px]">
+                      <span className="text-[14px] text-[#76808F ]">
+                        Progress
+                      </span>
+                      <div className="w-full relative bg-[#E6E6E6] h-[12px] rounded-[16px]">
+                        <div
+                          className="absolute left-0 bg-[#F26B3E] h-[12px] rounded-full transition-all duration-300"
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              Math.max(
+                                0,
+                                ((leagueData?.userPoints || 0) - 50) / 50
+                              ) * 50
+                            )}%`,
+                          }}
+                        ></div>
+                      </div>
+                      <div className="flex gap-[4px] items-center shrink-0">
+                        <Gold24 />
+                        <span className="text-[14px]">Gold League</span>
+                      </div>
+                    </div>
+                    <div className="mt-[24px] flex flex-col gap-[8px]">
+                      {renderLeagueTasks("silver", [
+                        "5 Mock Exams Completed",
+                        "+1 CLB Improvement (any skill)",
+                        "3 Writing with Feedback",
+                        "3 Speaking with Feedback",
+                      ])}
                     </div>
                   </div>
-                  <div className="mt-[24px] flex flex-col gap-[8px]">
-                        {renderLeagueTasks("silver", [
-                          "5 Mock Exams Completed",
-                          "+1 CLB Improvement (any skill)",
-                          "3 Writing with Feedback",
-                          "3 Speaking with Feedback",
-                        ])}
-                    </div>
-                    </div>
-                  )}
+                )}
 
                 {(noUser || currentLeague?.type === "gold") && (
-                    <div className="min-h-[232px] rounded-[12px] mt-[24px] p-[16px] bg-white cursor-pointer" onClick={() => setSelectedLeague("gold")}>
-                      <div className="flex justify-between">
-                        <div className="flex gap-[6px] items-center">
-                          <Gold40 />
-                          <span className="text-[16px] text-[#212E42] font-semibold">
-                            Gold League
+                  <div className="min-h-[232px] rounded-[12px] mt-[24px] p-[16px] bg-white cursor-pointer" onClick={() => setSelectedLeague("gold")}>
+                    <div className="flex justify-between">
+                      <div className="flex gap-[6px] items-center">
+                        <Gold40 />
+                        <span className="text-[16px] text-[#212E42] font-semibold">
+                          Gold League
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-[12px]">
+                        <div className="text-[14px]">
+                          <span className="text-[#76808F]">
+                            Requirement: {" "}
+                          </span>
+                          <span
+                            className={
+                              checkLeagueRequirements("gold")
+                                ? "text-[#10B981]"
+                                : "text-[#F59E0B]"
+                            }
+                          >
+                            3+ trophy
                           </span>
                         </div>
-                        <div className="flex items-center gap-[12px]">
-                          <div className="text-[14px]">
-                            <span className="text-[#76808F]">
-                              Requirement: {" "}
-                            </span>
-                            <span
-                              className={
-                                checkLeagueRequirements("gold")
-                                  ? "text-[#10B981]"
-                                  : "text-[#F59E0B]"
-                              }
-                            >
-                              3+ trophy
-                            </span>
-                  </div>
-                </div>
-                  </div>
-                  <div className="mt-[24px] items-center flex gap-[16px]">
-                        <span className="text-[14px] text-[#76808F ]">
-                          Progress
+                      </div>
+                    </div>
+                    <div className="mt-[24px] items-center flex gap-[16px]">
+                      <span className="text-[14px] text-[#76808F ]">
+                        Progress
+                      </span>
+                      <div className="w-full relative bg-[#E6E6E6] h-[12px] rounded-[16px]">
+                        <div
+                          className="absolute left-0 bg-[#F26B3E] h-[12px] rounded-full transition-all duration-300"
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              Math.max(
+                                0,
+                                ((leagueData?.userPoints || 0) - 100) / 50
+                              ) * 50
+                            )}%`,
+                          }}
+                        ></div>
+                      </div>
+                      <div className="flex gap-[4px] items-center shrink-0">
+                        <SvgLeagueKados24 />
+                        <span className="text-[#212E42] font-medium text-[14px]">
+                          100$ Gift Card
                         </span>
-                    <div className="w-full relative bg-[#E6E6E6] h-[12px] rounded-[16px]">
-                          <div
-                            className="absolute left-0 bg-[#F26B3E] h-[12px] rounded-full transition-all duration-300"
-                            style={{
-                              width: `${Math.min(
-                                100,
-                                Math.max(
-                                  0,
-                                  ((leagueData?.userPoints || 0) - 100) / 50
-                                ) * 50
-                              )}%`,
-                            }}
-                          ></div>
+                      </div>
                     </div>
-                    <div className="flex gap-[4px] items-center shrink-0">
-                      <SvgLeagueKados24 />
-                          <span className="text-[#212E42] font-medium text-[14px]">
-                            100$ Gift Card
+                    <div className="mt-[24px] flex flex-col gap-[8px]">
+                      {renderLeagueTasks("gold", [
+                        "10 Mock Exams Completed",
+                        "Practice 3x/Week (4 Weeks)",
+                        "1 Friend Referred (paid plan)",
+                      ])}
+
+                      {/* CELPIP Champion special section for Gold League */}
+                      <div className="flex flex-col gap-[8px] mt-[16px]">
+                        <div className="flex gap-[8px]">
+                          <CircleCheck />
+                          <span className="text-[#F27059] text-[14px]">
+                            CELPIP Champion: {" "}
                           </span>
+                        </div>
+
+                        <div className="flex flex-col gap-[8px]">
+                          <div className="flex gap-[8px]">
+                            <SvgCheck className="text-[#979EA8]" /> 10 mocks
+                          </div>
+                          <div className="flex gap-[8px]">
+                            <SvgCheck className="text-[#979EA8]" /> +2 CLB in
+                            1 skill
+                          </div>
+                          <div className="flex gap-[8px]">
+                            <SvgCheck className="text-[#979EA8]" /> 5 Writing
+                          </div>
+                          <div className="flex gap-[8px]">
+                            <SvgCheck className="text-[#979EA8]" /> + 5
+                            Speaking improved
+                          </div>
+                          <div className="flex gap-[8px]">
+                            <SvgCheck className="text-[#979EA8]" />
+                            all skills practiced
+                          </div>
+                          <div className="flex gap-[8px]">
+                            <SvgCheck className="text-[#979EA8]" />1 referral
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="mt-[24px] flex flex-col gap-[8px]">
-                        {renderLeagueTasks("gold", [
-                          "10 Mock Exams Completed",
-                          "Practice 3x/Week (4 Weeks)",
-                          "1 Friend Referred (paid plan)",
-                        ])}
-
-                        {/* CELPIP Champion special section for Gold League */}
-                        <div className="flex flex-col gap-[8px] mt-[16px]">
-                    <div className="flex gap-[8px]">
-                      <CircleCheck />
-                            <span className="text-[#F27059] text-[14px]">
-                              CELPIP Champion: {" "}
-                            </span>
-                    </div>
-
-                          <div className="flex flex-col gap-[8px]">
-                    <div className="flex gap-[8px]">
-                              <SvgCheck className="text-[#979EA8]" /> 10 mocks
-                    </div>
-                    <div className="flex gap-[8px]">
-                              <SvgCheck className="text-[#979EA8]" /> +2 CLB in
-                              1 skill
-                    </div>
-                      <div className="flex gap-[8px]">
-                              <SvgCheck className="text-[#979EA8]" /> 5 Writing
-                      </div>
-                            <div className="flex gap-[8px]">
-                              <SvgCheck className="text-[#979EA8]" /> + 5
-                              Speaking improved
-                      </div>
-                            <div className="flex gap-[8px]">
-                              <SvgCheck className="text-[#979EA8]" />
-                              all skills practiced
-                    </div>
-                            <div className="flex gap-[8px]">
-                              <SvgCheck className="text-[#979EA8]" />1 referral
-                  </div>
-                </div>
+                )}
               </div>
             </div>
-          </div>
-                  )}
-        </div>
-      </div>
           </div>
         </div>
       </div>

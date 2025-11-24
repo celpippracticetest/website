@@ -85,22 +85,29 @@ const Hero = () => {
     left-1/2 -translate-x-1/2 transition-all duration-500 
     ease-in-out transform bottom-0`}
       >
-        <div
+        <motion.div
           ref={buttonRef}
-          className={`flex relative z-[1] hover:!cursor-pointer 
+          animate={{ scale: [1, 1.05, 1] }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className={`flex relative overflow-hidden z-[1] hover:!cursor-pointer 
       bg-primary2 w-full max-w-[195px] sm:!max-w-[310px] 
       h-[48px] rounded-[24px] items-center justify-center
-      transition-all duration-300 hover:bg-gradient-to-r hover:from-[#F79D65] hover:to-[#759CFF]
+      transition-all duration-300 group
       `}
         >
-          <SvgPlus className="text-white" />
-          <span className="hidden sm:!flex text-white text-[20px] mr-[8px]">
+          <div className="absolute inset-0 bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <SvgPlus className="text-white relative z-10" />
+          <span className="hidden sm:!flex text-white text-[20px] mr-[8px] relative z-10">
             Start Your Free Practice{" "}
           </span>
-          <span className="flex sm:!hidden text-white text-[20px] mr-[8px]">
+          <span className="flex sm:!hidden text-white text-[20px] mr-[8px] relative z-10">
             Free Practice{" "}
           </span>
-        </div>
+        </motion.div>
       </Link>
 
       <section
@@ -142,16 +149,27 @@ const Hero = () => {
                   <span className="text-primary2">CELPIP</span> Score
                 </h1>
               </div>
-              <Link
-                href={"/practice-overview"}
-                className="hover:cursor-pointer hidden screen744:!flex font-semibold screen1280:!font-normal leading-[16px] hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]  shadow-startButton mt-[32px] screen1280:!mt-[40px]  gap-[8px] px-[24px] bg-primary2 max-w-[310px] h-[48px] rounded-[24px] items-center justify-center"
+              <motion.div
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+                className="hidden screen744:!flex mt-[32px] screen1280:!mt-[40px]"
               >
-                <SvgPlus className="text-white" />
+                <Link
+                  href={"/practice-overview"}
+                  className="hover:cursor-pointer relative overflow-hidden flex font-semibold screen1280:!font-normal leading-[16px] bg-primary2 shadow-startButton gap-[8px] px-[24px] max-w-[310px] h-[48px] rounded-[24px] items-center justify-center transition-all duration-300 group"
+                >
+                  <div className="absolute inset-0 bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <SvgPlus className="text-white relative z-10" />
 
-                <span className="text-white text-[20px] mr-[8px]">
-                  Start Your Free Practice{" "}
-                </span>
-              </Link>
+                  <span className="text-white text-[20px] mr-[8px] relative z-10">
+                    Start Your Free Practice{" "}
+                  </span>
+                </Link>
+              </motion.div>
               <div className="hidden screen744:!flex items-center gap-[8px] mt-[24px]">
                 <SvgCrown />
                 <span className="text-text2  font-normal text-[12px] ">
