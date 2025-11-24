@@ -12,7 +12,7 @@ const UserResponseReview = dynamic(() => import("./UserResponseReview"), {
   ssr: false,
 });
 const Footer = dynamic(() => import("./Footer"), { ssr: true });
-const AskBeavoButton = dynamic(() => import("../../AskBeavo/AskBeavoButton"), {
+const FloatingChatIcon = dynamic(() => import("../../AskBeavo/FloatingChatIcon"), {
   ssr: false,
 });
 
@@ -58,7 +58,7 @@ export default function HomePageClient() {
         <Practice />
         <Practice />
         <Footer />
-        <AskBeavoButton />
+        <FloatingChatIcon autoOpen={true} />
       </div>
     </ErrorBoundary>
   );
