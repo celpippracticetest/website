@@ -3,10 +3,12 @@
 import { useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import dynamic from "next/dynamic";
+import Practice from "./Practice";
+import Blog from "./Blog";
+import FAQ from "./FAQ";
 import { useChunkErrorHandler } from "@/hooks/useChunkErrorHandler";
 
 const Hero = dynamic(() => import("./Hero"), { ssr: true });
-const Practice = dynamic(() => import("./Practice"), { ssr: false });
 const Comments = dynamic(() => import("./Comments"), { ssr: false });
 const UserResponseReview = dynamic(() => import("./UserResponseReview"), {
   ssr: false,
@@ -56,9 +58,10 @@ export default function HomePageClient() {
         <UserResponseReview />
         <Comments />
         <Practice />
-        <Practice />
+        <Blog />
+        <FAQ />
         <Footer />
-        <FloatingChatIcon autoOpen={true} />
+        <FloatingChatIcon autoOpen={false} />
       </div>
     </ErrorBoundary>
   );
