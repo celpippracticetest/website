@@ -28,6 +28,8 @@ interface User {
   riskScore: number;
   ipAddresses: string[];
   userAgents: string[];
+  plan?: string;
+  planType?: string;
 }
 
 interface UsersResponse {
@@ -162,6 +164,7 @@ export default function UsersPage() {
               <option value="lastActivity">Last Activity</option>
               <option value="totalActivities">Total Activities</option>
               <option value="riskScore">Risk Score</option>
+              <option value="plan">Plan (Premium)</option>
             </select>
             <select
               value={sortOrder}
@@ -196,6 +199,12 @@ export default function UsersPage() {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Risk Score
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Premium
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Plan Type
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Activities
@@ -254,6 +263,29 @@ export default function UsersPage() {
                         </span>
                       </td>
 
+                      {/* Premium Status */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.plan === "premium" || user.plan === "pro"
+                            ? "bg-purple-100 text-purple-800"
+                            : "bg-gray-100 text-gray-800"
+                            }`}
+                        >
+                          {user.plan === "premium" || user.plan === "pro"
+                            ? "Premium"
+                            : "Free"}
+                        </span>
+                      </td>
+
+                      {/* Plan Type */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {user.planType ? (
+                          <span className="capitalize">{user.planType}</span>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+
                       {/* Activities */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {user.totalActivities.toLocaleString()}
@@ -267,10 +299,10 @@ export default function UsersPage() {
                         <div className="text-xs text-gray-500">
                           {user.practiceAttempts > 0
                             ? Math.round(
-                                (user.practiceCompletions /
-                                  user.practiceAttempts) *
-                                  100
-                              )
+                              (user.practiceCompletions /
+                                user.practiceAttempts) *
+                              100
+                            )
                             : 0}
                           % completion
                         </div>
@@ -284,8 +316,8 @@ export default function UsersPage() {
                         <div className="text-xs text-gray-500">
                           {user.mockAttempts > 0
                             ? Math.round(
-                                (user.mockCompletions / user.mockAttempts) * 100
-                              )
+                              (user.mockCompletions / user.mockAttempts) * 100
+                            )
                             : 0}
                           % completion
                         </div>

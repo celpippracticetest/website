@@ -3,6 +3,7 @@ import { Webhook } from "svix";
 import { TrackClient, RegionUS } from "customerio-node";
 import { ensureUserReferral } from "@/app/api/referrals/route";
 import { ActivityLogger } from "@/lib/userActivity";
+import { getDb } from "@/lib/mongodb";
 
 const GA_MEASUREMENT_ID = process.env.GA_MEASUREMENT_ID!;
 const GA_API_SECRET = process.env.GA_API_SECRET!;
@@ -43,48 +44,87 @@ export async function POST(req: NextRequest) {
       console.error("Customer.io identify error:", cioError);
     }
 
-    // Check for Clerk user.created event
-    if (body.type === "user.created" && body.data?.id) {
+    // Check for Clerk user.created or user.updated event
+    if (
+      (body.type === "user.created" || body.type === "user.updated") &&
+      body.data?.id
+    ) {
       const userId = body.data.id;
+      const email = body.data.email_addresses?.[0]?.email_address;
+      const firstName = body.data.first_name;
+      const lastName = body.data.last_name;
+      const imageUrl = body.data.image_url;
+      const publicMetadata = body.data.public_metadata || {};
 
       try {
-        // Log user signup
-        await ActivityLogger.userSignup(userId);
-      } catch (logErr) {
-        console.error("Activity logging failed:", logErr);
+        const db = await getDb();
+        const usersCollection = db.collection("users");
+
+        await usersCollection.updateOne(
+          { clerkUserId: userId },
+          {
+            $set: {
+              clerkUserId: userId,
+              email,
+              firstName,
+              lastName,
+              imageUrl,
+              publicMetadata,
+              plan: publicMetadata.plan || "free",
+              planType: publicMetadata.planType || null,
+              updatedAt: new Date(),
+            },
+            $setOnInsert: {
+              createdAt: new Date(),
+            },
+          },
+          { upsert: true }
+        );
+        console.log(`Synced user ${userId} to MongoDB users collection`);
+      } catch (dbErr) {
+        console.error("Failed to sync user to MongoDB:", dbErr);
       }
 
-      try {
-        // Ensure the newly created user immediately gets their own referral code
-        const baseUrl = req.nextUrl.origin;
-        await ensureUserReferral(userId, baseUrl);
-      } catch (ensureErr) {
-        console.error("ensureUserReferral failed:", ensureErr);
-      }
-
-      // --- Referral signup tracking (only if the user came via a referral) ---
-      try {
-        const meta =
-          (body?.data?.unsafe_metadata as any) ||
-          (body?.data?.public_metadata as any) ||
-          {};
-        const referralCode =
-          meta.ref || meta.referral || meta.code || meta.referralCode;
-
-        if (referralCode) {
-          await fetch(`${req.nextUrl.origin}/api/referrals/track-signup`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ referralCode, inviteeId: userId }),
-          });
+      if (body.type === "user.created") {
+        try {
+          // Log user signup
+          await ActivityLogger.userSignup(userId);
+        } catch (logErr) {
+          console.error("Activity logging failed:", logErr);
         }
-      } catch (refErr) {
-        console.error("Referral signup tracking failed:", refErr);
+
+        try {
+          // Ensure the newly created user immediately gets their own referral code
+          const baseUrl = req.nextUrl.origin;
+          await ensureUserReferral(userId, baseUrl);
+        } catch (ensureErr) {
+          console.error("ensureUserReferral failed:", ensureErr);
+        }
+
+        // --- Referral signup tracking (only if the user came via a referral) ---
+        try {
+          const meta =
+            (body?.data?.unsafe_metadata as any) ||
+            (body?.data?.public_metadata as any) ||
+            {};
+          const referralCode =
+            meta.ref || meta.referral || meta.code || meta.referralCode;
+
+          if (referralCode) {
+            await fetch(`${req.nextUrl.origin}/api/referrals/track-signup`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ referralCode, inviteeId: userId }),
+            });
+          }
+        } catch (refErr) {
+          console.error("Referral signup tracking failed:", refErr);
+        }
       }
     }
 
     await new Promise((resolve) => setTimeout(resolve, 100));
-    console.log("User created event sent to Google Analytics and Customer.io");
+    console.log("User event processed successfully");
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Webhook error:", error);

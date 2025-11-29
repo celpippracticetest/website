@@ -118,6 +118,26 @@ export async function GET(request: NextRequest) {
         },
       },
       {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "clerkUserId",
+          as: "userDetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$userDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $addFields: {
+          plan: { $ifNull: ["$userDetails.plan", "free"] },
+          planType: { $ifNull: ["$userDetails.planType", null] },
+        },
+      },
+      {
         $sort: {
           [sortBy === "createdAt" ? "firstActivity" : sortBy]:
             sortOrder === "desc" ? -1 : 1,
@@ -164,6 +184,8 @@ export async function GET(request: NextRequest) {
         riskScore: calculateRiskScoreGrouped(user),
         ipAddresses: user.ipAddresses.slice(0, 5),
         userAgents: user.userAgents.slice(0, 3),
+        plan: user.plan,
+        planType: user.planType,
       };
     });
 
