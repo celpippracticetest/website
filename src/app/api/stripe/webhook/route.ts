@@ -18,14 +18,39 @@ async function updateUserPublicMetadata(
   try {
     const user = await clerkClient.users.getUser(userId);
     const currentMetadata = user.publicMetadata || {};
+    const updatedMetadata = { ...currentMetadata, ...newFields };
+
     await clerkClient.users.updateUserMetadata(userId, {
-      publicMetadata: { ...currentMetadata, ...newFields },
+      publicMetadata: updatedMetadata,
     });
     console.log(`✅ Successfully updated metadata for user: ${userId}`);
+
+    // Sync to MongoDB users collection
+    try {
+      const db = await mongoClient.db();
+      const usersCollection = db.collection("users");
+
+      const updateDoc: any = {
+        publicMetadata: updatedMetadata,
+        updatedAt: new Date()
+      };
+
+      if (newFields.plan) updateDoc.plan = newFields.plan;
+      if (newFields.planType) updateDoc.planType = newFields.planType;
+
+      await usersCollection.updateOne(
+        { clerkUserId: userId },
+        { $set: updateDoc },
+        { upsert: true } // Upsert just in case, though user should exist
+      );
+      console.log(`✅ Synced metadata update to MongoDB for user: ${userId}`);
+    } catch (dbErr) {
+      console.error(`⚠️ Failed to sync metadata to MongoDB for user ${userId}:`, dbErr);
+    }
+
   } catch (error) {
     console.log(
-      `⚠️ Could not update user ${userId} metadata: ${
-        error instanceof Error ? error.message : "Unknown error"
+      `⚠️ Could not update user ${userId} metadata: ${error instanceof Error ? error.message : "Unknown error"
       }`
     );
   }
@@ -325,7 +350,7 @@ export async function POST(req: Request) {
     } catch (err) {
       console.error(
         "Webhook signature verification failed:" +
-          process.env.STRIPE_WEBHOOK_SECRET,
+        process.env.STRIPE_WEBHOOK_SECRET,
         err
       );
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });

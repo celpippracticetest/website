@@ -185,7 +185,7 @@ const TopHeader = () => {
             )
           )}
         </nav>
-        <div className="flex gap-[32px] screen1280:!gap-[28px]">
+        <div className="flex gap-[16px] screen744:gap-[32px] screen1280:!gap-[28px]">
           <div className="flex gap-[12px]">
             <div onClick={() => router.push("/league")} className="cursor-pointer w-[40px] shrink-0 h-[40px] rounded-full border border-[#D5D6D8] bg-transparent flex items-center justify-center">
               <SvgLeagueLogo />
@@ -195,7 +195,7 @@ const TopHeader = () => {
               tabIndex={0}
               aria-label="Open Premium Plans"
               onClick={() => setPremiumPlanModalState()}
-              className="ml-[14px] hover:cursor-pointer bg-white screen744:!ml-0 relative w-[40px] h-[40px] border-[1px] border-neutral2 rounded-[24px] flex items-center justify-center"
+              className="hover:cursor-pointer bg-white screen744:ml-[14px] relative w-[40px] h-[40px] border-[1px] border-neutral2 rounded-[24px] flex items-center justify-center"
             >
               <SvgDiamond />
               <div className="absolute leading-[16px] font-semibold    flex text-white items-center justify-center bg-error1 rounded-[16px] w-[34px] h-[20px] -top-[12px] -right-[12px] rotate-[10px] text-[10px]">
