@@ -384,26 +384,45 @@ export class LeagueRepository {
     console.log("Getting group leaderboard for group:", groupId);
     console.log("Current season:", currentSeason.seasonId);
 
+    // OPTIMIZATION: Batch fetch user points instead of N+1 queries
+    const userIds = group.users.map((u: any) => u.userId);
+    const allUserPoints = await this.db
+      .collection(this.userLeaguePointsCollection)
+      .find({
+        userId: { $in: userIds },
+        seasonId: currentSeason.seasonId,
+      })
+      .toArray();
+
+    // Create a map for faster lookup
+    const userPointsMap = new Map();
+    allUserPoints.forEach((p: any) => {
+      userPointsMap.set(p.userId, p);
+    });
+
+    console.log(`Fetched points for ${allUserPoints.length} users in batch`);
+
     // Update user points from UserLeaguePoints collection and fetch user names
     const updatedUsers = [];
-    for (const user of group.users) {
-      console.log("Checking user:", user.userId);
-      const userPoints = await this.db
-        .collection(this.userLeaguePointsCollection)
-        .findOne({
-          userId: user.userId,
-          seasonId: currentSeason.seasonId,
-        });
 
-      console.log("User points found:", userPoints);
+    // We still need to fetch user details from Clerk. 
+    // Ideally this should also be batched if Clerk client supports it,
+    // but for now we'll keep it per-user as the main bottleneck (DB calls) is reduced.
+    // To further optimize, we could cache user profiles in our DB.
+
+    for (const user of group.users) {
+      // console.log("Checking user:", user.userId);
+      const userPoints = userPointsMap.get(user.userId);
+
+      // console.log("User points found:", userPoints ? "yes" : "no");
 
       if (userPoints) {
         // Update user points in group
         user.points = userPoints.totalPoints;
         user.lastActivityAt = userPoints.lastActivityAt;
-        console.log("Updated user points:", user.userId, "totalPoints:", userPoints.totalPoints);
+        // console.log("Updated user points:", user.userId, "totalPoints:", userPoints.totalPoints);
       } else {
-        console.log("No user points found for:", user.userId);
+        // console.log("No user points found for:", user.userId);
         // Keep user in group even if no points found
         user.points = user.points || 0;
       }
