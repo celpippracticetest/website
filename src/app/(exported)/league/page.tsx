@@ -123,9 +123,22 @@ const Page = () => {
   const isPremiumUser = user?.publicMetadata?.plan === "premium";
   const noUser = isLoaded ? !isSignedIn : false;
 
+  const isFetchingRef = useRef(false);
+  const lastFetchedUserIdRef = useRef<string | null | undefined>(null);
+
   // Fetch league data from API
   const fetchLeagueData = async () => {
+    const currentUserId = user?.id;
+
+    // Prevent concurrent fetch for same user
+    if (isFetchingRef.current && lastFetchedUserIdRef.current === currentUserId) {
+      console.log("Preventing duplicate league fetch for user:", currentUserId);
+      return;
+    }
+
     try {
+      isFetchingRef.current = true;
+      lastFetchedUserIdRef.current = currentUserId;
       setIsLoadingLeague(true);
 
       const response = await fetch("/api/league");
@@ -219,11 +232,13 @@ const Page = () => {
       console.error("Error fetching league data:", error);
     } finally {
       setIsLoadingLeague(false);
+      isFetchingRef.current = false;
     }
   };
 
   // Initialize league data
   useEffect(() => {
+    if (!isLoaded) return;
     // Fetch league data for everyone, including guests
     fetchLeagueData();
   }, [isLoaded, user?.id]);
