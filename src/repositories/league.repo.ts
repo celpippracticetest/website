@@ -384,44 +384,85 @@ export class LeagueRepository {
     console.log("Getting group leaderboard for group:", groupId);
     console.log("Current season:", currentSeason.seasonId);
 
+    // OPTIMIZATION: Batch fetch user points instead of N+1 queries
+    const userIds = group.users.map((u: any) => u.userId);
+    const allUserPoints = await this.db
+      .collection(this.userLeaguePointsCollection)
+      .find({
+        userId: { $in: userIds },
+        seasonId: currentSeason.seasonId,
+      })
+      .toArray();
+
+    // Create a map for faster lookup
+    const userPointsMap = new Map();
+    allUserPoints.forEach((p: any) => {
+      userPointsMap.set(p.userId, p);
+    });
+
+    console.log(`Fetched points for ${allUserPoints.length} users in batch`);
+
     // Update user points from UserLeaguePoints collection and fetch user names
     const updatedUsers = [];
-    for (const user of group.users) {
-      console.log("Checking user:", user.userId);
-      const userPoints = await this.db
-        .collection(this.userLeaguePointsCollection)
-        .findOne({
-          userId: user.userId,
-          seasonId: currentSeason.seasonId,
-        });
 
-      console.log("User points found:", userPoints);
+    // OPTIMIZATION: Batch fetch user details from local DB to avoid N+1 Clerk calls
+    const userDetailsMap = new Map();
+    try {
+      const usersCollection = this.db.collection("users");
+      const localUsers = await usersCollection
+        .find({ clerkUserId: { $in: userIds } })
+        .toArray();
+
+      localUsers.forEach((u: any) => {
+        userDetailsMap.set(u.clerkUserId, u);
+      });
+      console.log(`Fetched details for ${localUsers.length} users from local DB`);
+    } catch (error) {
+      console.error("Error fetching local user details:", error);
+    }
+
+    for (const user of group.users) {
+      // console.log("Checking user:", user.userId);
+      const userPoints = userPointsMap.get(user.userId);
+
+      // console.log("User points found:", userPoints ? "yes" : "no");
 
       if (userPoints) {
         // Update user points in group
         user.points = userPoints.totalPoints;
         user.lastActivityAt = userPoints.lastActivityAt;
-        console.log("Updated user points:", user.userId, "totalPoints:", userPoints.totalPoints);
+        // console.log("Updated user points:", user.userId, "totalPoints:", userPoints.totalPoints);
       } else {
-        console.log("No user points found for:", user.userId);
+        // console.log("No user points found for:", user.userId);
         // Keep user in group even if no points found
         user.points = user.points || 0;
       }
 
-      // Fetch user name from Clerk
-      try {
-        const { clerkClient } = await import("@clerk/nextjs/server");
-        const client = await clerkClient();
-        const clerkUser = await client.users.getUser(user.userId);
-        user.name = clerkUser.firstName && clerkUser.lastName
-          ? `${clerkUser.firstName} ${clerkUser.lastName}`.trim()
-          : clerkUser.firstName || clerkUser.emailAddresses[0]?.emailAddress?.split('@')[0] || 'User';
-        user.email = clerkUser.emailAddresses[0]?.emailAddress;
-        user.avatar = clerkUser.imageUrl;
-      } catch (error) {
-        console.log("Error fetching user name for:", user.userId, error);
-        user.name = user.userId.slice(-8); // Fallback to last 8 chars of userId
-        user.email = null;
+      // Fetch user name from local DB first, fallback to Clerk if missing
+      const localUser = userDetailsMap.get(user.userId);
+
+      if (localUser) {
+        user.name = localUser.firstName && localUser.lastName
+          ? `${localUser.firstName} ${localUser.lastName}`.trim()
+          : localUser.firstName || localUser.email?.split('@')[0] || 'User';
+        user.email = localUser.email;
+        user.avatar = localUser.imageUrl;
+      } else {
+        // Fallback to Clerk only if not found locally (should be rare)
+        try {
+          const { clerkClient } = await import("@clerk/nextjs/server");
+          const client = await clerkClient();
+          const clerkUser = await client.users.getUser(user.userId);
+          user.name = clerkUser.firstName && clerkUser.lastName
+            ? `${clerkUser.firstName} ${clerkUser.lastName}`.trim()
+            : clerkUser.firstName || clerkUser.emailAddresses[0]?.emailAddress?.split('@')[0] || 'User';
+          user.email = clerkUser.emailAddresses[0]?.emailAddress;
+          user.avatar = clerkUser.imageUrl;
+        } catch (error) {
+          console.log("Error fetching user name for:", user.userId, error);
+          user.name = user.userId.slice(-8); // Fallback to last 8 chars of userId
+          user.email = null;
+        }
       }
 
       updatedUsers.push(user);

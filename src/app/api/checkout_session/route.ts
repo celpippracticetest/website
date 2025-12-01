@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       !userMetadata?.referralDiscountUsed
     ) {
       let isExpired = false;
-      
+
       // Check both metadata expiry and actual Stripe coupon expiry
       if (userMetadata?.referralDiscountExpiry) {
         const expiryDate = new Date(userMetadata.referralDiscountExpiry);
@@ -66,15 +66,15 @@ export async function POST(req: NextRequest) {
           isExpired = true;
         }
       }
-      
+
       // Double-check with Stripe to ensure the coupon is still valid
       if (!isExpired) {
         try {
           const promotionCodeDetails = await stripe.promotionCodes.retrieve(referralPromotionId);
-          const couponDetails = typeof promotionCodeDetails.coupon === 'string' 
+          const couponDetails = typeof promotionCodeDetails.coupon === 'string'
             ? await stripe.coupons.retrieve(promotionCodeDetails.coupon)
             : promotionCodeDetails.coupon;
-          
+
           // Check if coupon has expired
           if (couponDetails.redeem_by && couponDetails.redeem_by < Math.floor(Date.now() / 1000)) {
             isExpired = true;
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
           isExpired = true;
         }
       }
-      
+
       if (!isExpired) {
         promotionCode = referralPromotionId;
         referralDiscountApplied = true;
@@ -157,44 +157,44 @@ export async function POST(req: NextRequest) {
     }
 
     // Only apply NEW discount if no referral discount is available and user hasn't purchased before
-    if (
-      !promotionCode &&
-      newUserPromotionId &&
-      !userMetadata?.hasEverPurchased
-    ) {
-      // Check if NEW user discount is still valid (not expired)
-      let isNewDiscountExpired = false;
-      
-      // Check if the promotion code is still valid by retrieving it from Stripe
-      try {
-        const promotionCodeDetails = await stripe.promotionCodes.retrieve(newUserPromotionId);
-        const couponDetails = typeof promotionCodeDetails.coupon === 'string' 
-          ? await stripe.coupons.retrieve(promotionCodeDetails.coupon)
-          : promotionCodeDetails.coupon;
-        
-        // Check if coupon has expired
-        if (couponDetails.redeem_by && couponDetails.redeem_by < Math.floor(Date.now() / 1000)) {
-          isNewDiscountExpired = true;
-          console.log("❌ NEW user discount has expired");
-        }
-      } catch (error) {
-        console.log("❌ Error checking NEW user discount validity:", error);
-        isNewDiscountExpired = true;
-      }
-      
-      if (!isNewDiscountExpired) {
-        promotionCode = newUserPromotionId;
-        console.log(
-          `✅ Applying NEW user promotion_code id: ${newUserPromotionId}`
-        );
-      } else {
-        console.log("❌ NEW user discount has expired - proceeding without discount");
-      }
-    } else if (userMetadata?.hasEverPurchased) {
-      console.log(
-        "❌ User has already made a purchase - no discount available"
-      );
-    }
+    // if (
+    //   !promotionCode &&
+    //   newUserPromotionId &&
+    //   !userMetadata?.hasEverPurchased
+    // ) {
+    //   // Check if NEW user discount is still valid (not expired)
+    //   let isNewDiscountExpired = false;
+
+    //   // Check if the promotion code is still valid by retrieving it from Stripe
+    //   try {
+    //     const promotionCodeDetails = await stripe.promotionCodes.retrieve(newUserPromotionId);
+    //     const couponDetails = typeof promotionCodeDetails.coupon === 'string' 
+    //       ? await stripe.coupons.retrieve(promotionCodeDetails.coupon)
+    //       : promotionCodeDetails.coupon;
+
+    //     // Check if coupon has expired
+    //     if (couponDetails.redeem_by && couponDetails.redeem_by < Math.floor(Date.now() / 1000)) {
+    //       isNewDiscountExpired = true;
+    //       console.log("❌ NEW user discount has expired");
+    //     }
+    //   } catch (error) {
+    //     console.log("❌ Error checking NEW user discount validity:", error);
+    //     isNewDiscountExpired = true;
+    //   }
+
+    //   if (!isNewDiscountExpired) {
+    //     promotionCode = newUserPromotionId;
+    //     console.log(
+    //       `✅ Applying NEW user promotion_code id: ${newUserPromotionId}`
+    //     );
+    //   } else {
+    //     console.log("❌ NEW user discount has expired - proceeding without discount");
+    //   }
+    // } else if (userMetadata?.hasEverPurchased) {
+    //   console.log(
+    //     "❌ User has already made a purchase - no discount available"
+    //   );
+    // }
 
     // Create Checkout Sessions from body params.
     // Retrieve the product details using the product ID

@@ -254,25 +254,43 @@ export async function GET(request: NextRequest) {
     let sampleGroup: any = null; // kept for backward compatibility
     let sampleLeagueType: string | null = null; // kept for backward compatibility
     const sampleGroupsByType: Record<string, any> = {};
+
     try {
       if (currentSeason && Array.isArray(currentSeason.leagues)) {
         for (const league of currentSeason.leagues) {
-          if (!league || !Array.isArray(league.groups)) continue;
+          if (!league) continue;
           // If we already found a sample for this type, skip
           if (sampleGroupsByType[league.leagueType]) continue;
 
-          // Gather candidate groups (consider all, prefer most populated)
-          const candidates: any[] = [];
-          for (const groupId of league.groups) {
-            const group = await leagueRepo.getGroupLeaderboard(groupId.toString());
-            if (group) candidates.push(group);
+          // OPTIMIZATION: Instead of fetching ALL groups and sorting in memory,
+          // find ONE active group that has users.
+          // We prefer a group with users, but any active group will do as a base.
+          // Since we can't easily sort by array length in MongoDB without aggregation,
+          // we'll try to find a group with at least one user first.
+
+          let chosenGroupId: string | null = null;
+
+          // Try to find a group with users first
+          const activeGroupWithUsers = await db.collection("league_groups").findOne({
+            seasonId: currentSeason.seasonId,
+            // We need to map leagueType back to leagueId if possible, or use the groups array from season
+            _id: { $in: league.groups.map(id => new ObjectId(id)) },
+            status: "active",
+            "users.0": { $exists: true }
+          });
+
+          if (activeGroupWithUsers) {
+            chosenGroupId = activeGroupWithUsers._id.toString();
+          } else if (league.groups.length > 0) {
+            // Fallback to the first group if no group has users yet
+            chosenGroupId = league.groups[0].toString();
           }
 
-          // Prefer completed groups; else pick the one with most users
           let chosen: any = null;
-          if (candidates.length > 0) {
-            candidates.sort((a: any, b: any) => (b.users?.length || 0) - (a.users?.length || 0));
-            chosen = candidates[0];
+
+          if (chosenGroupId) {
+            // Only fetch leaderboard for the ONE chosen group
+            chosen = await leagueRepo.getGroupLeaderboard(chosenGroupId);
           }
 
           // If chosen group is small (less than 5 users), fetch top users to fill it
@@ -336,31 +354,17 @@ export async function GET(request: NextRequest) {
         // Only get activities from the current season to avoid old data
         const currentSeasonStart = currentSeason?.startDate ? new Date(currentSeason.startDate) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days ago as fallback
 
-        const userActivities = await db.collection("useractivities").find({
+        // OPTIMIZATION: Use distinct to get unique skills directly from DB
+        const uniqueSkills = await db.collection("useractivities").distinct("skill", {
           userId: userId,
           eventType: "practice_attempt_completed",
           status: "completed",
-          timestampUtc: { $gte: currentSeasonStart }
-        }).sort({ timestampUtc: -1 }).toArray();
-
-        console.log("User activities found (current season):", userActivities.length);
-        console.log("Activities:", userActivities.map(a => ({
-          skill: a.skill,
-          eventType: a.eventType,
-          status: a.status,
-          timestamp: a.timestampUtc,
-          contentId: a.contentId
-        })));
-
-        // Extract unique skills from completed practice sessions in current season
-        const skillsSet = new Set();
-        userActivities.forEach(activity => {
-          if (activity.skill) {
-            skillsSet.add(activity.skill);
-          }
+          timestampUtc: { $gte: currentSeasonStart },
+          skill: { $ne: null }
         });
-        skillsTried = Array.from(skillsSet) as string[];
-        console.log("Skills tried extracted (current season):", skillsTried);
+
+        skillsTried = uniqueSkills as string[];
+        console.log("Skills tried extracted (current season - optimized):", skillsTried);
       } catch (error) {
         console.error("Error fetching skills tried:", error);
         skillsTried = [];
