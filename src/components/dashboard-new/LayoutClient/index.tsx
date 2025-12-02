@@ -36,10 +36,7 @@ import { motion } from "framer-motion";
 import SvgClose from "@/components/icons/Close";
 import UpgradeModal from "../../modal/UpgradeModal";
 
-// ...
 
-// Usage update
-{ showUpgradeModal && <UpgradeModal setShowModal={setShowUpgradeModal} /> }
 import { useMenuCollapsedStore } from "@/store/menuCollapsed.store";
 import CountdownTimer from "@/components/dashboard-app/CounterDownTimer";
 import OnboardingSurvey from "@/components/onboardingSurvey";
@@ -621,7 +618,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
     <>
       {freeUser ? (
         <>
-          {showUpgradeModal && <UpgradeModal />}
+          {showUpgradeModal && <UpgradeModal setShowModal={setShowUpgradeModal} />}
           {!surveyVisible && showExtraDiscount && <ExtraDiscountModal />}
         </>
       ) : noUser ? (
