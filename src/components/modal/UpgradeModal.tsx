@@ -1,11 +1,14 @@
+"use client";
+
 import React, { useEffect, useRef } from "react";
-import { planDetails } from "../dashboard-new/Plans";
+import { usePlans } from "@/hooks/usePlans";
 import Image from "next/image";
 import PlanCard from "../pages/dashboard/PlanCard";
 import SvgClose from "../icons/Close";
 
 const UpgradeModal = (params: any) => {
   const { setShowModal } = params;
+  const { plans } = usePlans();
 
   const ref = useRef<HTMLDivElement>(null);
 
@@ -48,9 +51,9 @@ const UpgradeModal = (params: any) => {
           Up to 80% Off All Plans!{" "}
         </div>
         <div className="flex gap-[12px] flex-col-reverse screen744:!flex-row  ">
-          {planDetails.map((item, index) => (
+          {plans.map((item, index) => (
             <PlanCard
-              key={index}
+              key={item._id || index}
               id={index}
               title={item.title}
               type={item.type}
