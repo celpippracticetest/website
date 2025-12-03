@@ -22,7 +22,8 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import PlanCard from "@/components/pages/dashboard/PlanCard";
 import { TTaskSchemaDto } from "@/models/tasks.model";
-import { planDetails } from "@/components/dashboard-new/Plans";
+// planDetails import removed
+
 import LoginModal from "@/components/modal/LoginModal";
 import UpgradeModal from "@/components/modal/UpgradeModal";
 import SvgArrowRight from "@/components/icons/ArrowRight";
@@ -334,9 +335,9 @@ const WritingPracticeView = ({
             <h1 className="text-[18px] font-bold text-[#212E42]">
               {practice.passages[passageIndex].title}
             </h1>
-            <StatBadge 
-              count={practiceCount} 
-              label="answered today" 
+            <StatBadge
+              count={practiceCount}
+              label="answered today"
             />
           </div>
           {
@@ -346,9 +347,8 @@ const WritingPracticeView = ({
                   <div className="text-[14px] font-bold gap-2 text-center text-[#EE4266] flex items-center">
                     <p>
                       {time > 0
-                        ? `${Math.floor(time / 60)}:${
-                            time % 60 < 10 ? `0${time % 60}` : time % 60
-                          }`
+                        ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
+                        }`
                         : "Time's Up!"}
                     </p>
                   </div>
@@ -357,40 +357,40 @@ const WritingPracticeView = ({
 
               {allPractices.findIndex((p) => p.id == selectedPracticeId) <
                 allPractices.length - 1 && (
-                <button
-                  onClick={() => {
-                    const practiceIndex = allPractices.findIndex(
-                      (p) => p.id == selectedPracticeId
-                    );
-                    if (practiceIndex < allPractices.length - 1) {
-                      const taskUrl = selectedTaskId
-                        ? "&taskId=" + selectedTaskId
-                        : "";
-                      setPage("question");
-                      setTime(1620);
-                      setText("");
-                      setWordCount(0);
-                      setProgressBar(0);
-                      setIsSubmit(false);
-                      setTryToSubmit(false);
-                      router.push(
-                        "/writing?selectedPracticeId=" +
+                  <button
+                    onClick={() => {
+                      const practiceIndex = allPractices.findIndex(
+                        (p) => p.id == selectedPracticeId
+                      );
+                      if (practiceIndex < allPractices.length - 1) {
+                        const taskUrl = selectedTaskId
+                          ? "&taskId=" + selectedTaskId
+                          : "";
+                        setPage("question");
+                        setTime(1620);
+                        setText("");
+                        setWordCount(0);
+                        setProgressBar(0);
+                        setIsSubmit(false);
+                        setTryToSubmit(false);
+                        router.push(
+                          "/writing?selectedPracticeId=" +
                           allPractices[practiceIndex + 1].id +
                           taskUrl
-                      );
-                    } else {
-                    }
-                  }}
-                  className={`cursor-pointer text-[14px] font-normal  inline-flex items-center justify-center rounded-[24px] bg-white  w-[96px] h-[40px]`}
-                >
-                  {"Next"}
-                  <ArrowRight
-                    size={18}
-                    strokeWidth={1.7}
-                    className="ml-2"
-                  ></ArrowRight>
-                </button>
-              )}
+                        );
+                      } else {
+                      }
+                    }}
+                    className={`cursor-pointer text-[14px] font-normal  inline-flex items-center justify-center rounded-[24px] bg-white  w-[96px] h-[40px]`}
+                  >
+                    {"Next"}
+                    <ArrowRight
+                      size={18}
+                      strokeWidth={1.7}
+                      className="ml-2"
+                    ></ArrowRight>
+                  </button>
+                )}
             </div>
           }
         </div>
@@ -458,13 +458,13 @@ const WritingPracticeView = ({
                                 borderBottomLeftRadius: isOpen[index]
                                   ? "0"
                                   : index < array.length - 1
-                                  ? "0.0rem"
-                                  : "1.0rem",
+                                    ? "0.0rem"
+                                    : "1.0rem",
                                 borderBottomRightRadius: isOpen[index]
                                   ? "0"
                                   : index < array.length - 1
-                                  ? "0.0rem"
-                                  : "1.0rem",
+                                    ? "0.0rem"
+                                    : "1.0rem",
                               }}
                             >
                               {response.title}

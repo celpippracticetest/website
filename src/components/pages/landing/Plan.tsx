@@ -1,8 +1,20 @@
+"use client";
+
 import React from "react";
 import PlanCard from "./PlanCard";
-import { planDetailsLanding } from "@/components/dashboard-new/PlansLanding";
+import { usePlans } from "@/hooks/usePlans";
 
 const Plan = () => {
+  const { plans, isLoading } = usePlans();
+
+  if (isLoading) {
+    return (
+      <section id="plans" className="mb-[104px] flex justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mt-20"></div>
+      </section>
+    );
+  }
+
   return (
     <>
       <section
@@ -18,9 +30,9 @@ const Plan = () => {
         </h2>
 
         <div className=" mt-[40px] flex-col-reverse screen1280:!flex-row screen1280:!mt-[80px] px-[24px]  screen1280:!px-[40px] gap-[24px] flex flex-wrap screen1280:!flex-nowrap justify-center ">
-          {planDetailsLanding.map((item, index) => (
+          {plans.map((item, index) => (
             <PlanCard
-              key={index}
+              key={item._id || index}
               id={index}
               title={item.title}
               type={item.type}

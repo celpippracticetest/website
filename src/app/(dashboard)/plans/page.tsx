@@ -2,17 +2,36 @@ import PlanCard from "@/components/pages/plans/PlanCard";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
 import { currentUser } from "@clerk/nextjs/server";
 import mongoClient from "@/lib/mongodb";
+import { PlansRepository } from "@/repositories/plans.repo";
+import SvgBestValuePlan from "@/components/icons/BestValuePlan";
+import SvgPopularPlan from "@/components/icons/PopularPlan";
+import SvgFreePlan from "@/components/icons/FreePlan";
 
 import React from "react";
-import { planDetails } from "@/components/dashboard-new/Plans";
+
+const getIconComponent = (iconType?: string) => {
+  switch (iconType) {
+    case "BestValuePlan":
+      return <SvgBestValuePlan />;
+    case "PopularPlan":
+      return <SvgPopularPlan />;
+    case "FreePlan":
+      return <SvgFreePlan />;
+    default:
+      return <SvgFreePlan />;
+  }
+};
 
 const Plans = async () => {
   const user = await currentUser();
+  const db = await mongoClient.db();
   const userRepo = new CheckoutRepository(mongoClient);
+  const plansRepo = new PlansRepository(db);
 
-  const prevCheckout = await userRepo.findLatestCheckoutByUserId(
-    user?.id || ""
-  );
+  const [prevCheckout, plans] = await Promise.all([
+    userRepo.findLatestCheckoutByUserId(user?.id || ""),
+    plansRepo.getActivePlans(),
+  ]);
 
   const currentPlanTitle = prevCheckout?.lineItems?.[0]?.description || "";
 
@@ -27,9 +46,9 @@ const Plans = async () => {
         </h2>
 
         <div className="mt-[40px]  px-[24px]  gap-[24px] flex flex-wrap screen1280:!flex-nowrap  screen1280:!flex-row justify-center ">
-          {planDetails.map((item, index) => (
+          {plans.map((item, index) => (
             <PlanCard
-              key={index}
+              key={item._id?.toString() || index}
               id={index}
               title={item.title}
               type={item.type}
@@ -38,8 +57,8 @@ const Plans = async () => {
               discount={item.discount}
               buttonTitle={item.buttonTitle}
               features={item.features}
-              icon={item.icon}
-              iconWrapperColor={item.iconWrapperColor}
+              icon={getIconComponent(item.iconType)}
+              iconWrapperColor={item.iconWrapperColor || "bg-purple5"}
               currentPlanTitle={currentPlanTitle}
               planTitle={item.planTitle}
             />

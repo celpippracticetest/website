@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import useStore from "@/store";
 import { X, ChevronDown, ChevronUp } from "lucide-react";
 import PlanCard from "@/components/pages/landing/PlanCard";
-import { planDetailsLanding } from "@/components/dashboard-new/PlansLanding";
+import { usePlans } from "@/hooks/usePlans";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
@@ -109,6 +109,7 @@ const AvatarCarousel = () => {
 
 const PremiumPlanModal = () => {
     const { isPremiumPlanModalOpen, setPremiumPlanModalState } = useStore();
+    const { plans } = usePlans();
 
     useEffect(() => {
         if (isPremiumPlanModalOpen) {
@@ -243,8 +244,8 @@ const PremiumPlanModal = () => {
 
                                 {/* Pricing Cards */}
                                 <div className="flex flex-wrap justify-center gap-6 mb-16">
-                                    {[planDetailsLanding[2], planDetailsLanding[1], planDetailsLanding[0]].map((item, index) => (
-                                        <div key={index} className="w-full md:w-[300px] lg:w-[320px]">
+                                    {plans.map((item, index) => (
+                                        <div key={item._id || index} className="w-full md:w-[300px] lg:w-[320px]">
                                             <PlanCard
                                                 id={index}
                                                 title={item.title}
