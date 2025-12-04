@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 
 import { stripe } from "@/lib/stripe";
 import { currentUser } from "@clerk/nextjs/server";
+import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,19 +35,17 @@ export async function POST(req: NextRequest) {
     const referralPromotionId = userMetadata?.referralPromotionId;
     const newUserPromotionId = userMetadata?.promotionCodeId;
 
-    console.log("🔍 Checking referral discount for user:", user.id);
-    console.log("🔍 User metadata:", JSON.stringify(userMetadata, null, 2));
-    console.log("🔍 Referral promotion ID:", referralPromotionId);
-    console.log("🔍 User referral code:", userMetadata?.referralCode);
-    console.log("🔍 Referral active:", userMetadata?.referralActive);
-    console.log(
-      "🔍 Referral discount active:",
-      userMetadata?.referralDiscountActive
-    );
-    console.log(
-      "🔍 Referral discount used:",
-      userMetadata?.referralDiscountUsed
-    );
+    logger.info("Checking referral discount for checkout", {
+      component: "checkout_session_api",
+      action: "check_referral_discount",
+      userId: user.id,
+      email,
+      metadata: {
+        hasReferralCode: !!userMetadata?.referralCode,
+        hasReferralPromotion: !!referralPromotionId,
+        referralActive: userMetadata?.referralActive,
+      },
+    });
 
     // Prioritize referral discount over NEW discount
     // Only apply referral discount if user actually signed up with a referral code
@@ -89,8 +88,18 @@ export async function POST(req: NextRequest) {
       if (!isExpired) {
         promotionCode = referralPromotionId;
         referralDiscountApplied = true;
-        console.log(
-          `✅ Applying referral promotion_code id: ${referralPromotionId} for user with referral code: ${userMetadata.referralCode}`
+        logger.info(
+          "Applying referral promotion code",
+          {
+            component: "checkout_session_api",
+            action: "apply_referral_discount",
+            userId: user.id,
+            email,
+            metadata: {
+              promotionCodeId: referralPromotionId,
+              referralCode: userMetadata.referralCode,
+            },
+          }
         );
       } else {
         console.log("❌ Referral discount has expired - proceeding without discount");
@@ -210,11 +219,17 @@ export async function POST(req: NextRequest) {
     const priceObject = await stripe.prices.retrieve(priceId);
     const mode = priceObject.recurring ? "subscription" : "payment";
 
-    console.log(
-      "🔍 Creating checkout session with promotion code:",
-      promotionCode
-    );
-    console.log("🔍 Referral discount applied:", referralDiscountApplied);
+    logger.info("Creating checkout session", {
+      component: "checkout_session_api",
+      action: "create_checkout_session",
+      userId: user.id,
+      email,
+      metadata: {
+        product,
+        hasPromotionCode: !!promotionCode,
+        referralDiscountApplied,
+      },
+    });
 
     const session: any = await stripe.checkout.sessions.create({
       customer_email: email,
@@ -253,15 +268,21 @@ export async function POST(req: NextRequest) {
       }),
     });
 
-    console.log("✅ Checkout session created successfully");
-    console.log("✅ Session ID:", session.id);
-    console.log("✅ Session URL:", session.url);
-    console.log(
-      "🔍 Final session metadata:",
-      JSON.stringify(session.metadata, null, 2)
-    );
-    console.log("🔍 User ID being used:", user.id);
-    console.log("🔍 Referral code:", userMetadata?.referralCode);
+    logger.info("Checkout session created successfully", {
+      component: "checkout_session_api",
+      action: "checkout_session_created",
+      userId: user.id,
+      email,
+      metadata: {
+        sessionId: session.id,
+        hasReferralCode: !!userMetadata?.referralCode,
+      },
+    });
+
+    trackAPICall("POST", "/api/checkout_session", 200, {
+      sessionId: session.id,
+      hasDiscount: !!promotionCode,
+    });
 
     if (mode === "subscription" && session?.subscription) {
       await stripe.subscriptions.update(session.subscription, {
@@ -283,6 +304,11 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.redirect(session.url, 303);
   } catch (err: any) {
+    captureException(err, {
+      component: "checkout_session_api",
+      action: "checkout_session_error",
+    });
+
     return NextResponse.json(
       { error: err.message },
       { status: err.statusCode || 500 }

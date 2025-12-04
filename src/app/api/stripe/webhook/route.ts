@@ -7,6 +7,7 @@ import { ReferralRepository } from "@/repositories/referral.repo";
 import { ReferralInvitationRepository } from "@/repositories/referral-invitation.repo";
 import { clerkClient } from "@clerk/express";
 import { ActivityLogger } from "@/lib/userActivity";
+import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -23,7 +24,12 @@ async function updateUserPublicMetadata(
     await clerkClient.users.updateUserMetadata(userId, {
       publicMetadata: updatedMetadata,
     });
-    console.log(`✅ Successfully updated metadata for user: ${userId}`);
+    logger.info("Successfully updated metadata for user", {
+      component: "stripe_webhook",
+      action: "update_user_metadata",
+      userId,
+      metadata: { fields: Object.keys(newFields) },
+    });
 
     // Sync to MongoDB users collection
     try {
@@ -45,14 +51,20 @@ async function updateUserPublicMetadata(
       );
       console.log(`✅ Synced metadata update to MongoDB for user: ${userId}`);
     } catch (dbErr) {
-      console.error(`⚠️ Failed to sync metadata to MongoDB for user ${userId}:`, dbErr);
+      logger.error(" Failed to sync metadata to MongoDB", {
+        component: "stripe_webhook",
+        action: "sync_metadata_failed",
+        userId,
+        metadata: { error: dbErr },
+      });
     }
 
   } catch (error) {
-    console.log(
-      `⚠️ Could not update user ${userId} metadata: ${error instanceof Error ? error.message : "Unknown error"
-      }`
-    );
+    captureException(error, {
+      component: "stripe_webhook",
+      action: "update_metadata_error",
+      userId,
+    });
   }
 }
 
@@ -331,7 +343,10 @@ export async function POST(req: Request) {
       const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
       if (!webhookSecret) {
-        console.error("❌ STRIPE_WEBHOOK_SECRET not found in environment");
+        logger.error("STRIPE_WEBHOOK_SECRET not found in environment", {
+          component: "stripe_webhook",
+          action: "webhook_secret_missing",
+        });
         return NextResponse.json(
           { error: "Webhook secret not configured" },
           { status: 500 }
@@ -339,7 +354,10 @@ export async function POST(req: Request) {
       }
 
       if (!sig) {
-        console.error("❌ Missing stripe-signature header");
+        logger.error("Missing stripe-signature header", {
+          component: "stripe_webhook",
+          action: "missing_signature",
+        });
         return NextResponse.json(
           { error: "Missing signature" },
           { status: 400 }
@@ -348,11 +366,10 @@ export async function POST(req: Request) {
 
       event = stripe.webhooks.constructEvent(payload, sig, webhookSecret);
     } catch (err) {
-      console.error(
-        "Webhook signature verification failed:" +
-        process.env.STRIPE_WEBHOOK_SECRET,
-        err
-      );
+      captureException(err, {
+        component: "stripe_webhook",
+        action: "signature_verification_failed",
+      });
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
@@ -360,9 +377,14 @@ export async function POST(req: Request) {
       const session = event.data.object as Stripe.Checkout.Session;
       const metadata = session.metadata;
 
-      console.log("🔍 Processing checkout.session.completed event");
-      console.log("🔍 Session ID:", session.id);
-      console.log("🔍 Metadata:", JSON.stringify(metadata, null, 2));
+      logger.info("Processing checkout.session.completed event", {
+        component: "stripe_webhook",
+        action: "checkout_completed",
+        metadata: {
+          sessionId: session.id,
+          metadata,
+        },
+      });
 
       if (metadata?.user_id) {
         // Get user metadata to check for any existing discounts
@@ -391,8 +413,13 @@ export async function POST(req: Request) {
             hasEverPurchased: true,
             purchaseDate: new Date().toISOString(),
           });
-          console.log(
-            `✅ Cleared all discount fields for user ${metadata.user_id} after purchase`
+          logger.info(
+            "Cleared all discount fields for user after purchase",
+            {
+              component: "stripe_webhook",
+              action: "clear_discount_fields",
+              userId: metadata.user_id,
+            }
           );
         } else {
           await updateUserPublicMetadata(metadata.user_id, {
@@ -435,7 +462,11 @@ export async function POST(req: Request) {
         await handleReferralRewards(session, metadata);
         console.log("✅ Referral rewards processing completed successfully");
       } catch (error) {
-        console.error("❌ Error handling referral rewards:", error);
+        captureException(error, {
+          component: "stripe_webhook",
+          action: "referral_rewards_error",
+          metadata: { sessionId: session.id },
+        });
       }
 
       // Log payment successful

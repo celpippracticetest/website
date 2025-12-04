@@ -1,5 +1,6 @@
 import PremiumPlanModal from "@/components/premium-plan/PremiumPlanModal";
 import "./globals.css";
+import "@/sentry.client.config"; // Initialize Sentry on client
 import NextTopLoader from "nextjs-toploader";
 import { Analytics } from "@vercel/analytics/react";
 import { ClerkProvider } from "@clerk/nextjs";
@@ -10,6 +11,7 @@ import { LazyIntercom } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import CriticalCSS from "@/components/CriticalCSS";
 import type { Metadata } from "next";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const jakarta = Plus_Jakarta_Sans({
   display: "swap",
@@ -209,7 +211,11 @@ export default async function RootLayout({
           )}
 
           <NextTopLoader />
-          <ReactQueryProvider>{children}</ReactQueryProvider>
+          <ReactQueryProvider>
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
+          </ReactQueryProvider>
           <PremiumPlanModal />
           <LazyIntercom />
           <PerformanceMonitor />
