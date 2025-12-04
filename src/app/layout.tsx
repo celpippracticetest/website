@@ -1,6 +1,6 @@
 import PremiumPlanModal from "@/components/premium-plan/PremiumPlanModal";
 import "./globals.css";
-import "@/sentry.client.config"; // Initialize Sentry on client
+import "../../sentry.client.config"; // Initialize Sentry on client
 import NextTopLoader from "nextjs-toploader";
 import { Analytics } from "@vercel/analytics/react";
 import { ClerkProvider } from "@clerk/nextjs";

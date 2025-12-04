@@ -22,22 +22,6 @@ Sentry.init({
 
     // Performance Monitoring
 
-    // Integrations for Node.js
-    integrations: [
-        Sentry.amqplibIntegration(),
-        Sentry.captureConsoleIntegration({
-            levels: ["error", "warn"],
-        }),
-        Sentry.connectIntegration(),
-        Sentry.expressIntegration(),
-        Sentry.graphqlIntegration(),
-        Sentry.httpIntegration(),
-        Sentry.mongoIntegration(),
-        Sentry.mongooseIntegration(),
-        Sentry.postgresIntegration(),
-        Sentry.redisIntegration(),
-    ],
-
     beforeSend(event, hint) {
         // Filter out health check endpoints
         if (event.request?.url?.includes("/api/health")) {

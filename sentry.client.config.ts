@@ -16,15 +16,6 @@ Sentry.init({
     replaysOnErrorSampleRate: 1.0,
     replaysSessionSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 0.5,
 
-    // Additional configuration
-    integrations: [
-        Sentry.replayIntegration({
-            maskAllText: true,
-            blockAllMedia: true,
-        }),
-        Sentry.browserTracingIntegration(),
-    ],
-
     // Tag all events from client
     initialScope: {
         tags: {
