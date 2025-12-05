@@ -23,7 +23,7 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
     writing: {
         title: "Writing Practice",
         description:
-            "Writing is a crucial part of the CELPIP test, since it shows how well you're capable of conveying ideas clearly and properly in written English. With our CELPIP Writing Practice Test, you'll get to practice real test-type email and survey questions so that you feel confident and ready. We'll provide you with CELPIP practice test questions and instructions in the following.",
+            "Writing is a crucial part of the CELPIP test, since it shows how well you're capable of conveying ideas clearly and properly in written English. With our <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP Writing Practice Test</a>, you'll get to practice real test-type email and survey questions so that you feel confident and ready. We'll provide you with <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP practice test</a> questions and instructions in the following.",
         tasks: [
             {
                 id: "1",
@@ -94,7 +94,7 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
     listening: {
         title: "Listening Practice",
         description:
-            "Listening is the most important skill in the CELPIP test, since it shows how well you can hear and understand everyday conversations and English news. In the following, we will provide you with practice material to prepare you and to boost your confidence in listening. Using our CELPIP practice test, you will get a real feel of the test and practice your listening before appearing for the test.",
+            "Listening is the most important skill in the CELPIP test, since it shows how well you can hear and understand everyday conversations and English news. In the following, we will provide you with practice material to prepare you and to boost your confidence in listening. Using our \u003ca href='/' style='color: inherit; text-decoration: underline;'\u003eCELPIP practice test\u003c/a\u003e, you will get a real feel of the test and practice your listening before appearing for the test.",
         tasks: [
             {
                 id: "1",
@@ -160,7 +160,7 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
     reading: {
         title: "Reading Practice",
         description:
-            "The CELPIP reading practice test measures your capacity to understand written English in routine contexts such as emails, diagrams, and information texts. We provide you with a CELPIP practice test for reading and example questions to help you enhance comprehension, respond under time pressure, and build the confidence you need on test day.",
+            "The CELPIP reading practice test measures your capacity to understand written English in routine contexts such as emails, diagrams, and information texts. We provide you with a <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP practice test</a> for reading and example questions to help you enhance comprehension, respond under time pressure, and build the confidence you need on test day.",
         tasks: [
             {
                 id: "1",
@@ -246,7 +246,7 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
     speaking: {
         title: "Speaking Practice",
         description:
-            "Speaking skill is one of the most useful sections of the CELPIP test. This skill will show your natural English speaking ability. Let's improve your speaking fluency through our real exam CELPIP speaking practice test. Practice material will be provided below to help prepare you step by step.",
+            "Speaking skill is one of the most useful sections of the CELPIP test. This skill will show your natural English speaking ability. Let's improve your speaking fluency through our real exam <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP speaking practice test</a>. Practice material will be provided below to help prepare you step by step.",
         tasks: [
             {
                 id: "1",
