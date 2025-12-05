@@ -3,23 +3,33 @@ import * as Sentry from "@sentry/nextjs";
 Sentry.init({
     dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
+    // Enable logs - required for logger to work
+    enableLogs: true,
+
     // Set environment
     environment: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT || process.env.NODE_ENV,
 
     // Adjust this value in production, or use tracesSampler for greater control
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
 
-    // Setting this option to true will print useful information to the console while you're setting up Sentry.
-    debug: false,
-
     // Replay configuration - captures user sessions
     replaysOnErrorSampleRate: 1.0,
     replaysSessionSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 0.5,
 
+    // Setting this option to true will print useful information to the console while you're setting up Sentry.
+    debug: false,
+
+    // Integrations - automatically capture console.log, console.warn, console.error
+    integrations: [
+        Sentry.consoleLoggingIntegration({
+            levels: ["log", "warn", "error"]
+        }),
+    ],
+
     // Tag all events from client
     initialScope: {
         tags: {
-            environment: "client",
+            environment: "frontend",
             runtime: "browser",
         },
     },
@@ -28,7 +38,6 @@ Sentry.init({
     ignoreErrors: [
         // Random plugins/extensions
         "top.GLOBALS",
-        // See: http://blog.errorception.com/2012/03/tale-of-unfindable-js-error.html
         "originalCreateNotification",
         "canvas.contentDocument",
         "MyApp_RemoveAllHighlights",
@@ -38,26 +47,18 @@ Sentry.init({
         "ComboSearch is not defined",
         "http://loading.retry.widdit.com/",
         "atomicFindClose",
-        // Facebook borked
         "fb_xd_fragment",
-        // ISP "optimizing" proxy - `Cache-Control: no-transform` seems to
-        // reduce this. (thanks @acdha)
-        // See http://stackoverflow.com/questions/4113268
         "bmi_SafeAddOnload",
         "EBCallBackMessageReceived",
-        // See http://toolbar.conduit.com/Developer/HtmlAndGadget/Methods/JSInjection.aspx
         "conduitPage",
-        // Generic error code from errors outside the security sandbox
         "Script error.",
-        // Timeout errors
         "AbortError: The operation was aborted",
-        // Network errors
         "NetworkError",
         "Failed to fetch",
     ],
 
     beforeSend(event, hint) {
-        // Filter out certain events based on context
+        // Filter out health check endpoints
         if (event.request?.url?.includes("/api/health")) {
             return null;
         }

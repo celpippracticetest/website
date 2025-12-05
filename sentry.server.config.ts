@@ -3,6 +3,9 @@ import * as Sentry from "@sentry/nextjs";
 Sentry.init({
     dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
+    // Enable logs - required for logger to work
+    enableLogs: true,
+
     // Set environment
     environment: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT || process.env.NODE_ENV,
 
@@ -12,15 +15,20 @@ Sentry.init({
     // Setting this option to true will print useful information to the console while you're setting up Sentry.
     debug: false,
 
+    // Integrations - automatically capture console.log, console.warn, console.error
+    integrations: [
+        Sentry.consoleLoggingIntegration({
+            levels: ["log", "warn", "error"]
+        }),
+    ],
+
     // Tag all events from server
     initialScope: {
         tags: {
-            environment: "server",
+            environment: "backend",
             runtime: "node",
         },
     },
-
-    // Performance Monitoring
 
     beforeSend(event, hint) {
         // Filter out health check endpoints
@@ -28,7 +36,7 @@ Sentry.init({
             return null;
         }
 
-        // Add additional server context
+        // Add server context
         if (event.contexts) {
             event.contexts.runtime = {
                 name: "node",
