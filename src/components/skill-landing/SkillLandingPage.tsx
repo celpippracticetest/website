@@ -90,9 +90,10 @@ const SkillLandingPage: React.FC<SkillLandingPageProps> = ({
                         <h2 className="text-[24px] font-bold text-[#212E42] mb-4">
                             Start Your CELPIP {content.title.split(" ")[0]} Practice
                         </h2>
-                        <p className="text-[#525D6F] mb-8 leading-relaxed">
-                            {content.description}
-                        </p>
+                        <p
+                            className="text-[#525D6F] mb-8 leading-relaxed"
+                            dangerouslySetInnerHTML={{ __html: content.description }}
+                        />
 
                         <h3 className="text-[18px] font-bold text-[#212E42] mb-3">
                             {content.tipsTitle}

@@ -38,7 +38,7 @@ const FAQ = () => {
         {
             question: "What do you offer on CELPIPPracticeTest.com?",
             answer:
-                "At CELPIPPracticeTest.com, we offer a complete set of preparation tools, including real practice tests, complete practice exams, skill-development activities, study guides, and an exclusive Learning area.",
+                "At \u003ca href='/' style='color: inherit; text-decoration: underline;'\u003eCELPIPPracticeTest.com\u003c/a\u003e, we offer a complete set of preparation tools, including real practice tests, complete practice exams, skill-development activities, study guides, and an exclusive Learning area.",
         },
         {
             question: "Is CELPIP better than IELTS?",
@@ -82,14 +82,15 @@ const FAQ = () => {
                         </button>
                         <div
                             className={`grid transition-all duration-300 ease-in-out ${openIndex === index
-                                    ? "grid-rows-[1fr] opacity-100"
-                                    : "grid-rows-[0fr] opacity-0"
+                                ? "grid-rows-[1fr] opacity-100"
+                                : "grid-rows-[0fr] opacity-0"
                                 }`}
                         >
                             <div className="overflow-hidden">
-                                <div className="p-[24px] pt-0 text-[16px] text-[#5F6D7E] leading-[24px]">
-                                    {faq.answer}
-                                </div>
+                                <div
+                                    className="p-[24px] pt-0 text-[16px] text-[#5F6D7E] leading-[24px]"
+                                    dangerouslySetInnerHTML={{ __html: faq.answer }}
+                                />
                             </div>
                         </div>
                     </div>

@@ -4,6 +4,7 @@ import {
   clerkMiddleware,
   createRouteMatcher,
 } from "@clerk/nextjs/server";
+import { logger, trackUserAction, captureException } from "@/lib/sentry-logger";
 
 const isAdminRoute = createRouteMatcher(["/cms(.*)"]);
 const isProfileRoute = createRouteMatcher(["/profile(.*)"]);
@@ -103,8 +104,13 @@ export default clerkMiddleware(async (auth, req) => {
       ?.referralCode;
 
     if (!hasReferralCode) {
-      console.log(
-        "🔄 User is premium but has no referral code, creating one..."
+      logger.info(
+        "User is premium but has no referral code, creating one",
+        {
+          component: "middleware",
+          action: "create_referral_code",
+          userId: authenticate.userId,
+        }
       );
 
       try {
@@ -126,12 +132,26 @@ export default clerkMiddleware(async (auth, req) => {
 
         if (response.ok) {
           const data = await response.json();
-          console.log("✅ Referral code created:", data.code);
+          logger.info("Referral code created successfully", {
+            component: "middleware",
+            action: "referral_code_created",
+            userId: authenticate.userId,
+            metadata: { code: data.code },
+          });
         } else {
-          console.error("❌ Failed to create referral code:", response.status);
+          logger.error("Failed to create referral code", {
+            component: "middleware",
+            action: "referral_code_creation_failed",
+            userId: authenticate.userId,
+            metadata: { status: response.status },
+          });
         }
       } catch (error) {
-        console.error("❌ Error creating referral code:", error);
+        captureException(error, {
+          component: "middleware",
+          action: "referral_code_creation_error",
+          userId: authenticate.userId,
+        });
       }
     }
   }
@@ -148,7 +168,12 @@ export default clerkMiddleware(async (auth, req) => {
 
       if (referralCode) {
         // Store referral code in user metadata for later processing
-        console.log("🔍 Middleware - Referral code found:", referralCode);
+        logger.info("Referral code found in cookies", {
+          component: "middleware",
+          action: "referral_code_found",
+          userId: authenticate.userId,
+          metadata: { referralCode },
+        });
         await client.users.updateUserMetadata(authenticate.userId, {
           publicMetadata: {
             ...authenticate.sessionClaims?.metadata,
@@ -159,7 +184,12 @@ export default clerkMiddleware(async (auth, req) => {
         });
 
         // Process referral discount directly in middleware
-        console.log("🔍 Middleware - Processing referral discount...");
+        logger.info("Processing referral discount", {
+          component: "middleware",
+          action: "process_referral_discount",
+          userId: authenticate.userId,
+          metadata: { referralCode },
+        });
 
         // Apply referral discount
         try {
@@ -180,21 +210,34 @@ export default clerkMiddleware(async (auth, req) => {
           );
 
           if (discountResponse.ok) {
-            console.log(
-              "✅ Middleware - Referral discount applied successfully"
+            logger.info(
+              "Referral discount applied successfully",
+              {
+                component: "middleware",
+                action: "referral_discount_applied",
+                userId: authenticate.userId,
+                metadata: { referralCode },
+              }
             );
           } else {
             const errorData = await discountResponse.json();
-            console.error(
-              "❌ Middleware - Failed to apply referral discount:",
-              errorData
+            logger.error(
+              "Failed to apply referral discount",
+              {
+                component: "middleware",
+                action: "referral_discount_failed",
+                userId: authenticate.userId,
+                metadata: { referralCode, error: errorData },
+              }
             );
           }
         } catch (error) {
-          console.error(
-            "❌ Middleware - Error applying referral discount:",
-            error
-          );
+          captureException(error, {
+            component: "middleware",
+            action: "referral_discount_error",
+            userId: authenticate.userId,
+            metadata: { referralCode },
+          });
         }
 
         // Track the signup for the referrer
@@ -225,30 +268,44 @@ export default clerkMiddleware(async (auth, req) => {
             // Read response body safely to aid debugging
             const errorText = await response
               .text()
-              .catch(() => "❌ No error body");
-            console.error(
-              "❌ Failed to track signup:",
-              response.status,
-              response.statusText,
-              errorText
+              .catch(() => "No error body");
+            logger.error(
+              "Failed to track signup",
+              {
+                component: "middleware",
+                action: "track_signup_failed",
+                userId: authenticate.userId,
+                metadata: {
+                  status: response.status,
+                  statusText: response.statusText,
+                  errorText,
+                  referralCode,
+                },
+              }
             );
           } else {
             // Try to parse JSON but don't fail if it's empty
             let data: unknown = null;
             try {
               data = await response.json();
-            } catch {}
-            console.log(
-              "✅ Successfully tracked signup for referral code:",
-              referralCode,
-              data ? data : ""
+            } catch { }
+            logger.info(
+              "Successfully tracked signup for referral code",
+              {
+                component: "middleware",
+                action: "signup_tracked",
+                userId: authenticate.userId,
+                metadata: { referralCode, data },
+              }
             );
           }
         } catch (error) {
-          console.error(
-            "❌ Network or runtime error while tracking signup:",
-            error
-          );
+          captureException(error, {
+            component: "middleware",
+            action: "track_signup_error",
+            userId: authenticate.userId,
+            metadata: { referralCode },
+          });
         }
       } else {
         // Just update onboarding status
