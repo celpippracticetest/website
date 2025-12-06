@@ -1182,93 +1182,76 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
           >
             {practice ? (
               <>
-                <div
-                  className="group flex flex-col items-center mt-5 gap-1 cursor-pointer"
-                  onClick={() => router.push("/practice-overview")}
-                >
-                  <div className=" flex">
+                <Link href="/practice-overview" prefetch={true} className="group flex flex-col items-center mt-5 gap-1 cursor-pointer transition-all duration-300 ease-in-out">
+                  <div className="flex animate-[fadeIn_0.3s_ease-in-out]">
                     <SvgPracticeHover className="text-white" />
                   </div>
 
-                  <span className="text-xs text-[#FC8A65]">Practice</span>
-                  <span className="w-[4px] h-[4px] rounded-full bg-[#FC8A65] flex"></span>
-                </div>
+                  <span className="text-xs text-[#FC8A65] transition-all duration-300 ease-in-out">Practice</span>
+                  <span className="w-[4px] h-[4px] rounded-full bg-[#FC8A65] flex animate-[fadeIn_0.3s_ease-in-out]"></span>
+                </Link>
               </>
             ) : (
               <>
-                <div
-                  className="group flex flex-col items-center mt-5 gap-1 cursor-pointer"
-                  onClick={() => router.push("/practice-overview")}
-                >
-                  <div className="flex group-hover:hidden w-[24px] h-[24px]  items-center justify-center">
+                <Link href="/practice-overview" prefetch={true} className="group flex flex-col items-center mt-5 gap-1 cursor-pointer transition-all duration-300 ease-in-out">
+                  <div className="flex group-hover:hidden w-[24px] h-[24px] items-center justify-center transition-opacity duration-300 ease-in-out">
                     <SvgPractice
                       stroke="#76808F"
                       fill="transparent"
-                      className="text-[#76808F] "
+                      className="text-[#76808F]"
                     />
                   </div>
 
-                  <div className="hidden group-hover:flex">
+                  <div className="hidden group-hover:flex animate-[fadeIn_0.3s_ease-in-out]">
                     <SvgPracticeHover className="text-white" />
                   </div>
 
-                  <span className="text-xs text-[#76808F] group-hover:text-[#FC8A65]">
+                  <span className="text-xs text-[#76808F] group-hover:text-[#FC8A65] transition-all duration-300 ease-in-out">
                     Practice
                   </span>
-                  <span className="w-[4px] h-[4px] rounded-full group-hover:bg-[#FC8A65] group-hover:flex"></span>
-                </div>
+                  <span className="w-[4px] h-[4px] rounded-full group-hover:bg-[#FC8A65] group-hover:flex transition-all duration-300 ease-in-out"></span>
+                </Link>
               </>
             )}
 
             {mockTest ? (
               <>
                 <div
-                  className="
-    flex flex-col gap-[4px] items-center cursor-pointer
-    relative
-     translate-y-[2px] transition-transform
-  "
+                  className="flex flex-col gap-[4px] items-center cursor-pointer relative translate-y-[2px] transition-all duration-300 ease-in-out"
                   onClick={() => router.push("/exam-overview")}
                 >
-                  <div className="w-[44px] h-[44px]  flex items-center justify-center rounded-full bg-[radial-gradient(50%_265.62%_at_50%_50%,_#F26B3E_0%,_#FC8A65_100%)]">
-                    <div className=" flex w-[24px] h-[24px] items-center justify-center">
-                      <SvgMockTestHover className=" text-[#FC8A65]" />
+                  <div className="w-[44px] h-[44px] flex items-center justify-center rounded-full bg-[radial-gradient(50%_265.62%_at_50%_50%,_#F26B3E_0%,_#FC8A65_100%)] animate-[fadeIn_0.3s_ease-in-out]">
+                    <div className="flex w-[24px] h-[24px] items-center justify-center">
+                      <SvgMockTestHover className="text-[#FC8A65]" />
                     </div>
                   </div>
-                  <span className="text-xs text-[#FC8A65]">Mock Test</span>
-                  <span className="w-[4px] h-[4px] rounded-full bg-[#FC8A65] flex"></span>
+                  <span className="text-xs text-[#FC8A65] transition-all duration-300 ease-in-out">Mock Test</span>
+                  <span className="w-[4px] h-[4px] rounded-full bg-[#FC8A65] flex animate-[fadeIn_0.3s_ease-in-out]"></span>
                 </div>
               </>
             ) : (
               <>
                 <div
-                  className="
-    flex flex-col gap-[4px] items-center group hover:cursor-pointer
-    relative
-    translate-y-[4px] hover:translate-y-[2px] transition-transform
-  "
+                  className="flex flex-col gap-[4px] items-center group hover:cursor-pointer relative translate-y-[4px] hover:translate-y-[2px] transition-all duration-300 ease-in-out"
                   onClick={() => router.push("/exam-overview")}
                 >
-                  <div className="w-[48px] group-hover:!w-[44px] group-hover:!h-[44px] h-[48px] flex items-center justify-center rounded-full bg-[radial-gradient(50%_265.62%_at_50%_50%,_#F26B3E_0%,_#FC8A65_100%)]">
-                    <SvgMockTestNavigation className="text-[#76808F] flex group-hover:hidden group-hover:text-[#FC8A65]" />
+                  <div className="w-[48px] group-hover:!w-[44px] group-hover:!h-[44px] h-[48px] flex items-center justify-center rounded-full bg-[radial-gradient(50%_265.62%_at_50%_50%,_#F26B3E_0%,_#FC8A65_100%)] transition-all duration-300 ease-in-out">
+                    <SvgMockTestNavigation className="text-[#76808F] flex group-hover:hidden group-hover:text-[#FC8A65] transition-opacity duration-300 ease-in-out" />
 
-                    <div className="hidden group-hover:flex w-[24px] h-[24px] items-center justify-center">
+                    <div className="hidden group-hover:flex w-[24px] h-[24px] items-center justify-center animate-[fadeIn_0.3s_ease-in-out]">
                       <SvgMockTestHover className="text-[#76808F] group-hover:text-[#FC8A65]" />
                     </div>
                   </div>
-                  <span className="text-xs text-[#76808F] group-hover:text-[#FC8A65]">
+                  <span className="text-xs text-[#76808F] group-hover:text-[#FC8A65] transition-all duration-300 ease-in-out">
                     Mock Test
                   </span>
-                  <span className="w-[4px] h-[4px] rounded-full group-hover:bg-[#FC8A65] group-hover:flex"></span>
+                  <span className="w-[4px] h-[4px] rounded-full group-hover:bg-[#FC8A65] group-hover:flex transition-all duration-300 ease-in-out"></span>
                 </div>
               </>
             )}
 
-            <div
-              className="group flex flex-col items-center mt-5 gap-1 cursor-pointer"
-              onClick={() => router.push("/learning")}
-            >
-              <div className="flex group-hover:hidden w-[24px] h-[24px]  items-center justify-center">
+            <Link href="/learning" prefetch={true} className="group flex flex-col items-center mt-5 gap-1 cursor-pointer transition-all duration-300 ease-in-out">
+              <div className="flex group-hover:hidden w-[24px] h-[24px] items-center justify-center transition-opacity duration-300 ease-in-out">
                 <SvgLearning
                   stroke="#76808F"
                   fill="transparent"
@@ -1276,7 +1259,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                 />
               </div>
 
-              <div className="hidden group-hover:flex w-[24px] h-[24px]  items-center justify-center">
+              <div className="hidden group-hover:flex w-[24px] h-[24px] items-center justify-center animate-[fadeIn_0.3s_ease-in-out]">
                 <SvgLearning
                   stroke="#FC8A65"
                   fill="#FC8A65"
@@ -1284,11 +1267,11 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                 />
               </div>
 
-              <span className="text-xs text-[#76808F] group-hover:text-[#FC8A65]">
+              <span className="text-xs text-[#76808F] group-hover:text-[#FC8A65] transition-all duration-300 ease-in-out">
                 Learning
               </span>
-              <span className="w-[4px] h-[4px] rounded-full group-hover:bg-[#FC8A65] group-hover:flex"></span>
-            </div>
+              <span className="w-[4px] h-[4px] rounded-full group-hover:bg-[#FC8A65] group-hover:flex transition-all duration-300 ease-in-out"></span>
+            </Link>
           </div>
         </div>
       </div>
