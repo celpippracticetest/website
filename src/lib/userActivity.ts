@@ -2,22 +2,22 @@
 
 export interface ActivityLogData {
   eventType:
-    | "practice_attempt_started"
-    | "practice_attempt_completed"
-    | "mock_attempt_started"
-    | "mock_attempt_completed"
-    | "ai_feedback_generated"
-    | "learning_attempt_started"
-    | "score_report_viewed"
-    | "signup"
-    | "login"
-    | "logout"
-    | "payment_successful"
-    | "payment_failed"
-    | "subscription_created"
-    | "subscription_cancelled"
-    | "dispute_created"
-    | "dispute_resolved";
+  | "practice_attempt_started"
+  | "practice_attempt_completed"
+  | "mock_attempt_started"
+  | "mock_attempt_completed"
+  | "ai_feedback_generated"
+  | "learning_attempt_started"
+  | "score_report_viewed"
+  | "signup"
+  | "login"
+  | "logout"
+  | "payment_successful"
+  | "payment_failed"
+  | "subscription_created"
+  | "subscription_cancelled"
+  | "dispute_created"
+  | "dispute_resolved";
   context: "practice" | "mock" | "learning" | "system" | "payment";
   skill?: "Listening" | "Reading" | "Writing" | "Speaking";
   attemptId?: string;
@@ -37,7 +37,8 @@ export interface ActivityLogData {
  */
 export async function logUserActivity(data: ActivityLogData): Promise<boolean> {
   try {
-    const response = await fetch("/api/user-activity/log", {
+    const baseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
+    const response = await fetch(`${baseUrl}/api/user-activity/log`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -59,7 +60,8 @@ export async function logUserActivities(
   activities: ActivityLogData[]
 ): Promise<boolean> {
   try {
-    const response = await fetch("/api/user-activity/log", {
+    const baseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
+    const response = await fetch(`${baseUrl}/api/user-activity/log`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
