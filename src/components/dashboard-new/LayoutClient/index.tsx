@@ -1038,22 +1038,6 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                       </button>
                     </SignedIn>
                   </div>
-
-                  {/* Mobile menu button */}
-                  {/* <div className="flex md:hidden">
-            <button
-              type="button"
-              className="text-gray-700 hover:text-gray-900"
-              onClick={() => props.setMobileMenuOpen(!props.mobileMenuOpen)}
-            >
-              <span className="sr-only">Open main menu</span>
-              {props.mobileMenuOpen ? (
-                <X className="h-6 w-6" aria-hidden="true" />
-              ) : (
-                <Menu className="h-6 w-6" aria-hidden="true" />
-              )}
-            </button>
-          </div> */}
                 </div>
                 {/* dropdown for auth buttons */}
                 {isUserDropDownOpen && user && (
@@ -1154,32 +1138,16 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
             </div>
           )}
         </div>
-        <div
-          className="
-    fixed bottom-[16px] left-0 right-0
-    mx-auto
-    max-w-[1440px]
-    screen1280:px-[80px] px-[16px]
-    screen744:w-[calc(100%-84px)]
-    screen1280:!hidden
-  "
-          style={{ height: 82, pointerEvents: "none" }}
-        >
+
+        {/* bottom menu for mobile */}
+        <div className="fixed bottom-[16px] left-0 right-0 mx-auto max-w-[1440px] screen1280:px-[80px] px-[16px] screen744:w-[calc(100%-84px)] screen1280:!hidden" style={{ height: 82, pointerEvents: "none" }}>
           <div className="hidden screen744:!flex">
             <SvgBottomNavigation className="hidden screen744:!flex absolute inset-0 w-full h-full" />
           </div>
           <div className="flex screen744:!hidden items-center">
             <SvgBottomNavigationMobile className="flex screen744:!hidden absolute right-0 left-0 mx-auto inset-0 w-full h-full" />
           </div>
-          <div
-            className="
-      relative z-10
-      grid grid-cols-3
-      items-center justify-items-center
-      gap-[24px] h-full
-    "
-            style={{ pointerEvents: "auto" }}
-          >
+          <div className="relative z-10 grid grid-cols-3 items-center justify-items-center gap-[24px] h-full" style={{ pointerEvents: "auto" }}>
             {practice ? (
               <>
                 <Link href="/practice-overview" prefetch={true} className="group flex flex-col items-center mt-5 gap-1 cursor-pointer transition-all duration-300 ease-in-out">
