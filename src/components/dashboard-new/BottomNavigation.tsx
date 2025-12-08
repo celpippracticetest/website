@@ -40,6 +40,17 @@ const BottomNavigation = () => {
         }
     }, [pathname]);
 
+    // Vibration animation variants
+    const vibrationVariants = {
+        initial: { x: 0, scale: 1, opacity: 0 },
+        animate: {
+            x: [0, -4, 4, -4, 4, 0],
+            scale: 1,
+            opacity: 1,
+            transition: { duration: 0.4, ease: "easeInOut" }
+        }
+    };
+
     return (
         <div
             className="fixed bottom-[16px] left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-[400px] screen1280:!hidden"
@@ -61,14 +72,17 @@ const BottomNavigation = () => {
                 >
                     {practice && (
                         <motion.div
-                            layoutId="nav-pill"
                             className="absolute w-[80px] h-[56px] bg-[#E8ECF4] rounded-full -z-10"
-                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                            variants={vibrationVariants}
+                            initial="initial"
+                            animate="animate"
                         />
                     )}
                     <motion.div
+                        key={practice ? "active" : "inactive"}
+                        initial={practice ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
                         animate={{ opacity: practice ? 1 : 0.6, scale: practice ? 1 : 0.95 }}
-                        transition={{ duration: 0.3 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
                         className="flex flex-col items-center gap-1 cursor-pointer"
                     >
                         <div className="flex items-center justify-center w-[24px] h-[24px]">
@@ -94,14 +108,17 @@ const BottomNavigation = () => {
                 >
                     {mockTest && (
                         <motion.div
-                            layoutId="nav-pill"
                             className="absolute w-[80px] h-[56px] bg-[#E8ECF4] rounded-full -z-10"
-                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                            variants={vibrationVariants}
+                            initial="initial"
+                            animate="animate"
                         />
                     )}
                     <motion.div
+                        key={mockTest ? "active" : "inactive"}
+                        initial={mockTest ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
                         animate={{ opacity: mockTest ? 1 : 0.6, scale: mockTest ? 1 : 0.95 }}
-                        transition={{ duration: 0.3 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
                         className="flex flex-col items-center gap-1"
                     >
                         <div className="flex items-center justify-center w-[24px] h-[24px]">
@@ -128,14 +145,17 @@ const BottomNavigation = () => {
                 >
                     {isLearning && (
                         <motion.div
-                            layoutId="nav-pill"
                             className="absolute w-[80px] h-[56px] bg-[#E8ECF4] rounded-full -z-10"
-                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                            variants={vibrationVariants}
+                            initial="initial"
+                            animate="animate"
                         />
                     )}
                     <motion.div
+                        key={isLearning ? "active" : "inactive"}
+                        initial={isLearning ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
                         animate={{ opacity: isLearning ? 1 : 0.6, scale: isLearning ? 1 : 0.95 }}
-                        transition={{ duration: 0.3 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
                         className="flex flex-col items-center gap-1 cursor-pointer"
                     >
                         <div className="flex items-center justify-center w-[24px] h-[24px]">
@@ -159,3 +179,5 @@ const BottomNavigation = () => {
 };
 
 export default BottomNavigation;
+
+
