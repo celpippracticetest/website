@@ -5,18 +5,18 @@ const SvgMockTestNavigation = (props: SVGProps<SVGSVGElement>) => (
     xmlns="http://www.w3.org/2000/svg"
     width={28}
     height={28}
-    fill="none"
+    fill={props.fill || "none"}
     {...props}
   >
     <path
-      stroke="#fff"
+      stroke={props.stroke || "currentColor"}
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={1.5}
       d="M14.432 10.36h6.125M7.443 10.36l.875.875 2.625-2.625M14.432 18.527h6.125M7.443 18.527l.875.875 2.625-2.625"
     />
     <path
-      stroke="#fff"
+      stroke={props.stroke || "currentColor"}
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={1.5}
