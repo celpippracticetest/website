@@ -6,9 +6,9 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import clsx from "clsx";
 
-import SvgPractice from "@/components/icons/Practice";
-import SvgMockTestNavigation from "@/components/icons/MockTestNavigation";
-import SvgLearning from "@/components/icons/Learning";
+import SvgTextCheck from "../icons/TextCheck";
+import SvgBook from "../icons/Book";
+import SvgLamp from "../icons/Lamp";
 
 const BottomNavigation = () => {
     const pathname = usePathname();
@@ -42,15 +42,15 @@ const BottomNavigation = () => {
 
     return (
         <div
-            className="fixed bottom-[16px] left-0 right-0 mx-auto max-w-[1440px] screen1280:px-[80px] px-[16px] screen744:w-[calc(100%-84px)] screen1280:!hidden"
-            style={{ height: 82, pointerEvents: "none" }}
+            className="fixed bottom-[16px] left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-[400px] screen1280:!hidden"
+            style={{ height: 70, pointerEvents: "none" }}
         >
             {/* White pill background */}
             <div className="absolute inset-0 w-full h-full bg-white rounded-full shadow-[0px_4px_24px_0px_rgba(0,0,0,0.08)]" />
 
             {/* Navigation items */}
             <div
-                className="relative z-10 grid grid-cols-3 items-center justify-items-center gap-[24px] h-full"
+                className="relative z-10 grid grid-cols-3 items-center justify-items-center h-full px-4"
                 style={{ pointerEvents: "auto" }}
             >
                 {/* Practice */}
@@ -62,7 +62,7 @@ const BottomNavigation = () => {
                     {practice && (
                         <motion.div
                             layoutId="nav-pill"
-                            className="absolute w-[70px] h-[65px] bg-[#E8ECF4] rounded-[20px] -z-10"
+                            className="absolute w-[80px] h-[56px] bg-[#E8ECF4] rounded-full -z-10"
                             transition={{ type: "spring", stiffness: 300, damping: 20 }}
                         />
                     )}
@@ -72,19 +72,9 @@ const BottomNavigation = () => {
                         className="flex flex-col items-center gap-1 cursor-pointer"
                     >
                         <div className="flex items-center justify-center w-[24px] h-[24px]">
-                            {practice ? (
-                                <SvgPractice
-                                    stroke="#316BFF"
-                                    fill="#316BFF"
-                                    className="text-[#316BFF]"
-                                />
-                            ) : (
-                                <SvgPractice
-                                    stroke="#37465C"
-                                    fill="white"
-                                    className="text-[#37465C]"
-                                />
-                            )}
+                            <SvgLamp
+                                className={practice ? "text-[#316BFF]" : "text-[#37465C]"}
+                            />
                         </div>
                         <span
                             className={clsx(
@@ -105,7 +95,7 @@ const BottomNavigation = () => {
                     {mockTest && (
                         <motion.div
                             layoutId="nav-pill"
-                            className="absolute w-[70px] h-[65px] bg-[#E8ECF4] rounded-[20px] -z-10"
+                            className="absolute w-[80px] h-[56px] bg-[#E8ECF4] rounded-full -z-10"
                             transition={{ type: "spring", stiffness: 300, damping: 20 }}
                         />
                     )}
@@ -115,19 +105,9 @@ const BottomNavigation = () => {
                         className="flex flex-col items-center gap-1"
                     >
                         <div className="flex items-center justify-center w-[24px] h-[24px]">
-                            {mockTest ? (
-                                <SvgMockTestNavigation
-                                    stroke="#316BFF"
-                                    fill="#316BFF"
-                                    className="text-[#316BFF]"
-                                />
-                            ) : (
-                                <SvgMockTestNavigation
-                                    stroke="#37465C"
-                                    fill="white"
-                                    className="text-[#37465C]"
-                                />
-                            )}
+                            <SvgTextCheck
+                                className={mockTest ? "text-[#316BFF]" : "text-[#37465C]"}
+                            />
                         </div>
                         <span
                             className={clsx(
@@ -149,7 +129,7 @@ const BottomNavigation = () => {
                     {isLearning && (
                         <motion.div
                             layoutId="nav-pill"
-                            className="absolute w-[70px] h-[65px] bg-[#E8ECF4] rounded-[20px] -z-10"
+                            className="absolute w-[80px] h-[56px] bg-[#E8ECF4] rounded-full -z-10"
                             transition={{ type: "spring", stiffness: 300, damping: 20 }}
                         />
                     )}
@@ -159,19 +139,9 @@ const BottomNavigation = () => {
                         className="flex flex-col items-center gap-1 cursor-pointer"
                     >
                         <div className="flex items-center justify-center w-[24px] h-[24px]">
-                            {isLearning ? (
-                                <SvgLearning
-                                    stroke="#316BFF"
-                                    fill="#316BFF"
-                                    className="text-[#316BFF]"
-                                />
-                            ) : (
-                                <SvgLearning
-                                    stroke="#37465C"
-                                    fill="white"
-                                    className="text-[#37465C]"
-                                />
-                            )}
+                            <SvgBook
+                                className={isLearning ? "text-[#316BFF]" : "text-[#37465C]"}
+                            />
                         </div>
                         <span
                             className={clsx(
