@@ -63,6 +63,9 @@ const BottomNavigation = () => {
                         <motion.div
                             layoutId="nav-pill"
                             className="absolute w-[80px] h-[56px] bg-[#E8ECF4] rounded-full -z-10"
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0, opacity: 0 }}
                             transition={{ type: "spring", stiffness: 300, damping: 20 }}
                         />
                     )}
@@ -96,6 +99,9 @@ const BottomNavigation = () => {
                         <motion.div
                             layoutId="nav-pill"
                             className="absolute w-[80px] h-[56px] bg-[#E8ECF4] rounded-full -z-10"
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0, opacity: 0 }}
                             transition={{ type: "spring", stiffness: 300, damping: 20 }}
                         />
                     )}
@@ -130,6 +136,9 @@ const BottomNavigation = () => {
                         <motion.div
                             layoutId="nav-pill"
                             className="absolute w-[80px] h-[56px] bg-[#E8ECF4] rounded-full -z-10"
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0, opacity: 0 }}
                             transition={{ type: "spring", stiffness: 300, damping: 20 }}
                         />
                     )}
