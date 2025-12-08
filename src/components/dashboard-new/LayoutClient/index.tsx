@@ -55,6 +55,7 @@ import {
 import SvgDiamond from "@/components/icons/Diamond";
 import SvgLearningGift from "@/components/icons/LearningGift";
 import SvgLeagueLogo from "@/components/icons/LeagueLogo";
+import BottomNavigation from "@/components/dashboard-new/BottomNavigation";
 
 const NavItem = ({
   icon,
@@ -501,6 +502,9 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
     } else if (pathname === "/exam-overview" || pathname.includes("exams")) {
       setMockTest(true);
       setPractice(false);
+    } else if (pathname.includes("/learning")) {
+      setPractice(false);
+      setMockTest(false);
     }
   }, [pathname]);
   useEffect(() => {
@@ -1140,108 +1144,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
         </div>
 
         {/* bottom menu for mobile */}
-        <div className="fixed bottom-[16px] left-0 right-0 mx-auto max-w-[1440px] screen1280:px-[80px] px-[16px] screen744:w-[calc(100%-84px)] screen1280:!hidden" style={{ height: 82, pointerEvents: "none" }}>
-          <div className="hidden screen744:!flex">
-            <SvgBottomNavigation className="hidden screen744:!flex absolute inset-0 w-full h-full" />
-          </div>
-          <div className="flex screen744:!hidden items-center">
-            <SvgBottomNavigationMobile className="flex screen744:!hidden absolute right-0 left-0 mx-auto inset-0 w-full h-full" />
-          </div>
-          <div className="relative z-10 grid grid-cols-3 items-center justify-items-center gap-[24px] h-full" style={{ pointerEvents: "auto" }}>
-            {practice ? (
-              <>
-                <Link href="/practice-overview" prefetch={true} className="group flex flex-col items-center mt-5 gap-1 cursor-pointer transition-all duration-300 ease-in-out">
-                  <div className="flex animate-[fadeIn_0.3s_ease-in-out]">
-                    <SvgPracticeHover className="text-white" />
-                  </div>
-
-                  <span className="text-xs text-[#FC8A65] transition-all duration-300 ease-in-out">Practice</span>
-                  <span className="w-[4px] h-[4px] rounded-full bg-[#FC8A65] flex animate-[fadeIn_0.3s_ease-in-out]"></span>
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link href="/practice-overview" prefetch={true} className="group flex flex-col items-center mt-5 gap-1 cursor-pointer transition-all duration-300 ease-in-out">
-                  <div className="flex group-hover:hidden w-[24px] h-[24px] items-center justify-center transition-opacity duration-300 ease-in-out">
-                    <SvgPractice
-                      stroke="#76808F"
-                      fill="transparent"
-                      className="text-[#76808F]"
-                    />
-                  </div>
-
-                  <div className="hidden group-hover:flex animate-[fadeIn_0.3s_ease-in-out]">
-                    <SvgPracticeHover className="text-white" />
-                  </div>
-
-                  <span className="text-xs text-[#76808F] group-hover:text-[#FC8A65] transition-all duration-300 ease-in-out">
-                    Practice
-                  </span>
-                  <span className="w-[4px] h-[4px] rounded-full group-hover:bg-[#FC8A65] group-hover:flex transition-all duration-300 ease-in-out"></span>
-                </Link>
-              </>
-            )}
-
-            {mockTest ? (
-              <>
-                <div
-                  className="flex flex-col gap-[4px] items-center cursor-pointer relative translate-y-[2px] transition-all duration-300 ease-in-out"
-                  onClick={() => router.push("/exam-overview")}
-                >
-                  <div className="w-[44px] h-[44px] flex items-center justify-center rounded-full bg-[radial-gradient(50%_265.62%_at_50%_50%,_#F26B3E_0%,_#FC8A65_100%)] animate-[fadeIn_0.3s_ease-in-out]">
-                    <div className="flex w-[24px] h-[24px] items-center justify-center">
-                      <SvgMockTestHover className="text-[#FC8A65]" />
-                    </div>
-                  </div>
-                  <span className="text-xs text-[#FC8A65] transition-all duration-300 ease-in-out">Mock Test</span>
-                  <span className="w-[4px] h-[4px] rounded-full bg-[#FC8A65] flex animate-[fadeIn_0.3s_ease-in-out]"></span>
-                </div>
-              </>
-            ) : (
-              <>
-                <div
-                  className="flex flex-col gap-[4px] items-center group hover:cursor-pointer relative translate-y-[4px] hover:translate-y-[2px] transition-all duration-300 ease-in-out"
-                  onClick={() => router.push("/exam-overview")}
-                >
-                  <div className="w-[48px] group-hover:!w-[44px] group-hover:!h-[44px] h-[48px] flex items-center justify-center rounded-full bg-[radial-gradient(50%_265.62%_at_50%_50%,_#F26B3E_0%,_#FC8A65_100%)] transition-all duration-300 ease-in-out">
-                    <SvgMockTestNavigation className="text-[#76808F] flex group-hover:hidden group-hover:text-[#FC8A65] transition-opacity duration-300 ease-in-out" />
-
-                    <div className="hidden group-hover:flex w-[24px] h-[24px] items-center justify-center animate-[fadeIn_0.3s_ease-in-out]">
-                      <SvgMockTestHover className="text-[#76808F] group-hover:text-[#FC8A65]" />
-                    </div>
-                  </div>
-                  <span className="text-xs text-[#76808F] group-hover:text-[#FC8A65] transition-all duration-300 ease-in-out">
-                    Mock Test
-                  </span>
-                  <span className="w-[4px] h-[4px] rounded-full group-hover:bg-[#FC8A65] group-hover:flex transition-all duration-300 ease-in-out"></span>
-                </div>
-              </>
-            )}
-
-            <Link href="/learning" prefetch={true} className="group flex flex-col items-center mt-5 gap-1 cursor-pointer transition-all duration-300 ease-in-out">
-              <div className="flex group-hover:hidden w-[24px] h-[24px] items-center justify-center transition-opacity duration-300 ease-in-out">
-                <SvgLearning
-                  stroke="#76808F"
-                  fill="transparent"
-                  className="text-[#76808F] group-hover:text-[#FC8A65]"
-                />
-              </div>
-
-              <div className="hidden group-hover:flex w-[24px] h-[24px] items-center justify-center animate-[fadeIn_0.3s_ease-in-out]">
-                <SvgLearning
-                  stroke="#FC8A65"
-                  fill="#FC8A65"
-                  className="text-[#FC8A65]"
-                />
-              </div>
-
-              <span className="text-xs text-[#76808F] group-hover:text-[#FC8A65] transition-all duration-300 ease-in-out">
-                Learning
-              </span>
-              <span className="w-[4px] h-[4px] rounded-full group-hover:bg-[#FC8A65] group-hover:flex transition-all duration-300 ease-in-out"></span>
-            </Link>
-          </div>
-        </div>
+        <BottomNavigation />
       </div>
     </>
   );
