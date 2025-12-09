@@ -102,7 +102,7 @@ const BottomNavigation = () => {
                         <span
                             className={clsx(
                                 "text-xs",
-                                practice ? "text-[#316BFF]" : "text-[#37465C]"
+                                practice ? "text-black" : "text-[#37465C]"
                             )}
                         >
                             Practice
@@ -143,7 +143,7 @@ const BottomNavigation = () => {
                         <span
                             className={clsx(
                                 "text-xs",
-                                mockTest ? "text-[#316BFF]" : "text-[#37465C]"
+                                mockTest ? "text-black" : "text-[#37465C]"
                             )}
                         >
                             Exams
@@ -185,7 +185,7 @@ const BottomNavigation = () => {
                         <span
                             className={clsx(
                                 "text-xs",
-                                isLearning ? "text-[#316BFF]" : "text-[#37465C]"
+                                isLearning ? "text-black" : "text-[#37465C]"
                             )}
                         >
                             Learnings
