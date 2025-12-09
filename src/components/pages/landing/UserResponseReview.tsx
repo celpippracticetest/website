@@ -151,9 +151,8 @@ const UserResponseReview = () => {
             >
               <div
                 onClick={() => setActive(index)}
-                className={`${
-                  active === index ? "bg-primary2 text-white" : "text-text2"
-                } flex items-center hover:cursor-pointer justify-center hover:text-white hover:bg-primary2 text-[18px] h-[40px] w-[191px] screen1280:!w-[276px] rounded-[16px] transition-colors duration-300 z-[10] flex-shrink-0`}
+                className={`${active === index ? "bg-primary2 text-white" : "text-text2"
+                  } flex items-center hover:cursor-pointer justify-center hover:text-white hover:bg-primary2 text-[18px] h-[40px] w-[191px] screen1280:!w-[276px] rounded-[16px] transition-colors duration-300 z-[10] flex-shrink-0`}
               >
                 {tab.title}
               </div>
