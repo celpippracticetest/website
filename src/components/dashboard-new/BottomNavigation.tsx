@@ -6,9 +6,13 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import clsx from "clsx";
 
-import SvgTextCheck from "../icons/TextCheck";
-import SvgBook from "../icons/Book";
-import SvgLamp from "../icons/Lamp";
+import AnimatedIcon from "./AnimatedIcon";
+import attributionAnimation from "../icons/animated/attribution/attribution-in-attribution.json";
+import articleAnimation from "../icons/animated/article/article-in-article.json";
+import checkAnimation from "../icons/animated/check/check-in-reveal.json";
+import SvgAttribution from "../icons/animated/attribution/Attribution";
+import SvgArticle from "../icons/animated/article/Article";
+import SvgCheck from "../icons/animated/check/Check";
 
 const BottomNavigation = () => {
     const pathname = usePathname();
@@ -85,10 +89,15 @@ const BottomNavigation = () => {
                         transition={{ type: "spring", stiffness: 300, damping: 25 }}
                         className="flex flex-col items-center gap-1 cursor-pointer"
                     >
-                        <div className="flex items-center justify-center w-[24px] h-[24px]">
-                            <SvgLamp
-                                className={practice ? "text-[#316BFF]" : "text-[#37465C]"}
-                            />
+                        <div className="w-[24px] h-[24px]">
+                            {practice ? (
+                                <AnimatedIcon
+                                    animationData={attributionAnimation}
+                                    isActive={true}
+                                />
+                            ) : (
+                                <SvgAttribution />
+                            )}
                         </div>
                         <span
                             className={clsx(
@@ -121,10 +130,15 @@ const BottomNavigation = () => {
                         transition={{ type: "spring", stiffness: 300, damping: 25 }}
                         className="flex flex-col items-center gap-1"
                     >
-                        <div className="flex items-center justify-center w-[24px] h-[24px]">
-                            <SvgTextCheck
-                                className={mockTest ? "text-[#316BFF]" : "text-[#37465C]"}
-                            />
+                        <div className="w-[24px] h-[24px]">
+                            {mockTest ? (
+                                <AnimatedIcon
+                                    animationData={articleAnimation}
+                                    isActive={true}
+                                />
+                            ) : (
+                                <SvgArticle />
+                            )}
                         </div>
                         <span
                             className={clsx(
@@ -158,10 +172,15 @@ const BottomNavigation = () => {
                         transition={{ type: "spring", stiffness: 300, damping: 25 }}
                         className="flex flex-col items-center gap-1 cursor-pointer"
                     >
-                        <div className="flex items-center justify-center w-[24px] h-[24px]">
-                            <SvgBook
-                                className={isLearning ? "text-[#316BFF]" : "text-[#37465C]"}
-                            />
+                        <div className="w-[24px] h-[24px]">
+                            {isLearning ? (
+                                <AnimatedIcon
+                                    animationData={checkAnimation}
+                                    isActive={true}
+                                />
+                            ) : (
+                                <SvgCheck />
+                            )}
                         </div>
                         <span
                             className={clsx(
@@ -179,5 +198,6 @@ const BottomNavigation = () => {
 };
 
 export default BottomNavigation;
+
 
 
