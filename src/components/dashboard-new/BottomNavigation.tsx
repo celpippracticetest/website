@@ -7,10 +7,10 @@ import { motion } from "framer-motion";
 import clsx from "clsx";
 
 import AnimatedIcon from "./AnimatedIcon";
-import attributionAnimation from "../icons/animated/attribution/attribution-in-attribution.json";
+import bookAnimation from "../icons/animated/book/book-in-book.json";
 import articleAnimation from "../icons/animated/article/article-in-article.json";
 import checkAnimation from "../icons/animated/check/check-in-reveal.json";
-import SvgAttribution from "../icons/animated/attribution/Attribution";
+import SvgBook from "../icons/animated/book/Book";
 import SvgArticle from "../icons/animated/article/Article";
 import SvgCheck from "../icons/animated/check/Check";
 
@@ -92,11 +92,11 @@ const BottomNavigation = () => {
                         <div className="w-[24px] h-[24px]">
                             {practice ? (
                                 <AnimatedIcon
-                                    animationData={attributionAnimation}
+                                    animationData={bookAnimation}
                                     isActive={true}
                                 />
                             ) : (
-                                <SvgAttribution />
+                                <SvgBook />
                             )}
                         </div>
                         <span
