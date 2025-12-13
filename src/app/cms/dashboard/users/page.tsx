@@ -48,7 +48,7 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortBy, setSortBy] = useState("lastActivity");
   const [sortOrder, setSortOrder] = useState("desc");
   const [pagination, setPagination] = useState({
     page: 1,
