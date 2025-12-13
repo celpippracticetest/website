@@ -5,8 +5,9 @@ import * as XLSX from "xlsx";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  props: { params: Promise<{ userId: string }> }
 ) {
+  const resolvedParams = await props.params;
   try {
     const currentUserData = await currentUser();
     if (!currentUserData) {
@@ -39,7 +40,7 @@ export async function GET(
 
     // Build filter (same as in the GET route)
     const filter: any = {
-      $or: [{ userId: params.userId }, { email: params.userId }],
+      $or: [{ userId: resolvedParams.userId }, { email: resolvedParams.userId }],
     };
 
     if (startDate || endDate) {
@@ -198,7 +199,7 @@ export async function GET(
     const summaryData = [
       ["User Activity Summary"],
       ["Generated at (UTC)", new Date().toISOString()],
-      ["User ID", params.userId],
+      ["User ID", resolvedParams.userId],
       ["Date Range", `${startDate || "All time"} - ${endDate || "Present"}`],
       [""],
       ["Practice Attempted", summary.practiceAttempted],
@@ -276,7 +277,7 @@ export async function GET(
     const endDateStr = endDate
       ? new Date(endDate).toISOString().split("T")[0]
       : "present";
-    const filename = `user-${params?.userId}-activity-${startDateStr}-${endDateStr}-UTC.xlsx`;
+    const filename = `user-${resolvedParams?.userId}-activity-${startDateStr}-${endDateStr}-UTC.xlsx`;
 
     // Return Excel file
     return new NextResponse(excelBuffer, {

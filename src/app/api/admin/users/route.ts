@@ -42,11 +42,9 @@ export async function GET(request: NextRequest) {
     // Get unique users with their latest activity
     const pipeline = [
       { $match: searchFilter },
-      { $sort: { timestampUtc: 1 } },
       {
         $group: {
           _id: "$userId",
-          email: { $last: "$email" },
           lastActivity: { $max: "$timestampUtc" },
           firstActivity: { $min: "$timestampUtc" },
           totalActivities: { $sum: 1 },
@@ -135,6 +133,7 @@ export async function GET(request: NextRequest) {
         $addFields: {
           plan: { $ifNull: ["$userDetails.plan", "free"] },
           planType: { $ifNull: ["$userDetails.planType", null] },
+          email: { $ifNull: ["$userDetails.email", null] },
         },
       },
       {
@@ -147,7 +146,9 @@ export async function GET(request: NextRequest) {
       { $limit: limit },
     ];
 
-    const users = await userActivityCollection.aggregate(pipeline).toArray();
+    const users = await userActivityCollection
+      .aggregate(pipeline, { allowDiskUse: true })
+      .toArray();
 
     // Get total count for pagination
     const totalCountPipeline = [
