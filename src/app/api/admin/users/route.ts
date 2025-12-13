@@ -5,58 +5,62 @@ import client from "@/lib/mongodb";
 export async function GET(request: NextRequest) {
   try {
     const currentUserData = await currentUser();
-    if (!currentUserData) {
+    if (!currentUserData)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
-    // Check if user is admin
     const authenticate = await auth();
-
     const isAdmin =
       authenticate.sessionClaims?.metadata?.roles?.includes("admin");
-    if (!isAdmin) {
+    if (!isAdmin)
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
-    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const sortBy = searchParams.get("sortBy") || "totalActivities";
     const sortOrder = searchParams.get("sortOrder") || "desc";
 
     const db = client.db();
     const userActivityCollection = db.collection("useractivities");
 
-    // Build search filter
-    const searchFilter: Record<string, unknown> = {};
-    if (search) {
-      searchFilter.$or = [
-        { userId: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { ipAddress: { $regex: search, $options: "i" } },
-        { userAgent: { $regex: search, $options: "i" } },
-      ];
-    }
+    // Build Search Filter
+    // Note: We apply search at the END of the pipeline to ensure we filter the merged result
+    const searchRegex = search ? { $regex: search, $options: "i" } : null;
+    const searchMatch = searchRegex
+      ? {
+        $match: {
+          $or: [
+            { _id: searchRegex }, // userId
+            { email: searchRegex },
+            { firstName: searchRegex },
+            { lastName: searchRegex },
+            { "ipAddresses": searchRegex },
+          ],
+        },
+      }
+      : { $match: {} };
 
-    // Get unique users with their activity stats
-    // NOTE: Removed the expensive $sort before $group to avoid memory limit errors
+    // --- Aggregation Pipeline ---
     const pipeline = [
-      { $match: searchFilter },
-      // Group by userId FIRST (before any sort to avoid memory issues)
+      // 1. Aggregate Activity Stats (Group by userId)
+      // This gets us a list of UNIQUE active users with their stats
       {
         $group: {
           _id: "$userId",
-          email: { $last: "$email" },
+          email: { $last: "$email" }, // Use latest email from activity
           lastActivity: { $max: "$timestampUtc" },
           firstActivity: { $min: "$timestampUtc" },
           totalActivities: { $sum: 1 },
           ipAddresses: { $addToSet: "$ipAddress" },
           userAgents: { $addToSet: "$userAgent" },
-          eventTypes: { $addToSet: "$eventType" },
-          contexts: { $addToSet: "$context" },
           totalTokens: {
-            $sum: { $add: ["$llmTokensPrompt", "$llmTokensCompletion"] },
+            $sum: {
+              $add: [
+                { $ifNull: ["$llmTokensPrompt", 0] },
+                { $ifNull: ["$llmTokensCompletion", 0] },
+              ],
+            },
           },
           practiceAttempts: {
             $sum: {
@@ -83,7 +87,11 @@ export async function GET(request: NextRequest) {
           },
           mockCompletions: {
             $sum: {
-              $cond: [{ $eq: ["$eventType", "mock_attempt_completed"] }, 1, 0],
+              $cond: [
+                { $eq: ["$eventType", "mock_attempt_completed"] },
+                1,
+                0,
+              ],
             },
           },
           paymentEvents: {
@@ -118,82 +126,123 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      // Lookup user details from users collection
+      // 2. Union with Users Collection
+      // This brings in ALL users, including those with 0 activity
       {
-        $lookup: {
-          from: "users",
-          localField: "_id",
-          foreignField: "clerkUserId",
-          as: "userDetails",
+        $unionWith: {
+          coll: "users",
+          pipeline: [
+            {
+              $project: {
+                _id: "$clerkUserId", // Map clerkUserId to _id to match activity grouping
+                email: 1,
+                firstName: 1,
+                lastName: 1,
+                plan: 1,
+                planType: 1,
+                createdAt: 1,
+                // Mark these as from 'users' collection so we can prioritize profile data
+                isUserProfile: { $literal: true },
+              },
+            },
+          ],
         },
       },
+      // 3. Group and Merge (Combine Activity + Profile)
       {
-        $unwind: {
-          path: "$userDetails",
-          preserveNullAndEmptyArrays: true,
+        $group: {
+          _id: "$_id", // Group by User ID
+          email: { $last: "$email" }, // Prefer email from whichever doc came last (usually profile if sorted, but here we just take one)
+          // Profile Data
+          plan: { $max: "$plan" },
+          planType: { $max: "$planType" },
+          createdAt: { $max: "$createdAt" },
+          // Activity Stats (Summing works because one doc has stats, the other has 0/null)
+          lastActivity: { $max: "$lastActivity" },
+          firstActivity: { $min: "$firstActivity" },
+          totalActivities: { $sum: "$totalActivities" },
+          totalTokens: { $sum: "$totalTokens" },
+          practiceAttempts: { $sum: "$practiceAttempts" },
+          practiceCompletions: { $sum: "$practiceCompletions" },
+          mockAttempts: { $sum: "$mockAttempts" },
+          mockCompletions: { $sum: "$mockCompletions" },
+          paymentEvents: { $sum: "$paymentEvents" },
+          disputeEvents: { $sum: "$disputeEvents" },
+          // Arrays need to be merged
+          ipAddresses: { $push: "$ipAddresses" },
+          userAgents: { $push: "$userAgents" },
         },
       },
+      // 4. Clean up Arrays (Flatten)
       {
         $addFields: {
-          plan: { $ifNull: ["$userDetails.plan", "free"] },
-          planType: { $ifNull: ["$userDetails.planType", null] },
+          ipAddresses: {
+            $reduce: {
+              input: "$ipAddresses",
+              initialValue: [],
+              in: { $setUnion: ["$$value", { $ifNull: ["$$this", []] }] },
+            },
+          },
+          userAgents: {
+            $reduce: {
+              input: "$userAgents",
+              initialValue: [],
+              in: { $setUnion: ["$$value", { $ifNull: ["$$this", []] }] },
+            },
+          },
+          // Ensure defaults
+          plan: { $ifNull: ["$plan", "free"] },
+          createdAt: { $ifNull: ["$createdAt", "$firstActivity"] }, // Fallback to first activity if no profile
         },
       },
-      // Sort AFTER grouping (much smaller dataset = no memory issues)
+      // 5. Apply Search Filter (on the merged result)
+      searchMatch,
+      // 6. Sort
       {
         $sort: {
-          [sortBy === "createdAt" ? "firstActivity" : sortBy]:
-            sortOrder === "desc" ? -1 : 1,
+          [sortBy]: sortOrder === "desc" ? -1 : 1,
+          _id: 1, // Secondary sort for stability
         } as Record<string, 1 | -1>,
       },
-      { $skip: (page - 1) * limit },
-      { $limit: limit },
+      // 7. Pagination
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+        },
+      },
     ];
 
-    // Use allowDiskUse to handle large datasets
-    const users = await userActivityCollection
+    // Execute Aggregation
+    const result = await userActivityCollection
       .aggregate(pipeline, { allowDiskUse: true })
       .toArray();
 
-    // Get total count for pagination
-    const totalCountPipeline = [
-      { $match: searchFilter },
-      { $group: { _id: "$userId" } },
-      { $count: "total" },
-    ];
+    const data = result[0].data || [];
+    const totalCount = result[0].metadata[0]?.total || 0;
 
-    const totalCountResult = await userActivityCollection
-      .aggregate(totalCountPipeline, { allowDiskUse: true })
-      .toArray();
-    const totalCount = totalCountResult[0]?.total || 0;
-
-    // Format response
-    const formattedUsers = users.map((user) => {
-      const uniqueIpAddresses = user.ipAddresses.length;
-      const uniqueUserAgents = user.userAgents.length;
-
-      return {
-        userId: user._id,
-        email: user.email ?? null,
-        lastActivity: user.lastActivity,
-        firstActivity: user.firstActivity,
-        totalActivities: user.totalActivities,
-        uniqueIpAddresses,
-        uniqueUserAgents,
-        totalTokens: user.totalTokens,
-        practiceAttempts: user.practiceAttempts,
-        practiceCompletions: user.practiceCompletions,
-        mockAttempts: user.mockAttempts,
-        mockCompletions: user.mockCompletions,
-        paymentEvents: user.paymentEvents,
-        disputeEvents: user.disputeEvents,
-        riskScore: calculateRiskScoreGrouped(user),
-        ipAddresses: user.ipAddresses.slice(0, 5),
-        userAgents: user.userAgents.slice(0, 3),
-        plan: user.plan,
-        planType: user.planType,
-      };
-    });
+    // Format Response
+    const formattedUsers = data.map((user: any) => ({
+      userId: user._id,
+      email: user.email ?? null,
+      lastActivity: user.lastActivity || null,
+      firstActivity: user.firstActivity || user.createdAt || null,
+      totalActivities: user.totalActivities || 0,
+      uniqueIpAddresses: (user.ipAddresses || []).length,
+      uniqueUserAgents: (user.userAgents || []).length,
+      totalTokens: user.totalTokens || 0,
+      practiceAttempts: user.practiceAttempts || 0,
+      practiceCompletions: user.practiceCompletions || 0,
+      mockAttempts: user.mockAttempts || 0,
+      mockCompletions: user.mockCompletions || 0,
+      paymentEvents: user.paymentEvents || 0,
+      disputeEvents: user.disputeEvents || 0,
+      riskScore: calculateRiskScoreGrouped(user),
+      ipAddresses: (user.ipAddresses || []).slice(0, 5),
+      userAgents: (user.userAgents || []).slice(0, 3),
+      plan: user.plan,
+      planType: user.planType || null,
+    }));
 
     return NextResponse.json({
       users: formattedUsers,
@@ -251,4 +300,3 @@ function calculateRiskScoreGrouped(user: Record<string, unknown>): number {
 
   return Math.min(riskScore, 100);
 }
-
