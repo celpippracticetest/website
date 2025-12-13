@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   Shield,
   Clock,
+  RotateCw,
 } from "lucide-react";
 
 interface User {
@@ -174,6 +175,15 @@ export default function UsersPage() {
               <option value="desc">Descending</option>
               <option value="asc">Ascending</option>
             </select>
+            <button
+              onClick={fetchUsers}
+              className="p-2 text-gray-600 hover:text-blue-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+              title="Refresh"
+            >
+              <RotateCw
+                className={`w-5 h-5 ${loading ? "animate-spin" : ""}`}
+              />
+            </button>
           </div>
         </div>
       </div>
