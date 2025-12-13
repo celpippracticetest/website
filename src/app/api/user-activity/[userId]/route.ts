@@ -4,8 +4,9 @@ import client from "@/lib/mongodb";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  props: { params: Promise<{ userId: string }> }
 ) {
+  const resolvedParams = await props.params;
   try {
     const currentUserData = await currentUser();
     if (!currentUserData) {
@@ -17,7 +18,7 @@ export async function GET(
 
     const isAdmin =
       authenticate.sessionClaims?.metadata?.roles?.includes("admin");
-    if (!isAdmin && currentUserData.id !== params.userId) {
+    if (!isAdmin && currentUserData.id !== resolvedParams.userId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -39,7 +40,7 @@ export async function GET(
     const userActivityCollection = db.collection("useractivities");
 
     // Build filter
-    const filter: any = { userId: params?.userId };
+    const filter: any = { userId: resolvedParams?.userId };
 
     // Date range filter
     if (startDate || endDate) {
