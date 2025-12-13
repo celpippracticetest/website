@@ -28,21 +28,37 @@ export async function GET(request: NextRequest) {
     const db = client.db();
     const userActivityCollection = db.collection("useractivities");
 
-    // Build search filter
-    const searchFilter: any = {};
+    // Build search filter for useractivities
+    const searchFilter: Record<string, unknown> = {};
     if (search) {
       searchFilter.$or = [
         { userId: { $regex: search, $options: "i" } },
         { email: { $regex: search, $options: "i" } },
-        { ipAddress: { $regex: search, $options: "i" } },
-        { userAgent: { $regex: search, $options: "i" } },
       ];
     }
 
-    // Get unique users with their latest activity
+    // Determine sort field
+    const getSortField = (field: string): string => {
+      switch (field) {
+        case "createdAt":
+          return "firstActivity";
+        case "lastActivity":
+          return "lastActivity";
+        case "firstActivity":
+          return "firstActivity";
+        case "totalActivities":
+          return "totalActivities";
+        default:
+          return "firstActivity";
+      }
+    };
+
+    // Main pipeline: Start from useractivities (where activity data is guaranteed)
+    // Then lookup user details from users collection
     const pipeline = [
+      // Match search filter first (reduces data before grouping)
       { $match: searchFilter },
-      { $sort: { timestampUtc: 1 } },
+      // Group by userId to aggregate all activity statistics
       {
         $group: {
           _id: "$userId",
@@ -52,10 +68,13 @@ export async function GET(request: NextRequest) {
           totalActivities: { $sum: 1 },
           ipAddresses: { $addToSet: "$ipAddress" },
           userAgents: { $addToSet: "$userAgent" },
-          eventTypes: { $addToSet: "$eventType" },
-          contexts: { $addToSet: "$context" },
           totalTokens: {
-            $sum: { $add: ["$llmTokensPrompt", "$llmTokensCompletion"] },
+            $sum: {
+              $add: [
+                { $ifNull: ["$llmTokensPrompt", 0] },
+                { $ifNull: ["$llmTokensCompletion", 0] },
+              ],
+            },
           },
           practiceAttempts: {
             $sum: {
@@ -82,7 +101,11 @@ export async function GET(request: NextRequest) {
           },
           mockCompletions: {
             $sum: {
-              $cond: [{ $eq: ["$eventType", "mock_attempt_completed"] }, 1, 0],
+              $cond: [
+                { $eq: ["$eventType", "mock_attempt_completed"] },
+                1,
+                0,
+              ],
             },
           },
           paymentEvents: {
@@ -117,6 +140,7 @@ export async function GET(request: NextRequest) {
           },
         },
       },
+      // Lookup user details from users collection
       {
         $lookup: {
           from: "users",
@@ -125,31 +149,39 @@ export async function GET(request: NextRequest) {
           as: "userDetails",
         },
       },
+      // Unwind userDetails (preserveNullAndEmptyArrays to keep users without profile)
       {
         $unwind: {
           path: "$userDetails",
           preserveNullAndEmptyArrays: true,
         },
       },
+      // Add plan fields from user details
       {
         $addFields: {
           plan: { $ifNull: ["$userDetails.plan", "free"] },
           planType: { $ifNull: ["$userDetails.planType", null] },
+          // Use email from users collection if available, otherwise from activity
+          finalEmail: { $ifNull: ["$userDetails.email", "$email"] },
         },
       },
+      // Sort AFTER grouping (much more memory efficient!)
       {
         $sort: {
-          [sortBy === "createdAt" ? "firstActivity" : sortBy]:
-            sortOrder === "desc" ? -1 : 1,
-        },
+          [getSortField(sortBy)]: sortOrder === "desc" ? -1 : 1,
+        } as Record<string, 1 | -1>,
       },
+      // Pagination
       { $skip: (page - 1) * limit },
       { $limit: limit },
     ];
 
-    const users = await userActivityCollection.aggregate(pipeline).toArray();
+    // Use allowDiskUse to handle large datasets without memory limit errors
+    const users = await userActivityCollection
+      .aggregate(pipeline, { allowDiskUse: true })
+      .toArray();
 
-    // Get total count for pagination
+    // Get total count for pagination (count unique userIds)
     const totalCountPipeline = [
       { $match: searchFilter },
       { $group: { _id: "$userId" } },
@@ -157,35 +189,35 @@ export async function GET(request: NextRequest) {
     ];
 
     const totalCountResult = await userActivityCollection
-      .aggregate(totalCountPipeline)
+      .aggregate(totalCountPipeline, { allowDiskUse: true })
       .toArray();
     const totalCount = totalCountResult[0]?.total || 0;
 
     // Format response
     const formattedUsers = users.map((user) => {
-      const uniqueIpAddresses = user.ipAddresses.length;
-      const uniqueUserAgents = user.userAgents.length;
+      const uniqueIpAddresses = (user.ipAddresses || []).filter(Boolean).length;
+      const uniqueUserAgents = (user.userAgents || []).filter(Boolean).length;
 
       return {
         userId: user._id,
-        email: user.email ?? null,
-        lastActivity: user.lastActivity,
-        firstActivity: user.firstActivity,
-        totalActivities: user.totalActivities,
+        email: user.finalEmail ?? user.email ?? null,
+        lastActivity: user.lastActivity || null,
+        firstActivity: user.firstActivity || null,
+        totalActivities: user.totalActivities || 0,
         uniqueIpAddresses,
         uniqueUserAgents,
-        totalTokens: user.totalTokens,
-        practiceAttempts: user.practiceAttempts,
-        practiceCompletions: user.practiceCompletions,
-        mockAttempts: user.mockAttempts,
-        mockCompletions: user.mockCompletions,
-        paymentEvents: user.paymentEvents,
-        disputeEvents: user.disputeEvents,
+        totalTokens: user.totalTokens || 0,
+        practiceAttempts: user.practiceAttempts || 0,
+        practiceCompletions: user.practiceCompletions || 0,
+        mockAttempts: user.mockAttempts || 0,
+        mockCompletions: user.mockCompletions || 0,
+        paymentEvents: user.paymentEvents || 0,
+        disputeEvents: user.disputeEvents || 0,
         riskScore: calculateRiskScoreGrouped(user),
-        ipAddresses: user.ipAddresses.slice(0, 5),
-        userAgents: user.userAgents.slice(0, 3),
-        plan: user.plan,
-        planType: user.planType,
+        ipAddresses: (user.ipAddresses || []).filter(Boolean).slice(0, 5),
+        userAgents: (user.userAgents || []).filter(Boolean).slice(0, 3),
+        plan: user.plan || "free",
+        planType: user.planType || null,
       };
     });
 
@@ -207,14 +239,16 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function calculateRiskScoreGrouped(user: any): number {
+function calculateRiskScoreGrouped(user: Record<string, unknown>): number {
   let riskScore = 0;
 
-  const uniqueIpAddresses = user.ipAddresses?.length ?? 0;
-  const uniqueUserAgents = user.userAgents?.length ?? 0;
+  const ipAddresses = (user.ipAddresses as string[] | undefined) || [];
+  const userAgents = (user.userAgents as string[] | undefined) || [];
+  const uniqueIpAddresses = ipAddresses.filter(Boolean).length;
+  const uniqueUserAgents = userAgents.filter(Boolean).length;
 
   // High dispute events
-  if (user.disputeEvents > 0) riskScore += 50;
+  if (((user.disputeEvents as number) || 0) > 0) riskScore += 50;
 
   // Multiple IP addresses (potential shared account)
   if (uniqueIpAddresses > 10) riskScore += 30;
@@ -224,14 +258,19 @@ function calculateRiskScoreGrouped(user: any): number {
   if (uniqueUserAgents > 5) riskScore += 15;
 
   // High token usage without completion
-  const attempts = (user.practiceAttempts || 0) + (user.mockAttempts || 0);
+  const attempts =
+    ((user.practiceAttempts as number) || 0) + ((user.mockAttempts as number) || 0);
   const completions =
-    (user.practiceCompletions || 0) + (user.mockCompletions || 0);
+    ((user.practiceCompletions as number) || 0) + ((user.mockCompletions as number) || 0);
   const completionRate = attempts ? completions / attempts : 1;
-  if (completionRate < 0.3 && (user.totalTokens || 0) > 10000) riskScore += 25;
+  if (completionRate < 0.3 && ((user.totalTokens as number) || 0) > 10000)
+    riskScore += 25;
 
   // Payment events without corresponding activity
-  if ((user.paymentEvents || 0) > 0 && (user.totalActivities || 0) < 10)
+  if (
+    ((user.paymentEvents as number) || 0) > 0 &&
+    ((user.totalActivities as number) || 0) < 10
+  )
     riskScore += 20;
 
   return Math.min(riskScore, 100);
