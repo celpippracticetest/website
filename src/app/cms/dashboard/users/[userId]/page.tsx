@@ -316,9 +316,9 @@ export default function UserDetailPage() {
               <p className="text-xs text-gray-500">
                 {summary.practiceAttempted > 0
                   ? Math.round(
-                      (summary.practiceCompleted / summary.practiceAttempted) *
-                        100
-                    )
+                    (summary.practiceCompleted / summary.practiceAttempted) *
+                    100
+                  )
                   : 0}
                 % completion
               </p>
@@ -332,15 +332,15 @@ export default function UserDetailPage() {
               <FileText className="w-6 h-6 text-green-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Mock Exams</p>
+              <p className="text-sm font-medium text-gray-600">Exams</p>
               <p className="text-2xl font-bold text-gray-900">
                 {summary.mockAttempted} / {summary.mockCompleted}
               </p>
               <p className="text-xs text-gray-500">
                 {summary.mockAttempted > 0
                   ? Math.round(
-                      (summary.mockCompleted / summary.mockAttempted) * 100
-                    )
+                    (summary.mockCompleted / summary.mockAttempted) * 100
+                  )
                   : 0}
                 % completion
               </p>
@@ -447,7 +447,7 @@ export default function UserDetailPage() {
                 Practice
               </option>
               <option value="mock_attempt_started,mock_attempt_completed">
-                Mock Exams
+                Exams
               </option>
               <option value="ai_feedback_generated">AI Feedback</option>
               <option value="login,logout">Authentication</option>
@@ -468,7 +468,7 @@ export default function UserDetailPage() {
             >
               <option value="">All Contexts</option>
               <option value="practice">Practice</option>
-              <option value="mock">Mock Exams</option>
+              <option value="mock">Exams</option>
               <option value="learning">Learning</option>
               <option value="system">System</option>
               <option value="payment">Payment</option>
