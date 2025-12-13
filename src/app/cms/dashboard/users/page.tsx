@@ -191,20 +191,16 @@ export default function UsersPage() {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      User ID
-                    </th>
+
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Email
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Risk Score
                     </th>
+
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Premium
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Plan Type
+                      Plan
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Activities
@@ -232,19 +228,7 @@ export default function UsersPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {users.map((user) => (
                     <tr key={user.userId} className="hover:bg-gray-50">
-                      {/* User ID */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {user.userId}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {user.disputeEvents > 0 && (
-                            <span className="text-red-600 font-medium">
-                              {user.disputeEvents} dispute(s)
-                            </span>
-                          )}
-                        </div>
-                      </td>
+
 
                       {/* Email */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -263,27 +247,20 @@ export default function UsersPage() {
                         </span>
                       </td>
 
-                      {/* Premium Status */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.plan === "premium" || user.plan === "pro"
-                            ? "bg-purple-100 text-purple-800"
-                            : "bg-gray-100 text-gray-800"
-                            }`}
-                        >
-                          {user.plan === "premium" || user.plan === "pro"
-                            ? "Premium"
-                            : "Free"}
-                        </span>
-                      </td>
+
 
                       {/* Plan Type */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {user.planType ? (
-                          <span className="capitalize">{user.planType}</span>
-                        ) : (
-                          "-"
-                        )}
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.plan === "premium" || user.plan === "pro"
+                              ? "bg-purple-100 text-purple-800"
+                              : "bg-gray-100 text-gray-800"
+                            }`}
+                        >
+                          {user.plan === "premium" || user.plan === "pro"
+                            ? `Premium ${user.planType ? `(${user.planType})` : ""}`
+                            : "Free"}
+                        </span>
                       </td>
 
                       {/* Activities */}
