@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { useButtonVisibleStore } from "@/store/buttonVisible.store";
 import { useInView } from "react-intersection-observer";
 import TopHeader from "./TopHeader";
+import { Button } from "@/components/v2/Button";
 
 const SvgMockExamLight = dynamic(() => import("../../icons/MockExamsLight"), {
   ssr: false,
@@ -70,9 +71,7 @@ const Hero = () => {
 
   return (
     <div ref={ref} className="flex flex-col ">
-      <Link
-        href={"/practice-overview"}
-        aria-label="Start your free CELPIP practice"
+      <div
         className={`w-full  
     flex bg-[linear-gradient(180deg,_rgba(255,_255,_255,_0.4)_0%,_rgba(255,_255,_255,_0.8)_100%)] 
     backdrop-blur-[1px] 
@@ -85,30 +84,14 @@ const Hero = () => {
     left-1/2 -translate-x-1/2 transition-all duration-500 
     ease-in-out transform bottom-0`}
       >
-        <motion.div
-          ref={buttonRef}
-          animate={{ scale: [1, 1.05, 1] }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className={`flex relative overflow-hidden z-[1] hover:!cursor-pointer 
-      bg-primary2 w-full max-w-[195px] sm:!max-w-[310px] 
-      h-[48px] rounded-[24px] items-center justify-center
-      transition-all duration-300 group
-      `}
-        >
-          <div className="absolute inset-0 bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <SvgPlus className="text-white relative z-10" />
-          <span className="hidden sm:!flex text-white text-[20px] mr-[8px] relative z-10">
-            Start Your Free Practice{" "}
-          </span>
-          <span className="flex sm:!hidden text-white text-[20px] mr-[8px] relative z-10">
-            Free Practice{" "}
-          </span>
-        </motion.div>
-      </Link>
+        <Button asChild variant="primary">
+          <Link href={"/practice-overview"} aria-label="Start your free CELPIP practice">
+            <SvgPlus />
+            <span className="hidden sm:!flex">Start Your Free Practice</span>
+            <span className="flex sm:!hidden">Free Practice</span>
+          </Link>
+        </Button>
+      </div>
 
       <section
         style={{
@@ -149,27 +132,12 @@ const Hero = () => {
                   <span className="text-primary2">CELPIP</span> Score
                 </h1>
               </div>
-              <motion.div
-                animate={{ scale: [1, 1.05, 1] }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="hidden screen744:!flex mt-[32px] screen1280:!mt-[40px]"
-              >
-                <Link
-                  href={"/practice-overview"}
-                  className="hover:cursor-pointer relative overflow-hidden flex font-semibold screen1280:!font-normal leading-[16px] bg-primary2 shadow-startButton gap-[8px] px-[24px] max-w-[310px] h-[48px] rounded-[24px] items-center justify-center transition-all duration-300 group"
-                >
-                  <div className="absolute inset-0 bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <SvgPlus className="text-white relative z-10" />
-
-                  <span className="text-white text-[20px] mr-[8px] relative z-10">
-                    Start Your Free Practice{" "}
-                  </span>
-                </Link>
-              </motion.div>
+                <Button asChild variant="primary">
+                  <Link href={"/practice-overview"}>
+                    <SvgPlus />
+                    <span>Start Your Free Practice</span>
+                  </Link>
+                </Button>
               <div className="hidden screen744:!flex items-center gap-[8px] mt-[24px]">
                 <SvgCrown />
                 <span className="text-text2  font-normal text-[12px] ">
