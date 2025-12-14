@@ -84,12 +84,10 @@ const Hero = () => {
     left-1/2 -translate-x-1/2 transition-all duration-500 
     ease-in-out transform bottom-0`}
       >
-        <Button asChild variant="primary">
-          <Link href={"/practice-overview"} aria-label="Start your free CELPIP practice">
-            <SvgPlus />
-            <span className="hidden sm:!flex">Start Your Free Practice</span>
-            <span className="flex sm:!hidden">Free Practice</span>
-          </Link>
+        <Button href="/practice-overview" aria-label="Start your free CELPIP practice">
+          <SvgPlus />
+          <span className="hidden sm:!flex">Start Your Free Practice</span>
+          <span className="flex sm:!hidden">Free Practice</span>
         </Button>
       </div>
 
@@ -132,11 +130,9 @@ const Hero = () => {
                   <span className="text-primary2">CELPIP</span> Score
                 </h1>
               </div>
-                <Button asChild variant="primary">
-                  <Link href={"/practice-overview"}>
-                    <SvgPlus />
-                    <span>Start Your Free Practice</span>
-                  </Link>
+                <Button href="/practice-overview">
+                  <SvgPlus />
+                  <span>Start Your Free Practice</span>
                 </Button>
               <div className="hidden screen744:!flex items-center gap-[8px] mt-[24px]">
                 <SvgCrown />

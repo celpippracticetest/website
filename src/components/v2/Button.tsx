@@ -1,17 +1,18 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
+import Link from "next/link";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const v2ButtonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full font-medium select-none transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 active:translate-y-[4px] active:shadow-none",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full font-medium select-none transition-transform transition-shadow transition-colors duration-300 ease-in-out transform-gpu will-change-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 active:translate-y-[6px] active:translate-x-[2px] active:shadow-none",
   {
     variants: {
       variant: {
         primary:
-          "bg-[#2563EB] text-white shadow-[0_6px_0_0_#93C5FD] hover:bg-[#3B82F6] hover:shadow-[0_6px_0_0_#60A5FA] disabled:bg-[#E5E7EB] disabled:text-[#6B7280]",
+          "bg-[#2563EB] text-white shadow-[2px_6px_0_0_#93C5FD] hover:bg-[#1E40AF] disabled:bg-[#E5E7EB] disabled:text-[#6B7280]",
         secondary:
-          "bg-[#F9735F] text-white shadow-[0_6px_0_0_#FEB2A8] hover:bg-[#FB8A74] hover:shadow-[0_6px_0_0_#FEC6BE] disabled:bg-[#E5E7EB] disabled:text-[#6B7280]",
+          "bg-[#F9735F] text-white shadow-[2px_6px_0_0_#FEB2A8] hover:bg-[#D94E37] disabled:bg-[#E5E7EB] disabled:text-[#6B7280]",
       },
       size: {
         sm: "h-10 px-6 text-[16px]",
@@ -27,17 +28,39 @@ const v2ButtonVariants = cva(
   }
 );
 
+type AnchorProps = React.AnchorHTMLAttributes<HTMLAnchorElement>;
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    AnchorProps,
     VariantProps<typeof v2ButtonVariants> {
   asChild?: boolean;
+  href?: string;
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button";
+const Button = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, href, children, ...props }, ref) => {
+    const classes = cn(v2ButtonVariants({ variant, size, className }));
+
+    if (asChild) {
+      return (
+        <Slot className={classes} ref={ref as React.Ref<any>} {...props}>
+          {children}
+        </Slot>
+      );
+    }
+
+    if (href) {
+      return (
+        <Link href={href} className={classes} ref={ref as React.Ref<any>} {...(props as AnchorProps)}>
+          {children}
+        </Link>
+      );
+    }
+
     return (
-      <Comp className={cn(v2ButtonVariants({ variant, size, className }))} ref={ref} {...props} />
+      <button className={classes} ref={ref as React.Ref<HTMLButtonElement>} {...props}>
+        {children}
+      </button>
     );
   }
 );
