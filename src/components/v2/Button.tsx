@@ -5,14 +5,14 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const v2ButtonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full font-medium select-none transition-transform transition-shadow transition-colors duration-300 ease-in-out transform-gpu will-change-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 active:translate-y-[6px] active:translate-x-[2px] active:shadow-none",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full font-medium select-none transition-transform transition-shadow transition-colors duration-300 ease-in-out transform-gpu will-change-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 hover:-translate-y-[2px] active:translate-y-[6px] active:translate-x-[2px] active:shadow-none",
   {
     variants: {
       variant: {
         primary:
-          "bg-[#2563EB] text-white shadow-[2px_6px_0_0_#93C5FD] hover:bg-[#1E40AF] disabled:bg-[#E5E7EB] disabled:text-[#6B7280]",
+          "bg-button-primary text-white shadow-[2px_6px_0_0_rgba(117,156,255,1)] hover:bg-button-primary disabled:bg-button-disabled disabled:text-[#6B7280]",
         secondary:
-          "bg-[#F9735F] text-white shadow-[2px_6px_0_0_#FEB2A8] hover:bg-[#D94E37] disabled:bg-[#E5E7EB] disabled:text-[#6B7280]",
+          "bg-button-secondary text-white shadow-[2px_6px_0_0_rgba(117,156,255,1)] hover:bg-button-secondary disabled:bg-button-disabled disabled:text-[#6B7280]",
       },
       size: {
         sm: "h-10 px-6 text-[16px]",
