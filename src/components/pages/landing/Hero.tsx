@@ -84,7 +84,7 @@ const Hero = () => {
     left-1/2 -translate-x-1/2 transition-all duration-500 
     ease-in-out transform bottom-0`}
       >
-        <Button href="/practice-overview" aria-label="Start your free CELPIP practice">
+        <Button size="lg" href="/practice-overview" aria-label="Start your free CELPIP practice">
           <SvgPlus />
           <span className="hidden sm:!flex">Start Your Free Practice</span>
           <span className="flex sm:!hidden">Free Practice</span>
@@ -130,7 +130,7 @@ const Hero = () => {
                   <span className="text-primary2">CELPIP</span> Score
                 </h1>
               </div>
-                <Button href="/practice-overview">
+                <Button href="/practice-overview" size="lg">
                   <SvgPlus />
                   <span>Start Your Free Practice</span>
                 </Button>

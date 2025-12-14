@@ -15,35 +15,48 @@ const v2ButtonVariants = cva(
           "bg-button-secondary text-white shadow-[2px_6px_0_0_rgba(117,156,255,1)] hover:bg-button-secondary active:shadow-[0px_0px_0_0_rgba(117,156,255,0)] disabled:bg-button-disabled disabled:text-[#6B7280] disabled:hover:bg-button-disabled",
       },
       size: {
-        sm: "h-10 px-6 text-[16px]",
-        md: "h-12 px-8 text-[18px]",
-        lg: "h-16 px-10 text-[20px]",
-        default: "h-[60px] px-12 text-[20px]",
+        sm: "h-[40px] w-[100px] text-[14px]",
+        md: "h-[48px] w-[200px] text-[16px]",
+        mp: "h-[55px] w-[220px] text-[16px]",
+        lg: "h-[56px] w-[260px] text-[18px]",
+      },
+      round: {
+        none: "",
+        sm: "h-[42px] w-[42px] rounded-full p-0",
+        md: "h-[46px] w-[46px] rounded-full p-0",
       },
     },
     defaultVariants: {
       variant: "primary",
-      size: "default",
+      size: "mp",
+      round: "none",
     },
   }
 );
 
 type AnchorProps = React.AnchorHTMLAttributes<HTMLAnchorElement>;
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    AnchorProps,
-    VariantProps<typeof v2ButtonVariants> {
+type ButtonBaseProps = VariantProps<typeof v2ButtonVariants> & {
   asChild?: boolean;
-  href?: string;
-}
+  className?: string;
+  children?: React.ReactNode;
+};
+type ButtonLinkProps = ButtonBaseProps &
+  Omit<AnchorProps, keyof React.ButtonHTMLAttributes<HTMLButtonElement>> & {
+    href: string;
+  };
+type ButtonButtonProps = ButtonBaseProps &
+  React.ButtonHTMLAttributes<HTMLButtonElement> & {
+    href?: undefined;
+  };
+export type ButtonProps = ButtonLinkProps | ButtonButtonProps;
 
 const Button = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, href, children, ...props }, ref) => {
-    const classes = cn(v2ButtonVariants({ variant, size, className }));
+  ({ className, variant, size, round, asChild = false, href, children, ...props }, ref) => {
+    const classes = cn(v2ButtonVariants({ variant, size, round, className }));
 
     if (asChild) {
       return (
-        <Slot className={classes} ref={ref as React.Ref<any>} {...props}>
+        <Slot className={classes} ref={ref as React.Ref<HTMLElement>} {...props}>
           {children}
         </Slot>
       );
@@ -51,7 +64,7 @@ const Button = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPro
 
     if (href) {
       return (
-        <Link href={href} className={classes} ref={ref as React.Ref<any>} {...(props as AnchorProps)}>
+        <Link href={href} className={classes} ref={ref as React.Ref<HTMLAnchorElement>} {...(props as AnchorProps)}>
           {children}
         </Link>
       );
