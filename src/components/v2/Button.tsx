@@ -10,9 +10,9 @@ const v2ButtonVariants = cva(
     variants: {
       variant: {
         primary:
-          "bg-button-primary text-white shadow-[2px_6px_0_0_rgba(117,156,255,1)] hover:bg-button-primary active:shadow-[0px_0px_0_0_rgba(117,156,255,0)] disabled:bg-button-disabled disabled:text-[#6B7280] disabled:hover:bg-button-disabled",
+          "bg-button-primary text-white shadow-[3.69px_3.91px_0_0_rgba(117,156,255,1)] hover:bg-button-primary active:shadow-[0px_0px_0_0_rgba(117,156,255,0)] disabled:bg-button-disabled disabled:text-[#6B7280] disabled:hover:bg-button-disabled",
         secondary:
-          "bg-button-secondary text-white shadow-[2px_6px_0_0_rgba(117,156,255,1)] hover:bg-button-secondary active:shadow-[0px_0px_0_0_rgba(117,156,255,0)] disabled:bg-button-disabled disabled:text-[#6B7280] disabled:hover:bg-button-disabled",
+          "bg-button-secondary text-white shadow-[3.69px_3.91px_0_0_rgba(117,156,255,1)] hover:bg-button-secondary active:shadow-[0px_0px_0_0_rgba(117,156,255,0)] disabled:bg-button-disabled disabled:text-[#6B7280] disabled:hover:bg-button-disabled",
       },
       size: {
         sm: "h-[40px] w-[100px] text-[14px]",

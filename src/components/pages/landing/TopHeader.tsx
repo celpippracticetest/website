@@ -16,6 +16,7 @@ import {
 import useStore from "@/store";
 import SvgLeagueLogo from "../../icons/LeagueLogo";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/v2/Button";
 
 const SvgClose = dynamic(() => import("../../icons/Close"), { ssr: false });
 const SvgDiamond = dynamic(() => import("../../icons/Diamond"), { ssr: true });
@@ -64,7 +65,7 @@ const TopHeader = () => {
   }, []);
 
   const icons = [
-    <div className="relative  flex items-center justify-center">
+    <div key="mock-exam-icon" className="relative  flex items-center justify-center">
       <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
         <SvgMockTest className="  text-[#76808F]  duration-200 " />
       </div>
@@ -72,7 +73,7 @@ const TopHeader = () => {
         <SvgMockTestTopNavigationHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
       </div>
     </div>,
-    <div className="relative w-[24px] h-[24px] flex items-center justify-center">
+    <div key="practice-icon" className="relative w-[24px] h-[24px] flex items-center justify-center">
       <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
         <SvgPractice
           fill="transparent"
@@ -84,7 +85,7 @@ const TopHeader = () => {
         <SvgPracticeBlueHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
       </div>
     </div>,
-    <div className="relative  flex items-center justify-center">
+    <div key="learn-icon" className="relative  flex items-center justify-center">
       <div className="flex group-hover:hidden w-[24px] h-[24px]  items-center justify-center">
         <SvgLearning
           stroke="#76808F"
@@ -104,28 +105,13 @@ const TopHeader = () => {
   ];
 
   return (
-    <div className="max-w-[1440px]  w-full flex justify-center mx-auto ">
+    <div className="max-w-[1440px] w-full flex justify-center mx-auto ">
       <div
-        className="
-            z-3
-        max-w-[1156px]
-        w-full
-        screen1280:!h-[80px]
-        h-[72px]
-        flex
-        items-center
-        justify-between
-        text-center
-         bg-[linear-gradient(90deg,_rgba(255,_255,_255,_0.65)_0%,_rgba(255,_255,_255,_0.2)_100%)]
-        border-solid
-        fixed
-        top-0
-        border-[1.5px]
-        backdrop-blur-[8px]
-        border-primary5
-        rounded-es-[32px]
-        rounded-ee-[32px]"
-      >
+        className="z-3 max-w-[1156px] w-full screen1280:!h-[80px] h-[72px] flex items-center justify-between text-center border-solid fixed top-0 border-[1.5px] backdrop-blur-[8px] border-primary5 rounded-es-[32px] rounded-ee-[32px]"
+        style={{
+          background:
+            "linear-gradient(90deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.2) 100%)",
+        }}>
         <div className="flex ml-[16px] screen744:!ml-[24px] screen1280:!ml-[40px] items-center gap-[12px] screen744:!gap-[24px]">
           <span
             className="flex screen1280:!hidden"
@@ -134,9 +120,21 @@ const TopHeader = () => {
           >
             <SvgHamburger />
           </span>
-          <Link className="shrink-0" href={"/"}>
+          <Link className="shrink-0 flex flex-row items-center" href={"/"}>
             <Image
-              src="/images/logo.png"
+              src="/images/header-logo-left.png"
+              alt="logo"
+              width={32}
+              height={32}
+              className="w-[32px] h-[32px]"
+              priority={true}
+              sizes="32px"
+              quality={90}
+              loading="eager"
+              fetchPriority="high"
+            />
+            <Image
+              src="/images/header-logo-right.png"
               alt="logo"
               width={133}
               height={40}
@@ -172,8 +170,6 @@ const TopHeader = () => {
                       className="group gap-[10px] h-[36px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
                       href={hrefs[index]}
                     >
-                      {icons[index]}
-
                       <span className=" text-[16px] font-normal">{label}</span>
                     </Link>
                     {index != 2 && (
@@ -187,6 +183,9 @@ const TopHeader = () => {
         </nav>
         <div className="flex gap-[16px] screen744:gap-[32px] screen1280:!gap-[28px]">
           <div className="flex gap-[12px]">
+            <Button round="sm">
+
+            </Button>
             <div onClick={() => router.push("/league")} className="cursor-pointer w-[40px] shrink-0 h-[40px] rounded-full border border-[#D5D6D8] bg-transparent flex items-center justify-center">
               <SvgLeagueLogo />
             </div>
