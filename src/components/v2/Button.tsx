@@ -22,7 +22,7 @@ const v2ButtonVariants = cva(
       },
       round: {
         none: "",
-        sm: "h-[42px] w-[42px] rounded-full p-0",
+        sm: "h-[40px] w-[40px] rounded-full p-0",
         md: "h-[46px] w-[46px] rounded-full p-0",
       },
     },

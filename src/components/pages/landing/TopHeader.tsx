@@ -14,7 +14,6 @@ import {
   SvgPracticeBlueHover,
 } from "@/components/icons";
 import useStore from "@/store";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/v2/Button";
 import SvgCup from "@/components/v2/icons/cup";
 import SvgCrown from "@/components/v2/icons/crown";
@@ -26,15 +25,15 @@ const SvgHamburger = dynamic(() => import("../../icons/Hamburger"), {
 const TopHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const setPremiumPlanModalState = useStore((state) => state.setPremiumPlanModalState);
-  const router = useRouter();
   const hrefs = ["/exam-overview", "/practice-overview", "/learning"];
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const sidebarMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const checkMenu = (event: any) => {
+    const checkMenu = (event: MouseEvent) => {
       if (sidebarMenuRef?.current) {
-        if (!sidebarMenuRef?.current.contains(event.target)) {
+        const target = event.target as Node | null;
+        if (!sidebarMenuRef?.current.contains(target)) {
           setIsMenuOpen(false);
         }
       }
@@ -114,7 +113,7 @@ const TopHeader = () => {
         }}>
         <div className="flex items-center gap-[12px] screen744:!gap-[24px]">
           <span
-            className="flex screen1280:!hidden"
+            className="flex"
             onClick={() => setIsMenuOpen && setIsMenuOpen(!isMenuOpen)}
             aria-label="Open menu"
           >
@@ -136,11 +135,11 @@ const TopHeader = () => {
             <Image
               src="/images/header-logo-right.png"
               alt="logo"
-              width={133}
+              width={84}
               height={40}
-              className="w-[133px] h-[40px]"
+              className="w-[63px] screen744:!w-[84px] h-auto"
               priority={true}
-              sizes="133px"
+              sizes="(max-width: 743px) 63px, 84px"
               quality={90}
               loading="eager"
               fetchPriority="high"
@@ -183,13 +182,16 @@ const TopHeader = () => {
         </nav>
         <div className="flex gap-[16px] screen744:gap-[32px] screen1280:!gap-[28px]">
           <div className="flex gap-[12px]">
-            <Button round="sm" href="/league">
-             <SvgCup />
+            <Button className="hidden screen744:!flex" round="md" href="/league" aria-label="Open League">
+              <SvgCup />
             </Button>
-            <Button variant="secondary" round="sm" onClick={() => setPremiumPlanModalState()}>
-             <SvgCrown />
+            <Button className="screen744:!hidden flex" variant="secondary" round="sm" onClick={() => setPremiumPlanModalState()} aria-label="Open Premium Plans">
+              <SvgCrown />
             </Button>
-          </ div>
+            <Button className="screen744:!flex hidden" variant="secondary" round="md" onClick={() => setPremiumPlanModalState()} aria-label="Open Premium Plans">
+              <SvgCrown />
+            </Button>
+          </div>
           <div className="h-[40px] flex items-center justify-center">
             <AuthButtons />
           </div>

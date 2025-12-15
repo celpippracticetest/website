@@ -1,11 +1,6 @@
 "use client";
 import { Button } from "@/components/v2/Button";
-import {
-  SignInButton,
-  SignedIn,
-  useUser,
-  SignUpButton,
-} from "@clerk/nextjs";
+import { SignedIn, useUser } from "@clerk/nextjs";
 
 import { useClerk } from "@clerk/nextjs";
 import Link from "next/link";
@@ -15,7 +10,10 @@ import { useState, useEffect, useRef } from "react";
 const AuthButtons = () => {
   const { isSignedIn } = useUser();
   const [isUserDropDownOpen, setUserDropDownOpen] = useState(false);
-  const { user }: any = useUser();
+  const { user } = useUser();
+  const roles = (user?.publicMetadata as Record<string, unknown> | undefined)?.["roles"] as
+    | string[]
+    | undefined;
   const { signOut } = useClerk();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -58,9 +56,7 @@ const AuthButtons = () => {
           {isUserDropDownOpen && (
             <div className="absolute right-0 z-10 mt-2 w-56 top-[48px] rounded-md bg-white ring-1 shadow-lg ring-black/5">
               <div className="py-1">
-                {user &&
-                  user.publicMetadata.roles &&
-                  user.publicMetadata.roles.includes("admin") && (
+                {roles?.includes("admin") && (
                     <a
                       href="/cms/dashboard"
                       className="block px-4 py-2 text-[14px] text-gray-700 w-full text-left"
@@ -86,11 +82,13 @@ const AuthButtons = () => {
                 </Link>
                 <button
                   onClick={() => {
-                    if (
-                      typeof window !== "undefined" &&
-                      (window as any).Intercom
-                    ) {
-                      (window as any).Intercom("show");
+                    if (typeof window !== "undefined") {
+                      const w = window as unknown as {
+                        Intercom?: (cmd: string) => void;
+                      };
+                      if (w.Intercom) {
+                        w.Intercom("show");
+                      }
                     }
                   }}
                   id="support-button"
@@ -114,16 +112,18 @@ const AuthButtons = () => {
         </div>
       </SignedIn>
       {!isSignedIn && (
-          <Button size="md">
-            <span id="sign-up-button" className="flex screen1280:!hidden">
+        <>
+          <Button size="sm" className="max-[744px]:flex min-[744px]:hidden">
+            <span id="sign-up-button">Sign Up</span>
+          </Button>
+          <Button size="md" className="max-[744px]:hidden min-[744px]:flex">
+            <span id="sign-up-button" className="flex">
               Sign Up
               <span className="mx-1">/</span>
               Login
             </span>
-            <span className="hidden screen1280:!flex">
-              Sign Up
-            </span>
           </Button>
+        </>
       )}
     </>
   );
