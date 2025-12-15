@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const v2ButtonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full font-medium select-none transition-all duration-300 ease-in-out transform-gpu will-change-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 hover:-translate-y-[2px] disabled:hover:translate-y-0 active:translate-y-[6px] active:translate-x-[2px]",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full font-medium select-none transition-all duration-300 ease-in-out transform-gpu will-change-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 hover:-translate-y-[2px] disabled:hover:translate-y-0 active:translate-y-[6px] active:translate-x-[2px] cursor-pointer",
   {
     variants: {
       variant: {
@@ -52,11 +52,14 @@ export type ButtonProps = ButtonLinkProps | ButtonButtonProps;
 
 const Button = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonProps>(
   ({ className, variant, size, round, asChild = false, href, children, ...props }, ref) => {
-    const classes = cn(v2ButtonVariants({ variant, size, round, className }));
+    const classes = cn(
+      v2ButtonVariants({ variant, size, round, className }),
+      round && round !== "none" ? "shadow-[2.67px_2.67px_0_0_rgba(117,156,255,1)]" : undefined
+    );
 
     if (asChild) {
       return (
-        <Slot className={classes} ref={ref as React.Ref<HTMLElement>} {...props}>
+        <Slot className={`${classes} cursor-pointer`} ref={ref as React.Ref<HTMLElement>} {...props}>
           {children}
         </Slot>
       );
@@ -64,7 +67,7 @@ const Button = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPro
 
     if (href) {
       return (
-        <Link href={href} className={classes} ref={ref as React.Ref<HTMLAnchorElement>} {...(props as AnchorProps)}>
+        <Link href={href} className={`${classes} cursor-pointer`} ref={ref as React.Ref<HTMLAnchorElement>} {...(props as AnchorProps)}>
           {children}
         </Link>
       );

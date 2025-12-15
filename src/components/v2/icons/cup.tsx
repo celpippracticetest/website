@@ -1,9 +1,19 @@
 import * as React from "react";
 import type { SVGProps } from "react";
-const Svg5Star = (props: SVGProps<SVGSVGElement>) => (
-  <svg {...props} width="22" height="17" viewBox="0 0 22 17" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M10.779 1L14.6858 6.60976L20.55 3.80104L17.6139 12.2195H3.93611L1 3.80104L6.8642 6.60976L10.771 1H10.779Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
-    <path d="M18.3608 15.6925L3.41077 15.6925" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+const SvgCup = (props: SVGProps<SVGSVGElement>) => (
+  <svg {...props} width="22" height="20" viewBox="0 0 22 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g clip-path="url(#clip0_17_1540)">
+    <path d="M17.7693 2.5H19.4616C20.3924 2.5 21.1539 3.25 21.1539 4.16667V5.83333C21.1539 7.66667 19.6308 9.16667 17.7693 9.16667V2.5Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M4.23081 9.16667C2.36927 9.16667 0.846191 7.66667 0.846191 5.83333V4.16667C0.846191 3.25 1.60773 2.5 2.5385 2.5H4.23081V9.16667Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M5.92302 0.833344H16.0769C17.0076 0.833344 17.7692 1.58334 17.7692 2.50001V9.16668C17.7692 12.8333 14.723 15.8333 10.9999 15.8333C7.27687 15.8333 4.23071 12.8333 4.23071 9.16668V2.50001C4.23071 1.58334 4.99225 0.833344 5.92302 0.833344Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M11 15.8333V19.1667" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M8.46155 19.1667H13.5385" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <defs>
+    <clipPath id="clip0_17_1540">
+    <rect width="22" height="20" fill="white"/>
+    </clipPath>
+    </defs>
   </svg>
 );
-export default Svg5Star;
+export default SvgCup;

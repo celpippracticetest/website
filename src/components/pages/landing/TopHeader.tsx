@@ -14,12 +14,12 @@ import {
   SvgPracticeBlueHover,
 } from "@/components/icons";
 import useStore from "@/store";
-import SvgLeagueLogo from "../../icons/LeagueLogo";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/v2/Button";
+import SvgCup from "@/components/v2/icons/cup";
+import SvgCrown from "@/components/v2/icons/crown";
 
 const SvgClose = dynamic(() => import("../../icons/Close"), { ssr: false });
-const SvgDiamond = dynamic(() => import("../../icons/Diamond"), { ssr: true });
 const SvgHamburger = dynamic(() => import("../../icons/Hamburger"), {
   ssr: true,
 });
@@ -107,12 +107,12 @@ const TopHeader = () => {
   return (
     <div className="max-w-[1440px] w-full flex justify-center mx-auto ">
       <div
-        className="z-3 max-w-[1156px] w-full screen1280:!h-[80px] h-[72px] flex items-center justify-between text-center border-solid fixed top-0 border-[1.5px] backdrop-blur-[8px] border-primary5 rounded-es-[32px] rounded-ee-[32px]"
+        className="z-3 px-[16px] screen744:!px-[24px] screen1280:!px-[40px] max-w-[1156px] w-full screen1280:!h-[80px] h-[72px] flex items-center justify-between text-center border-solid fixed top-0 border-[1.5px] backdrop-blur-[8px] border-primary5 rounded-es-[32px] rounded-ee-[32px]"
         style={{
           background:
             "linear-gradient(90deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.2) 100%)",
         }}>
-        <div className="flex ml-[16px] screen744:!ml-[24px] screen1280:!ml-[40px] items-center gap-[12px] screen744:!gap-[24px]">
+        <div className="flex items-center gap-[12px] screen744:!gap-[24px]">
           <span
             className="flex screen1280:!hidden"
             onClick={() => setIsMenuOpen && setIsMenuOpen(!isMenuOpen)}
@@ -183,24 +183,12 @@ const TopHeader = () => {
         </nav>
         <div className="flex gap-[16px] screen744:gap-[32px] screen1280:!gap-[28px]">
           <div className="flex gap-[12px]">
-            <Button round="sm">
-
+            <Button round="sm" href="/league">
+             <SvgCup />
             </Button>
-            <div onClick={() => router.push("/league")} className="cursor-pointer w-[40px] shrink-0 h-[40px] rounded-full border border-[#D5D6D8] bg-transparent flex items-center justify-center">
-              <SvgLeagueLogo />
-            </div>
-            <div
-              role="button"
-              tabIndex={0}
-              aria-label="Open Premium Plans"
-              onClick={() => setPremiumPlanModalState()}
-              className="hover:cursor-pointer bg-white screen744:ml-[14px] relative w-[40px] h-[40px] border-[1px] border-neutral2 rounded-[24px] flex items-center justify-center"
-            >
-              <SvgDiamond />
-              <div className="absolute leading-[16px] font-semibold    flex text-white items-center justify-center bg-error1 rounded-[16px] w-[34px] h-[20px] -top-[12px] -right-[12px] rotate-[10px] text-[10px]">
-                PRO
-              </div>
-            </div>
+            <Button variant="secondary" round="sm" onClick={() => setPremiumPlanModalState()}>
+             <SvgCrown />
+            </Button>
           </ div>
           <div className="h-[40px] flex items-center justify-center">
             <AuthButtons />
