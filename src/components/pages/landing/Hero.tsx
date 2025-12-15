@@ -1,14 +1,14 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import SvgCrown from "../../icons/Crown";
 import ExamSectionCard from "./ExamSectionCard";
-import Link from "next/link";
 import { motion } from "framer-motion";
 import { useButtonVisibleStore } from "@/store/buttonVisible.store";
 import { useInView } from "react-intersection-observer";
 import TopHeader from "./TopHeader";
 import { Button } from "@/components/v2/Button";
+import SvgMedalLg from "@/components/v2/icons/medal-lg";
+import SvgMedalMd from "@/components/v2/icons/medal-md";
 
 const SvgMockExamLight = dynamic(() => import("../../icons/MockExamsLight"), {
   ssr: false,
@@ -33,8 +33,7 @@ const SvgMockExamsColorful = dynamic(
 );
 
 const Hero = () => {
-  const buttonRef = useRef<HTMLDivElement | null>(null);
-  const { ref, inView } = useInView();
+  const { ref } = useInView();
   const { setVisible, isVisible, isInFooter } = useButtonVisibleStore(
     (state) => state
   );
@@ -106,6 +105,27 @@ const Hero = () => {
             <div className="flex flex-col ">
               <div className="flex flex-col items-start screen744:!flex-row screen744:!gap-[10px] screen744:!ml-[8px] mt-0 screen744:!mt-[40px] screen1280:!mt-[98px] screen744:!items-center">
                 <div className="mt-[16px]  flex items-center h-[44px]">
+                  <div className="items-center gap-[8px] mt-[24px] flex flex-row">
+                    <SvgMedalLg className="hidden screen1280:!flex"/>
+                    <SvgMedalMd className="flex screen1280:!hidden"/>
+                    <span className="text-text2 font-normal screen1280:!text-[20px] text-[14px]">
+                      <span className="text-primary2">#1 Top rated</span> CELPIP Resource 2025{" "}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-[21px] screen1280:!mt-[38px] max-w-[368px] screen1280:!max-w-[652px] w-full h-[135px] screen1280:!h-[172px]">
+                <h1 className="font-bold text-[32px] screen1280:!text-[65px] leading-[40px] screen1280:!leading-[70px] text-text1">
+                  Reach Your Target<br />
+                  <span className="text-primary2">CELPIP</span> Score.{" "}<br className="screen1280:!hidden block" />
+                  <span className="text-secondary2 italic">Faster.</span>
+                </h1>
+              </div>
+                <Button href="/practice-overview" size="lg">
+                  <SvgPlus />
+                  <span>Start Your Free Practice</span>
+                </Button>
+                <div className="flex flex-row screen1280:!mt-[8px] mt-[14px]">
                   <Image
                     src="/images/people.png"
                     alt="People icon showing 20,000+ CELPIP graduates trusting CELPIPPRACTICETEST.com"
@@ -117,33 +137,9 @@ const Hero = () => {
                     Trusted by 10k+ test-takers{" "}
                   </h2>
                 </div>
-                <div className="flex screen744:!hidden items-center  gap-[8px] mt-[8px] screen744:!mt-[24px]">
-                  <SvgCrown />
-                  <span className="text-text2  font-normal text-[12px] ">
-                    Top rated CELPIP Resource 2025{" "}
-                  </span>
-                </div>
-              </div>
-              <div className="mt-[16px] screen744:!mt-[24px] max-w-[368px] screen1280:!max-w-[652px] w-full h-[135px] screen1280:!h-[172px]">
-                <h1 className="font-bold text-[32px] screen755:!text-[65px] leading-[40px] screen755:!leading-[70px] text-text1">
-                  Reach Your Target<br />
-                  <span className="text-primary2">CELPIP</span> Score.{" "}<br className="screen755:!hidden block" />
-                  <span className="text-secondary2 italic">Faster.</span>
-                </h1>
-              </div>
-                <Button href="/practice-overview" size="lg">
-                  <SvgPlus />
-                  <span>Start Your Free Practice</span>
-                </Button>
-              <div className="hidden screen744:!flex items-center gap-[8px] mt-[24px]">
-                <SvgCrown />
-                <span className="text-text2  font-normal text-[12px] ">
-                  Top rated CELPIP Resource 2025{" "}
-                </span>
-              </div>
             </div>
             <div className="flex">
-              <div className="flex flex-col gap-[8px]  screen744:!gap-[16px] mt-0 screen744:!mt-[116px] screen1280:!mt-[108px] w-[262px] h-[186px] screen744:!h-[224px]">
+              <div className="flex flex-col gap-[8px] screen744:!gap-[16px] screen744:!flex hidden mt-0 screen744:!mt-[116px] screen1280:!mt-[108px] w-[262px] h-[186px] screen744:!h-[224px]">
                 {[
                   {
                     title1: "60",

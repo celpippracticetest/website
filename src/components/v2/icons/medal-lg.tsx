@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { SVGProps } from "react";
-const SvgMedal = (props: SVGProps<SVGSVGElement>) => (
+const SvgMedalLg = (props: SVGProps<SVGSVGElement>) => (
   <svg {...props} width="29" height="43" viewBox="0 0 29 43" fill="none" xmlns="http://www.w3.org/2000/svg">
     <g clip-path="url(#clip0_1_14276)">
     <path d="M6.09838 26.9041L1.54672 37.527C1.30649 38.0829 1.55515 38.7336 2.09882 38.9792C2.25476 39.0482 2.42334 39.0784 2.59192 39.0697L6.45662 38.8715C7.034 38.8457 7.5861 39.0956 7.95698 39.5481L10.4309 42.6078C10.8144 43.0733 11.4972 43.1336 11.9523 42.7371C12.0788 42.6294 12.1757 42.4915 12.2431 42.3406L14.5063 37.0615V28.1711L6.1026 26.9041H6.09838Z" fill="#F27059"/>
@@ -16,4 +16,4 @@ const SvgMedal = (props: SVGProps<SVGSVGElement>) => (
   </svg>
 
 );
-export default SvgMedal;
+export default SvgMedalLg;
