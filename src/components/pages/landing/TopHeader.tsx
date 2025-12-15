@@ -113,7 +113,7 @@ const TopHeader = () => {
         }}>
         <div className="flex items-center gap-[12px] screen744:!gap-[24px]">
           <span
-            className="flex"
+            className="screen1280:!hidden flex"
             onClick={() => setIsMenuOpen && setIsMenuOpen(!isMenuOpen)}
             aria-label="Open menu"
           >
@@ -125,7 +125,7 @@ const TopHeader = () => {
               alt="logo"
               width={32}
               height={32}
-              className="w-[32px] h-[32px]"
+              className="w-[32px] h-[32px] max-[375px]:hidden min-[376px]:inline"
               priority={true}
               sizes="32px"
               quality={90}

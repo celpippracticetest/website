@@ -125,9 +125,10 @@ const Hero = () => {
                 </div>
               </div>
               <div className="mt-[16px] screen744:!mt-[24px] max-w-[368px] screen1280:!max-w-[652px] w-full h-[135px] screen1280:!h-[172px]">
-                <h1 className="font-bold text-[36px] screen744:!text-[40px] screen1280:!text-[60px] leading-[71px] screen1280:!leading-[88px] text-text1">
-                  Reach Your Target{" "}
-                  <span className="text-primary2">CELPIP</span> Score
+                <h1 className="font-bold text-[32px] screen755:!text-[65px] leading-[40px] screen755:!leading-[70px] text-text1">
+                  Reach Your Target<br />
+                  <span className="text-primary2">CELPIP</span> Score.{" "}<br className="screen755:!hidden block" />
+                  <span className="text-secondary2 italic">Faster.</span>
                 </h1>
               </div>
                 <Button href="/practice-overview" size="lg">
