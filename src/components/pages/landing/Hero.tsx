@@ -192,7 +192,7 @@ const Hero = () => {
                   priority
                 />
                 <h2 className="text-text1 font-medium leading-[28px] screen1280:!text-[14px] text-[10px]">
-                  Trusted by 10k+ test-takers{" "}
+                  Trusted by 70k+ test-takers{" "}
                 </h2>
               </div>
             </div>

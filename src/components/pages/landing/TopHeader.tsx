@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
-const AuthButtons = dynamic(() => import("./AuthButtons"), { ssr: false });
 import Image from "next/image";
 import SvgLearning from "@/components/icons/Learning";
 import SvgPractice from "@/components/icons/Practice";
@@ -14,9 +13,6 @@ import {
   SvgPracticeBlueHover,
 } from "@/components/icons";
 import useStore from "@/store";
-import { Button } from "@/components/v2/Button";
-import SvgCup from "@/components/v2/icons/cup";
-import SvgCrown from "@/components/v2/icons/crown";
 import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
 
 const SvgClose = dynamic(() => import("../../icons/Close"), { ssr: false });
@@ -25,7 +21,6 @@ const SvgHamburger = dynamic(() => import("../../icons/Hamburger"), {
 });
 const TopHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const setPremiumPlanModalState = useStore((state) => state.setPremiumPlanModalState);
   const hrefs = ["/exam-overview", "/practice-overview", "/learning"];
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const sidebarMenuRef = useRef<HTMLDivElement>(null);

@@ -222,7 +222,7 @@ const PremiumPlanModal = () => {
                                     </div>
                                     <div className="flex items-center justify-center gap-2 text-gray-700 font-medium mb-8">
                                         <AvatarCarousel />
-                                        <span>Trusted by 40k+ test-takers</span>
+                                        <span>Trusted by 70k+ test-takers</span>
                                     </div>
 
                                     {/* Features Bar */}

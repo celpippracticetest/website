@@ -2,8 +2,11 @@ import AuthButtons from "../pages/landing/AuthButtons"
 import { Button } from "./Button"
 import SvgCrown from "./icons/crown"
 import SvgCup from "./icons/cup"
+import useStore from "@/store";
 
 const TopHeaderRightSide = () => {
+    const setPremiumPlanModalState = useStore((state) => state.setPremiumPlanModalState);
+
     return (
         <div className="flex gap-[16px] screen744:gap-[32px] screen1280:!gap-[28px]">
             <div className="flex gap-[12px]">
