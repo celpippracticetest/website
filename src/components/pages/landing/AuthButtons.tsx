@@ -38,7 +38,7 @@ const AuthButtons = () => {
         <div className="mr-[24px] flex items-center" ref={dropdownRef}>
           <button
             onClick={() => setUserDropDownOpen(!isUserDropDownOpen)}
-            className="cursor-pointer"
+            className="cursor-pointer w-10 h-10"
           >
             {user && user.imageUrl ? (
               <img
@@ -57,16 +57,16 @@ const AuthButtons = () => {
             <div className="absolute right-0 z-10 mt-2 w-56 top-[48px] rounded-md bg-white ring-1 shadow-lg ring-black/5">
               <div className="py-1">
                 {roles?.includes("admin") && (
-                    <a
-                      href="/cms/dashboard"
-                      className="block px-4 py-2 text-[14px] text-gray-700 w-full text-left"
-                      role="menuitem"
-                      tabIndex={-1}
-                      id="menu-item-0"
-                    >
-                      CMS Dashboard
-                    </a>
-                  )}
+                  <a
+                    href="/cms/dashboard"
+                    className="block px-4 py-2 text-[14px] text-gray-700 w-full text-left"
+                    role="menuitem"
+                    tabIndex={-1}
+                    id="menu-item-0"
+                  >
+                    CMS Dashboard
+                  </a>
+                )}
 
                 <Link
                   href="/league"
