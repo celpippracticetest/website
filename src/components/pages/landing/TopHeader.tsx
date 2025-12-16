@@ -17,6 +17,7 @@ import useStore from "@/store";
 import { Button } from "@/components/v2/Button";
 import SvgCup from "@/components/v2/icons/cup";
 import SvgCrown from "@/components/v2/icons/crown";
+import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
 
 const SvgClose = dynamic(() => import("../../icons/Close"), { ssr: false });
 const SvgHamburger = dynamic(() => import("../../icons/Hamburger"), {
@@ -180,22 +181,7 @@ const TopHeader = () => {
             )
           )}
         </nav>
-        <div className="flex gap-[16px] screen744:gap-[32px] screen1280:!gap-[28px]">
-          <div className="flex gap-[12px]">
-            <Button className="hidden screen744:!flex" round="md" href="/league" aria-label="Open League">
-              <SvgCup />
-            </Button>
-            <Button className="screen744:!hidden flex" variant="secondary" round="sm" onClick={() => setPremiumPlanModalState()} aria-label="Open Premium Plans">
-              <SvgCrown />
-            </Button>
-            <Button className="screen744:!flex hidden" variant="secondary" size="sm" onClick={() => setPremiumPlanModalState()} aria-label="Open Premium Plans">
-              <SvgCrown /> pricing
-            </Button>
-          </div>
-          <div className="h-[40px] flex items-center justify-center">
-            <AuthButtons />
-          </div>
-        </div>
+        <TopHeaderRightSide />
       </div>
 
       {isMenuOpen && (
