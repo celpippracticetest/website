@@ -9,6 +9,7 @@ import TopHeader from "./TopHeader";
 import { Button } from "@/components/v2/Button";
 import SvgMedalLg from "@/components/v2/icons/medal-lg";
 import SvgMedalMd from "@/components/v2/icons/medal-md";
+import { SvgLearning } from "@/components/icons";
 
 const SvgMockExamLight = dynamic(() => import("../../icons/MockExamsLight"), {
   ssr: false,
@@ -230,6 +231,12 @@ const Hero = () => {
                 icon: <SvgMockExamsColorful />,
                 bgColor: "bg-purple5",
                 link: "/exam-overview",
+              },
+              {
+                title: "Learning",
+                icon: <SvgLearning />,
+                bgColor: "bg-[#FEF9C3]",
+                link: "/learning",
               },
             ].map((exam, index, array) => (
               <ExamSectionCard
