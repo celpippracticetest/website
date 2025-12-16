@@ -97,7 +97,7 @@ const Comments = () => {
             key={index}
             role="article"
             style={{ transitionDelay: `${index * 100}ms` }}
-            className={`flex flex-col flex-shrink-0 min-w-[280px] max-w-[316px] h-[180px] bg-white shadow-[2px_2px_8px_0px_#212E4214] hover:!shadow-[0px_10px_35px_0px_#212E421A] p-[16px] rounded-[24px] ${animate
+            className={`flex flex-col flex-shrink-0 min-w-[280px] max-w-[316px] h-[230px] bg-white shadow-[2px_2px_8px_0px_#212E4214] hover:!shadow-[0px_10px_35px_0px_#212E421A] p-[16px] rounded-[24px] ${animate
               ? "translate-x-0 opacity-100"
               : "-translate-x-full opacity-0"
               } transition-all duration-700 ease-out transform`}
@@ -120,7 +120,7 @@ const Comments = () => {
                 </span>
               </div>
             </div>
-            <div className="text-text2 text-[16px] leading-[100%] font-normal mt-[16px]">
+            <div className="text-text2 text-[12px] leading-[18px] font-normal mt-[16px]">
               {person.comment}
             </div>
           </div>
@@ -157,7 +157,7 @@ const Comments = () => {
                 </span>
               </div>
             </div>
-            <div className="text-text2 text-[16px] leading-[100%] screen1280:!leading-[23px] screen1280:!text-[18px] font-normal mt-[16px]">
+            <div className="text-text2 text-[12px] leading-[18px] screen1280:!leading-[23px] screen1280:!text-[16px] font-normal mt-[16px]">
               {person.comment}
             </div>
           </div>
