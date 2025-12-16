@@ -188,8 +188,8 @@ const TopHeader = () => {
             <Button className="screen744:!hidden flex" variant="secondary" round="sm" onClick={() => setPremiumPlanModalState()} aria-label="Open Premium Plans">
               <SvgCrown />
             </Button>
-            <Button className="screen744:!flex hidden" variant="secondary" round="md" onClick={() => setPremiumPlanModalState()} aria-label="Open Premium Plans">
-              <SvgCrown />
+            <Button className="screen744:!flex hidden" variant="secondary" size="sm" onClick={() => setPremiumPlanModalState()} aria-label="Open Premium Plans">
+              <SvgCrown /> pricing
             </Button>
           </div>
           <div className="h-[40px] flex items-center justify-center">

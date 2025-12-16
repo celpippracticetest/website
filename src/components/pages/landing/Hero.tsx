@@ -97,27 +97,23 @@ const Hero = () => {
           backgroundSize: "300% 300%",
           animation: "gradient 14s ease-in-out infinite",
         }}
-        className="relative h-[430px] screen744:!h-[656px] screen1280:!h-[693px] pt-[80px] justify-center transition-all duration-300 w-full background-animate shadow-[inset_0px_-80px_96px_-4px_#F4F7FF]"
+        className="relative pt-[80px] justify-center transition-all duration-300 w-full background-animate shadow-[inset_0px_-80px_96px_-4px_#F4F7FF]"
       >
         <TopHeader />
         <div className="flex max-w-[1440px] w-full justify-center mx-auto ">
-          <div className="flex flex-col screen744:!flex-row w-full justify-between px-[16px] screen744:!px-[40px] flex-wrap screen744:!flex-nowrap">
-            <div className="flex flex-col w-full">
-              <div className="flex flex-col items-start screen744:!flex-row screen744:!gap-[10px] mt-[28px] screen1280:!mt-[108px] screen744:!items-center">
-                <div className="mt-[16px] flex items-center h-[44px]">
-                  <div className="items-center gap-[8px] mt-[24px] flex flex-row">
-                    <SvgMedalLg className="hidden screen1280:!flex"/>
-                    <SvgMedalMd className="flex screen1280:!hidden"/>
-                    <span className="text-text2 font-normal screen1280:!text-[20px] text-[14px]">
-                      <span className="text-primary2">#1 Top rated</span> CELPIP Resource 2025{" "}
-                    </span>
-                  </div>
-                </div>
+          <div className="flex flex-col screen744:!flex-row w-full screen744:!justify-between justify-center px-[16px] screen744:!px-[40px] flex-wrap screen744:!flex-nowrap">
+            <div className="flex flex-col w-full screen744:!justify-between justify-center">
+              <div className="items-center gap-[8px] screen1280:!mt-[92px] mt-[27px] flex flex-row screen744:!justify-start justify-center">
+                <SvgMedalLg className="hidden screen1280:!flex" />
+                <SvgMedalMd className="flex screen1280:!hidden" />
+                <span className="text-text2 font-normal screen1280:!text-[20px] text-[14px]">
+                  <span className="text-primary2">#1 Top rated</span> CELPIP Resource 2025{" "}
+                </span>
               </div>
-              <div className="mt-[21px] flex flex-row justify-between w-full screen1280:!mt-[38px] w-full h-[135px] screen1280:!h-[245px]">
+              <div className="mt-[21px] flex flex-row justify-between w-full screen1280:!mt-[38px] w-full h-[95px] screen744:!h-[135px] screen1280:!h-[245px] screen744:!justify-between justify-center">
                 <h1 className="font-bold text-[32px] screen1280:!text-[65px] leading-[40px] screen1280:!leading-[70px] text-text1">
                   Reach Your Target<br />
-                  <span className="text-primary2">CELPIP</span> Score.{" "}<br className="screen1280:!block hidden" />
+                  <span className="text-primary2">CELPIP</span> Score.{" "}<br className="screen744:!block hidden" />
                   <span className="text-secondary2 italic">Faster.</span>
                 </h1>
                 <div className="flex">
@@ -179,22 +175,26 @@ const Hero = () => {
                   </motion.div>
                 </div>
               </div>
-                <Button href="/practice-overview" size="lg">
+              <div className="font-inter font-semibold text-xs leading-5 tracking-normal text-center screen744:!hidden flex justify-center">60 mock exams · 3,000+ questions · Instant AI scoring</div>
+              <div className="flex screen744:!justify-start justify-center">
+                <Button href="/practice-overview" size="lg" className="mt-[24px]">
                   <SvgPlus />
                   <span>Start Your Free Practice</span>
                 </Button>
-                <div className="flex flex-row screen1280:!mt-[8px] mt-[14px]">
-                  <Image
-                    src="/images/people.png"
-                    alt="People icon showing 20,000+ CELPIP graduates trusting CELPIPPRACTICETEST.com"
-                    width={65}
-                    height={28}
-                    priority
-                  />
-                  <h2 className="text-text1 font-medium text-[14px] screen744:!text-[18px] leading-[28px] screen1280:!mt-[17px] mt-[13px]">
-                    Trusted by 10k+ test-takers{" "}
-                  </h2>
-                </div>
+              </div>
+              <div className="flex flex-row screen1280:!mt-[8px] mt-[14px] screen744:!justify-start justify-center items-center gap-2">
+                <Image
+                  src="/images/people.png"
+                  alt="People icon showing 20,000+ CELPIP graduates trusting CELPIPPRACTICETEST.com"
+                  width={65}
+                  height={28}
+                  className="max-h-[25px]"
+                  priority
+                />
+                <h2 className="text-text1 font-medium leading-[28px] screen1280:!text-[14px] text-[10px]">
+                  Trusted by 10k+ test-takers{" "}
+                </h2>
+              </div>
             </div>
           </div>
         </div>
