@@ -104,7 +104,7 @@ const Hero = () => {
         <div className="flex max-w-[1440px] w-full justify-center mx-auto ">
           <div className="flex flex-col screen744:!flex-row w-full screen744:!justify-between justify-center px-[16px] screen744:!px-[40px] flex-wrap screen744:!flex-nowrap">
             <div className="flex flex-col w-full screen744:!justify-between justify-center">
-              <div className="items-center gap-[8px] screen1280:!mt-[92px] mt-[27px] flex flex-row screen744:!justify-start justify-center">
+              <div className="items-center gap-[8px] screen1280:!mt-[35px] mt-[27px] flex flex-row screen744:!justify-start justify-center">
                 <SvgMedalLg className="hidden screen1280:!flex" />
                 <SvgMedalMd className="flex screen1280:!hidden" />
                 <span className="text-text2 font-normal screen1280:!text-[20px] text-[14px]">

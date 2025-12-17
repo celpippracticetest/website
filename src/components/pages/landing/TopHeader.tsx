@@ -12,7 +12,6 @@ import {
   SvgMockTestTopNavigationHover,
   SvgPracticeBlueHover,
 } from "@/components/icons";
-import useStore from "@/store";
 import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
 
 const SvgClose = dynamic(() => import("../../icons/Close"), { ssr: false });

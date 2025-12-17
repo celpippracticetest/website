@@ -23,14 +23,12 @@ const Improve = () => {
         <div className="flex border-t-[1px] border-[#D5D6D8] flex-col screen744:flex-row">
           <div className="flex-1 h-auto max-w-[530px] screen1280:!border-r-[1px] border-[#D5D6D8] flex  p-[16px] flex-col">
             <span className="text-text2 text-[12px] font-normal leading-[24px]">
-              A local business council is exploring ways to strengthen the
-              economy by helping screen744all businesses and wants your input
-              after seeing their struggles and potential. They’ve sent a survey
-              to find the best support method, aiming to lift the community’s
-              prosperity. This is your chance to boost local growth! Which
-              option do you prefer? Why? -Option A: Provide tax incentives and
-              grants to screen744all businesses. -Option B: Create community
-              markets and pop-up events for local entrepreneurs.
+              A local business council is researching ways to strengthen the economy by helping screen744all businesses and your input after seeing them struggle and having potential. 
+              They've done a survey to see what support option would be best, hoping to lift the community's prosperity. 
+              This is your chance to promote local development! 
+              Which one is your choice? Why did you choose it? 
+              A: Provide grants and tax credits to screen744all businesspersons. 
+              B: Create pop-up events and neighborhood markets for indigenous businesspeople.
             </span>
 
             <div className="rounded-[12px] mt-[10px] px-[16px] py-[8px] border-[1px] border-solid border-[#D5D6D8]">

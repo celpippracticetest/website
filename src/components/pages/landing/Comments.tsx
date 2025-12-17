@@ -9,59 +9,53 @@ const Svg5Star = dynamic(() => import("../../icons/5Star"), { ssr: false });
 const Comments = () => {
   const personsTop = [
     {
-      name: "Carlos Mendoza",
+      name: "Ravi",
       comment:
-        "CELPIPPRACTICETEST.com made my practice a revolutionary process. Practice in speaking and getting instant feedback increased my confidence level. I cleared my with 9 in all sections!",
+        "The timed practice tests were identical to the real test. That practice enabled me to manage stress and finish each section within the allotted time.",
+      source: "bear_student.png",
+    },
+    {
+      name: "Tatiana",
+      comment:
+        "Simple and efficient. Practiced for a month and improved in all 4 areas. Having the dashboard tracking my progress was a lovely addition.",
+      source: "Tatiana.png",
+    },
+    {
+      name: "Carlos",
+      comment:
+        "CELPIPPRACTICETEST.com made my practice a revolutionary process. Practice in speaking and getting instant feedback increased my confidence level. I cleared with 9 in all sections!",
       source: "Carlos.png",
     },
     {
-      name: "Li Wei",
+      name: "Admad",
+      comment:
+        "I finally got CLB 9 in writing after doing 2 weeks of practice tests at CELPIPPRACTICETEST.com. The AI feedback was exactly what I needed to improve structure and coherence. I highly recommend it!",
+      source: "Ahmed.png",
+    },
+  ];
+  const personsBottom = [
+    {
+      name: "Sofia",
+      comment:
+        "I adored the way the feedback was individualized. It pointed out my weak points in writing and speaking, and I could notice clear improvement week by week.",
+      source: "bear_student_tablet.png",
+    },
+    {
+      name: "Lie",
       comment:
         "The practice of speaking on this website is amazing. I practiced and listened to the high-score examples. It was so helpful.",
       source: "Li.png",
     },
     {
-      name: "Tatiana Volkov",
-      comment:
-        "Simple and efficient. Practiced for a month and improved in all 4 areas. Having the dashboard tracking my progress was a lovely addition.",
-      source: "Tatiana.png",
-    },
-  ];
-  const personsBottom = [
-    {
-      name: "Ahmed El-Sayed",
-      comment:
-        "I finally got CLB 9 in writing after doing 2 weeks of practice tests at CELPIPPRACTICETEST.com. The AI feedback was exactly what I needed to improve structure and coherence. I highly recommend it!",
-      source: "Ahmed.png",
-    },
-    {
-      name: "Dalia Haddad",
-      comment:
-        "So many useful tips that I learned from the reading section. Mock tests are challenging but true to life. Assisted to calm down fears.",
-      source: "Dalia.png",
-    },
-    {
-      name: "Dalia Haddad",
-      comment:
-        "So many useful tips that I learned from the reading section. Mock tests are challenging but true to life. Assisted to calm down fears.",
-      source: "Dalia.png",
-    },
-    {
-      name: "Ravi",
-      comment:
-        "The timed practice tests were identical to the real test. That practice enabled me to manage stress and finish each section within the allotted time.",
-      source: "Ahmed.png",
-    },
-    {
-      name: "Sofia",
-      comment:
-        "I adored the way the feedback was individualized. It pointed out my weak points in writing and speaking, and I could notice clear improvement week by week.",
-      source: "Dalia.png",
-    },
-    {
       name: "Mark",
       comment:
-        "Honestly, the variety of practice questions kept me engaged. I enjoyed it and my never got bored, and on the day of the test, everything was comfortable and familiar.",
+        "Honestly, the variety of practice questions kept me engaged. I enjoyed it and never got bored, and on the day of the test, everything was comfortable and familiar.",
+      source: "bear.png",
+    },
+    {
+      name: "Dalia",
+      comment:
+        "So many useful tips that I learned from the reading section. Mock tests are challenging but true to life. Assisted to calm down fears.",
       source: "Dalia.png",
     },
   ];

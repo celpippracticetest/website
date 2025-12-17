@@ -31,7 +31,7 @@ const UserResponseReview = () => {
         body: {
           title: "CELPIP Score Result",
           subtitle:
-            "Receive feedback and estimated CELPIP scores for your writing and speaking tasks, aligned with official evaluation criteria",
+            "Get Feedback and estimated CELPIP scores for your writing and speaking practices in real time, based on formal assessment criteria.",
           size: 255,
           component: <MockTest />,
         },
@@ -66,7 +66,7 @@ const UserResponseReview = () => {
         body: {
           title: "Train Like It’s the Real CELPIP Exam",
           subtitle:
-            "Master the CELPIP test by training with real exam-style questions",
+            "Learn to be a CELPIP test master by practicing with actual exam-pattern questionsA Peaceful Countryside RoadWhat can you see in the picture below? Describe it as best as you can. The person you are talking to can't see the picture.",
           size: 306,
           component: <AIReviewTest />,
         },
@@ -74,7 +74,7 @@ const UserResponseReview = () => {
     },
     {
       type: "improve",
-      title: "Improve",
+      title: "Real Exam Format",
       response: {
         header: {
           title1: "AI Feedback",
@@ -83,7 +83,7 @@ const UserResponseReview = () => {
         body: {
           title: "Train Like It’s the Real CELPIP Exam",
           subtitle:
-            "Master the CELPIP test by training with real exam-style questions",
+            "Practice Like It's the Real CELPIP Test. Excel at the CELPIP test with real exam-style questions to practice.",
           size: 375,
           component: <Improve />,
         },
