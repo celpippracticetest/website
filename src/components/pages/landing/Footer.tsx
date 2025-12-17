@@ -104,7 +104,7 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="flex mt-[10px]  screen744:!mt-[30px] screen1280:!mt-[50px] justify-center">
+        <div className="flex mt-[55px] screen744:!mt-[65px] screen1280:!mt-[50px] justify-center">
           <span className="text-text3 font-normal text-[14px] ">
             {`© ${new Date().getFullYear()} CELPIPPRACTICETEST.com. All rights reserved.`}
           </span>
