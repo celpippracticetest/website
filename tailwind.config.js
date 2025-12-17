@@ -92,6 +92,12 @@ module.exports = {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        button: {
+          primary: "rgba(49, 107, 255, 1)",
+          primaryShadow: "rgba(117, 156, 255, 1)",
+          secondary: "rgba(242, 112, 89, 1)",
+          disabled: "rgba(213, 214, 216, 1)",
+        },
         celblue: {
           50: "#f0f7ff",
           100: "#e0eefe",

@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
-const AuthButtons = dynamic(() => import("./AuthButtons"), { ssr: false });
 import Image from "next/image";
 import SvgLearning from "@/components/icons/Learning";
 import SvgPractice from "@/components/icons/Practice";
@@ -13,27 +12,23 @@ import {
   SvgMockTestTopNavigationHover,
   SvgPracticeBlueHover,
 } from "@/components/icons";
-import useStore from "@/store";
-import SvgLeagueLogo from "../../icons/LeagueLogo";
-import { useRouter } from "next/navigation";
+import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
 
 const SvgClose = dynamic(() => import("../../icons/Close"), { ssr: false });
-const SvgDiamond = dynamic(() => import("../../icons/Diamond"), { ssr: true });
 const SvgHamburger = dynamic(() => import("../../icons/Hamburger"), {
   ssr: true,
 });
 const TopHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const setPremiumPlanModalState = useStore((state) => state.setPremiumPlanModalState);
-  const router = useRouter();
   const hrefs = ["/exam-overview", "/practice-overview", "/learning"];
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const sidebarMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const checkMenu = (event: any) => {
+    const checkMenu = (event: MouseEvent) => {
       if (sidebarMenuRef?.current) {
-        if (!sidebarMenuRef?.current.contains(event.target)) {
+        const target = event.target as Node | null;
+        if (!sidebarMenuRef?.current.contains(target)) {
           setIsMenuOpen(false);
         }
       }
@@ -64,7 +59,7 @@ const TopHeader = () => {
   }, []);
 
   const icons = [
-    <div className="relative  flex items-center justify-center">
+    <div key="mock-exam-icon" className="relative  flex items-center justify-center">
       <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
         <SvgMockTest className="  text-[#76808F]  duration-200 " />
       </div>
@@ -72,7 +67,7 @@ const TopHeader = () => {
         <SvgMockTestTopNavigationHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
       </div>
     </div>,
-    <div className="relative w-[24px] h-[24px] flex items-center justify-center">
+    <div key="practice-icon" className="relative w-[24px] h-[24px] flex items-center justify-center">
       <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
         <SvgPractice
           fill="transparent"
@@ -84,7 +79,7 @@ const TopHeader = () => {
         <SvgPracticeBlueHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
       </div>
     </div>,
-    <div className="relative  flex items-center justify-center">
+    <div key="learn-icon" className="relative  flex items-center justify-center">
       <div className="flex group-hover:hidden w-[24px] h-[24px]  items-center justify-center">
         <SvgLearning
           stroke="#76808F"
@@ -104,45 +99,42 @@ const TopHeader = () => {
   ];
 
   return (
-    <div className="max-w-[1440px]  w-full flex justify-center mx-auto ">
+    <div className="max-w-[1440px] w-full flex justify-center mx-auto ">
       <div
-        className="
-            z-3
-        max-w-[1156px]
-        w-full
-        screen1280:!h-[80px]
-        h-[72px]
-        flex
-        items-center
-        justify-between
-        text-center
-         bg-[linear-gradient(90deg,_rgba(255,_255,_255,_0.65)_0%,_rgba(255,_255,_255,_0.2)_100%)]
-        border-solid
-        fixed
-        top-0
-        border-[1.5px]
-        backdrop-blur-[8px]
-        border-primary5
-        rounded-es-[32px]
-        rounded-ee-[32px]"
-      >
-        <div className="flex ml-[16px] screen744:!ml-[24px] screen1280:!ml-[40px] items-center gap-[12px] screen744:!gap-[24px]">
+        className="z-3 px-[16px] screen744:!px-[24px] screen1280:!px-[40px] max-w-[1156px] w-full screen1280:!h-[80px] h-[72px] flex items-center justify-between text-center border-solid fixed top-0 border-[1.5px] backdrop-blur-[8px] border-primary5 rounded-es-[32px] rounded-ee-[32px]"
+        style={{
+          background:
+            "linear-gradient(90deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.2) 100%)",
+        }}>
+        <div className="flex items-center gap-[12px] screen744:!gap-[24px]">
           <span
-            className="flex screen1280:!hidden"
+            className="screen1280:!hidden flex"
             onClick={() => setIsMenuOpen && setIsMenuOpen(!isMenuOpen)}
             aria-label="Open menu"
           >
             <SvgHamburger />
           </span>
-          <Link className="shrink-0" href={"/"}>
+          <Link className="shrink-0 flex flex-row items-center" href={"/"}>
             <Image
-              src="/images/logo.png"
+              src="/images/header-logo-left.png"
               alt="logo"
-              width={133}
-              height={40}
-              className="w-[133px] h-[40px]"
+              width={32}
+              height={32}
+              className="w-[32px] h-[32px] max-[375px]:hidden min-[376px]:inline"
               priority={true}
-              sizes="133px"
+              sizes="32px"
+              quality={90}
+              loading="eager"
+              fetchPriority="high"
+            />
+            <Image
+              src="/images/header-logo-right.png"
+              alt="logo"
+              width={84}
+              height={40}
+              className="w-[63px] screen744:!w-[84px] h-auto"
+              priority={true}
+              sizes="(max-width: 743px) 63px, 84px"
               quality={90}
               loading="eager"
               fetchPriority="high"
@@ -172,8 +164,6 @@ const TopHeader = () => {
                       className="group gap-[10px] h-[36px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
                       href={hrefs[index]}
                     >
-                      {icons[index]}
-
                       <span className=" text-[16px] font-normal">{label}</span>
                     </Link>
                     {index != 2 && (
@@ -185,28 +175,7 @@ const TopHeader = () => {
             )
           )}
         </nav>
-        <div className="flex gap-[16px] screen744:gap-[32px] screen1280:!gap-[28px]">
-          <div className="flex gap-[12px]">
-            <div onClick={() => router.push("/league")} className="cursor-pointer w-[40px] shrink-0 h-[40px] rounded-full border border-[#D5D6D8] bg-transparent flex items-center justify-center">
-              <SvgLeagueLogo />
-            </div>
-            <div
-              role="button"
-              tabIndex={0}
-              aria-label="Open Premium Plans"
-              onClick={() => setPremiumPlanModalState()}
-              className="hover:cursor-pointer bg-white screen744:ml-[14px] relative w-[40px] h-[40px] border-[1px] border-neutral2 rounded-[24px] flex items-center justify-center"
-            >
-              <SvgDiamond />
-              <div className="absolute leading-[16px] font-semibold    flex text-white items-center justify-center bg-error1 rounded-[16px] w-[34px] h-[20px] -top-[12px] -right-[12px] rotate-[10px] text-[10px]">
-                PRO
-              </div>
-            </div>
-          </ div>
-          <div className="h-[40px] flex items-center justify-center">
-            <AuthButtons />
-          </div>
-        </div>
+        <TopHeaderRightSide />
       </div>
 
       {isMenuOpen && (

@@ -1,13 +1,15 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import SvgCrown from "../../icons/Crown";
 import ExamSectionCard from "./ExamSectionCard";
-import Link from "next/link";
 import { motion } from "framer-motion";
 import { useButtonVisibleStore } from "@/store/buttonVisible.store";
 import { useInView } from "react-intersection-observer";
 import TopHeader from "./TopHeader";
+import { Button } from "@/components/v2/Button";
+import SvgMedalLg from "@/components/v2/icons/medal-lg";
+import SvgMedalMd from "@/components/v2/icons/medal-md";
+import { SvgLearning } from "@/components/icons";
 
 const SvgMockExamLight = dynamic(() => import("../../icons/MockExamsLight"), {
   ssr: false,
@@ -32,8 +34,7 @@ const SvgMockExamsColorful = dynamic(
 );
 
 const Hero = () => {
-  const buttonRef = useRef<HTMLDivElement | null>(null);
-  const { ref, inView } = useInView();
+  const { ref } = useInView();
   const { setVisible, isVisible, isInFooter } = useButtonVisibleStore(
     (state) => state
   );
@@ -70,9 +71,7 @@ const Hero = () => {
 
   return (
     <div ref={ref} className="flex flex-col ">
-      <Link
-        href={"/practice-overview"}
-        aria-label="Start your free CELPIP practice"
+      <div
         className={`w-full  
     flex bg-[linear-gradient(180deg,_rgba(255,_255,_255,_0.4)_0%,_rgba(255,_255,_255,_0.8)_100%)] 
     backdrop-blur-[1px] 
@@ -85,30 +84,12 @@ const Hero = () => {
     left-1/2 -translate-x-1/2 transition-all duration-500 
     ease-in-out transform bottom-0`}
       >
-        <motion.div
-          ref={buttonRef}
-          animate={{ scale: [1, 1.05, 1] }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className={`flex relative overflow-hidden z-[1] hover:!cursor-pointer 
-      bg-primary2 w-full max-w-[195px] sm:!max-w-[310px] 
-      h-[48px] rounded-[24px] items-center justify-center
-      transition-all duration-300 group
-      `}
-        >
-          <div className="absolute inset-0 bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <SvgPlus className="text-white relative z-10" />
-          <span className="hidden sm:!flex text-white text-[20px] mr-[8px] relative z-10">
-            Start Your Free Practice{" "}
-          </span>
-          <span className="flex sm:!hidden text-white text-[20px] mr-[8px] relative z-10">
-            Free Practice{" "}
-          </span>
-        </motion.div>
-      </Link>
+        <Button size="lg" href="/practice-overview" aria-label="Start your free CELPIP practice">
+          <SvgPlus />
+          <span className="hidden sm:!flex">Start Your Free Practice</span>
+          <span className="flex sm:!hidden">Free Practice</span>
+        </Button>
+      </div>
 
       <section
         style={{
@@ -117,127 +98,108 @@ const Hero = () => {
           backgroundSize: "300% 300%",
           animation: "gradient 14s ease-in-out infinite",
         }}
-        className="relative h-[508px] screen744:!h-[656px] screen1280:!h-[693px] pt-[80px] justify-center transition-all duration-300 w-full background-animate shadow-[inset_0px_-80px_96px_-4px_#F4F7FF]"
+        className="relative pt-[80px] justify-center transition-all duration-300 w-full background-animate shadow-[inset_0px_-80px_96px_-4px_#F4F7FF]"
       >
         <TopHeader />
         <div className="flex max-w-[1440px] w-full justify-center mx-auto ">
-          <div className="flex flex-col screen744:!flex-row   w-full  justify-between px-[16px] screen744:!px-[40px] flex-wrap screen744:!flex-nowrap">
-            <div className="flex flex-col ">
-              <div className="flex flex-col items-start screen744:!flex-row screen744:!gap-[10px] screen744:!ml-[8px] mt-0 screen744:!mt-[40px] screen1280:!mt-[98px] screen744:!items-center">
-                <div className="mt-[16px]  flex items-center h-[44px]">
-                  <Image
-                    src="/images/people.png"
-                    alt="People icon showing 20,000+ CELPIP graduates trusting CELPIPPRACTICETEST.com"
-                    width={65}
-                    height={28}
-                    priority
-                  />
-                  <h2 className="text-text1 font-medium text-[14px] screen744:!text-[18px]  leading-[28px]">
-                    Trusted by 10k+ test-takers{" "}
-                  </h2>
-                </div>
-                <div className="flex screen744:!hidden items-center  gap-[8px] mt-[8px] screen744:!mt-[24px]">
-                  <SvgCrown />
-                  <span className="text-text2  font-normal text-[12px] ">
-                    Top rated CELPIP Resource 2025{" "}
-                  </span>
-                </div>
-              </div>
-              <div className="mt-[16px] screen744:!mt-[24px] max-w-[368px] screen1280:!max-w-[652px] w-full h-[135px] screen1280:!h-[172px]">
-                <h1 className="font-bold text-[36px] screen744:!text-[40px] screen1280:!text-[60px] leading-[71px] screen1280:!leading-[88px] text-text1">
-                  Reach Your Target{" "}
-                  <span className="text-primary2">CELPIP</span> Score
-                </h1>
-              </div>
-              <motion.div
-                animate={{ scale: [1, 1.05, 1] }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="hidden screen744:!flex mt-[32px] screen1280:!mt-[40px]"
-              >
-                <Link
-                  href={"/practice-overview"}
-                  className="hover:cursor-pointer relative overflow-hidden flex font-semibold screen1280:!font-normal leading-[16px] bg-primary2 shadow-startButton gap-[8px] px-[24px] max-w-[310px] h-[48px] rounded-[24px] items-center justify-center transition-all duration-300 group"
-                >
-                  <div className="absolute inset-0 bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <SvgPlus className="text-white relative z-10" />
-
-                  <span className="text-white text-[20px] mr-[8px] relative z-10">
-                    Start Your Free Practice{" "}
-                  </span>
-                </Link>
-              </motion.div>
-              <div className="hidden screen744:!flex items-center gap-[8px] mt-[24px]">
-                <SvgCrown />
-                <span className="text-text2  font-normal text-[12px] ">
-                  Top rated CELPIP Resource 2025{" "}
+          <div className="flex flex-col screen744:!flex-row w-full screen744:!justify-between justify-center px-[16px] screen744:!px-[40px] flex-wrap screen744:!flex-nowrap">
+            <div className="flex flex-col w-full screen744:!justify-between justify-center">
+              <div className="items-center gap-[8px] screen1280:!mt-[35px] mt-[27px] flex flex-row screen744:!justify-start justify-center">
+                <SvgMedalLg className="hidden screen1280:!flex" />
+                <SvgMedalMd className="flex screen1280:!hidden" />
+                <span className="text-text2 font-normal screen1280:!text-[20px] text-[14px]">
+                  <span className="text-primary2 font-extrabold">#1 Top rated</span> CELPIP Resource 2025{" "}
                 </span>
               </div>
-            </div>
-            <div className="flex">
-              <div className="flex flex-col gap-[8px]  screen744:!gap-[16px] mt-0 screen744:!mt-[116px] screen1280:!mt-[108px] w-[262px] h-[186px] screen744:!h-[224px]">
-                {[
-                  {
-                    title1: "60",
-                    title2: "mock exams",
-                    icon: <SvgMockExamLight />,
-                  },
-                  { title1: "", title2: "Guide & Tips", icon: <SvgGuide /> },
-                  {
-                    title1: "3,000+",
-                    title2: "sample tests",
-                    icon: <SvgSampleTest />,
-                  },
-                  {
-                    title1: "",
-                    title2: "AI-powered scoring",
-                    icon: <SvgScoring />,
-                  },
-                ].map((item, index) => (
+              <div className="mt-[21px] flex flex-row justify-between w-full screen1280:!mt-[38px] w-full h-[95px] screen744:!h-[135px] screen1280:!h-[245px] screen744:!justify-between justify-center">
+                <h1 className="font-bold text-[32px] screen1280:!text-[65px] leading-[40px] screen1280:!leading-[70px] text-text1 screen744:!text-left text-center">
+                  Reach Your Target<br />
+                  <span className="text-primary2">CELPIP</span> Score.{" "}<br className="screen744:!block hidden" />
+                  <span className="text-secondary2 italic">Faster.</span>
+                </h1>
+                <div className="flex">
+                  <div className="flex flex-col gap-[8px] screen744:!gap-[16px] screen744:!flex hidden w-[262px] h-[186px] screen744:!h-[224px]">
+                    {[
+                      {
+                        title1: "60",
+                        title2: "mock exams",
+                        icon: <SvgMockExamLight />,
+                      },
+                      { title1: "", title2: "Guide & Tips", icon: <SvgGuide /> },
+                      {
+                        title1: "3,000+",
+                        title2: "sample tests",
+                        icon: <SvgSampleTest />,
+                      },
+                      {
+                        title1: "",
+                        title2: "AI-powered scoring",
+                        icon: <SvgScoring />,
+                      },
+                    ].map((item, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1, duration: 0.1 }}
+                        className="flex gap-[8px] h-[44px] items-center"
+                      >
+                        <span>{item.icon}</span>
+                        {item.title1 && (
+                          <span className="text-text1 font-bold text-[20px] leading-[28px]">
+                            {item.title1}
+                          </span>
+                        )}
+                        <h3 className="text-text1 font-normal text-[20px] leading-[28px]">
+                          {item.title2}
+                        </h3>
+                      </motion.div>
+                    ))}
+                  </div>
                   <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: -10 }}
+                    initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1, duration: 0.1 }}
-                    className="flex gap-[8px] h-[44px] items-center"
+                    transition={{ delay: 0.1, duration: 0.1 }}
                   >
-                    <span>{item.icon}</span>
-                    {item.title1 && (
-                      <span className="text-text1 font-bold text-[20px] leading-[28px]">
-                        {item.title1}
-                      </span>
-                    )}
-                    <h3 className="text-text1 font-normal text-[20px] leading-[28px]">
-                      {item.title2}
-                    </h3>
+                    <Image
+                      src="/images/hero.png"
+                      alt="Hero image of CELPIP preparation platform showing student success"
+                      className="hidden screen1280:!flex w-[327px] h-[491px] relative top-[-120px]"
+                      width={327}
+                      height={491}
+                      priority={true}
+                      sizes="(max-width: 1280px) 0px, 327px"
+                      quality={85}
+                      loading="eager"
+                      fetchPriority="high"
+                    />
                   </motion.div>
-                ))}
+                </div>
               </div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1, duration: 0.1 }}
-              >
+              <div className="font-inter font-semibold text-xs leading-5 tracking-normal text-center screen744:!hidden flex justify-center">60 mock exams · 3,000+ questions · Instant AI scoring</div>
+              <div className="flex screen744:!justify-start justify-center">
+                <Button href="/practice-overview" size="lg" className="mt-[24px]">
+                  <SvgPlus />
+                  <span>Start Your Free Practice</span>
+                </Button>
+              </div>
+              <div className="flex flex-row screen1280:!mt-[8px] mt-[14px] screen744:!justify-start justify-center items-center gap-2">
                 <Image
-                  src="/images/hero.png"
-                  alt="Hero image of CELPIP preparation platform showing student success"
-                  className="hidden screen1280:!flex w-[327px] h-[491px]"
-                  width={327}
-                  height={491}
-                  priority={true}
-                  sizes="(max-width: 1280px) 0px, 327px"
-                  quality={85}
-                  loading="eager"
-                  fetchPriority="high"
+                  src="/images/people.png"
+                  alt="People icon showing 20,000+ CELPIP graduates trusting CELPIPPRACTICETEST.com"
+                  width={65}
+                  height={28}
+                  className="max-h-[25px]"
+                  priority
                 />
-              </motion.div>
+                <h2 className="text-text1 font-medium leading-[28px] screen1280:!text-[14px] text-[10px]">
+                  Trusted by 70k+ test-takers{" "}
+                </h2>
+              </div>
             </div>
           </div>
         </div>
-        <div className="hidden screen744:!flex absolute -bottom-[52px] left-0 right-0 mt-[32px] px-[16px]">
+        <div className="hidden screen744:!flex left-0 right-0 screen1280:!mt-[52px] mt-[20px] px-[16px]">
           <div className="flex flex-wrap screen1280:flex-nowrap gap-[16px] screen1280:gap-[24px] w-full max-w-[1440px] mx-auto justify-center">
             {[
               {
@@ -269,6 +231,12 @@ const Hero = () => {
                 icon: <SvgMockExamsColorful />,
                 bgColor: "bg-purple5",
                 link: "/exam-overview",
+              },
+              {
+                title: "Learning",
+                icon: <SvgLearning />,
+                bgColor: "bg-[#FEF9C3]",
+                link: "/learning",
               },
             ].map((exam, index, array) => (
               <ExamSectionCard

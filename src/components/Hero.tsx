@@ -54,7 +54,7 @@ const Hero = () => {
                 />
               </div>
               <h2 className="text-gray-800 font-medium">
-                Trusted by <span className="font-bold">10k+ test-takers</span>
+                Trusted by <span className="font-bold">70k+ test-takers</span>
               </h2>
             </div>
 
