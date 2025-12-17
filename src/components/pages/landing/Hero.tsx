@@ -108,11 +108,11 @@ const Hero = () => {
                 <SvgMedalLg className="hidden screen1280:!flex" />
                 <SvgMedalMd className="flex screen1280:!hidden" />
                 <span className="text-text2 font-normal screen1280:!text-[20px] text-[14px]">
-                  <span className="text-primary2">#1 Top rated</span> CELPIP Resource 2025{" "}
+                  <span className="text-primary2 font-extrabold">#1 Top rated</span> CELPIP Resource 2025{" "}
                 </span>
               </div>
               <div className="mt-[21px] flex flex-row justify-between w-full screen1280:!mt-[38px] w-full h-[95px] screen744:!h-[135px] screen1280:!h-[245px] screen744:!justify-between justify-center">
-                <h1 className="font-bold text-[32px] screen1280:!text-[65px] leading-[40px] screen1280:!leading-[70px] text-text1">
+                <h1 className="font-bold text-[32px] screen1280:!text-[65px] leading-[40px] screen1280:!leading-[70px] text-text1 screen744:!text-left text-center">
                   Reach Your Target<br />
                   <span className="text-primary2">CELPIP</span> Score.{" "}<br className="screen744:!block hidden" />
                   <span className="text-secondary2 italic">Faster.</span>
