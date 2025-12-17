@@ -113,10 +113,10 @@ const AuthButtons = () => {
       </SignedIn>
       {!isSignedIn && (
         <>
-          <Button size="sm" className="max-[744px]:flex min-[744px]:hidden">
+          <Button size="sm" className="max-[744px]:flex min-[744px]:hidden" href="/sign-up">
             <span id="sign-up-button">Sign Up</span>
           </Button>
-          <Button size="md" className="max-[744px]:hidden min-[744px]:flex">
+          <Button size="md" className="max-[744px]:hidden min-[744px]:flex" href="/sign-up">
             <span id="sign-up-button" className="flex">
               Sign Up
               <span className="mx-1">/</span>
