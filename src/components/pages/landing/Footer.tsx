@@ -54,6 +54,12 @@ const Footer = () => {
               >
                 <span>Privacy Policy</span>
               </Link>
+              <Link
+                href="/"
+                className="text-text2 font-normal text-[14px]"
+              >
+                <span>Refund Policy</span>
+              </Link>
             </div>
           </div>
 
@@ -74,6 +80,9 @@ const Footer = () => {
                     </li>
                     <li className="text-text2 font-normal h-[19px] text-[16px]">
                       <Link href={"/writing"}>Writing</Link>
+                    </li>
+                    <li className="text-text2 font-normal h-[19px] text-[16px]">
+                      <Link href={"/"}>Ai Learning</Link>
                     </li>
                   </ul>
                 </li>
