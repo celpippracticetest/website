@@ -20,12 +20,16 @@ import { useDeleteUserEmail } from "@/hooks/useDeleteUserEmail";
 import SvgCloseCircle from "@/components/icons/CloseCircle";
 import Link from "next/link";
 export default function Profile({ prevCheckout, subscriptionData }: any) {
+  const { user } = useUser();
   const [planNameDisplay, setPlanNameDisplay] = useState<string>("");
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     // Priority: Use subscription data if available, otherwise fallback to checkout data
-    if (subscriptionData && subscriptionData.currentPeriodStart && subscriptionData.currentPeriodEnd) {
+    if (subscriptionData?.planName) {
+      setPlanNameDisplay(subscriptionData.planName);
+      setIsLoaded(true);
+    } else if (subscriptionData && subscriptionData.currentPeriodStart && subscriptionData.currentPeriodEnd) {
       setPlanNameDisplay(subscriptionData.planName || "Premium Plan");
       setIsLoaded(true);
     } else if (prevCheckout && prevCheckout.createdAt) {
@@ -34,9 +38,15 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
       setPlanNameDisplay(description || "Premium Plan");
       setIsLoaded(true);
     } else {
+      // Fallback based on metadata if no data found but user is marked as premium
+      if (user?.publicMetadata?.plan === 'premium') {
+        setPlanNameDisplay("Premium Plan");
+      } else if (user?.publicMetadata?.plan === 'pro') {
+        setPlanNameDisplay("Pro Plan");
+      }
       setIsLoaded(true);
     }
-  }, [prevCheckout, subscriptionData]);
+  }, [prevCheckout, subscriptionData, user]);
 
   const [showSetPasswordModal, setShowSetPasswordModal] = useState(false);
   const [password, setPassword] = useState("");
@@ -57,7 +67,6 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
       number: /\d/.test(password),
     });
   }, [password]);
-  const { user } = useUser();
 
   const router = useRouter();
   const [showToast, setShowToast] = useState(false);
