@@ -20,71 +20,20 @@ import { useDeleteUserEmail } from "@/hooks/useDeleteUserEmail";
 import SvgCloseCircle from "@/components/icons/CloseCircle";
 import Link from "next/link";
 export default function Profile({ prevCheckout, subscriptionData }: any) {
-  const [daysLeft, setDaysLeft] = useState<number>(0);
-  const [totalDays, setTotalDays] = useState<number>(0);
+  const [planNameDisplay, setPlanNameDisplay] = useState<string>("");
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     // Priority: Use subscription data if available, otherwise fallback to checkout data
     if (subscriptionData && subscriptionData.currentPeriodStart && subscriptionData.currentPeriodEnd) {
-      // Use Stripe subscription data for accurate calculation
-      const start = new Date(subscriptionData.currentPeriodStart * 1000);
-      start.setHours(0, 0, 0, 0);
-
-      const end = new Date(subscriptionData.currentPeriodEnd * 1000);
-      end.setHours(0, 0, 0, 0);
-
-      const millisPerDay = 1000 * 60 * 60 * 24;
-      const total = Math.floor((end.getTime() - start.getTime()) / millisPerDay);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const left = Math.max(
-        0,
-        Math.floor((end.getTime() - today.getTime()) / millisPerDay)
-      );
-
-      setTotalDays(total);
-      setDaysLeft(left);
+      setPlanNameDisplay(subscriptionData.planName || "Premium Plan");
       setIsLoaded(true);
     } else if (prevCheckout && prevCheckout.createdAt) {
       // Fallback to checkout data for one-time purchases
-      const start = new Date(prevCheckout.createdAt);
-      start.setHours(0, 0, 0, 0);
-
-      const end = new Date(start);
-      const desc = prevCheckout.lineItems?.[0]?.description?.toLowerCase();
-
-      switch (desc) {
-        case "weekly":
-          end.setDate(end.getDate() + 7);
-          break;
-        case "monthly":
-          end.setDate(end.getDate() + 30);
-          break;
-        case "3month":
-          end.setDate(end.getDate() + 90);
-          break;  
-        default:
-          end.setFullYear(end.getFullYear() + 1);
-      }
-      end.setHours(0, 0, 0, 0);
-
-      const millisPerDay = 1000 * 60 * 60 * 24;
-      const total = Math.floor((end.getTime() - start.getTime()) / millisPerDay);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const left = Math.max(
-        0,
-        Math.floor((end.getTime() - today.getTime()) / millisPerDay)
-      );
-
-      setTotalDays(total);
-      setDaysLeft(left);
+      const description = prevCheckout.lineItems?.[0]?.description;
+      setPlanNameDisplay(description || "Premium Plan");
       setIsLoaded(true);
     } else {
-      // No valid data, set defaults
-      setTotalDays(0);
-      setDaysLeft(0);
       setIsLoaded(true);
     }
   }, [prevCheckout, subscriptionData]);
@@ -439,14 +388,14 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
                 Premium Account
               </span>
 
-              {user?.publicMetadata.plan == "premium" && (
+              {(user?.publicMetadata.plan == "premium" || user?.publicMetadata.plan == "pro" || subscriptionData) && (
                 <span className="text-[14px] font-semibold text-[#F27059]">
-                  {isLoaded ? `${daysLeft}/${totalDays} Days` : "Loading..."}
+                  {isLoaded ? planNameDisplay : "Loading..."}
                 </span>
               )}
             </div>
             <div>
-              {user?.publicMetadata.plan == "premium" ? (
+              {(user?.publicMetadata.plan == "premium" || user?.publicMetadata.plan == "pro" || subscriptionData) ? (
                 <div className="flex gap-[8px] screen744:!gap-[16px] items-center flex-row-reverse justify-start flex-wrap">
                   <Link
                     href={"/plans"}

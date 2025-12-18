@@ -1,6 +1,6 @@
 import Profile from "@/components/dashboard-new/Profile";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
-import { currentUser, auth, clerkClient } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import mongoClient from "@/lib/mongodb";
 import { redirect } from "next/navigation";
 import Stripe from "stripe";
@@ -32,10 +32,10 @@ export default async function UserProfilePage() {
     let subscriptionData = null;
     if (customerId) {
       try {
-        // First try to get active subscriptions
+        // First try to get active or trialing subscriptions
         const subscriptions = await stripe.subscriptions.list({
           customer: customerId,
-          status: "active",
+          // status: "active", // Removed to find all statuses (we'll filter later if needed)
           limit: 1,
         });
 
@@ -46,7 +46,9 @@ export default async function UserProfilePage() {
           console.log("Debug - Found subscription ID:", subscriptionId);
           
           // Get full subscription details
-          const subscription = await stripe.subscriptions.retrieve(subscriptionId) as any;
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+            expand: ["items.data.price.product"],
+          }) as any;
           
           console.log("Debug - Raw subscription data:", {
             id: subscription.id,
@@ -111,6 +113,7 @@ export default async function UserProfilePage() {
             currentPeriodEnd: currentPeriodEnd,
             cancelAtPeriodEnd: subscription.cancel_at_period_end,
             planId: subscription.items.data[0]?.price?.id,
+            planName: subscription.items.data[0]?.price?.product?.name,
           };
           console.log("Debug - Subscription data:", subscriptionData);
         } else {
@@ -145,7 +148,8 @@ export default async function UserProfilePage() {
                 currentPeriodEnd: Math.floor(endDate.getTime() / 1000),
                 cancelAtPeriodEnd: false,
                 planId: "one_time_payment",
-                isOneTimePayment: true
+                isOneTimePayment: true,
+                planName: latestCharge.description || "One-time Payment",
               };
               console.log("Debug - One-time payment data:", subscriptionData);
             }
@@ -166,10 +170,9 @@ export default async function UserProfilePage() {
             customerId = customers.data[0].id;
             console.log("Debug - Found customer by email:", customerId);
             
-            // Check for active subscriptions first
+            // Check for subscriptions (any status)
             const subscriptions = await stripe.subscriptions.list({
               customer: customerId,
-              status: "active",
               limit: 1,
             });
 
@@ -178,7 +181,9 @@ export default async function UserProfilePage() {
               console.log("Debug - Found subscription ID:", subscriptionId);
               
               // Get full subscription details
-              const subscription = await stripe.subscriptions.retrieve(subscriptionId) as any;
+              const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+                expand: ["items.data.price.product"],
+              }) as any;
               
               console.log("Debug - Raw subscription data:", {
                 id: subscription.id,
@@ -275,7 +280,23 @@ export default async function UserProfilePage() {
     }
 
 
-    return <Profile prevCheckout={prevCheckout} subscriptionData={subscriptionData} />;
+    // Sync metadata if needed
+    if (subscriptionData) {
+      const shouldBePlan = subscriptionData.planName?.toLowerCase().includes("pro") ? "pro" : "premium";
+      if (user.publicMetadata.plan !== shouldBePlan) {
+        console.log(`Debug - Updating user metadata from ${user.publicMetadata.plan} to ${shouldBePlan}`);
+        await client.users.updateUserMetadata(userId, {
+          publicMetadata: {
+            ...user.publicMetadata,
+            plan: shouldBePlan
+          }
+        });
+        // Update local user object to reflect changes in UI immediately
+        user.publicMetadata.plan = shouldBePlan;
+      }
+    }
+
+    return <Profile user={JSON.parse(JSON.stringify(user))} prevCheckout={prevCheckout} subscriptionData={subscriptionData} />;
   } catch (error) {
     console.error("Unexpected error in profile page:", error);
     redirect("/");
