@@ -6,11 +6,11 @@ import { useClerk } from "@clerk/nextjs";
 import Link from "next/link";
 
 import { useState, useEffect, useRef } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const AuthButtons = () => {
-  const { isSignedIn } = useUser();
+  const { isSignedIn, user, isLoaded } = useUser();
   const [isUserDropDownOpen, setUserDropDownOpen] = useState(false);
-  const { user } = useUser();
   const roles = (user?.publicMetadata as Record<string, unknown> | undefined)?.["roles"] as
     | string[]
     | undefined;
@@ -32,6 +32,11 @@ const AuthButtons = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  if (!isLoaded) {
+    return <Skeleton className="w-10 h-10 rounded-full" />;
+  }
+
   return (
     <>
       <SignedIn>
