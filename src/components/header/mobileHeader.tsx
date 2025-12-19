@@ -143,7 +143,8 @@ const MobileHeader = (props: {
               (user && !user.publicMetadata.plan) ||
               (user &&
                 user.publicMetadata.plan &&
-                user?.publicMetadata.plan !== "premium")) && (
+                user?.publicMetadata.plan !== "premium" && 
+                user?.publicMetadata.plan !== "pro")) && (
               <div
                 onClick={() => {
                   setPremiumPlanModalState();

@@ -412,6 +412,7 @@ export async function POST(req: Request) {
             // Mark that user has made a purchase (no more discounts)
             hasEverPurchased: true,
             purchaseDate: new Date().toISOString(),
+            plan: (metadata.plan_name || "premium").toLowerCase().includes("pro") ? "pro" : "premium"
           });
           logger.info(
             "Cleared all discount fields for user after purchase",
@@ -426,6 +427,7 @@ export async function POST(req: Request) {
             planCancelled: false,
             hasEverPurchased: true,
             purchaseDate: new Date().toISOString(),
+            plan: (metadata.plan_name || "premium").toLowerCase().includes("pro") ? "pro" : "premium"
           });
         }
 

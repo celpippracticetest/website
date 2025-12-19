@@ -128,7 +128,7 @@ const DesktopHeader = (props: {
 
           {/* Auth buttons */}
           <div className="flex items-right gap-4 lg:gap-5 md:gap-3 ">
-            {user?.publicMetadata.plan !== "premium" && (
+            {user?.publicMetadata.plan !== "premium" && user?.publicMetadata.plan !== "pro" && (
               <div
                 onClick={() => {
                   setPremiumPlanModalState();
