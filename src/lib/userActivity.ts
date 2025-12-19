@@ -37,7 +37,11 @@ export interface ActivityLogData {
  */
 export async function logUserActivity(data: ActivityLogData): Promise<boolean> {
   try {
-    const baseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
+    let baseUrl = "";
+    if (typeof window === "undefined") {
+      baseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
+    }
+
     const response = await fetch(`${baseUrl}/api/user-activity/log`, {
       method: "POST",
       headers: {
@@ -60,7 +64,11 @@ export async function logUserActivities(
   activities: ActivityLogData[]
 ): Promise<boolean> {
   try {
-    const baseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
+    let baseUrl = "";
+    if (typeof window === "undefined") {
+      baseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
+    }
+
     const response = await fetch(`${baseUrl}/api/user-activity/log`, {
       method: "PUT",
       headers: {
