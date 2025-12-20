@@ -39,7 +39,11 @@ const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
     };
   }, [freeUser, noUser]);
 
-  const handleStart = (exam: TExamSchemaDto, partId: number = 1) => {
+  const handleStart = (
+    exam: TExamSchemaDto,
+    partId: number = 1,
+    section?: string
+  ) => {
     if (freeUser) {
       setShowUpgradeModal(true);
       return;
@@ -48,19 +52,8 @@ const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
       return;
     }
     setSelectedExam(exam.name);
-    router.push(`/exams/exam_${exam.id}/part${partId}`);
-  };
-
-  const handleScore = (exam: TExamSchemaDto) => {
-    if (freeUser) {
-      setShowUpgradeModal(true);
-      return;
-    } else if (noUser) {
-      setShowLoginModal(true);
-      return;
-    }
-    setSelectedExam(exam.name);
-    router.push(`/exams/exam_${exam.id}/results`);
+    const query = section ? `?section=${section}` : "";
+    router.push(`/exams/exam_${exam.id}/part${partId}${query}`);
   };
 
   return (

@@ -7,6 +7,7 @@ import { TPracticeDto } from "@/models/practice.model";
 import useStore from "@/store";
 
 import { useRouter } from "nextjs-toploader/app";
+import { useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 
@@ -42,7 +43,9 @@ const SpeakingExamView = ({
   partNumber,
 }: SpeakingExamViewProps) => {
   const router = useRouter();
-  const [sendingResult, setSendingResult] = useState(false);
+  const searchParams = useSearchParams();
+  const section = searchParams.get("section");
+  const [sendingResult] = useState(false);
   const [passageIndex, setPassageIndex] = useState(0);
 
   const [time, setTime] = useState(partId == 17 || partId == 18 ? 60 : 30);
@@ -69,6 +72,16 @@ const SpeakingExamView = ({
   const [isSubmit, setIsSubmit] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [audioURL, setAudioURL] = useState<string | null>(null);
+  useEffect(() => {
+    if (audioURL) {
+      console.log("Audio recorded:", audioURL);
+    }
+  }, [audioURL]);
+  useEffect(() => {
+    if (sendingResult) {
+      console.log("Sending result...");
+    }
+  }, [sendingResult]);
   const [micStream, setMicStream] = useState<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const hasStartedRecordingRef = useRef(false);
@@ -114,6 +127,7 @@ const SpeakingExamView = ({
 
       setIsRecording(true);
     } catch (err) {
+      console.error(err);
       setErrorAccessingMicrophone(true);
     }
   };
@@ -447,26 +461,29 @@ const SpeakingExamView = ({
               <div className="flex items-center gap-2 justify-end pb-[10px] ">
                 <button
                   onClick={() => {
+                    const query = section ? `?section=${section}` : "";
                     if (isRecording) cancelRecording();
                     if (page == "description" && passageIndex == 0) {
-                      if (partId === 1) {
+                      if (partId === 1 || (section === "speaking" && partId === 13)) {
                         router.push("/exam-overview");
                       } else {
                         router.push(
                           "/exams/exam_" +
                             practice.taskId +
                             "/part" +
-                            (partId - 1).toString()
+                            (partId - 1).toString() +
+                            query
                         );
                       }
-                    } else if (page == "question" && partId === 7) {
+                    } else if (page == "question" && partId === 13) {
                       setPage("description");
                     } else if (page == "question") {
                       router.push(
                         "/exams/exam_" +
                           practice.taskId +
                           "/part" +
-                          (partId - 1).toString()
+                          (partId - 1).toString() +
+                          query
                       );
                     } else if (page == "evaluateResult") {
                       setPage("question");
@@ -479,6 +496,7 @@ const SpeakingExamView = ({
                 </button>
                 <button
                   onClick={() => {
+                    const query = section ? `?section=${section}` : "";
                     if (isRecording) cancelRecording();
                     if (page == "description") {
                       setPage("question");
@@ -492,7 +510,8 @@ const SpeakingExamView = ({
                           "/exams/exam_" +
                             practice.taskId +
                             "/part" +
-                            (partId + 1).toString()
+                            (partId + 1).toString() +
+                            query
                         );
                         setTime(partId == 17 || partId == 18 ? 60 : 30);
                       }
@@ -507,7 +526,7 @@ const SpeakingExamView = ({
                     "cursor-pointer flex items-center gap-[8px] justify-center h-[40px] font-normal text-[#212E42] text-[14px] w-[96px] bg-white rounded-[24px]"
                   }
                 >
-                  Next
+                  {section === "speaking" && partId >= 20 ? "Finish Exam" : "Next"}
                   <SvgArrowRight />
                 </button>
               </div>
@@ -657,7 +676,7 @@ const SpeakingExamView = ({
                                 </h5>
                               </div>
                               <div className="text-[14px] p-[16px] text-[#212E42]  font-semibold">
-                                We don't have permission to use your microphone.
+                                We don&apos;t have permission to use your microphone.
                                 <ol className="mt-[16px] font-normal">
                                   <li>
                                     Click &apos;Settings&apos; icon near the

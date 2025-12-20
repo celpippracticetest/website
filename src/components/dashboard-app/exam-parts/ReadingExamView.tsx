@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, LoaderCircle } from "lucide-react";
 import { TPracticeDto } from "@/models/practice.model";
-import { useRouter } from "nextjs-toploader/app";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import ReadingQuestionList from "../reading-practice/components/ReadingQuestionList";
 import useStore from "@/store";
@@ -45,6 +45,8 @@ const ReadingExamView = ({
 }: ReadingExamViewProps) => {
   const timerTime = partId == 10 ? 780 : 660;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const section = searchParams.get("section");
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { user, isLoaded, isSignedIn } = useUser();
@@ -143,10 +145,20 @@ const ReadingExamView = ({
           // Optionally handle error
           console.error("Failed to submit answers:", error);
         }
-        router.push(
-          "/exams/exam_" + practice.taskId + "/part" + (partId + 1).toString()
-        );
+        const query = section ? `?section=${section}` : "";
+        if (section === "reading" && partId >= 10) {
+          router.push(`/exams/exam_${practice.taskId}/results`);
+        } else {
+          router.push(
+            "/exams/exam_" +
+              practice.taskId +
+              "/part" +
+              (partId + 1).toString() +
+              query
+          );
+        }
       };
+
       submitAnswers();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -359,15 +371,17 @@ const ReadingExamView = ({
                 <button
                   disabled={page == "answer"}
                   onClick={() => {
+                    const query = section ? `?section=${section}` : "";
                     if (page == "description" && passageIndex == 0) {
-                      if (partId === 1) {
+                      if (partId === 1 || (section === "reading" && partId === 7)) {
                         router.push("/exam-overview");
                       } else {
                         router.push(
                           "/exams/exam_" +
                             practice.taskId +
                             "/part" +
-                            (partId - 1).toString()
+                            (partId - 1).toString() +
+                            query
                         );
                       }
                     } else if (page == "question" && partId === 7) {
@@ -377,7 +391,8 @@ const ReadingExamView = ({
                         "/exams/exam_" +
                           practice.taskId +
                           "/part" +
-                          (partId - 1).toString()
+                          (partId - 1).toString() +
+                          query
                       );
                     }
                     setTime(timerTime);

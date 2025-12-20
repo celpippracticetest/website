@@ -7,6 +7,7 @@ import AudioPlayer from "../listening-practice/components/AudioPlayer";
 import ListeningQuestionList from "../listening-practice/components/ListeningQuestionList";
 import { TPracticeDto } from "@/models/practice.model";
 import { useRouter } from "nextjs-toploader/app";
+import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import ListeningDropDownQuestionList from "../listening-practice/components/ListeningDropDownQuestionList";
 import { useUser } from "@clerk/nextjs";
@@ -43,6 +44,8 @@ const ListeningExamView = ({
 
   const router = useRouter();
   const { user, isLoaded, isSignedIn } = useUser();
+  const searchParams = useSearchParams();
+  const section = searchParams.get("section");
   const { addPoints } = useLeaguePoints();
   const {
     isModalOpen,
@@ -140,10 +143,20 @@ const ListeningExamView = ({
           // Optionally handle error
           console.error("Failed to submit answers:", error);
         }
-        router.push(
-          "/exams/exam_" + practice.taskId + "/part" + (partId + 1).toString()
-        );
-      };
+          const query = section ? `?section=${section}` : "";
+          if (section === "listening" && partId >= 6) {
+            router.push(`/exams/exam_${practice.taskId}/results`);
+          } else {
+            router.push(
+              "/exams/exam_" +
+                practice.taskId +
+                "/part" +
+                (partId + 1).toString() +
+                query
+            );
+          }
+        };
+
       submitAnswers();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -349,6 +362,7 @@ const ListeningExamView = ({
               <button
                 disabled={page == "answer"}
                 onClick={() => {
+                  const query = section ? `?section=${section}` : "";
                   if (page == "description" && passageIndex == 0) {
                     if (partId === 1) {
                       router.push("/exam-overview");
@@ -357,7 +371,8 @@ const ListeningExamView = ({
                         "/exams/exam_" +
                           practice.taskId +
                           "/part" +
-                          (partId - 1).toString()
+                          (partId - 1).toString() +
+                          query
                       );
                     }
                   } else if (page == "instructions" && passageIndex == 0) {

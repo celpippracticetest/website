@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, LoaderCircle } from "lucide-react";
 import { TPracticeDto } from "@/models/practice.model";
 import { useRouter } from "nextjs-toploader/app";
+import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import useStore from "@/store";
 import { useUser } from "@clerk/nextjs";
@@ -40,6 +41,8 @@ const WritingExamView = ({
   partNumber,
 }: WritingExamViewProps) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const section = searchParams.get("section");
   const [page, setPage] = useState(partId == 11 ? "description" : "question");
   const [passageIndex, setPassageIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<
@@ -393,25 +396,28 @@ const WritingExamView = ({
 
                 <button
                   onClick={() => {
+                    const query = section ? `?section=${section}` : "";
                     if (page == "description" && passageIndex == 0) {
-                      if (partId === 1) {
+                      if (partId === 1 || (section === "writing" && partId === 11)) {
                         router.push("/exam-overview");
                       } else {
                         router.push(
                           "/exams/exam_" +
                             practice.taskId +
                             "/part" +
-                            (partId - 1).toString()
+                            (partId - 1).toString() +
+                            query
                         );
                       }
-                    } else if (page == "question" && partId === 7) {
+                    } else if (page == "question" && partId === 11) {
                       setPage("description");
                     } else if (page == "question") {
                       router.push(
                         "/exams/exam_" +
                           practice.taskId +
                           "/part" +
-                          (partId - 1).toString()
+                          (partId - 1).toString() +
+                          query
                       );
                     }
                     setTime(1620);
@@ -422,15 +428,21 @@ const WritingExamView = ({
                 </button>
                 <button
                   onClick={() => {
+                    const query = section ? `?section=${section}` : "";
                     if (page == "description") {
                       setPage("question");
                     } else if (page == "question") {
-                      router.push(
-                        "/exams/exam_" +
-                          practice.taskId +
-                          "/part" +
-                          (partId + 1).toString()
-                      );
+                      if (section === "writing" && partId >= 12) {
+                        router.push(`/exams/exam_${practice.taskId}/results`);
+                      } else {
+                        router.push(
+                          "/exams/exam_" +
+                            practice.taskId +
+                            "/part" +
+                            (partId + 1).toString() +
+                            query
+                        );
+                      }
                     }
                     setTime(1620);
                   }}
@@ -438,7 +450,7 @@ const WritingExamView = ({
                     "cursor-pointer flex items-center gap-[8px] justify-center h-[40px] font-normal text-[#212E42] text-[14px] w-[96px] bg-white rounded-[24px]"
                   }
                 >
-                  Next
+                  {section === "writing" && partId >= 12 ? "Finish Exam" : "Next"}
                   <SvgArrowRight />
                 </button>
               </div>
@@ -582,6 +594,29 @@ const WritingExamView = ({
                           <p className="text-[14px] font-medium text-[#37465C]">
                             You can now proceed to the next step.
                           </p>
+                          <Button
+                            className="mt-4 bg-[#4A7DFF] text-white rounded-full px-6 py-2"
+                            onClick={() => {
+                              const query = section ? `?section=${section}` : "";
+                              if (section === "writing" && partId >= 12) {
+                                router.push(
+                                  `/exams/exam_${practice.taskId}/results`
+                                );
+                              } else {
+                                router.push(
+                                  "/exams/exam_" +
+                                    practice.taskId +
+                                    "/part" +
+                                    (partId + 1).toString() +
+                                    query
+                                );
+                              }
+                            }}
+                          >
+                            {section === "writing" && partId >= 12
+                              ? "Finish Exam"
+                              : "Next Part"}
+                          </Button>
                         </div>
                       </div>
                     ) : (
