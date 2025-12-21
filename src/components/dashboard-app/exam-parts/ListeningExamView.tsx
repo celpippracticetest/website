@@ -131,12 +131,14 @@ const ListeningExamView = ({
               `${Math.floor(time / 60)} minutes`
             );
 
-            // Check for trophy achievements
-            await checkTrophyAchievements(
-              20,
-              "mockExams",
-              `${Math.floor(time / 60)}:${time % 60}`
-            );
+            // Check for trophy achievements (only for complete exam mode)
+            if (!section) {
+              await checkTrophyAchievements(
+                20,
+                "mockExams",
+                `${Math.floor(time / 60)}:${time % 60}`
+              );
+            }
           }
         } catch (error) {
           // Optionally handle error
@@ -255,8 +257,8 @@ const ListeningExamView = ({
     <>
       <div
         className={`z-[999] fixed inset-0 flex items-center justify-center px-[14px] screen744:!px-[16px] screen1280:!px-[20px] transition-opacity ${showModal
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
+          ? "opacity-100 pointer-events-auto"
+          : "opacity-0 pointer-events-none"
           }`}
       >
         <div
@@ -526,8 +528,8 @@ const ListeningExamView = ({
                                   <div key={index}>
                                     <span
                                       className={`${index % 2 == 0
-                                          ? "bg-[#FFEBD6]"
-                                          : "bg-[#D1DEFF]"
+                                        ? "bg-[#FFEBD6]"
+                                        : "bg-[#D1DEFF]"
                                         }   inline-block leading-[16px] mr-[8px] p-[8px] rounded-[8px]  text-black h-[32px] text-[14px]  font-normal `}
                                     >
                                       {con.name}:

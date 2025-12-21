@@ -136,12 +136,14 @@ const ReadingExamView = ({
               `${Math.floor(time / 60)} minutes`
             );
 
-            // Check for trophy achievements
-            await checkTrophyAchievements(
-              20,
-              "mockExams",
-              `${Math.floor(time / 60)}:${time % 60}`
-            );
+            // Check for trophy achievements (only for complete exam mode)
+            if (!section) {
+              await checkTrophyAchievements(
+                20,
+                "mockExams",
+                `${Math.floor(time / 60)}:${time % 60}`
+              );
+            }
           }
         } catch (error) {
           // Optionally handle error
@@ -264,15 +266,15 @@ const ReadingExamView = ({
       <div className="flex flex-col w-full">
         <div
           className={`z-[999] fixed inset-0 flex items-center justify-center px-[14px] screen744:!px-[16px] screen1280:!px-[20px] transition-opacity ${menuShowModal
-              ? "opacity-100 pointer-events-auto"
-              : "opacity-0 pointer-events-none"
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
             }`}
         >
           <div
             ref={ref}
             className={`max-w-[725px] w-full h-[90vh] screen1280:!h-[828px] p-[24px] bg-white rounded-[16px] transform transition-all duration-300 ease-out overflow-y-auto ${menuShowModal
-                ? "scale-100 translate-y-0"
-                : "scale-95 translate-y-2"
+              ? "scale-100 translate-y-0"
+              : "scale-95 translate-y-2"
               }`}
           >
             <div className="w-full flex flex-col screen1280:!flex-row gap-[16px]">
