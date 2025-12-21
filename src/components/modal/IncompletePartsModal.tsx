@@ -3,6 +3,10 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, ChevronRight } from "lucide-react";
+import SvgListening from "../icons/Listening";
+import SvgReading from "../icons/Reading";
+import SvgWriting from "../icons/Writing";
+import SvgSpeaking from "../icons/Speaking";
 
 interface IncompletePart {
     name: string;
@@ -37,11 +41,11 @@ const IncompletePartsModal: React.FC<IncompletePartsModalProps> = ({
     };
 
     const getSectionIcon = (sectionName: string) => {
-        const icons: Record<string, string> = {
-            Listening: "🎧",
-            Reading: "📖",
-            Writing: "✍️",
-            Speaking: "🎤",
+        const icons: Record<string, any> = {
+            Listening: <SvgListening />,
+            Reading: <SvgReading />,
+            Writing: <SvgWriting />,
+            Speaking: <SvgSpeaking />,
         };
         return icons[sectionName] || "📝";
     };
@@ -76,17 +80,23 @@ const IncompletePartsModal: React.FC<IncompletePartsModalProps> = ({
                 {/* Incomplete Sections List */}
                 <div className="mb-6">
                     <p className="text-sm font-semibold text-[#37465C] mb-3">
-                        Missing sections:
+                        Missing sections (click to start):
                     </p>
                     <div className="space-y-2">
                         {incompleteParts.map((part, index) => (
-                            <div
+                            <button
                                 key={index}
-                                className="flex items-center gap-3 p-3 bg-[#F2F6FF] rounded-xl"
+                                onClick={() => {
+                                    router.push(`/exams/exam_${examId}/part${part.startPart}`);
+                                }}
+                                className="w-full flex items-center gap-3 p-3 bg-[#F2F6FF] rounded-xl hover:bg-[#E5ECFF] transition-all duration-200 hover:scale-[1.02] cursor-pointer"
                             >
                                 <span className="text-2xl">{getSectionIcon(part.name)}</span>
-                                <span className="text-[#37465C] font-medium">{part.name}</span>
-                            </div>
+                                <span className="text-[#37465C] font-medium flex-1 text-left">
+                                    {part.name}
+                                </span>
+                                <ChevronRight className="w-5 h-5 text-[#76808F]" />
+                            </button>
                         ))}
                     </div>
                 </div>
@@ -107,8 +117,14 @@ const IncompletePartsModal: React.FC<IncompletePartsModalProps> = ({
                         <ChevronRight className="w-5 h-5" />
                     </button>
                     <button
+                        onClick={onClose}
+                        className="w-full py-3.5 bg-[#0DAA94] text-white rounded-xl font-semibold hover:bg-[#0c9581] transition-all duration-200 hover:scale-[1.02] "
+                    >
+                        View Results Anyway
+                    </button>
+                    <button
                         onClick={handleBackToExams}
-                        className="w-full py-3.5 bg-[#F2F6FF] text-[#37465C] rounded-xl font-semibold hover:bg-[#E5ECFF] transition-all duration-200 hover:scale-[1.02]"
+                        className="w-full py-3.5 bg-[#F2F6FF] text-[#37465C] rounded-xl font-semibold hover:bg-[#E5ECFF] transition-all duration-200 hover:scale-[1.02] cursor-pointer"
                     >
                         Back to Exams
                     </button>
