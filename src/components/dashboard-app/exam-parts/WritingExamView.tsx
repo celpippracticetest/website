@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, LoaderCircle } from "lucide-react";
 import { TPracticeDto } from "@/models/practice.model";
 import { useRouter } from "nextjs-toploader/app";
+import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import useStore from "@/store";
 import { useUser } from "@clerk/nextjs";
@@ -23,6 +24,7 @@ import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import { PRACTICE_PARTS } from "@/constants";
+import ContinueExamModal from "@/components/modal/ContinueExamModal";
 
 interface WritingExamViewProps {
   practice: TPracticeDto;
@@ -40,11 +42,10 @@ const WritingExamView = ({
   partNumber,
 }: WritingExamViewProps) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const section = searchParams.get("section");
   const [page, setPage] = useState(partId == 11 ? "description" : "question");
-  const [passageIndex, setPassageIndex] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<
-    Record<string, string>
-  >({});
+  const [passageIndex] = useState(0);
   const [time, setTime] = useState(1620);
   const [wordCount, setWordCount] = useState(0);
   const [progressBar, setProgressBar] = useState(0);
@@ -66,15 +67,8 @@ const WritingExamView = ({
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
   const [showModal, setShowModal] = useState(false);
+  const [showContinueModal, setShowContinueModal] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const shouldShowPractice: any =
-    practice.isFree ||
-    (!practice.isFree &&
-      user &&
-      user.publicMetadata.plan &&
-      user.publicMetadata.plan === "premium");
-  const [answers, setAnswers] = useState<any[]>([]);
-  const [freeAttempts, setFreeAttempts] = useState<number | null>(3);
   const setPremiumPlanModalState = useStore(
     (state) => state.setPremiumPlanModalState
   );
@@ -153,12 +147,14 @@ const WritingExamView = ({
       // Add league points for mock exam completion
       await addPoints(20, "mockExams", `${Math.floor(time / 60)} minutes`);
 
-      // Check for trophy achievements
-      await checkTrophyAchievements(
-        20,
-        "mockExams",
-        `${Math.floor(time / 60)}:${time % 60}`
-      );
+      // Check for trophy achievements (only for complete exam mode)
+      if (!section) {
+        await checkTrophyAchievements(
+          20,
+          "mockExams",
+          `${Math.floor(time / 60)}:${time % 60}`
+        );
+      }
 
       // Log AI feedback generation
       if (result.usage) {
@@ -181,26 +177,12 @@ const WritingExamView = ({
     }
   };
 
-  useEffect(() => {
-    if (
-      (user && !user.publicMetadata.plan) ||
-      (user && user.publicMetadata.plan === "free")
-    ) {
-      setFreeAttempts(3 - answers.length > 0 ? 3 - answers.length : 0);
-    } else {
-      setFreeAttempts(null);
-    }
-  }, [user, answers]);
-
-  const handleAnswerSelect = (questionId: number, answerId: string) => {
-    setSelectedAnswers((prev) => ({
-      ...prev,
-      [questionId]: answerId,
-    }));
-  };
-  if (isLoaded && (!user || (user && user.publicMetadata.plan !== "premium"))) {
-    router.push("exam-overview");
-  }
+  const shouldShowPractice: boolean =
+    practice.isFree ||
+    !!(!practice.isFree &&
+      user &&
+      user.publicMetadata.plan &&
+      user.publicMetadata.plan === "premium");
 
   const [menuShowModal, setMenuShowModal] = useState(false);
   interface PracticeSection {
@@ -212,8 +194,8 @@ const WritingExamView = ({
   }
 
   useEffect(() => {
-    function handleClickOutside(event: any) {
-      if (ref.current && !ref.current.contains(event.target)) {
+    function handleClickOutside(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
         setMenuShowModal(false);
       }
     }
@@ -281,19 +263,17 @@ const WritingExamView = ({
       <div className="flex flex-col w-full">
         <div>
           <div
-            className={`z-[999] fixed inset-0 flex items-center justify-center px-[14px] screen744:!px-[16px] screen1280:!px-[20px] transition-opacity ${
-              menuShowModal
-                ? "opacity-100 pointer-events-auto"
-                : "opacity-0 pointer-events-none"
-            }`}
+            className={`z-[999] fixed inset-0 flex items-center justify-center px-[14px] screen744:!px-[16px] screen1280:!px-[20px] transition-opacity ${menuShowModal
+              ? "opacity-100 pointer-events-auto"
+              : "opacity-0 pointer-events-none"
+              }`}
           >
             <div
               ref={ref}
-              className={`max-w-[725px] w-full h-[90vh] screen1280:!h-[828px] p-[24px] bg-white rounded-[16px] transform transition-all duration-300 ease-out overflow-y-auto ${
-                menuShowModal
-                  ? "scale-100 translate-y-0"
-                  : "scale-95 translate-y-2"
-              }`}
+              className={`max-w-[725px] w-full h-[90vh] screen1280:!h-[828px] p-[24px] bg-white rounded-[16px] transform transition-all duration-300 ease-out overflow-y-auto ${menuShowModal
+                ? "scale-100 translate-y-0"
+                : "scale-95 translate-y-2"
+                }`}
             >
               <div className="w-full flex flex-col screen1280:!flex-row gap-[16px]">
                 {practiceSections.map((section) => (
@@ -320,9 +300,8 @@ const WritingExamView = ({
                                 `/exams/exam_${examId}/part${p.index.toString()}`
                               );
                             }}
-                            className={`${
-                              partId === p.index ? "bg-[#F7F9FF]" : "bg-white"
-                            } w-full min-h-[60px] cursor-pointer  h-auto text-left border border-[#D5D6D8]  hover:bg-[#F7F9FF] transition-colors rounded-[12px] p-[12px]`}
+                            className={`${partId === p.index ? "bg-[#F7F9FF]" : "bg-white"
+                              } w-full min-h-[60px] cursor-pointer  h-auto text-left border border-[#D5D6D8]  hover:bg-[#F7F9FF] transition-colors rounded-[12px] p-[12px]`}
                           >
                             <div className="text-[14px] text-[#37465C] font-medium leading-[28px]">
                               {p.title}
@@ -356,10 +335,10 @@ const WritingExamView = ({
               onClick={() => setMenuShowModal(true)}
               className="max-w-[442px] justify-between cursor-pointer border px-[16px] border-[#D5D6D8] rounded-[12px] gap-[4px] w-full flex items-center h-[56px]"
             >
-            <div className="text-[#37465C] text-[16px]">
-              <span className="font-normal">Writing Part{partId}:</span>
-              <span className="font-bold">{PRACTICE_PARTS[partId - 1]}</span>
-            </div>
+              <div className="text-[#37465C] text-[16px]">
+                <span className="font-normal">Writing Part{partId}:</span>
+                <span className="font-bold">{PRACTICE_PARTS[partId - 1]}</span>
+              </div>
               <SvgChevronDownExam className="text-[#37465C]" />
             </div>
           </div>
@@ -382,9 +361,8 @@ const WritingExamView = ({
                     <div className="text-[14px] font-semibold gap-2 text-center text-[#EE4266] flex items-center">
                       <p>
                         {time > 0
-                          ? `${Math.floor(time / 60)}:${
-                              time % 60 < 10 ? `0${time % 60}` : time % 60
-                            }`
+                          ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
+                          }`
                           : "Time's Up!"}
                       </p>
                     </div>
@@ -393,25 +371,28 @@ const WritingExamView = ({
 
                 <button
                   onClick={() => {
+                    const query = section ? `?section=${section}` : "";
                     if (page == "description" && passageIndex == 0) {
-                      if (partId === 1) {
+                      if (partId === 1 || (section === "writing" && partId === 11)) {
                         router.push("/exam-overview");
                       } else {
                         router.push(
                           "/exams/exam_" +
-                            practice.taskId +
-                            "/part" +
-                            (partId - 1).toString()
+                          practice.taskId +
+                          "/part" +
+                          (partId - 1).toString() +
+                          query
                         );
                       }
-                    } else if (page == "question" && partId === 7) {
+                    } else if (page == "question" && partId === 11) {
                       setPage("description");
                     } else if (page == "question") {
                       router.push(
                         "/exams/exam_" +
-                          practice.taskId +
-                          "/part" +
-                          (partId - 1).toString()
+                        practice.taskId +
+                        "/part" +
+                        (partId - 1).toString() +
+                        query
                       );
                     }
                     setTime(1620);
@@ -422,15 +403,21 @@ const WritingExamView = ({
                 </button>
                 <button
                   onClick={() => {
+                    const query = section ? `?section=${section}` : "";
                     if (page == "description") {
                       setPage("question");
                     } else if (page == "question") {
-                      router.push(
-                        "/exams/exam_" +
+                      if (section === "writing" && partId >= 12) {
+                        router.push(`/exams/exam_${practice.taskId}/results`);
+                      } else {
+                        router.push(
+                          "/exams/exam_" +
                           practice.taskId +
                           "/part" +
-                          (partId + 1).toString()
-                      );
+                          (partId + 1).toString() +
+                          query
+                        );
+                      }
                     }
                     setTime(1620);
                   }}
@@ -438,7 +425,7 @@ const WritingExamView = ({
                     "cursor-pointer flex items-center gap-[8px] justify-center h-[40px] font-normal text-[#212E42] text-[14px] w-[96px] bg-white rounded-[24px]"
                   }
                 >
-                  Next
+                  {section === "writing" && partId >= 12 ? "Finish Exam" : "Next"}
                   <SvgArrowRight />
                 </button>
               </div>
@@ -508,7 +495,7 @@ const WritingExamView = ({
 
                   <div className="p-4  overflow-y-auto [&::-webkit-scrollbar]:w-2  [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full  [&::-webkit-scrollbar-track]:bg-slate-100">
                     {(!tryToSubmit && !isSubmit) ||
-                    (wordCount < 20 && tryToSubmit) ? (
+                      (wordCount < 20 && tryToSubmit) ? (
                       <div className="w-full">
                         <div className="flex items-center justify-between mb-2">
                           <h3 className="text-[14px] text-[#212E42] font-semibold mb-2">
@@ -582,6 +569,40 @@ const WritingExamView = ({
                           <p className="text-[14px] font-medium text-[#37465C]">
                             You can now proceed to the next step.
                           </p>
+                          <Button
+                            className="mt-4 bg-[#4A7DFF] text-white rounded-full px-6 py-2"
+                            onClick={() => {
+                              const query = section
+                                ? `?section=${section}`
+                                : "";
+                              if (section === "writing" && partId >= 12) {
+                                setShowContinueModal(true);
+                              } else {
+                                if (partId >= 12) {
+                                  router.push(
+                                    "/exams/exam_" +
+                                    practice.taskId +
+                                    "/part13" +
+                                    query
+                                  );
+                                } else {
+                                  router.push(
+                                    "/exams/exam_" +
+                                    practice.taskId +
+                                    "/part" +
+                                    (partId + 1).toString() +
+                                    query
+                                  );
+                                }
+                              }
+                            }}
+                          >
+                            {partId >= 12
+                              ? section === "writing"
+                                ? "Finish Exam"
+                                : "Next Section"
+                              : "Next Part"}
+                          </Button>
                         </div>
                       </div>
                     ) : (
@@ -611,6 +632,21 @@ const WritingExamView = ({
         userPoints={userPoints}
         timeSpent={timeSpent}
       />
+      {showContinueModal && (
+        <ContinueExamModal
+          onContinue={() => {
+            setShowContinueModal(false);
+            router.push(
+              `/exams/exam_${practice.taskId}/part13?section=speaking`
+            );
+          }}
+          onFinish={() => {
+            setShowContinueModal(false);
+            router.push(`/exam-overview`);
+          }}
+          nextSectionName="Speaking"
+        />
+      )}
     </div>
   );
 };

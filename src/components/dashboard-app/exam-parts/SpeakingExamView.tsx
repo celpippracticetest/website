@@ -7,6 +7,7 @@ import { TPracticeDto } from "@/models/practice.model";
 import useStore from "@/store";
 
 import { useRouter } from "nextjs-toploader/app";
+import { useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 
@@ -42,7 +43,9 @@ const SpeakingExamView = ({
   partNumber,
 }: SpeakingExamViewProps) => {
   const router = useRouter();
-  const [sendingResult, setSendingResult] = useState(false);
+  const searchParams = useSearchParams();
+  const section = searchParams.get("section");
+  const [sendingResult] = useState(false);
   const [passageIndex, setPassageIndex] = useState(0);
 
   const [time, setTime] = useState(partId == 17 || partId == 18 ? 60 : 30);
@@ -69,6 +72,16 @@ const SpeakingExamView = ({
   const [isSubmit, setIsSubmit] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [audioURL, setAudioURL] = useState<string | null>(null);
+  useEffect(() => {
+    if (audioURL) {
+      console.log("Audio recorded:", audioURL);
+    }
+  }, [audioURL]);
+  useEffect(() => {
+    if (sendingResult) {
+      console.log("Sending result...");
+    }
+  }, [sendingResult]);
   const [micStream, setMicStream] = useState<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const hasStartedRecordingRef = useRef(false);
@@ -114,6 +127,7 @@ const SpeakingExamView = ({
 
       setIsRecording(true);
     } catch (err) {
+      console.error(err);
       setErrorAccessingMicrophone(true);
     }
   };
@@ -181,12 +195,14 @@ const SpeakingExamView = ({
         `${Math.floor(recordingTime / 60)} minutes`
       );
 
-      // Check for trophy achievements
-      await checkTrophyAchievements(
-        20,
-        "mockExams",
-        `${Math.floor(recordingTime / 60)}:${recordingTime % 60}`
-      );
+      // Check for trophy achievements (only for complete exam mode)
+      if (!section) {
+        await checkTrophyAchievements(
+          20,
+          "mockExams",
+          `${Math.floor(recordingTime / 60)}:${recordingTime % 60}`
+        );
+      }
 
       setIsSubmit(true);
     } catch (error) {
@@ -349,19 +365,17 @@ const SpeakingExamView = ({
       <div className="flex flex-col w-full">
         <div>
           <div
-            className={`z-[999] fixed inset-0 flex items-center justify-center px-[14px] screen744:!px-[16px] screen1280:!px-[20px] transition-opacity ${
-              menuShowModal
+            className={`z-[999] fixed inset-0 flex items-center justify-center px-[14px] screen744:!px-[16px] screen1280:!px-[20px] transition-opacity ${menuShowModal
                 ? "opacity-100 pointer-events-auto"
                 : "opacity-0 pointer-events-none"
-            }`}
+              }`}
           >
             <div
               ref={ref}
-              className={`max-w-[725px] w-full h-[90vh] screen1280:!h-[828px] p-[24px] bg-white rounded-[16px] transform transition-all duration-300 ease-out overflow-y-auto ${
-                menuShowModal
+              className={`max-w-[725px] w-full h-[90vh] screen1280:!h-[828px] p-[24px] bg-white rounded-[16px] transform transition-all duration-300 ease-out overflow-y-auto ${menuShowModal
                   ? "scale-100 translate-y-0"
                   : "scale-95 translate-y-2"
-              }`}
+                }`}
             >
               <div className="w-full flex flex-col screen1280:!flex-row gap-[16px]">
                 {practiceSections.map((section) => (
@@ -388,9 +402,8 @@ const SpeakingExamView = ({
                                 `/exams/exam_${examId}/part${p.index.toString()}`
                               );
                             }}
-                            className={`${
-                              partId === p.index ? "bg-[#F7F9FF]" : "bg-white"
-                            } w-full min-h-[60px] cursor-pointer  h-auto text-left border border-[#D5D6D8]  hover:bg-[#F7F9FF] transition-colors rounded-[12px] p-[12px]`}
+                            className={`${partId === p.index ? "bg-[#F7F9FF]" : "bg-white"
+                              } w-full min-h-[60px] cursor-pointer  h-auto text-left border border-[#D5D6D8]  hover:bg-[#F7F9FF] transition-colors rounded-[12px] p-[12px]`}
                           >
                             <div className="text-[14px] text-[#37465C] font-medium leading-[28px]">
                               {p.title}
@@ -424,10 +437,10 @@ const SpeakingExamView = ({
               onClick={() => setMenuShowModal(true)}
               className="max-w-[442px] justify-between cursor-pointer border px-[16px] border-[#D5D6D8] rounded-[12px] gap-[4px] w-full flex items-center h-[56px]"
             >
-            <div className="text-[#37465C] text-[16px]">
-              <span className="font-normal">Speaking Part{partId}:</span>
-              <span className="font-bold">{PRACTICE_PARTS[partId - 1]}</span>
-            </div>
+              <div className="text-[#37465C] text-[16px]">
+                <span className="font-normal">Speaking Part{partId}:</span>
+                <span className="font-bold">{PRACTICE_PARTS[partId - 1]}</span>
+              </div>
               <SvgChevronDownExam className="text-[#37465C]" />
             </div>
           </div>
@@ -447,26 +460,29 @@ const SpeakingExamView = ({
               <div className="flex items-center gap-2 justify-end pb-[10px] ">
                 <button
                   onClick={() => {
+                    const query = section ? `?section=${section}` : "";
                     if (isRecording) cancelRecording();
                     if (page == "description" && passageIndex == 0) {
-                      if (partId === 1) {
+                      if (partId === 1 || (section === "speaking" && partId === 13)) {
                         router.push("/exam-overview");
                       } else {
                         router.push(
                           "/exams/exam_" +
-                            practice.taskId +
-                            "/part" +
-                            (partId - 1).toString()
+                          practice.taskId +
+                          "/part" +
+                          (partId - 1).toString() +
+                          query
                         );
                       }
-                    } else if (page == "question" && partId === 7) {
+                    } else if (page == "question" && partId === 13) {
                       setPage("description");
                     } else if (page == "question") {
                       router.push(
                         "/exams/exam_" +
-                          practice.taskId +
-                          "/part" +
-                          (partId - 1).toString()
+                        practice.taskId +
+                        "/part" +
+                        (partId - 1).toString() +
+                        query
                       );
                     } else if (page == "evaluateResult") {
                       setPage("question");
@@ -479,6 +495,7 @@ const SpeakingExamView = ({
                 </button>
                 <button
                   onClick={() => {
+                    const query = section ? `?section=${section}` : "";
                     if (isRecording) cancelRecording();
                     if (page == "description") {
                       setPage("question");
@@ -490,9 +507,10 @@ const SpeakingExamView = ({
                       } else {
                         router.push(
                           "/exams/exam_" +
-                            practice.taskId +
-                            "/part" +
-                            (partId + 1).toString()
+                          practice.taskId +
+                          "/part" +
+                          (partId + 1).toString() +
+                          query
                         );
                         setTime(partId == 17 || partId == 18 ? 60 : 30);
                       }
@@ -507,7 +525,7 @@ const SpeakingExamView = ({
                     "cursor-pointer flex items-center gap-[8px] justify-center h-[40px] font-normal text-[#212E42] text-[14px] w-[96px] bg-white rounded-[24px]"
                   }
                 >
-                  Next
+                  {section === "speaking" && partId >= 20 ? "Finish Exam" : "Next"}
                   <SvgArrowRight />
                 </button>
               </div>
@@ -559,7 +577,7 @@ const SpeakingExamView = ({
                   <div className="p-4 overflow-y-auto lg:border-r border-r-0 border-b lg:border-b-0 border-slate-300 [&::-webkit-scrollbar]:w-2  [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full  [&::-webkit-scrollbar-track]:bg-slate-100">
                     <div className="relative">
                       {practice.passages[0].body &&
-                      practice.passages[0].body?.length > 30 ? (
+                        practice.passages[0].body?.length > 30 ? (
                         <>
                           {!practice.passages[0].pictureUrl && (
                             <p className="text-[14px] text-gray-400 mb-2">
@@ -591,9 +609,8 @@ const SpeakingExamView = ({
                           <img
                             src={practice.passages[0].pictureUrl}
                             alt={practice.passages[0].title}
-                            className={`w-full h-auto mb-4 rounded-lg shadow-md ${
-                              !shouldShowPractice ? "blur-sm" : ""
-                            }`}
+                            className={`w-full h-auto mb-4 rounded-lg shadow-md ${!shouldShowPractice ? "blur-sm" : ""
+                              }`}
                           />
                         </>
                       )}
@@ -657,7 +674,7 @@ const SpeakingExamView = ({
                                 </h5>
                               </div>
                               <div className="text-[14px] p-[16px] text-[#212E42]  font-semibold">
-                                We don't have permission to use your microphone.
+                                We don&apos;t have permission to use your microphone.
                                 <ol className="mt-[16px] font-normal">
                                   <li>
                                     Click &apos;Settings&apos; icon near the

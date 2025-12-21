@@ -12,7 +12,8 @@ import { useUser } from "@clerk/nextjs";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 import { ActivityLogger } from "@/lib/userActivity";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import IncompletePartsModal from "@/components/modal/IncompletePartsModal";
 
 function scaleToBand(weightedPercent: number): number {
   return Math.ceil((weightedPercent / 100) * 12);
@@ -39,6 +40,41 @@ const ResultExamView = ({
       ActivityLogger.scoreReportViewed(exams.id, "mock");
     }
   }, [user, exams]);
+
+  // Detect incomplete sections
+  const getIncompleteSections = () => {
+    const sections = [];
+
+    // Check Listening (parts 1-6) - if NO answer records exist at all
+    const hasListening = answers.some(
+      a => a.partId && a.partId >= 1 && a.partId <= 6
+    );
+    if (!hasListening) sections.push({ name: "Listening", startPart: 1 });
+
+    // Check Reading (parts 7-10) - if NO answer records exist at all
+    const hasReading = answers.some(
+      a => a.partId && a.partId >= 7 && a.partId <= 10
+    );
+    if (!hasReading) sections.push({ name: "Reading", startPart: 7 });
+
+    // Check Writing (parts 11-12) - if NO answer records exist at all
+    const hasWriting = speakingAndWritingAnswers.some(
+      (a: any) => a.partId && a.partId >= 11 && a.partId <= 12
+    );
+    if (!hasWriting) sections.push({ name: "Writing", startPart: 11 });
+
+    // Check Speaking (parts 13-20) - if NO answer records exist at all
+    const hasSpeaking = speakingAndWritingAnswers.some(
+      (a: any) => a.partId && a.partId >= 13 && a.partId <= 20
+    );
+    if (!hasSpeaking) sections.push({ name: "Speaking", startPart: 13 });
+
+    return sections;
+  };
+
+  const incompleteSections = getIncompleteSections();
+  const [showIncompleteModal, setShowIncompleteModal] = useState(incompleteSections.length > 0);
+
   const listeningAverage = (() => {
     const average = Array.from({ length: 6 })
       .map((_, index) => {
@@ -182,13 +218,12 @@ const ResultExamView = ({
                 <div className="flex items-center bg-white">
                   Overal Score:{" "}
                   <span
-                    className={`opacity-80 font-black text-4xl ${
-                      listeningAverage < 4
-                        ? "text-red-500"
-                        : listeningAverage > 10
+                    className={`opacity-80 font-black text-4xl ${listeningAverage < 4
+                      ? "text-red-500"
+                      : listeningAverage > 10
                         ? "text-green-500"
                         : "text-[#F59E0B]"
-                    }`}
+                      }`}
                   >
                     {listeningAverage}
                   </span>
@@ -213,13 +248,12 @@ const ResultExamView = ({
                 <div className="flex items-center bg-white">
                   Overal Score:{" "}
                   <span
-                    className={`opacity-80 font-black text-4xl ${
-                      readingAverage < 4
-                        ? "text-red-500"
-                        : readingAverage > 10
+                    className={`opacity-80 font-black text-4xl ${readingAverage < 4
+                      ? "text-red-500"
+                      : readingAverage > 10
                         ? "text-green-500"
                         : "text-[#F59E0B]"
-                    }`}
+                      }`}
                   >
                     {readingAverage}
                   </span>
@@ -244,13 +278,12 @@ const ResultExamView = ({
                 <div className="flex items-center bg-white">
                   Overal Score:{" "}
                   <span
-                    className={`opacity-80 font-black text-4xl ${
-                      writingAverage < 4
-                        ? "text-red-500"
-                        : writingAverage > 10
+                    className={`opacity-80 font-black text-4xl ${writingAverage < 4
+                      ? "text-red-500"
+                      : writingAverage > 10
                         ? "text-green-500"
                         : "text-[#F59E0B]"
-                    }`}
+                      }`}
                   >
                     {writingAverage}
                   </span>
@@ -274,13 +307,12 @@ const ResultExamView = ({
                 <div className="flex items-center bg-white">
                   Overal Score:{" "}
                   <span
-                    className={`opacity-80 font-black text-4xl ${
-                      speakingAverage < 4
-                        ? "text-red-500"
-                        : speakingAverage > 10
+                    className={`opacity-80 font-black text-4xl ${speakingAverage < 4
+                      ? "text-red-500"
+                      : speakingAverage > 10
                         ? "text-green-500"
                         : "text-[#F59E0B]"
-                    }`}
+                      }`}
                   >
                     {speakingAverage}
                   </span>
@@ -299,6 +331,14 @@ const ResultExamView = ({
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Incomplete Parts Modal */}
+      <IncompletePartsModal
+        isOpen={showIncompleteModal}
+        onClose={() => setShowIncompleteModal(false)}
+        incompleteParts={incompleteSections}
+        examId={exams.id}
+      />
     </div>
   );
 };
