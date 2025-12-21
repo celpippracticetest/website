@@ -45,27 +45,25 @@ const ResultExamView = ({
   const getIncompleteSections = () => {
     const sections = [];
 
-    // Check Listening (parts 1-6) - if NO answers with actual content exist
+    // Check Listening (parts 1-6) - if NO answer records exist at all
     const hasListening = answers.some(
-      a => a.partId && a.partId >= 1 && a.partId <= 6 &&
-        a.answers && Object.keys(a.answers).length > 0
+      a => a.partId && a.partId >= 1 && a.partId <= 6
     );
     if (!hasListening) sections.push({ name: "Listening", startPart: 1 });
 
-    // Check Reading (parts 7-10) - if NO answers with actual content exist
+    // Check Reading (parts 7-10) - if NO answer records exist at all
     const hasReading = answers.some(
-      a => a.partId && a.partId >= 7 && a.partId <= 10 &&
-        a.answers && Object.keys(a.answers).length > 0
+      a => a.partId && a.partId >= 7 && a.partId <= 10
     );
     if (!hasReading) sections.push({ name: "Reading", startPart: 7 });
 
-    // Check Writing (parts 11-12) - if NO answers exist
+    // Check Writing (parts 11-12) - if NO answer records exist at all
     const hasWriting = speakingAndWritingAnswers.some(
       (a: any) => a.partId && a.partId >= 11 && a.partId <= 12
     );
     if (!hasWriting) sections.push({ name: "Writing", startPart: 11 });
 
-    // Check Speaking (parts 13-20) - if NO answers exist
+    // Check Speaking (parts 13-20) - if NO answer records exist at all
     const hasSpeaking = speakingAndWritingAnswers.some(
       (a: any) => a.partId && a.partId >= 13 && a.partId <= 20
     );
