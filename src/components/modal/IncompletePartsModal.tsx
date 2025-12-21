@@ -78,7 +78,7 @@ const IncompletePartsModal: React.FC<IncompletePartsModalProps> = ({
                 </div>
 
                 {/* Incomplete Sections List */}
-                <div className="mb-6">
+                <div className="mb-6 hidden screen744:block">
                     <p className="text-sm font-semibold text-[#37465C] mb-3">
                         Missing sections (click to start):
                     </p>
