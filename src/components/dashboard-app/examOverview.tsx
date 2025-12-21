@@ -94,25 +94,25 @@ const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
                           Complete Test
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleStart(exam, 1)}
+                          onClick={() => handleStart(exam, 1, "listening")}
                           className="cursor-pointer"
                         >
                           Listening
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleStart(exam, 7)}
+                          onClick={() => handleStart(exam, 7, "reading")}
                           className="cursor-pointer"
                         >
                           Reading
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleStart(exam, 11)}
+                          onClick={() => handleStart(exam, 11, "writing")}
                           className="cursor-pointer"
                         >
                           Writing
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleStart(exam, 13)}
+                          onClick={() => handleStart(exam, 13, "speaking")}
                           className="cursor-pointer"
                         >
                           Speaking
