@@ -228,7 +228,7 @@ const PremiumPlanModal = () => {
                                     {/* Features Bar */}
                                     <div className="flex flex-wrap justify-center gap-4 md:gap-8 text-sm font-medium text-gray-700 mb-10">
                                         <div className="flex items-center gap-2">
-                                            <SvgPresenceAbsence /> 40 mock exams
+                                            <SvgPresenceAbsence /> 60 mock exams
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <SvgTeacher /> Guide & Tips
