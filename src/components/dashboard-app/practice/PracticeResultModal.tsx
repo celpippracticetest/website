@@ -377,7 +377,11 @@ const PracticeResultModal = ({
 
                                     {/* Audio Player */}
                                     <div className="px-8 pb-8 pt-0">
-                                        <AudioPlayerV2 key="better-version-audio" audioUrl={data?.result?.betterVersionAudio || data?.result?.audioUrl || data?.audioUrl} />
+                                        <AudioPlayerV2
+                                            key="better-version-audio"
+                                            audioUrl={data?.result?.betterVersionAudio}
+                                            textToSpeak={data?.result?.betterVersion || ""}
+                                        />
                                     </div>
                                 </div>
                             </div>

@@ -25,16 +25,33 @@ const PauseIcon = (props: SVGProps<SVGSVGElement>) => (
 
 interface AudioPlayerV2Props {
     audioUrl?: string;
+    textToSpeak?: string;
     className?: string;
 }
 
-export default function AudioPlayerV2({ audioUrl, className = "" }: AudioPlayerV2Props) {
+export default function AudioPlayerV2({ audioUrl, textToSpeak, className = "" }: AudioPlayerV2Props) {
     const audioRef = useRef<HTMLAudioElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
 
+    // TTS State
+    const [isTTS, setIsTTS] = useState(false);
+
     useEffect(() => {
+        // Determine mode
+        if (audioUrl) {
+            setIsTTS(false);
+        } else if (textToSpeak) {
+            setIsTTS(true);
+        } else {
+            setIsTTS(false); // Default or disabled
+        }
+    }, [audioUrl, textToSpeak]);
+
+    useEffect(() => {
+        if (isTTS) return;
+
         const audio = audioRef.current;
         if (!audio) return;
 
@@ -51,20 +68,58 @@ export default function AudioPlayerV2({ audioUrl, className = "" }: AudioPlayerV
             audio.removeEventListener("timeupdate", onTimeUpdate);
             audio.removeEventListener("ended", onEnded);
         };
-    }, []);
+    }, [isTTS]);
+
+    // Handle TTS cleanup
+    useEffect(() => {
+        return () => {
+            if (isTTS) {
+                window.speechSynthesis.cancel();
+            }
+        };
+    }, [isTTS]);
 
     const togglePlay = () => {
-        const audio = audioRef.current;
-        if (!audio) return;
-        if (isPlaying) {
-            audio.pause();
+        if (isTTS) {
+            if (isPlaying) {
+                window.speechSynthesis.cancel();
+                setIsPlaying(false);
+            } else {
+                if (!textToSpeak) return;
+
+                // Cancel any ongoing speech
+                window.speechSynthesis.cancel();
+
+                const utterance = new SpeechSynthesisUtterance(textToSpeak);
+                utterance.lang = "en-US";
+                utterance.rate = 0.9; // Slightly slower for clarity
+
+                utterance.onend = () => {
+                    setIsPlaying(false);
+                };
+
+                utterance.onerror = () => {
+                    setIsPlaying(false);
+                };
+
+                window.speechSynthesis.speak(utterance);
+                setIsPlaying(true);
+            }
         } else {
-            audio.play();
+            const audio = audioRef.current;
+            if (!audio) return;
+            if (isPlaying) {
+                audio.pause();
+            } else {
+                audio.play();
+            }
+            setIsPlaying(!isPlaying);
         }
-        setIsPlaying(!isPlaying);
     };
 
     const onSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (isTTS) return; // seeking not supported for simple TTS
+
         const time = Number(e.target.value);
         if (audioRef.current) {
             audioRef.current.currentTime = time;
@@ -73,7 +128,9 @@ export default function AudioPlayerV2({ audioUrl, className = "" }: AudioPlayerV
     };
 
     // Calculate percentage for progress bar gradient
-    const progressPercent = duration ? (currentTime / duration) * 100 : 0;
+    // For TTS, we don't have real progress, so we'll show full or empty based on playing state (or indeterminate)
+    // Actually, simply disabling progress for TTS is better UX than a fake bar.
+    const progressPercent = !isTTS && duration ? (currentTime / duration) * 100 : 0;
 
     return (
         <div className={`flex items-center gap-6 border border-[#0DAA94] rounded-full px-5 py-3 bg-white w-full max-w-[600px] ${className}`}>
@@ -90,14 +147,15 @@ export default function AudioPlayerV2({ audioUrl, className = "" }: AudioPlayerV
                 )}
             </button>
 
-            <div className="relative w-full h-4 flex items-center">
+            <div className={`relative w-full h-4 flex items-center ${isTTS ? "opacity-50 cursor-not-allowed" : ""}`}>
                 <input
                     type="range"
                     min={0}
                     max={duration || 100}
                     value={currentTime}
                     onChange={onSeek}
-                    className="w-full absolute z-10 opacity-0 cursor-pointer h-full"
+                    disabled={isTTS}
+                    className={`w-full absolute z-10 opacity-0 h-full ${isTTS ? "cursor-not-allowed" : "cursor-pointer"}`}
                 />
 
                 {/* Custom Track */}
@@ -110,13 +168,16 @@ export default function AudioPlayerV2({ audioUrl, className = "" }: AudioPlayerV
                 </div>
 
                 {/* Custom Thumb - visual only, follows calculated position */}
-                <div
-                    className="absolute w-5 h-5 bg-[#0DAA94] rounded-full top-1/2 -translate-y-1/2 pointer-events-none transition-all duration-100 ease-linear shadow-sm"
-                    style={{ left: `calc(${progressPercent}% - 10px)` }} // -10px to center the 20px thumb
-                />
+                {!isTTS && (
+                    <div
+                        className="absolute w-5 h-5 bg-[#0DAA94] rounded-full top-1/2 -translate-y-1/2 pointer-events-none transition-all duration-100 ease-linear shadow-sm"
+                        style={{ left: `calc(${progressPercent}% - 10px)` }} // -10px to center the 20px thumb
+                    />
+                )}
             </div>
 
-            <audio ref={audioRef} src={audioUrl} />
+            {/* Hidden audio element only rendered if we have a URL */}
+            {audioUrl && <audio ref={audioRef} src={audioUrl} />}
         </div>
     );
 }
