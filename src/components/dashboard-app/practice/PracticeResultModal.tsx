@@ -179,55 +179,43 @@ const PracticeResultModal = ({
                             </div>
                         </div>
 
-                        {/* Skills breakdown table */}
-                        <Table>
-                            <TableBody>
-                                <TableRow className="border-b-0">
-                                    <TableCell className="p-0">
-                                        <div className="p-6 flex flex-col items-center justify-center border-r h-full">
-                                            <CircularSkillProgress
-                                                label="Coherence"
-                                                score={skillScores.coherence}
-                                                maxScore={maxScore}
-                                            />
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="p-0">
-                                        <div className="p-6 flex flex-col items-center justify-center border-r h-full">
-                                            <CircularSkillProgress
-                                                label="Vocabulary"
-                                                score={skillScores.vocabulary}
-                                                maxScore={maxScore}
-                                            />
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="p-0">
-                                        <div className="p-6 flex flex-col items-center justify-center border-r h-full">
-                                            <CircularSkillProgress
-                                                label="Readability"
-                                                score={skillScores.readability}
-                                                maxScore={maxScore}
-                                            />
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="p-0">
-                                        <div className="p-6 flex flex-col items-center justify-center h-full">
-                                            <CircularSkillProgress
-                                                label="Fulfillment"
-                                                score={skillScores.fulfillment}
-                                                maxScore={maxScore}
-                                            />
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
+                        {/* Skills breakdown grid */}
+                        <div className="grid grid-cols-2 min-[744px]:grid-cols-4 border-t divide-x divide-y min-[744px]:divide-y-0">
+                            <div className="p-6 flex flex-col items-center justify-center h-full">
+                                <CircularSkillProgress
+                                    label="Coherence"
+                                    score={skillScores.coherence}
+                                    maxScore={maxScore}
+                                />
+                            </div>
+                            <div className="p-6 flex flex-col items-center justify-center h-full">
+                                <CircularSkillProgress
+                                    label="Vocabulary"
+                                    score={skillScores.vocabulary}
+                                    maxScore={maxScore}
+                                />
+                            </div>
+                            <div className="p-6 flex flex-col items-center justify-center h-full">
+                                <CircularSkillProgress
+                                    label="Readability"
+                                    score={skillScores.readability}
+                                    maxScore={maxScore}
+                                />
+                            </div>
+                            <div className="p-6 flex flex-col items-center justify-center h-full">
+                                <CircularSkillProgress
+                                    label="Fulfillment"
+                                    score={skillScores.fulfillment}
+                                    maxScore={maxScore}
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     {/* TABBED INTERFACE */}
                     <div className="mt-4">
                         {/* Tab Headers */}
-                        <div className="flex flex-row gap-4 mb-6 justify-center sticky top-0 z-10 bg-white/95 backdrop-blur-sm p-4 -mx-4 border-b border-white/50">
+                        <div className="flex flex-col min-[744px]:flex-row gap-4 mb-6 justify-center sticky top-0 z-10 bg-white/95 backdrop-blur-sm p-4 -mx-4 border-b border-sidebar-border/50">
                             <button
                                 onClick={() => {
                                     setActiveTab("feedback");
