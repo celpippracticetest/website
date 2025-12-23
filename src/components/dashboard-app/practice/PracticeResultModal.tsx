@@ -7,6 +7,7 @@ import SvgStar from "@/components/icons/Star";
 import SvgDanger from "@/components/icons/danger";
 import SvgCircleWithDot from "@/components/icons/CircleWithDot";
 import SvgMultiplePlus from "@/components/icons/multiplePlus";
+import { diffWords } from "diff";
 
 interface PracticeResultModalProps {
     isOpen: boolean;
@@ -289,36 +290,55 @@ const PracticeResultModal = ({
 
                                 <div className="prose prose-base max-w-none text-slate-800 bg-[#FFF5EF] p-8 rounded-[12px] leading-8 text-[16px]">
                                     <span>
-                                        {data?.result?.grammarMistakes?.map(
-                                            (mistakeBlock: any, index: number) => {
-                                                if (mistakeBlock.improvement == null) {
-                                                    return (
-                                                        <span key={index}>
-                                                            {mistakeBlock.original}
-                                                        </span>
-                                                    );
-                                                }
+                                        {(() => {
+                                            const originalText = data?.text || "";
+                                            // The better version is used for the diff.
+                                            // If LLM provides specific mistakes, we might prefer those, but user requested consistent Diff style
+                                            // so we rely on computing the difference between original and improved text directly.
+                                            const improvedText = data?.result?.betterVersion || "";
 
-                                                if (onlyShowCorrect) {
-                                                    return (
-                                                        <span key={index} className="bg-[#B3FFBD] text-slate-900 mx-0.5 px-0.5 rounded-[2px] font-normal">
-                                                            {mistakeBlock.improvement}
-                                                        </span>
-                                                    );
-                                                }
+                                            // If either text is missing, fall back to "No improvements available" or just showing original
+                                            if (!originalText || !improvedText) return originalText;
 
-                                                return (
-                                                    <React.Fragment key={index}>
-                                                        <span className="bg-[#FFBDB3] text-slate-900 mx-0.5 px-0.5 rounded-[2px] line-through decoration-slate-500/50">
-                                                            {mistakeBlock.original}
-                                                        </span>
-                                                        <span className="bg-[#B3FFBD] text-slate-900 mx-0.5 px-0.5 rounded-[2px] font-normal">
-                                                            {mistakeBlock.improvement}
-                                                        </span>
-                                                    </React.Fragment>
-                                                );
+                                            try {
+                                                const diff = diffWords(originalText, improvedText);
+
+                                                return diff.map((part, index) => {
+                                                    // Improved (Added) -> Green
+                                                    if (part.added) {
+                                                        if (onlyShowCorrect) {
+                                                            return (
+                                                                <span key={index} className="bg-[#B3FFBD] text-slate-900 mx-0.5 px-0.5 rounded-[2px] font-normal">
+                                                                    {part.value}
+                                                                </span>
+                                                            );
+                                                        }
+                                                        return (
+                                                            <span key={index} className="bg-[#B3FFBD] text-slate-900 mx-0.5 px-0.5 rounded-[2px] font-normal">
+                                                                {part.value}
+                                                            </span>
+                                                        );
+                                                    }
+
+                                                    // Original (Removed) -> Red
+                                                    if (part.removed) {
+                                                        if (onlyShowCorrect) return null; // Hide removed parts in "only correct" mode
+
+                                                        return (
+                                                            <span key={index} className="bg-[#FFBDB3] text-slate-900 mx-0.5 px-0.5 rounded-[2px] line-through decoration-slate-500/50">
+                                                                {part.value}
+                                                            </span>
+                                                        );
+                                                    }
+
+                                                    // Unchanged
+                                                    return <span key={index}>{part.value}</span>;
+                                                });
+                                            } catch (e) {
+                                                console.error("Diff calculation failed", e);
+                                                return originalText;
                                             }
-                                        )}
+                                        })()}
                                     </span>
                                 </div>
 
