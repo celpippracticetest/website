@@ -1,6 +1,6 @@
 "use client";
 import PracticeResultModal from "../practice/PracticeResultModal";
-import React from "react";
+import React, { useEffect } from "react";
 
 const WritingAnswerModal = ({
   isAnswerModalOpen,
@@ -13,11 +13,15 @@ const WritingAnswerModal = ({
   result: Record<string, any> | null;
   taskContent?: string;
 }) => {
+  useEffect(() => {
+    console.log(result);
+
+  }, [result])
   return (
     <PracticeResultModal
       isOpen={isAnswerModalOpen}
       onClose={() => setAnswerModalOpen(false)}
-      result={result}
+      data={result}
       type="WRITING"
       taskContent={taskContent}
     />

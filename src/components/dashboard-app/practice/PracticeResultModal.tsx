@@ -11,7 +11,7 @@ import SvgMultiplePlus from "@/components/icons/multiplePlus";
 interface PracticeResultModalProps {
     isOpen: boolean;
     onClose: () => void;
-    result: any; // Using any to be compatible with both result types for now, or define a union type
+    data: any; // Renamed from result
     type: "WRITING" | "SPEAKING";
     taskContent?: string;
 }
@@ -19,7 +19,7 @@ interface PracticeResultModalProps {
 const PracticeResultModal = ({
     isOpen,
     onClose,
-    result,
+    data,
     type,
     taskContent,
 }: PracticeResultModalProps) => {
@@ -38,10 +38,10 @@ const PracticeResultModal = ({
     if (!isOpen) return null;
 
     const skillScores = {
-        coherence: result ? result.result.contentAndCoherence : 0,
-        vocabulary: result ? result.result.vocabulary : 0,
-        readability: result ? result.result.readabilityAndGrammar : 0,
-        fulfillment: result ? result.result.taskFulfillment : 0,
+        coherence: data?.result ? data.result.contentAndCoherence : 0,
+        vocabulary: data?.result ? data.result.vocabulary : 0,
+        readability: data?.result ? data.result.readabilityAndGrammar : 0,
+        fulfillment: data?.result ? data.result.taskFulfillment : 0,
     };
 
     const maxScore = 12;
@@ -76,7 +76,7 @@ const PracticeResultModal = ({
         };
     };
 
-    const scoreDetails = getScoreDescription(result ? result.result.overall : 0);
+    const scoreDetails = getScoreDescription(data?.result ? data.result.overall : 0);
 
     return (
         <>
@@ -148,11 +148,11 @@ const PracticeResultModal = ({
                                     </div>
                                     {type === "WRITING" ? (
                                         <p className="text-slate-700 whitespace-pre-line leading-6 bg-slate-50 p-4 rounded-lg">
-                                            {result ? result.text : "Something happened..."}
+                                            {data ? data.text : "Something happened..."}
                                         </p>
                                     ) : (
                                         <div className="mt-2">
-                                            <AudioPlayerV2 audioUrl={result?.audioUrl} />
+                                            <AudioPlayerV2 audioUrl={data?.audioUrl} />
                                         </div>
                                     )}
                                 </div>
@@ -281,7 +281,7 @@ const PracticeResultModal = ({
                                 <div className="prose prose-base max-w-none prose-blue text-slate-700 bg-[#F0F6FF] p-6 rounded-[12px]">
                                     <div
                                         dangerouslySetInnerHTML={{
-                                            __html: result?.result.feedback
+                                            __html: (data?.result?.feedback || "")
                                                 .replace(/<\/?feedback>/g, "")
                                                 .replace(/\n/g, "<br />")
                                                 .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>"),
@@ -301,7 +301,7 @@ const PracticeResultModal = ({
 
                                 <div className="prose prose-base max-w-none text-slate-800 bg-[#FFF5EF] p-8 rounded-[12px] leading-8 text-[16px]">
                                     <span>
-                                        {result?.result.grammarMistakes.map(
+                                        {data?.result?.grammarMistakes?.map(
                                             (mistakeBlock: any, index: number) => {
                                                 if (mistakeBlock.improvement == null) {
                                                     return (
@@ -367,7 +367,7 @@ const PracticeResultModal = ({
                                         <div>
                                             <div
                                                 dangerouslySetInnerHTML={{
-                                                    __html: result?.result.betterVersion
+                                                    __html: (data?.result?.betterVersion || "")
                                                         .replace(/\n/g, "<br />")
                                                         .replace(/\*\*(.*?)\*\*/g, "<strong class='text-[#0DAA94] cursor-pointer hover:underline'>$1</strong>"),
                                                 }}
@@ -377,7 +377,7 @@ const PracticeResultModal = ({
 
                                     {/* Audio Player */}
                                     <div className="px-8 pb-8 pt-0">
-                                        <AudioPlayerV2 key="better-version-audio" audioUrl={result?.result?.audioUrl || result?.audioUrl} />
+                                        <AudioPlayerV2 key="better-version-audio" audioUrl={data?.result?.betterVersionAudio || data?.result?.audioUrl || data?.audioUrl} />
                                     </div>
                                 </div>
                             </div>
