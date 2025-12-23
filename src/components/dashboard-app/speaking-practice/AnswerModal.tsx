@@ -5,10 +5,12 @@ export default function SpeakingAnswerModal({
   isAnswerModalOpen,
   setAnswerModalOpen,
   result,
+  taskContent,
 }: {
   isAnswerModalOpen: boolean;
   setAnswerModalOpen: (isOpen: boolean) => void;
   result: Record<string, any> | null;
+  taskContent?: string;
 }) {
   return (
     <PracticeResultModal
@@ -16,6 +18,7 @@ export default function SpeakingAnswerModal({
       onClose={() => setAnswerModalOpen(false)}
       result={result}
       type="SPEAKING"
+      taskContent={taskContent}
     />
   );
 }

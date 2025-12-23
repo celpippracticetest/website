@@ -6,10 +6,12 @@ const WritingAnswerModal = ({
   isAnswerModalOpen,
   setAnswerModalOpen,
   result,
+  taskContent,
 }: {
   isAnswerModalOpen: boolean;
   setAnswerModalOpen: (isOpen: boolean) => void;
   result: Record<string, any> | null;
+  taskContent?: string;
 }) => {
   return (
     <PracticeResultModal
@@ -17,6 +19,7 @@ const WritingAnswerModal = ({
       onClose={() => setAnswerModalOpen(false)}
       result={result}
       type="WRITING"
+      taskContent={taskContent}
     />
   );
 };

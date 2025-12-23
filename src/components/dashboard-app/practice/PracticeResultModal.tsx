@@ -1,7 +1,8 @@
 import CircularSkillProgress from "@/components/shared/CircularSkillProgress";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import * as React from "react";
-import AudioPlayer from "../listening-practice/components/AudioPlayer";
+import AudioPlayerV2 from "../listening-practice/components/AudioPlayerV2";
+import SvgChevronDown from "@/components/icons/ChevronDown";
 import SvgStar from "@/components/icons/Star";
 import SvgDanger from "@/components/icons/danger";
 import SvgCircleWithDot from "@/components/icons/CircleWithDot";
@@ -12,6 +13,7 @@ interface PracticeResultModalProps {
     onClose: () => void;
     result: any; // Using any to be compatible with both result types for now, or define a union type
     type: "WRITING" | "SPEAKING";
+    taskContent?: string;
 }
 
 const PracticeResultModal = ({
@@ -19,8 +21,10 @@ const PracticeResultModal = ({
     onClose,
     result,
     type,
+    taskContent,
 }: PracticeResultModalProps) => {
     const [activeTab, setActiveTab] = React.useState<"feedback" | "improvements" | "betterVersion">("feedback");
+    const [isTaskResponseOpen, setIsTaskResponseOpen] = React.useState(false);
     const [onlyShowCorrect, setOnlyShowCorrect] = React.useState(false);
 
     // Reset tab when modal opens
@@ -110,35 +114,48 @@ const PracticeResultModal = ({
                         <span className="text-[14px] font-medium">Back</span>
                     </button>
 
-                    <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-2">
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="lucide lucide-circle-user w-5 h-5 text-slate-400"
-                            >
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <circle cx="12" cy="10" r="3"></circle>
-                                <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"></path>
-                            </svg>
-                            <h4 className="font-semibold text-lg text-slate-700">
-                                Your Response
-                            </h4>
-                        </div>
-                        {type === "WRITING" ? (
-                            <p className="text-slate-700 whitespace-pre-line leading-6 bg-slate-50 p-4 rounded-lg">
-                                {result ? result.text : "Something happened..."}
-                            </p>
-                        ) : (
-                            <div className="bg-slate-50 p-4 rounded-lg">
-                                <AudioPlayer audioUrl={result?.audioUrl} />
+                    {/* Collapsible Task & Response Section */}
+                    <div className="border border-slate-200 rounded-lg overflow-hidden bg-white mb-2">
+                        <button
+                            type="button"
+                            onClick={() => setIsTaskResponseOpen(!isTaskResponseOpen)}
+                            className="w-full flex items-center justify-between p-4 bg-white hover:bg-slate-50 transition-colors"
+                        >
+                            <span className="font-semibold text-slate-900 border-none">Task & Your Response</span>
+                            <SvgChevronDown className={`w-5 h-5 text-slate-500 transition-transform duration-200 ${isTaskResponseOpen ? "rotate-180" : ""}`} />
+                        </button>
+
+                        {isTaskResponseOpen && (
+                            <div className="p-4 pt-0 border-t border-slate-100 flex flex-col gap-4">
+
+                                {taskContent && (
+                                    <div className="mt-4">
+                                        <h4 className="font-semibold text-sm text-slate-500 mb-2 uppercase tracking-wide">
+                                            Task Prompt
+                                        </h4>
+                                        <p className="text-slate-800 whitespace-pre-line leading-6">
+                                            {taskContent}
+                                        </p>
+                                        <div className="h-px bg-slate-100 w-full mt-6"></div>
+                                    </div>
+                                )}
+
+                                <div className={`${taskContent ? "mt-0" : "mt-4"} flex flex-col gap-2`}>
+                                    <div className="flex items-center gap-2">
+                                        <h4 className="font-semibold text-sm text-slate-500 mb-2 uppercase tracking-wide">
+                                            Your Response
+                                        </h4>
+                                    </div>
+                                    {type === "WRITING" ? (
+                                        <p className="text-slate-700 whitespace-pre-line leading-6 bg-slate-50 p-4 rounded-lg">
+                                            {result ? result.text : "Something happened..."}
+                                        </p>
+                                    ) : (
+                                        <div className="mt-2">
+                                            <AudioPlayerV2 audioUrl={result?.audioUrl} />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -358,12 +375,9 @@ const PracticeResultModal = ({
                                         </div>
                                     </div>
 
-                                    {/* Audio Player (if exists, or reusing main player logic if better version has audio) */}
+                                    {/* Audio Player */}
                                     <div className="px-8 pb-8 pt-0">
-                                        <div className="bg-white rounded-full border border-slate-200 shadow-sm p-1">
-                                            {/* Using a key to force re-render if url changes, though unlikely here */}
-                                            <AudioPlayer key="better-version-audio" audioUrl={result?.result?.audioUrl || result?.audioUrl} />
-                                        </div>
+                                        <AudioPlayerV2 key="better-version-audio" audioUrl={result?.result?.audioUrl || result?.audioUrl} />
                                     </div>
                                 </div>
                             </div>
@@ -371,7 +385,7 @@ const PracticeResultModal = ({
                     </div>
 
                 </div>
-            </div>
+            </div >
         </>
     );
 };
