@@ -1,7 +1,7 @@
 import * as React from "react";
 import type { SVGProps } from "react";
 const SvgMultiplePlus = (props: SVGProps<SVGSVGElement>) => (
-  <svg width="63" height="61" viewBox="0 0 63 61" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg className="w-[40px]" width="63" height="61" viewBox="0 0 63 61" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
     <g clip-path="url(#clip0_113_666)">
       <path fill-rule="evenodd" clip-rule="evenodd" d="M28.8718 0.195242L58.7795 8.21899C61.8051 9.03061 63.6154 12.1744 62.8051 15.2102L54.7949 45.2043C53.9846 48.235 50.8462 50.0483 47.8154 49.2367L45.8564 48.6819L18.9795 15.0613L21.8974 4.22253C22.7077 1.19179 25.8462 -0.621516 28.8769 0.190105L28.8718 0.195242Z" fill="#0DAA94" />
       <path d="M39.6923 15.0613H6.1641C2.75976 15.0613 0 17.8257 0 21.2358V54.8204C0 58.2305 2.75976 60.9949 6.1641 60.9949H39.6923C43.0966 60.9949 45.8564 58.2305 45.8564 54.8204V21.2358C45.8564 17.8257 43.0966 15.0613 39.6923 15.0613Z" fill="#B4FDF3" />

@@ -210,9 +210,12 @@ const PracticeResultModal = ({
                     {/* TABBED INTERFACE */}
                     <div className="mt-4">
                         {/* Tab Headers */}
-                        <div className="flex flex-row gap-4 mb-6 justify-center">
+                        <div className="flex flex-row gap-4 mb-6 justify-center sticky top-0 z-10 bg-white/95 backdrop-blur-sm p-4 -mx-4 border-b border-white/50">
                             <button
-                                onClick={() => setActiveTab("feedback")}
+                                onClick={() => {
+                                    setActiveTab("feedback");
+                                    document.getElementById("feedback")?.scrollIntoView({ behavior: "smooth" });
+                                }}
                                 className={`px-6 py-2.5 w-full rounded-[8px] text-[14px] font-medium transition-all duration-200 text-[#316BFF] ${activeTab === "feedback"
                                     ? "bg-[#D6E6FF]"
                                     : "bg-[#E6F0FF] hover:bg-[#D6E6FF]"
@@ -221,7 +224,10 @@ const PracticeResultModal = ({
                                 AI Feedback
                             </button>
                             <button
-                                onClick={() => setActiveTab("improvements")}
+                                onClick={() => {
+                                    setActiveTab("improvements");
+                                    document.getElementById("improvements")?.scrollIntoView({ behavior: "smooth" });
+                                }}
                                 className={`px-6 py-2.5 w-full rounded-[8px] text-[14px] font-medium transition-all duration-200 text-[#F27059] ${activeTab === "improvements"
                                     ? "bg-[#FFDCC0]"
                                     : "bg-[#FFF0E6] hover:bg-[#FFDCC0]"
@@ -230,7 +236,10 @@ const PracticeResultModal = ({
                                 Improvements
                             </button>
                             <button
-                                onClick={() => setActiveTab("betterVersion")}
+                                onClick={() => {
+                                    setActiveTab("betterVersion");
+                                    document.getElementById("betterVersion")?.scrollIntoView({ behavior: "smooth" });
+                                }}
                                 className={`px-6 py-2.5 w-full rounded-[8px] text-[14px] font-medium transition-all duration-200 text-[#0DAA94] ${activeTab === "betterVersion"
                                     ? "bg-[#CCFFF5]"
                                     : "bg-[#E6FFFA] hover:bg-[#CCFFF5]"
@@ -243,127 +252,121 @@ const PracticeResultModal = ({
                         {/* Tab Content */}
                         <div className="min-h-[200px]">
 
-                            {/* FEEDBACK TAB */}
-                            {activeTab === "feedback" && (
-                                <div className="flex flex-col gap-2 mb-10">
-                                    <div className="flex items-center gap-6 mb-2">
-                                        <SvgStar />
-                                        <h4 className="font-bold text-[28px] text-slate-900">
-                                            Feedback
-                                        </h4>
-                                    </div>
-
-                                    <div className="prose prose-base max-w-none prose-blue text-slate-700 bg-[#F0F6FF] p-6 rounded-[12px]">
-                                        <div
-                                            dangerouslySetInnerHTML={{
-                                                __html: result?.result.feedback
-                                                    .replace(/<\/?feedback>/g, "")
-                                                    .replace(/\n/g, "<br />")
-                                                    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>"),
-                                            }}
-                                        ></div>
-                                    </div>
+                            {/* FEEDBACK SECTION */}
+                            <div id="feedback" className="flex flex-col gap-2 mb-10 pt-4 scroll-mt-24">
+                                <div className="flex items-center gap-6 mb-2">
+                                    <SvgStar />
+                                    <h4 className="font-bold text-[28px] text-slate-900">
+                                        Feedback
+                                    </h4>
                                 </div>
-                            )}
 
-                            {/* IMPROVEMENTS TAB */}
-                            {activeTab === "improvements" && (
-                                <div className="flex flex-col gap-6 mb-10">
-                                    <div className="flex items-center gap-4">
-                                        <SvgDanger />
-                                        <h4 className="font-bold text-[28px] text-slate-900 leading-tight">
-                                            Recommended Improvements
-                                        </h4>
-                                    </div>
+                                <div className="prose prose-base max-w-none prose-blue text-slate-700 bg-[#F0F6FF] p-6 rounded-[12px]">
+                                    <div
+                                        dangerouslySetInnerHTML={{
+                                            __html: result?.result.feedback
+                                                .replace(/<\/?feedback>/g, "")
+                                                .replace(/\n/g, "<br />")
+                                                .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>"),
+                                        }}
+                                    ></div>
+                                </div>
+                            </div>
 
-                                    <div className="prose prose-base max-w-none text-slate-800 bg-[#FFF5EF] p-8 rounded-[12px] leading-8 text-[16px]">
-                                        <span>
-                                            {result?.result.grammarMistakes.map(
-                                                (mistakeBlock: any, index: number) => {
-                                                    if (mistakeBlock.improvement == null) {
-                                                        return (
-                                                            <span key={index}>
-                                                                {mistakeBlock.original}
-                                                            </span>
-                                                        );
-                                                    }
+                            {/* IMPROVEMENTS SECTION */}
+                            <div id="improvements" className="flex flex-col gap-6 mb-10 pt-4 scroll-mt-24">
+                                <div className="flex items-center gap-4">
+                                    <SvgDanger />
+                                    <h4 className="font-bold text-[28px] text-slate-900 leading-tight">
+                                        Recommended Improvements
+                                    </h4>
+                                </div>
 
-                                                    if (onlyShowCorrect) {
-                                                        return (
-                                                            <span key={index} className="bg-[#B3FFBD] text-slate-900 mx-0.5 px-0.5 rounded-[2px] font-normal">
-                                                                {mistakeBlock.improvement}
-                                                            </span>
-                                                        );
-                                                    }
-
+                                <div className="prose prose-base max-w-none text-slate-800 bg-[#FFF5EF] p-8 rounded-[12px] leading-8 text-[16px]">
+                                    <span>
+                                        {result?.result.grammarMistakes.map(
+                                            (mistakeBlock: any, index: number) => {
+                                                if (mistakeBlock.improvement == null) {
                                                     return (
-                                                        <React.Fragment key={index}>
-                                                            <span className="bg-[#FFBDB3] text-slate-900 mx-0.5 px-0.5 rounded-[2px] line-through decoration-slate-500/50">
-                                                                {mistakeBlock.original}
-                                                            </span>
-                                                            <span className="bg-[#B3FFBD] text-slate-900 mx-0.5 px-0.5 rounded-[2px] font-normal">
-                                                                {mistakeBlock.improvement}
-                                                            </span>
-                                                        </React.Fragment>
+                                                        <span key={index}>
+                                                            {mistakeBlock.original}
+                                                        </span>
                                                     );
                                                 }
-                                            )}
-                                        </span>
-                                    </div>
 
-                                    <button
-                                        onClick={() => setOnlyShowCorrect(!onlyShowCorrect)}
-                                        className="mt-2 w-fit px-6 py-3 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-slate-900 font-bold rounded-lg text-[14px] transition-colors"
-                                    >
-                                        {onlyShowCorrect ? "Show Differences" : "Show only the correct version"}
-                                    </button>
+                                                if (onlyShowCorrect) {
+                                                    return (
+                                                        <span key={index} className="bg-[#B3FFBD] text-slate-900 mx-0.5 px-0.5 rounded-[2px] font-normal">
+                                                            {mistakeBlock.improvement}
+                                                        </span>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <React.Fragment key={index}>
+                                                        <span className="bg-[#FFBDB3] text-slate-900 mx-0.5 px-0.5 rounded-[2px] line-through decoration-slate-500/50">
+                                                            {mistakeBlock.original}
+                                                        </span>
+                                                        <span className="bg-[#B3FFBD] text-slate-900 mx-0.5 px-0.5 rounded-[2px] font-normal">
+                                                            {mistakeBlock.improvement}
+                                                        </span>
+                                                    </React.Fragment>
+                                                );
+                                            }
+                                        )}
+                                    </span>
                                 </div>
-                            )}
 
-                            {/* BETTER VERSION TAB */}
-                            {activeTab === "betterVersion" && (
-                                <div className="flex flex-col gap-6 mb-10">
-                                    <div className="flex items-center gap-4">
-                                        <SvgCircleWithDot />
-                                        <h4 className="font-bold text-[28px] text-slate-900 leading-tight">
-                                            Better Version of Your Response
-                                        </h4>
+                                <button
+                                    onClick={() => setOnlyShowCorrect(!onlyShowCorrect)}
+                                    className="mt-2 w-fit px-6 py-3 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-slate-900 font-bold rounded-lg text-[14px] transition-colors"
+                                >
+                                    {onlyShowCorrect ? "Show Differences" : "Show only the correct version"}
+                                </button>
+                            </div>
+
+                            {/* BETTER VERSION SECTION */}
+                            <div id="betterVersion" className="flex flex-col gap-6 mb-10 pt-4 scroll-mt-24">
+                                <div className="flex items-center gap-4">
+                                    <SvgCircleWithDot />
+                                    <h4 className="font-bold text-[28px] text-slate-900 leading-tight">
+                                        Better Version of Your Response
+                                    </h4>
+                                </div>
+
+                                <div className="flex flex-col gap-0 text-slate-800 bg-[#F2FFFD] rounded-[12px] overflow-hidden">
+                                    {/* Helper Tip */}
+                                    <div className="flex items-center justify-center gap-2 p-6 pb-2 pt-8">
+                                        <div className="relative inline-flex items-center gap-2 bg-[#E0F2F1] pl-16 pr-6 py-3 rounded-full overflow-visible">
+                                            <div className="absolute -left-0 -bottom-0">
+                                                <SvgMultiplePlus className="w-[50px] h-[50px] drop-shadow-sm" />
+                                            </div>
+                                            <span className="text-[14px] font-bold text-slate-900">Click to add words to learn them later.</span>
+                                        </div>
                                     </div>
 
-                                    <div className="flex flex-col gap-0 text-slate-800 bg-[#F2FFFD] rounded-[12px] overflow-hidden">
-                                        {/* Helper Tip */}
-                                        <div className="flex items-center gap-2 p-6 pb-2">
-                                            <div className="inline-flex items-center gap-2 bg-[#E0F2F1] px-3 py-1.5 rounded-full">
-                                                <div>
-                                                    <SvgMultiplePlus />
-                                                </div>
-                                                <span className="text-[14px] font-bold text-slate-900">Click to add words to learn them later.</span>
-                                            </div>
+                                    {/* Content */}
+                                    <div className="prose prose-base max-w-none text-slate-700 p-8 pt-4 leading-8 text-[16px]">
+                                        <div>
+                                            <div
+                                                dangerouslySetInnerHTML={{
+                                                    __html: result?.result.betterVersion
+                                                        .replace(/\n/g, "<br />")
+                                                        .replace(/\*\*(.*?)\*\*/g, "<strong class='text-[#0DAA94] cursor-pointer hover:underline'>$1</strong>"),
+                                                }}
+                                            ></div>
                                         </div>
+                                    </div>
 
-                                        {/* Content */}
-                                        <div className="prose prose-base max-w-none text-slate-700 p-8 pt-4 leading-8 text-[16px]">
-                                            <div>
-                                                <div
-                                                    dangerouslySetInnerHTML={{
-                                                        __html: result?.result.betterVersion
-                                                            .replace(/\n/g, "<br />")
-                                                            .replace(/\*\*(.*?)\*\*/g, "<strong class='text-[#0DAA94] cursor-pointer hover:underline'>$1</strong>"),
-                                                    }}
-                                                ></div>
-                                            </div>
-                                        </div>
-
-                                        {/* Audio Player (if exists, or reusing main player logic if better version has audio) */}
-                                        <div className="px-8 pb-8 pt-0">
-                                            <div className="bg-white rounded-full border border-slate-200 shadow-sm p-1">
-                                                {/* Using a key to force re-render if url changes, though unlikely here */}
-                                                <AudioPlayer key="better-version-audio" audioUrl={result?.result?.audioUrl || result?.audioUrl} />
-                                            </div>
+                                    {/* Audio Player (if exists, or reusing main player logic if better version has audio) */}
+                                    <div className="px-8 pb-8 pt-0">
+                                        <div className="bg-white rounded-full border border-slate-200 shadow-sm p-1">
+                                            {/* Using a key to force re-render if url changes, though unlikely here */}
+                                            <AudioPlayer key="better-version-audio" audioUrl={result?.result?.audioUrl || result?.audioUrl} />
                                         </div>
                                     </div>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     </div>
 
