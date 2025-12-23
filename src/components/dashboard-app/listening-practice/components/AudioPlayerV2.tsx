@@ -84,11 +84,13 @@ export default function AudioPlayerV2({ audioUrl, textToSpeak, className = "" }:
             if (isPlaying) {
                 window.speechSynthesis.cancel();
                 setIsPlaying(false);
+                setCurrentTime(0);
             } else {
                 if (!textToSpeak) return;
 
                 // Cancel any ongoing speech
                 window.speechSynthesis.cancel();
+                setCurrentTime(0);
 
                 const utterance = new SpeechSynthesisUtterance(textToSpeak);
                 utterance.lang = "en-US";
@@ -96,10 +98,20 @@ export default function AudioPlayerV2({ audioUrl, textToSpeak, className = "" }:
 
                 utterance.onend = () => {
                     setIsPlaying(false);
+                    setCurrentTime(0);
                 };
 
                 utterance.onerror = () => {
                     setIsPlaying(false);
+                    setCurrentTime(0);
+                };
+
+                // Track progress by character index
+                utterance.onboundary = (event) => {
+                    // We track charIndex for 'word' or 'sentence' boundaries
+                    if (event.name === 'word' || event.name === 'sentence') {
+                        setCurrentTime(event.charIndex);
+                    }
                 };
 
                 window.speechSynthesis.speak(utterance);
@@ -128,9 +140,9 @@ export default function AudioPlayerV2({ audioUrl, textToSpeak, className = "" }:
     };
 
     // Calculate percentage for progress bar gradient
-    // For TTS, we don't have real progress, so we'll show full or empty based on playing state (or indeterminate)
-    // Actually, simply disabling progress for TTS is better UX than a fake bar.
-    const progressPercent = !isTTS && duration ? (currentTime / duration) * 100 : 0;
+    const progressPercent = isTTS
+        ? (textToSpeak && textToSpeak.length > 0 ? (currentTime / textToSpeak.length) * 100 : 0)
+        : (duration ? (currentTime / duration) * 100 : 0);
 
     return (
         <div className={`flex items-center gap-6 border border-[#0DAA94] rounded-full px-5 py-3 bg-white w-full max-w-[600px] ${className}`}>
@@ -147,11 +159,11 @@ export default function AudioPlayerV2({ audioUrl, textToSpeak, className = "" }:
                 )}
             </button>
 
-            <div className={`relative w-full h-4 flex items-center ${isTTS ? "opacity-50 cursor-not-allowed" : ""}`}>
+            <div className={`relative w-full h-4 flex items-center ${isTTS ? "cursor-not-allowed" : ""}`}>
                 <input
                     type="range"
                     min={0}
-                    max={duration || 100}
+                    max={isTTS ? (textToSpeak?.length || 100) : (duration || 100)}
                     value={currentTime}
                     onChange={onSeek}
                     disabled={isTTS}
