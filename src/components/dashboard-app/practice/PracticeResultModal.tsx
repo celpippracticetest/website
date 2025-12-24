@@ -8,6 +8,7 @@ import SvgDanger from "@/components/icons/danger";
 import SvgCircleWithDot from "@/components/icons/CircleWithDot";
 import SvgMultiplePlus from "@/components/icons/multiplePlus";
 import { diffWords } from "diff";
+import { useEffect } from "react";
 
 interface PracticeResultModalProps {
     isOpen: boolean;
@@ -47,7 +48,7 @@ const PracticeResultModal = ({
 
     const maxScore = 12;
     const overallScore = Math.round(
-        Object.values(skillScores).reduce((sum: any, score: any) => sum + score, 0) /
+        Object.values(skillScores).reduce((sum: number, score: any) => sum + (typeof score === 'number' ? score : 0), 0) /
         Object.keys(skillScores).length
     );
 
@@ -291,14 +292,15 @@ const PracticeResultModal = ({
                                 <div className="prose prose-base max-w-none text-slate-800 bg-[#FFF5EF] p-8 rounded-[12px] leading-8 text-[16px]">
                                     <span>
                                         {(() => {
-                                            const originalText = data?.text || "";
+                                            // For Writing, data.text contains the user's response.
+                                            // For Speaking, data.text might be missing. We can reconstruct it from grammarMistakes 
+                                            // (which typically covers the full text in segments) or check if there's a transcript.
+                                            // Fallback to joining grammarMistakes if text is missing.
+                                            const originalText = data?.text || data?.result?.grammarMistakes?.map((m: { original: string }) => m.original).join(" ") || "";
+
                                             // The better version is used for the diff.
-                                            // If LLM provides specific mistakes, we might prefer those, but user requested consistent Diff style
-                                            // so we rely on computing the difference between original and improved text directly.
                                             const improvedText = data?.result?.betterVersion || "";
 
-                                            // If either text is missing, fall back to "No improvements available" or just showing original
-                                            if (!originalText || !improvedText) return originalText;
 
                                             try {
                                                 const diff = diffWords(originalText, improvedText);
