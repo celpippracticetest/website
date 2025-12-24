@@ -12,10 +12,6 @@ export default function SpeakingAnswerModal({
   result: Record<string, any> | null;
   taskContent?: string;
 }) {
-  useEffect(() => {
-    console.log(result);
-
-  }, [result])
   return (
     <PracticeResultModal
       isOpen={isAnswerModalOpen}

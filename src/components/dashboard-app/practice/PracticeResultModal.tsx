@@ -261,9 +261,9 @@ const PracticeResultModal = ({
 
                             {/* FEEDBACK SECTION */}
                             <div id="feedback" className="flex flex-col gap-2 mb-10 pt-4 scroll-mt-24">
-                                <div className="flex items-center gap-6 mb-2">
+                                <div className="flex items-center gap-3 mb-2">
                                     <SvgStar />
-                                    <h4 className="font-bold text-[28px] text-slate-900">
+                                    <h4 className="font-bold text-[22px] text-slate-900">
                                         Feedback
                                     </h4>
                                 </div>
@@ -281,10 +281,10 @@ const PracticeResultModal = ({
                             </div>
 
                             {/* IMPROVEMENTS SECTION */}
-                            <div id="improvements" className="flex flex-col gap-6 mb-10 pt-4 scroll-mt-24">
+                            <div id="improvements" className="flex flex-col gap-3 mb-10 pt-4 scroll-mt-24">
                                 <div className="flex items-center gap-4">
                                     <SvgDanger />
-                                    <h4 className="font-bold text-[28px] text-slate-900 leading-tight">
+                                    <h4 className="font-bold text-[22px] text-slate-900 leading-tight">
                                         Recommended Improvements
                                     </h4>
                                 </div>
@@ -353,10 +353,10 @@ const PracticeResultModal = ({
                             </div>
 
                             {/* BETTER VERSION SECTION */}
-                            <div id="betterVersion" className="flex flex-col gap-6 mb-10 pt-4 scroll-mt-24">
+                            <div id="betterVersion" className="flex flex-col gap-3 mb-10 pt-4 scroll-mt-24">
                                 <div className="flex items-center gap-4">
                                     <SvgCircleWithDot />
-                                    <h4 className="font-bold text-[28px] text-slate-900 leading-tight">
+                                    <h4 className="font-bold text-[22px] text-slate-900 leading-tight">
                                         Better Version of Your Response
                                     </h4>
                                 </div>

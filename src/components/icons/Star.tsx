@@ -1,7 +1,7 @@
 import * as React from "react";
 import type { SVGProps } from "react";
 const SvgStar = (props: SVGProps<SVGSVGElement>) => (
-    <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg className="w-[28px]" width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
         <g clip-path="url(#clip0_113_642)">
             <path opacity="0.25" d="M6.66667 0C2.98333 0 0 2.98333 0 6.66667V13.3333C0 14.25 0.75 15 1.66667 15C2.58333 15 3.33333 14.25 3.33333 13.3333V6.66667C3.33333 4.825 4.825 3.33333 6.66667 3.33333H13.3333C14.25 3.33333 15 2.58333 15 1.66667C15 0.75 14.25 0 13.3333 0H6.66667Z" fill="#759CFF" />
             <path opacity="0.25" d="M36.6667 0C35.75 0 35 0.75 35 1.66667C35 2.58333 35.75 3.33333 36.6667 3.33333H43.3333C45.175 3.33333 46.6667 4.825 46.6667 6.66667V13.3333C46.6667 14.25 47.4167 15 48.3333 15C49.25 15 50 14.25 50 13.3333V6.66667C50 2.98333 47.0167 0 43.3333 0H36.6667Z" fill="#759CFF" />
