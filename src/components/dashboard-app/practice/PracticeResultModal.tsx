@@ -7,6 +7,7 @@ import SvgStar from "@/components/icons/Star";
 import SvgDanger from "@/components/icons/danger";
 import SvgCircleWithDot from "@/components/icons/CircleWithDot";
 import SvgMultiplePlus from "@/components/icons/multiplePlus";
+import { WordMenu } from "./WordMenu";
 import { diffWords } from "diff";
 import { useEffect } from "react";
 
@@ -375,13 +376,21 @@ const PracticeResultModal = ({
                                     {/* Content */}
                                     <div className="prose prose-base max-w-none text-slate-700 p-8 pt-4 leading-8 text-[16px]">
                                         <div>
-                                            <div
-                                                dangerouslySetInnerHTML={{
-                                                    __html: (data?.result?.betterVersion || "")
-                                                        .replace(/\n/g, "<br />")
-                                                        .replace(/\*\*(.*?)\*\*/g, "<strong class='text-[#0DAA94] cursor-pointer hover:underline'>$1</strong>"),
-                                                }}
-                                            ></div>
+                                            <div>
+                                                {(data?.result?.betterVersion || "").split(/(\*\*.*?\*\*)/g).map((part, index) => {
+                                                    if (part.startsWith("**") && part.endsWith("**")) {
+                                                        const word = part.slice(2, -2); // Remove **
+                                                        return <WordMenu key={index} word={word} />;
+                                                    }
+                                                    // Handle line breaks in regular text
+                                                    return part.split('\n').map((subPart, subIndex, array) => (
+                                                        <React.Fragment key={`${index}-${subIndex}`}>
+                                                            {subPart}
+                                                            {subIndex < array.length - 1 && <br />}
+                                                        </React.Fragment>
+                                                    ));
+                                                })}
+                                            </div>
                                         </div>
                                     </div>
 
