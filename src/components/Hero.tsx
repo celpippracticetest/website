@@ -131,7 +131,7 @@ const Hero = () => {
                   alt="Mock exams"
                   className="w-8 h-8 mr-4 group-hover:brightness-0 group-hover:invert transition-all duration-300"
                 />
-                <span className="text-xl font-medium">40 mock exams</span>
+                <span className="text-xl font-medium">60 mock exams</span>
               </div>
 
               <div className="flex items-center bg-white rounded-lg p-4 shadow-sm hover:bg-[#3ebbf3] hover:text-white transition-all duration-300 cursor-pointer group">

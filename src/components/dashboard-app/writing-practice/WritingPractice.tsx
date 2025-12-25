@@ -99,8 +99,8 @@ const WritingPractice = ({
         selectedTaskId={selectedTaskId}
         onBackClick={handleBackToPracticeList}
         onComplete={() => handlePracticeComplete(selectedPractice.id)}
-        onUpgrade={() => {}}
-        onNextPractice={() => {}}
+        onUpgrade={() => { }}
+        onNextPractice={() => { }}
         task={task}
         completedPracticeId={completedPracticeId}
       />
@@ -108,6 +108,7 @@ const WritingPractice = ({
         isAnswerModalOpen={isAnswerModalOpen}
         setAnswerModalOpen={setAnswerModalOpen}
         result={result}
+        taskContent={selectedPractice?.passages[0].body}
       />
     </div>
   ) : (

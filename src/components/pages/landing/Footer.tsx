@@ -82,7 +82,7 @@ const Footer = () => {
                       <Link href={"/writing"}>Writing</Link>
                     </li>
                     <li className="text-text2 font-normal h-[19px] text-[16px]">
-                      <Link href={"/"}>Ai Learning</Link>
+                      <Link href={"/learning"}>Ai Learning</Link>
                     </li>
                   </ul>
                 </li>
