@@ -58,6 +58,7 @@ import SvgLeagueLogo from "@/components/icons/LeagueLogo";
 import BottomNavigation from "@/components/dashboard-new/BottomNavigation";
 import DesktopNavigation from "@/components/dashboard-new/DesktopNavigation";
 import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
+import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 
 const NavItem = ({
   icon,
@@ -861,6 +862,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
         {/* bottom menu for mobile */}
         <BottomNavigation />
       </div >
+      <AskBeavoButton />
     </>
   );
 };

@@ -22,7 +22,7 @@ export const WordMenu: React.FC<WordMenuProps> = ({ word, onAskAI }) => {
     const handleMouseLeave = () => {
         closeTimeoutRef.current = setTimeout(() => {
             setIsOpen(false);
-        }, 200); // 200ms delay before closing
+        }, 300); // 300ms delay before closing
     };
 
     // Function to handle pronunciation
@@ -67,6 +67,7 @@ export const WordMenu: React.FC<WordMenuProps> = ({ word, onAskAI }) => {
             <Popover.Portal>
                 <Popover.Content
                     className="z-50 w-48 rounded-xl bg-white p-0 shadow-[0_10px_38px_-10px_hsla(206,22%,7%,.35),0_10px_20px_-15px_hsla(206,22%,7%,.2)] border border-slate-100 will-change-[transform,opacity] 
+                    duration-300 ease-out
                     data-[state=open]:animate-in data-[state=closed]:animate-out 
                     data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 
                     data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 

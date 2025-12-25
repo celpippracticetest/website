@@ -13,7 +13,6 @@ import ResultExamView from "@/components/dashboard-app/exam-parts/ResultExamView
 import { ObjectId } from "mongodb";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
 import { currentUser } from "@clerk/nextjs/server";
-import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 
 const Exam = async ({ params }: { params: { slug: string[] } }) => {
   const resolvedParams = await params;
@@ -74,9 +73,6 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
             speakingAndWritingAnswers={speakingAndWritingAnswers}
           />
         </div>
-        <div className="hidden screen1280:!flex">
-          <AskBeavoButton />
-        </div>
       </main>
     );
   }
@@ -133,9 +129,6 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
             examName={exam?.name}
           />
         )}
-      </div>
-      <div className="hidden screen1280:!flex">
-        <AskBeavoButton />
       </div>
     </main>
   );
