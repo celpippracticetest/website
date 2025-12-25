@@ -30,15 +30,18 @@ const PracticeResultModal = ({
     const [activeTab, setActiveTab] = React.useState<"feedback" | "improvements" | "betterVersion">("feedback");
     const [isTaskResponseOpen, setIsTaskResponseOpen] = React.useState(false);
     const [onlyShowCorrect, setOnlyShowCorrect] = React.useState(false);
-    const { askAboutWord } = useAskBeavoStore();
+    const { askAboutWord, setOpen } = useAskBeavoStore();
 
     // Reset tab when modal opens
     React.useEffect(() => {
         if (isOpen) {
             setActiveTab("feedback");
             setOnlyShowCorrect(false);
+        } else {
+            // Close Ask Beavo modal when PracticeResult modal closes
+            setOpen(false);
         }
-    }, [isOpen]);
+    }, [isOpen, setOpen]);
 
     if (!isOpen) return null;
 

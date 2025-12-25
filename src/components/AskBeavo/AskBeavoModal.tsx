@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useUserContext } from "@/hooks/useUserContext";
 import SvgClose from "../icons/Close";
 import SvgChatBotSend from "../icons/ChatBotSend";
@@ -19,6 +19,15 @@ const AskBeavoModal: React.FC = () => {
     const [inputText, setInputText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const userContext = useUserContext();
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Auto-scroll to bottom whenever messages or loading state changes
+    useEffect(() => {
+        if (messagesEndRef.current) {
+            const container = messagesEndRef.current;
+            container.scrollTop = container.scrollHeight;
+        }
+    }, [messages, isLoading, isOpen]);
 
     // Handle initial message from store
     useEffect(() => {
@@ -197,7 +206,10 @@ const AskBeavoModal: React.FC = () => {
                 )}
 
                 {/* Messages */}
-                <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+                <div
+                    ref={messagesEndRef}
+                    className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 scroll-smooth"
+                >
                     {messages.map((message) => (
                         <div
                             key={message.id}
