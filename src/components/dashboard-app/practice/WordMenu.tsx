@@ -85,7 +85,7 @@ export const WordMenu: React.FC<WordMenuProps> = ({ word, onAskAI }) => {
 
                         {/* Menu Items */}
                         <div className="p-1 flex flex-col gap-1">
-                            <button
+                            {/* <button
                                 onClick={handleAddToWords}
                                 className="cursor-pointer flex items-center gap-3 w-full px-3 py-2 text-sm text-slate-700 hover:bg-[#F2FFFD] hover:text-[#0DAA94] rounded-lg transition-colors text-left"
                             >
@@ -93,7 +93,7 @@ export const WordMenu: React.FC<WordMenuProps> = ({ word, onAskAI }) => {
                                     <Plus size={14} strokeWidth={3} />
                                 </div>
                                 <span className="font-medium">Add to words</span>
-                            </button>
+                            </button> */}
 
                             <button
                                 onClick={handleAskAI}

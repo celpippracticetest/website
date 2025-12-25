@@ -369,14 +369,14 @@ const PracticeResultModal = ({
 
                                 <div className="flex flex-col gap-0 text-slate-800 bg-[#F2FFFD] rounded-[12px] overflow-hidden">
                                     {/* Helper Tip */}
-                                    <div className="flex items-center justify-center gap-2 p-6 pb-2 pt-8">
+                                    {/* <div className="flex items-center justify-center gap-2 p-6 pb-2 pt-8">
                                         <div className="relative inline-flex items-center gap-2 bg-[#E0F2F1] pl-16 pr-6 py-3 rounded-full overflow-visible">
                                             <div className="absolute -left-0 -bottom-0">
                                                 <SvgMultiplePlus className="w-[50px] h-[50px] drop-shadow-sm" />
                                             </div>
                                             <span className="text-[14px] font-bold text-slate-900">Click to add words to learn them later.</span>
                                         </div>
-                                    </div>
+                                    </div> */}
 
                                     {/* Content */}
                                     <div className="prose prose-base max-w-none text-slate-700 p-8 pt-4 leading-8 text-[16px]">
@@ -384,9 +384,9 @@ const PracticeResultModal = ({
                                             <div>
                                                 {(() => {
                                                     // Mock test data for WordMenu demonstration
-                                                    const mockBetterVersion = `I believe the company should provide better **service** to its clients. We need to find a **resolution** to this problem quickly. The **technical** team is working on **implementing** new **solutions** that will improve our overall **performance**. It's **essential** to maintain **effective** communication throughout this process.`;
+                                                    // const mockBetterVersion = `I believe the company should provide better **service** to its clients. We need to find a **resolution** to this problem quickly. The **technical** team is working on **implementing** new **solutions** that will improve our overall **performance**. It's **essential** to maintain **effective** communication throughout this process.`;
 
-                                                    const textToRender = mockBetterVersion;
+                                                    const textToRender = data?.result?.betterVersion || '';
 
                                                     return textToRender.split(/(\*\*.*?\*\*)/g).map((part, index) => {
                                                         if (part.startsWith("**") && part.endsWith("**")) {
