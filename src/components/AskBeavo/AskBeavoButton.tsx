@@ -31,6 +31,3 @@ const AskBeavoButton: React.FC = () => {
 };
 
 export default AskBeavoButton;
-
-
-export default AskBeavoButton;
