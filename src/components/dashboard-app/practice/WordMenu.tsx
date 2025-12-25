@@ -4,9 +4,10 @@ import * as Popover from "@radix-ui/react-popover";
 
 interface WordMenuProps {
     word: string;
+    onAskAI?: (word: string) => void;
 }
 
-export const WordMenu: React.FC<WordMenuProps> = ({ word }) => {
+export const WordMenu: React.FC<WordMenuProps> = ({ word, onAskAI }) => {
     const [isOpen, setIsOpen] = useState(false);
 
     // Function to handle pronunciation
@@ -26,8 +27,10 @@ export const WordMenu: React.FC<WordMenuProps> = ({ word }) => {
 
     const handleAskAI = (e: React.MouseEvent) => {
         e.stopPropagation();
-        // Logic to ask AI (placeholder)
-        console.log("Asking AI about:", word);
+        setIsOpen(false);
+        if (onAskAI) {
+            onAskAI(word);
+        }
     };
 
     return (

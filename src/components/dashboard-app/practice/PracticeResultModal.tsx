@@ -10,6 +10,7 @@ import SvgMultiplePlus from "@/components/icons/multiplePlus";
 import { WordMenu } from "./WordMenu";
 import { diffWords } from "diff";
 import { useEffect } from "react";
+import { useAskBeavoStore } from "@/stores/askBeavoStore";
 
 interface PracticeResultModalProps {
     isOpen: boolean;
@@ -29,6 +30,7 @@ const PracticeResultModal = ({
     const [activeTab, setActiveTab] = React.useState<"feedback" | "improvements" | "betterVersion">("feedback");
     const [isTaskResponseOpen, setIsTaskResponseOpen] = React.useState(false);
     const [onlyShowCorrect, setOnlyShowCorrect] = React.useState(false);
+    const { askAboutWord } = useAskBeavoStore();
 
     // Reset tab when modal opens
     React.useEffect(() => {
@@ -377,19 +379,26 @@ const PracticeResultModal = ({
                                     <div className="prose prose-base max-w-none text-slate-700 p-8 pt-4 leading-8 text-[16px]">
                                         <div>
                                             <div>
-                                                {(data?.result?.betterVersion || "").split(/(\*\*.*?\*\*)/g).map((part, index) => {
-                                                    if (part.startsWith("**") && part.endsWith("**")) {
-                                                        const word = part.slice(2, -2); // Remove **
-                                                        return <WordMenu key={index} word={word} />;
-                                                    }
-                                                    // Handle line breaks in regular text
-                                                    return part.split('\n').map((subPart, subIndex, array) => (
-                                                        <React.Fragment key={`${index}-${subIndex}`}>
-                                                            {subPart}
-                                                            {subIndex < array.length - 1 && <br />}
-                                                        </React.Fragment>
-                                                    ));
-                                                })}
+                                                {(() => {
+                                                    // Mock test data for WordMenu demonstration
+                                                    const mockBetterVersion = `I believe the company should provide better **service** to its clients. We need to find a **resolution** to this problem quickly. The **technical** team is working on **implementing** new **solutions** that will improve our overall **performance**. It's **essential** to maintain **effective** communication throughout this process.`;
+
+                                                    const textToRender = mockBetterVersion;
+
+                                                    return textToRender.split(/(\*\*.*?\*\*)/g).map((part, index) => {
+                                                        if (part.startsWith("**") && part.endsWith("**")) {
+                                                            const word = part.slice(2, -2); // Remove **
+                                                            return <WordMenu key={index} word={word} onAskAI={askAboutWord} />;
+                                                        }
+                                                        // Handle line breaks in regular text
+                                                        return part.split('\n').map((subPart, subIndex, array) => (
+                                                            <React.Fragment key={`${index}-${subIndex}`}>
+                                                                {subPart}
+                                                                {subIndex < array.length - 1 && <br />}
+                                                            </React.Fragment>
+                                                        ));
+                                                    });
+                                                })()}
                                             </div>
                                         </div>
                                     </div>

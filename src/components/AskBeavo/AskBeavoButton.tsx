@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useUserContext } from "@/hooks/useUserContext";
 import SvgBeavo from "../icons/Beavo";
 import SvgClose from "../icons/Close";
 import SvgChatBotSend from "../icons/ChatBotSend";
+import { useAskBeavoStore } from "@/stores/askBeavoStore";
 
 interface Message {
   id: string;
@@ -14,19 +15,33 @@ interface Message {
 }
 
 const AskBeavoButton: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const { isOpen, setOpen, initialMessage } = useAskBeavoStore();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const userContext = useUserContext();
 
-  const handleSendMessage = async () => {
-    if (!inputText.trim() || isLoading) return;
+  // Handle initial message from store
+  useEffect(() => {
+    if (isOpen && initialMessage) {
+      setInputText(initialMessage);
+      // Auto-send after a short delay to feel more natural
+      setTimeout(() => {
+        if (initialMessage) {
+          handleSendMessage(initialMessage);
+        }
+      }, 100);
+    }
+  }, [isOpen, initialMessage]);
+
+  const handleSendMessage = async (messageOverride?: string) => {
+    const messageToSend = messageOverride || inputText.trim();
+    if (!messageToSend || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       type: "user",
-      content: inputText.trim(),
+      content: messageToSend,
       timestamp: new Date(),
     };
 
@@ -105,7 +120,7 @@ const AskBeavoButton: React.FC = () => {
     <>
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
         <button
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => setOpen(!isOpen)}
           className="relative flex items-center cursor-pointer justify-center text-[#212E42] text-[14px] h-[40px] w-[134px] gap-[8px] rounded-[24px] px-[16px] pl-[8px] font-normal
                 bg-white overflow-hidden shadow-lg hover:scale-105 transition-transform duration-200"
         >
@@ -145,7 +160,7 @@ const AskBeavoButton: React.FC = () => {
                 </div>
               </div>
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={() => setOpen(false)}
                 className="cursor-pointer hover:bg-gray-100 rounded-full p-2 transition-colors"
               >
                 <SvgClose />
@@ -213,8 +228,8 @@ const AskBeavoButton: React.FC = () => {
                 >
                   <div
                     className={`max-w-[80%] rounded-2xl px-4 py-3 ${message.type === "user"
-                        ? "bg-gradient-to-r from-[#F79D65] to-[#759CFF] text-white"
-                        : "bg-gray-100 text-gray-900"
+                      ? "bg-gradient-to-r from-[#F79D65] to-[#759CFF] text-white"
+                      : "bg-gray-100 text-gray-900"
                       }`}
                   >
                     <p className="text-sm whitespace-pre-wrap">
@@ -261,11 +276,11 @@ const AskBeavoButton: React.FC = () => {
                   rows={2}
                 />
                 <button
-                  onClick={handleSendMessage}
+                  onClick={() => handleSendMessage()}
                   disabled={!inputText.trim() || isLoading}
                   className={`cursor-pointer px-3 py-2 absolute right-3 top-1/2 -translate-y-1/2 rounded-xl font-medium transition-colors ${inputText.trim() && !isLoading
-                      ? " from-[#F79D65] to-[#759CFF] text-white"
-                      : " text-gray-400 cursor-not-allowed"
+                    ? " from-[#F79D65] to-[#759CFF] text-white"
+                    : " text-gray-400 cursor-not-allowed"
                     }`}
                 >
                   {isLoading ? (
