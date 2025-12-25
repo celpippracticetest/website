@@ -4,8 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import clsx from "clsx";
 import {
-  SignedIn,
-  SignedOut,
   SignInButton,
   SignUpButton,
   useClerk,
@@ -41,24 +39,11 @@ import { useMenuCollapsedStore } from "@/store/menuCollapsed.store";
 import CountdownTimer from "@/components/dashboard-app/CounterDownTimer";
 import OnboardingSurvey from "@/components/onboardingSurvey";
 import SvgReferral from "@/components/icons/Referral";
-import SvgLearning from "@/components/icons/Learning";
-import SvgMockTestNavigation from "@/components/icons/MockTestNavigation";
-import SvgBottomNavigation from "@/components/icons/BottomNavigation";
-import SvgPracticeHover from "@/components/icons/PracticeHover";
-import {
-  SvgBottomNavigationMobile,
-  SvgMockTestHover,
-  SvgMockTestTopNavigationHover,
-  SvgPracticeBlueHover,
-  SvgRefferalMobileNavigation,
-} from "@/components/icons";
-import SvgDiamond from "@/components/icons/Diamond";
-import SvgLearningGift from "@/components/icons/LearningGift";
-import SvgLeagueLogo from "@/components/icons/LeagueLogo";
+
 import BottomNavigation from "@/components/dashboard-new/BottomNavigation";
 import DesktopNavigation from "@/components/dashboard-new/DesktopNavigation";
 import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
-import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
+import AskBeavoModal from "@/components/AskBeavo/AskBeavoModal";
 
 const NavItem = ({
   icon,
@@ -862,7 +847,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
         {/* bottom menu for mobile */}
         <BottomNavigation />
       </div >
-      <AskBeavoButton />
+      <AskBeavoModal />
     </>
   );
 };
