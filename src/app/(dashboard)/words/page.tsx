@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import WordPill from "@/components/dashboard-app/words/WordPill";
 import { TUserWordDto } from "@/models/userWords.model";
 import SvgChevronDown from "@/components/icons/ChevronDown";
+import { WordDetailsCard } from "@/components/dashboard-app/words/WordDetailsCard";
 
 const WordsPage = () => {
     const [words, setWords] = useState<TUserWordDto[]>([]);
@@ -11,6 +12,7 @@ const WordsPage = () => {
     const [loading, setLoading] = useState(true);
     const [loadMoreLoading, setLoadMoreLoading] = useState(false);
     const [skip, setSkip] = useState(0);
+    const [selectedWordIndex, setSelectedWordIndex] = useState<number | null>(0);
     const limit = 20;
 
     useEffect(() => {
@@ -29,6 +31,7 @@ const WordsPage = () => {
                     setWords((prev) => [...prev, ...data.items]);
                 } else {
                     setWords(data.items);
+                    if (data.items.length > 0) setSelectedWordIndex(0);
                 }
                 setTotal(data.total);
             }
@@ -63,11 +66,13 @@ const WordsPage = () => {
         }
     };
 
+    const selectedWord = selectedWordIndex !== null && words.length > 0 ? words[selectedWordIndex] : null;
+
     return (
-        <div className="pt-8 flex flex-col w-full">
-            <div className="px-20 max-w-7xl flex justify-center items-center flex-col w-full">
+        <div className="pt-8 flex flex-col w-full min-h-screen">
+            <div className="px-20 max-w-7xl flex justify-center items-center flex-col w-full mx-auto">
                 <div className="mb-10 flex justify-start w-full">
-                    <h1 className="text-[32px] font-bold text-[#212E42]">Added Words</h1>
+                    <h1 className="text-[40px] font-bold text-[#212E42] tracking-tight">Added Words</h1>
                 </div>
 
                 {loading ? (
@@ -75,28 +80,29 @@ const WordsPage = () => {
                         <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#0DAA94] border-t-transparent"></div>
                     </div>
                 ) : words.length === 0 ? (
-                    <div className="text-center p-8 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200 w-fit">
-                        <p className="text-gray-500 text-lg">No words added yet. Start practicing to add some!</p>
+                    <div className="text-center p-12 bg-gray-50 rounded-[40px] border-2 border-dashed border-gray-200 w-full max-w-lg mb-20 mt-10">
+                        <p className="text-gray-500 text-lg font-medium">No words added yet. Start practicing to add some!</p>
                     </div>
                 ) : (
                     <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                            {words.map((item) => (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
+                            {words.map((item, index) => (
                                 <WordPill
                                     key={item.id}
                                     word={item.word}
                                     isLearned={item.isLearned}
                                     onToggleLearned={() => handleToggleLearned(item.word, !!item.isLearned)}
+                                    onClick={() => setSelectedWordIndex(index)}
                                 />
                             ))}
                         </div>
 
                         {words.length < total && (
-                            <div className="mt-12 flex justify-center">
+                            <div className="mt-16 flex justify-center">
                                 <button
                                     onClick={handleLoadMore}
                                     disabled={loadMoreLoading}
-                                    className="flex items-center gap-2 text-[#212E42] hover:text-[#0DAA94] transition-colors font-medium group disabled:opacity-50"
+                                    className="flex items-center gap-2 text-[#212E42]/60 hover:text-[#0DAA94] transition-all font-bold text-lg group disabled:opacity-50"
                                 >
                                     {loadMoreLoading ? "Loading..." : "Load more"}
                                     <div className="transition-transform group-hover:translate-y-1">
@@ -104,6 +110,17 @@ const WordsPage = () => {
                                     </div>
                                 </button>
                             </div>
+                        )}
+
+                        {selectedWord && (
+                            <WordDetailsCard
+                                word={selectedWord}
+                                onNext={() => setSelectedWordIndex(prev => (prev !== null && prev < words.length - 1) ? prev + 1 : prev)}
+                                onPrevious={() => setSelectedWordIndex(prev => (prev !== null && prev > 0) ? prev - 1 : prev)}
+                                onToggleMastered={handleToggleLearned}
+                                hasPrevious={selectedWordIndex !== null && selectedWordIndex > 0}
+                                hasNext={selectedWordIndex !== null && selectedWordIndex < words.length - 1}
+                            />
                         )}
                     </>
                 )}
