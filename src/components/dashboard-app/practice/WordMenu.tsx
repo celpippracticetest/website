@@ -1,13 +1,15 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Plus, Sparkles, Volume2 } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
+import clsx from "clsx";
 
 interface WordMenuProps {
     word: string;
     onAskAI?: (word: string) => void;
+    isHighlighted?: boolean;
 }
 
-export const WordMenu: React.FC<WordMenuProps> = ({ word, onAskAI }) => {
+export const WordMenu: React.FC<WordMenuProps> = ({ word, onAskAI, isHighlighted = true }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
     const [isChecking, setIsChecking] = useState(false);
@@ -91,7 +93,12 @@ export const WordMenu: React.FC<WordMenuProps> = ({ word, onAskAI }) => {
         <Popover.Root open={isOpen} onOpenChange={setIsOpen}>
             <Popover.Trigger asChild>
                 <span
-                    className="font-bold text-[#0DAA94] cursor-pointer rounded-md px-1 transition-all duration-200 border border-transparent hover:border-[#0DAA94] hover:bg-[#E0F2F1] hover:shadow-sm"
+                    className={clsx(
+                        "cursor-pointer transition-all duration-200 rounded-sm px-0.5 -mx-0.5",
+                        isHighlighted
+                            ? "font-bold text-[#0DAA94] border border-transparent hover:border-[#0DAA94] hover:bg-[#E0F2F1] hover:shadow-sm"
+                            : "text-inherit hover:text-[#0DAA94] hover:bg-[#E0F2F1] underline decoration-transparent hover:decoration-[#0DAA94]/30 underline-offset-4"
+                    )}
                     onMouseEnter={handleMouseEnter}
                     onMouseLeave={handleMouseLeave}
                     onClick={(e) => {
