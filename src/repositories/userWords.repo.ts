@@ -37,6 +37,7 @@ export class UserWordsRepository {
             _id: new ObjectId(),
             userId,
             word: wordToSave,
+            isLearned: false,
             createdAt: new Date(),
         };
 
@@ -62,18 +63,40 @@ export class UserWordsRepository {
             _id: new ObjectId(),
             userId,
             word,
+            isLearned: false,
             createdAt: new Date(),
         }));
 
         await this.getCollection().insertMany(entities);
     }
 
-    async getAllWords(userId: string): Promise<TUserWordDto[]> {
+    async getAllWords(userId: string, limit: number = 100, skip: number = 0): Promise<{ items: TUserWordDto[], total: number }> {
+        const total = await this.getCollection().countDocuments({ userId });
         const entities = await this.getCollection()
             .find({ userId })
             .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
             .toArray();
-        return entities.map(e => this.convertFromEntity(e));
+
+        return {
+            items: entities.map(e => this.convertFromEntity(e)),
+            total
+        };
+    }
+
+    async countWords(userId: string): Promise<number> {
+        return await this.getCollection().countDocuments({ userId });
+    }
+
+    async toggleLearned(userId: string, word: string, isLearned: boolean): Promise<TUserWordDto | null> {
+        const wordToMatch = word.toLowerCase().trim();
+        const result = await this.getCollection().findOneAndUpdate(
+            { userId, word: wordToMatch },
+            { $set: { isLearned } },
+            { returnDocument: "after" }
+        );
+        return result ? this.convertFromEntity(result) : null;
     }
 
     async deleteWord(userId: string, word: string): Promise<void> {
