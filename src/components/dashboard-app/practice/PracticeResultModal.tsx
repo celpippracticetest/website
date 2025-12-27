@@ -368,15 +368,38 @@ const PracticeResultModal = ({
                                 </div>
 
                                 <div className="flex flex-col gap-0 text-slate-800 bg-[#F2FFFD] rounded-[12px] overflow-hidden">
-                                    {/* Helper Tip */}
-                                    {/* <div className="flex items-center justify-center gap-2 p-6 pb-2 pt-8">
-                                        <div className="relative inline-flex items-center gap-2 bg-[#E0F2F1] pl-16 pr-6 py-3 rounded-full overflow-visible">
+                                    {/* Helper Tip / Bulk Save */}
+                                    <div className="flex items-center justify-center gap-2 p-6 pb-2 pt-8">
+                                        <button
+                                            onClick={async () => {
+                                                const text = data?.result?.betterVersion || '';
+                                                const words = text.match(/\*\*(.*?)\*\*/g)?.map((w: string) => w.slice(2, -2)) || [];
+                                                if (words.length > 0) {
+                                                    try {
+                                                        const response = await fetch("/api/user-words/bulk", {
+                                                            method: "POST",
+                                                            headers: { "Content-Type": "application/json" },
+                                                            body: JSON.stringify({ words }),
+                                                        });
+                                                        if (response.ok) {
+                                                            // Could show a toast here
+                                                            alert("All words saved to your vocabulary!");
+                                                            // Reload WordMenus to update their status
+                                                            window.location.reload();
+                                                        }
+                                                    } catch (error) {
+                                                        console.error("Error bulk saving words:", error);
+                                                    }
+                                                }
+                                            }}
+                                            className="relative inline-flex items-center gap-2 bg-[#E0F2F1] hover:bg-[#B2DFDB] transition-colors cursor-pointer pl-16 pr-6 py-3 rounded-full overflow-visible"
+                                        >
                                             <div className="absolute -left-0 -bottom-0">
                                                 <SvgMultiplePlus className="w-[50px] h-[50px] drop-shadow-sm" />
                                             </div>
-                                            <span className="text-[14px] font-bold text-slate-900">Click to add words to learn them later.</span>
-                                        </div>
-                                    </div> */}
+                                            <span className="text-[14px] font-bold text-slate-900 underline decoration-[#0DAA94] decoration-2 underline-offset-4">Click to save all words to learn them later.</span>
+                                        </button>
+                                    </div>
 
                                     {/* Content */}
                                     <div className="prose prose-base max-w-none text-slate-700 p-8 pt-4 leading-8 text-[16px]">

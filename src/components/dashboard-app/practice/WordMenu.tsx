@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Plus, Sparkles, Volume2 } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
 
@@ -9,7 +9,31 @@ interface WordMenuProps {
 
 export const WordMenu: React.FC<WordMenuProps> = ({ word, onAskAI }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [isSaved, setIsSaved] = useState(false);
+    const [isChecking, setIsChecking] = useState(false);
     const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Check if word is already saved when the popover opens
+    useEffect(() => {
+        if (isOpen) {
+            checkIfSaved();
+        }
+    }, [isOpen, word]);
+
+    const checkIfSaved = async () => {
+        setIsChecking(true);
+        try {
+            const response = await fetch(`/api/user-words?word=${encodeURIComponent(word)}`);
+            if (response.ok) {
+                const data = await response.json();
+                setIsSaved(data.saved);
+            }
+        } catch (error) {
+            console.error("Error checking saved status:", error);
+        } finally {
+            setIsChecking(false);
+        }
+    };
 
     const handleMouseEnter = () => {
         if (closeTimeoutRef.current) {
@@ -33,11 +57,26 @@ export const WordMenu: React.FC<WordMenuProps> = ({ word, onAskAI }) => {
         window.speechSynthesis.speak(utterance);
     };
 
-    const handleAddToWords = (e: React.MouseEvent) => {
+    const handleSaveWord = async (e: React.MouseEvent) => {
         e.stopPropagation();
-        // Logic to add to words (placeholder for now)
-        console.log("Adding to words:", word);
-        // You might want to show a toast here
+        if (isSaved) {
+            // Redirect or show navigation to words page
+            window.location.href = "/dashboard/words";
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/user-words", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ word }),
+            });
+            if (response.ok) {
+                setIsSaved(true);
+            }
+        } catch (error) {
+            console.error("Error saving word:", error);
+        }
     };
 
     const handleAskAI = (e: React.MouseEvent) => {
@@ -85,15 +124,16 @@ export const WordMenu: React.FC<WordMenuProps> = ({ word, onAskAI }) => {
 
                         {/* Menu Items */}
                         <div className="p-1 flex flex-col gap-1">
-                            {/* <button
-                                onClick={handleAddToWords}
-                                className="cursor-pointer flex items-center gap-3 w-full px-3 py-2 text-sm text-slate-700 hover:bg-[#F2FFFD] hover:text-[#0DAA94] rounded-lg transition-colors text-left"
+                            <button
+                                onClick={handleSaveWord}
+                                disabled={isChecking}
+                                className="cursor-pointer flex items-center gap-3 w-full px-3 py-2 text-sm text-slate-700 hover:bg-[#F2FFFD] hover:text-[#0DAA94] rounded-lg transition-colors text-left disabled:opacity-50"
                             >
                                 <div className="bg-[#0DAA94] text-white p-1 rounded-md">
-                                    <Plus size={14} strokeWidth={3} />
+                                    {isSaved ? <Sparkles size={14} strokeWidth={3} /> : <Plus size={14} strokeWidth={3} />}
                                 </div>
-                                <span className="font-medium">Add to words</span>
-                            </button> */}
+                                <span className="font-medium">{isSaved ? "Show in words" : "Add to words"}</span>
+                            </button>
 
                             <button
                                 onClick={handleAskAI}
