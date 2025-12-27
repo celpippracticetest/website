@@ -64,16 +64,16 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
     };
 
     return (
-        <div className="w-full flex flex-col items-center mt-20 transition-all duration-500 animate-in fade-in slide-in-from-bottom-8">
+        <div className="w-full flex flex-col items-center mt-20 transition-all duration-500 animate-in fade-in slide-in-from-bottom-8 relative">
+
             {/* Mastered Toggle at Top */}
-            <div className="mb-8">
+            <div className="mb-8 relative z-10">
                 <button
                     onClick={() => onToggleMastered(word.word, !!word.isLearned)}
+                    style={{ color: 'hsla(223, 100%, 60%, 1)' }}
                     className={clsx(
-                        "flex items-center gap-2 font-bold px-6 py-3 rounded-full transition-all active:scale-95 shadow-sm hover:shadow-md",
-                        word.isLearned
-                            ? "text-blue-600 bg-blue-50 border border-blue-200"
-                            : "text-gray-400 bg-white border border-gray-200 hover:text-gray-500"
+                        "flex items-center cursor-pointer gap-2 font-bold px-6 py-3 rounded-full transition-all active:scale-95",
+                        word.isLearned ? "bg-blue-50" : "bg-white hover:bg-blue-50/50"
                     )}
                 >
                     <SvgLearningArrowUp />
@@ -81,80 +81,95 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                 </button>
             </div>
 
-            <div className="relative flex items-center justify-center w-full max-w-5xl px-4">
+            <div className="relative flex items-center justify-center w-full max-w-5xl px-4 z-10">
                 {/* Previous Button */}
                 <button
                     onClick={onPrevious}
                     disabled={!hasPrevious}
-                    className="absolute left-0 lg:-left-20 flex flex-col items-center gap-2 group disabled:opacity-30 disabled:cursor-not-allowed transition-transform hover:-translate-x-1"
+                    style={{ color: 'hsla(9, 85%, 65%, 1)' }}
+                    className="absolute cursor-pointer left-0 lg:-left-28 flex items-center gap-2 group disabled:opacity-30 disabled:cursor-not-allowed transition-all px-6 py-3 rounded-full hover:bg-rose-50"
                 >
-                    <div className="flex items-center gap-2 text-[#FF7E67] font-bold text-lg">
+                    <div className="flex items-center gap-2 font-bold text-lg">
                         <SvgArrowLeft />
                         <span>Previous</span>
                     </div>
                 </button>
 
-                {/* Main Card */}
-                <div className="bg-white rounded-[40px] shadow-[0_30px_60px_rgba(0,0,0,0.08)] w-full max-w-2xl overflow-hidden border border-gray-100 flex flex-col">
-                    {/* Card Header */}
-                    <div className="p-12 text-center bg-gray-50/30">
-                        <div className="flex items-center justify-center gap-5 mb-3">
-                            <h2 className="text-[48px] font-bold text-[#212E42] tracking-tight">{word.word}</h2>
-                            <button
-                                onClick={handlePronunciation}
-                                className="p-3 transition-all hover:scale-110 active:scale-95 bg-white shadow-sm hover:shadow-md rounded-full border border-gray-100 text-[#212E42]"
-                            >
-                                <SvgSpeaker />
-                            </button>
-                        </div>
-                        <p className="text-[22px] text-gray-500 font-medium tracking-wide">
-                            {loading ? "..." : details?.phonetics || ""}
-                        </p>
+                {/* Main Card with Directional Glows */}
+                <div className="relative w-full max-w-2xl">
+                    {/* Shadow Glows */}
+                    <div className="absolute inset-x-8 inset-y-8 blur-[100px] opacity-70 -z-10">
+                        {/* Top: Blue */}
+                        <div className="absolute top-[-50px] left-1/2 -translate-x-1/2 w-[80%] h-[120px] bg-[hsla(223,100%,60%,0.3)] rounded-full" />
+                        {/* Right: Teal */}
+                        <div className="absolute right-[-50px] top-1/2 -translate-y-1/2 w-[120px] h-[80%] bg-[hsla(172,86%,36%,0.3)] rounded-full" />
+                        {/* Left: Rose */}
+                        <div className="absolute left-[-50px] top-1/2 -translate-y-1/2 w-[120px] h-[80%] bg-[hsla(9,85%,65%,0.3)] rounded-full" />
+                        {/* Bottom: Rose */}
+                        <div className="absolute bottom-[-50px] left-1/2 -translate-x-1/2 w-[80%] h-[120px] bg-[hsla(9,85%,65%,0.3)] rounded-full" />
                     </div>
 
-                    <div className="h-px bg-slate-200 w-full" />
-
-                    {/* Card Content */}
-                    <div className="p-12 pt-8 flex-1">
-                        {loading ? (
-                            <div className="py-24 space-y-4">
-                                <div className="flex justify-center">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-[3px] border-[#0DAA94] border-t-transparent" />
-                                </div>
-                                <p className="text-center text-gray-400 font-medium animate-pulse">Fetching word details...</p>
+                    <div className="bg-white rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.06)] w-full overflow-hidden border border-gray-100 flex flex-col relative z-20">
+                        {/* Card Header */}
+                        <div className="p-12 text-center bg-gray-50/30">
+                            <div className="flex items-center justify-center gap-5 mb-3">
+                                <h2 className="text-[48px] font-bold text-[#212E42] tracking-tight">{word.word}</h2>
+                                <button
+                                    onClick={handlePronunciation}
+                                    className="p-3 transition-all hover:scale-110 active:scale-95 bg-white shadow-sm hover:shadow-md rounded-full border border-gray-100 text-[#212E42]"
+                                >
+                                    <SvgSpeaker />
+                                </button>
                             </div>
-                        ) : (
-                            <div className="space-y-10">
-                                {details?.partsOfSpeech.map((pos, idx) => (
-                                    <div key={idx} className="group">
-                                        <h3 className="text-[20px] italic font-bold text-[#212E42] mb-5 border-l-4 border-[#0DAA94] pl-4">{pos.part}</h3>
-                                        <div className="space-y-6">
-                                            {pos.definitions.map((def, dIdx) => (
-                                                <div key={dIdx} className="text-[#4A5568] leading-relaxed text-lg">
-                                                    <div className="flex gap-3">
-                                                        <span className="font-bold text-gray-300">{dIdx + 1}.</span>
-                                                        <div className="space-y-2">
-                                                            <p className="font-medium text-slate-700">{def.definition}</p>
-                                                            {def.example && (
-                                                                <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100/50">
-                                                                    <p className="text-[16px] text-slate-600 italic">
-                                                                        <span className="font-bold text-blue-400 mr-2">Example:</span>
-                                                                        {def.example}
-                                                                    </p>
-                                                                </div>
-                                                            )}
+                            <p className="text-[22px] text-gray-500 font-medium tracking-wide">
+                                {loading ? "..." : details?.phonetics || ""}
+                            </p>
+                        </div>
+
+                        <div className="h-px bg-slate-200 w-full" />
+
+                        {/* Card Content */}
+                        <div className="p-12 pt-8 flex-1">
+                            {loading ? (
+                                <div className="py-24 space-y-4">
+                                    <div className="flex justify-center">
+                                        <div className="animate-spin rounded-full h-12 w-12 border-[3px] border-[#0DAA94] border-t-transparent" />
+                                    </div>
+                                    <p className="text-center text-gray-400 font-medium animate-pulse">Fetching word details...</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-10">
+                                    {details?.partsOfSpeech.map((pos, idx) => (
+                                        <div key={idx} className="group">
+                                            <h3 className="text-[20px] italic font-bold text-[#212E42] mb-5 border-l-4 border-[#0DAA94] pl-4">{pos.part}</h3>
+                                            <div className="space-y-6">
+                                                {pos.definitions.map((def, dIdx) => (
+                                                    <div key={dIdx} className="text-[#4A5568] leading-relaxed text-lg">
+                                                        <div className="flex gap-3">
+                                                            <span className="font-bold text-gray-300">{dIdx + 1}.</span>
+                                                            <div className="space-y-2">
+                                                                <p className="font-medium text-slate-700">{def.definition}</p>
+                                                                {def.example && (
+                                                                    <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100/50">
+                                                                        <p className="text-[16px] text-slate-600 italic">
+                                                                            <span className="font-bold text-blue-400 mr-2">Example:</span>
+                                                                            {def.example}
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                ))}
+                                            </div>
+                                            {idx < details.partsOfSpeech.length - 1 && (
+                                                <div className="mt-10 h-px bg-slate-100 w-full" />
+                                            )}
                                         </div>
-                                        {idx < details.partsOfSpeech.length - 1 && (
-                                            <div className="mt-10 h-px bg-slate-100 w-full" />
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -162,9 +177,10 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                 <button
                     onClick={onNext}
                     disabled={!hasNext}
-                    className="absolute right-0 lg:-right-20 flex flex-col items-center gap-2 group disabled:opacity-30 disabled:cursor-not-allowed transition-transform hover:translate-x-1"
+                    style={{ color: 'hsla(172, 86%, 36%, 1)' }}
+                    className="absolute cursor-pointer right-0 lg:-right-28 flex items-center gap-2 group disabled:opacity-30 disabled:cursor-not-allowed transition-all px-6 py-3 rounded-full hover:bg-teal-50"
                 >
-                    <div className="flex items-center gap-2 text-[#0DAA94] font-bold text-lg">
+                    <div className="flex items-center gap-2 font-bold text-lg">
                         <span>Next</span>
                         <SvgArrowRight />
                     </div>
@@ -172,9 +188,14 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
             </div>
 
             {/* Word Info Label at Bottom */}
-            <div className="mt-12 mb-20 flex items-center gap-3 text-[#B76DE5] font-bold text-lg bg-[#B76DE5]/5 px-6 py-3 rounded-full border border-[#B76DE5]/20">
-                <SvgInfo />
-                <span>Word Information</span>
+            <div className="relative mt-12 mb-20 z-10">
+                <div
+                    style={{ color: 'hsla(290, 72%, 52%, 1)' }}
+                    className="flex cursor-pointer items-center gap-3 font-bold text-lg px-8 py-4 rounded-full transition-all hover:bg-purple-50"
+                >
+                    <SvgInfo />
+                    <span>Word Information</span>
+                </div>
             </div>
         </div>
     );

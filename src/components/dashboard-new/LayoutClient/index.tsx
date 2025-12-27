@@ -849,7 +849,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
         <BottomNavigation />
       </div >
       <AskBeavoModal />
-      <GlobalInteractiveProvider />
+      {/* <GlobalInteractiveProvider /> */}
     </>
   );
 };

@@ -83,12 +83,17 @@ export const GlobalInteractiveProvider: React.FC = () => {
         const result = getWordAtPoint(e.clientX, e.clientY);
 
         if (result) {
-            document.body.style.cursor = 'pointer';
-            setHighlightRect(result.rect);
+            // If the word changed, update the ghost trigger instantly
+            if (result.word !== hoveredWord || !virtualRect) {
+                setHoveredWord(result.word);
+                setVirtualRect(result.rect);
+                setIsOpen(false); // Close previous popover if any
+            }
         } else {
-            document.body.style.cursor = 'default';
+            // If we moved away from a word and no popover is open, clean up
             if (!isOpen) {
-                setHighlightRect(null);
+                setHoveredWord(null);
+                setVirtualRect(null);
             }
         }
 
@@ -97,44 +102,44 @@ export const GlobalInteractiveProvider: React.FC = () => {
         if (timerRef.current) clearTimeout(timerRef.current);
 
         timerRef.current = setTimeout(() => {
-            const result = getWordAtPoint(mousePos.current.x, mousePos.current.y);
-            if (result) {
-                setHoveredWord(result.word);
-                setVirtualRect(result.rect);
+            const currentResult = getWordAtPoint(mousePos.current.x, mousePos.current.y);
+            // Only open if we are still hovering the SAME word after 200ms
+            if (currentResult && currentResult.word === hoveredWord) {
                 setIsOpen(true);
             }
-        }, 200); // Debounce reduced to 200ms as requested
-    }, [isOpen]);
+        }, 200);
+    }, [isOpen, hoveredWord, virtualRect]);
 
     useEffect(() => {
         window.addEventListener("mousemove", handleMouseMove);
         return () => {
             window.removeEventListener("mousemove", handleMouseMove);
             if (timerRef.current) clearTimeout(timerRef.current);
-            document.body.style.cursor = 'default';
         };
     }, [handleMouseMove]);
 
-    // Cleanup highlight when popover closes
-    useEffect(() => {
-        if (!isOpen) {
-            setHighlightRect(null);
-        }
-    }, [isOpen]);
-
     return (
         <>
-            {/* Real-time Highlight Overlay */}
-            {highlightRect && (
+            {/* Ghost Trigger: Renders the actual interactive style over the text */}
+            {hoveredWord && virtualRect && (
                 <div
-                    className="fixed pointer-events-none z-[49] bg-[#E0F2F1] rounded-sm transition-all duration-75 border-b border-[#0DAA94]/20"
+                    className={clsx(
+                        "fixed pointer-events-none z-[49] flex items-center justify-center transition-colors duration-150 rounded-sm",
+                        "text-[#0DAA94] bg-[#E0F2F1] underline decoration-[#0DAA94]/30 underline-offset-4 font-normal cursor-pointer"
+                    )}
                     style={{
-                        top: highlightRect.top - 2,
-                        left: highlightRect.left - 2,
-                        width: highlightRect.width + 4,
-                        height: highlightRect.height + 4,
+                        top: virtualRect.top,
+                        left: virtualRect.left,
+                        width: virtualRect.width,
+                        height: virtualRect.height,
+                        fontSize: 'inherit', // Attempt to match parent if possible, but limited to rect
+                        pointerEvents: 'none', // Critical: doesn't block mouse detection
+                        cursor: 'pointer'
                     }}
-                />
+                >
+                    <style dangerouslySetInnerHTML={{ __html: `body { cursor: pointer !important; }` }} />
+                    <span className="opacity-0">{hoveredWord}</span>
+                </div>
             )}
 
             {hoveredWord && virtualRect && (

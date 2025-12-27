@@ -50,7 +50,7 @@ const DesktopNavigation = () => {
         }
     }, [pathname]);
 
-    const isWords = pathname === "/words" || pathname === "/dashboard/words";
+    const isWords = pathname === "/words";
 
     const navItems = [
         {
@@ -79,7 +79,7 @@ const DesktopNavigation = () => {
         },
         {
             label: "Words",
-            href: "/dashboard/words",
+            href: "/words",
             isActive: isWords,
             animation: bookAnimation, // Placeholder animation
             hoverAnimation: bookHover, // Placeholder hover

@@ -45,7 +45,7 @@ const BottomNavigation = () => {
         }
     }, [pathname]);
 
-    const isWords = pathname === "/words" || pathname === "/dashboard/words";
+    const isWords = pathname === "/words";
 
     // Vibration animation variants
     const vibrationVariants = {
@@ -198,7 +198,7 @@ const BottomNavigation = () => {
 
                 {/* Words */}
                 <Link
-                    href="/dashboard/words"
+                    href="/words"
                     prefetch={true}
                     className="relative w-full h-full flex items-center justify-center"
                 >
