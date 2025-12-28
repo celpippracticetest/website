@@ -70,10 +70,7 @@ const WordsPage = () => {
 
     return (
         <div className="pt-8 flex flex-col w-full min-h-screen">
-            <div className="px-20 max-w-7xl flex justify-center items-center flex-col w-full mx-auto">
-                <div className="mb-10 flex justify-start w-full">
-                    <h1 className="text-[40px] font-bold text-[#212E42] tracking-tight">Added Words</h1>
-                </div>
+            <div className="pl-20 max-w-7xl flex justify-center items-center flex-col w-full mx-auto">
 
                 {loading ? (
                     <div className="flex justify-center items-center h-64">
@@ -84,33 +81,7 @@ const WordsPage = () => {
                         <p className="text-gray-500 text-lg font-medium">No words added yet. Start practicing to add some!</p>
                     </div>
                 ) : (
-                    <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
-                            {words.map((item, index) => (
-                                <WordPill
-                                    key={item.id}
-                                    word={item.word}
-                                    isLearned={item.isLearned}
-                                    onToggleLearned={() => handleToggleLearned(item.word, !!item.isLearned)}
-                                    onClick={() => setSelectedWordIndex(index)}
-                                />
-                            ))}
-                        </div>
-
-                        {words.length < total && (
-                            <div className="mt-16 flex justify-center">
-                                <button
-                                    onClick={handleLoadMore}
-                                    disabled={loadMoreLoading}
-                                    className="flex items-center gap-2 text-[#212E42]/60 hover:text-[#0DAA94] transition-all font-bold text-lg group disabled:opacity-50"
-                                >
-                                    {loadMoreLoading ? "Loading..." : "Load more"}
-                                    <div className="transition-transform group-hover:translate-y-1">
-                                        <SvgChevronDown />
-                                    </div>
-                                </button>
-                            </div>
-                        )}
+                    <div className="flex screen1280:flex-row flex-col-reverse justify-between w-full">
 
                         {selectedWord && (
                             <WordDetailsCard
@@ -122,7 +93,39 @@ const WordsPage = () => {
                                 hasNext={selectedWordIndex !== null && selectedWordIndex < words.length - 1}
                             />
                         )}
-                    </>
+
+                        <div className="flex flex-col gap-8">
+                            <div className="flex justify-start w-full">
+                                <h1 className="text-[20px] font-bold text-[#212E42] tracking-tight">Added Words</h1>
+                            </div>
+                            <div className="flex screen1280:flex-col flex-wrap screen1280:mb-0 mb-6 gap-6 w-full">
+                                {words.map((item, index) => (
+                                    <WordPill
+                                        key={item.id}
+                                        word={item.word}
+                                        isLearned={item.isLearned}
+                                        onToggleLearned={() => handleToggleLearned(item.word, !!item.isLearned)}
+                                        onClick={() => setSelectedWordIndex(index)}
+                                    />
+                                ))}
+                            </div>
+
+                            {words.length < total && (
+                                <div className="mt-16 flex justify-center">
+                                    <button
+                                        onClick={handleLoadMore}
+                                        disabled={loadMoreLoading}
+                                        className="flex items-center gap-2 text-[#212E42]/60 hover:text-[#0DAA94] transition-all font-bold text-lg group disabled:opacity-50"
+                                    >
+                                        {loadMoreLoading ? "Loading..." : "Load more"}
+                                        <div className="transition-transform group-hover:translate-y-1">
+                                            <SvgChevronDown />
+                                        </div>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 )}
             </div>
         </div>

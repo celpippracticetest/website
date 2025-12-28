@@ -64,7 +64,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
     };
 
     return (
-        <div className="w-full flex flex-col items-center mt-20 transition-all duration-500 animate-in fade-in slide-in-from-bottom-8 relative">
+        <div className="screen1280:max-w-[70%] max-w-[90%] flex flex-col items-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-8 relative">
 
             {/* Mastered Toggle at Top */}
             <div className="mb-8 relative z-10">
@@ -73,7 +73,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                     style={{ color: 'hsla(223, 100%, 60%, 1)' }}
                     className={clsx(
                         "flex items-center cursor-pointer gap-2 font-bold px-6 py-3 rounded-full transition-all active:scale-95",
-                        word.isLearned ? "bg-blue-50" : "bg-white hover:bg-blue-50/50"
+                        word.isLearned ? "bg-blue-50" : "hover:bg-blue-50/50"
                     )}
                 >
                     <SvgLearningArrowUp />
@@ -81,7 +81,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                 </button>
             </div>
 
-            <div className="relative flex items-center justify-center w-full max-w-5xl px-4 z-10">
+            <div className="relative flex items-center justify-center w-full px-4 z-10">
                 {/* Previous Button */}
                 <button
                     onClick={onPrevious}
@@ -96,7 +96,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                 </button>
 
                 {/* Main Card with Directional Glows */}
-                <div className="relative w-full max-w-2xl">
+                <div className="relative w-full ml-[28px]">
                     {/* Shadow Glows */}
                     <div className="absolute inset-x-8 inset-y-8 blur-[100px] opacity-70 -z-10">
                         {/* Top: Blue */}
