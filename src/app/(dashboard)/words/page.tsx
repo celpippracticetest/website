@@ -5,6 +5,7 @@ import WordPill from "@/components/dashboard-app/words/WordPill";
 import { TUserWordDto } from "@/models/userWords.model";
 import SvgChevronDown from "@/components/icons/ChevronDown";
 import { WordDetailsCard } from "@/components/dashboard-app/words/WordDetailsCard";
+import RecommendedWordPill from "@/components/dashboard-app/words/RecommendedWordPill";
 
 const WordsPage = () => {
     const [words, setWords] = useState<TUserWordDto[]>([]);
@@ -13,10 +14,13 @@ const WordsPage = () => {
     const [loadMoreLoading, setLoadMoreLoading] = useState(false);
     const [skip, setSkip] = useState(0);
     const [selectedWordIndex, setSelectedWordIndex] = useState<number | null>(0);
+    const [recommendations, setRecommendations] = useState<string[]>([]);
+    const [recoLoading, setRecoLoading] = useState(false);
     const limit = 20;
 
     useEffect(() => {
         fetchWords();
+        fetchRecommendations();
     }, []);
 
     const fetchWords = async (currentSkip = 0, append = false) => {
@@ -49,6 +53,46 @@ const WordsPage = () => {
         fetchWords(nextSkip, true);
     };
 
+    const fetchRecommendations = async () => {
+        setRecoLoading(true);
+        try {
+            const response = await fetch("/api/word-recommendations");
+            if (response.ok) {
+                const data = await response.json();
+                console.log("Recommendations Data:", data);
+                setRecommendations(data.recommendations || []);
+            }
+        } catch (error) {
+            console.error("Error fetching recommendations:", error);
+        } finally {
+            setRecoLoading(false);
+        }
+    };
+
+    const handleAddRecommended = async (word: string) => {
+        try {
+            const response = await fetch("/api/user-words", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ word }),
+            });
+            if (response.ok) {
+                // Add to list and remove from recommendations
+                const newWord = await response.json();
+                setWords((prev) => [newWord, ...prev]);
+                setTotal((prev) => prev + 1);
+                setRecommendations((prev) => prev.filter((w) => w !== word));
+
+                // If recommendations are low, fetch more
+                if (recommendations.length <= 1) {
+                    fetchRecommendations();
+                }
+            }
+        } catch (error) {
+            console.error("Error adding recommended word:", error);
+        }
+    };
+
     const handleToggleLearned = async (word: string, currentStatus: boolean) => {
         try {
             const response = await fetch("/api/user-words", {
@@ -70,7 +114,7 @@ const WordsPage = () => {
 
     return (
         <div className="pt-8 flex flex-col w-full min-h-screen">
-            <div className="pl-20 max-w-7xl flex justify-center items-center flex-col w-full mx-auto">
+            <div className="screen1024:pl-20 max-w-7xl flex justify-center items-center flex-col w-full mx-auto">
 
                 {loading ? (
                     <div className="flex justify-center items-center h-64">
@@ -127,6 +171,31 @@ const WordsPage = () => {
                         </div>
                     </div>
                 )}
+
+                {/* Recommended Words Section */}
+                <div className="mt-20 mb-32 w-full">
+                    <div className="bg-[#EDF0F5] rounded-[32px] p-10 w-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] border border-gray-200/50">
+                        <h2 className="text-[#76808F] text-[16px] font-medium mb-8">Recommended Words</h2>
+                        <div className="flex flex-wrap gap-6">
+                            {recoLoading && recommendations.length === 0 ? (
+                                <div className="flex items-center gap-3">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#0DAA94] border-t-transparent"></div>
+                                    <span className="text-gray-400 font-medium">Coming up with ideas...</span>
+                                </div>
+                            ) : recommendations.length > 0 ? (
+                                recommendations.map((word, idx) => (
+                                    <RecommendedWordPill
+                                        key={idx}
+                                        word={word}
+                                        onAdd={() => handleAddRecommended(word)}
+                                    />
+                                ))
+                            ) : (
+                                <p className="text-gray-400 italic">No recommendations available right now.</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );

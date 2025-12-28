@@ -64,16 +64,15 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
     };
 
     return (
-        <div className="screen1280:max-w-[70%] max-w-[90%] flex flex-col items-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-8 relative">
+        <div className="screen1280:max-w-[70%] screen1024:max-w-[90%] flex flex-col items-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-8 relative">
 
-            {/* Mastered Toggle at Top */}
-            <div className="mb-8 relative z-10">
+            {/* Mastered Toggle at Top (Hidden on Tablet/Mobile) */}
+            <div className="mb-8 relative hidden screen1024:flex">
                 <button
                     onClick={() => onToggleMastered(word.word, !!word.isLearned)}
                     style={{ color: 'hsla(223, 100%, 60%, 1)' }}
                     className={clsx(
                         "flex items-center cursor-pointer gap-2 font-bold px-6 py-3 rounded-full transition-all active:scale-95",
-                        word.isLearned ? "bg-blue-50" : "hover:bg-blue-50/50"
                     )}
                 >
                     <SvgLearningArrowUp />
@@ -81,13 +80,13 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                 </button>
             </div>
 
-            <div className="relative flex items-center justify-center w-full px-4 z-10">
-                {/* Previous Button */}
+            <div className="relative flex items-center justify-center w-full px-4">
+                {/* Previous Button (Hidden on Tablet/Mobile) */}
                 <button
                     onClick={onPrevious}
                     disabled={!hasPrevious}
                     style={{ color: 'hsla(9, 85%, 65%, 1)' }}
-                    className="absolute cursor-pointer left-0 lg:-left-28 flex items-center gap-2 group disabled:opacity-30 disabled:cursor-not-allowed transition-all px-6 py-3 rounded-full hover:bg-rose-50"
+                    className="absolute cursor-pointer left-0 lg:-left-28 hidden screen1024:flex items-center gap-2 group disabled:opacity-30 disabled:cursor-not-allowed transition-all px-6 py-3 rounded-full hover:bg-rose-50"
                 >
                     <div className="flex items-center gap-2 font-bold text-lg">
                         <SvgArrowLeft />
@@ -96,9 +95,9 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                 </button>
 
                 {/* Main Card with Directional Glows */}
-                <div className="relative w-full ml-[28px]">
+                <div className="relative w-full screen1024:ml-[28px]">
                     {/* Shadow Glows */}
-                    <div className="absolute inset-x-8 inset-y-8 blur-[100px] opacity-70 -z-10">
+                    <div className="absolute inset-x-8 inset-y-8 blur-[100px] opacity-70">
                         {/* Top: Blue */}
                         <div className="absolute top-[-50px] left-1/2 -translate-x-1/2 w-[80%] h-[120px] bg-[hsla(223,100%,60%,0.3)] rounded-full" />
                         {/* Right: Teal */}
@@ -109,9 +108,20 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                         <div className="absolute bottom-[-50px] left-1/2 -translate-x-1/2 w-[80%] h-[120px] bg-[hsla(9,85%,65%,0.3)] rounded-full" />
                     </div>
 
-                    <div className="bg-white rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.06)] w-full overflow-hidden border border-gray-100 flex flex-col relative z-20">
+                    <div className="bg-white rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.06)] w-full overflow-hidden border border-gray-100 flex flex-col relative">
                         {/* Card Header */}
-                        <div className="p-12 text-center bg-gray-50/30">
+                        <div className="p-12 text-center bg-gray-50/30 relative">
+                            {/* Internal Mastered Toggle (Visible on Tablet/Mobile) */}
+                            <div className="flex justify-center screen1024:hidden">
+                                <button
+                                    onClick={() => onToggleMastered(word.word, !!word.isLearned)}
+                                    style={{ color: 'hsla(223, 100%, 60%, 1)' }}
+                                    className="flex items-center cursor-pointer gap-2 font-bold px-4 py-2 rounded-full transition-all active:scale-95 text-sm">
+                                    <SvgLearningArrowUp />
+                                    <span>Mastered</span>
+                                </button>
+                            </div>
+
                             <div className="flex items-center justify-center gap-5 mb-3">
                                 <h2 className="text-[48px] font-bold text-[#212E42] tracking-tight">{word.word}</h2>
                                 <button
@@ -170,15 +180,46 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                                 </div>
                             )}
                         </div>
+
+                        {/* Internal Navigation Footer (Visible on Tablet/Mobile) */}
+                        <div className="p-8 border-t border-slate-100 flex items-center justify-between screen1024:hidden">
+                            <button
+                                onClick={onPrevious}
+                                disabled={!hasPrevious}
+                                style={{ color: 'hsla(9, 85%, 65%, 1)' }}
+                                className="flex items-center gap-2 font-bold disabled:opacity-30 disabled:cursor-not-allowed px-4 py-2 rounded-full hover:bg-rose-50"
+                            >
+                                <SvgArrowLeft />
+                                <span>Prev</span>
+                            </button>
+
+                            <div
+                                style={{ color: 'hsla(290, 72%, 52%, 1)' }}
+                                className="flex cursor-pointer items-center gap-2 font-bold px-4 py-2 rounded-full hover:bg-purple-50"
+                            >
+                                <SvgInfo />
+                                <span className="hidden screen744:inline">Information</span>
+                            </div>
+
+                            <button
+                                onClick={onNext}
+                                disabled={!hasNext}
+                                style={{ color: 'hsla(172, 86%, 36%, 1)' }}
+                                className="flex items-center gap-2 font-bold disabled:opacity-30 disabled:cursor-not-allowed px-4 py-2 rounded-full hover:bg-teal-50"
+                            >
+                                <span>Next</span>
+                                <SvgArrowRight />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                {/* Next Button */}
+                {/* Next Button (Hidden on Tablet/Mobile) */}
                 <button
                     onClick={onNext}
                     disabled={!hasNext}
                     style={{ color: 'hsla(172, 86%, 36%, 1)' }}
-                    className="absolute cursor-pointer right-0 lg:-right-28 flex items-center gap-2 group disabled:opacity-30 disabled:cursor-not-allowed transition-all px-6 py-3 rounded-full hover:bg-teal-50"
+                    className="absolute cursor-pointer right-0 lg:-right-28 hidden screen1024:flex items-center gap-2 group disabled:opacity-30 disabled:cursor-not-allowed transition-all px-6 py-3 rounded-full hover:bg-teal-50"
                 >
                     <div className="flex items-center gap-2 font-bold text-lg">
                         <span>Next</span>
@@ -187,8 +228,8 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                 </button>
             </div>
 
-            {/* Word Info Label at Bottom */}
-            <div className="relative mt-12 mb-20 z-10">
+            {/* Word Info Label at Bottom (Hidden on Tablet/Mobile) */}
+            <div className="relative mt-12 mb-20 hidden screen1024:flex">
                 <div
                     style={{ color: 'hsla(290, 72%, 52%, 1)' }}
                     className="flex cursor-pointer items-center gap-3 font-bold text-lg px-8 py-4 rounded-full transition-all hover:bg-purple-50"

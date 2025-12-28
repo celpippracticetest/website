@@ -12,7 +12,7 @@ const WordPill: React.FC<WordPillProps> = ({ word, isLearned = false, onToggleLe
     return (
         <div
             onClick={onClick}
-            className="flex items-center justify-between min-w-[160px] bg-[#E8EBF2] hover:bg-[#DDE1E9] transition-all duration-200 px-6 py-3 rounded-full group cursor-pointer"
+            className="flex items-center justify-between gap-4 bg-[#E8EBF2] hover:bg-[#DDE1E9] transition-all duration-200 px-6 py-3 rounded-full group cursor-pointer"
         >
             <span className="font-bold text-[#212E42] text-lg select-none capitalize">
                 {word}
