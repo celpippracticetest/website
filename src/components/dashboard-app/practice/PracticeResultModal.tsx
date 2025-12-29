@@ -8,7 +8,6 @@ import SvgDanger from "@/components/icons/danger";
 import SvgCircleWithDot from "@/components/icons/CircleWithDot";
 import SvgMultiplePlus from "@/components/icons/multiplePlus";
 import { WordMenu } from "./WordMenu";
-import { InteractiveText } from "./InteractiveText";
 import { diffWords } from "diff";
 import { useEffect } from "react";
 import { useAskBeavoStore } from "@/stores/askBeavoStore";
@@ -142,9 +141,9 @@ const PracticeResultModal = ({
                                         <h4 className="font-semibold text-sm text-slate-500 mb-2 uppercase tracking-wide">
                                             Task Prompt
                                         </h4>
-                                        <div className="text-slate-800 whitespace-pre-line leading-6">
-                                            <InteractiveText text={taskContent} onAskAI={askAboutWord} />
-                                        </div>
+                                        <p className="text-slate-800 whitespace-pre-line leading-6">
+                                            {taskContent}
+                                        </p>
                                         <div className="h-px bg-slate-100 w-full mt-6"></div>
                                     </div>
                                 )}
@@ -156,9 +155,9 @@ const PracticeResultModal = ({
                                         </h4>
                                     </div>
                                     {type === "WRITING" ? (
-                                        <div className="text-slate-700 whitespace-pre-line leading-6 bg-slate-50 p-4 rounded-lg">
-                                            <InteractiveText text={data ? data.text : ""} onAskAI={askAboutWord} />
-                                        </div>
+                                        <p className="text-slate-700 whitespace-pre-line leading-6 bg-slate-50 p-4 rounded-lg">
+                                            {data ? data.text : "Something happened..."}
+                                        </p>
                                     ) : (
                                         <div className="mt-2">
                                             <AudioPlayerV2 audioUrl={data?.audioUrl} />
@@ -275,11 +274,15 @@ const PracticeResultModal = ({
                                     </h4>
                                 </div>
 
-                                <div className="prose prose-base max-w-none prose-blue text-slate-700 bg-[#F0F6FF] p-6 rounded-[12px] leading-relaxed">
-                                    <InteractiveText
-                                        text={(data?.result?.feedback || "").replace(/<\/?feedback>/g, "")}
-                                        onAskAI={askAboutWord}
-                                    />
+                                <div className="prose prose-base max-w-none prose-blue text-slate-700 bg-[#F0F6FF] p-6 rounded-[12px]">
+                                    <div
+                                        dangerouslySetInnerHTML={{
+                                            __html: (data?.result?.feedback || "")
+                                                .replace(/<\/?feedback>/g, "")
+                                                .replace(/\n/g, "<br />")
+                                                .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>"),
+                                        }}
+                                    ></div>
                                 </div>
                             </div>
 
@@ -365,45 +368,42 @@ const PracticeResultModal = ({
                                 </div>
 
                                 <div className="flex flex-col gap-0 text-slate-800 bg-[#F2FFFD] rounded-[12px] overflow-hidden">
-                                    {/* Helper Tip / Bulk Save */}
-                                    <div className="flex items-center justify-center gap-2 p-6 pb-2 pt-8">
-                                        <button
-                                            onClick={async () => {
-                                                const text = data?.result?.betterVersion || '';
-                                                const words = text.match(/\*\*(.*?)\*\*/g)?.map((w: string) => w.slice(2, -2)) || [];
-                                                if (words.length > 0) {
-                                                    try {
-                                                        const response = await fetch("/api/user-words/bulk", {
-                                                            method: "POST",
-                                                            headers: { "Content-Type": "application/json" },
-                                                            body: JSON.stringify({ words }),
-                                                        });
-                                                        if (response.ok) {
-                                                            // Could show a toast here
-                                                            alert("All words saved to your vocabulary!");
-                                                            // Reload WordMenus to update their status
-                                                            window.location.reload();
-                                                        }
-                                                    } catch (error) {
-                                                        console.error("Error bulk saving words:", error);
-                                                    }
-                                                }
-                                            }}
-                                            className="relative inline-flex items-center gap-2 bg-[#E0F2F1] hover:bg-[#B2DFDB] transition-colors cursor-pointer pl-16 pr-6 py-3 rounded-full overflow-visible"
-                                        >
+                                    {/* Helper Tip */}
+                                    {/* <div className="flex items-center justify-center gap-2 p-6 pb-2 pt-8">
+                                        <div className="relative inline-flex items-center gap-2 bg-[#E0F2F1] pl-16 pr-6 py-3 rounded-full overflow-visible">
                                             <div className="absolute -left-0 -bottom-0">
                                                 <SvgMultiplePlus className="w-[50px] h-[50px] drop-shadow-sm" />
                                             </div>
-                                            <span className="text-[14px] font-bold text-slate-900 underline decoration-[#0DAA94] decoration-2 underline-offset-4">Click to save all words to learn them later.</span>
-                                        </button>
-                                    </div>
+                                            <span className="text-[14px] font-bold text-slate-900">Click to add words to learn them later.</span>
+                                        </div>
+                                    </div> */}
 
                                     {/* Content */}
-                                    <div className="text-slate-700 p-8 pt-4 leading-8 text-[16px]">
-                                        <InteractiveText
-                                            text={data?.result?.betterVersion || ''}
-                                            onAskAI={askAboutWord}
-                                        />
+                                    <div className="prose prose-base max-w-none text-slate-700 p-8 pt-4 leading-8 text-[16px]">
+                                        <div>
+                                            <div>
+                                                {(() => {
+                                                    // Mock test data for WordMenu demonstration
+                                                    // const mockBetterVersion = `I believe the company should provide better **service** to its clients. We need to find a **resolution** to this problem quickly. The **technical** team is working on **implementing** new **solutions** that will improve our overall **performance**. It's **essential** to maintain **effective** communication throughout this process.`;
+
+                                                    const textToRender = data?.result?.betterVersion || '';
+
+                                                    return textToRender.split(/(\*\*.*?\*\*)/g).map((part, index) => {
+                                                        if (part.startsWith("**") && part.endsWith("**")) {
+                                                            const word = part.slice(2, -2); // Remove **
+                                                            return <WordMenu key={index} word={word} onAskAI={askAboutWord} />;
+                                                        }
+                                                        // Handle line breaks in regular text
+                                                        return part.split('\n').map((subPart, subIndex, array) => (
+                                                            <React.Fragment key={`${index}-${subIndex}`}>
+                                                                {subPart}
+                                                                {subIndex < array.length - 1 && <br />}
+                                                            </React.Fragment>
+                                                        ));
+                                                    });
+                                                })()}
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {/* Audio Player */}

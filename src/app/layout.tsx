@@ -106,9 +106,24 @@ export default async function RootLayout({
             href="/favicon/apple-touch-icon.png"
             sizes="any"
           />
-          <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials"/>
+          <link rel="manifest" href="/manifest.json" />
 
-
+          {/* Service Worker – lazy */}
+          <Script
+            id="sw-register"
+            strategy="lazyOnload"
+            dangerouslySetInnerHTML={{
+              __html: `
+                if ('serviceWorker' in navigator) {
+                  window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js')
+                      .then(function(reg) { console.log('SW registered:', reg); })
+                      .catch(function(err) { console.log('SW registration failed:', err); });
+                  });
+                }
+              `,
+            }}
+          />
 
           {/* JSON-LD early is fine */}
           <Script

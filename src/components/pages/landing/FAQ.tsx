@@ -74,7 +74,7 @@ const FAQ = () => {
                                 {faq.question}
                             </span>
                             <span
-                                className={`transform transition-transform duration-300 min-w-[20px] ${openIndex === index ? "rotate-180" : ""
+                                className={`transform transition-transform duration-300 ${openIndex === index ? "rotate-180" : ""
                                     }`}
                             >
                                 <SvgChevronDown />
