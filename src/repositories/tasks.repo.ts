@@ -19,10 +19,10 @@ export class TaskRepository {
     };
     return TaskSchemaDto.parse(task);
   }
-    async findTaskById(id: string): Promise<TTaskSchemaDto | null> {
-      const entity = await this.getTaskCollection().findOne({ _id: new ObjectId(id) });
-      return entity ? this.convertFromEntity(entity) : null;
-    }
+  async findTaskById(id: string): Promise<TTaskSchemaDto | null> {
+    const entity = await this.getTaskCollection().findOne({ _id: new ObjectId(id) });
+    return entity ? this.convertFromEntity(entity) : null;
+  }
 
   async createTask(dto: Omit<TTaskSchemaDto, "id">): Promise<TTaskSchemaDto> {
     const task = TaskSchema.parse({
@@ -41,76 +41,76 @@ export class TaskRepository {
     const skip = page * limit;
     const aggregateFilter = [
       {
-      $match: {
-        ...filter,
-      },
-      },
-      {
-      $lookup: {
-        from: "practices", // The practices collection
-        localField: "_id", // The task ID in the tasks collection
-        foreignField: "taskId", // The task ID in the practices collection
-        as: "practices", // The resulting array of practices
-      },
-      },
-      {
-      $addFields: {
-        practiceCount: { $size: "$practices" }, // Count the number of practices for each task
-      },
-      },
-      {
-      $sort: {
-        createdAt: -1,
-      },
-      },
-      {
-      $facet: {
-        total: [
-        {
-          $count: "count",
+        $match: {
+          ...filter,
         },
-        ],
-        data: [
-        {
-          $addFields: {
-          _id: "$_id",
+      },
+      {
+        $lookup: {
+          from: "practices", // The practices collection
+          localField: "_id", // The task ID in the tasks collection
+          foreignField: "taskId", // The task ID in the practices collection
+          as: "practices", // The resulting array of practices
+        },
+      },
+      {
+        $addFields: {
+          practiceCount: { $size: "$practices" }, // Count the number of practices for each task
+        },
+      },
+      {
+        $sort: {
+          createdAt: -1,
+        },
+      },
+      {
+        $facet: {
+          total: [
+            {
+              $count: "count",
+            },
+          ],
+          data: [
+            {
+              $addFields: {
+                _id: "$_id",
+              },
+            },
+          ],
+        },
+      },
+      {
+        $unwind: "$total",
+      },
+      {
+        $project: {
+          items: {
+            $slice: [
+              "$data",
+              skip,
+              {
+                $ifNull: [limit, "$total.count"],
+              },
+            ],
           },
-        },
-        ],
-      },
-      },
-      {
-      $unwind: "$total",
-      },
-      {
-      $project: {
-        items: {
-        $slice: [
-          "$data",
-          skip,
-          {
-          $ifNull: [limit, "$total.count"],
+          page: {
+            $literal: skip / limit + 1,
           },
-        ],
+          hasNextPage: {
+            $lt: [{ $multiply: [limit, Number(page)] }, "$total.count"],
+          },
+          totalPages: {
+            $ceil: {
+              $divide: ["$total.count", limit],
+            },
+          },
+          totalItems: "$total.count",
         },
-        page: {
-        $literal: skip / limit + 1,
-        },
-        hasNextPage: {
-        $lt: [{ $multiply: [limit, Number(page)] }, "$total.count"],
-        },
-        totalPages: {
-        $ceil: {
-          $divide: ["$total.count", limit],
-        },
-        },
-        totalItems: "$total.count",
-      },
       },
     ];
 
     const results = await this.getTaskCollection().aggregate(aggregateFilter).toArray();
-    
+
     if (results.length == 0) {
       return {
         items: [],
@@ -131,18 +131,19 @@ export class TaskRepository {
     };
   }
 
-  //   async updateUser(id: string, dto: Omit<Partial<UserDTO>, "id">): Promise<UserDTO | null> {
-  //     const candidate = userEntitySchema.partial().parse(dto);
+  async updateTask(id: string, dto: Partial<TTaskSchemaDto>): Promise<TTaskSchemaDto | null> {
+    const { id: _id, ...updateData } = dto;
 
-  //     const { value } = await this.getUsersCollection().findOneAndUpdate(
-  //       { _id: new ObjectId(id) },
-  //       { $set: candidate },
-  //       { returnDocument: "after" }
-  //     );
-  //     return value ? UserDTO.convertFromEntity(value) : null;
-  //   }
+    const result = await this.getTaskCollection().findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: updateData },
+      { returnDocument: "after" }
+    );
 
-  //   async deleteUser(id: string): Promise<void> {
-  //     await this.getUsersCollection().deleteOne({ _id: new ObjectId(id) });
-  //   }
+    return result ? this.convertFromEntity(result as unknown as TTaskSchema) : null;
+  }
+
+  async deleteTask(id: string): Promise<void> {
+    await this.getTaskCollection().deleteOne({ _id: new ObjectId(id) });
+  }
 }
