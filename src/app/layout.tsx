@@ -57,6 +57,8 @@ export async function generateMetadata(): Promise<Metadata> {
         { url: "/favicon/android-chrome-192x192.png" },
         { url: "/favicon/android-chrome-192x192.png", sizes: "180x180", type: "image/png" },
         { url: "/favicon/android-chrome-512x512.png", sizes: "512x512", type: "image/png" },
+        { url: "/favicon/apple-touch-icon.png" },
+        { url: "/favicon/apple-touch-icon.png", sizes: "180x180", type: "image/png" }
       ],
     },
     manifest: "/manifest.json",
