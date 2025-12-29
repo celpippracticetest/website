@@ -111,9 +111,9 @@ export default async function RootLayout({
           <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials"/>
           
           <link rel="apple-touch-icon" href="/favicon/apple-touch-icon.png" />
-          <link rel="apple-touch-icon" sizes="152x152" href="/favicon/apple-touch-icon.png" />
-          <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
-          <link rel="apple-touch-icon" sizes="167x167" href="/favicon/apple-touch-icon.png" />
+          <link rel="apple-touch-icon" sizes="152x152" href="/favicon/apple-touch-icon.png" crossOrigin="use-credentials"/>
+          <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" crossOrigin="use-credentials"/>
+          <link rel="apple-touch-icon" sizes="167x167" href="/favicon/apple-touch-icon.png" crossOrigin="use-credentials"/>
           
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-status-bar-style" content="default" />
