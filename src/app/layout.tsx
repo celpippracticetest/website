@@ -114,7 +114,14 @@ export default async function RootLayout({
           {/* Icons & PWA */}
           <link rel="icon" href="/favicon/favicon.ico" sizes="any" />
           <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials"/>
+          <link rel="apple-touch-icon" href="/favicon/apple-touch-icon.png" />
+          <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
+          <link rel="mask-icon" href="/favicon/apple-touch-icon.png" color="#3B82F6"></link>
           
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+          <meta name="apple-mobile-web-app-title" content="CELPIP Test" />
+          <meta name="theme-color" content="#3B82F6" />
 
           {/* JSON-LD early is fine */}
           <Script
