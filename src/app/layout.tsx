@@ -106,7 +106,7 @@ export default async function RootLayout({
             href="/favicon/apple-touch-icon.png"
             sizes="any"
           />
-          <link rel="manifest" href="/manifest.json" />
+          <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials"/>
 
 
 
