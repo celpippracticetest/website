@@ -44,7 +44,6 @@ import BottomNavigation from "@/components/dashboard-new/BottomNavigation";
 import DesktopNavigation from "@/components/dashboard-new/DesktopNavigation";
 import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
 import AskBeavoModal from "@/components/AskBeavo/AskBeavoModal";
-import { GlobalInteractiveProvider } from "@/components/dashboard-app/practice/GlobalInteractiveProvider";
 
 const NavItem = ({
   icon,
@@ -849,7 +848,6 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
         <BottomNavigation />
       </div >
       <AskBeavoModal />
-      {/* <GlobalInteractiveProvider /> */}
     </>
   );
 };

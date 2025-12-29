@@ -20,7 +20,7 @@ const SvgHamburger = dynamic(() => import("../../icons/Hamburger"), {
 });
 const TopHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const hrefs = ["/exam-overview", "/practice-overview", "/learning", "/words"];
+  const hrefs = ["/exam-overview", "/practice-overview", "/learning"];
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const sidebarMenuRef = useRef<HTMLDivElement>(null);
 
@@ -72,38 +72,30 @@ const TopHeader = () => {
         <SvgPractice
           fill="transparent"
           stroke={"#76808F"}
-          className="duration-200"
+          className="    duration-200 "
         />
       </div>
       <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
-        <SvgPracticeBlueHover className="text-[#316BFF]   duration-200 group-hover:opacity-100" />
+        <SvgPracticeBlueHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
       </div>
     </div>,
     <div key="learn-icon" className="relative  flex items-center justify-center">
       <div className="flex group-hover:hidden w-[24px] h-[24px]  items-center justify-center">
         <SvgLearning
           stroke="#76808F"
-          fill="#76808F"
+          fill="transparent"
           className="text-[#76808F] group-hover:text-[#316BFF]"
         />
       </div>
 
       <div className="hidden group-hover:flex w-[24px] h-[24px]  items-center justify-center">
         <SvgLearning
-          stroke="#76808F"
-          fill="#76808F"
+          stroke="#316BFF"
+          fill="#316BFF"
           className="text-[#316BFF]"
         />
       </div>
     </div>,
-    <div key="mock-exam-icon" className="relative  flex items-center justify-center">
-      <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
-        <SvgMockTest className="  text-[#76808F]  duration-200 " />
-      </div>
-      <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
-        <SvgMockTestTopNavigationHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
-      </div>
-    </div>
   ];
 
   return (
@@ -150,17 +142,34 @@ const TopHeader = () => {
           </Link>
         </div>
         <nav className="gap-[24px] hidden screen1280:!flex">
-          {["Mock Exams", "Practice Overview", "Learning", "Words"].map(
+          {["Mock Exams", "Practice Overview", "Learning"].map(
             (label, index) => (
               <React.Fragment key={label}>
-                <Link
-                  className="group gap-[10px] h-[36px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
-                  href={hrefs[index]}
-                >
-                  <span className=" text-[16px] font-normal">{label}</span>
-                </Link>
-                {index != 3 && (
-                  <div className="bg-outline w-[1px] h-[35px] rounded-[15px]"></div>
+                {index === 3 ? (
+                  <>
+                    <div className="bg-outline w-[1px] h-[35px] rounded-[15px]"></div>
+
+                    <a
+                      rel="noopener noreferrer"
+                      className="h-[36px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
+                      href={hrefs[index]}
+                      target="_blank"
+                    >
+                      <span className=" text-[16px] font-normal">{label}</span>
+                    </a>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      className="group gap-[10px] h-[36px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
+                      href={hrefs[index]}
+                    >
+                      <span className=" text-[16px] font-normal">{label}</span>
+                    </Link>
+                    {index != 2 && (
+                      <div className="bg-outline w-[1px] h-[35px] rounded-[15px]"></div>
+                    )}
+                  </>
                 )}
               </React.Fragment>
             )
@@ -200,18 +209,29 @@ const TopHeader = () => {
           </span>
         </div>
         <div className=" mt-[32px] gap-[16px]">
-          {["Mock Exams", "Practice Overview", "Learning", "Words"].map(
+          {["Mock Exams", "Practice Overview", "Learning"].map(
             (label, index) => (
               <React.Fragment key={label}>
-                <Link
-                  key={label}
-                  className="h-[36px] group gap-[10px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
-                  href={hrefs[index]}
-                >
-                  {icons[index]}
+                {index === 3 ? (
+                  <a
+                    className="h-[36px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
+                    href={hrefs[index]}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    <span className=" text-[16px] font-normal">{label}</span>
+                  </a>
+                ) : (
+                  <Link
+                    key={label}
+                    className="h-[36px] group gap-[10px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
+                    href={hrefs[index]}
+                  >
+                    {icons[index]}
 
-                  <span className=" text-[16px] font-normal">{label}</span>
-                </Link>
+                    <span className=" text-[16px] font-normal">{label}</span>
+                  </Link>
+                )}
               </React.Fragment>
             )
           )}

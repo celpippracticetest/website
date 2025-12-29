@@ -18,7 +18,6 @@ import checkHover from "../icons/animated/check/check-hover-pinch.json";
 import SvgBook from "../icons/animated/book/Book";
 import SvgArticle from "../icons/animated/article/Article";
 import SvgCheck from "../icons/animated/check/Check";
-import SvgVocabulary from "../icons/Vocabulary";
 
 const DesktopNavigation = () => {
     const pathname = usePathname();
@@ -50,8 +49,6 @@ const DesktopNavigation = () => {
         }
     }, [pathname]);
 
-    const isWords = pathname === "/words";
-
     const navItems = [
         {
             label: "Practice",
@@ -76,14 +73,6 @@ const DesktopNavigation = () => {
             animation: checkAnimation,
             hoverAnimation: checkHover,
             StaticIcon: SvgCheck,
-        },
-        {
-            label: "Words",
-            href: "/words",
-            isActive: isWords,
-            animation: bookAnimation, // Placeholder animation
-            hoverAnimation: bookHover, // Placeholder hover
-            StaticIcon: SvgVocabulary,
         },
     ];
 

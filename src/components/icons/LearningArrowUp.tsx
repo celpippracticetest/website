@@ -9,7 +9,7 @@ const SvgLearningArrowUp = (props: SVGProps<SVGSVGElement>) => (
     {...props}
   >
     <path
-      stroke="currentColor"
+      stroke="#fff"
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeMiterlimit={10}
