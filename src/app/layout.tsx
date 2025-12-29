@@ -54,6 +54,13 @@ export async function generateMetadata(): Promise<Metadata> {
       icon: "/favicon/favicon.ico",
       apple: "/favicon/apple-touch-icon.png",
     },
+    manifest: "/manifest.json",
+    themeColor: "#3B82F6",
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: "CELPIP Test",
+    },
     robots: { index: !isPreview, follow: !isPreview },
   };
 }
@@ -101,14 +108,18 @@ export default async function RootLayout({
 
           {/* Icons & PWA */}
           <link rel="icon" href="/favicon/favicon.ico" sizes="any" />
-          <link
-            rel="apple-touch-icon"
-            href="/favicon/apple-touch-icon.png"
-            sizes="any"
-          />
           <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials"/>
-
-
+          
+          <link rel="apple-touch-icon" href="/favicon/apple-touch-icon.png" />
+          <link rel="apple-touch-icon" sizes="152x152" href="/favicon/apple-touch-icon.png" />
+          <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
+          <link rel="apple-touch-icon" sizes="167x167" href="/favicon/apple-touch-icon.png" />
+          
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+          <meta name="apple-mobile-web-app-title" content="CELPIP Test" />
+          
+          <meta name="theme-color" content="#3B82F6" />
 
           {/* JSON-LD early is fine */}
           <Script
