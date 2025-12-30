@@ -8,10 +8,11 @@ export const GlobalInteractiveProvider: React.FC = () => {
     const [virtualRect, setVirtualRect] = useState<DOMRect | null>(null);
     const [highlightRect, setHighlightRect] = useState<DOMRect | null>(null);
     const [isOpen, setIsOpen] = useState(false);
+    const [activeWord, setActiveWord] = useState<string | null>(null);
+    const [activeRect, setActiveRect] = useState<DOMRect | null>(null);
     const { askAboutWord } = useAskBeavoStore();
 
     const mousePos = useRef({ x: 0, y: 0 });
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
 
     // Helper to check if an element should be ignored (interactive elements)
     const isIgnoredElement = (el: HTMLElement | null): boolean => {
@@ -98,25 +99,26 @@ export const GlobalInteractiveProvider: React.FC = () => {
         }
 
         if (isOpen) return;
-
-        if (timerRef.current) clearTimeout(timerRef.current);
-
-        timerRef.current = setTimeout(() => {
-            const currentResult = getWordAtPoint(mousePos.current.x, mousePos.current.y);
-            // Only open if we are still hovering the SAME word after 200ms
-            if (currentResult && currentResult.word === hoveredWord) {
-                setIsOpen(true);
-            }
-        }, 200);
     }, [isOpen, hoveredWord, virtualRect]);
+
+    const handleClick = useCallback((e: MouseEvent) => {
+        // If we are over a word, open the menu and LOCK it to that word
+        const result = getWordAtPoint(e.clientX, e.clientY);
+        if (result && result.word === hoveredWord) {
+            setActiveWord(result.word);
+            setActiveRect(result.rect);
+            setIsOpen(true);
+        }
+    }, [hoveredWord, isOpen]);
 
     useEffect(() => {
         window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("click", handleClick);
         return () => {
             window.removeEventListener("mousemove", handleMouseMove);
-            if (timerRef.current) clearTimeout(timerRef.current);
+            window.removeEventListener("click", handleClick);
         };
-    }, [handleMouseMove]);
+    }, [handleMouseMove, handleClick]);
 
     return (
         <>
@@ -142,10 +144,10 @@ export const GlobalInteractiveProvider: React.FC = () => {
                 </div>
             )}
 
-            {hoveredWord && virtualRect && (
+            {activeWord && activeRect && (
                 <WordMenu
-                    word={hoveredWord}
-                    virtualRect={virtualRect}
+                    word={activeWord}
+                    virtualRect={activeRect}
                     open={isOpen}
                     onOpenChange={setIsOpen}
                     onAskAI={askAboutWord}

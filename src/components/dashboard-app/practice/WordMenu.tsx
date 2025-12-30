@@ -56,7 +56,6 @@ export const WordMenu: React.FC<WordMenuProps> = ({
             clearTimeout(closeTimeoutRef.current);
             closeTimeoutRef.current = null;
         }
-        setIsOpen(true);
     };
 
     const handleMouseLeave = () => {
@@ -121,7 +120,6 @@ export const WordMenu: React.FC<WordMenuProps> = ({
                                 ? "font-bold text-[#0DAA94] border border-transparent hover:border-[#0DAA94] hover:bg-[#E0F2F1] hover:shadow-sm"
                                 : "text-inherit hover:text-[#0DAA94] hover:bg-[#E0F2F1] underline decoration-transparent hover:decoration-[#0DAA94]/30 underline-offset-4"
                         )}
-                        onMouseEnter={handleMouseEnter}
                         onMouseLeave={handleMouseLeave}
                         onClick={(e) => {
                             e.preventDefault();

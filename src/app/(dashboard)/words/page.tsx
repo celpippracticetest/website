@@ -6,6 +6,7 @@ import { TUserWordDto } from "@/models/userWords.model";
 import SvgChevronDown from "@/components/icons/ChevronDown";
 import { WordDetailsCard } from "@/components/dashboard-app/words/WordDetailsCard";
 import RecommendedWordPill from "@/components/dashboard-app/words/RecommendedWordPill";
+import WordsLanding from "@/components/dashboard-app/words/WordsLanding";
 
 const WordsPage = () => {
     const [words, setWords] = useState<TUserWordDto[]>([]);
@@ -121,9 +122,7 @@ const WordsPage = () => {
                         <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#0DAA94] border-t-transparent"></div>
                     </div>
                 ) : words.length === 0 ? (
-                    <div className="text-center p-12 bg-gray-50 rounded-[40px] border-2 border-dashed border-gray-200 w-full max-w-lg mb-20 mt-10">
-                        <p className="text-gray-500 text-lg font-medium">No words added yet. Start practicing to add some!</p>
-                    </div>
+                    <WordsLanding />
                 ) : (
                     <div className="flex screen1280:flex-row flex-col-reverse justify-between w-full">
 
