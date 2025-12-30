@@ -21,6 +21,7 @@ const WordsPage = () => {
     const [selectedWordIndex, setSelectedWordIndex] = useState<number | null>(0);
     const [recommendations, setRecommendations] = useState<string[]>([]);
     const [recoLoading, setRecoLoading] = useState(false);
+    const [showMobileDetails, setShowMobileDetails] = useState(false);
     const limit = 20;
 
     useEffect(() => {
@@ -132,7 +133,7 @@ const WordsPage = () => {
 
                         {/* Word Details Card - Desktop Only */}
                         <div className="hidden screen1280:block">
-                            {selectedWord && (
+                            {selectedWord && selectedWordIndex !== null && (
                                 <WordDetailsCard
                                     word={selectedWord}
                                     onNext={() => setSelectedWordIndex(prev => (prev !== null && prev < words.length - 1) ? prev + 1 : prev)}
@@ -140,39 +141,62 @@ const WordsPage = () => {
                                     onToggleMastered={handleToggleLearned}
                                     hasPrevious={selectedWordIndex !== null && selectedWordIndex > 0}
                                     hasNext={selectedWordIndex !== null && selectedWordIndex < words.length - 1}
+                                    currentIndex={selectedWordIndex}
+                                    totalWords={total}
                                 />
                             )}
                         </div>
 
                         {/* Word List Section */}
                         <div className="flex flex-col gap-8 w-full screen1280:w-auto">
-                            {/* Mobile: Card Container */}
-                            <div className="screen1280:hidden bg-white rounded-[32px] p-8 shadow-lg">
-                                <h1 className="text-[24px] font-bold text-[#212E42] tracking-tight mb-6">Added Words</h1>
-                                <div className="flex flex-col gap-4 w-full">
-                                    {words.map((item, index) => (
-                                        <WordPill
-                                            key={item.id}
-                                            word={item.word}
-                                            isLearned={item.isLearned}
-                                            onToggleLearned={() => handleToggleLearned(item.word, !!item.isLearned)}
-                                            onClick={() => setSelectedWordIndex(index)}
-                                        />
-                                    ))}
-                                </div>
+                            {/* Mobile: Card Container or Details View */}
+                            <div className="screen1280:hidden">
+                                {!showMobileDetails ? (
+                                    <div className="bg-white rounded-[32px] p-8 shadow-lg">
+                                        <h1 className="text-[24px] font-bold text-[#212E42] tracking-tight mb-6">Added Words</h1>
+                                        <div className="flex flex-col gap-4 w-full">
+                                            {words.map((item, index) => (
+                                                <WordPill
+                                                    key={item.id}
+                                                    word={item.word}
+                                                    isLearned={item.isLearned}
+                                                    onToggleLearned={() => handleToggleLearned(item.word, !!item.isLearned)}
+                                                    onClick={() => setSelectedWordIndex(index)}
+                                                />
+                                            ))}
+                                        </div>
 
-                                {words.length < total && (
-                                    <div className="mt-8 flex justify-center">
-                                        <button
-                                            onClick={handleLoadMore}
-                                            disabled={loadMoreLoading}
-                                            className="flex items-center gap-2 text-[#76808F] hover:text-[#0DAA94] transition-all font-medium text-md group disabled:opacity-50"
-                                        >
-                                            {loadMoreLoading ? "Loading..." : "Load more"}
-                                            <div className="transition-transform group-hover:translate-y-1">
-                                                <SvgChevronDown />
+                                        {words.length < total && (
+                                            <div className="mt-8 flex justify-center">
+                                                <button
+                                                    onClick={handleLoadMore}
+                                                    disabled={loadMoreLoading}
+                                                    className="flex items-center gap-2 text-[#76808F] hover:text-[#0DAA94] transition-all font-medium text-md group disabled:opacity-50"
+                                                >
+                                                    {loadMoreLoading ? "Loading..." : "Load more"}
+                                                    <div className="transition-transform group-hover:translate-y-1">
+                                                        <SvgChevronDown />
+                                                    </div>
+                                                </button>
                                             </div>
-                                        </button>
+                                        )}
+
+                                    </div>
+                                ) : (
+                                    <div>
+                                        {selectedWord && selectedWordIndex !== null && (
+                                            <WordDetailsCard
+                                                word={selectedWord}
+                                                onNext={() => setSelectedWordIndex(prev => (prev !== null && prev < words.length - 1) ? prev + 1 : prev)}
+                                                onPrevious={() => setSelectedWordIndex(prev => (prev !== null && prev > 0) ? prev - 1 : prev)}
+                                                onToggleMastered={handleToggleLearned}
+                                                hasPrevious={selectedWordIndex !== null && selectedWordIndex > 0}
+                                                hasNext={selectedWordIndex !== null && selectedWordIndex < words.length - 1}
+                                                onBack={() => setShowMobileDetails(false)}
+                                                currentIndex={selectedWordIndex}
+                                                totalWords={total}
+                                            />
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -214,7 +238,7 @@ const WordsPage = () => {
                 )}
 
                 {/* Recommended Words Section */}
-                {isSignedIn && (
+                {isSignedIn && !showMobileDetails && (
                     <div className="my-16 w-full">
                         <div className="screen1244:bg-[#EDF0F5] rounded-[32px] p-10 w-full screen1244:shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] screen1244:border screen1244:border-gray-200/50">
                             <h2 className="text-[#76808F] text-[16px] font-medium mb-8">Recommended Words</h2>
@@ -240,9 +264,12 @@ const WordsPage = () => {
                     </div>
                 )}
 
-                <Button>
-                    View Flashcards <SvgArrowRight />
-                </Button>
+                {/* View Flashcards Button */}
+                {selectedWord && !showMobileDetails && (
+                    <Button onClick={() => setShowMobileDetails(true)}>
+                        View Flashcards <SvgArrowRight />
+                    </Button>
+                )}
             </div>
         </div>
     );

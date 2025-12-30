@@ -25,6 +25,9 @@ interface WordDetailsCardProps {
     onToggleMastered: (word: string, status: boolean) => void;
     hasPrevious: boolean;
     hasNext: boolean;
+    onBack?: () => void;
+    currentIndex?: number;
+    totalWords?: number;
 }
 
 export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
@@ -34,6 +37,9 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
     onToggleMastered,
     hasPrevious,
     hasNext,
+    onBack,
+    currentIndex,
+    totalWords,
 }) => {
     const [details, setDetails] = useState<WordDetail | null>(null);
     const [loading, setLoading] = useState(true);
@@ -66,33 +72,41 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
     return (
         <div className="screen1280:max-w-[70%] screen1024:max-w-[90%] flex flex-col items-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-8 relative">
 
-            {/* Mastered Toggle at Top (Hidden on Tablet/Mobile) */}
-            <div className="mb-8 relative hidden screen1024:flex">
-                <button
-                    onClick={() => onToggleMastered(word.word, !!word.isLearned)}
-                    style={{ color: 'hsla(223, 100%, 60%, 1)' }}
-                    className={clsx(
-                        "flex items-center cursor-pointer gap-2 font-bold px-6 py-3 rounded-full transition-all active:scale-95",
+            {/* Mobile Header (Under 1244px) */}
+            <div className="w-full block screen1244:hidden mb-6">
+                {/* Top Bar with Back, Title, and Counter */}
+                <div className="flex items-center justify-between px-4 py-4 screen1280:hidden flex">
+                    {onBack && (
+                        <button
+                            onClick={onBack}
+                            className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors active:scale-95"
+                        >
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M15 18L9 12L15 6" stroke="#212E42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        </button>
                     )}
-                >
-                    <SvgLearningArrowUp />
-                    <span>Mastered</span>
-                </button>
+                    <h2 className="text-[20px] font-semibold text-[#76808F] flex-1 text-center">Words</h2>
+                    {currentIndex !== undefined && totalWords !== undefined && (
+                        <span className="text-[18px] font-medium text-[#76808F]">
+                            {currentIndex + 1}/{totalWords}
+                        </span>
+                    )}
+                </div>
+                {/* Mastered Button */}
+                <div className="flex justify-center mt-2">
+                    <button
+                        onClick={() => onToggleMastered(word.word, !!word.isLearned)}
+                        className="flex items-center gap-2 font-bold text-[16px] transition-all active:scale-95"
+                        style={{ color: 'hsla(223, 100%, 60%, 1)' }}
+                    >
+                        <SvgLearningArrowUp />
+                        <span>Mastered</span>
+                    </button>
+                </div>
             </div>
 
             <div className="relative flex items-center justify-center w-full px-4">
-                {/* Previous Button (Hidden on Tablet/Mobile) */}
-                <button
-                    onClick={onPrevious}
-                    disabled={!hasPrevious}
-                    style={{ color: 'hsla(9, 85%, 65%, 1)' }}
-                    className="absolute cursor-pointer left-0 lg:-left-28 hidden screen1024:flex items-center gap-2 group disabled:opacity-30 disabled:cursor-not-allowed transition-all px-6 py-3 rounded-full hover:bg-rose-50"
-                >
-                    <div className="flex items-center gap-2 font-bold text-lg">
-                        <SvgArrowLeft />
-                        <span>Previous</span>
-                    </div>
-                </button>
 
                 {/* Main Card with Directional Glows */}
                 <div className="relative w-full screen1024:ml-[28px]">
@@ -111,16 +125,6 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                     <div className="bg-white rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.06)] w-full overflow-hidden border border-gray-100 flex flex-col relative">
                         {/* Card Header */}
                         <div className="p-12 text-center bg-gray-50/30 relative">
-                            {/* Internal Mastered Toggle (Visible on Tablet/Mobile) */}
-                            <div className="flex justify-center screen1024:hidden">
-                                <button
-                                    onClick={() => onToggleMastered(word.word, !!word.isLearned)}
-                                    style={{ color: 'hsla(223, 100%, 60%, 1)' }}
-                                    className="flex items-center cursor-pointer gap-2 font-bold px-4 py-2 rounded-full transition-all active:scale-95 text-sm">
-                                    <SvgLearningArrowUp />
-                                    <span>Mastered</span>
-                                </button>
-                            </div>
 
                             <div className="flex items-center justify-center gap-5 mb-3">
                                 <h2 className="text-[48px] font-bold text-[#212E42] tracking-tight">{word.word}</h2>
@@ -182,7 +186,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                         </div>
 
                         {/* Internal Navigation Footer (Visible on Tablet/Mobile) */}
-                        <div className="p-8 border-t border-slate-100 flex items-center justify-between screen1024:hidden">
+                        <div className="p-8 border-t border-slate-100 flex items-center justify-between screen1280:hidden">
                             <button
                                 onClick={onPrevious}
                                 disabled={!hasPrevious}
@@ -193,13 +197,6 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                                 <span>Prev</span>
                             </button>
 
-                            <div
-                                style={{ color: 'hsla(290, 72%, 52%, 1)' }}
-                                className="flex cursor-pointer items-center gap-2 font-bold px-4 py-2 rounded-full hover:bg-purple-50"
-                            >
-                                <SvgInfo />
-                                <span className="hidden screen744:inline">Information</span>
-                            </div>
 
                             <button
                                 onClick={onNext}
@@ -229,7 +226,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
             </div>
 
             {/* Word Info Label at Bottom (Hidden on Tablet/Mobile) */}
-            <div className="relative mt-12 mb-20 hidden screen1024:flex">
+            <div className="relative mt-12 mb-20">
                 <div
                     style={{ color: 'hsla(290, 72%, 52%, 1)' }}
                     className="flex cursor-pointer items-center gap-3 font-bold text-lg px-8 py-4 rounded-full transition-all hover:bg-purple-50"
