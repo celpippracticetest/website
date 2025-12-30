@@ -8,6 +8,8 @@ import SvgChevronDown from "@/components/icons/ChevronDown";
 import { WordDetailsCard } from "@/components/dashboard-app/words/WordDetailsCard";
 import RecommendedWordPill from "@/components/dashboard-app/words/RecommendedWordPill";
 import WordsLanding from "@/components/dashboard-app/words/WordsLanding";
+import { Button } from "@/components/v2/Button";
+import SvgArrowRight from "@/components/icons/ArrowRight";
 
 const WordsPage = () => {
     const { isSignedIn } = useUser();
@@ -126,57 +128,95 @@ const WordsPage = () => {
                 ) : words.length === 0 ? (
                     <WordsLanding />
                 ) : (
-                    <div className="flex screen1280:flex-row flex-col-reverse justify-between w-full">
+                    <div className="flex screen1280:flex-row flex-col-reverse justify-between w-full px-4 screen1280:px-0">
 
-                        {selectedWord && (
-                            <WordDetailsCard
-                                word={selectedWord}
-                                onNext={() => setSelectedWordIndex(prev => (prev !== null && prev < words.length - 1) ? prev + 1 : prev)}
-                                onPrevious={() => setSelectedWordIndex(prev => (prev !== null && prev > 0) ? prev - 1 : prev)}
-                                onToggleMastered={handleToggleLearned}
-                                hasPrevious={selectedWordIndex !== null && selectedWordIndex > 0}
-                                hasNext={selectedWordIndex !== null && selectedWordIndex < words.length - 1}
-                            />
-                        )}
-
-                        <div className="flex flex-col gap-8">
-                            <div className="flex justify-start w-full">
-                                <h1 className="text-[20px] font-bold text-[#212E42] tracking-tight">Added Words</h1>
-                            </div>
-                            <div className="flex screen1280:flex-col flex-wrap screen1280:mb-0 mb-6 gap-6 w-full">
-                                {words.map((item, index) => (
-                                    <WordPill
-                                        key={item.id}
-                                        word={item.word}
-                                        isLearned={item.isLearned}
-                                        onToggleLearned={() => handleToggleLearned(item.word, !!item.isLearned)}
-                                        onClick={() => setSelectedWordIndex(index)}
-                                    />
-                                ))}
-                            </div>
-
-                            {words.length < total && (
-                                <div className="mt-16 flex justify-center">
-                                    <button
-                                        onClick={handleLoadMore}
-                                        disabled={loadMoreLoading}
-                                        className="flex items-center gap-2 text-[#212E42]/60 hover:text-[#0DAA94] transition-all font-bold text-lg group disabled:opacity-50"
-                                    >
-                                        {loadMoreLoading ? "Loading..." : "Load more"}
-                                        <div className="transition-transform group-hover:translate-y-1">
-                                            <SvgChevronDown />
-                                        </div>
-                                    </button>
-                                </div>
+                        {/* Word Details Card - Desktop Only */}
+                        <div className="hidden screen1280:block">
+                            {selectedWord && (
+                                <WordDetailsCard
+                                    word={selectedWord}
+                                    onNext={() => setSelectedWordIndex(prev => (prev !== null && prev < words.length - 1) ? prev + 1 : prev)}
+                                    onPrevious={() => setSelectedWordIndex(prev => (prev !== null && prev > 0) ? prev - 1 : prev)}
+                                    onToggleMastered={handleToggleLearned}
+                                    hasPrevious={selectedWordIndex !== null && selectedWordIndex > 0}
+                                    hasNext={selectedWordIndex !== null && selectedWordIndex < words.length - 1}
+                                />
                             )}
+                        </div>
+
+                        {/* Word List Section */}
+                        <div className="flex flex-col gap-8 w-full screen1280:w-auto">
+                            {/* Mobile: Card Container */}
+                            <div className="screen1280:hidden bg-white rounded-[32px] p-8 shadow-lg">
+                                <h1 className="text-[24px] font-bold text-[#212E42] tracking-tight mb-6">Added Words</h1>
+                                <div className="flex flex-col gap-4 w-full">
+                                    {words.map((item, index) => (
+                                        <WordPill
+                                            key={item.id}
+                                            word={item.word}
+                                            isLearned={item.isLearned}
+                                            onToggleLearned={() => handleToggleLearned(item.word, !!item.isLearned)}
+                                            onClick={() => setSelectedWordIndex(index)}
+                                        />
+                                    ))}
+                                </div>
+
+                                {words.length < total && (
+                                    <div className="mt-8 flex justify-center">
+                                        <button
+                                            onClick={handleLoadMore}
+                                            disabled={loadMoreLoading}
+                                            className="flex items-center gap-2 text-[#76808F] hover:text-[#0DAA94] transition-all font-medium text-md group disabled:opacity-50"
+                                        >
+                                            {loadMoreLoading ? "Loading..." : "Load more"}
+                                            <div className="transition-transform group-hover:translate-y-1">
+                                                <SvgChevronDown />
+                                            </div>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Desktop: Simple List */}
+                            <div className="hidden screen1280:flex flex-col gap-8">
+                                <div className="flex justify-start w-full">
+                                    <h1 className="text-[20px] font-bold text-[#212E42] tracking-tight">Added Words</h1>
+                                </div>
+                                <div className="flex screen1280:flex-col flex-wrap screen1280:mb-0 mb-6 gap-6 w-full">
+                                    {words.map((item, index) => (
+                                        <WordPill
+                                            key={item.id}
+                                            word={item.word}
+                                            isLearned={item.isLearned}
+                                            onToggleLearned={() => handleToggleLearned(item.word, !!item.isLearned)}
+                                            onClick={() => setSelectedWordIndex(index)}
+                                        />
+                                    ))}
+                                </div>
+
+                                {words.length < total && (
+                                    <div className="mt-16 flex justify-center">
+                                        <button
+                                            onClick={handleLoadMore}
+                                            disabled={loadMoreLoading}
+                                            className="flex items-center gap-2 text-[#212E42]/60 hover:text-[#0DAA94] transition-all font-bold text-lg group disabled:opacity-50"
+                                        >
+                                            {loadMoreLoading ? "Loading..." : "Load more"}
+                                            <div className="transition-transform group-hover:translate-y-1">
+                                                <SvgChevronDown />
+                                            </div>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
 
                 {/* Recommended Words Section */}
                 {isSignedIn && (
-                    <div className="mt-20 mb-32 w-full">
-                        <div className="bg-[#EDF0F5] rounded-[32px] p-10 w-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] border border-gray-200/50">
+                    <div className="my-16 w-full">
+                        <div className="screen1244:bg-[#EDF0F5] rounded-[32px] p-10 w-full screen1244:shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] screen1244:border screen1244:border-gray-200/50">
                             <h2 className="text-[#76808F] text-[16px] font-medium mb-8">Recommended Words</h2>
                             <div className="flex flex-wrap gap-6">
                                 {recoLoading && recommendations.length === 0 ? (
@@ -199,6 +239,10 @@ const WordsPage = () => {
                         </div>
                     </div>
                 )}
+
+                <Button>
+                    View Flashcards <SvgArrowRight />
+                </Button>
             </div>
         </div>
     );
