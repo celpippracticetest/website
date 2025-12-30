@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useUser } from "@clerk/nextjs";
 import WordPill from "@/components/dashboard-app/words/WordPill";
 import { TUserWordDto } from "@/models/userWords.model";
 import SvgChevronDown from "@/components/icons/ChevronDown";
@@ -9,6 +10,7 @@ import RecommendedWordPill from "@/components/dashboard-app/words/RecommendedWor
 import WordsLanding from "@/components/dashboard-app/words/WordsLanding";
 
 const WordsPage = () => {
+    const { isSignedIn } = useUser();
     const [words, setWords] = useState<TUserWordDto[]>([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -115,7 +117,7 @@ const WordsPage = () => {
 
     return (
         <div className="pt-8 flex flex-col w-full min-h-screen">
-            <div className="screen1024:pl-20 max-w-7xl flex justify-center items-center flex-col w-full mx-auto">
+            <div className={`max-w-7xl flex justify-center items-center flex-col w-full mx-auto ${isSignedIn ? "screen1024:pl-20" : ""}`}>
 
                 {loading ? (
                     <div className="flex justify-center items-center h-64">
@@ -172,29 +174,31 @@ const WordsPage = () => {
                 )}
 
                 {/* Recommended Words Section */}
-                <div className="mt-20 mb-32 w-full">
-                    <div className="bg-[#EDF0F5] rounded-[32px] p-10 w-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] border border-gray-200/50">
-                        <h2 className="text-[#76808F] text-[16px] font-medium mb-8">Recommended Words</h2>
-                        <div className="flex flex-wrap gap-6">
-                            {recoLoading && recommendations.length === 0 ? (
-                                <div className="flex items-center gap-3">
-                                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#0DAA94] border-t-transparent"></div>
-                                    <span className="text-gray-400 font-medium">Coming up with ideas...</span>
-                                </div>
-                            ) : recommendations.length > 0 ? (
-                                recommendations.map((word, idx) => (
-                                    <RecommendedWordPill
-                                        key={idx}
-                                        word={word}
-                                        onAdd={() => handleAddRecommended(word)}
-                                    />
-                                ))
-                            ) : (
-                                <p className="text-gray-400 italic">No recommendations available right now.</p>
-                            )}
+                {isSignedIn && (
+                    <div className="mt-20 mb-32 w-full">
+                        <div className="bg-[#EDF0F5] rounded-[32px] p-10 w-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] border border-gray-200/50">
+                            <h2 className="text-[#76808F] text-[16px] font-medium mb-8">Recommended Words</h2>
+                            <div className="flex flex-wrap gap-6">
+                                {recoLoading && recommendations.length === 0 ? (
+                                    <div className="flex items-center gap-3">
+                                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#0DAA94] border-t-transparent"></div>
+                                        <span className="text-gray-400 font-medium">Coming up with ideas...</span>
+                                    </div>
+                                ) : recommendations.length > 0 ? (
+                                    recommendations.map((word, idx) => (
+                                        <RecommendedWordPill
+                                            key={idx}
+                                            word={word}
+                                            onAdd={() => handleAddRecommended(word)}
+                                        />
+                                    ))
+                                ) : (
+                                    <p className="text-gray-400 italic">No recommendations available right now.</p>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );
