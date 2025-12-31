@@ -137,7 +137,11 @@ const WordsPage = () => {
 
     const handleViewFlashcards = () => {
         if (words.length > 0) {
-            const randomIndex = Math.floor(Math.random() * words.length);
+            let randomIndex = Math.floor(Math.random() * words.length);
+            // Try to pick a different word if possible
+            if (words.length > 1 && randomIndex === selectedWordIndex) {
+                randomIndex = (randomIndex + 1) % words.length;
+            }
             setSelectedWordIndex(randomIndex);
             setShowMobileDetails(true);
         }
@@ -231,6 +235,7 @@ const WordsPage = () => {
                                         >
                                             {selectedWord && selectedWordIndex !== null && (
                                                 <WordDetailsCard
+                                                    key={selectedWord.word}
                                                     word={selectedWord}
                                                     onNext={() => setSelectedWordIndex(prev => (prev !== null && prev < words.length - 1) ? prev + 1 : prev)}
                                                     onPrevious={() => setSelectedWordIndex(prev => (prev !== null && prev > 0) ? prev - 1 : prev)}

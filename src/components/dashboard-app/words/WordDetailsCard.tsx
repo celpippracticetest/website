@@ -113,7 +113,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                     onClick={onPrevious}
                     disabled={!hasPrevious}
                     style={{ color: 'hsla(9, 85%, 65%, 1)' }}
-                    className="absolute cursor-pointer left-0 lg:-left-28 hidden screen1024:flex items-center gap-2 group disabled:opacity-30 disabled:cursor-not-allowed transition-all px-6 py-3 rounded-full hover:bg-rose-50"
+                    className="absolute cursor-pointer left-0 lg:-left-28 hidden screen1280:flex items-center gap-2 group disabled:opacity-30 disabled:cursor-not-allowed transition-all px-6 py-3 rounded-full hover:bg-rose-50"
                 >
                     <div className="flex items-center gap-2 font-bold text-lg">
                         <SvgArrowLeft />
@@ -229,7 +229,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                     onClick={onNext}
                     disabled={!hasNext}
                     style={{ color: 'hsla(172, 86%, 36%, 1)' }}
-                    className="absolute cursor-pointer right-0 lg:-right-28 hidden screen1024:flex items-center gap-2 group disabled:opacity-30 disabled:cursor-not-allowed transition-all px-6 py-3 rounded-full hover:bg-teal-50"
+                    className="absolute cursor-pointer right-0 lg:-right-28 hidden screen1280:flex items-center gap-2 group disabled:opacity-30 disabled:cursor-not-allowed transition-all px-6 py-3 rounded-full hover:bg-teal-50"
                 >
                     <div className="flex items-center gap-2 font-bold text-lg">
                         <span>Next</span>
