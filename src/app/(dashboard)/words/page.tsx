@@ -267,13 +267,22 @@ const WordsPage = () => {
                                         <span className="text-gray-400 font-medium">Coming up with ideas...</span>
                                     </div>
                                 ) : recommendations.length > 0 ? (
-                                    recommendations.map((word, idx) => (
-                                        <RecommendedWordPill
-                                            key={idx}
-                                            word={word}
-                                            onAdd={() => handleAddRecommended(word)}
-                                        />
-                                    ))
+                                    <AnimatePresence mode="popLayout">
+                                        {recommendations.map((word) => (
+                                            <motion.div
+                                                key={word}
+                                                layout
+                                                initial={{ opacity: 0, scale: 0.8 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
+                                            >
+                                                <RecommendedWordPill
+                                                    word={word}
+                                                    onAdd={() => handleAddRecommended(word)}
+                                                />
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
                                 ) : (
                                     <p className="text-gray-400 italic">No recommendations available right now.</p>
                                 )}
