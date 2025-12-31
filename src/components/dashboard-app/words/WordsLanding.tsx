@@ -69,6 +69,14 @@ const WordsLanding = () => {
                             placeholder="blur"
                         />
                     </div>
+                    <div className="screen1024:hidden absolute left-1/2 -translate-x-1/2 screen744:-bottom-[38px] -bottom-[40px] w-[50px] h-auto z-10 pointer-events-none rotate-90">
+                        <Image
+                            src={ArrowImage}
+                            alt="Arrow"
+                            className="w-full h-auto object-contain"
+                            placeholder="blur"
+                        />
+                    </div>
                 </div>
 
                 {/* Card 2 */}
@@ -90,6 +98,14 @@ const WordsLanding = () => {
                                 placeholder="blur"
                             />
                         </div>
+                        <div className="screen1024:hidden absolute left-1/2 -translate-x-1/2 screen744:-bottom-[38px] -bottom-[40px] w-[50px] h-auto z-10 pointer-events-none rotate-90 scale-y-[-1]">
+                            <Image
+                                src={ArrowImage}
+                                alt="Arrow"
+                                className="w-full h-auto object-contain"
+                                placeholder="blur"
+                            />
+                        </div>
                     </div>
                     <div className="mt-5 text-center screen1024:flex flex-col hidden">
                         <h3 className="text-[#316BFF] text-[18px] font-bold mb-3">Study with smart flashcards</h3>
@@ -97,14 +113,7 @@ const WordsLanding = () => {
                     </div>
                 </div>
 
-                <div className="screen1024:hidden block absolute top-1/2 screen1024:left-[calc(100%-6px)] -translate-y-1/2 w-[50px] h-auto pointer-events-none bottom-[170px]">
-                    <Image
-                        src={ArrowImage}
-                        alt="Arrow"
-                        className="w-full h-auto object-contain"
-                        placeholder="blur"
-                    />
-                </div>
+
 
                 {/* Card 3 */}
                 <div className="w-[320px] screen744:w-[400px] h-auto transition-transform">
@@ -116,14 +125,6 @@ const WordsLanding = () => {
                     />
                 </div>
 
-                <div className="screen1024:hidden block absolute top-1/2 screen1024:left-[calc(100%-6px)] -translate-y-1/2 w-[50px] h-auto pointer-events-none bottom-[170px]">
-                    <Image
-                        src={ArrowImage}
-                        alt="Arrow"
-                        className="w-full h-auto object-contain"
-                        placeholder="blur"
-                    />
-                </div>
 
             </div>
         </div>
