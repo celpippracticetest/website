@@ -1,15 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
-<url><loc>https://celpippracticetest.com</loc><lastmod>2025-07-23T06:52:44.805Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://celpippracticetest.com/terms-of-service</loc><lastmod>2025-07-23T06:52:44.805Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://celpippracticetest.com/privacy-policy</loc><lastmod>2025-07-23T06:52:44.805Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://celpippracticetest.com/exam-overview</loc><lastmod>2025-07-23T06:52:44.805Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://celpippracticetest.com/exams</loc><lastmod>2025-07-23T06:52:44.805Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://celpippracticetest.com/practice-overview</loc><lastmod>2025-07-23T06:52:44.805Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://celpippracticetest.com/failed</loc><lastmod>2025-07-23T06:52:44.805Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://celpippracticetest.com/wiki</loc><lastmod>2025-07-23T06:52:44.805Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://celpippracticetest.com/reading</loc><lastmod>2025-07-23T06:52:44.797Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://celpippracticetest.com/writing</loc><lastmod>2025-07-23T06:52:44.797Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://celpippracticetest.com/speaking</loc><lastmod>2025-07-23T06:52:44.797Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://celpippracticetest.com/listening</loc><lastmod>2025-07-23T06:52:44.797Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://celpippracticetest.com/onboarding</loc><lastmod>2025-12-31T18:32:51.617Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://celpippracticetest.com</loc><lastmod>2025-12-31T18:32:51.617Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://celpippracticetest.com/terms-of-service</loc><lastmod>2025-12-31T18:32:51.617Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://celpippracticetest.com/privacy-policy</loc><lastmod>2025-12-31T18:32:51.617Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://celpippracticetest.com/failed</loc><lastmod>2025-12-31T18:32:51.617Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://celpippracticetest.com/wiki</loc><lastmod>2025-12-31T18:32:51.617Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://celpippracticetest.com/reading</loc><lastmod>2025-12-31T18:32:51.615Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://celpippracticetest.com/writing</loc><lastmod>2025-12-31T18:32:51.615Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://celpippracticetest.com/speaking</loc><lastmod>2025-12-31T18:32:51.615Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://celpippracticetest.com/listening</loc><lastmod>2025-12-31T18:32:51.615Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
 </urlset>
