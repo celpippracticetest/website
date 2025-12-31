@@ -135,6 +135,14 @@ const WordsPage = () => {
         }
     };
 
+    const handleViewFlashcards = () => {
+        if (words.length > 0) {
+            const randomIndex = Math.floor(Math.random() * words.length);
+            setSelectedWordIndex(randomIndex);
+            setShowMobileDetails(true);
+        }
+    };
+
     const selectedWord = selectedWordIndex !== null && words.length > 0 ? words[selectedWordIndex] : null;
 
     return (
@@ -189,7 +197,10 @@ const WordsPage = () => {
                                                         isLearned={item.isLearned}
                                                         isSelected={selectedWordIndex === index}
                                                         onToggleLearned={() => handleToggleLearned(item.word, !!item.isLearned)}
-                                                        onClick={() => setSelectedWordIndex(index)}
+                                                        onClick={() => {
+                                                            setSelectedWordIndex(index);
+                                                            setShowMobileDetails(true);
+                                                        }}
                                                     />
                                                 ))}
                                             </div>
@@ -276,7 +287,7 @@ const WordsPage = () => {
                 {/* Recommended Words Section */}
                 {isSignedIn && !showMobileDetails && (
                     <div className="w-full">
-                        <div className="screen1280:bg-[#EDF0F5] rounded-[32px] p-10 w-full screen1280:shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] screen1280:border screen1280:border-gray-200/50">
+                        <div className="screen1280:bg-[#EDF0F5] max-h-[180px] rounded-[32px] p-10 w-full screen1280:shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] screen1280:border screen1280:border-gray-200/50">
                             <h2 className="text-[#76808F] text-[16px] font-medium mb-8">Recommended Words</h2>
                             <div className="flex flex-wrap gap-6">
                                 {recoLoading && recommendations.length === 0 ? (
@@ -311,7 +322,7 @@ const WordsPage = () => {
 
                 {/* View Flashcards Button */}
                 {selectedWord && !showMobileDetails && (
-                    <Button className="screen1280:hidden flex" onClick={() => setShowMobileDetails(true)}>
+                    <Button className="screen1280:hidden flex" onClick={handleViewFlashcards}>
                         View Flashcards <SvgArrowRight />
                     </Button>
                 )}
