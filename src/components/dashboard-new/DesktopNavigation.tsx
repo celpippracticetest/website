@@ -81,9 +81,9 @@ const DesktopNavigation = () => {
             label: "Words",
             href: "/words",
             isActive: isWords,
-            animation: bookAnimation, // Placeholder animation
-            hoverAnimation: bookHover, // Placeholder hover
-            StaticIcon: SvgVocabulary,
+            animation: bookAnimation,
+            hoverAnimation: bookHover,
+            StaticIcon: SvgBook,
         },
     ];
 
