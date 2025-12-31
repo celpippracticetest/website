@@ -108,6 +108,19 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
 
             <div className="relative flex items-center justify-center w-full px-4">
 
+                {/* Previous Button (Hidden on Tablet/Mobile) */}
+                <button
+                    onClick={onPrevious}
+                    disabled={!hasPrevious}
+                    style={{ color: 'hsla(9, 85%, 65%, 1)' }}
+                    className="absolute cursor-pointer left-0 lg:-left-28 hidden screen1024:flex items-center gap-2 group disabled:opacity-30 disabled:cursor-not-allowed transition-all px-6 py-3 rounded-full hover:bg-rose-50"
+                >
+                    <div className="flex items-center gap-2 font-bold text-lg">
+                        <SvgArrowLeft />
+                        <span>Prev</span>
+                    </div>
+                </button>
+
                 {/* Main Card with Directional Glows */}
                 <div className="relative w-full screen1024:ml-[28px]">
                     {/* Shadow Glows */}
