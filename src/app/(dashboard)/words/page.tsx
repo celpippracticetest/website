@@ -160,6 +160,7 @@ const WordsPage = () => {
                                                     key={item.id}
                                                     word={item.word}
                                                     isLearned={item.isLearned}
+                                                    isSelected={selectedWordIndex === index}
                                                     onToggleLearned={() => handleToggleLearned(item.word, !!item.isLearned)}
                                                     onClick={() => setSelectedWordIndex(index)}
                                                 />
@@ -212,6 +213,7 @@ const WordsPage = () => {
                                             key={item.id}
                                             word={item.word}
                                             isLearned={item.isLearned}
+                                            isSelected={selectedWordIndex === index}
                                             onToggleLearned={() => handleToggleLearned(item.word, !!item.isLearned)}
                                             onClick={() => setSelectedWordIndex(index)}
                                         />
