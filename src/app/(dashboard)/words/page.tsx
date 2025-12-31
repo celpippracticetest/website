@@ -76,6 +76,26 @@ const WordsPage = () => {
         }
     };
 
+    const refillRecommendations = async () => {
+        try {
+            const response = await fetch("/api/word-recommendations");
+            if (response.ok) {
+                const data = await response.json();
+                const newRecs = data.recommendations || [];
+                setRecommendations(prev => {
+                    const existing = new Set(prev);
+                    const uniqueNew = newRecs.filter((w: string) => !existing.has(w));
+                    if (uniqueNew.length > 0) {
+                        return [...prev, uniqueNew[0]];
+                    }
+                    return prev;
+                });
+            }
+        } catch (error) {
+            console.error("Error refilling recommendations:", error);
+        }
+    };
+
     const handleAddRecommended = async (word: string) => {
         try {
             const response = await fetch("/api/user-words", {
@@ -90,10 +110,8 @@ const WordsPage = () => {
                 setTotal((prev) => prev + 1);
                 setRecommendations((prev) => prev.filter((w) => w !== word));
 
-                // If recommendations are low, fetch more
-                if (recommendations.length <= 1) {
-                    fetchRecommendations();
-                }
+                // Remove the used word and fetch a new one to replace it
+                refillRecommendations();
             }
         } catch (error) {
             console.error("Error adding recommended word:", error);
