@@ -1,5 +1,9 @@
 import React from "react";
 import Image from "next/image";
+import FirstImage from "@/images/word-page/first.png";
+import SecondImage from "@/images/word-page/second.png";
+import ThirdImage from "@/images/word-page/third.png";
+import ArrowImage from "@/images/word-page/arrow.png";
 
 const WordsLanding = () => {
     return (
@@ -48,24 +52,34 @@ const WordsLanding = () => {
                 />
 
                 {/* Card 1 */}
-                <div className="relative w-[320px] screen744:w-[400px] aspect-[420/320] transition-transform hover:scale-105 duration-500 screen1024:translate-x-20">
+                <div className="w-[320px] screen744:w-[400px] h-auto hover:scale-105 duration-500">
                     <Image
-                        src="/images/word-page/first.png"
+                        src={FirstImage}
                         alt="Add words as you practice"
-                        fill
-                        className="object-contain"
+                        className="w-full h-auto object-contain"
+                        placeholder="blur"
                     />
                 </div>
 
                 {/* Card 2 */}
                 <div className="flex flex-col items-center screen1024:pb-[100px]">
-                    <div className="relative w-[320px] screen744:w-[400px] aspect-[420/320] transition-transform hover:scale-105 duration-500 z-10">
-                        <Image
-                            src="/images/word-page/second.png"
-                            alt="Study with smart flashcards"
-                            fill
-                            className="object-contain"
-                        />
+                    <div className="flex flex-row">
+                        <div className="w-[320px] screen744:w-[400px] h-auto hover:scale-105 duration-500 z-10">
+                            <Image
+                                src={SecondImage}
+                                alt="Study with smart flashcards"
+                                className="w-full h-auto object-contain"
+                                placeholder="blur"
+                            />
+                        </div>
+                        <div className="relative w-[60px] screen744:w-[100px] h-auto z-10">
+                            <Image
+                                src={ArrowImage}
+                                alt="Arrow"
+                                className="w-full h-auto object-contain"
+                                placeholder="blur"
+                            />
+                        </div>
                     </div>
                     <div className="mt-5 text-center screen1024:flex flex-col hidden">
                         <h3 className="text-[#316BFF] text-[18px] font-bold mb-3">Study with smart flashcards</h3>
@@ -74,12 +88,12 @@ const WordsLanding = () => {
                 </div>
 
                 {/* Card 3 */}
-                <div className="relative w-[320px] screen744:w-[400px] aspect-[420/320] transition-transform hover:scale-105 duration-500 screen1024:-translate-x-20">
+                <div className="w-[320px] screen744:w-[400px] h-auto transition-transform hover:scale-105 duration-500">
                     <Image
-                        src="/images/word-page/third.png"
+                        src={ThirdImage}
                         alt="Master words that matter"
-                        fill
-                        className="object-contain"
+                        className="w-full h-auto object-contain"
+                        placeholder="blur"
                     />
                 </div>
 
