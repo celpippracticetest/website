@@ -19,11 +19,11 @@ const WordsLanding = () => {
             </div>
 
             {/* Illustration Section */}
-            <div className="relative w-full flex flex-col screen1024:flex-row items-center justify-center gap-10 screen1024:gap-0 min-h-[500px]">
+            <div className="relative w-full flex flex-col screen1024:flex-row items-center justify-center gap-4 min-h-[500px]">
 
                 {/* Background Glow 1: Between Card 1 and Card 2 */}
                 <div
-                    className="colored-bg absolute pointer-events-none  rounded-full hidden screen1024:block"
+                    className="colored-bg absolute pointer-events-none rounded-full hidden screen1024:block"
                     style={{
                         width: '350px',
                         height: '700px',
@@ -52,19 +52,29 @@ const WordsLanding = () => {
                 />
 
                 {/* Card 1 */}
-                <div className="w-[320px] screen744:w-[400px] h-auto hover:scale-105 duration-500">
-                    <Image
-                        src={FirstImage}
-                        alt="Add words as you practice"
-                        className="w-full h-auto object-contain"
-                        placeholder="blur"
-                    />
+                <div className="relative inline-block">
+                    <div className="w-[320px] screen744:w-[400px] h-auto z-10">
+                        <Image
+                            src={FirstImage}
+                            alt="Study with smart flashcards"
+                            className="w-full h-auto object-contain"
+                            placeholder="blur"
+                        />
+                    </div>
+                    <div className="absolute top-1/2 bottom-[-30px] screen1024:left-[calc(100%-6px)] -translate-y-1/2 w-[50px] h-auto z-10 pointer-events-none hidden screen1024:block">
+                        <Image
+                            src={ArrowImage}
+                            alt="Arrow"
+                            className="w-full h-auto object-contain"
+                            placeholder="blur"
+                        />
+                    </div>
                 </div>
 
                 {/* Card 2 */}
                 <div className="flex flex-col items-center screen1024:pb-[100px]">
-                    <div className="flex flex-row">
-                        <div className="w-[320px] screen744:w-[400px] h-auto hover:scale-105 duration-500 z-10">
+                    <div className="relative inline-block">
+                        <div className="w-[320px] screen744:w-[400px] h-auto z-10">
                             <Image
                                 src={SecondImage}
                                 alt="Study with smart flashcards"
@@ -72,7 +82,7 @@ const WordsLanding = () => {
                                 placeholder="blur"
                             />
                         </div>
-                        <div className="relative w-[60px] screen744:w-[100px] h-auto z-10">
+                        <div className="absolute top-1/2 left-[calc(100%-6px)] -translate-y-1/2 w-[50px] h-auto z-10 pointer-events-none hidden screen1024:block">
                             <Image
                                 src={ArrowImage}
                                 alt="Arrow"
@@ -87,11 +97,29 @@ const WordsLanding = () => {
                     </div>
                 </div>
 
+                <div className="screen1024:hidden block absolute top-1/2 screen1024:left-[calc(100%-6px)] -translate-y-1/2 w-[50px] h-auto pointer-events-none bottom-[170px]">
+                    <Image
+                        src={ArrowImage}
+                        alt="Arrow"
+                        className="w-full h-auto object-contain"
+                        placeholder="blur"
+                    />
+                </div>
+
                 {/* Card 3 */}
-                <div className="w-[320px] screen744:w-[400px] h-auto transition-transform hover:scale-105 duration-500">
+                <div className="w-[320px] screen744:w-[400px] h-auto transition-transform">
                     <Image
                         src={ThirdImage}
                         alt="Master words that matter"
+                        className="w-full h-auto object-contain"
+                        placeholder="blur"
+                    />
+                </div>
+
+                <div className="screen1024:hidden block absolute top-1/2 screen1024:left-[calc(100%-6px)] -translate-y-1/2 w-[50px] h-auto pointer-events-none bottom-[170px]">
+                    <Image
+                        src={ArrowImage}
+                        alt="Arrow"
                         className="w-full h-auto object-contain"
                         placeholder="blur"
                     />
