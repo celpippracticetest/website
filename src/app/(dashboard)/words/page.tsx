@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import WordPill from "@/components/dashboard-app/words/WordPill";
 import { TUserWordDto } from "@/models/userWords.model";
+import { motion, AnimatePresence } from "framer-motion";
 import SvgChevronDown from "@/components/icons/ChevronDown";
 import { WordDetailsCard } from "@/components/dashboard-app/words/WordDetailsCard";
 import RecommendedWordPill from "@/components/dashboard-app/words/RecommendedWordPill";
@@ -150,56 +151,71 @@ const WordsPage = () => {
                         {/* Word List Section */}
                         <div className="flex flex-col gap-8 w-full screen1280:w-auto">
                             {/* Mobile: Card Container or Details View */}
-                            <div className="screen1280:hidden">
-                                {!showMobileDetails ? (
-                                    <div className="bg-white rounded-[32px] p-8 shadow-lg h-[calc(100vh-460px)] overflow-y-auto">
-                                        <h1 className="text-[24px] font-bold text-[#212E42] tracking-tight mb-6">Added Words</h1>
-                                        <div className="flex flex-col gap-4 w-full">
-                                            {words.map((item, index) => (
-                                                <WordPill
-                                                    key={item.id}
-                                                    word={item.word}
-                                                    isLearned={item.isLearned}
-                                                    isSelected={selectedWordIndex === index}
-                                                    onToggleLearned={() => handleToggleLearned(item.word, !!item.isLearned)}
-                                                    onClick={() => setSelectedWordIndex(index)}
-                                                />
-                                            ))}
-                                        </div>
-
-                                        {words.length < total && (
-                                            <div className="mt-8 flex justify-center">
-                                                <button
-                                                    onClick={handleLoadMore}
-                                                    disabled={loadMoreLoading}
-                                                    className="flex items-center gap-2 text-[#76808F] hover:text-[#0DAA94] transition-all font-medium text-md group disabled:opacity-50"
-                                                >
-                                                    {loadMoreLoading ? "Loading..." : "Load more"}
-                                                    <div className="transition-transform group-hover:translate-y-1">
-                                                        <SvgChevronDown />
-                                                    </div>
-                                                </button>
+                            <div className="screen1280:hidden relative">
+                                <AnimatePresence mode="wait">
+                                    {!showMobileDetails ? (
+                                        <motion.div
+                                            key="list"
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -20 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="bg-white rounded-[32px] p-8 shadow-lg h-[calc(100vh-460px)] overflow-y-auto"
+                                        >
+                                            <h1 className="text-[24px] font-bold text-[#212E42] tracking-tight mb-6">Added Words</h1>
+                                            <div className="flex flex-col gap-4 w-full">
+                                                {words.map((item, index) => (
+                                                    <WordPill
+                                                        key={item.id}
+                                                        word={item.word}
+                                                        isLearned={item.isLearned}
+                                                        isSelected={selectedWordIndex === index}
+                                                        onToggleLearned={() => handleToggleLearned(item.word, !!item.isLearned)}
+                                                        onClick={() => setSelectedWordIndex(index)}
+                                                    />
+                                                ))}
                                             </div>
-                                        )}
 
-                                    </div>
-                                ) : (
-                                    <div>
-                                        {selectedWord && selectedWordIndex !== null && (
-                                            <WordDetailsCard
-                                                word={selectedWord}
-                                                onNext={() => setSelectedWordIndex(prev => (prev !== null && prev < words.length - 1) ? prev + 1 : prev)}
-                                                onPrevious={() => setSelectedWordIndex(prev => (prev !== null && prev > 0) ? prev - 1 : prev)}
-                                                onToggleMastered={handleToggleLearned}
-                                                hasPrevious={selectedWordIndex !== null && selectedWordIndex > 0}
-                                                hasNext={selectedWordIndex !== null && selectedWordIndex < words.length - 1}
-                                                onBack={() => setShowMobileDetails(false)}
-                                                currentIndex={selectedWordIndex}
-                                                totalWords={total}
-                                            />
-                                        )}
-                                    </div>
-                                )}
+                                            {words.length < total && (
+                                                <div className="mt-8 flex justify-center">
+                                                    <button
+                                                        onClick={handleLoadMore}
+                                                        disabled={loadMoreLoading}
+                                                        className="flex items-center gap-2 text-[#76808F] hover:text-[#0DAA94] transition-all font-medium text-md group disabled:opacity-50"
+                                                    >
+                                                        {loadMoreLoading ? "Loading..." : "Load more"}
+                                                        <div className="transition-transform group-hover:translate-y-1">
+                                                            <SvgChevronDown />
+                                                        </div>
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                        </motion.div>
+                                    ) : (
+                                        <motion.div
+                                            key="details"
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: 20 }}
+                                            transition={{ duration: 0.2 }}
+                                        >
+                                            {selectedWord && selectedWordIndex !== null && (
+                                                <WordDetailsCard
+                                                    word={selectedWord}
+                                                    onNext={() => setSelectedWordIndex(prev => (prev !== null && prev < words.length - 1) ? prev + 1 : prev)}
+                                                    onPrevious={() => setSelectedWordIndex(prev => (prev !== null && prev > 0) ? prev - 1 : prev)}
+                                                    onToggleMastered={handleToggleLearned}
+                                                    hasPrevious={selectedWordIndex !== null && selectedWordIndex > 0}
+                                                    hasNext={selectedWordIndex !== null && selectedWordIndex < words.length - 1}
+                                                    onBack={() => setShowMobileDetails(false)}
+                                                    currentIndex={selectedWordIndex}
+                                                    totalWords={total}
+                                                />
+                                            )}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
 
                             {/* Desktop: Simple List */}
