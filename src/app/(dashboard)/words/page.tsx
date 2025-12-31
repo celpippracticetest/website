@@ -289,7 +289,7 @@ const WordsPage = () => {
                     <div className="w-full">
                         <div className="screen1280:bg-[#EDF0F5] max-h-[180px] rounded-[32px] p-10 w-full screen1280:shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] screen1280:border screen1280:border-gray-200/50">
                             <h2 className="text-[#76808F] text-[16px] font-medium mb-8">Recommended Words</h2>
-                            <div className="flex flex-wrap gap-6">
+                            <div className="flex flex-nowrap gap-6 overflow-x-auto w-full items-center pb-2">
                                 {recoLoading && recommendations.length === 0 ? (
                                     <div className="flex items-center gap-3">
                                         <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#0DAA94] border-t-transparent"></div>
@@ -304,6 +304,7 @@ const WordsPage = () => {
                                                 initial={{ opacity: 0, scale: 0.8 }}
                                                 animate={{ opacity: 1, scale: 1 }}
                                                 exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
+                                                className="shrink-0"
                                             >
                                                 <RecommendedWordPill
                                                     word={word}
