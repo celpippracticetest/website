@@ -122,7 +122,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                         <div className="absolute bottom-[-50px] left-1/2 -translate-x-1/2 w-[80%] h-[120px] bg-[hsla(9,85%,65%,0.3)] rounded-full" />
                     </div>
 
-                    <div className="bg-white rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.06)] w-full overflow-hidden border border-gray-100 flex flex-col relative">
+                    <div className="bg-white rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.06)] w-full overflow-hidden border border-gray-100 flex flex-col relative screen1280:h-full h-[calc(100vh-400px)]">
                         {/* Card Header */}
                         <div className="p-12 text-center bg-gray-50/30 relative">
 
@@ -226,7 +226,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
             </div>
 
             {/* Word Info Label at Bottom (Hidden on Tablet/Mobile) */}
-            <div className="relative mt-12 mb-20">
+            <div className="relative">
                 <div
                     style={{ color: 'hsla(290, 72%, 52%, 1)' }}
                     className="flex cursor-pointer items-center gap-3 font-bold text-lg px-8 py-4 rounded-full transition-all hover:bg-purple-50"

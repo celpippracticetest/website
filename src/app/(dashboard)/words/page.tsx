@@ -119,7 +119,7 @@ const WordsPage = () => {
     const selectedWord = selectedWordIndex !== null && words.length > 0 ? words[selectedWordIndex] : null;
 
     return (
-        <div className="pt-8 flex flex-col w-full min-h-screen">
+        <div className="screen1280:pt-8 flex flex-col w-full min-h-screen">
             <div className={`max-w-7xl flex justify-center items-center flex-col w-full mx-auto ${isSignedIn ? "screen1024:pl-20" : ""}`}>
 
                 {loading ? (
@@ -152,7 +152,7 @@ const WordsPage = () => {
                             {/* Mobile: Card Container or Details View */}
                             <div className="screen1280:hidden">
                                 {!showMobileDetails ? (
-                                    <div className="bg-white rounded-[32px] p-8 shadow-lg">
+                                    <div className="bg-white rounded-[32px] p-8 shadow-lg h-[calc(100vh-460px)] overflow-y-auto">
                                         <h1 className="text-[24px] font-bold text-[#212E42] tracking-tight mb-6">Added Words</h1>
                                         <div className="flex flex-col gap-4 w-full">
                                             {words.map((item, index) => (
@@ -239,8 +239,8 @@ const WordsPage = () => {
 
                 {/* Recommended Words Section */}
                 {isSignedIn && !showMobileDetails && (
-                    <div className="my-16 w-full">
-                        <div className="screen1244:bg-[#EDF0F5] rounded-[32px] p-10 w-full screen1244:shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] screen1244:border screen1244:border-gray-200/50">
+                    <div className="w-full">
+                        <div className="screen1280:bg-[#EDF0F5] rounded-[32px] p-10 w-full screen1280:shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] screen1280:border screen1280:border-gray-200/50">
                             <h2 className="text-[#76808F] text-[16px] font-medium mb-8">Recommended Words</h2>
                             <div className="flex flex-wrap gap-6">
                                 {recoLoading && recommendations.length === 0 ? (
@@ -266,7 +266,7 @@ const WordsPage = () => {
 
                 {/* View Flashcards Button */}
                 {selectedWord && !showMobileDetails && (
-                    <Button onClick={() => setShowMobileDetails(true)}>
+                    <Button className="screen1280:hidden flex" onClick={() => setShowMobileDetails(true)}>
                         View Flashcards <SvgArrowRight />
                     </Button>
                 )}
