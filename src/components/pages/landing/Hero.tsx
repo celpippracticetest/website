@@ -10,7 +10,7 @@ import { Button } from "@/components/v2/Button";
 import SvgMedalLg from "@/components/v2/icons/medal-lg";
 import SvgMedalMd from "@/components/v2/icons/medal-md";
 import { SvgLearning } from "@/components/icons";
-import SvgWord from "@/components/icons/word";
+import SvgWord from "@/components/icons/Word";
 
 const SvgMockExamLight = dynamic(() => import("../../icons/MockExamsLight"), {
   ssr: false,
