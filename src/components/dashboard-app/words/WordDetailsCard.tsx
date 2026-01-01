@@ -97,7 +97,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                 <div className="flex justify-center mt-2">
                     <button
                         onClick={() => onToggleMastered(word.word, !!word.isLearned)}
-                        className="flex items-center gap-2 font-bold text-[16px] transition-all active:scale-95"
+                        className="flex items-center gap-2 font-bold text-[16px] cursor-pointer transition-all active:scale-95 px-4 py-2 rounded-full hover:bg-blue-200"
                         style={{ color: 'hsla(223, 100%, 60%, 1)' }}
                     >
                         <SvgLearningArrowUp />
@@ -126,16 +126,16 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                     {/* Shadow Glows */}
                     <div className="absolute inset-x-8 inset-y-8 blur-[100px] opacity-70">
                         {/* Top: Blue */}
-                        <div className="absolute top-[-50px] left-1/2 -translate-x-1/2 w-[80%] h-[120px] bg-[hsla(223,100%,60%,0.3)] rounded-full" />
+                        <div className="absolute top-[-50px] left-1/2 -translate-x-1/2 w-[80%] h-[120px] bg-[hsla(223,100%,60%,0.1)] rounded-full" />
                         {/* Right: Teal */}
                         <div className="absolute right-[-50px] top-1/2 -translate-y-1/2 w-[120px] h-[80%] bg-[hsla(172,86%,36%,0.3)] rounded-full" />
                         {/* Left: Rose */}
                         <div className="absolute left-[-50px] top-1/2 -translate-y-1/2 w-[120px] h-[80%] bg-[hsla(9,85%,65%,0.3)] rounded-full" />
                         {/* Bottom: Rose */}
-                        <div className="absolute bottom-[-50px] left-1/2 -translate-x-1/2 w-[80%] h-[120px] bg-[hsla(9,85%,65%,0.3)] rounded-full" />
+                        <div className="absolute bottom-[-50px] left-1/2 -translate-x-1/2 w-[80%] h-[120px] bg-[hsla(9,85%,65%,0.1)] rounded-full" />
                     </div>
 
-                    <div className="bg-white rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.06)] w-full border border-gray-100 flex flex-col relative screen1280:max-h-full screen1280:min-h-[450px] h-[calc(100vh-400px)] min-h-0 overflow-hidden">
+                    <div className="bg-white rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.06)] w-full border border-gray-100 flex flex-col relative screen1280:max-h-full screen1280:min-h-[370px] h-[calc(100vh-400px)] min-h-0 overflow-hidden">
                         {/* Card Header */}
                         <div className="p-6 text-center bg-gray-50/30 relative">
 
