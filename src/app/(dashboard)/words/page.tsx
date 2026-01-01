@@ -160,10 +160,10 @@ const WordsPage = () => {
                 ) : words.length === 0 ? (
                     <WordsLanding />
                 ) : (
-                    <div className="flex screen1280:flex-row flex-col-reverse justify-between w-full px-4 screen1280:px-0">
+                    <div className="flex screen1280:flex-row flex-col-reverse justify-between w-full px-4 screen1280:px-0 screen1280:h-[calc(100vh-340px)]">
 
                         {/* Word Details Card - Desktop Only */}
-                        <div className="hidden screen1280:block">
+                        <div className="hidden screen1280:flex h-full w-full justify-center items-center">
                             {selectedWord && selectedWordIndex !== null && (
                                 <WordDetailsCard
                                     word={selectedWord}
@@ -253,7 +253,7 @@ const WordsPage = () => {
                             </div>
 
                             {/* Desktop: Simple List */}
-                            <div className="hidden screen1280:flex flex-col gap-8">
+                            <div className="hidden screen1280:flex flex-col gap-8 h-full overflow-y-auto pr-4 scrollbar-thin">
                                 <div className="flex justify-start w-full">
                                     <h1 className="text-[20px] font-bold text-[#212E42] tracking-tight">Added Words</h1>
                                 </div>

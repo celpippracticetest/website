@@ -70,7 +70,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
     };
 
     return (
-        <div className="screen1280:max-w-[70%] screen1024:max-w-[90%] flex flex-col items-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-8 relative">
+        <div className="screen1280:max-w-[70%] screen1024:max-w-[90%] flex flex-col items-center justify-center screen1280:h-full transition-all duration-500 animate-in fade-in slide-in-from-bottom-8 relative">
 
             {/* Mobile Header (Under 1244px) */}
             <div className="w-full block screen1244:hidden mb-6">
@@ -122,7 +122,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                 </button>
 
                 {/* Main Card with Directional Glows */}
-                <div className="relative w-full screen1024:ml-[28px]">
+                <div className="relative w-full h-full screen1024:ml-[28px] flex flex-col justify-center">
                     {/* Shadow Glows */}
                     <div className="absolute inset-x-8 inset-y-8 blur-[100px] opacity-70">
                         {/* Top: Blue */}
@@ -135,7 +135,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                         <div className="absolute bottom-[-50px] left-1/2 -translate-x-1/2 w-[80%] h-[120px] bg-[hsla(9,85%,65%,0.3)] rounded-full" />
                     </div>
 
-                    <div className="bg-white rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.06)] w-full  screen1280:overflow-hidden overflow-auto border border-gray-100 flex flex-col relative screen1280:h-full h-[calc(100vh-400px)]">
+                    <div className="bg-white rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.06)] w-full screen1280:overflow-hidden overflow-auto border border-gray-100 flex flex-col relative screen1280:h-full h-[calc(100vh-400px)] min-h-0">
                         {/* Card Header */}
                         <div className="p-12 text-center bg-gray-50/30 relative">
 
@@ -156,7 +156,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                         <div className="h-px bg-slate-200 w-full" />
 
                         {/* Card Content */}
-                        <div className="p-12 pt-8 flex-1">
+                        <div className="p-12 pt-8 flex-1 overflow-y-auto min-h-0">
                             {loading ? (
                                 <div className="py-24 space-y-4">
                                     <div className="flex justify-center">
