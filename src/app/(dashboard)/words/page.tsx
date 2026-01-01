@@ -150,8 +150,8 @@ const WordsPage = () => {
     const selectedWord = selectedWordIndex !== null && words.length > 0 ? words[selectedWordIndex] : null;
 
     return (
-        <div className="screen1280:pt-8 flex flex-col w-full min-h-screen">
-            <div className={`max-w-7xl flex justify-center items-center flex-col w-full mx-auto ${isSignedIn && words.length > 0 ? "screen1024:pl-20" : ""}`}>
+        <div className="flex flex-col w-full min-h-screen">
+            <div className={`max-w-7xl flex justify-center items-center flex-col w-full mx-auto`}>
 
                 {loading ? (
                     <div className="flex justify-center items-center h-64">
@@ -160,10 +160,10 @@ const WordsPage = () => {
                 ) : words.length === 0 ? (
                     <WordsLanding />
                 ) : (
-                    <div className="flex screen1280:flex-row flex-col-reverse justify-between w-full px-4 screen1280:px-0 screen1280:h-[calc(100vh-340px)]">
+                    <div className="flex screen1280:flex-row flex-col-reverse justify-between w-full px-4 screen1280:px-0 screen1280:max-h-[calc(100vh-340px)] screen1280:min-h-[500px]">
 
                         {/* Word Details Card - Desktop Only */}
-                        <div className="hidden screen1280:flex h-full w-full justify-center items-center">
+                        <div className="hidden screen1280:flex screen1280:h-full w-full justify-center items-center overflow-hidden">
                             {selectedWord && selectedWordIndex !== null && (
                                 <WordDetailsCard
                                     word={selectedWord}
@@ -271,7 +271,7 @@ const WordsPage = () => {
                                 </div>
 
                                 {words.length < total && (
-                                    <div className="mt-16 flex justify-center">
+                                    <div className="flex justify-center">
                                         <button
                                             onClick={handleLoadMore}
                                             disabled={loadMoreLoading}
