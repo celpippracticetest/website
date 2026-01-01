@@ -10,6 +10,7 @@ import { Button } from "@/components/v2/Button";
 import SvgMedalLg from "@/components/v2/icons/medal-lg";
 import SvgMedalMd from "@/components/v2/icons/medal-md";
 import { SvgLearning } from "@/components/icons";
+import SvgWord from "@/components/icons/word";
 
 const SvgMockExamLight = dynamic(() => import("../../icons/MockExamsLight"), {
   ssr: false,
@@ -104,7 +105,7 @@ const Hero = () => {
         <div className="flex max-w-[1440px] w-full justify-center mx-auto ">
           <div className="flex flex-col screen744:!flex-row w-full screen744:!justify-between justify-center px-[16px] screen744:!px-[40px] flex-wrap screen744:!flex-nowrap">
             <div className="flex flex-col w-full screen744:!justify-between justify-center">
-              <div className="items-center gap-[8px] screen1280:!mt-[35px] mt-[27px] flex flex-row screen744:!justify-start justify-center">
+              <div className="items-center gap-[8px] screen1280:!mt-[35px] mt-[37px] flex flex-row screen744:!justify-start justify-center">
                 <SvgMedalLg className="hidden screen1280:!flex" />
                 <SvgMedalMd className="flex screen1280:!hidden" />
                 <span className="text-text2 font-normal screen1280:!text-[20px] text-[14px]">
@@ -199,7 +200,9 @@ const Hero = () => {
             </div>
           </div>
         </div>
-        <div className="hidden screen744:!flex left-0 right-0 screen1280:!mt-[52px] mt-[20px] px-[16px]">
+
+        {/* desktop */}
+        <div className="hidden screen744:!flex left-0 right-0 screen1280:!mt-[52px] mt-[40px] px-[42px]">
           <div className="flex flex-wrap screen1280:flex-nowrap gap-[16px] screen1280:gap-[24px] w-full max-w-[1440px] mx-auto justify-center">
             {[
               {
@@ -238,6 +241,12 @@ const Hero = () => {
                 bgColor: "bg-[#FEF9C3]",
                 link: "/learning",
               },
+              {
+                title: "Words",
+                icon: <SvgWord />,
+                bgColor: "bg-[#CCFBF1]",
+                link: "/words",
+              },
             ].map((exam, index, array) => (
               <ExamSectionCard
                 key={index}
@@ -251,6 +260,8 @@ const Hero = () => {
           </div>
         </div>
       </section>
+
+      {/* mobile */}
       <div className="flex screen744:!hidden mt-[32px] px-[16px]">
         <div className="grid grid-cols-2 screen744:!flex flex-wrap screen1280:flex-nowrap gap-[16px] screen1280:gap-[24px] w-full max-w-[1440px] mx-auto justify-center">
           {[
@@ -283,6 +294,18 @@ const Hero = () => {
               icon: <SvgMockExamsColorful />,
               bgColor: "bg-purple5",
               link: "/exam-overview",
+            },
+            {
+              title: "Learning",
+              icon: <SvgLearning />,
+              bgColor: "bg-[#FEF9C3]",
+              link: "/learning",
+            },
+            {
+              title: "Words",
+              icon: <SvgWord />,
+              bgColor: "bg-[#CCFBF1]",
+              link: "/words",
             },
           ].map((exam, index, array) => (
             <ExamSectionCard

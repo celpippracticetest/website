@@ -7,13 +7,13 @@ import ArrowImage from "@/images/word-page/arrow.png";
 
 const WordsLanding = () => {
     return (
-        <div className="flex flex-col items-center justify-center py-20 px-4 text-center max-w-[1280px] mx-auto animate-in fade-in duration-700 overflow-visible relative">
+        <div className="flex flex-col items-center justify-center px-4 text-center max-w-[1280px] mx-auto animate-in fade-in duration-700 overflow-visible relative">
             {/* Headline Section */}
-            <div className="max-w-4xl mb-20 text-center flex flex-col items-center">
-                <h1 className="text-[40px] screen744:text-[52px] font-bold text-[#212E42] leading-[1.15] mb-8 tracking-tight">
+            <div className="max-w-4xl mb-4 text-center flex flex-col items-center">
+                <h1 className="text-[25px] screen744:text-[39px] font-bold text-[#212E42] leading-[1.15] mb-2 tracking-tight">
                     Grow your CELPIP vocabulary for exam success.
                 </h1>
-                <p className="text-[18px] screen744:text-[22px] text-[#212E42] opacity-80 leading-relaxed max-w-3xl mx-auto font-medium">
+                <p className="text-[8px] screen744:text-[12px] text-[#212E42] opacity-80 leading-relaxed max-w-3xl mx-auto font-medium">
                     Add new words as you practice, study them with smart flashcards, and master them for the CELPIP exam.
                 </p>
             </div>
@@ -108,7 +108,7 @@ const WordsLanding = () => {
                         </div>
                     </div>
                     <div className="mt-5 text-center screen1024:flex flex-col hidden">
-                        <h3 className="text-[#316BFF] text-[18px] font-bold mb-3">Study with smart flashcards</h3>
+                        <h3 className="text-[#316BFF] text-[18px] font-bold">Study with smart flashcards</h3>
                         <p className="text-[#212E42] text-[12px] opacity-70 max-w-[320px] mx-auto">See definitions, pronunciation, and examples all in one place.</p>
                     </div>
                 </div>

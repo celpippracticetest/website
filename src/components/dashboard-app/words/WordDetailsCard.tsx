@@ -70,7 +70,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
     };
 
     return (
-        <div className="screen1280:max-w-[70%] screen1024:max-w-[90%] flex flex-col items-center justify-center screen1280:h-full transition-all duration-500 animate-in fade-in slide-in-from-bottom-8 relative">
+        <div className="screen1280:max-w-[70%] screen1024:max-w-[90%] flex flex-col items-center justify-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-8 relative">
 
             {/* Mobile Header (Under 1244px) */}
             <div className="w-full block screen1244:hidden mb-6">

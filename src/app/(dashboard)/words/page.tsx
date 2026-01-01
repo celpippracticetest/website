@@ -23,7 +23,7 @@ const WordsPage = () => {
     const [recommendations, setRecommendations] = useState<string[]>([]);
     const [recoLoading, setRecoLoading] = useState(false);
     const [showMobileDetails, setShowMobileDetails] = useState(false);
-    const limit = 20;
+    const limit = 5;
 
     useEffect(() => {
         fetchWords();
@@ -151,7 +151,7 @@ const WordsPage = () => {
 
     return (
         <div className="screen1280:pt-8 flex flex-col w-full min-h-screen">
-            <div className={`max-w-7xl flex justify-center items-center flex-col w-full mx-auto ${isSignedIn ? "screen1024:pl-20" : ""}`}>
+            <div className={`max-w-7xl flex justify-center items-center flex-col w-full mx-auto ${isSignedIn && words.length > 0 ? "screen1024:pl-20" : ""}`}>
 
                 {loading ? (
                     <div className="flex justify-center items-center h-64">
@@ -290,7 +290,7 @@ const WordsPage = () => {
                 )}
 
                 {/* Recommended Words Section */}
-                {isSignedIn && !showMobileDetails && (
+                {isSignedIn && words.length > 0 && !showMobileDetails && (
                     <div className="w-full">
                         <div className="screen1280:bg-[#EDF0F5] max-h-[180px] rounded-[32px] p-10 w-full screen1280:shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] screen1280:border screen1280:border-gray-200/50">
                             <h2 className="text-[#76808F] text-[16px] font-medium mb-8">Recommended Words</h2>
