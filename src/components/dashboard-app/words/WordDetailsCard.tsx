@@ -242,7 +242,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
             <div className="relative">
                 <div
                     style={{ color: 'hsla(290, 72%, 52%, 1)' }}
-                    className="flex cursor-pointer items-center gap-3 font-bold text-lg px-8 py-4 rounded-full transition-all hover:bg-purple-50"
+                    className="flex items-center gap-3 font-bold text-lg px-8 py-4 rounded-full transition-all"
                 >
                     <SvgInfo />
                     <span>Word Information</span>
