@@ -202,8 +202,8 @@ const Hero = () => {
         </div>
 
         {/* Navigation Cards (Desktop & Mobile Unified) */}
-        <div className="flex flex-col w-full px-[16px] screen744:!px-[42px] mt-auto pb-[60px] screen744:!pb-[40px] screen1280:!mt-[52px] overflow-hidden">
-          <div className="flex flex-nowrap overflow-x-auto no-scrollbar gap-[12px] screen744:!gap-[16px] screen1280:gap-[24px] w-full max-w-[1440px] mx-auto screen1024:justify-center">
+        <div className="flex flex-col w-full overflow-hidden">
+          <div className="flex flex-nowrap px-[16px] screen744:!px-[42px]  pt-[22px] pb-[60px] screen744:!pb-[40px] screen1280:!mt-[52px] overflow-x-auto no-scrollbar gap-[12px] screen744:!gap-[16px] screen1280:gap-[24px] w-full max-w-[1440px] mx-auto screen1024:justify-center">
             {[
               { title: "Listening", icon: <SvgListening />, bgColor: "bg-primary5", link: "/listening" },
               { title: "Speaking", icon: <SvgSpeaking />, bgColor: "bg-secondary5", link: "/speaking" },
