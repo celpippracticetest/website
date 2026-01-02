@@ -747,7 +747,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
         </div>
       </motion.div>
       {user && visibleHorizontalCoupon && (
-        <div className="flex  items-center flex-wrap justify-between screen744:!justify-center px-[8px] screen1280:!px-[16px] py-[14px] gap-[5px] screen1280:!gap-[32px] bg-[#37465C]  h-auto min-h-[64px] ">
+        <div className="flex items-center flex-wrap justify-between screen744:!justify-center px-[8px] screen1280:!px-[16px] py-[14px] gap-[5px] screen1280:!gap-[32px] bg-[#37465C]  h-auto min-h-[64px] ">
           <div className="flex flex-col screen744:!flex-row gap-[2px] items-center justify-center text-white h-auto text-[12px]   screen744:!text-[20px] font-bold">
             Extra 10% Discount
             <span className="text-[11px] screen744:!text-[16px] font-normal">
@@ -778,7 +778,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
               </span>
             </button>
           </div>
-          <div className="hidden screen744:!flex  min-h-[23px] items-center h-auto   gap-[8px] justify-center    ">
+          <div className="hidden screen744:!flex min-h-[23px] items-center h-auto gap-[8px] justify-center">
             <span className="text-[14px]  text-white font-semibold ">
               Expires in
             </span>
@@ -787,12 +787,11 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
         </div>
       )}
 
-      <div className="flex w-full mb-[100px] justify-center  max-w-[1440px] mx-auto  z-[99999999]">
+      <div className="flex w-full justify-center max-w-[1440px] mx-auto z-[99999999]">
         <div
-          className="flex flex-col  w-full    h-full      screen744:!w-[calc(100%-84px)]
- bg-[#F4F7FF] items-end"
+          className="flex flex-col w-full h-full screen744:!w-[calc(100%-84px)] bg-[#F4F7FF] items-end"
         >
-          <div className="px-[16px] screen744:!px-0  w-full mb-[16px]">
+          <div className="px-[16px] screen744:!px-0 w-full mb-[16px]">
             <div
               className={clsx(
                 "transition-all flex justify-between w-full px-[16px] duration-1000 ease-in-out mt-[24px] rounded-[32px] ",
@@ -816,7 +815,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
 
               </div>
 
-              <div className="flex items-center justify-between  h-[48px]">
+              <div className="flex items-center justify-between h-[48px]">
                 {/* <span
                 onClick={() => setIsMenuOpen && setIsMenuOpen(!isMenuOpen)}
                 className="flex cursor-pointer gap-[5px] items-center justify-center w-[40px] h-[40px] border-[#D5D6D8]  border-[1px] rounded-[100%] screen744:!hidden"

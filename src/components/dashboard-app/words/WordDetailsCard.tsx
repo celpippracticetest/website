@@ -73,13 +73,13 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
         <div className="screen1280:max-w-[70%] screen1024:max-w-[100%] flex flex-col items-center justify-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-8 relative">
 
             {/* Mobile Header (Under 1244px) */}
-            <div className="w-full block screen1244:hidden mb-6">
+            <div className="w-full block screen1244:hidden mb-2">
                 {/* Top Bar with Back, Title, and Counter */}
-                <div className="flex items-center justify-between px-4 py-4 screen1280:hidden flex">
+                <div className="flex items-center justify-between p-2 screen1280:hidden flex">
                     {onBack && (
                         <button
                             onClick={onBack}
-                            className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors active:scale-95"
+                            className="-ml-2 hover:bg-gray-100 rounded-full transition-colors active:scale-95"
                         >
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M15 18L9 12L15 6" stroke="#212E42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -94,7 +94,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                     )}
                 </div>
                 {/* Mastered Button */}
-                <div className="flex justify-center mt-2">
+                <div className="flex justify-center screen1024:flex hidden">
                     <button
                         onClick={() => onToggleMastered(word.word, !!word.isLearned)}
                         className="flex items-center gap-2 font-bold text-[16px] cursor-pointer transition-all active:scale-95 px-4 py-2 rounded-full hover:bg-blue-200"
@@ -135,12 +135,12 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                         <div className="absolute bottom-[-50px] left-1/2 -translate-x-1/2 w-[80%] h-[120px] bg-[hsla(9,85%,65%,0.1)] rounded-full" />
                     </div>
 
-                    <div className="bg-white rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.06)] w-full border border-gray-100 flex flex-col relative screen1280:max-h-full screen1280:min-h-[370px] h-[calc(100vh-400px)] min-h-0 overflow-hidden">
+                    <div className="bg-white rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.06)] w-full border border-gray-100 flex flex-col relative screen1280:max-h-full screen1280:min-h-[370px] h-[calc(100vh-315px)] min-h-0 overflow-hidden">
                         {/* Card Header */}
-                        <div className="p-6 text-center bg-gray-50/30 relative">
+                        <div className="p-4 text-center bg-gray-50/30 relative">
 
                             <div className="flex items-center justify-center gap-5 mb-3">
-                                <h2 className="text-[38px] font-bold text-[#212E42] tracking-tight">{word.word}</h2>
+                                <h2 className="text-[28px] font-bold text-[#212E42] tracking-tight">{word.word}</h2>
                                 <button
                                     onClick={handlePronunciation}
                                     className="p-3 transition-all hover:scale-110 active:scale-95 bg-white shadow-sm hover:shadow-md rounded-full border border-gray-100 text-[#212E42]"
@@ -148,7 +148,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                                     <SvgSpeaker />
                                 </button>
                             </div>
-                            <p className="text-[22px] text-gray-500 font-medium tracking-wide">
+                            <p className="text-[12px] text-gray-500 font-medium tracking-wide">
                                 {loading ? "..." : details?.phonetics || ""}
                             </p>
                         </div>
@@ -156,7 +156,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                         <div className="h-px bg-slate-200 w-full" />
 
                         {/* Card Content */}
-                        <div className="p-12 pt-8 flex-1 overflow-y-auto min-h-0">
+                        <div className="p-4 flex-1 overflow-y-auto min-h-0">
                             {loading ? (
                                 <div className="py-24 space-y-4">
                                     <div className="flex justify-center">
@@ -199,7 +199,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                         </div>
 
                         {/* Internal Navigation Footer (Visible on Tablet/Mobile) */}
-                        <div className="p-8 border-t border-slate-100 flex items-center justify-between screen1280:hidden">
+                        <div className="p-4 border-t border-slate-100 flex items-center justify-between screen1280:hidden">
                             <button
                                 onClick={onPrevious}
                                 disabled={!hasPrevious}
@@ -209,6 +209,17 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                                 <SvgArrowLeft />
                                 <span>Prev</span>
                             </button>
+
+                            <div className="flex justify-center screen1024:hidden flex">
+                                <button
+                                    onClick={() => onToggleMastered(word.word, !!word.isLearned)}
+                                    className="flex items-center gap-2 font-bold text-[16px] cursor-pointer transition-all active:scale-95 px-4 py-2 rounded-full hover:bg-blue-200"
+                                    style={{ color: 'hsla(223, 100%, 60%, 1)' }}
+                                >
+                                    <SvgLearningArrowUp />
+                                    <span>Mastered</span>
+                                </button>
+                            </div>
 
 
                             <button

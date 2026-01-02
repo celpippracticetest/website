@@ -150,7 +150,7 @@ const WordsPage = () => {
     const selectedWord = selectedWordIndex !== null && words.length > 0 ? words[selectedWordIndex] : null;
 
     return (
-        <div className="flex flex-col w-full min-h-screen">
+        <div className="flex flex-col w-full max-h-screen">
             <div className={`max-w-7xl flex justify-center items-center flex-col w-full mx-auto`}>
 
                 {loading ? (

@@ -1,8 +1,11 @@
 import React from "react";
 import Image from "next/image";
 import FirstImage from "@/images/word-page/first.png";
+import FirstImageMobile from "@/images/word-page/first-mobile.png";
 import SecondImage from "@/images/word-page/second.png";
+import SecondImageMobile from "@/images/word-page/second-mobile.png";
 import ThirdImage from "@/images/word-page/third.png";
+import ThirdImageMobile from "@/images/word-page/third-mobile.png";
 import ArrowImage from "@/images/word-page/arrow.png";
 
 const WordsLanding = () => {
@@ -10,10 +13,10 @@ const WordsLanding = () => {
         <div className="flex flex-col items-center justify-center px-4 text-center max-w-[1280px] mx-auto animate-in fade-in duration-700 overflow-visible relative">
             {/* Headline Section */}
             <div className="max-w-4xl mb-4 text-center flex flex-col items-center">
-                <h1 className="text-[25px] screen744:text-[39px] font-bold text-[#212E42] leading-[1.15] mb-2 tracking-tight">
+                <h1 className="text-[25px] screen1024:text-[39px] font-bold text-[#212E42] leading-[1.15] mb-2 tracking-tight">
                     Grow your CELPIP vocabulary for exam success.
                 </h1>
-                <p className="text-[8px] screen744:text-[12px] text-[#212E42] opacity-80 leading-relaxed max-w-3xl mx-auto font-medium">
+                <p className="text-[8px] screen1024:flex hidden screen744:text-[12px] text-[#212E42] opacity-80 leading-relaxed max-w-3xl mx-auto font-medium">
                     Add new words as you practice, study them with smart flashcards, and master them for the CELPIP exam.
                 </p>
             </div>
@@ -57,11 +60,17 @@ const WordsLanding = () => {
                         <Image
                             src={FirstImage}
                             alt="Study with smart flashcards"
-                            className="w-full h-auto object-contain"
+                            className="w-full h-auto object-contain screen1024:block hidden"
+                            placeholder="blur"
+                        />
+                        <Image
+                            src={FirstImageMobile}
+                            alt="Study with smart flashcards"
+                            className="w-full h-auto object-contain screen1024:hidden block"
                             placeholder="blur"
                         />
                     </div>
-                    <div className="absolute top-1/2 bottom-[-30px] screen1024:left-[calc(100%-6px)] -translate-y-1/2 w-[50px] h-auto z-10 pointer-events-none hidden screen1024:block">
+                    <div className="absolute top-1/2 bottom-[-26px] screen1024:left-[calc(100%-6px)] z-2 -translate-y-1/2 w-[50px] h-auto pointer-events-none hidden screen1024:block">
                         <Image
                             src={ArrowImage}
                             alt="Arrow"
@@ -69,7 +78,7 @@ const WordsLanding = () => {
                             placeholder="blur"
                         />
                     </div>
-                    <div className="screen1024:hidden absolute left-1/2 -translate-x-1/2 screen744:-bottom-[38px] -bottom-[40px] w-[50px] h-auto z-10 pointer-events-none rotate-90">
+                    <div className="screen1024:hidden absolute left-1/2 -translate-x-1/2 screen744:-bottom-[34px] z-2 -bottom-[36px] w-[50px] h-auto pointer-events-none rotate-90">
                         <Image
                             src={ArrowImage}
                             alt="Arrow"
@@ -86,11 +95,17 @@ const WordsLanding = () => {
                             <Image
                                 src={SecondImage}
                                 alt="Study with smart flashcards"
-                                className="w-full h-auto object-contain"
+                                className="w-full h-auto object-contain screen1024:block hidden"
+                                placeholder="blur"
+                            />
+                            <Image
+                                src={SecondImageMobile}
+                                alt="Study with smart flashcards"
+                                className="w-full h-auto object-contain screen1024:hidden block"
                                 placeholder="blur"
                             />
                         </div>
-                        <div className="absolute top-1/2 left-[calc(100%-6px)] -translate-y-1/2 w-[50px] h-auto z-10 pointer-events-none hidden screen1024:block">
+                        <div className="absolute top-1/2 left-[calc(100%-6px)] -translate-y-1/2 w-[50px] z-2 h-auto pointer-events-none hidden screen1024:block">
                             <Image
                                 src={ArrowImage}
                                 alt="Arrow"
@@ -98,7 +113,7 @@ const WordsLanding = () => {
                                 placeholder="blur"
                             />
                         </div>
-                        <div className="screen1024:hidden absolute left-1/2 -translate-x-1/2 screen744:-bottom-[38px] -bottom-[40px] w-[50px] h-auto z-10 pointer-events-none rotate-90 scale-y-[-1]">
+                        <div className="screen1024:hidden absolute left-1/2 -translate-x-1/2 screen744:-bottom-[34px] z-2 -bottom-[36px] w-[50px] h-auto pointer-events-none rotate-90 scale-y-[-1]">
                             <Image
                                 src={ArrowImage}
                                 alt="Arrow"
@@ -120,7 +135,13 @@ const WordsLanding = () => {
                     <Image
                         src={ThirdImage}
                         alt="Master words that matter"
-                        className="w-full h-auto object-contain"
+                        className="w-full h-auto object-contain screen1024:block hidden"
+                        placeholder="blur"
+                    />
+                    <Image
+                        src={ThirdImageMobile}
+                        alt="Master words that matter"
+                        className="w-full h-auto object-contain screen1024:hidden block"
                         placeholder="blur"
                     />
                 </div>

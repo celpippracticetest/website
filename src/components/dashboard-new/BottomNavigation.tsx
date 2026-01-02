@@ -60,7 +60,7 @@ const BottomNavigation = () => {
 
     return (
         <div
-            className="fixed bottom-[16px] left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-[400px] screen1280:!hidden"
+            className="fixed bottom-[16px] left-1/2 z-20 -translate-x-1/2 w-[calc(100%-32px)] max-w-[400px] screen1280:!hidden"
             style={{ height: 70, pointerEvents: "none" }}
         >
             {/* White pill background */}
