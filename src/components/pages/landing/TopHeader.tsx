@@ -13,6 +13,7 @@ import {
   SvgPracticeBlueHover,
 } from "@/components/icons";
 import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
+import SvgWord from "@/components/icons/Word";
 
 const SvgClose = dynamic(() => import("../../icons/Close"), { ssr: false });
 const SvgHamburger = dynamic(() => import("../../icons/Hamburger"), {
@@ -89,7 +90,7 @@ const TopHeader = () => {
       </div>
 
       <div className="hidden group-hover:flex w-[24px] h-[24px]  items-center justify-center">
-        <SvgLearning
+        <SvgWord
           stroke="#76808F"
           fill="#76808F"
           className="text-[#316BFF]"

@@ -19,6 +19,7 @@ import SvgBook from "../icons/animated/book/Book";
 import SvgArticle from "../icons/animated/article/Article";
 import SvgCheck from "../icons/animated/check/Check";
 import SvgVocabulary from "../icons/Vocabulary";
+import SvgWord from "../icons/Word";
 
 const DesktopNavigation = () => {
     const pathname = usePathname();
@@ -83,7 +84,7 @@ const DesktopNavigation = () => {
             isActive: isWords,
             animation: bookAnimation,
             hoverAnimation: bookHover,
-            StaticIcon: SvgBook,
+            StaticIcon: SvgWord,
         },
     ];
 
