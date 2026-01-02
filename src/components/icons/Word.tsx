@@ -2,9 +2,12 @@
 import * as React from "react";
 import type { SVGProps } from "react";
 const SvgWord = (props: SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" id="word-folder">
-        <path fill="#000" fill-rule="evenodd" d="M1.5 6C1.5 4.067 3.067 2.5 5 2.5H7.38404C8.56096 2.5 9.65908 3.09151 10.3066 4.07426L11.5284 5.92848C11.9909 6.63045 12.7753 7.05295 13.616 7.05295H19C20.933 7.05295 22.5 8.61995 22.5 10.5529V18C22.5 19.933 20.933 21.5 19 21.5H5C3.067 21.5 1.5 19.933 1.5 18V6ZM5 3.5C3.61929 3.5 2.5 4.61929 2.5 6V18C2.5 19.3807 3.61929 20.5 5 20.5H19C20.3807 20.5 21.5 19.3807 21.5 18V10.5529C21.5 9.17224 20.3807 8.05295 19 8.05295H13.616C12.439 8.05295 11.3409 7.46144 10.6934 6.47869L9.4716 4.62448C9.00907 3.92251 8.22469 3.5 7.38404 3.5H5Z" clip-rule="evenodd"></path>
-        <path fill="#000" fill-rule="evenodd" d="M16.2573 11.5713C16.4941 11.7134 16.5709 12.0205 16.4288 12.2573L13.4288 17.2573C13.3446 17.3977 13.1969 17.488 13.0336 17.4989C12.8702 17.5099 12.7119 17.4403 12.6096 17.3124L11.3076 15.6849C11.1214 15.4522 10.7743 15.4329 10.5636 15.6437L8.85359 17.3536C8.71698 17.4902 8.51389 17.5359 8.33194 17.471C8.14999 17.406 8.02174 17.2421 8.00252 17.0498L7.50252 12.0498C7.47504 11.7751 7.67551 11.53 7.95029 11.5026C8.22506 11.4751 8.47008 11.6756 8.49756 11.9503L8.89257 15.9004L9.85646 14.9365C10.4886 14.3044 11.5299 14.3621 12.0884 15.0602L12.9413 16.1262L15.5713 11.7428C15.7134 11.506 16.0205 11.4293 16.2573 11.5713Z" clip-rule="evenodd"></path>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M4 6L12 6" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M8 6V4" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M12.0008 14.0003C8.11407 13.0287 6.11567 10.6408 5.54688 6.37793" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M4.0001 13.9998C7.88484 13.0286 9.88317 10.6426 10.4531 6.38379" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M14.5 17.0002H19.5M13 19.0002L16.0784 11.6891C16.4219 10.8732 17.5781 10.8732 17.9216 11.6891L21 19.0002" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
     </svg>
 );
 export default SvgWord;

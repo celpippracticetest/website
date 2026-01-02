@@ -13,7 +13,7 @@ import checkAnimation from "../icons/animated/check/check-in-reveal.json";
 import SvgBook from "../icons/animated/book/Book";
 import SvgArticle from "../icons/animated/article/Article";
 import SvgCheck from "../icons/animated/check/Check";
-import { Sparkles } from "lucide-react";
+import SvgWord from "../icons/Word";
 
 const BottomNavigation = () => {
     const pathname = usePathname();
@@ -218,11 +218,7 @@ const BottomNavigation = () => {
                         className="flex flex-col items-center gap-1 cursor-pointer"
                     >
                         <div className="w-[24px] h-[24px] flex items-center justify-center">
-                            {isWords ? (
-                                <Sparkles className="text-[#0DAA94]" size={20} />
-                            ) : (
-                                <Sparkles className="text-[#37465C]" size={20} />
-                            )}
+                            <SvgWord />
                         </div>
                         <span
                             className={clsx(

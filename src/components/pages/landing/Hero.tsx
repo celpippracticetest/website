@@ -99,7 +99,7 @@ const Hero = () => {
           backgroundSize: "300% 300%",
           animation: "gradient 14s ease-in-out infinite",
         }}
-        className="relative pt-[80px] justify-center transition-all duration-300 w-full background-animate shadow-[inset_0px_-80px_96px_-4px_#F4F7FF]"
+        className="relative pt-[80px] flex flex-col min-h-screen screen1024:min-h-[100dvh] justify-between transition-all duration-300 w-full background-animate shadow-[inset_0px_-80px_96px_-4px_#F4F7FF]"
       >
         <TopHeader />
         <div className="flex max-w-[1440px] w-full justify-center mx-auto ">
@@ -201,52 +201,17 @@ const Hero = () => {
           </div>
         </div>
 
-        {/* desktop */}
-        <div className="hidden screen744:!flex left-0 right-0 screen1280:!mt-[52px] mt-[40px] px-[42px]">
-          <div className="flex flex-wrap screen1280:flex-nowrap gap-[16px] screen1280:gap-[24px] w-full max-w-[1440px] mx-auto justify-center">
+        {/* Navigation Cards (Desktop & Mobile Unified) */}
+        <div className="flex flex-col w-full px-[16px] screen744:!px-[42px] mt-auto pb-[60px] screen744:!pb-[40px] screen1280:!mt-[52px] overflow-hidden">
+          <div className="flex flex-nowrap overflow-x-auto no-scrollbar gap-[12px] screen744:!gap-[16px] screen1280:gap-[24px] w-full max-w-[1440px] mx-auto screen1024:justify-center">
             {[
-              {
-                title: "Listening",
-                icon: <SvgListening />,
-                bgColor: "bg-primary5",
-                link: "/listening",
-              },
-              {
-                title: "Speaking",
-                icon: <SvgSpeaking />,
-                bgColor: "bg-secondary5",
-                link: "/speaking",
-              },
-              {
-                title: "Writing",
-                icon: <SvgWriting />,
-                bgColor: "bg-success5",
-                link: "/writing",
-              },
-              {
-                title: "Reading",
-                icon: <SvgReading />,
-                bgColor: "bg-error5",
-                link: "/reading",
-              },
-              {
-                title: "Mock Exams",
-                icon: <SvgMockExamsColorful />,
-                bgColor: "bg-purple5",
-                link: "/exam-overview",
-              },
-              {
-                title: "Learning",
-                icon: <SvgLearning />,
-                bgColor: "bg-[#FEF9C3]",
-                link: "/learning",
-              },
-              {
-                title: "Words",
-                icon: <SvgWord />,
-                bgColor: "bg-[#CCFBF1]",
-                link: "/words",
-              },
+              { title: "Listening", icon: <SvgListening />, bgColor: "bg-primary5", link: "/listening" },
+              { title: "Speaking", icon: <SvgSpeaking />, bgColor: "bg-secondary5", link: "/speaking" },
+              { title: "Writing", icon: <SvgWriting />, bgColor: "bg-success5", link: "/writing" },
+              { title: "Reading", icon: <SvgReading />, bgColor: "bg-error5", link: "/reading" },
+              { title: "Mock Exams", icon: <SvgMockExamsColorful />, bgColor: "bg-purple5", link: "/exam-overview" },
+              { title: "Learning", icon: <SvgLearning />, bgColor: "bg-[#FEF9C3]", link: "/learning" },
+              { title: "Words", icon: <SvgWord />, bgColor: "bg-[#CCFBF1]", link: "/words" },
             ].map((exam, index, array) => (
               <ExamSectionCard
                 key={index}
@@ -260,65 +225,6 @@ const Hero = () => {
           </div>
         </div>
       </section>
-
-      {/* mobile */}
-      <div className="flex screen744:!hidden mt-[32px] px-[16px]">
-        <div className="grid grid-cols-2 screen744:!flex flex-wrap screen1280:flex-nowrap gap-[16px] screen1280:gap-[24px] w-full max-w-[1440px] mx-auto justify-center">
-          {[
-            {
-              title: "Listening",
-              icon: <SvgListening />,
-              bgColor: "bg-primary5",
-              link: "/listening",
-            },
-            {
-              title: "Speaking",
-              icon: <SvgSpeaking />,
-              bgColor: "bg-secondary5",
-              link: "/speaking",
-            },
-            {
-              title: "Writing",
-              icon: <SvgWriting />,
-              bgColor: "bg-success5",
-              link: "/writing",
-            },
-            {
-              title: "Reading",
-              icon: <SvgReading />,
-              bgColor: "bg-error5",
-              link: "/reading",
-            },
-            {
-              title: "Mock Exams",
-              icon: <SvgMockExamsColorful />,
-              bgColor: "bg-purple5",
-              link: "/exam-overview",
-            },
-            {
-              title: "Learning",
-              icon: <SvgLearning />,
-              bgColor: "bg-[#FEF9C3]",
-              link: "/learning",
-            },
-            {
-              title: "Words",
-              icon: <SvgWord />,
-              bgColor: "bg-[#CCFBF1]",
-              link: "/words",
-            },
-          ].map((exam, index, array) => (
-            <ExamSectionCard
-              key={index}
-              title={exam.title}
-              icon={exam.icon}
-              bgColor={exam.bgColor}
-              isLast={index === array.length - 1}
-              link={exam.link}
-            />
-          ))}
-        </div>
-      </div>
     </div>
   );
 };
