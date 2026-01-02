@@ -203,15 +203,15 @@ const Hero = () => {
 
         {/* Navigation Cards (Desktop & Mobile Unified) */}
         <div className="flex flex-col w-full overflow-hidden">
-          <div className="flex flex-nowrap px-[16px] screen744:!px-[42px]  pt-[22px] pb-[60px] screen744:!pb-[40px] screen1280:!mt-[52px] overflow-x-auto no-scrollbar gap-[12px] screen744:!gap-[16px] screen1280:gap-[24px] w-full max-w-[1440px] mx-auto screen1024:justify-center">
+          <div className="flex flex-col screen744:!flex-row px-[16px] screen744:!px-[42px] pt-[22px] pb-[60px] screen744:!pb-[40px] screen1280:!mt-[52px] overflow-y-auto screen744:!overflow-x-auto no-scrollbar gap-[12px] screen744:!gap-[16px] screen1280:gap-[24px] w-full max-w-[1440px] mx-auto screen1024:justify-center">
             {[
-              { title: "Listening", icon: <SvgListening />, bgColor: "bg-primary5", link: "/listening" },
-              { title: "Speaking", icon: <SvgSpeaking />, bgColor: "bg-secondary5", link: "/speaking" },
-              { title: "Writing", icon: <SvgWriting />, bgColor: "bg-success5", link: "/writing" },
-              { title: "Reading", icon: <SvgReading />, bgColor: "bg-error5", link: "/reading" },
+              { title: "Listening", icon: <SvgListening className="text-[#1D4ED8]" />, bgColor: "bg-primary5", link: "/listening" },
+              { title: "Speaking", icon: <SvgSpeaking className="text-[#BE123C]" />, bgColor: "bg-secondary5", link: "/speaking" },
+              { title: "Writing", icon: <SvgWriting className="text-[#0D9488]" />, bgColor: "bg-success5", link: "/writing" },
+              { title: "Reading", icon: <SvgReading className="text-[#B91C1C]" />, bgColor: "bg-error5", link: "/reading" },
               { title: "Mock Exams", icon: <SvgMockExamsColorful />, bgColor: "bg-purple5", link: "/exam-overview" },
-              { title: "Learning", icon: <SvgLearning />, bgColor: "bg-[#FEF9C3]", link: "/learning" },
-              { title: "Words", icon: <SvgWord />, bgColor: "bg-[#CCFBF1]", link: "/words" },
+              { title: "Learning", icon: <SvgLearning className="text-[#854D0E]" />, bgColor: "bg-[#FEF9C3]", link: "/learning" },
+              { title: "Words", icon: <SvgWord className="text-[#0D8A72] w-[24px]" />, bgColor: "bg-[#CCFBF1]", link: "/words" },
             ].map((exam, index, array) => (
               <ExamSectionCard
                 key={index}

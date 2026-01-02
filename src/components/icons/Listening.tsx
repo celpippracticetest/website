@@ -9,21 +9,21 @@ const SvgListening = (props: SVGProps<SVGSVGElement>) => (
     {...props}
   >
     <path
-      stroke="#316BFF"
+      stroke="currentColor"
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={1.5}
       d="M6.73 7.051c.474-1.068.892-2.32 1.932-2.97 4.903-3.064 9.979 1.728 9.234 6.943-.431 3.018-3.605 4.633-4.868 7.158-1.082 2.165-5.348 4.193-5.69 1.11"
     />
     <path
-      stroke="#316BFF"
+      stroke="currentColor"
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={1.5}
       d="M14.174 14.317c2.533-2.687 1.894-8.995-2.29-8.805-3.15.144-2.416 4.369-1.683 5.834"
     />
     <path
-      stroke="#316BFF"
+      stroke="currentColor"
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={1.5}
