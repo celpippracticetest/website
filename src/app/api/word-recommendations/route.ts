@@ -19,61 +19,81 @@ export async function GET(req: NextRequest) {
         if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
         const repo = new UserWordsRepository(mongoClient);
-        // Fetch more words to ensure AI knows what the user has
+        // Fetch words to ensure AI knows what the user has
         const { items } = await repo.getAllWords(user.id, 500, 0);
         const existingWords = items.map(i => i.word.toLowerCase().trim());
         const existingSet = new Set(existingWords);
 
-        const aiResponse = await fetch(
-            "https://openrouter.ai/api/v1/chat/completions",
-            {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-                    "HTTP-Referer": "https://celpippracticetest.com",
-                    "X-Title": "CELPIP Practice Test",
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    model: "meta-llama/llama-3.1-8b-instruct:free",
-                    messages: [
-                        { role: "system", content: SYSTEM_PROMPT },
-                        { role: "user", content: `Existing Words: ${JSON.stringify(existingWords)}` },
-                    ],
-                    response_format: { type: "json_object" },
-                }),
-            }
-        );
+        // Limit words in prompt to avoid token limits for power users, 
+        // but keep full set for local filtering.
+        const recentWordsForAi = existingWords.slice(0, 100);
 
         let finalRecommendations: string[] = [];
 
-        if (aiResponse.ok) {
-            const data = await aiResponse.json();
-            const content = data.choices[0].message.content;
-            console.log("AI Content:", content);
+        try {
+            const aiResponse = await fetch(
+                "https://openrouter.ai/api/v1/chat/completions",
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                        "HTTP-Referer": "https://celpippracticetest.com",
+                        "X-Title": "CELPIP Practice Test",
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        model: "meta-llama/llama-3.1-8b-instruct:free",
+                        messages: [
+                            { role: "system", content: SYSTEM_PROMPT },
+                            { role: "user", content: `Existing Words: ${JSON.stringify(recentWordsForAi)}` },
+                        ],
+                        response_format: { type: "json_object" },
+                        timeout: 10000,
+                    }),
+                }
+            );
 
-            try {
-                const parsed = JSON.parse(content);
-                const rawRecommendations = parsed.recommendations || parsed.words || (Array.isArray(parsed) ? parsed : []);
+            if (aiResponse.ok) {
+                const data = await aiResponse.json();
+                const content = data.choices?.[0]?.message?.content;
 
-                // Filter out any duplicates locally as a safety measure
-                finalRecommendations = rawRecommendations
-                    .map((w: string) => w.trim())
-                    .filter((w: string) => w.length > 0 && !existingSet.has(w.toLowerCase()));
-            } catch (e) {
-                console.error("JSON Parse Error:", e);
-                finalRecommendations = ["Diligent", "Perspective", "Evaluate"].filter(w => !existingSet.has(w.toLowerCase()));
+                if (content) {
+                    const parsed = JSON.parse(content);
+                    const rawRecommendations = parsed.recommendations || parsed.words || (Array.isArray(parsed) ? parsed : []);
+
+                    if (Array.isArray(rawRecommendations)) {
+                        finalRecommendations = rawRecommendations
+                            .map((w: any) => String(w).trim())
+                            .filter((w: string) => w.length > 0 && !existingSet.has(w.toLowerCase()));
+                    }
+                }
+            } else {
+                console.error("OpenRouter Error status:", aiResponse.status);
             }
-        } else {
-            console.error("OpenRouter Error:", await aiResponse.text());
-            finalRecommendations = ["Acumen", "Pragmatic", "Eloquent"].filter(w => !existingSet.has(w.toLowerCase()));
+        } catch (aiError) {
+            console.error("AI Recommendation fetch/parse error:", aiError);
         }
 
-        // If we still don't have enough words, provide some high-quality defaults that likely aren't added
+        // Expanded Fallback Lists (CEFR B2-C2 compatible)
+        const primaryBackups = [
+            "Conspicuous", "Ambiguous", "Eloquent", "Pragmatic", "Diligent",
+            "Evaluate", "Perspective", "Acumen", "Resilient", "Alleviate",
+            "Meticulous", "Substantial", "Advocate", "Consistent", "Diminish",
+            "Equivocal", "Fastidious", "Gregarious", "Inherent", "Mitigate"
+        ];
+
+        const secondaryBackups = [
+            "Ephemeral", "Paradigm", "Surmount", "Exacerbate", "Benevolent",
+            "Capricious", "Dichotomy", "Enervate", "Fortuitous", "Ineffable",
+            "Juxtapose", "Loquacious", "Nefarious", "Obfuscate", "Pervasive",
+            "Rhetoric", "Sycophant", "Tenuous", "Ubiquitous", "Zealous"
+        ];
+
+        // Fill recommendations if AI failed or results were filtered out
         if (finalRecommendations.length < 3) {
-            const backups = ["Ephemeral", "Paradigm", "Surmount", "Resilient", "Alleviate"];
-            for (const b of backups) {
-                if (!existingSet.has(b.toLowerCase()) && !finalRecommendations.includes(b)) {
+            const allBackups = [...primaryBackups, ...secondaryBackups];
+            for (const b of allBackups) {
+                if (!existingSet.has(b.toLowerCase()) && !finalRecommendations.some(r => r.toLowerCase() === b.toLowerCase())) {
                     finalRecommendations.push(b);
                 }
                 if (finalRecommendations.length >= 3) break;
@@ -82,7 +102,10 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({ recommendations: finalRecommendations.slice(0, 3) });
     } catch (error) {
-        console.error("Word recommendations API error:", error);
-        return NextResponse.json({ recommendations: [] });
+        console.error("Word recommendations critical API error:", error);
+        // Last line of defense: return ultra-safe defaults even on total crash
+        return NextResponse.json({
+            recommendations: ["Resilient", "Alleviate", "Perspective"].slice(0, 3)
+        });
     }
 }
