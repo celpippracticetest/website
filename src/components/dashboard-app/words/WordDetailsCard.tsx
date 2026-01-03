@@ -5,7 +5,6 @@ import SvgArrowRight from "@/components/icons/ArrowRight";
 import SvgInfo from "@/components/icons/Info";
 import { TUserWordDto } from "@/models/userWords.model";
 import SvgLearningArrowUp from "@/components/icons/LearningArrowUp";
-import clsx from "clsx";
 
 interface WordDetail {
     phonetics: string;
@@ -70,7 +69,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
     };
 
     return (
-        <div className="screen1280:max-w-[70%] screen1024:max-w-[100%] flex flex-col items-center justify-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-8 relative screen1280:max-h-[calc(100vh-430px)]">
+        <div className="w-full screen1280:max-w-[70%] screen1024:max-w-[100%] flex flex-col items-center justify-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-8 relative screen1280:max-h-[calc(100vh-430px)]">
 
             {/* Mobile Header (Under 1244px) */}
             <div className="w-full block mb-2 screen1280:max-h-[calc(100vh-430px)]">
@@ -135,7 +134,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                         <div className="absolute bottom-[-50px] left-1/2 -translate-x-1/2 w-[80%] h-[120px] bg-[hsla(9,85%,65%,0.1)] rounded-full" />
                     </div>
 
-                    <div className="bg-white rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.06)] w-full border border-gray-100 flex flex-col relative screen1280:max-h-full screen1280:min-h-[370px] h-[calc(100vh-315px)] min-h-0 overflow-hidden">
+                    <div className="bg-white rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.06)] w-full border border-gray-100 flex flex-col relative screen1280:max-h-full h-[calc(100vh-315px)] min-h-0 overflow-hidden">
                         {/* Card Header */}
                         <div className="p-4 text-center bg-gray-50/30 relative">
 
