@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import clsx from "clsx";
 import {
@@ -45,6 +46,10 @@ import DesktopNavigation from "@/components/dashboard-new/DesktopNavigation";
 import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
 import AskBeavoModal from "@/components/AskBeavo/AskBeavoModal";
 import { GlobalInteractiveProvider } from "@/components/dashboard-app/practice/GlobalInteractiveProvider";
+
+const SvgHamburger = dynamic(() => import("../../icons/Hamburger"), {
+  ssr: true,
+});
 
 const NavItem = ({
   icon,
@@ -621,14 +626,14 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
       )}
 
       {isMenuOpen && (
-        <div className="fixed top-0 w-full h-full  backdrop-blur-[20px] z-[9]"></div>
+        <div className="fixed top-0 w-full h-full  backdrop-blur-[20px] z-[100]"></div>
       )}
       <motion.div
         ref={sidebarMenuRef}
         initial={{ x: "-100%" }}
         animate={{ x: isMenuOpen ? "0" : "-100%" }}
         transition={{ duration: 0.5, ease: "easeInOut" }}
-        className={` z-[9] fixed left-0 top-0 flex flex-col text-[#3D3B3B] bg-[#f9f9f9]  w-full max-w-[351px] h-[100vh] max-h-screen overflow-y-auto`}
+        className={` z-[101] fixed left-0 top-0 flex flex-col text-[#3D3B3B] bg-[#f9f9f9]  w-full max-w-[351px] h-[100vh] max-h-screen overflow-y-auto`}
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         <div
@@ -789,17 +794,28 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
 
       <div className="flex w-full justify-center max-w-[1440px] mx-auto z-[99999999]">
         <div
-          className="flex flex-col w-full h-full screen744:!w-[calc(100%-84px)] bg-[#F4F7FF] items-end"
+          className="flex flex-col w-full h-full screen744:!w-[calc(100%-84px)] bg-[#F4F7FF] items-end pt-[96px] screen1280:!pt-0"
         >
           <div className="px-[16px] screen744:!px-0 w-full mb-[16px]">
             <div
               className={clsx(
-                "transition-all flex justify-between w-full px-[16px] duration-1000 ease-in-out mt-[24px] rounded-[32px] ",
-                "screen1280:!w-full mx-auto max-w-[1280px] flex h-[80px] items-center justify-center pl-[24px] relative w-full border border-[#D1DEFF] bg-[linear-gradient(90deg,_rgba(255,_255,_255,_0.65)_0%,_rgba(255,_255,_255,_0.2)_100%)] ",
-                "flex-row items-center"
+                "transition-all flex justify-between w-full duration-1000 ease-in-out",
+                // Mobile (< 1280)
+                "fixed top-0 left-0 right-0 z-[50] h-[72px] px-[16px] screen744:!px-[24px] rounded-b-[32px] border-b border-[#D1DEFF] backdrop-blur-[8px]",
+                "bg-[linear-gradient(90deg,_rgba(255,_255,_255,_0.65)_0%,_rgba(255,_255,_255,_0.2)_100%)]",
+                // Desktop (>= 1280)
+                "screen1280:!static screen1280:!mt-[24px] screen1280:!rounded-[32px] screen1280:!h-[80px] screen1280:!max-w-[1280px] screen1280:!mx-auto screen1280:!pl-[24px] screen1280:!border screen1280:!px-[16px]",
+                "items-center"
               )}
             >
-              <div className="flex gap-[64px] w-full">
+              <div className="flex gap-[12px] screen744:!gap-[24px] screen1280:!gap-[64px] items-center w-full">
+                <div
+                  className="screen1280:hidden flex cursor-pointer"
+                  onClick={() => setIsMenuOpen(true)}
+                >
+                  <SvgHamburger />
+                </div>
+
                 <Image
                   onClick={() => router.push("/")}
                   alt="full logo"
@@ -816,12 +832,6 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
               </div>
 
               <div className="flex items-center justify-between h-[48px]">
-                {/* <span
-                onClick={() => setIsMenuOpen && setIsMenuOpen(!isMenuOpen)}
-                className="flex cursor-pointer gap-[5px] items-center justify-center w-[40px] h-[40px] border-[#D5D6D8]  border-[1px] rounded-[100%] screen744:!hidden"
-              >
-                <SvgHamburger />
-              </span> */}
                 <div className="hidden screen744:!flex flex-col"></div>
 
                 {/* right side */}
