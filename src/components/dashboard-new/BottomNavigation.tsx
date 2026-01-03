@@ -13,6 +13,7 @@ import checkAnimation from "../icons/animated/check/check-in-reveal.json";
 import SvgBook from "../icons/animated/book/Book";
 import SvgArticle from "../icons/animated/article/Article";
 import SvgCheck from "../icons/animated/check/Check";
+import SvgWord from "../icons/Word";
 
 const BottomNavigation = () => {
     const pathname = usePathname();
@@ -44,6 +45,8 @@ const BottomNavigation = () => {
         }
     }, [pathname]);
 
+    const isWords = pathname === "/words";
+
     // Vibration animation variants
     const vibrationVariants = {
         initial: { x: 0, scale: 1, opacity: 0 },
@@ -57,7 +60,7 @@ const BottomNavigation = () => {
 
     return (
         <div
-            className="fixed bottom-[16px] left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-[400px] screen1280:!hidden"
+            className="fixed bottom-[16px] left-1/2 z-20 -translate-x-1/2 w-[calc(100%-32px)] max-w-[400px] screen1280:!hidden"
             style={{ height: 70, pointerEvents: "none" }}
         >
             {/* White pill background */}
@@ -65,7 +68,7 @@ const BottomNavigation = () => {
 
             {/* Navigation items */}
             <div
-                className="relative z-10 grid grid-cols-3 items-center justify-items-center h-full px-4"
+                className="relative z-10 grid grid-cols-4 items-center justify-items-center h-full px-4"
                 style={{ pointerEvents: "auto" }}
             >
                 {/* Practice */}
@@ -189,6 +192,41 @@ const BottomNavigation = () => {
                             )}
                         >
                             Learnings
+                        </span>
+                    </motion.div>
+                </Link>
+
+                {/* Words */}
+                <Link
+                    href="/words"
+                    prefetch={true}
+                    className="relative w-full h-full flex items-center justify-center"
+                >
+                    {isWords && (
+                        <motion.div
+                            className="absolute w-[80px] h-[56px] bg-[#E8ECF4] rounded-full -z-10"
+                            variants={vibrationVariants}
+                            initial="initial"
+                            animate="animate"
+                        />
+                    )}
+                    <motion.div
+                        key={isWords ? "active" : "inactive"}
+                        initial={isWords ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
+                        animate={{ opacity: isWords ? 1 : 0.6, scale: isWords ? 1 : 0.95 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                        className="flex flex-col items-center gap-1 cursor-pointer"
+                    >
+                        <div className="w-[24px] h-[24px] flex items-center justify-center">
+                            <SvgWord />
+                        </div>
+                        <span
+                            className={clsx(
+                                "text-[10px]",
+                                isWords ? "text-black" : "text-[#37465C]"
+                            )}
+                        >
+                            Words
                         </span>
                     </motion.div>
                 </Link>

@@ -6,7 +6,7 @@ if (!process.env.MONGODB_URI) {
 
 const uri = process.env.MONGODB_URI;
 const options: MongoClientOptions = {
-  serverSelectionTimeoutMS: 5000,
+  serverSelectionTimeoutMS: 8000,
   socketTimeoutMS: 45000,
 };
 
@@ -23,13 +23,19 @@ if (process.env.NODE_ENV === "development") {
 
   if (!globalWithMongo._mongoClient) {
     globalWithMongo._mongoClient = new MongoClient(uri, options);
+    globalWithMongo._mongoClientPromise = globalWithMongo._mongoClient.connect();
+  } else {
+    // Check if the existing client's topology is closed (happens during HMR)
+    // @ts-ignore - accessing internal topology for connection state check
+    if (globalWithMongo._mongoClient.topology?.isDestroyed() || globalWithMongo._mongoClient.topology?.s?.state === 'closed') {
+      console.log("MongoDB client topology was closed, reconnecting...");
+      globalWithMongo._mongoClient = new MongoClient(uri, options);
+      globalWithMongo._mongoClientPromise = globalWithMongo._mongoClient.connect();
+    }
   }
-  client = globalWithMongo._mongoClient;
 
-  if (!globalWithMongo._mongoClientPromise) {
-    globalWithMongo._mongoClientPromise = client.connect();
-  }
-  clientPromise = globalWithMongo._mongoClientPromise;
+  client = globalWithMongo._mongoClient;
+  clientPromise = globalWithMongo._mongoClientPromise || client.connect();
 } else {
   // In production mode, it's best to not use a global variable.
   client = new MongoClient(uri, options);

@@ -1,22 +1,61 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Plus, Sparkles, Volume2 } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
+import clsx from "clsx";
 
 interface WordMenuProps {
     word: string;
     onAskAI?: (word: string) => void;
+    isHighlighted?: boolean;
+    virtualRect?: DOMRect | null;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }
 
-export const WordMenu: React.FC<WordMenuProps> = ({ word, onAskAI }) => {
-    const [isOpen, setIsOpen] = useState(false);
+export const WordMenu: React.FC<WordMenuProps> = ({
+    word,
+    onAskAI,
+    isHighlighted = true,
+    virtualRect,
+    open: controlledOpen,
+    onOpenChange: controlledOnOpenChange
+}) => {
+    const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+
+    const isOpen = controlledOpen !== undefined ? controlledOpen : uncontrolledOpen;
+    const setIsOpen = controlledOnOpenChange !== undefined ? controlledOnOpenChange : setUncontrolledOpen;
+
+    const [isSaved, setIsSaved] = useState(false);
+    const [isChecking, setIsChecking] = useState(false);
     const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Check if word is already saved when the popover opens
+    useEffect(() => {
+        if (isOpen) {
+            checkIfSaved();
+        }
+    }, [isOpen, word]);
+
+    const checkIfSaved = async () => {
+        setIsChecking(true);
+        try {
+            const response = await fetch(`/api/user-words?word=${encodeURIComponent(word)}`);
+            if (response.ok) {
+                const data = await response.json();
+                setIsSaved(data.saved);
+            }
+        } catch (error) {
+            console.error("Error checking saved status:", error);
+        } finally {
+            setIsChecking(false);
+        }
+    };
 
     const handleMouseEnter = () => {
         if (closeTimeoutRef.current) {
             clearTimeout(closeTimeoutRef.current);
             closeTimeoutRef.current = null;
         }
-        setIsOpen(true);
     };
 
     const handleMouseLeave = () => {
@@ -33,11 +72,26 @@ export const WordMenu: React.FC<WordMenuProps> = ({ word, onAskAI }) => {
         window.speechSynthesis.speak(utterance);
     };
 
-    const handleAddToWords = (e: React.MouseEvent) => {
+    const handleSaveWord = async (e: React.MouseEvent) => {
         e.stopPropagation();
-        // Logic to add to words (placeholder for now)
-        console.log("Adding to words:", word);
-        // You might want to show a toast here
+        if (isSaved) {
+            // Redirect or show navigation to words page
+            window.location.href = "/words";
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/user-words", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ word }),
+            });
+            if (response.ok) {
+                setIsSaved(true);
+            }
+        } catch (error) {
+            console.error("Error saving word:", error);
+        }
     };
 
     const handleAskAI = (e: React.MouseEvent) => {
@@ -50,19 +104,32 @@ export const WordMenu: React.FC<WordMenuProps> = ({ word, onAskAI }) => {
 
     return (
         <Popover.Root open={isOpen} onOpenChange={setIsOpen}>
-            <Popover.Trigger asChild>
-                <span
-                    className="font-bold text-[#0DAA94] cursor-pointer rounded-md px-1 transition-all duration-200 border border-transparent hover:border-[#0DAA94] hover:bg-[#E0F2F1] hover:shadow-sm"
-                    onMouseEnter={handleMouseEnter}
-                    onMouseLeave={handleMouseLeave}
-                    onClick={(e) => {
-                        e.preventDefault();
-                        setIsOpen(!isOpen);
-                    }}
-                >
-                    {word}
-                </span>
-            </Popover.Trigger>
+            {virtualRect ? (
+                <Popover.Anchor virtualRef={{
+                    current: {
+                        getBoundingClientRect: () => virtualRect
+                    } as any
+                }} />
+            ) : (
+                <Popover.Trigger asChild>
+                    <span
+                        data-word-menu="true"
+                        className={clsx(
+                            "cursor-pointer transition-all duration-200 rounded-sm px-0.5 -mx-0.5",
+                            isHighlighted
+                                ? "font-bold text-[#0DAA94] border border-transparent hover:border-[#0DAA94] hover:bg-[#E0F2F1] hover:shadow-sm"
+                                : "text-inherit hover:text-[#0DAA94] hover:bg-[#E0F2F1] underline decoration-transparent hover:decoration-[#0DAA94]/30 underline-offset-4"
+                        )}
+                        onMouseLeave={handleMouseLeave}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            setIsOpen(!isOpen);
+                        }}
+                    >
+                        {word}
+                    </span>
+                </Popover.Trigger>
+            )}
 
             <Popover.Portal>
                 <Popover.Content
@@ -85,15 +152,16 @@ export const WordMenu: React.FC<WordMenuProps> = ({ word, onAskAI }) => {
 
                         {/* Menu Items */}
                         <div className="p-1 flex flex-col gap-1">
-                            {/* <button
-                                onClick={handleAddToWords}
-                                className="cursor-pointer flex items-center gap-3 w-full px-3 py-2 text-sm text-slate-700 hover:bg-[#F2FFFD] hover:text-[#0DAA94] rounded-lg transition-colors text-left"
+                            <button
+                                onClick={handleSaveWord}
+                                disabled={isChecking}
+                                className="cursor-pointer flex items-center gap-3 w-full px-3 py-2 text-sm text-slate-700 hover:bg-[#F2FFFD] hover:text-[#0DAA94] rounded-lg transition-colors text-left disabled:opacity-50"
                             >
                                 <div className="bg-[#0DAA94] text-white p-1 rounded-md">
-                                    <Plus size={14} strokeWidth={3} />
+                                    {isSaved ? <Sparkles size={14} strokeWidth={3} /> : <Plus size={14} strokeWidth={3} />}
                                 </div>
-                                <span className="font-medium">Add to words</span>
-                            </button> */}
+                                <span className="font-medium">{isSaved ? "Show in words" : "Add to words"}</span>
+                            </button>
 
                             <button
                                 onClick={handleAskAI}

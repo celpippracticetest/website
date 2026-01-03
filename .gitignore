@@ -9,7 +9,14 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-
+# PWA files
+/public/sw.js
+/public/sw.js.map
+/public/workbox-*.js
+/public/workbox-*.js.map
+/public/swe-worker-*.js
+/public/swe-worker-*.js.map
+/public/fallback-*.js
 # testing
 /coverage
 

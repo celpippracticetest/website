@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import clsx from "clsx";
-import { motion } from "framer-motion";
 
 import AnimatedIcon from "./AnimatedIcon";
 import bookAnimation from "../icons/animated/book/book-in-book.json";
@@ -18,6 +17,7 @@ import checkHover from "../icons/animated/check/check-hover-pinch.json";
 import SvgBook from "../icons/animated/book/Book";
 import SvgArticle from "../icons/animated/article/Article";
 import SvgCheck from "../icons/animated/check/Check";
+import SvgWord from "../icons/Word";
 
 const DesktopNavigation = () => {
     const pathname = usePathname();
@@ -49,6 +49,8 @@ const DesktopNavigation = () => {
         }
     }, [pathname]);
 
+    const isWords = pathname === "/words";
+
     const navItems = [
         {
             label: "Practice",
@@ -74,6 +76,12 @@ const DesktopNavigation = () => {
             hoverAnimation: checkHover,
             StaticIcon: SvgCheck,
         },
+        {
+            label: "Words",
+            href: "/words",
+            isActive: isWords,
+            StaticIcon: SvgWord,
+        },
     ];
 
     return (
@@ -91,37 +99,55 @@ const DesktopNavigation = () => {
                     >
                         <div className="relative w-[24px] h-[24px] flex items-center justify-center">
                             {item.isActive ? (
-                                <AnimatedIcon
-                                    animationData={item.animation}
-                                    isActive={true}
-                                />
+                                item.animation ? (
+                                    <AnimatedIcon
+                                        animationData={item.animation}
+                                        isActive={true}
+                                    />
+                                ) : (
+                                    <item.StaticIcon className="text-black" />
+                                )
                             ) : (
                                 <>
-                                    {/* Default Gray Icon - fades out on hover */}
-                                    <div
-                                        className={clsx(
-                                            "absolute inset-0 flex items-center justify-center transition-opacity duration-200",
-                                            isHovered ? "opacity-0" : "opacity-100"
-                                        )}
-                                    >
-                                        <item.StaticIcon className="text-[#76808F]" />
-                                    </div>
+                                    {item.hoverAnimation ? (
+                                        <>
+                                            {/* Default Gray Icon - fades out on hover */}
+                                            <div
+                                                className={clsx(
+                                                    "absolute inset-0 flex items-center justify-center transition-opacity duration-200",
+                                                    isHovered ? "opacity-0" : "opacity-100"
+                                                )}
+                                            >
+                                                <item.StaticIcon className="text-[#76808F]" />
+                                            </div>
 
-                                    {/* Hover Animation - appears on hover */}
-                                    <div
-                                        className={clsx(
-                                            "absolute inset-0 flex items-center justify-center transition-opacity duration-200",
-                                            isHovered ? "opacity-100" : "opacity-0"
-                                        )}
-                                    >
-                                        {/* Always render but control visibility to avoid remount flickering if possible, 
-                                            but AnimatedIcon resets on isActive change. 
-                                            Here we want it to play when hovered. */}
-                                        <AnimatedIcon
-                                            animationData={item.hoverAnimation}
-                                            isActive={isHovered}
-                                        />
-                                    </div>
+                                            {/* Hover Animation - appears on hover */}
+                                            <div
+                                                className={clsx(
+                                                    "absolute inset-0 flex items-center justify-center transition-opacity duration-200",
+                                                    isHovered ? "opacity-100" : "opacity-0"
+                                                )}
+                                            >
+                                                {/* Always render but control visibility to avoid remount flickering if possible, 
+                                                    but AnimatedIcon resets on isActive change. 
+                                                    Here we want it to play when hovered. */}
+                                                <AnimatedIcon
+                                                    animationData={item.hoverAnimation}
+                                                    isActive={isHovered}
+                                                />
+                                            </div>
+                                        </>
+                                    ) : (
+                                        /* Static Icon with color transition for items without animation */
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <item.StaticIcon
+                                                className={clsx(
+                                                    "transition-colors duration-200",
+                                                    isHovered ? "text-[#316BFF]" : "text-[#76808F]"
+                                                )}
+                                            />
+                                        </div>
+                                    )}
                                 </>
                             )}
                         </div>
