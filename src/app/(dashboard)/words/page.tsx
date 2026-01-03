@@ -160,10 +160,10 @@ const WordsPage = () => {
                 ) : words.length === 0 ? (
                     <WordsLanding />
                 ) : (
-                    <div className="flex screen1280:flex-row flex-col-reverse justify-between w-full px-4 screen1280:px-0 screen1280:max-h-[calc(100vh-340px)] screen1280:min-h-[500px]">
+                    <div className="flex screen1280:flex-row flex-col-reverse justify-between w-full px-4 screen1280:px-0 screen1280:max-h-[calc(100vh-430px)]">
 
                         {/* Word Details Card - Desktop Only */}
-                        <div className="hidden screen1280:flex screen1280:h-full w-full justify-center items-center overflow-hidden">
+                        <div className="hidden screen1280:flex screen1280:h-full w-full justify-center items-center overflow-hidden py-[44px]">
                             {selectedWord && selectedWordIndex !== null && (
                                 <WordDetailsCard
                                     word={selectedWord}
@@ -291,7 +291,7 @@ const WordsPage = () => {
 
                 {/* Recommended Words Section */}
                 {isSignedIn && words.length > 0 && !showMobileDetails && (
-                    <div className="w-full">
+                    <div className="w-full screen1280:mt-[100px]">
                         <div className="screen1280:bg-[#EDF0F5] max-h-[180px] rounded-[32px] p-10 w-full screen1280:shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] screen1280:border screen1280:border-gray-200/50">
                             <h2 className="text-[#76808F] text-[16px] font-medium mb-8">Recommended Words</h2>
                             <div className="flex flex-nowrap gap-6 overflow-x-auto w-full items-center pb-2">

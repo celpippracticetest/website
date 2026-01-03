@@ -11,6 +11,7 @@ import SvgMedalLg from "@/components/v2/icons/medal-lg";
 import SvgMedalMd from "@/components/v2/icons/medal-md";
 import { SvgLearning } from "@/components/icons";
 import SvgWord from "@/components/icons/Word";
+import { cn } from "@/lib/utils";
 
 const SvgMockExamLight = dynamic(() => import("../../icons/MockExamsLight"), {
   ssr: false,
@@ -203,7 +204,7 @@ const Hero = () => {
 
         {/* Navigation Cards (Desktop & Mobile Unified) */}
         <div className="flex flex-col w-full overflow-hidden">
-          <div className="flex flex-col screen744:!flex-row px-[16px] screen744:!px-[42px] pt-[22px] pb-[60px] screen744:!pb-[40px] screen1280:!mt-[52px] overflow-y-auto screen744:!overflow-x-auto no-scrollbar gap-[12px] screen744:!gap-[16px] screen1280:gap-[24px] w-full max-w-[1440px] mx-auto screen1024:justify-center">
+          <div className="flex flex-row flex-wrap screen744:flex-nowrap px-[16px] screen744:!px-[42px] pt-[22px] pb-[60px] screen744:!pb-[40px] screen1280:!mt-[52px] gap-[12px] screen744:!gap-[16px] screen1280:gap-[24px] w-full max-w-[1440px] mx-auto screen1024:justify-center">
             {[
               { title: "Listening", icon: <SvgListening className="text-[#1D4ED8]" />, bgColor: "bg-primary5", link: "/listening" },
               { title: "Speaking", icon: <SvgSpeaking className="text-[#BE123C]" />, bgColor: "bg-secondary5", link: "/speaking" },
@@ -212,16 +213,20 @@ const Hero = () => {
               { title: "Mock Exams", icon: <SvgMockExamsColorful />, bgColor: "bg-purple5", link: "/exam-overview" },
               { title: "Learning", icon: <SvgLearning className="text-[#854D0E]" />, bgColor: "bg-[#FEF9C3]", link: "/learning" },
               { title: "Words", icon: <SvgWord className="text-[#0D8A72] w-[24px]" />, bgColor: "bg-[#CCFBF1]", link: "/words" },
-            ].map((exam, index, array) => (
-              <ExamSectionCard
-                key={index}
-                title={exam.title}
-                icon={exam.icon}
-                bgColor={exam.bgColor}
-                isLast={index === array.length - 1}
-                link={exam.link}
-              />
-            ))}
+            ].map((exam, index, array) => {
+              const isLast = index === array.length - 1;
+              return (
+                <ExamSectionCard
+                  key={index}
+                  title={exam.title}
+                  icon={exam.icon}
+                  bgColor={exam.bgColor}
+                  isLast={isLast}
+                  link={exam.link}
+                  className={cn("screen744:!w-auto", {"!w-[calc(50%-6px)]": !isLast, 'w-full': isLast})}
+                />
+              );
+            })}
           </div>
         </div>
       </section>

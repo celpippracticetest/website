@@ -70,10 +70,10 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
     };
 
     return (
-        <div className="screen1280:max-w-[70%] screen1024:max-w-[100%] flex flex-col items-center justify-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-8 relative">
+        <div className="screen1280:max-w-[70%] screen1024:max-w-[100%] flex flex-col items-center justify-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-8 relative screen1280:max-h-[calc(100vh-430px)]">
 
             {/* Mobile Header (Under 1244px) */}
-            <div className="w-full block screen1244:hidden mb-2">
+            <div className="w-full block mb-2 screen1280:max-h-[calc(100vh-430px)]">
                 {/* Top Bar with Back, Title, and Counter */}
                 <div className="flex items-center justify-between p-2 screen1280:hidden flex">
                     {onBack && (
@@ -94,7 +94,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                     )}
                 </div>
                 {/* Mastered Button */}
-                <div className="flex justify-center screen1024:flex hidden">
+                <div className="flex justify-center screen1280:flex hidden">
                     <button
                         onClick={() => onToggleMastered(word.word, !!word.isLearned)}
                         className="flex items-center gap-2 font-bold text-[16px] cursor-pointer transition-all active:scale-95 px-4 py-2 rounded-full hover:bg-blue-200"
@@ -122,7 +122,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                 </button>
 
                 {/* Main Card with Directional Glows */}
-                <div className="relative w-full h-full flex flex-col justify-center">
+                <div className="relative w-full h-full flex flex-col justify-center screen1280:max-h-[calc(100vh-430px)]">
                     {/* Shadow Glows */}
                     <div className="absolute inset-x-8 inset-y-8 blur-[100px] opacity-70">
                         {/* Top: Blue */}
