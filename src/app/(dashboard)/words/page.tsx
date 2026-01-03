@@ -192,7 +192,7 @@ const WordsPage = () => {
                                             transition={{ duration: 0.2 }}
                                             className="bg-white rounded-[32px] p-8 shadow-lg h-[calc(100vh-460px)] overflow-y-auto"
                                         >
-                                            <h1 className="text-[24px] font-bold text-[#212E42] tracking-tight mb-6">Added Words</h1>
+                                            <h1 className="text-[12px] font-bold text-[#212E42] tracking-tight mb-6">Added Words</h1>
                                             <div className="flex flex-col gap-4 w-full">
                                                 {words.map((item, index) => (
                                                     <WordPill
@@ -255,7 +255,7 @@ const WordsPage = () => {
                             {/* Desktop: Simple List */}
                             <div className="hidden screen1280:flex flex-col gap-8 h-full overflow-y-auto pr-4 scrollbar-thin">
                                 <div className="flex justify-start w-full">
-                                    <h1 className="text-[20px] font-bold text-[#212E42] tracking-tight">Added Words</h1>
+                                    <h1 className="text-[16px] font-bold text-[#212E42] tracking-tight">Added Words</h1>
                                 </div>
                                 <div className="flex screen1280:flex-col flex-wrap screen1280:mb-0 mb-6 gap-6 w-full">
                                     {words.map((item, index) => (

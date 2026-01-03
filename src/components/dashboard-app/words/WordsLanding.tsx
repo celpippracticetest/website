@@ -78,7 +78,7 @@ const WordsLanding = () => {
                             placeholder="blur"
                         />
                     </div>
-                    <div className="screen1024:hidden absolute left-1/2 -translate-x-1/2 screen744:-bottom-[34px] z-2 -bottom-[36px] w-[50px] h-auto pointer-events-none rotate-90">
+                    <div className="screen1024:hidden absolute left-1/2 -translate-x-1/2 screen744:-bottom-[26px] z-2 -bottom-[28px] w-[40px] h-auto pointer-events-none rotate-90">
                         <Image
                             src={ArrowImage}
                             alt="Arrow"
@@ -113,7 +113,7 @@ const WordsLanding = () => {
                                 placeholder="blur"
                             />
                         </div>
-                        <div className="screen1024:hidden absolute left-1/2 -translate-x-1/2 screen744:-bottom-[34px] z-2 -bottom-[36px] w-[50px] h-auto pointer-events-none rotate-90 scale-y-[-1]">
+                        <div className="screen1024:hidden absolute left-1/2 -translate-x-1/2 screen744:-bottom-[26px] z-2 -bottom-[28px] w-[40px] h-auto pointer-events-none rotate-90 scale-y-[-1]">
                             <Image
                                 src={ArrowImage}
                                 alt="Arrow"
