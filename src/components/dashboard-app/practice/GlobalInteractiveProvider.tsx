@@ -49,16 +49,17 @@ export const GlobalInteractiveProvider: React.FC = () => {
 
         // Find the word boundaries
         let start = offset;
-        while (start > 0 && /[a-zA-ZÀ-ÿ0-9'-]/.test(text[start - 1])) {
+        while (start > 0 && /[a-zA-ZÀ-ÿ'-]/.test(text[start - 1])) {
             start--;
         }
         let end = offset;
-        while (end < text.length && /[a-zA-ZÀ-ÿ0-9'-]/.test(text[end])) {
+        while (end < text.length && /[a-zA-ZÀ-ÿ'-]/.test(text[end])) {
             end++;
         }
 
         const word = text.slice(start, end).trim();
-        if (!word || word.length < 2) return null;
+        // Skip if word is empty, too short, or contains numbers
+        if (!word || word.length < 2 || /\d/.test(word)) return null;
 
         if (isIgnoredElement(node.parentElement)) return null;
 
