@@ -137,17 +137,30 @@ export const GlobalInteractiveProvider: React.FC = () => {
         }
     }, []);
 
+    const handleScroll = useCallback(() => {
+        if (!isOpen) {
+            setHoveredWord(null);
+            setVirtualRect(null);
+        }
+        if (hoverTimeoutRef.current) {
+            clearTimeout(hoverTimeoutRef.current);
+            hoverTimeoutRef.current = null;
+        }
+    }, [isOpen]);
+
     useEffect(() => {
         window.addEventListener("mousemove", handleMouseMove);
         window.addEventListener("click", handleClick);
+        window.addEventListener("scroll", handleScroll, { passive: true });
         return () => {
             window.removeEventListener("mousemove", handleMouseMove);
             window.removeEventListener("click", handleClick);
+            window.removeEventListener("scroll", handleScroll);
             if (hoverTimeoutRef.current) {
                 clearTimeout(hoverTimeoutRef.current);
             }
         };
-    }, [handleMouseMove, handleClick]);
+    }, [handleMouseMove, handleClick, handleScroll]);
 
     return (
         <>
