@@ -129,6 +129,10 @@ export const GlobalInteractiveProvider: React.FC = () => {
         // Keep the click functionality as a fallback or to force it
         const result = getWordAtPoint(e.clientX, e.clientY);
         if (result) {
+            // Stop propagation to prevent parent (e.g. Card) click events from firing
+            e.stopPropagation();
+            e.preventDefault();
+
             if (hoverTimeoutRef.current) {
                 clearTimeout(hoverTimeoutRef.current);
             }
@@ -151,11 +155,12 @@ export const GlobalInteractiveProvider: React.FC = () => {
 
     useEffect(() => {
         window.addEventListener("mousemove", handleMouseMove);
-        window.addEventListener("click", handleClick);
+        // Use capture phase for click to intercept it before it reaches parent elements
+        window.addEventListener("click", handleClick, { capture: true });
         window.addEventListener("scroll", handleScroll, { passive: true });
         return () => {
             window.removeEventListener("mousemove", handleMouseMove);
-            window.removeEventListener("click", handleClick);
+            window.removeEventListener("click", handleClick, { capture: true });
             window.removeEventListener("scroll", handleScroll);
             if (hoverTimeoutRef.current) {
                 clearTimeout(hoverTimeoutRef.current);
