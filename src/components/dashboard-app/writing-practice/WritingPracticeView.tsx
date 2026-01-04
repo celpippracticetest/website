@@ -329,7 +329,7 @@ const WritingPracticeView = ({
         selectedTaskId={selectedTaskId}
         completedPractice={completedPracticeId}
       />
-      <div className="bg-white rounded-xl  flex flex-col overflow-hidden border border-[#D5D6D8] h-full w-full">
+      <div className="bg-white rounded-xl  flex flex-col overflow-hidden border border-[#D5D6D8] h-full w-full mb-[120px]">
         <div className="flex justify-between pb-[21px]  lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
           <div className="flex gap-2 flex-col screen744:!shrink-0">
             <h1 className="text-[18px] font-bold text-[#212E42]">

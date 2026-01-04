@@ -49,16 +49,17 @@ export const GlobalInteractiveProvider: React.FC = () => {
 
         // Find the word boundaries
         let start = offset;
-        while (start > 0 && /[a-zA-ZÀ-ÿ0-9'-]/.test(text[start - 1])) {
+        while (start > 0 && /[a-zA-ZÀ-ÿ'-]/.test(text[start - 1])) {
             start--;
         }
         let end = offset;
-        while (end < text.length && /[a-zA-ZÀ-ÿ0-9'-]/.test(text[end])) {
+        while (end < text.length && /[a-zA-ZÀ-ÿ'-]/.test(text[end])) {
             end++;
         }
 
         const word = text.slice(start, end).trim();
-        if (!word || word.length < 2) return null;
+        // Skip if word is empty, too short, or contains numbers
+        if (!word || word.length < 2 || /\d/.test(word)) return null;
 
         if (isIgnoredElement(node.parentElement)) return null;
 
@@ -67,7 +68,7 @@ export const GlobalInteractiveProvider: React.FC = () => {
         wordRange.setEnd(node, end);
         const rects = wordRange.getClientRects();
 
-        let bestRect = rects[0] || wordRange.getBoundingClientRect();
+        let bestRect: DOMRect | null = null;
         for (let i = 0; i < rects.length; i++) {
             if (x >= rects[i].left && x <= rects[i].right && y >= rects[i].top && y <= rects[i].bottom) {
                 bestRect = rects[i];
@@ -75,8 +76,12 @@ export const GlobalInteractiveProvider: React.FC = () => {
             }
         }
 
+        if (!bestRect) return null;
+
         return { word, rect: bestRect };
     };
+
+    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const handleMouseMove = useCallback((e: MouseEvent) => {
         mousePos.current = { x: e.clientX, y: e.clientY };
@@ -86,39 +91,82 @@ export const GlobalInteractiveProvider: React.FC = () => {
         if (result) {
             // If the word changed, update the ghost trigger instantly
             if (result.word !== hoveredWord || !virtualRect) {
+                // If moving to a DIFFERENT word, close the current menu
+                if (isOpen && result.word !== activeWord) {
+                    setIsOpen(false);
+                }
+
                 setHoveredWord(result.word);
                 setVirtualRect(result.rect);
-                setIsOpen(false); // Close previous popover if any
+
+                // Clear existing timeout when moving to a new word
+                if (hoverTimeoutRef.current) {
+                    clearTimeout(hoverTimeoutRef.current);
+                }
+
+                // Set a timeout to open the menu automatically on hover
+                hoverTimeoutRef.current = setTimeout(() => {
+                    setActiveWord(result.word);
+                    setActiveRect(result.rect);
+                    setIsOpen(true);
+                }, 300); // 300ms hover delay
             }
         } else {
-            // If we moved away from a word and no popover is open, clean up
+            // If we moved away from a word
             if (!isOpen) {
                 setHoveredWord(null);
                 setVirtualRect(null);
             }
-        }
 
-        if (isOpen) return;
-    }, [isOpen, hoveredWord, virtualRect]);
+            if (hoverTimeoutRef.current) {
+                clearTimeout(hoverTimeoutRef.current);
+                hoverTimeoutRef.current = null;
+            }
+        }
+    }, [isOpen, hoveredWord, virtualRect, activeWord]);
 
     const handleClick = useCallback((e: MouseEvent) => {
-        // If we are over a word, open the menu and LOCK it to that word
+        // Keep the click functionality as a fallback or to force it
         const result = getWordAtPoint(e.clientX, e.clientY);
-        if (result && result.word === hoveredWord) {
+        if (result) {
+            // Stop propagation to prevent parent (e.g. Card) click events from firing
+            e.stopPropagation();
+            e.preventDefault();
+
+            if (hoverTimeoutRef.current) {
+                clearTimeout(hoverTimeoutRef.current);
+            }
             setActiveWord(result.word);
             setActiveRect(result.rect);
             setIsOpen(true);
         }
-    }, [hoveredWord, isOpen]);
+    }, []);
+
+    const handleScroll = useCallback(() => {
+        if (!isOpen) {
+            setHoveredWord(null);
+            setVirtualRect(null);
+        }
+        if (hoverTimeoutRef.current) {
+            clearTimeout(hoverTimeoutRef.current);
+            hoverTimeoutRef.current = null;
+        }
+    }, [isOpen]);
 
     useEffect(() => {
         window.addEventListener("mousemove", handleMouseMove);
-        window.addEventListener("click", handleClick);
+        // Use capture phase for click to intercept it before it reaches parent elements
+        window.addEventListener("click", handleClick, { capture: true });
+        window.addEventListener("scroll", handleScroll, { passive: true });
         return () => {
             window.removeEventListener("mousemove", handleMouseMove);
-            window.removeEventListener("click", handleClick);
+            window.removeEventListener("click", handleClick, { capture: true });
+            window.removeEventListener("scroll", handleScroll);
+            if (hoverTimeoutRef.current) {
+                clearTimeout(hoverTimeoutRef.current);
+            }
         };
-    }, [handleMouseMove, handleClick]);
+    }, [handleMouseMove, handleClick, handleScroll]);
 
     return (
         <>
@@ -126,21 +174,17 @@ export const GlobalInteractiveProvider: React.FC = () => {
             {hoveredWord && virtualRect && (
                 <div
                     className={clsx(
-                        "fixed pointer-events-none z-[49] flex items-center justify-center transition-colors duration-150 rounded-sm",
-                        "text-[#0DAA94] bg-[#E0F2F1] underline decoration-[#0DAA94]/30 underline-offset-4 font-normal cursor-pointer"
+                        "fixed pointer-events-none z-[49] transition-all duration-150 rounded-sm",
+                        "bg-[#0DAA94]/10 border-b-2 border-[#0DAA94]/40"
                     )}
                     style={{
                         top: virtualRect.top,
                         left: virtualRect.left,
                         width: virtualRect.width,
                         height: virtualRect.height,
-                        fontSize: 'inherit', // Attempt to match parent if possible, but limited to rect
-                        pointerEvents: 'none', // Critical: doesn't block mouse detection
-                        cursor: 'pointer'
                     }}
                 >
                     <style dangerouslySetInnerHTML={{ __html: `body { cursor: pointer !important; }` }} />
-                    <span className="opacity-0">{hoveredWord}</span>
                 </div>
             )}
 

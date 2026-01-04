@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import Image from "next/image";
 import clsx from "clsx";
 import {
@@ -25,7 +24,6 @@ import SvgAllSkills from "@/components/icons/AllSkills";
 import { usePathname, useRouter } from "next/navigation";
 import { useSelectedTask } from "@/store/useSelectedTask.store";
 import { useSelectedExam } from "@/store/useSelectedExam.store";
-import PlanCard from "@/components/pages/dashboard/PlanCard";
 import ExtraDiscountModal from "@/components/modal/ExtraDiscountModal";
 import { useExtraDiscountStore } from "@/store/useExtraDiscount.store";
 import { useCreateDiscountCoupon } from "@/hooks/useCreateDiscountCoupon";
@@ -46,10 +44,6 @@ import DesktopNavigation from "@/components/dashboard-new/DesktopNavigation";
 import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
 import AskBeavoModal from "@/components/AskBeavo/AskBeavoModal";
 import { GlobalInteractiveProvider } from "@/components/dashboard-app/practice/GlobalInteractiveProvider";
-
-const SvgHamburger = dynamic(() => import("../../icons/Hamburger"), {
-  ssr: true,
-});
 
 const NavItem = ({
   icon,
@@ -809,22 +803,26 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
               )}
             >
               <div className="flex gap-[12px] screen744:!gap-[24px] screen1280:!gap-[64px] items-center w-full">
-                <div
-                  className="screen1280:hidden flex cursor-pointer"
-                  onClick={() => setIsMenuOpen(true)}
-                >
-                  <SvgHamburger />
-                </div>
-
                 <Image
                   onClick={() => router.push("/")}
                   alt="full logo"
                   width={133}
                   height={40}
                   className={clsx(
-                    "opacity-100 delay-300 hover:!cursor-pointer"
+                    "opacity-100 delay-300 hover:!cursor-pointer screen1280:block hidden"
                   )}
                   src="/images/logo.png"
+                />
+
+                <Image
+                  onClick={() => router.push("/")}
+                  alt="full logo"
+                  width={35}
+                  height={35}
+                  className={clsx(
+                    "opacity-100 delay-300 hover:!cursor-pointer screen1280:hidden block"
+                  )}
+                  src="/images/header-logo-left.png"
                 />
 
                 <DesktopNavigation />
@@ -858,7 +856,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
         <BottomNavigation />
       </div >
       <AskBeavoModal />
-      {/* <GlobalInteractiveProvider /> */}
+      <GlobalInteractiveProvider />
     </>
   );
 };
