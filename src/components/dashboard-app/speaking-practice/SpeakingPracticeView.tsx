@@ -18,7 +18,6 @@ import UpgradeModal from "@/components/modal/UpgradeModal";
 import { TWritingAnswerDto } from "@/models/answer";
 import LoginModal from "@/components/modal/LoginModal";
 import SvgRecording from "@/components/icons/Recording";
-import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
@@ -92,11 +91,11 @@ const SpeakingPracticeView = ({
   const noUser = isLoaded ? !isSignedIn : false;
   const [showModal, setShowModal] = useState(false);
   const router = useRouter();
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying] = useState(false);
   const [page, setPage] = useState("question");
   const [passageIndex, setPassageIndex] = useState(0);
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [questionIndexInPractice, setQuestionIndexInPractice] = useState(0);
+  const [, setQuestionIndexInPractice] = useState(0);
   const [isOpen, setIsOpen] = useState<Record<number, boolean>>({});
   const [selectedAnswers, setSelectedAnswers] = useState<
     Record<string, string>
@@ -105,13 +104,11 @@ const SpeakingPracticeView = ({
   const [recordingTime, setRecordingTime] = useState(
     recordingTimePerTask[practice.taskId.toString()]
   );
-  const [wordCount, setWordCount] = useState(0);
   const [progressBar, setProgressBar] = useState(0);
   const [isSubmit, setIsSubmit] = useState(false);
-  const [text, setText] = useState("");
-  const [tryToSubmit, setTryToSubmit] = useState(false);
+  const [, setText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
-  const [audioURL, setAudioURL] = useState<string | null>(null);
+  const [, setAudioURL] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunks = useRef<Blob[]>([]);
   const shouldShowPractice: any =
@@ -393,7 +390,7 @@ const SpeakingPracticeView = ({
   }
 
   return (
-    <div className="h-full mx-auto w-full transition-all duration-300 flex gap-5">
+    <div className="h-full mx-auto w-full transition-all duration-300 flex gap-5 mb-[120px]">
       {freeUser ? (
         showModal && <UpgradeModal setShowModal={setShowModal} />
       ) : noUser ? (
