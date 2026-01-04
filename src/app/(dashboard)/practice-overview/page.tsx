@@ -79,7 +79,7 @@ const DashboardApp = () => {
   }
 
   return (
-    <div className="flex flex-col w-full items-end">
+    <div className="flex flex-col w-full items-end mb-[120px]">
       <PracticeOverview tasks={tasks} />
     </div>
   );
