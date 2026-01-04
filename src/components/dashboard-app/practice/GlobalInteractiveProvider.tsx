@@ -155,20 +155,17 @@ export const GlobalInteractiveProvider: React.FC = () => {
             {hoveredWord && virtualRect && (
                 <div
                     className={clsx(
-                        "fixed pointer-events-none z-[49] flex items-center justify-center transition-colors duration-150 rounded-sm",
-                        "text-[#0DAA94] bg-[#E0F2F1] underline decoration-[#0DAA94]/30 underline-offset-4 font-normal cursor-pointer"
+                        "fixed pointer-events-none z-[49] transition-all duration-150 rounded-sm",
+                        "bg-[#0DAA94]/10 border-b-2 border-[#0DAA94]/40"
                     )}
                     style={{
                         top: virtualRect.top,
                         left: virtualRect.left,
                         width: virtualRect.width,
                         height: virtualRect.height,
-                        fontSize: 'inherit', // Attempt to match parent if possible, but limited to rect
-                        pointerEvents: 'none', // Critical: doesn't block mouse detection
                     }}
                 >
                     <style dangerouslySetInnerHTML={{ __html: `body { cursor: pointer !important; }` }} />
-                    <span className="opacity-0">{hoveredWord}</span>
                 </div>
             )}
 
