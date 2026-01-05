@@ -22,14 +22,26 @@ export const GlobalInteractiveProvider: React.FC = () => {
     const isIgnoredElement = (el: HTMLElement | null): boolean => {
         if (!el) return false;
         const tag = el.tagName.toLowerCase();
-        const isInteractive = ["button", "a", "input", "textarea", "select", "svg", "path"].includes(tag) ||
+
+        // 1. Direct tag check
+        const isInteractiveTag = ["button", "a", "input", "textarea", "select", "svg", "path"].includes(tag);
+
+        // 2. Attribute and logic check
+        const hasInteractiveAttr =
             el.getAttribute("role") === "button" ||
             el.getAttribute("data-word-menu") === "true" ||
             el.onclick != null ||
+            el.classList.contains("cursor-pointer");
+
+        // 3. Closest ancestor check (includes self)
+        const hasInteractiveParent =
             el.closest("button") != null ||
             el.closest("a") != null ||
-            el.closest("[data-word-menu='true']") != null;
-        return isInteractive;
+            el.closest("[data-word-menu='true']") != null ||
+            el.closest(".cursor-pointer") != null ||
+            el.closest("[data-no-word-menu='true']") != null;
+
+        return isInteractiveTag || hasInteractiveAttr || hasInteractiveParent;
     };
 
     const getWordAtPoint = (x: number, y: number) => {
