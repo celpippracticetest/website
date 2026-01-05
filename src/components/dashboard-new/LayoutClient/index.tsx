@@ -789,7 +789,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
 
       <div className="flex w-full justify-center max-w-[1440px] mx-auto z-[99999999]">
         <div
-          className="flex flex-col w-full h-full screen744:!w-[calc(100%-84px)] bg-[#F4F7FF] items-end pt-[96px] screen1280:!pt-0"
+          className="flex flex-col w-full h-full screen744:!w-[calc(100%-84px)] bg-[#F4F7FF] items-end screen744:pt-[96px] pt-[50px] screen1280:!pt-0"
         >
           <div className="px-[16px] screen744:!px-0 w-full mb-[16px]">
             <div
