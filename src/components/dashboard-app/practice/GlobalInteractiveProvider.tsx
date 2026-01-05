@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { WordMenu } from "./WordMenu";
 import { useAskBeavoStore } from "@/stores/askBeavoStore";
+import { useUser } from "@clerk/nextjs";
+import { useAuthModalStore } from "@/store/useAuthModal.store";
 import clsx from "clsx";
 
 export const GlobalInteractiveProvider: React.FC = () => {
@@ -11,6 +13,8 @@ export const GlobalInteractiveProvider: React.FC = () => {
     const [activeWord, setActiveWord] = useState<string | null>(null);
     const [activeRect, setActiveRect] = useState<DOMRect | null>(null);
     const { askAboutWord } = useAskBeavoStore();
+    const { isSignedIn } = useUser();
+    const { setShowLoginModal } = useAuthModalStore();
 
     const mousePos = useRef({ x: 0, y: 0 });
 
@@ -106,6 +110,12 @@ export const GlobalInteractiveProvider: React.FC = () => {
 
                 // Set a timeout to open the menu automatically on hover
                 hoverTimeoutRef.current = setTimeout(() => {
+                    if (!isSignedIn) {
+                        setShowLoginModal(true);
+                        setHoveredWord(null);
+                        setVirtualRect(null);
+                        return;
+                    }
                     setActiveWord(result.word);
                     setActiveRect(result.rect);
                     setIsOpen(true);
@@ -132,6 +142,11 @@ export const GlobalInteractiveProvider: React.FC = () => {
             // Stop propagation to prevent parent (e.g. Card) click events from firing
             e.stopPropagation();
             e.preventDefault();
+
+            if (!isSignedIn) {
+                setShowLoginModal(true);
+                return;
+            }
 
             if (hoverTimeoutRef.current) {
                 clearTimeout(hoverTimeoutRef.current);

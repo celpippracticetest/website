@@ -40,7 +40,7 @@ const AuthButtons = () => {
   return (
     <>
       <SignedIn>
-        <div className="mr-[24px] flex items-center" ref={dropdownRef}>
+        <div className="relative mr-[24px] flex items-center" ref={dropdownRef}>
           <button
             onClick={() => setUserDropDownOpen(!isUserDropDownOpen)}
             className="cursor-pointer w-10 h-10"
@@ -59,7 +59,7 @@ const AuthButtons = () => {
           </button>
 
           {isUserDropDownOpen && (
-            <div className="absolute right-0 z-10 mt-2 w-56 top-[48px] rounded-md bg-white ring-1 shadow-lg ring-black/5">
+            <div className="absolute right-0 z-[100] mt-2 w-56 top-[48px] rounded-md bg-white ring-1 shadow-lg ring-black/5">
               <div className="py-1">
                 {roles?.includes("admin") && (
                   <a

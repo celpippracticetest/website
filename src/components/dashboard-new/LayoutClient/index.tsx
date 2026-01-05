@@ -26,6 +26,7 @@ import { useSelectedTask } from "@/store/useSelectedTask.store";
 import { useSelectedExam } from "@/store/useSelectedExam.store";
 import ExtraDiscountModal from "@/components/modal/ExtraDiscountModal";
 import { useExtraDiscountStore } from "@/store/useExtraDiscount.store";
+import { useAuthModalStore } from "@/store/useAuthModal.store";
 import { useCreateDiscountCoupon } from "@/hooks/useCreateDiscountCoupon";
 import SvgCopy from "@/components/icons/Copy";
 import React from "react";
@@ -207,7 +208,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
   const noUser = isLoaded ? !isSignedIn : false;
 
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
+  const { showLoginModal, setShowLoginModal } = useAuthModalStore();
   const ref = useRef<HTMLDivElement>(null);
   const loginRef = useRef<HTMLDivElement>(null);
   const { collapsed, setCollapsed } = useMenuCollapsedStore((state) => state);
@@ -798,7 +799,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
                 "fixed top-0 left-0 right-0 z-[50] h-[72px] px-[16px] screen744:!px-[24px] rounded-b-[32px] border-b border-[#D1DEFF] backdrop-blur-[8px]",
                 "bg-[linear-gradient(90deg,_rgba(255,_255,_255,_0.65)_0%,_rgba(255,_255,_255,_0.2)_100%)]",
                 // Desktop (>= 1280)
-                "screen1280:!static screen1280:!mt-[24px] screen1280:!rounded-[32px] screen1280:!h-[80px] screen1280:!max-w-[1280px] screen1280:!mx-auto screen1280:!pl-[24px] screen1280:!border screen1280:!px-[16px]",
+                "screen1280:!relative screen1280:!z-[50] screen1280:!mt-[24px] screen1280:!rounded-[32px] screen1280:!h-[80px] screen1280:!max-w-[1280px] screen1280:!mx-auto screen1280:!pl-[24px] screen1280:!border screen1280:!px-[16px]",
                 "items-center"
               )}
             >
