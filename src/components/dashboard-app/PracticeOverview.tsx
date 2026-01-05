@@ -11,16 +11,11 @@ import SvgReadingPart from "../icons/ReadingPart";
 import SvgWritingPart from "../icons/WritingPart";
 import SvgSpeakingPart from "../icons/SpeakingPart";
 
-interface PracticeTask {
-  taskNumber: string;
-  name: string;
-}
-
 interface PracticeSection {
   title: string;
   color: string;
   icon: React.ReactNode;
-  tasks: PracticeTask[];
+  tasks: TTaskSchemaDto[];
   route: string;
   bgColor: string;
 }
@@ -98,9 +93,9 @@ const PracticeOverview = ({
   const practiceSections: PracticeSection[] = [
     {
       title: "Listening",
-      color: "text-[#316BFF]",
+      color: "text-[#0DAA94]",
       icon: <SvgListeningPart />,
-      bgColor: "bg-[#F0FFFD]", // Light background for expanded area
+      bgColor: "bg-[#E6F6F4]",
       route: "listening",
       tasks:
         tasks["listening"]?.sort((a, b) => {
@@ -112,8 +107,8 @@ const PracticeOverview = ({
     },
     {
       title: "Reading",
-      color: "text-[#F27059]",
-      bgColor: "bg-[#FFF2F4]",
+      color: "text-[#EE4266]",
+      bgColor: "bg-[#FEECEF]",
       icon: <SvgReadingPart />,
       route: "reading",
       tasks:
@@ -126,9 +121,9 @@ const PracticeOverview = ({
     },
     {
       title: "Writing",
-      color: "text-[#0DAA94]",
+      color: "text-[#F27059]",
       icon: <SvgWritingPart />,
-      bgColor: "bg-[#F0FFFD]",
+      bgColor: "bg-[#FFF1EE]",
       route: "writing",
       tasks:
         tasks["writing"]?.sort((a, b) => {
@@ -140,9 +135,9 @@ const PracticeOverview = ({
     },
     {
       title: "Speaking",
-      color: "text-[#EE4266]",
+      color: "text-[#7C3AED]",
       icon: <SvgSpeakingPart />,
-      bgColor: "bg-[#FFF8F0]",
+      bgColor: "bg-[#F1E9FE]",
       route: "speaking",
       tasks:
         tasks["speaking"]?.sort((a, b) => {
@@ -155,15 +150,64 @@ const PracticeOverview = ({
   ];
 
   return (
-    <div className="flex flex-col w-full px-[16px] screen1280:!px-[40px] bg-[#F4F7FF] pt-[16px] gap-6">
-      <div className="flex h-[52px] screen744:!hidden gap-[8px] flex-col w-full items-start">
+    <div className="flex flex-col w-full px-[16px] screen1280:!px-[40px] bg-[#F4F7FF] pt-[16px] gap-6 pb-20">
+      {/* Mobile Header (Hidden on Desktop) */}
+      <div className="flex h-[52px] screen1280:hidden gap-[8px] flex-col w-full items-start">
         <span className="text-[18px] text-[#37465C] font-semibold">
           Practice
         </span>
         <span className="text-[14px] text-[#76808F] font-normal">All</span>
       </div>
 
-      <div className="flex flex-col gap-3">
+      {/* Desktop Grid Layout (>= 1280px) */}
+      <div className="hidden screen1280:grid grid-cols-4 gap-8">
+        {practiceSections.map((section) => (
+          <div key={section.title} className="flex flex-col gap-8">
+            {/* Desktop Header */}
+            <div className="flex flex-col items-center gap-2">
+              <div className={`flex items-center justify-center w-[72px] h-[72px] rounded-full ${section.bgColor} ${section.color}`}>
+                <div className="scale-150">{section.icon}</div>
+              </div>
+              <h2 className={`text-[20px] font-bold ${section.color}`}>
+                {section.title}
+              </h2>
+            </div>
+
+            {/* Desktop Tasks List */}
+            <div className="flex flex-col gap-4">
+              {section.tasks.map((task, index) => (
+                <div
+                  key={`${section.title}-${index}`}
+                  onClick={() => {
+                    if (!task?.id) return;
+                    setSelectedTask(task);
+                  }}
+                  className="group flex flex-col p-5 bg-white rounded-[16px] shadow-sm hover:shadow-md transition-all cursor-pointer border border-transparent hover:border-[#0DAA94]/20 relative"
+                >
+                  {selectedTask?.id == task?.id && (
+                    <div className="absolute inset-0 bg-white/80 rounded-[16px] flex items-center justify-center z-10">
+                      <LoaderCircle className="w-6 h-6 animate-spin text-blue-500" />
+                    </div>
+                  )}
+
+                  <div className="mb-3">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-[#F1F5F9] text-[#64748B]">
+                      Task {index + 1}
+                    </span>
+                  </div>
+
+                  <h3 className="text-[#212E42] font-bold text-[18px] leading-snug">
+                    {task.name}
+                  </h3>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Mobile Accordion Layout (< 1280px) */}
+      <div className="flex flex-col gap-3 screen1280:hidden">
         {practiceSections.map((section) => {
           const isExpanded = expandedSections.has(section.title);
           return (
@@ -200,7 +244,7 @@ const PracticeOverview = ({
                           key={`${section.title}-${index}`}
                           onClick={() => {
                             if (!task?.id) return;
-                            setSelectedTask(task as TTaskSchemaDto);
+                            setSelectedTask(task);
                           }}
                           className="group flex flex-col p-5 screen1280:p-6 cursor-pointer bg-white rounded-[20px] shadow-sm hover:shadow-md transition-all border border-transparent hover:border-[#0DAA94]/20 relative"
                         >
