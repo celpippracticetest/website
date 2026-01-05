@@ -1,9 +1,10 @@
-import React, { useEffect, useRef } from "react";
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
+import { useAuthModalStore } from "@/store/useAuthModal.store";
 import Close from "../icons/Close";
 
 const LoginModal = (params: any) => {
   const { setShowLoginModal } = params;
+  const { loginMessage } = useAuthModalStore();
   const loginRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -34,7 +35,7 @@ const LoginModal = (params: any) => {
           Login to your account
         </div>
         <div className="text-[#76808F] mt-[12px] text-[14px] text-center font-normal">
-          Please log in to start the exam{" "}
+          {loginMessage || "Please log in to start the exam"}{" "}
           <SignUpButton>
             <div className="text-[14px] mx-[16px] cursor-pointer flex items-center justify-center text-white bg-[#4A7DFF] rounded-[24px] h-[40px] mt-[12px]  text-center font-normal">
               Create a free account

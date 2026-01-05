@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Plus, Sparkles, Volume2 } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
+import { useUser } from "@clerk/nextjs";
+import { useAuthModalStore } from "@/store/useAuthModal.store";
 import clsx from "clsx";
 
 interface WordMenuProps {
@@ -25,18 +27,22 @@ export const WordMenu: React.FC<WordMenuProps> = ({
     const isOpen = controlledOpen !== undefined ? controlledOpen : uncontrolledOpen;
     const setIsOpen = controlledOnOpenChange !== undefined ? controlledOnOpenChange : setUncontrolledOpen;
 
+    const { isSignedIn } = useUser();
+    const { setShowLoginModal } = useAuthModalStore();
+
     const [isSaved, setIsSaved] = useState(false);
     const [isChecking, setIsChecking] = useState(false);
     const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Check if word is already saved when the popover opens
     useEffect(() => {
-        if (isOpen) {
+        if (isOpen && isSignedIn) {
             checkIfSaved();
         }
-    }, [isOpen, word]);
+    }, [isOpen, word, isSignedIn]);
 
     const checkIfSaved = async () => {
+        if (!isSignedIn) return;
         setIsChecking(true);
         try {
             const response = await fetch(`/api/user-words?word=${encodeURIComponent(word)}`);
@@ -74,6 +80,13 @@ export const WordMenu: React.FC<WordMenuProps> = ({
 
     const handleSaveWord = async (e: React.MouseEvent) => {
         e.stopPropagation();
+
+        if (!isSignedIn) {
+            setIsOpen(false);
+            setShowLoginModal(true, "Please log in to add the word");
+            return;
+        }
+
         if (isSaved) {
             // Redirect or show navigation to words page
             window.location.href = "/words";
@@ -97,6 +110,12 @@ export const WordMenu: React.FC<WordMenuProps> = ({
     const handleAskAI = (e: React.MouseEvent) => {
         e.stopPropagation();
         setIsOpen(false);
+
+        if (!isSignedIn) {
+            setShowLoginModal(true, "Please log in to add the word");
+            return;
+        }
+
         if (onAskAI) {
             onAskAI(word);
         }

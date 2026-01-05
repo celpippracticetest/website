@@ -6,7 +6,7 @@ const ShowTaskHeader = ({ children }: any) => {
     <div
       className={`
     
-flex flex-col pt-[40px] h-screen items-center w-full px-[16px]`}
+flex flex-col h-screen items-center w-full px-[16px]`}
     >
       {children}
     </div>
