@@ -208,7 +208,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
   const noUser = isLoaded ? !isSignedIn : false;
 
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const { showLoginModal, setShowLoginModal } = useAuthModalStore();
+  const { showLoginModal, setShowLoginModal, loginMessage } = useAuthModalStore();
   const ref = useRef<HTMLDivElement>(null);
   const loginRef = useRef<HTMLDivElement>(null);
   const { collapsed, setCollapsed } = useMenuCollapsedStore((state) => state);
@@ -334,7 +334,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
             Login to your account
           </div>
           <div className="text-[#212E42] mt-[12px] text-[14px] text-center font-normal">
-            Please log in to start the exam{" "}
+            {loginMessage || "Please log in to start the exam"}{" "}
             <SignUpButton>
               <div className="text-[14px] cursor-pointer flex items-center justify-center text-white bg-[#4A7DFF] rounded-[24px] h-[40px] mt-[12px]  text-center font-normal">
                 Create a free account

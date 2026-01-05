@@ -83,7 +83,7 @@ export const WordMenu: React.FC<WordMenuProps> = ({
 
         if (!isSignedIn) {
             setIsOpen(false);
-            setShowLoginModal(true);
+            setShowLoginModal(true, "Please log in to add the word");
             return;
         }
 
@@ -112,7 +112,7 @@ export const WordMenu: React.FC<WordMenuProps> = ({
         setIsOpen(false);
 
         if (!isSignedIn) {
-            setShowLoginModal(true);
+            setShowLoginModal(true, "Please log in to add the word");
             return;
         }
 
