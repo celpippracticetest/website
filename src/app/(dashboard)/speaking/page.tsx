@@ -78,7 +78,7 @@ const SpeakingPage = async ({
   if (!selectedPracticeId && !taskId) {
     return (
       <ShowTaskHeader>
-        <div className="flex  h-[52px] screen744:!hidden gap-[8px] flex-col w-full items-start">
+        <div className="flex h-[52px] screen744:!hidden gap-[8px] flex-col w-full items-start">
           <span className="text-[18px] text-[#37465C] font-semibold">
             Practice
           </span>
@@ -86,13 +86,7 @@ const SpeakingPage = async ({
             Speaking
           </span>
         </div>
-        <div className="flex mt-[32px]  screen744:!mt-[0] items-center justify-center gap-[8px] max-w-[1200px] w-full h-[60px] rounded-[12px] bg-[#FFEBD6]">
-          <SvgSpeakingPart className="text-[#F27059]" />
-          <span className="text-[#37465C] font-semibold text-[20px]">
-            Speaking Practice
-          </span>
-        </div>
-        <ShowTasks tasks={speakingTasks} />
+        <ShowTasks tasks={speakingTasks.map(t => ({ ...t, icon: <SvgSpeakingPart className="text-[#EE4266]" />, title: "Speaking Practice" }))} />
       </ShowTaskHeader>
     );
   }

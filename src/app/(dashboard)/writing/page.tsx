@@ -87,13 +87,7 @@ const WritingPage = async ({
             Writing
           </span>
         </div>
-        <div className="flex  mt-[32px]  screen744:!mt-[0] items-center justify-center gap-[8px] max-w-[1200px] w-full h-[60px] rounded-[12px] bg-[#F0FFFD]">
-          <SvgWritingPart className="text-[#0DAA94]" />
-          <span className="text-[#37465C] font-semibold text-[20px]">
-            Writing Practice
-          </span>
-        </div>
-        <ShowTasks tasks={writingTasks} />
+        <ShowTasks tasks={writingTasks.map(t => ({ ...t, icon: <SvgWritingPart className="text-[#0DAA94]" />, title: "Writing Practice" }))} />
       </ShowTaskHeader>
     );
   }
