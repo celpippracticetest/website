@@ -110,12 +110,6 @@ export const GlobalInteractiveProvider: React.FC = () => {
 
                 // Set a timeout to open the menu automatically on hover
                 hoverTimeoutRef.current = setTimeout(() => {
-                    if (!isSignedIn) {
-                        setShowLoginModal(true);
-                        setHoveredWord(null);
-                        setVirtualRect(null);
-                        return;
-                    }
                     setActiveWord(result.word);
                     setActiveRect(result.rect);
                     setIsOpen(true);
@@ -142,11 +136,6 @@ export const GlobalInteractiveProvider: React.FC = () => {
             // Stop propagation to prevent parent (e.g. Card) click events from firing
             e.stopPropagation();
             e.preventDefault();
-
-            if (!isSignedIn) {
-                setShowLoginModal(true);
-                return;
-            }
 
             if (hoverTimeoutRef.current) {
                 clearTimeout(hoverTimeoutRef.current);
