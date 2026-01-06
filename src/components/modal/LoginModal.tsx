@@ -1,6 +1,7 @@
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import { useAuthModalStore } from "@/store/useAuthModal.store";
 import Close from "../icons/Close";
+import { useRef, useEffect } from "react";
 
 const LoginModal = (params: any) => {
   const { setShowLoginModal } = params;
