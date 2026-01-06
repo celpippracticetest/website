@@ -28,6 +28,15 @@ export const metadata = {
     "Free CELPIP Listening Practice Tests & Mock Exams | CELPIPPRACTICETEST",
   description:
     "Prepare for CELPIP Listening with authentic recordings, adaptive quizzes, and analytics. Improve accuracy, note‑taking, and exam‑day confidence | CELPIPPRACTICETEST.com",
+  keywords: [
+    "celpip listening practice test",
+    "celpip listening test",
+    "celpip listening practice",
+    "celpip general listening practice test",
+    "celpip listening practice test with answers",
+    "celpip listening practice with answers",
+    "celpip audio sample",
+  ],
   alternates: {
     canonical: "https://celpippracticetest.com/listening",
   },
@@ -103,7 +112,7 @@ const DashboardApp = async ({
   const practices = await practiceRepo.getAllPractice(
     {
       type: "LISTENING",
-      taskId: taskId ? (new ObjectId(taskId) as any) : undefined,
+      taskId: taskId ? (new ObjectId(taskId) as unknown as string) : undefined,
     },
     0,
     200
