@@ -259,9 +259,9 @@ const PlansForUsers = (
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                           className="lucide lucide-arrow-right w-5 h-5 lg:w-4 lg:h-4"
                         >
                           <path d="M5 12h14"></path>
@@ -322,9 +322,9 @@ const PlansForUsers = (
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                           className="lucide lucide-arrow-right w-5 h-5 lg:w-4 lg:h-4"
                         >
                           <path d="M5 12h14"></path>
