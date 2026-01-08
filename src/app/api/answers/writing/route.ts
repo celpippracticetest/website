@@ -2,7 +2,7 @@ import { PracticeRepository } from "@/repositories/practice.repo";
 import { NextRequest, NextResponse } from "next/server";
 import mongoClient from "@/lib/mongodb";
 import { WritingAnswerRequestSchema } from "@/models/answer";
-import { WritingAnswerRepository } from "@/repositories/writingAnswers";
+import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { currentUser } from "@clerk/nextjs/server";
@@ -17,7 +17,7 @@ export const POST = async function (req: NextRequest) {
 
   if (answersParser.success) {
     const answerBody = answersParser.data;
-    const answerRepo = new WritingAnswerRepository(mongoClient);
+    const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
     if (!user.publicMetadata.plan || user.publicMetadata.plan !== "premium") {
       const prevAnswer = await answerRepo.getAllWritingAnswers(
         { userId: user.id, practiceId: answerBody.practiceId, type: "WRITING" },
@@ -394,7 +394,7 @@ export const GET = async function (req: NextRequest) {
   if (!user) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
-  const answerRepo = new WritingAnswerRepository(mongoClient);
+  const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
   const answers = await answerRepo.getAllWritingAnswers(
     { userId: user.id, practiceId, type: "WRITING" },
     0,
