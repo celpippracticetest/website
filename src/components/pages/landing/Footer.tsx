@@ -6,7 +6,7 @@ import Image from "next/image";
 
 const Footer = () => {
   const { ref, inView } = useInView();
-  const { setInFooter, isInFooter } = useButtonVisibleStore((state) => state);
+  const { setInFooter } = useButtonVisibleStore((state) => state);
 
   useEffect(() => {
     if (inView) {
@@ -55,7 +55,7 @@ const Footer = () => {
                 <span>Privacy Policy</span>
               </Link>
               <Link
-                href="/"
+                href="/refund-policy"
                 className="text-text2 font-normal text-[14px]"
               >
                 <span>Refund Policy</span>

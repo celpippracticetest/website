@@ -1,0 +1,184 @@
+"use client";
+import React, { useEffect, useRef, useState } from "react";
+import TopHeader from "./TopHeader";
+import Footer from "./Footer";
+
+const RefundPolicy = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const sidebarMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const win = window as unknown as { Intercom?: (method: string) => void };
+    if (typeof window !== "undefined" && win.Intercom) {
+      win.Intercom("show");
+    }
+    return () => {
+      if (typeof window !== "undefined" && win.Intercom) {
+        win.Intercom("hide");
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const checkMenu = (event: MouseEvent) => {
+      if (sidebarMenuRef?.current) {
+        if (!sidebarMenuRef?.current.contains(event.target as Node)) {
+          setIsMenuOpen(false);
+        }
+      }
+    };
+
+    window.document.addEventListener("mousedown", checkMenu);
+  }, []);
+
+  useEffect(() => {
+    const handleSize = () => {
+      setDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+    window.addEventListener("resize", handleSize);
+  }, []);
+
+  useEffect(() => {
+    if (isMenuOpen === true && dimensions.width <= 1279) {
+      document.body.classList.add("overflow-hidden");
+    } else if (isMenuOpen === false && dimensions.width <= 1279) {
+      document.body.classList.remove("overflow-hidden");
+    }
+    if (isMenuOpen === true && dimensions.width > 1279) {
+      setIsMenuOpen(false);
+    }
+  }, [isMenuOpen, dimensions]);
+
+  const data = [
+    {
+      title: "Overview",
+      description: `This Refund Policy explains when refunds may be granted and how refund requests are handled for CELPIPPRACTICETEST.com.
+The Services are digital, non-tangible services delivered electronically and accessed immediately upon payment. Submitting a refund request does not guarantee approval.`,
+    },
+    {
+      title: "Eligibility",
+      description: `Refunds are eligible only for the first subscription purchase and only if all of the following conditions are met:`,
+      lists: [
+        "The request relates to the user’s first successful payment",
+        "The refund request is submitted within 7 days of the charge date",
+        "The user has not completed more than one mock exam",
+        "The user has not completed more than two practice activities in any single skill",
+        "Refund requests submitted outside the 7-day submission window are automatically rejected and not eligible for review.",
+      ],
+      sub: [
+        {
+          title: "Refunds are not available for:",
+          description: "",
+          lists: [
+            "Subscription renewals or repeat payments",
+            "Accounts that exceed the usage limits above",
+            "Requests based solely on forgetting to cancel a subscription",
+            "Requests submitted outside the 7-day submission window",
+          ],
+        },
+      ],
+    },
+    {
+      title: "Refund Request Process",
+      description: `All refund requests must be submitted exclusively through our refund request platform: https://refund.celpippractice.ca
+This platform is the only accepted method for submitting and tracking refund requests.
+Requests submitted through customer chat, email, or any other communication channel are not considered refund requests, do not initiate review, and will not be processed.
+After submission, you will receive a tracking code by email. This tracking code allows you to view the current status and message history related to your request.`,
+    },
+    {
+      title: "Review Process",
+      description: `Each refund request is reviewed individually. During review:`,
+      lists: [
+        "Account activity and usage may be evaluated",
+        "Eligibility criteria will be verified",
+        "Additional information may be requested through the refund platform",
+        "You may track the status of your request at any time using your tracking code on the refund platform.",
+      ],
+    },
+    {
+      title: "Final Determination",
+      description: `Refund decisions issued through the refund review process are final.
+Approved refunds are processed back to the original payment method. Rejected requests are closed and not eligible for reconsideration.
+Initiating a chargeback, payment dispute, or bank claim does not override this policy and may result in the request being closed.`,
+    },
+    {
+      title: "Contact",
+      description: `For questions regarding this Refund Policy, contact: support@celpippracticetest.com`,
+    },
+  ];
+
+  return (
+    <>
+      <TopHeader />
+
+      <div className="flex flex-col max-w-[1156px] mx-auto justify-center mt-[120px] px-[16px] mb-[116px]">
+        <h1 className="text-primary1 font-bold text-[28px]">
+          Refund Policy
+        </h1>
+        <span className="mt-[16px] font-normal text-[16px] text-text3">
+          Last Updated: Jan 08, 2026
+        </span>
+        {data?.map((element, index) => (
+          <div key={index} className="mt-[40px]">
+            <div className="flex flex-col">
+              <h2 className="font-semibold text-[20px]">{element.title}</h2>
+              <p className="font-normal text-[18px] mt-[17px] whitespace-pre-wrap">
+                {element?.description}
+              </p>
+              {element?.lists && (
+                <ul className="pl-20 mt-4">
+                  {element?.lists?.map((list, index) => (
+                    <li key={index} className="list-disc text-[18px]">
+                      {list}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {element?.sub && (
+                <>
+                  {element?.sub?.map((list, index) => (
+                    <div key={index} className="mt-[20px]">
+                      <div className="flex flex-col">
+                        <h3 className="font-semibold text-[20px] ml-[28px]">
+                          {list.title}
+                        </h3>
+                        {list?.description && (
+                          <p className="font-normal text-[18px] mt-[17px] whitespace-pre-wrap">
+                            {list?.description}
+                          </p>
+                        )}
+                        {list?.lists && (
+                          <ul className="pl-[48px] mt-4 text-[18px]">
+                            {list?.lists?.map((list, index) => (
+                              <li key={index} className="list-disc ml-[10px]">
+                                {list}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          </div>
+        ))}
+        <div className="h-[1px] bg-outline mt-[61px]"></div>
+        <p className="font-normal text-[16px] text-text3 mt-[20px]">
+          © 2026 CELPIPPRACTICETEST.com. All rights reserved.
+          CELPIPPRACTICETEST.com is not affiliated with, endorsed by, or
+          sponsored by any official testing organization.
+        </p>
+      </div>
+      <Footer />
+    </>
+  );
+};
+
+export default RefundPolicy;
