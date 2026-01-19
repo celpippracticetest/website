@@ -8,17 +8,7 @@ const TermsOfService = () => {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const sidebarMenuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const win = window as unknown as { Intercom?: (method: string) => void };
-    if (typeof window !== "undefined" && win.Intercom) {
-      win.Intercom("show");
-    }
-    return () => {
-      if (typeof window !== "undefined" && win.Intercom) {
-        win.Intercom("hide");
-      }
-    };
-  }, []);
+
   useEffect(() => {
     const checkMenu = (event: MouseEvent) => {
       if (sidebarMenuRef?.current) {

@@ -8,17 +8,7 @@ const RefundPolicy = () => {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const sidebarMenuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const win = window as unknown as { Intercom?: (method: string) => void };
-    if (typeof window !== "undefined" && win.Intercom) {
-      win.Intercom("show");
-    }
-    return () => {
-      if (typeof window !== "undefined" && win.Intercom) {
-        win.Intercom("hide");
-      }
-    };
-  }, []);
+
 
   useEffect(() => {
     const checkMenu = (event: MouseEvent) => {
@@ -169,12 +159,6 @@ Initiating a chargeback, payment dispute, or bank claim does not override this p
             </div>
           </div>
         ))}
-        <div className="h-[1px] bg-outline mt-[61px]"></div>
-        <p className="font-normal text-[16px] text-text3 mt-[20px]">
-          © 2026 CELPIPPRACTICETEST.com. All rights reserved.
-          CELPIPPRACTICETEST.com is not affiliated with, endorsed by, or
-          sponsored by any official testing organization.
-        </p>
       </div>
       <Footer />
     </>
