@@ -7,16 +7,7 @@ const PrivacyPolicy = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const sidebarMenuRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (typeof window !== "undefined" && (window as any).Intercom) {
-      (window as any).Intercom("show");
-    }
-    return () => {
-      if (typeof window !== "undefined" && (window as any).Intercom) {
-        (window as any).Intercom("hide");
-      }
-    };
-  }, []);
+
   useEffect(() => {
     const checkMenu = (event: MouseEvent) => {
       if (sidebarMenuRef?.current) {
@@ -49,7 +40,7 @@ const PrivacyPolicy = () => {
       setIsMenuOpen(false);
     }
   }, [isMenuOpen, dimensions]);
-  const hrefs = ["/exam-overview", "/practice-overview", "/wiki"];
+
 
   const data = [
     {

@@ -6,7 +6,7 @@ import mongoClient from "@/lib/mongodb";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { PracticeRepository } from "@/repositories/practice.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
-import { WritingAnswerRepository } from "@/repositories/writingAnswers";
+import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { currentUser } from "@clerk/nextjs/server";
 import { ObjectId } from "mongodb";
 import { redirect, RedirectType } from "next/navigation";
@@ -18,6 +18,15 @@ export const metadata = {
     "Free CELPIP Speaking Practice Tests & Mock Exams | CELPIPPRACTICETEST",
   description:
     "Simulate the real CELPIP Speaking test with timed tasks, AI grading, and expert tips. Track progress, boost fluency, and hit your target score | CELPIPPRACTICETEST.com",
+  keywords: [
+    "celpip speaking practice test",
+    "celpip speaking test",
+    "celpip speaking practice",
+    "celpip practice test speaking",
+    "celpip sample speaking questions",
+    "celpip practice speaking test",
+    "celpip general speaking sample test",
+  ],
   alternates: {
     canonical: "https://celpippracticetest.com/speaking",
   },
@@ -78,7 +87,7 @@ const SpeakingPage = async ({
   if (!selectedPracticeId && !taskId) {
     return (
       <ShowTaskHeader>
-        <div className="flex h-[52px] screen744:!hidden gap-[8px] flex-col w-full items-start">
+        <div className="flex  h-[52px] screen744:!hidden gap-[8px] flex-col w-full items-start">
           <span className="text-[18px] text-[#37465C] font-semibold">
             Practice
           </span>
@@ -86,7 +95,13 @@ const SpeakingPage = async ({
             Speaking
           </span>
         </div>
-        <ShowTasks tasks={speakingTasks.map(t => ({ ...t, icon: <SvgSpeakingPart className="text-[#EE4266]" />, title: "Speaking Practice" }))} />
+        <div className="flex mt-[32px]  screen744:!mt-[0] items-center justify-center gap-[8px] max-w-[1200px] w-full h-[60px] rounded-[12px] bg-[#FFEBD6]">
+          <SvgSpeakingPart className="text-[#F27059]" />
+          <span className="text-[#37465C] font-semibold text-[20px]">
+            Speaking Practice
+          </span>
+        </div>
+        <ShowTasks tasks={speakingTasks} />
       </ShowTaskHeader>
     );
   }
@@ -100,7 +115,7 @@ const SpeakingPage = async ({
   const practices = await practiceRepo.getAllPractice(
     {
       type: "SPEAKING",
-      taskId: taskId ? (new ObjectId(taskId) as any) : undefined,
+      taskId: taskId ? (new ObjectId(taskId) as unknown as string) : undefined,
     },
     0,
     200
@@ -130,7 +145,7 @@ const SpeakingPage = async ({
     }
   }
   if (user) {
-    const writingAnswerRepo = new WritingAnswerRepository(mongoClient);
+    const writingAnswerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
     completedPracticeId =
       await writingAnswerRepo.findAnswersByPracticeIdsAndUser(
         practices.items.map((p) => p.id),
@@ -139,7 +154,7 @@ const SpeakingPage = async ({
   }
 
   return (
-    <main className=" bg-[#F2F6FF] min-h-screen flex w-full justify-center   ">
+    <main className=" bg-[#F2F6FF] min-h-screen flex w-full justify-center ">
       <SpeakingPractice
         showHeader={true}
         allPractices={practices.items}

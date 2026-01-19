@@ -6,7 +6,7 @@ import mongoClient from "@/lib/mongodb";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { PracticeRepository } from "@/repositories/practice.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
-import { WritingAnswerRepository } from "@/repositories/writingAnswers";
+import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { currentUser } from "@clerk/nextjs/server";
 import { ObjectId } from "mongodb";
 import { redirect, RedirectType } from "next/navigation";
@@ -25,6 +25,19 @@ export const metadata = {
   title: "Free CELPIP Writing Practice Tests & Mock Exams | CELPIPPRACTICETEST",
   description:
     "Get higher CELPIP Writing marks with practice prompts, instant AI feedback, and model answers. Hone grammar, coherence, task response fast | CELPIPPRACTICETEST.com",
+  keywords: [
+    "celpip writing practice test",
+    "celpip sample writing test",
+    "celpip writing practice",
+    "celpip writing test",
+    "celpip writing samples",
+    "celpip general writing",
+    "celpip general writing test",
+    "celpip mock test writing",
+    "celpip practice test writing",
+    "celpip practice writing test",
+    "celpip general writing sample answers",
+  ],
   alternates: {
     canonical: "https://celpippracticetest.com/writing",
   },
@@ -101,7 +114,7 @@ const WritingPage = async ({
   const practices = await practiceRepo.getAllPractice(
     {
       type: "WRITING",
-      taskId: taskId ? (new ObjectId(taskId) as any) : undefined,
+      taskId: taskId ? (new ObjectId(taskId) as unknown as string) : undefined,
     },
     0,
     200
@@ -131,7 +144,7 @@ const WritingPage = async ({
     }
   }
   if (user) {
-    const writingAnswerRepo = new WritingAnswerRepository(mongoClient);
+    const writingAnswerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
     completedPracticeId =
       await writingAnswerRepo.findAnswersByPracticeIdsAndUser(
         practices.items.map((p) => p.id),

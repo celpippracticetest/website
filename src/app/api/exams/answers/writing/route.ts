@@ -2,7 +2,7 @@ import { PracticeRepository } from "@/repositories/practice.repo";
 import { NextRequest, NextResponse } from "next/server";
 import mongoClient from "@/lib/mongodb";
 import { WritingAnswerRequestSchema } from "@/models/answer";
-import { WritingAnswerRepository } from "@/repositories/writingAnswers";
+import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { currentUser } from "@clerk/nextjs/server";
@@ -347,7 +347,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
 
     // Extract tool call result
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    const answerRepo = new WritingAnswerRepository(mongoClient);
+    const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
 
     if (!toolCall) {
       console.error("No tool call! Full response:", JSON.stringify(data, null, 2));
@@ -523,7 +523,7 @@ export const GET = async function (req: NextRequest) {
   if (!user) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
-  const answerRepo = new WritingAnswerRepository(mongoClient);
+  const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
   const answers = await answerRepo.getAllWritingAnswers(
     { userId: user.id, examId, partId: parseInt(partId), type: "WRITING" },
     0,

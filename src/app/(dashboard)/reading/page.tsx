@@ -18,6 +18,15 @@ export const metadata = {
   title: "Free CELPIP Reading Practice Tests & Mock Exams | CELPIPPRACTICETEST",
   description:
     "Boost CELPIP Reading scores with realistic passages, quick explanations, and speed drills. Strengthen scanning, inference, and time management | CELPIPPRACTICETEST.com",
+  keywords: [
+    "celpip reading practise",
+    "celpip reading test",
+    "celpip reading sample",
+    "celpip reading test sample",
+    "celpip general reading",
+    "celpip general reading test",
+    "celpip reading practice test",
+  ],
   alternates: {
     canonical: "https://celpippracticetest.com/reading",
   },
@@ -104,7 +113,7 @@ const ReadingPage = async ({
   const practices = await practiceRepo.getAllPractice(
     {
       type: "READING",
-      taskId: taskId ? (new ObjectId(taskId) as any) : undefined,
+      taskId: taskId ? (new ObjectId(taskId) as unknown as string) : undefined,
     },
     0,
     200

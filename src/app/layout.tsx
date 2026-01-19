@@ -28,7 +28,7 @@ const GTM_ID = "GTM-M24FJ7JC";
 export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "";
   const isPreview = appBaseUrl.includes("vercel.app");
-  
+
   return {
     title: "CELPIP Practice Test Online | Instant Scoring, Expert Tips",
     description:
@@ -37,6 +37,11 @@ export async function generateMetadata(): Promise<Metadata> {
       "CELPIP",
       "CELPIP practice test",
       "CELPIP mock exam",
+      "CELPIP mock test",
+      "CELPIP general practice test",
+      "celpip test",
+      "free celpip practice test",
+      "celpip online practice test",
       "CELPIP preparation",
       "CELPIP listening",
       "CELPIP reading",
@@ -115,11 +120,11 @@ export default async function RootLayout({
 
           {/* Icons & PWA */}
           <link rel="icon" href="/favicon/favicon.ico" sizes="any" />
-          <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials"/>
+          <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
           <link rel="apple-touch-icon" href="/favicon/apple-touch-icon.png" />
           <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
           <link rel="mask-icon" href="/favicon/apple-touch-icon.png" color="#3B82F6"></link>
-          
+
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-status-bar-style" content="default" />
           <meta name="apple-mobile-web-app-title" content="CELPIP Test" />

@@ -7,7 +7,7 @@ import {
 import { Upload } from "@aws-sdk/lib-storage";
 import { createClient } from "@deepgram/sdk";
 import { PracticeRepository } from "@/repositories/practice.repo";
-import { WritingAnswerRepository } from "@/repositories/writingAnswers";
+import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { TPracticeDto } from "@/models/practice.model";
 import { TaskRepository } from "@/repositories/tasks.repo";
 import { TTaskSchemaDto } from "@/models/tasks.model";
@@ -553,7 +553,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
       
       console.log("Successfully extracted complete data from content");
       
-      const answerRepo = new WritingAnswerRepository(mongoClient);
+      const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
       const answer = await answerRepo.createOrUpdateAnswer({
         audioUrl: location,
         userId: user.id,
@@ -610,7 +610,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
     
     const stored = toStoredEvaluation(evaluation);
 
-    const answerRepo = new WritingAnswerRepository(mongoClient);
+    const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
     const answer = await answerRepo.createOrUpdateAnswer({
       audioUrl: location,
       userId: user.id,
@@ -652,7 +652,7 @@ export const GET = async function (req: NextRequest) {
   if (!user) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
-  const answerRepo = new WritingAnswerRepository(mongoClient);
+  const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
   const answers = await answerRepo.getAllWritingAnswers(
     { userId: user.id, practiceId, type: "SPEAKING" },
     0,

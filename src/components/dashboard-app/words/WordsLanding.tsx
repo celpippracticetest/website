@@ -22,7 +22,7 @@ const WordsLanding = () => {
             </div>
 
             {/* Illustration Section */}
-            <div className="relative w-full flex flex-col screen1024:flex-row items-center justify-center gap-4 min-h-[500px]">
+            <div className="relative w-full flex flex-col screen1024:flex-row items-center justify-center gap-4 min-h-[500px] mb-[40px]">
 
                 {/* Background Glow 1: Between Card 1 and Card 2 */}
                 <div

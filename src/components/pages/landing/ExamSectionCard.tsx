@@ -8,6 +8,7 @@ interface IExamSectionCard {
   key: number;
   link: string;
   isLast?: boolean;
+  className?: string;
 }
 
 const ExamSectionCard = ({

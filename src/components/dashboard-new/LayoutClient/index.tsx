@@ -45,6 +45,7 @@ import DesktopNavigation from "@/components/dashboard-new/DesktopNavigation";
 import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
 import AskBeavoModal from "@/components/AskBeavo/AskBeavoModal";
 import { GlobalInteractiveProvider } from "@/components/dashboard-app/practice/GlobalInteractiveProvider";
+import { cn } from "@/lib/utils";
 
 const NavItem = ({
   icon,
@@ -789,7 +790,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
 
       <div className="flex w-full justify-center max-w-[1440px] mx-auto z-[99999999]">
         <div
-          className="flex flex-col w-full h-full screen744:!w-[calc(100%-84px)] bg-[#F4F7FF] items-end screen744:pt-[96px] pt-[50px] screen1280:!pt-0"
+          className={cn("flex flex-col w-full h-full screen744:!w-[calc(100%-84px)] bg-[#F4F7FF] items-end screen744:pt-[96px] pt-[50px] screen1280:!pt-0", { "screen1280:m-0 mb-[120px] screen744:pt-[96px] pt-[50px]": !pathname.includes('words'), "pt-[96px]": pathname.includes('words') })}
         >
           <div className="px-[16px] screen744:!px-0 w-full mb-[16px]">
             <div

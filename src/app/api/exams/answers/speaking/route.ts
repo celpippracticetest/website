@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { promises as fs } from "fs";
 import mongoClient from "@/lib/mongodb";
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import { createClient } from "@deepgram/sdk";
-import { WritingAnswerRepository } from "@/repositories/writingAnswers";
+import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { currentUser } from "@clerk/nextjs/server";
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
 import { USER_PROMPTS } from "./userPrompts";
@@ -426,7 +425,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
         },
       };
 
-      const answerRepo = new WritingAnswerRepository(mongoClient);
+      const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
       const contentInput = msg.content.find(
         (item: any) => item.input && typeof item.input === "object"
       )?.input ?? null;
@@ -485,7 +484,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
       }
     }
 
-    const answerRepo = new WritingAnswerRepository(mongoClient);
+    const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
 
     const contentInput =
       msg.content.find(
@@ -547,7 +546,7 @@ export const GET = async function (req: NextRequest) {
   if (!user) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
-  const answerRepo = new WritingAnswerRepository(mongoClient);
+  const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
   const answers = await answerRepo.getAllWritingAnswers(
     { userId: user.id, examId, partId: parseInt(partId), type: "SPEAKING" },
     0,

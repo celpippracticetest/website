@@ -151,7 +151,7 @@ const WordsPage = () => {
 
     return (
         <div className="flex flex-col w-full max-h-screen">
-            <div className={`max-w-7xl flex justify-center items-center flex-col w-full mx-auto`}>
+            <div className="max-w-7xl flex justify-center items-center flex-col w-full mx-auto">
 
                 {loading ? (
                     <div className="flex justify-center items-center h-64">

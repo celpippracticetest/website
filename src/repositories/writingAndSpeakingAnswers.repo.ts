@@ -1,7 +1,7 @@
 import { TWritingAnswer, TWritingAnswerDto, WritingAnswerDto, WritingAnswerSchema } from "@/models/answer";
 import { MongoClient, Db, ObjectId } from "mongodb";
 
-export class WritingAnswerRepository {
+export class WritingAndSpeakingAnswerRepository {
   private readonly db: Db;
 
   constructor(mongoClient: MongoClient) {
@@ -51,13 +51,20 @@ export class WritingAnswerRepository {
     return this.convertFromEntity({ ...dto, _id: insertedId });
   }
   async createOrUpdateAnswer(dto: Omit<TWritingAnswerDto, "id">): Promise<TWritingAnswerDto> {
-    const existing = await this.getAnswerCollection().findOne({
-      examId: dto.examId,
-      partId: dto.partId,
-      userId: dto.userId,
-    });
+    const existing = await this.getAnswerCollection().findOne(
+      dto.practiceId
+        ? {
+            practiceId: dto.practiceId,
+            userId: dto.userId,
+          }
+        : {
+            examId: dto.examId,
+            partId: dto.partId,
+            userId: dto.userId,
+          }
+    );
 
-    if (!dto.practiceId && existing) {
+    if (existing) {
       // Update the existing answer
       const updated = await this.getAnswerCollection().findOneAndUpdate(
         { _id: existing._id },
@@ -81,7 +88,7 @@ export class WritingAnswerRepository {
   ): Promise<{ items: TWritingAnswerDto[]; hasNextPage: boolean; page: number; totalPages: number; totalItems: number }> {
     const skip = page * limit;
     const sanitizedFilter = Object.fromEntries(
-      Object.entries(filter).filter(([_, value]) => value !== undefined)
+      Object.entries(filter).filter(([, value]) => value !== undefined)
     );
     const aggregateFilter = [
       {

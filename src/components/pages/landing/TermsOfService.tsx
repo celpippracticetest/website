@@ -8,16 +8,7 @@ const TermsOfService = () => {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const sidebarMenuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && (window as any).Intercom) {
-      (window as any).Intercom("show");
-    }
-    return () => {
-      if (typeof window !== "undefined" && (window as any).Intercom) {
-        (window as any).Intercom("hide");
-      }
-    };
-  }, []);
+
   useEffect(() => {
     const checkMenu = (event: MouseEvent) => {
       if (sidebarMenuRef?.current) {
@@ -50,95 +41,103 @@ const TermsOfService = () => {
       setIsMenuOpen(false);
     }
   }, [isMenuOpen, dimensions]);
-  const hrefs = ["/exam-overview", "/practice-overview", "/wiki"];
 
   const data = [
     {
       title: "Introduction",
-      description: `   Welcome to CELPIPPRACTICETEST.com. These Terms of Service ("Terms") govern your
-            access to and use of our website at https://celpippracticetest.com (the "Site")
-            and any related services (together, the "Services"). By accessing or
-            using the Site, you agree to be bound by these Terms. If you do not
-            agree, please discontinue use immediately.`,
+      description: `Welcome to CELPIPPRACTICETEST.com (“we,” “us,” or “our”). These Terms of Service (“Terms”) govern your access to and use of our website at https://celpippracticetest.com (the “Site”) and all related digital services (collectively, the “Services”).
+By accessing, registering for, subscribing to, or using the Services, you agree to be bound by these Terms. If you do not agree, you must discontinue use of the Site and Services immediately.`,
     },
     {
       title: "1. Acceptance of Terms",
-      description: `   By creating an account, subscribing, or using our Services, you confirm that you have read, understood, and agree to these Terms and our Privacy Policy.`,
+      description: `By creating an account, completing a purchase, or using the Services, you confirm that you have read, understood, and accepted these Terms, our Privacy Policy, and our Refund Policy. Acceptance of these terms is required to access the Services.`,
     },
     {
       title: "2. Description of Services",
-      description: `CELPIPPRACTICETEST.com is an independent, third‑party platform offering realistic practice tests, skill‑building exercises, and AI‑driven feedback to help you prepare for English language proficiency exams. All content is original—created by language experts—and no copyrighted materials have been reproduced.`,
+      description: `CELPIPPRACTICETEST.com is an independent, third-party platform providing digital practice tests, skill-based exercises, and AI-assisted feedback for English language exam preparation purposes only.
+All content on the Site is original and created by our team. We do not reproduce, license, or distribute official exam materials.
+The Services do not guarantee specific scores, outcomes, performance improvements, or exam results. Variations in content, feedback, or system behavior do not constitute a defect, misrepresentation, or failure of service.`,
     },
     {
       title: "3. User Accounts",
-      description: `Some features require registration. You agree to:`,
+      description: `Some features require account registration. By creating an account, you agree to:`,
       lists: [
-        "Provide accurate, complete information.",
-        "Keep your password and account secure.",
-        "Be responsible for all activity under your account.",
-        "Notify us immediately of unauthorized use.",
+        "Provide accurate, current, and complete information",
+        "Maintain the confidentiality of your login credentials",
+        "Be fully responsible for all activity under your account",
+        "Notify us promptly of any unauthorized access or use",
       ],
     },
     {
-      title: "4. User Conduct",
-      description: `You will not:`,
+      title: "4. Acceptable Use",
+      description: `You agree not to:`,
       lists: [
-        "Use the Site for illegal purposes.",
-        "Attempt unauthorized access to the Site or its systems.",
-        "Interfere with the Site’s operation or security.",
-        "Copy, sell, or exploit any part of the Site.",
-        "Use bots, scrapers, or other automated means to access the Site.",
-        "Transmit viruses, malware, or other harmful code.",
+        "Use the Services for unlawful or unauthorized purposes",
+        "Attempt to access restricted systems without permission",
+        "Interfere with the security, availability, or operation of the Services",
+        "Copy, reproduce, sell, resell, or exploit any part of the Services",
+        "Use automated tools such as bots, scrapers, or crawlers",
+        "Upload or transmit malicious software or harmful code",
       ],
     },
     {
       title: "5. Intellectual Property",
-      description: `All text, images, graphics, code, and other content on the Site are owned by CELPIPPRACTICETEST.com or our licensors and protected by Canadian and international copyright laws. You are granted a limited, non‑exclusive, non‑transferable license to use the Site for personal, non‑commercial purposes only.`,
+      description: `All content on the Site, including text, graphics, images, software, and code, is owned by CELPIPPRACTICETEST.com or its licensors and is protected by Canadian and international intellectual property laws.
+You are granted a limited, non-exclusive, non-transferable, revocable license to access and use the Services for personal, non-commercial purposes only.`,
     },
     {
-      title: "6. Subscription, Payment & Refund Policy",
+      title: "6. Subscriptions, Payments, and Refunds",
       sub: [
         {
-          title: "    6.1. Subscription & Pricing",
-          description: `Our current subscription plans and pricing are published on the Pricing page of the Site and may be updated or offered at promotional rates at any time. By subscribing, you agree to pay all fees associated with your selected plan.`,
+          title: "6.1 Subscription and Billing",
+          description: `Subscription plans, pricing, and features are displayed on the Site and may change from time to time.
+Subscriptions renew automatically unless canceled before the renewal date. Canceling a subscription prevents future charges only and does not reverse, void, or refund any completed or pending charges, including subscription renewals.
+Service delivery occurs immediately upon successful payment, at which point access to digital content and platform features is granted.`,
         },
         {
-          title: "6.2. Refund Policy",
+          title: "6.2 Refund Eligibility and Process",
+          description: `Refunds are only eligible for the first subscription purchase and only if all of the following conditions are met:`,
           lists: [
-            "Eligibility Window: Refunds are available only within 24 hours of your first successful payment, provided you have not completed more than one mock exam or two practice activities in any skill.",
-            "How to Request: Email support@celpippracticetest.com with your account details and request a refund within the 24-hour window.",
-            "Finality: All refund requests submitted after 24 hours will be denied. Refunds will also be denied if you have completed more than one mock exam or more than two practices of any skill, regardless of timing. Disputing the charge with your financial institution will not change this policy, as you agreed to these Terms during registration.",
+            "The request relates to the user’s first successful payment",
+            "The refund request is submitted within 7 days of the charge date",
+            "The user has not completed more than one mock exam",
+            "The user has not completed more than two practice activities in any single skill",
+            "Refund requests submitted more than 7 days after the charge date are automatically rejected and not reviewed, regardless of usage.",
+            "Refunds are not available for subscription renewals, second or subsequent payments, or accounts that exceed the usage limits described above.",
+            "The refund request platform is the sole and exclusive method for submitting a refund request. Requests made through customer chat, email, social media, or any other communication channel are not considered valid refund requests and do not initiate the refund review process.",
+            "Refund eligibility does not create an obligation to issue a refund. All refund requests are reviewed at our sole discretion based on the criteria outlined in these Terms and the Refund Policy.",
+            "Initiating a chargeback, payment dispute, or bank claim does not alter, suspend, or override these Terms or the Refund Policy.",
           ],
         },
       ],
     },
     {
       title: "7. Disclaimer of Warranties",
-      description: `The Site and Services are provided “as is” and “as available,” without warranties of any kind, express or implied. CELPIPPRACTICETEST.com disclaims all warranties, including merchantability, fitness for a particular purpose, and non‑infringement.`,
+      description: `The Services are provided on an “as is” and “as available” basis. To the fullest extent permitted by law, we disclaim all warranties, express or implied, including implied warranties of merchantability, fitness for a particular purpose, and non-infringement.`,
     },
     {
       title: "8. Limitation of Liability",
-      description: `To the fullest extent permitted by law, CELPIPPRACTICETEST.com shall not be liable for any indirect, incidental, special, or consequential damages arising out of your use of the Site or Services, even if advised of the possibility of such damages.`,
+      description: `To the maximum extent permitted by law, CELPIPPRACTICETEST.com shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from or related to your use of the Services.`,
     },
     {
-      title: "9. Third‑Party Links",
-      description: `Our Site may contain links to third‑party websites. These links are provided for convenience only; we do not endorse or assume responsibility for their content.`,
+      title: "9. Third-Party Links",
+      description: `The Site may contain links to third-party websites for convenience. We do not control, endorse, or assume responsibility for any third-party content or services.`,
     },
     {
       title: "10. Termination",
-      description: `We may suspend or terminate your access at any time without notice if you breach these Terms or for any other reason at our sole discretion.`,
+      description: `We may suspend or terminate access to the Services at any time, with or without notice, if you violate these Terms or if continued access is deemed inappropriate in our sole discretion.`,
     },
     {
-      title: "11. Changes to Terms",
-      description: `We may update these Terms from time to time. The “Last Updated” date will reflect the change. Your continued use after any update constitutes acceptance of the revised Terms.`,
+      title: "11. Changes to These Terms",
+      description: `We may update these Terms at any time. Updates will be reflected by the “Last Updated” date. Continued use of the Services after changes become effective constitutes acceptance of the revised Terms.`,
     },
     {
       title: "12. Governing Law",
-      description: `These Terms are governed by the laws of Canada, without regard to its conflict‑of‑law provisions.`,
+      description: `These Terms are governed by and construed in accordance with the laws of Canada, without regard to conflict of law principles.`,
     },
     {
-      title: "13. Contact Information",
-      description: `If you have questions or need assistance, please reach out to us at: Email: support@celpippracticetest.com`,
+      title: "13. Contact",
+      description: `For questions or assistance, contact us at: Email: support@celpippracticetest.com`,
     },
   ];
 
@@ -151,7 +150,7 @@ const TermsOfService = () => {
           Terms of Service
         </h1>
         <span className="mt-[16px] font-normal text-[16px] text-text3">
-          Last Updated: Apr 17, 2025
+          Last Updated: Jan 08, 2026
         </span>
         {data?.map((element, index) => (
           <div key={index} className="mt-[40px]">
@@ -200,7 +199,7 @@ const TermsOfService = () => {
         ))}
         <div className="h-[1px] bg-outline mt-[61px]"></div>
         <p className="font-normal text-[16px] text-text3 mt-[20px]">
-          © 2025 CELPIPPRACTICETEST.com. All rights reserved.
+          © 2026 CELPIPPRACTICETEST.com. All rights reserved.
           CELPIPPRACTICETEST.com is not affiliated with, endorsed by, or
           sponsored by any official testing organization.
         </p>
