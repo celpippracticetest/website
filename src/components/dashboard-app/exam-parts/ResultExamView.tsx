@@ -35,7 +35,7 @@ const ResultExamView = ({
 }) => {
   const route = useRouter();
   const searchParams = useSearchParams();
-  const currentAttemptId = searchParams.get("attemptId");
+  const currentAttemptId = searchParams.get("attemptId") === "null" ? null : searchParams.get("attemptId");
 
   const attempts = useMemo(() => {
     const attemptMap = new Map<string, Date>();
@@ -118,12 +118,13 @@ const ResultExamView = ({
         )
           return 0;
         const examPart = examParts.find((e) => e.partId == index + 1);
-        const allQuestions = examPart?.passages.reduce(
+        const allQuestions = examPart?.passages?.reduce(
           (questions: any, passage) => {
-            return questions.concat(passage.questions);
+            return questions.concat(passage.questions || []);
           },
           []
-        );
+        ) || [];
+        if (allQuestions.length === 0) return 0;
         const numberOfCorrect = allQuestions.filter(
           (q: any, index: any) =>
             userAnswer?.answers[index] &&
@@ -151,12 +152,13 @@ const ResultExamView = ({
         )
           return 0;
         const examPart = examParts.find((e) => e.partId == index + 7);
-        const allQuestions = examPart?.passages.reduce(
+        const allQuestions = examPart?.passages?.reduce(
           (questions: any, passage: any) => {
-            return questions.concat(passage.questions);
+            return questions.concat(passage.questions || []);
           },
           []
-        );
+        ) || [];
+        if (allQuestions.length === 0) return 0;
         const numberOfCorrect = allQuestions.filter(
           (q: any, index: any) =>
             userAnswer?.answers[index] &&

@@ -428,7 +428,7 @@ const SpeakingExamView = ({
               <div className="flex gap-[10px]">
                 <a
                   className="relative rounded-[24px] flex-wrap px-[16px] shrink-0   text-[14px] font-normal border-[1px] bg-white flex items-center justify-center border-[#76808F] max-w-[186px] w-full h-[40px]"
-                  href={`/exams/exam_${examId}/results?partNumber=part${partId}&attemptId=${searchParams.get("attemptId")}`}
+                  href={`/exams/exam_${examId}/results?partNumber=part${partId}${searchParams.get("attemptId") && searchParams.get("attemptId") !== "null" ? `&attemptId=${searchParams.get("attemptId")}` : ""}`}
                 >
                   <span className="flex">View Answers &amp; Score</span>
                 </a>

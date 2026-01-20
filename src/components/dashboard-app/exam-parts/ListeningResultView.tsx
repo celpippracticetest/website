@@ -14,12 +14,12 @@ const ListeningResultView = ({
   examPart: TExamPartSchemaDto | undefined;
   answer: TListeningAndReadingAnswerDto | undefined;
 }) => {
-  const allQuestions: any = examPart?.passages.reduce(
+  const allQuestions: any = examPart?.passages?.reduce(
     (questions, passage: any) => {
-      return questions.concat(passage.questions);
+      return questions.concat(passage.questions || []);
     },
     []
-  );
+  ) || [];
 
   const numberOfCorrect = allQuestions.filter(
     (q: any, index: number) =>
@@ -85,19 +85,18 @@ const ListeningResultView = ({
                           Question{index + 1}: {question.question}
                         </span>
                         <span
-                          className={`ml-2 flex shrink-0 items-center rounded-[24px] font-semibold h-[24px] text-[11px] ${
-                            !userAnswer?.answers[index]
+                          className={`ml-2 flex shrink-0 items-center rounded-[24px] font-semibold h-[24px] text-[11px] ${!userAnswer?.answers[index]
                               ? "text-[#212E42] bg-[#E6E6E6] px-[12px]"
                               : userAnswer.answers[index] === question.answer
-                              ? "text-[#0DAA94] bg-[#F0FFFD] px-[12px]"
-                              : "text-[#EE4266] bg-[#FFE2E8] px-[12px]"
-                          }`}
+                                ? "text-[#0DAA94] bg-[#F0FFFD] px-[12px]"
+                                : "text-[#EE4266] bg-[#FFE2E8] px-[12px]"
+                            }`}
                         >
                           {!userAnswer?.answers[index]
                             ? "Not Answered"
                             : userAnswer.answers[index] === question.answer
-                            ? "Correct"
-                            : "Wrong"}
+                              ? "Correct"
+                              : "Wrong"}
                         </span>
                       </div>
                       <div className=" w-full text-[#212E42]">
