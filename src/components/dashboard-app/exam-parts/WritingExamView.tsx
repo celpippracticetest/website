@@ -114,6 +114,7 @@ const WritingExamView = ({
         examId: practice.taskId,
         partId,
         text,
+        attemptId: searchParams.get("attemptId") || undefined,
       };
 
       // Simulate progress bar increment
@@ -135,7 +136,7 @@ const WritingExamView = ({
       const result = await response.json();
 
       // Log mock exam part completed
-      const attemptId = `mock_${practice.taskId}_${Date.now()}`;
+      const attemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
       await ActivityLogger.mockCompleted(
         attemptId,
         practice.taskId.toString(),

@@ -13,6 +13,7 @@ import ListeningAnswerList from "./components/ListeningAnswers";
 import { TPassage } from "@/models/listenExam.model";
 import { useRouter } from "nextjs-toploader/app";
 import { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 
 import useStore from "@/store";
 import { TWritingAnswerDto } from "@/models/answer";
@@ -97,21 +98,28 @@ const WritingPracticeView = ({
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
   const [showModal, setShowModal] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [page, setPage] = useState("question");
+  const [showContinueModal, setShowContinueModal] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
+  const attemptId = searchParams.get("attemptId");
+  const [page, setPage] = useState(
+    practice.id.includes("part11") ? "description" : "question"
+  );
   const [passageIndex, setPassageIndex] = useState(0);
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [questionIndexInPractice, setQuestionIndexInPractice] = useState(0);
-  const [isOpen, setIsOpen] = useState<Record<number, boolean>>({});
-  const [selectedAnswers, setSelectedAnswers] = useState<
-    Record<string, string>
-  >({});
   const [time, setTime] = useState(1620);
   const [wordCount, setWordCount] = useState(0);
   const [progressBar, setProgressBar] = useState(0);
   const [isSubmit, setIsSubmit] = useState(false);
   const [text, setText] = useState("");
   const [tryToSubmit, setTryToSubmit] = useState(false);
+  const [questionIndexInPractice, setQuestionIndexInPractice] = useState(0);
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [selectedAnswers, setSelectedAnswers] = useState<
+    Record<string, string>
+  >({});
+  const [isOpen, setIsOpen] = useState<Record<number, boolean>>({});
+  const [isPlaying, setIsPlaying] = useState(false);
+
   const shouldShowPractice: any =
     practice.isFree ||
     (!practice.isFree &&
@@ -143,6 +151,13 @@ const WritingPracticeView = ({
       }
     };
   }, [page, time]);
+  useEffect(() => {
+    // Log mock exam started when component mounts
+    if (user && practice.taskId) {
+      const loggerAttemptId = attemptId || `mock_${practice.taskId}_${Date.now()}`;
+      ActivityLogger.mockStarted(loggerAttemptId, practice.taskId.toString());
+    }
+  }, [user, practice.taskId, attemptId]);
 
   useEffect(() => {
     if (isSubmit) {
@@ -191,6 +206,7 @@ const WritingPracticeView = ({
       const requestData = {
         practiceId: practice.id,
         text,
+        attemptId,
       };
 
       // Simulate progress bar increment
@@ -212,9 +228,9 @@ const WritingPracticeView = ({
       const result = await response.json();
 
       // Log practice completed
-      const attemptId = `practice_${practice.id}_${Date.now()}`;
+      const logAttemptId = `practice_${practice.id}_${Date.now()}`;
       await ActivityLogger.practiceCompleted(
-        attemptId,
+        logAttemptId,
         practice.id,
         "Writing",
         result.overall,
@@ -239,7 +255,7 @@ const WritingPracticeView = ({
           "Writing",
           result.usage.prompt_tokens || 0,
           result.usage.completion_tokens || 0,
-          attemptId
+          logAttemptId
         );
 
         // Add league points for AI feedback
@@ -279,8 +295,8 @@ const WritingPracticeView = ({
 
     // Log practice started
     if (user && selectedPracticeId) {
-      const attemptId = `practice_${selectedPracticeId}_${Date.now()}`;
-      ActivityLogger.practiceStarted(attemptId, selectedPracticeId, "Writing").catch(error => {
+      const practiceAttemptId = `practice_${selectedPracticeId}_${Date.now()}`;
+      ActivityLogger.practiceStarted(practiceAttemptId, selectedPracticeId, "Writing").catch(error => {
         console.error("Error logging practice started:", error);
       });
     }

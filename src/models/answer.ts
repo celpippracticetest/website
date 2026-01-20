@@ -8,22 +8,25 @@ const WritingAnswerRequestSchema = z.object({
   practiceId: z.string().optional(),
   examId: z.string().optional(),
   partId: z.number().optional(),
+  attemptId: z.string().optional(),
 });
 
 const ListeningAndReadingAnswerSchemaRequest = z.object({
   answers: z.record(z.string(), z.string()),
   practiceId: z.string().optional(),
-  examId: z.string().optional(), 
-  partId: z.number().optional()
+  examId: z.string().optional(),
+  partId: z.number().optional(),
+  attemptId: z.string().optional()
 });
 const ListeningAndReadingAnswer = z.object({
   _id: z.instanceof(ObjectId),
   answers: z.record(z.string(), z.string()),
   practiceId: z.string().optional(),
   taskId: z.string().optional(),
-  examId: z.string().optional(), 
+  examId: z.string().optional(),
   partId: z.number().optional(),
   userId: z.string(),
+  attemptId: z.string().optional(),
   type: ExamType,
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -38,6 +41,7 @@ const WritingAnswerSchema = z.object({
   examId: z.string().optional(),
   partId: z.number().optional(),
   overalScore: z.number(),
+  attemptId: z.string().optional(),
   type: z.enum(["WRITING", "SPEAKING"]),
   result: z.object({
     overall: z.number(),
@@ -74,19 +78,19 @@ type TWritingAnswerDto = z.infer<typeof WritingAnswerDto>;
 type TListeningAndReadingAnswerRequest = z.infer<typeof ListeningAndReadingAnswerSchemaRequest>;
 type TListeningAndReadingAnswer = z.infer<typeof ListeningAndReadingAnswer>;
 type TListeningAndReadingAnswerDto = z.infer<typeof ListeningAndReadingAnswerDto>;
-export { 
-  WritingAnswerRequestSchema, 
-  WritingAnswerSchema, 
-  WritingAnswerDto, 
+export {
+  WritingAnswerRequestSchema,
+  WritingAnswerSchema,
+  WritingAnswerDto,
   ListeningAndReadingAnswerSchemaRequest,
   ListeningAndReadingAnswer,
   ListeningAndReadingAnswerDto
 };
-export type { 
-  TWritingAnswerRequest, 
-  TWritingAnswer, 
-  TWritingAnswerDto, 
+export type {
+  TWritingAnswerRequest,
+  TWritingAnswer,
+  TWritingAnswerDto,
   TListeningAndReadingAnswer,
   TListeningAndReadingAnswerDto,
-  TListeningAndReadingAnswerRequest 
+  TListeningAndReadingAnswerRequest
 };

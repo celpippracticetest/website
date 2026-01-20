@@ -11,8 +11,10 @@ import { PRACTICE_PARTS } from "@/constants";
 
 const SpeakingResultView = ({
   examPart,
+  attemptId,
 }: {
   examPart: TExamPartSchemaDto | undefined;
+  attemptId?: string | null;
 }) => {
   const [answer, setAnswer] = React.useState<TWritingAnswerDto | null>(null);
   const [showMoreMistake, setShowMoreMistake] = React.useState(false);
@@ -27,6 +29,9 @@ const SpeakingResultView = ({
       );
       url.searchParams.append("examId", examPart?.examId.toString() ?? "");
       url.searchParams.append("partId", examPart?.partId.toString() ?? "");
+      if (attemptId) {
+        url.searchParams.append("attemptId", attemptId);
+      }
       const response = await fetch(url.toString(), {
         method: "GET",
         headers: {
@@ -47,7 +52,7 @@ const SpeakingResultView = ({
   };
   React.useEffect(() => {
     fetchUsersAnswer();
-  }, []);
+  }, [examPart?.examId, examPart?.partId, attemptId]);
   if (!examPart) {
     return <div></div>;
   }
@@ -62,7 +67,7 @@ const SpeakingResultView = ({
   const maxScore = 12;
   const overallScore = Math.round(
     Object.values(skillScores).reduce((sum, score) => sum + score, 0) /
-      Object.keys(skillScores).length
+    Object.keys(skillScores).length
   );
 
   // Determine the description based on overall score

@@ -159,6 +159,7 @@ const SpeakingExamView = ({
     formData.append("audio", blob, "recording.m4a");
     formData.append("examId", practice.taskId);
     formData.append("partId", partId.toString());
+    formData.append("attemptId", searchParams.get("attemptId") || "");
 
     const progressInterval = setInterval(() => {
       setProgressBar((prev) => (prev < 100 ? prev + 1 : prev));
@@ -178,10 +179,11 @@ const SpeakingExamView = ({
       }
       setProgressBar(100);
 
+      const result = await response.json();
       // Log mock exam part completed
-      const attemptId = `mock_${practice.taskId}_${Date.now()}`;
+      const loggerAttemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
       await ActivityLogger.mockCompleted(
-        attemptId,
+        loggerAttemptId,
         practice.taskId.toString(),
         undefined, // Score will be available later
         undefined, // Breakdown will be available later
@@ -279,8 +281,8 @@ const SpeakingExamView = ({
 
     // Log mock exam started when component mounts
     if (user && practice.taskId) {
-      const attemptId = `mock_${practice.taskId}_${Date.now()}`;
-      ActivityLogger.mockStarted(attemptId, practice.taskId.toString());
+      const loggerAttemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
+      ActivityLogger.mockStarted(loggerAttemptId, practice.taskId.toString());
     }
   }, [practice.taskId, partId, user]);
 
@@ -366,15 +368,15 @@ const SpeakingExamView = ({
         <div>
           <div
             className={`z-[999] fixed inset-0 flex items-center justify-center px-[14px] screen744:!px-[16px] screen1280:!px-[20px] transition-opacity ${menuShowModal
-                ? "opacity-100 pointer-events-auto"
-                : "opacity-0 pointer-events-none"
+              ? "opacity-100 pointer-events-auto"
+              : "opacity-0 pointer-events-none"
               }`}
           >
             <div
               ref={ref}
               className={`max-w-[725px] w-full h-[90vh] screen1280:!h-[828px] p-[24px] bg-white rounded-[16px] transform transition-all duration-300 ease-out overflow-y-auto ${menuShowModal
-                  ? "scale-100 translate-y-0"
-                  : "scale-95 translate-y-2"
+                ? "scale-100 translate-y-0"
+                : "scale-95 translate-y-2"
                 }`}
             >
               <div className="w-full flex flex-col screen1280:!flex-row gap-[16px]">
@@ -426,7 +428,7 @@ const SpeakingExamView = ({
               <div className="flex gap-[10px]">
                 <a
                   className="relative rounded-[24px] flex-wrap px-[16px] shrink-0   text-[14px] font-normal border-[1px] bg-white flex items-center justify-center border-[#76808F] max-w-[186px] w-full h-[40px]"
-                  href={`/exams/exam_${examId}/results?partNumber=part${partNumber}`}
+                  href={`/exams/exam_${examId}/results?partNumber=part${partId}&attemptId=${searchParams.get("attemptId")}`}
                 >
                   <span className="flex">View Answers &amp; Score</span>
                 </a>
@@ -470,8 +472,7 @@ const SpeakingExamView = ({
                           "/exams/exam_" +
                           practice.taskId +
                           "/part" +
-                          (partId - 1).toString() +
-                          query
+                          `/exams/exam_${practice.taskId}/part${(partId - 1).toString()}?attemptId=${searchParams.get("attemptId")}${query ? "&" + query.replace("?", "") : ""}`
                         );
                       }
                     } else if (page == "question" && partId === 13) {
@@ -509,14 +510,13 @@ const SpeakingExamView = ({
                           "/exams/exam_" +
                           practice.taskId +
                           "/part" +
-                          (partId + 1).toString() +
-                          query
+                          `/exams/exam_${practice.taskId}/part${(partId + 1).toString()}?attemptId=${searchParams.get("attemptId")}${query ? "&" + query.replace("?", "") : ""}`
                         );
                         setTime(partId == 17 || partId == 18 ? 60 : 30);
                       }
                     } else if (page == "evaluateResult") {
                       router.push(
-                        "/exams/exam_" + practice.taskId + "/results"
+                        `/exams/exam_${practice.taskId}/results?attemptId=${searchParams.get("attemptId")}`
                       );
                       setTime(partId == 17 || partId == 18 ? 60 : 30);
                     }
@@ -537,7 +537,7 @@ const SpeakingExamView = ({
                 <p className="text-[16px] font-bold text-[#212E42] mb-4">
                   Evaluation Complete!
                 </p>
-                <a href={"/exams/exam_" + practice.taskId + "/results"}>
+                <a href={`/exams/exam_${practice.taskId}/results?attemptId=${searchParams.get("attemptId")}`}>
                   <button className="bg-[#4A7DFF] text-white flex items-center rounded-[24px] px-[24px] h-[40px] cursor-pointer ">
                     View Results
                   </button>

@@ -96,10 +96,10 @@ const ReadingExamView = ({
   useEffect(() => {
     // Log mock exam started when component mounts
     if (user && practice.taskId) {
-      const attemptId = `mock_${practice.taskId}_${Date.now()}`;
-      ActivityLogger.mockStarted(attemptId, practice.taskId.toString());
+      const loggerAttemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
+      ActivityLogger.mockStarted(loggerAttemptId, practice.taskId.toString());
     }
-  }, [user, practice.taskId]);
+  }, [user, practice.taskId, searchParams]);
 
   useEffect(() => {
     if (page === "answer" && user) {
@@ -114,15 +114,16 @@ const ReadingExamView = ({
               examId: practice.taskId,
               partId: partId,
               answers: selectedAnswers,
+              attemptId: searchParams.get("attemptId"),
             }),
           });
 
           if (response.ok) {
             const result = await response.json();
             // Log mock exam part completed
-            const attemptId = `mock_${practice.taskId}_${Date.now()}`;
+            const loggerAttemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
             await ActivityLogger.mockCompleted(
-              attemptId,
+              loggerAttemptId,
               practice.taskId.toString(),
               result.overall,
               result,
@@ -149,7 +150,8 @@ const ReadingExamView = ({
           // Optionally handle error
           console.error("Failed to submit answers:", error);
         }
-        const query = section ? `?section=${section}` : "";
+        const attemptId = searchParams.get("attemptId");
+        const query = section ? `?section=${section}&attemptId=${attemptId}` : `?attemptId=${attemptId}`;
         if (section === "reading" && partId >= 10) {
           setShowContinueModal(true);
         } else {
@@ -325,7 +327,7 @@ const ReadingExamView = ({
             <div className="flex gap-[10px]">
               <a
                 className="relative rounded-[24px] flex-wrap px-[16px] shrink-0   text-[14px] font-normal border-[1px] bg-white flex items-center justify-center border-[#76808F] max-w-[186px] w-full h-[40px]"
-                href={`/exams/exam_${examId}/results?partNumber=part${partNumber}`}
+                href={`/exams/exam_${examId}/results?partNumber=part${partId}&attemptId=${searchParams.get("attemptId")}`}
               >
                 <span className="flex">View Answers &amp; Score</span>
               </a>
@@ -522,7 +524,7 @@ const ReadingExamView = ({
                           <ReadingQuestionList
                             key={index}
                             questionIndex={index}
-                            totalQuestions={practice.totalQuestion}
+                            totalQuestions={practice.totalQuestion || 0}
                             question={question}
                             onAnswerSelect={(
                               questionId: number,
@@ -726,7 +728,7 @@ const ReadingExamView = ({
           onContinue={() => {
             setShowContinueModal(false);
             router.push(
-              `/exams/exam_${practice.taskId}/part11?section=writing`
+              `/exams/exam_${practice.taskId}/part11?section=writing&attemptId=${searchParams.get("attemptId")}`
             );
           }}
           onFinish={() => {

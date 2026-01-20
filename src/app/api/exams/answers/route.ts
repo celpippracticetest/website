@@ -15,8 +15,8 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
-    if(!parseResult.data.examId || !parseResult.data.partId){
-        return NextResponse.json({ message: "exam id or part id is missing" }, { status: 400 });
+    if (!parseResult.data.examId || !parseResult.data.partId) {
+      return NextResponse.json({ message: "exam id or part id is missing" }, { status: 400 });
     }
     const examPartsRepo = new ExamPartsRepository(mongoClient);
     const examPart: TExamPartSchemaDto | null = await examPartsRepo.findExamPartByExamIdAndPartId(parseResult.data.examId, parseResult.data.partId);
@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
       type: examPart.type,
       examId: examPart.examId.toString(),
       partId: examPart.partId,
+      attemptId: parseResult.data.attemptId,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
