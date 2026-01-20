@@ -540,97 +540,92 @@ const ReadingExamView = ({
                           />
                         )
                       )}
-                      {practice.passages[1] && practice.passages[1].body && (
-                        <>
-                          <p className="font-semibold text-slate-900 mt-4">
-                            {practice.passages[1].title}
-                          </p>
-                          <p className="text-[#212E42] mb-6 p-4  text-[14px] leading-7  font-medium  whitespace-pre-line">
-                            {practice.passages[1] &&
-                              practice.passages[1].body &&
-                              practice.passages[1].body
-                                ?.split("${Q}")
-                                .map((p, index, arr) => (
-                                  <React.Fragment key={index}>
-                                    {p}
-                                    {index !== arr.length - 1 && (
-                                      <Popover.Root>
-                                        <Popover.Trigger className="PopoverTrigger bg-[#F7B267] cursor-pointer px-2 rounded font-semibold text-[#212E42] text-[14px] py-1">
-                                          {parseInt(
-                                            practice.passages[1].questions[0].id
-                                          ) + index}
-                                          {selectedAnswers[
-                                            practice.passages[0].questions
-                                              .length + index
-                                          ]
-                                            ? ". " +
-                                            practice.passages[1].questions[
-                                              index
-                                            ].choices.find(
-                                              (choice) =>
-                                                choice.id ===
-                                                selectedAnswers[
-                                                practice.passages[0]
-                                                  .questions.length + index
-                                                ]
-                                            )?.text
-                                            : "..."}
-                                        </Popover.Trigger>
-                                        <Popover.Portal>
-                                          <Popover.Content
-                                            className="PopoverContent rounded-md border bg-popover text-popover-foreground shadow-md outline-none  w-80 p-2"
-                                            sideOffset={5}
-                                          >
-                                            <div className="flex flex-col">
-                                              <p className="text-[14px] font-medium mb-2"></p>
-                                              {practice.passages[1].questions[
+                      {practice.passages[1]?.body &&
+                        practice.passages[1]?.body?.length > 0 && (
+                          <>
+                            <p className="font-semibold text-slate-900 mt-4">
+                              {practice.passages[1]?.title}
+                            </p>
+                            <p className="text-[#212E42] mb-6 p-4  text-[14px] leading-7  font-medium  whitespace-pre-line">
+                              {practice.passages[1]?.body &&
+                                practice.passages[1]?.body
+                                  ?.split("${Q}")
+                                  .map((p, index, arr) => (
+                                    <React.Fragment key={index}>
+                                      {p}
+                                      {index !== arr.length - 1 && (
+                                        <Popover.Root>
+                                          <Popover.Trigger className="PopoverTrigger bg-[#F7B267] cursor-pointer px-2 rounded font-semibold text-[#212E42] text-[14px] py-1">
+                                            {parseInt(
+                                              practice.passages[1]?.questions?.[0]?.id || "0"
+                                            ) + index}
+                                            {selectedAnswers[
+                                              (practice.passages[0]?.questions?.length || 0) + index
+                                            ]
+                                              ? ". " +
+                                              practice.passages[1]?.questions?.[
                                                 index
-                                              ].choices.map(
-                                                (choice, indexChoice) => (
-                                                  <Popover.Close
-                                                    asChild
-                                                    key={indexChoice}
-                                                  >
-                                                    <div
-                                                      className="flex items-center p-2 rounded-md transition-all cursor-pointer hover:bg-blue-50 "
-                                                      onClick={(e) => {
-                                                        if (
-                                                          shouldShowPractice
-                                                        ) {
-                                                          handleAnswerSelect(
-                                                            practice.passages[0]
-                                                              .questions
-                                                              .length + index,
-                                                            choice.id
-                                                          );
-                                                        } else {
-                                                          setPremiumPlanModalState();
-                                                        }
-                                                      }}
+                                              ]?.choices?.find(
+                                                (choice) =>
+                                                  choice.id ===
+                                                  selectedAnswers[
+                                                  (practice.passages[0]?.questions?.length || 0) + index
+                                                  ]
+                                              )?.text
+                                              : "..."}
+                                          </Popover.Trigger>
+                                          <Popover.Portal>
+                                            <Popover.Content
+                                              className="PopoverContent rounded-md border bg-popover text-popover-foreground shadow-md outline-none  w-80 p-2"
+                                              sideOffset={5}
+                                            >
+                                              <div className="flex flex-col">
+                                                <p className="text-[14px] font-medium mb-2"></p>
+                                                {(practice.passages[1]?.questions?.[
+                                                  index
+                                                ]?.choices || []).map(
+                                                  (choice, indexChoice) => (
+                                                    <Popover.Close
+                                                      asChild
+                                                      key={indexChoice}
                                                     >
-                                                      {selectedAnswers[
-                                                        practice.passages[0]
-                                                          .questions.length +
-                                                        index
-                                                      ] === choice.id ? (
-                                                        <SvgCheckCircle className="shrink-0 mr-2" />
-                                                      ) : (
-                                                        <SvgCircle className="shrink-0 mr-2" />
-                                                      )}
-                                                      <span className="text-[14px] ml-2">
-                                                        {choice.text}
-                                                      </span>
-                                                    </div>
-                                                  </Popover.Close>
-                                                )
-                                              )}
-                                            </div>
-                                            <Popover.Arrow className="PopoverArrow" />
-                                          </Popover.Content>
-                                        </Popover.Portal>
-                                      </Popover.Root>
-                                    )}
-                                    {/* {index !== arr.length - 1 && (
+                                                      <div
+                                                        className="flex items-center p-2 rounded-md transition-all cursor-pointer hover:bg-blue-50 "
+                                                        onClick={(e) => {
+                                                          if (
+                                                            shouldShowPractice
+                                                          ) {
+                                                            handleAnswerSelect(
+                                                              (practice.passages[0]?.questions?.length || 0) + index,
+                                                              choice.id
+                                                            );
+                                                          } else {
+                                                            setPremiumPlanModalState();
+                                                          }
+                                                        }}
+                                                      >
+                                                        {selectedAnswers[
+                                                          (practice.passages[0]?.questions?.length || 0) +
+                                                          index
+                                                        ] === choice.id ? (
+                                                          <SvgCheckCircle className="shrink-0 mr-2" />
+                                                        ) : (
+                                                          <SvgCircle className="shrink-0 mr-2" />
+                                                        )}
+                                                        <span className="text-[14px] ml-2">
+                                                          {choice.text}
+                                                        </span>
+                                                      </div>
+                                                    </Popover.Close>
+                                                  )
+                                                )}
+                                              </div>
+                                              <Popover.Arrow className="PopoverArrow" />
+                                            </Popover.Content>
+                                          </Popover.Portal>
+                                        </Popover.Root>
+                                      )}
+                                      {/* {index !== arr.length - 1 && (
                                   <span
                                     className="bg-blue-200 cursor-pointer px-2 rounded font-semibold text-slate-800 text-[14px] py-1 relative"
                                     type="button"
@@ -661,11 +656,11 @@ const ReadingExamView = ({
                                     )}
                                   </span>
                                 )} */}
-                                  </React.Fragment>
-                                ))}
-                          </p>
-                        </>
-                      )}
+                                    </React.Fragment>
+                                  ))}
+                            </p>
+                          </>
+                        )}
                       {practice.passages[2] &&
                         practice.passages[2].questions &&
                         practice.passages[2].questions?.length > 0 && (
@@ -674,18 +669,18 @@ const ReadingExamView = ({
                           </p>
                         )}
                       {practice.passages[2] &&
-                        practice.passages[2].questions &&
-                        practice.passages[2].questions?.length > 0 &&
-                        practice.passages[2].questions.map(
+                        practice.passages[2]?.questions &&
+                        (practice.passages[2]?.questions?.length || 0) > 0 &&
+                        practice.passages[2]?.questions.map(
                           (question, index) => (
                             <ReadingQuestionList
                               key={index}
                               questionIndex={
-                                practice.passages[0].questions?.length +
-                                practice.passages[1].questions?.length +
+                                (practice.passages[0]?.questions?.length || 0) +
+                                (practice.passages[1]?.questions?.length || 0) +
                                 index
                               }
-                              totalQuestions={practice.totalQuestion}
+                              totalQuestions={practice.totalQuestion || 0}
                               question={question}
                               onAnswerSelect={(
                                 questionId: number,
@@ -693,8 +688,8 @@ const ReadingExamView = ({
                               ) => {
                                 if (shouldShowPractice) {
                                   handleAnswerSelect(
-                                    practice.passages[0].questions?.length +
-                                    practice.passages[1].questions?.length +
+                                    (practice.passages[0]?.questions?.length || 0) +
+                                    (practice.passages[1]?.questions?.length || 0) +
                                     index,
                                     answerId
                                   );

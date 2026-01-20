@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns";
 
 function scaleToBand(weightedPercent: number): number {
+  if (isNaN(weightedPercent)) return 0;
   return Math.ceil((weightedPercent / 100) * 12);
 }
 
@@ -41,7 +42,7 @@ const ResultExamView = ({
     const attemptMap = new Map<string, Date>();
     [...allAnswers, ...allSpeakingAndWritingAnswers].forEach((a) => {
       const id = a.attemptId || "legacy";
-      const date = new Date(a.createdAt);
+      const date = a.createdAt ? new Date(a.createdAt) : new Date(0);
       if (!attemptMap.has(id) || date > attemptMap.get(id)!) {
         attemptMap.set(id, date);
       }
@@ -49,7 +50,7 @@ const ResultExamView = ({
 
     return Array.from(attemptMap.entries())
       .map(([id, date]) => ({ id, date }))
-      .sort((a, b) => b.date.getTime() - a.date.getTime());
+      .sort((a, b) => (b.date?.getTime() || 0) - (a.date?.getTime() || 0));
   }, [allAnswers, allSpeakingAndWritingAnswers]);
 
   const selectedAttemptId = currentAttemptId || attempts[0]?.id;

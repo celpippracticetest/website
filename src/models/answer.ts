@@ -27,9 +27,9 @@ const ListeningAndReadingAnswer = z.object({
   partId: z.number().optional(),
   userId: z.string(),
   attemptId: z.string().optional(),
-  type: ExamType,
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  type: ExamType.optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
 })
 
 const WritingAnswerSchema = z.object({
@@ -40,26 +40,30 @@ const WritingAnswerSchema = z.object({
   practiceId: z.string().optional(),
   examId: z.string().optional(),
   partId: z.number().optional(),
-  overalScore: z.number(),
+  overalScore: z.number().optional(),
   attemptId: z.string().optional(),
-  type: z.enum(["WRITING", "SPEAKING"]),
-  result: z.object({
-    overall: z.number(),
-    contentAndCoherence: z.number(),
-    vocabulary: z.number(),
-    readabilityAndGrammar: z.number(),
-    taskFulfillment: z.number(),
-    feedback: z.string(),
-    grammarMistakes: z.array(
-      z.object({
-        original: z.string(),
-        improvement: z.string().nullable(),
-      })
-    ),
-    betterVersion: z.string(),
-  }),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  type: z.enum(["WRITING", "SPEAKING"]).optional(),
+  result: z
+    .object({
+      overall: z.number().optional(),
+      contentAndCoherence: z.number().optional(),
+      vocabulary: z.number().optional(),
+      readabilityAndGrammar: z.number().optional(),
+      taskFulfillment: z.number().optional(),
+      feedback: z.string().optional(),
+      grammarMistakes: z
+        .array(
+          z.object({
+            original: z.string().optional(),
+            improvement: z.string().nullable().optional(),
+          })
+        )
+        .optional(),
+      betterVersion: z.string().optional(),
+    })
+    .optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
 });
 
 const WritingAnswerDto = z.object({
