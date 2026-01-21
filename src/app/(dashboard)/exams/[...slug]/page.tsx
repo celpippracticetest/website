@@ -117,6 +117,7 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
             practice={practice}
             partId={parseInt(partNumber)}
             examName={exam?.name}
+            examNumber={exam?.order}
           />
         )}
         {practice.type == "READING" && (
@@ -126,6 +127,7 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
             partId={parseInt(partNumber)}
             examId={examId}
             examName={exam?.name}
+            examNumber={exam?.order}
           />
         )}
         {practice.type == "WRITING" && (
@@ -135,6 +137,7 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
             partNumber={partNumber}
             examId={examId}
             examName={exam?.name}
+            examNumber={exam?.order}
           />
         )}
         {practice.type == "SPEAKING" && (
@@ -144,6 +147,7 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
             examId={examId}
             partNumber={partNumber}
             examName={exam?.name}
+            examNumber={exam?.order}
           />
         )}
       </div>

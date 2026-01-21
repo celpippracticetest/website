@@ -19,6 +19,7 @@ interface ExamHeaderProps {
     getPartsForSection: (route: string) => { title: string; index: number }[];
     menuShowModal: boolean;
     examPractice: string;
+    examNumber: number | undefined;
 }
 
 const ExamHeader = forwardRef<HTMLDivElement, ExamHeaderProps>(
@@ -31,7 +32,8 @@ const ExamHeader = forwardRef<HTMLDivElement, ExamHeaderProps>(
             practiceSections,
             getPartsForSection,
             menuShowModal,
-            examPractice
+            examPractice,
+            examNumber
         },
         ref
     ) => {
@@ -93,7 +95,7 @@ const ExamHeader = forwardRef<HTMLDivElement, ExamHeaderProps>(
                 <div className="flex flex-col screen744:!flex-row flex-wrap  justify-between my-[24px] w-full h-auto min-h-[56px] gap-[20px]">
                     <div className="flex gap-[10px]  screen744:!gap-[40px] items-center">
                         <span className="shrink-0">
-                            Exam {(examName ?? "").replace(/Mock\s+(Set|Test)/gi, "").trim()}
+                            Exam {examNumber ?? (examName ?? "").match(/\d+/)?.[0] ?? ""}
                         </span>
                         <div className="flex gap-[10px]">
                             <a

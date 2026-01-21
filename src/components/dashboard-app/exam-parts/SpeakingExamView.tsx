@@ -34,6 +34,7 @@ interface SpeakingExamViewProps {
   examId?: string;
   examName?: string;
   partNumber?: string;
+  examNumber?: number;
 }
 
 const SpeakingExamView = ({
@@ -42,6 +43,7 @@ const SpeakingExamView = ({
   examId,
   examName,
   partNumber,
+  examNumber,
 }: SpeakingExamViewProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -366,7 +368,7 @@ const SpeakingExamView = ({
       )}
 
       <div className="flex flex-col w-full">
-        <ExamHeader examPractice="Speaking" ref={ref} setShowModal={setMenuShowModal} menuShowModal={menuShowModal} examId={practice.taskId} partId={partId} examName={practice.name} practiceSections={practiceSections} getPartsForSection={getPartsForSection} />
+        <ExamHeader examPractice="Speaking" ref={ref} setShowModal={setMenuShowModal} menuShowModal={menuShowModal} examId={practice.taskId} partId={partId} examName={practice.name} examNumber={examNumber} practiceSections={practiceSections} getPartsForSection={getPartsForSection} />
 
 
         <div className="bg-white rounded-xl flex flex-col screen1280:!h-[920px] overflow-scroll border border-[#D5D6D8] w-full">

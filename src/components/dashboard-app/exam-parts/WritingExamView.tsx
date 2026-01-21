@@ -33,6 +33,7 @@ interface WritingExamViewProps {
   examId?: string;
   examName?: string;
   partNumber?: string;
+  examNumber?: number;
 }
 
 const WritingExamView = ({
@@ -41,6 +42,7 @@ const WritingExamView = ({
   examId,
   examName,
   partNumber,
+  examNumber,
 }: WritingExamViewProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -263,7 +265,7 @@ const WritingExamView = ({
         <></>
       )}
       <div className="flex flex-col w-full">
-        <ExamHeader examPractice="Writing" ref={ref} setShowModal={setMenuShowModal} menuShowModal={menuShowModal} examId={practice.taskId} partId={partId} examName={practice.name} practiceSections={practiceSections} getPartsForSection={getPartsForSection} />
+        <ExamHeader examPractice="Writing" ref={ref} setShowModal={setMenuShowModal} menuShowModal={menuShowModal} examId={practice.taskId} partId={partId} examName={practice.name} examNumber={examNumber} practiceSections={practiceSections} getPartsForSection={getPartsForSection} />
 
         <div className="bg-white rounded-xl flex flex-col screen1280:!h-[920px] overflow-scroll border border-[#D5D6D8] w-full">
           <div className="flex justify-between pb-[21px]  lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">

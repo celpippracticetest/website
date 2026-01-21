@@ -30,6 +30,7 @@ interface ListeningExamViewProps {
   examId: string;
   partNumber: string;
   examName?: string;
+  examNumber?: number;
 }
 
 const ListeningExamView = ({
@@ -38,6 +39,7 @@ const ListeningExamView = ({
   examId,
   partNumber,
   examName,
+  examNumber,
 }: ListeningExamViewProps) => {
   const task5or6 = [4, 5, 6];
   const task5or6Time = [180, 240, 270];
@@ -256,7 +258,7 @@ const ListeningExamView = ({
   };
   return (
     <>
-      <ExamHeader examPractice="Listening" ref={ref} setShowModal={setShowModal} menuShowModal={showModal} examId={practice.taskId} partId={partId} examName={practice.name} practiceSections={practiceSections} getPartsForSection={getPartsForSection} />
+      <ExamHeader examPractice="Listening" ref={ref} setShowModal={setShowModal} menuShowModal={showModal} examId={practice.taskId} partId={partId} examName={practice.name} examNumber={examNumber} practiceSections={practiceSections} getPartsForSection={getPartsForSection} />
 
       <div className=" mx-auto w-full  h-auto transition-all duration-300 flex gap-5">
         <Card className="bg-white/90 flex-col  border border-[#D5D6D8] h-full w-full">
