@@ -214,7 +214,7 @@ const ResultExamView = ({
       <div className=" gap-[10px] text-[#212E42] px-[24px] flex items-center bg-[#FFEBD6] h-auto min-h-[56px] py-2 rounded-tl-[8px] rounded-tr-[8px] text-[18px] font-bold justify-between">
         <div className="flex items-center gap-2">
           Answers & Score
-          <div className="flex screen1280:!hidden">
+          <div className="hidden screen1280:!flex">
             <AskBeavoButton />
           </div>
         </div>

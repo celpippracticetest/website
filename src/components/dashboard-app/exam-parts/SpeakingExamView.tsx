@@ -19,8 +19,6 @@ import SvgSpeakingPart from "@/components/icons/SpeakingPart";
 import SvgWritingPart from "@/components/icons/WritingPart";
 import SvgListeningPart from "@/components/icons/ListeningPart";
 import SvgReadingPart from "@/components/icons/ReadingPart";
-import SvgChevronDownExam from "@/components/icons/ChevronDownExam";
-import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
