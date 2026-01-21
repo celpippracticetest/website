@@ -19,10 +19,10 @@ export class WritingAndSpeakingAnswerRepository {
     };
     return WritingAnswerDto.parse(answer);
   }
-    async findAnswer(id: string): Promise<TWritingAnswerDto | null> {
-      const entity = await this.getAnswerCollection().findOne({ _id: new ObjectId(id) });
-      return entity ? this.convertFromEntity(entity) : null;
-    }
+  async findAnswer(id: string): Promise<TWritingAnswerDto | null> {
+    const entity = await this.getAnswerCollection().findOne({ _id: new ObjectId(id) });
+    return entity ? this.convertFromEntity(entity) : null;
+  }
 
   async findAnswersByPracticeIdsAndUser(
     practiceIds: string[],
@@ -36,7 +36,7 @@ export class WritingAndSpeakingAnswerRepository {
       .project({ practiceId: 1 })
       .toArray();
 
-    
+
     const uniqueAnswers = Array.from(
       new Map(answers.map(a => [a.practiceId, a])).values()
     );
@@ -52,12 +52,19 @@ export class WritingAndSpeakingAnswerRepository {
   }
   async createOrUpdateAnswer(dto: Omit<TWritingAnswerDto, "id">): Promise<TWritingAnswerDto> {
     const existing = await this.getAnswerCollection().findOne(
-      dto.practiceId
+      dto.attemptId
         ? {
+          attemptId: dto.attemptId,
+          examId: dto.examId,
+          partId: dto.partId,
+          userId: dto.userId,
+        }
+        : dto.practiceId
+          ? {
             practiceId: dto.practiceId,
             userId: dto.userId,
           }
-        : {
+          : {
             examId: dto.examId,
             partId: dto.partId,
             userId: dto.userId,
@@ -170,18 +177,18 @@ export class WritingAndSpeakingAnswerRepository {
     };
   }
 
-    async updateAnswer(id: string, dto: Omit<Partial<TWritingAnswerDto>, "id">): Promise<TWritingAnswerDto | null> {
-      const candidate = WritingAnswerSchema.partial().parse({...dto});
+  async updateAnswer(id: string, dto: Omit<Partial<TWritingAnswerDto>, "id">): Promise<TWritingAnswerDto | null> {
+    const candidate = WritingAnswerSchema.partial().parse({ ...dto });
 
-      const result = await this.getAnswerCollection().findOneAndUpdate(
-        { _id: new ObjectId(id) },
-        { $set: candidate },
-        { returnDocument: "after" }
-      );
-      return result ? this.convertFromEntity(result) : null;
-    }
+    const result = await this.getAnswerCollection().findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: candidate },
+      { returnDocument: "after" }
+    );
+    return result ? this.convertFromEntity(result) : null;
+  }
 
-    async deleteAnswer(id: string): Promise<void> {
-      await this.getAnswerCollection().deleteOne({ _id: new ObjectId(id) });
-    }
+  async deleteAnswer(id: string): Promise<void> {
+    await this.getAnswerCollection().deleteOne({ _id: new ObjectId(id) });
+  }
 }

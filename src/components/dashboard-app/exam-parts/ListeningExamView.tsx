@@ -12,18 +12,17 @@ import { useEffect } from "react";
 import ListeningDropDownQuestionList from "../listening-practice/components/ListeningDropDownQuestionList";
 import { useUser } from "@clerk/nextjs";
 import SvgArrowRight from "@/components/icons/ArrowRight";
-import SvgChevronDownExam from "@/components/icons/ChevronDownExam";
 import SvgSpeakingPart from "@/components/icons/SpeakingPart";
 import SvgWritingPart from "@/components/icons/WritingPart";
 import SvgReadingPart from "@/components/icons/ReadingPart";
 import SvgListeningPart from "@/components/icons/ListeningPart";
-import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import { PRACTICE_PARTS } from "@/constants";
 import ContinueExamModal from "@/components/modal/ContinueExamModal";
+import ExamHeader from "./components/ExamHeader";
 
 interface ListeningExamViewProps {
   practice: TPracticeDto;
@@ -31,6 +30,7 @@ interface ListeningExamViewProps {
   examId: string;
   partNumber: string;
   examName?: string;
+  examNumber?: number;
 }
 
 const ListeningExamView = ({
@@ -39,6 +39,7 @@ const ListeningExamView = ({
   examId,
   partNumber,
   examName,
+  examNumber,
 }: ListeningExamViewProps) => {
   const task5or6 = [4, 5, 6];
   const task5or6Time = [180, 240, 270];
@@ -91,10 +92,10 @@ const ListeningExamView = ({
   useEffect(() => {
     // Log mock exam started when component mounts
     if (user && practice.taskId) {
-      const attemptId = `mock_${practice.taskId}_${Date.now()}`;
-      ActivityLogger.mockStarted(attemptId, practice.taskId.toString());
+      const loggerAttemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
+      ActivityLogger.mockStarted(loggerAttemptId, practice.taskId.toString());
     }
-  }, [user, practice.taskId]);
+  }, [user, practice.taskId, searchParams]);
 
   useEffect(() => {
     if (page === "answer" && user) {
@@ -109,15 +110,16 @@ const ListeningExamView = ({
               examId: practice.taskId,
               partId: partId,
               answers: selectedAnswers,
+              attemptId: searchParams.get("attemptId"),
             }),
           });
 
           if (response.ok) {
             const result = await response.json();
             // Log mock exam part completed
-            const attemptId = `mock_${practice.taskId}_${Date.now()}`;
+            const loggerAttemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
             await ActivityLogger.mockCompleted(
-              attemptId,
+              loggerAttemptId,
               practice.taskId.toString(),
               result.overall,
               result,
@@ -144,7 +146,8 @@ const ListeningExamView = ({
           // Optionally handle error
           console.error("Failed to submit answers:", error);
         }
-        const query = section ? `?section=${section}` : "";
+        const attemptId = searchParams.get("attemptId");
+        const query = section ? `?section=${section}&attemptId=${attemptId}` : `?attemptId=${attemptId}`;
         if (section === "listening" && partId >= 6) {
           setShowContinueModal(true);
         } else {
@@ -255,83 +258,8 @@ const ListeningExamView = ({
   };
   return (
     <>
-      <div
-        className={`z-[999] fixed inset-0 flex items-center justify-center px-[14px] screen744:!px-[16px] screen1280:!px-[20px] transition-opacity ${showModal
-          ? "opacity-100 pointer-events-auto"
-          : "opacity-0 pointer-events-none"
-          }`}
-      >
-        <div
-          ref={ref}
-          className={`max-w-[725px] w-full h-[90vh] screen1280:!h-[828px] p-[24px] bg-white rounded-[16px] transform transition-all duration-300 ease-out overflow-y-auto ${showModal ? "scale-100 translate-y-0" : "scale-95 translate-y-2"
-            }`}
-        >
-          <div className="w-full flex flex-col screen1280:!flex-row gap-[16px]">
-            {practiceSections.map((section) => (
-              <div
-                key={section.title}
-                className="flex w-full screen1280:!max-w-[220px] flex-col gap-4"
-              >
-                <div
-                  className={`flex  justify-center rounded-[12px] items-center h-[60px] ${section.color} ${section.bgColor}`}
-                >
-                  {section.icon}
-                  <h2 className="text-[16px] screen1280:!text-[16px] text-[#37465C] font-semibold ml-2">
-                    {section.title}
-                  </h2>
-                </div>
-                <div className="grid grid-cols-1 screen744:!grid-cols-2 screen1280:!grid-cols-1 gap-[16px] mb-[16px]">
-                  {getPartsForSection(section.route).map((p) => {
-                    return (
-                      <button
-                        key={p.index}
-                        onClick={() => {
-                          setShowModal(false);
-                          router.push(
-                            `/exams/exam_${examId}/part${p.index.toString()}`
-                          );
-                        }}
-                        className={`${partId === p.index ? "bg-[#F7F9FF]" : "bg-white"
-                          } w-full min-h-[60px] cursor-pointer  h-auto text-left border border-[#D5D6D8]  hover:bg-[#F7F9FF] transition-colors rounded-[12px] p-[12px]`}
-                      >
-                        <div className="text-[14px] text-[#37465C] font-medium leading-[28px]">
-                          {p.title}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      <div className="flex flex-col screen744:!flex-row flex-wrap  justify-between my-[24px] w-full h-auto min-h-[56px] gap-[20px]">
-        <div className="flex gap-[10px]  screen744:!gap-[40px] items-center mr-[10px]">
-          <span className="shrink-0">
-            Exam {(examName ?? "").replace(/Mock\s+(Set|Test)/gi, "").trim()}
-          </span>
-          <div className="flex gap-[10px]">
-            <a
-              className="relative rounded-[24px] flex-wrap px-[16px] shrink-0   text-[14px] font-normal border-[1px] bg-white flex items-center justify-center border-[#76808F] max-w-[186px] w-full h-[40px]"
-              href={`/exams/exam_${examId}/results?partNumber=part${partNumber}`}
-            >
-              <span className="flex">View Answers &amp; Score</span>
-            </a>
-            <AskBeavoButton />
-          </div>
-        </div>
-        <div
-          onClick={() => setShowModal(true)}
-          className="max-w-[442px] justify-between cursor-pointer border px-[16px] border-[#D5D6D8] rounded-[12px] gap-[4px] w-full flex items-center h-[56px]"
-        >
-          <div className="text-[#37465C] text-[16px]">
-            <span className="font-normal">Listening Part{partId}:</span>
-            <span className="font-bold">{PRACTICE_PARTS[partId - 1]}</span>
-          </div>
-          <SvgChevronDownExam className="text-[#37465C]" />
-        </div>
-      </div>
+      <ExamHeader examPractice="Listening" ref={ref} setShowModal={setShowModal} menuShowModal={showModal} examId={practice.taskId} partId={partId} examName={practice.name} examNumber={examNumber} practiceSections={practiceSections} getPartsForSection={getPartsForSection} />
+
       <div className=" mx-auto w-full  h-auto transition-all duration-300 flex gap-5">
         <Card className="bg-white/90 flex-col  border border-[#D5D6D8] h-full w-full">
           <div className="flex justify-between rounded-lg lg:items-center gap-2 lg:gap-0 pb-[10px]  px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
@@ -597,7 +525,7 @@ const ListeningExamView = ({
           onContinue={() => {
             setShowContinueModal(false);
             router.push(
-              `/exams/exam_${practice.taskId}/part7?section=reading`
+              `/exams/exam_${practice.taskId}/part7?section=reading&attemptId=${searchParams.get("attemptId")}`
             );
           }}
           onFinish={() => {

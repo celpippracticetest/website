@@ -2,12 +2,15 @@
 
 import React, { useEffect } from "react";
 import SvgBeavo from "../icons/Beavo";
+import { cn } from "@/lib/utils";
 
 interface FloatingChatIconProps {
     autoOpen?: boolean;
+    className?: string;
+    onClick?: (e: React.MouseEvent) => void;
 }
 
-const FloatingChatIcon: React.FC<FloatingChatIconProps> = ({ autoOpen = false }) => {
+const FloatingChatIcon: React.FC<FloatingChatIconProps> = ({ autoOpen = false, className, onClick }) => {
     // Auto-open Intercom on mount if autoOpen is true
     useEffect(() => {
         if (autoOpen && typeof window !== "undefined" && (window as any).Intercom) {
@@ -20,13 +23,17 @@ const FloatingChatIcon: React.FC<FloatingChatIconProps> = ({ autoOpen = false })
 
     const handleClick = (e: React.MouseEvent) => {
         e.preventDefault();
+        if (onClick) {
+            onClick(e);
+            return;
+        }
         if (typeof window !== "undefined" && (window as any).Intercom) {
             (window as any).Intercom("show");
         }
     };
 
     return (
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className={cn("fixed bottom-6 right-6 z-50", className)}>
             <button
                 id="support-button"
                 onClick={handleClick}

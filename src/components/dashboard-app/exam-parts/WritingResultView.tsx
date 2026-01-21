@@ -12,8 +12,10 @@ import { PRACTICE_PARTS } from "@/constants";
 
 const WritingResultView = ({
   examPart,
+  attemptId,
 }: {
   examPart: TExamPartSchemaDto | undefined;
+  attemptId?: string | null;
 }) => {
   const [answer, setAnswer] = React.useState<TWritingAnswerDto | null>(null);
   const [showMoreMistake, setShowMoreMistake] = React.useState(false);
@@ -25,6 +27,9 @@ const WritingResultView = ({
       const url = new URL("/api/exams/answers/writing", window.location.origin);
       url.searchParams.append("examId", examPart?.examId.toString() ?? "");
       url.searchParams.append("partId", examPart?.partId.toString() ?? "");
+      if (attemptId) {
+        url.searchParams.append("attemptId", attemptId);
+      }
       const response = await fetch(url.toString(), {
         method: "GET",
         headers: {
@@ -45,22 +50,22 @@ const WritingResultView = ({
   };
   React.useEffect(() => {
     fetchUsersAnswer();
-  }, []);
+  }, [examPart?.examId, examPart?.partId, attemptId]);
   if (!examPart) {
     return <div></div>;
   }
 
   const skillScores = {
-    coherence: answer ? answer.result.contentAndCoherence : 0, // Green (high)
-    vocabulary: answer ? answer.result.vocabulary : 0, // Yellow (medium)
-    readability: answer ? answer.result.readabilityAndGrammar : 0, // Orange (low-medium)
-    fulfillment: answer ? answer.result.taskFulfillment : 0, // Red (low)
+    coherence: answer?.result?.contentAndCoherence ?? 0,
+    vocabulary: answer?.result?.vocabulary ?? 0,
+    readability: answer?.result?.readabilityAndGrammar ?? 0,
+    fulfillment: answer?.result?.taskFulfillment ?? 0,
   };
 
   const maxScore = 12;
   const overallScore = Math.round(
     Object.values(skillScores).reduce((sum, score) => sum + score, 0) /
-      Object.keys(skillScores).length
+    Object.keys(skillScores).length
   );
 
   // Determine the description based on overall score
@@ -89,7 +94,7 @@ const WritingResultView = ({
         "The response is extremely brief, lacks essential details, and doesn't address the task requirements.",
     };
   };
-  const scoreDetails = getScoreDescription(answer ? answer.result.overall : 0);
+  const scoreDetails = getScoreDescription(answer?.result?.overall ?? 0);
 
   return (
     <Accordion.Root
@@ -229,7 +234,7 @@ const WritingResultView = ({
                       <div className={"relative overflow-hidden"}>
                         <div className="prose prose-base max-w-none prose-blue text-slate-700 whitespace-pre-line">
                           <span className="text-slate-700">
-                            {answer?.result.grammarMistakes.map(
+                            {(answer?.result?.grammarMistakes ?? []).map(
                               (mistakeBlock, index) => {
                                 if (mistakeBlock.improvement == null) {
                                   return (
@@ -271,7 +276,7 @@ const WritingResultView = ({
                           <div>
                             <div
                               dangerouslySetInnerHTML={{
-                                __html: answer?.result.betterVersion
+                                __html: (answer?.result?.betterVersion || "")
                                   .replace(/\n/g, "<br />")
                                   .replace(
                                     /\*\*(.*?)\*\*/g,
@@ -295,7 +300,7 @@ const WritingResultView = ({
                         <div className="prose prose-base max-w-none prose-blue prose-blockquote:border-l-4 prose-blockquote:border-gray-200 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:mb-8 prose-blockquote:mt-0 prose-p:mb-2 prose-p:mt-0  prose-h4:mb-0 prose-h4:mt-2 prose-h4:text-[14px] prose-h4:font-extrabold prose-h4:text-slate-950 text-slate-700">
                           <div
                             dangerouslySetInnerHTML={{
-                              __html: answer?.result.feedback
+                              __html: (answer?.result?.feedback || "")
                                 .replace(/<\/?feedback>/g, "")
                                 .replace(/\n/g, "<br />")
                                 .replace(

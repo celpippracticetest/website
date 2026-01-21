@@ -52,7 +52,8 @@ const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
       return;
     }
     setSelectedExam(exam.name);
-    const query = section ? `?section=${section}` : "";
+    const attemptId = `att_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const query = section ? `?section=${section}&attemptId=${attemptId}` : `?attemptId=${attemptId}`;
     router.push(`/exams/exam_${exam.id}/part${partId}${query}`);
   };
 

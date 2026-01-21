@@ -61,12 +61,19 @@ export class ListeningAndReadingAnswerRepository {
   ): Promise<TListeningAndReadingAnswerDto> {
     // Check if an answer exists for the given practiceId and userId
     const existing = await this.getAnswerCollection().findOne(
-      dto.practiceId
+      dto.attemptId
         ? {
+          attemptId: dto.attemptId,
+          examId: dto.examId,
+          partId: dto.partId,
+          userId: dto.userId,
+        }
+        : dto.practiceId
+          ? {
             practiceId: dto.practiceId,
             userId: dto.userId,
           }
-        : {
+          : {
             examId: dto.examId,
             partId: dto.partId,
             userId: dto.userId,

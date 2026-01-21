@@ -12,18 +12,22 @@ import { useUser } from "@clerk/nextjs";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 import { ActivityLogger } from "@/lib/userActivity";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import IncompletePartsModal from "@/components/modal/IncompletePartsModal";
+import { useSearchParams } from "next/navigation";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { format } from "date-fns";
 
 function scaleToBand(weightedPercent: number): number {
+  if (isNaN(weightedPercent)) return 0;
   return Math.ceil((weightedPercent / 100) * 12);
 }
 
 const ResultExamView = ({
   exams,
   examParts,
-  answers,
-  speakingAndWritingAnswers,
+  answers: allAnswers,
+  speakingAndWritingAnswers: allSpeakingAndWritingAnswers,
 }: {
   exams: TExamSchemaDto;
   examParts: TExamPartSchemaDto[];
@@ -31,6 +35,35 @@ const ResultExamView = ({
   speakingAndWritingAnswers: any;
 }) => {
   const route = useRouter();
+  const searchParams = useSearchParams();
+  const currentAttemptId = searchParams.get("attemptId") === "null" ? null : searchParams.get("attemptId");
+
+  const attempts = useMemo(() => {
+    const attemptMap = new Map<string, Date>();
+    [...allAnswers, ...allSpeakingAndWritingAnswers].forEach((a) => {
+      const id = a.attemptId || "legacy";
+      const date = a.createdAt ? new Date(a.createdAt) : new Date(0);
+      if (!attemptMap.has(id) || date > attemptMap.get(id)!) {
+        attemptMap.set(id, date);
+      }
+    });
+
+    return Array.from(attemptMap.entries())
+      .map(([id, date]) => ({ id, date }))
+      .sort((a, b) => (b.date?.getTime() || 0) - (a.date?.getTime() || 0));
+  }, [allAnswers, allSpeakingAndWritingAnswers]);
+
+  const selectedAttemptId = currentAttemptId || attempts[0]?.id;
+
+  const answers = useMemo(() => {
+    if (!selectedAttemptId) return allAnswers;
+    return allAnswers.filter((a) => (a.attemptId || "legacy") === selectedAttemptId);
+  }, [allAnswers, selectedAttemptId]);
+
+  const speakingAndWritingAnswers = useMemo(() => {
+    if (!selectedAttemptId) return allSpeakingAndWritingAnswers;
+    return allSpeakingAndWritingAnswers.filter((a: any) => (a.attemptId || "legacy") === selectedAttemptId);
+  }, [allSpeakingAndWritingAnswers, selectedAttemptId]);
 
   const { user, isLoaded } = useUser();
 
@@ -86,12 +119,13 @@ const ResultExamView = ({
         )
           return 0;
         const examPart = examParts.find((e) => e.partId == index + 1);
-        const allQuestions = examPart?.passages.reduce(
+        const allQuestions = examPart?.passages?.reduce(
           (questions: any, passage) => {
-            return questions.concat(passage.questions);
+            return questions.concat(passage.questions || []);
           },
           []
-        );
+        ) || [];
+        if (allQuestions.length === 0) return 0;
         const numberOfCorrect = allQuestions.filter(
           (q: any, index: any) =>
             userAnswer?.answers[index] &&
@@ -119,12 +153,13 @@ const ResultExamView = ({
         )
           return 0;
         const examPart = examParts.find((e) => e.partId == index + 7);
-        const allQuestions = examPart?.passages.reduce(
+        const allQuestions = examPart?.passages?.reduce(
           (questions: any, passage: any) => {
-            return questions.concat(passage.questions);
+            return questions.concat(passage.questions || []);
           },
           []
-        );
+        ) || [];
+        if (allQuestions.length === 0) return 0;
         const numberOfCorrect = allQuestions.filter(
           (q: any, index: any) =>
             userAnswer?.answers[index] &&
@@ -176,11 +211,35 @@ const ResultExamView = ({
   }
   return (
     <div className=" mx-auto w-full flex flex-col bg-white  rounded-[8px]">
-      <div className=" gap-[10px] text-[#212E42] px-[24px] flex items-center bg-[#FFEBD6] h-[56px] rounded-tl-[8px] rounded-tr-[8px]  text-[18px] font-bold">
-        Answers & Score
-        <div className="flex  screen1280:!hidden">
-          <AskBeavoButton />
+      <div className=" gap-[10px] text-[#212E42] px-[24px] flex items-center bg-[#FFEBD6] h-auto min-h-[56px] py-2 rounded-tl-[8px] rounded-tr-[8px] text-[18px] font-bold justify-between">
+        <div className="flex items-center gap-2">
+          Answers & Score
+          <div className="hidden screen1280:!flex">
+            <AskBeavoButton />
+          </div>
         </div>
+        {attempts.length > 0 && (
+          <div className="flex items-center gap-2 font-normal text-[14px]">
+            <span className="hidden screen744:!inline">Attempt History:</span>
+            <Select
+              value={selectedAttemptId}
+              onValueChange={(val) => {
+                route.push(`/exams/exam_${exams.id}/results?attemptId=${val}`);
+              }}
+            >
+              <SelectTrigger className="w-[200px] h-[36px] bg-white border-[#D5D6D8]">
+                <SelectValue placeholder="Select attempt" />
+              </SelectTrigger>
+              <SelectContent>
+                {attempts.map((att) => (
+                  <SelectItem key={att.id} value={att.id}>
+                    {format(att.date, "MMM d, yyyy HH:mm")}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       <div className="px-[16px] screen744:!px-[24px] mt-[24px]">
@@ -295,6 +354,7 @@ const ResultExamView = ({
                   <WritingResultView
                     key={11 + index}
                     examPart={examParts.find((e) => e.partId == index + 11)}
+                    attemptId={selectedAttemptId}
                   />
                 ))}
               </div>
@@ -324,6 +384,7 @@ const ResultExamView = ({
                   <SpeakingResultView
                     key={13 + index}
                     examPart={examParts.find((e) => e.partId == index + 13)}
+                    attemptId={selectedAttemptId}
                   />
                 ))}
               </div>

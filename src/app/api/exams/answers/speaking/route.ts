@@ -58,9 +58,9 @@ async function uploadAudioBuffer(
   } catch (error) {
     console.error(
       "Upload failed" +
-        process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID +
-        " " +
-        process.env.NEXT_PUBLIC_AWS_SECRETE_ACCESS_KEY,
+      process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID +
+      " " +
+      process.env.NEXT_PUBLIC_AWS_SECRETE_ACCESS_KEY,
       error
     );
     return null;
@@ -133,6 +133,7 @@ export const POST = async function (req: Request) {
     const examPartRepo = new ExamPartsRepository(mongoClient);
     const examId = formData.get("examId") as string;
     const partId = formData.get("partId") as string;
+    const attemptId = formData.get("attemptId") as string;
 
     const examPart = await examPartRepo.findExamPartByExamIdAndPartId(
       examId,
@@ -227,7 +228,7 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
     }
 
     // Determine which model to use
-    const modelToUse = process.env.OPENROUTER_MODEL ;
+    const modelToUse = process.env.OPENROUTER_MODEL;
     console.log("Using model:", modelToUse);
 
     // Enhance system prompt for models that don't support tool calling well
@@ -357,14 +358,14 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
 
     // Extract tool call result and format like Anthropic response
     const toolCall = openRouterResponse.choices?.[0]?.message?.tool_calls?.[0];
-    
+
     if (!toolCall) {
       console.error("No tool call! Full response:", JSON.stringify(openRouterResponse, null, 2));
-      
+
       // Fallback: Try to parse structured content from message
       const messageContent = openRouterResponse.choices?.[0]?.message?.content || "";
       let parsedResult: any = null;
-      
+
       // Strategy 1: Try direct JSON parse
       try {
         parsedResult = JSON.parse(messageContent);
@@ -379,32 +380,32 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
           }
         }
       }
-      
+
       if (!parsedResult || typeof parsedResult !== 'object') {
         console.error("All parsing strategies failed!");
         throw new Error(
           `This model does not support tool calling properly. Please use a different model (e.g., Claude). Provider: ${openRouterResponse.provider}, Model: ${openRouterResponse.model}`
         );
       }
-      
+
       // Validate that all required fields exist - NO DEFAULTS!
       const requiredFields = [
-        'overall', 'contentAndCoherence', 'vocabulary', 
-        'readabilityAndGrammar', 'taskFulfillment', 'feedback', 
+        'overall', 'contentAndCoherence', 'vocabulary',
+        'readabilityAndGrammar', 'taskFulfillment', 'feedback',
         'grammarMistakes', 'betterVersion'
       ];
-      
-      const missingFields = requiredFields.filter(field => 
+
+      const missingFields = requiredFields.filter(field =>
         parsedResult[field] === undefined || parsedResult[field] === null
       );
-      
+
       if (missingFields.length > 0) {
         console.error("Missing required fields:", missingFields);
         throw new Error(
           `Model returned incomplete data. Missing fields: ${missingFields.join(', ')}. Please use Claude instead of ${openRouterResponse.model}`
         );
       }
-      
+
       // Validate betterVersion is not empty
       if (!parsedResult.betterVersion || parsedResult.betterVersion.trim().length < 50) {
         console.error("betterVersion is empty or too short");
@@ -412,7 +413,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
           `Model did not provide proper betterVersion (must be at least 50 characters). Please use Claude instead of ${openRouterResponse.model}`
         );
       }
-      
+
       console.log("Successfully extracted complete data from content");
       const msg: any = {
         content: [
@@ -442,6 +443,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
         overalScore: contentInput.overall,
         type: "SPEAKING",
         result: contentInput,
+        attemptId: attemptId || undefined,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -453,7 +455,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
         },
       });
     }
-    
+
     const msg: any = {
       content: [
         {
@@ -508,6 +510,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
         betterVersion: "",
         grammarMistakes: [],
       },
+      attemptId: attemptId || undefined,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -546,9 +549,11 @@ export const GET = async function (req: NextRequest) {
   if (!user) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
+  const attemptId = req.nextUrl.searchParams.get("attemptId");
+  const filterAttemptId = attemptId === "legacy" ? null : (attemptId || undefined);
   const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
   const answers = await answerRepo.getAllWritingAnswers(
-    { userId: user.id, examId, partId: parseInt(partId), type: "SPEAKING" },
+    { userId: user.id, examId, partId: parseInt(partId), type: "SPEAKING", attemptId: filterAttemptId as any },
     0,
     100
   );

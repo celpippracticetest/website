@@ -2,9 +2,7 @@
 import React from "react";
 import SvgCloseEye from "@/components/icons/CloseEye";
 import SvgOpenEye from "@/components/icons/OpenEye";
-import { useCancelUserPlan } from "@/hooks/useCancelUserPlan";
-import { useUser } from "@clerk/nextjs";
-import { useReverification } from "@clerk/nextjs";
+import { useReverification, useUser } from "@clerk/nextjs";
 import SvgDesktop from "@/components/icons/Desktop";
 import SvgPhone from "@/components/icons/Phone";
 import SvgTrash from "@/components/icons/Trash";
@@ -86,12 +84,37 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
 
   const { mutate } = useDeleteUserSessions();
   const { mutate: handleDeleteUserAccount } = useDeleteUserAccount();
-  const { mutate: handleUserPlan } = useCancelUserPlan();
+
   const { mutate: handleDeleteUserEmail } = useDeleteUserEmail();
 
   const [confirmEmailId, setConfirmEmailId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showCancelSubscription, setShowCancelSubscription] = useState(false);
+  const [loadingPortal, setLoadingPortal] = useState(false);
+
+  const handleManageSubscription = async () => {
+    try {
+      setLoadingPortal(true);
+      const response = await fetch("/api/stripe/create-portal-session", {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to create portal session");
+      }
+
+      const { url } = await response.json();
+      window.location.href = url;
+    } catch (error) {
+      console.error(error);
+      setToastType("error");
+      setToastMessage(error instanceof Error ? error.message : "Failed to load subscription portal");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } finally {
+      setLoadingPortal(false);
+    }
+  };
 
   const handleConfirmDeleteEmail = (emailId: string) => {
     if (!user) return;
@@ -271,9 +294,8 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
     <>
       {showToast && (
         <div
-          className={`fixed top-4 right-4 z-50 px-4 py-2 rounded shadow-lg transition-opacity duration-300 ${
-            toastType === "success" ? "bg-green-500" : "bg-red-500"
-          } text-white`}
+          className={`fixed top-4 right-4 z-50 px-4 py-2 rounded shadow-lg transition-opacity duration-300 ${toastType === "success" ? "bg-green-500" : "bg-red-500"
+            } text-white`}
         >
           {toastMessage}
         </div>
@@ -406,23 +428,15 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
             <div>
               {(user?.publicMetadata.plan == "premium" || user?.publicMetadata.plan == "pro" || subscriptionData) ? (
                 <div className="flex gap-[8px] screen744:!gap-[16px] items-center flex-row-reverse justify-start flex-wrap">
-                  <Link
-                    href={"/plans"}
-                    className="flex bg-[#4A7DFF] text-white items-center justify-center   rounded-[24px]  font-normal text-[14px] w-[113px] h-[40px]"
-                  >
-                    See Plans
-                  </Link>
                   <button
-                    onClick={() => setShowCancelSubscription(true)}
-                    className={` ${
-                      user.publicMetadata.planCancelled == true
-                        ? "text-gray"
-                        : "text-[#EE4266]"
-                    } cursor-pointer text-[#EE4266] text-[14px] font-normal w-[126px] text-center`}
+                    onClick={handleManageSubscription}
+                    disabled={loadingPortal}
+                    className={` ${user.publicMetadata.planCancelled == true
+                      ? "text-gray"
+                      : "text-[#EE4266]"
+                      } cursor-pointer text-[#EE4266] text-[14px] font-normal w-[150px] text-center disabled:opacity-50`}
                   >
-                    {user.publicMetadata.planCancelled == true
-                      ? "Plan was canceled!"
-                      : "Cancel plan"}
+                    {loadingPortal ? "Loading..." : "Manage Subscription"}
                   </button>
                 </div>
               ) : (
@@ -504,13 +518,10 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
                     <SvgDesktop />
                   )}
                   <span>
-                    {`${
-                      session.latestActivity.isMobile ? "Phone " : "Desktop "
-                    }${session.latestActivity.deviceType}, ${
-                      session.latestActivity.browserName
-                    }, ${session.latestActivity?.city}, ${
-                      session.latestActivity?.country
-                    }`}
+                    {`${session.latestActivity.isMobile ? "Phone " : "Desktop "
+                      }${session.latestActivity.deviceType}, ${session.latestActivity.browserName
+                      }, ${session.latestActivity?.city}, ${session.latestActivity?.country
+                      }`}
                   </span>
                 </div>
                 <span>
@@ -553,7 +564,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
               <span className="text-[#212E42] text-[16px] font-medium">
                 Delete Account
               </span>
-               
+
             </div>
             <button onClick={() => setShowDeleteConfirm(true)}>
               <span className="flex cursor-pointer items-center justify-center border-[#EE4266] text-[#EE4266] rounded-[24px] border-[1px] font-normal text-[14px] w-[149px] h-[40px]">
@@ -562,7 +573,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
             </button>
           </div>
         </div>
-          
+
       </div>
       {confirmEmailId && (
         <div className="fixed inset-0  bg-[#17161680] flex justify-center items-center z-50">
@@ -644,54 +655,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
           </div>
         </div>
       )}
-      {showCancelSubscription && (
-        <div className="fixed inset-0 bg-[#17161680] flex justify-center items-center  z-[9999]">
-          <div className="bg-white flex items-center flex-col rounded-[24px] w-full max-w-[429px] h-[214px] pt-[24px] pb-[16px] px-[24px] text-center mx-[16px]">
-            <SvgCloseCircle />
-            <div className="text-[#EF7300] text-[18px] font-medium pt-[16px]">
-              Cancel Plan
-            </div>
-            <div className="text-[#979EA8] text-[14px] font-normal pt-[16px]">
-              Are you sure you want to cencel your plan?
-            </div>
-            <div className="h-[2px] bg-[#E6E6E6] pt-[16px]"></div>
-            <div className="flex w-full gap-[8px] justify-around mt-[16px]">
-              <button
-                onClick={() => setShowCancelSubscription(false)}
-                className="w-full cursor-pointer max-w-[186px] text-[#76808F] h-[40px] rounded-[24px] border border-[#76808F]"
-              >
-                No
-              </button>
-              <button
-                onClick={() =>
-                  handleUserPlan(undefined, {
-                    onSuccess: async () => {
-                      await user?.reload();
-                      setToastType("success");
-                      setToastMessage("Plan canceled successfully");
-                      setShowToast(true);
-                      setShowCancelSubscription(false);
-                      setTimeout(() => {
-                        setShowToast(false);
-                      }, 3000);
-                    },
-                    onError: () => {
-                      setToastType("error");
-                      setToastMessage("Failed to cancel user plan");
-                      setShowCancelSubscription(false);
-                      setShowToast(true);
-                      setTimeout(() => setShowToast(false), 3000);
-                    },
-                  })
-                }
-                className="w-full cursor-pointer max-w-[186px] rounded-[24px] h-[40px] bg-[#4A7DFF] text-white"
-              >
-                Yes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Cancel Subscription Modal Removed */}
       {/* Set Password Modal */}
       {showSetPasswordModal && (
         <SetPasswordModal
@@ -760,11 +724,10 @@ function SetPasswordModal({
           <div className="relative mb-4">
             <label
               className={`absolute left-3 top-[-10px] text-[12px] bg-white px-1 transition-all duration-200
-                ${
-                  password.length > 0 ||
+                ${password.length > 0 ||
                   document.activeElement?.id === "set-password-input"
-                    ? ""
-                    : "opacity-0"
+                  ? ""
+                  : "opacity-0"
                 }
                 text-[#76808F]`}
             >
@@ -795,11 +758,10 @@ function SetPasswordModal({
           <div className="relative mb-4">
             <label
               className={`absolute left-3 top-[-10px] text-[12px] bg-white px-1 transition-all duration-200
-                ${
-                  confirmPassword.length > 0 ||
+                ${confirmPassword.length > 0 ||
                   document.activeElement?.id === "set-confirm-password-input"
-                    ? ""
-                    : "opacity-0"
+                  ? ""
+                  : "opacity-0"
                 }
                 text-[#76808F]`}
             >

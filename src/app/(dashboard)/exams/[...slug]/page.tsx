@@ -12,6 +12,7 @@ import SpeakingExamView from "@/components/dashboard-app/exam-parts/SpeakingExam
 import ResultExamView from "@/components/dashboard-app/exam-parts/ResultExamView";
 import { ObjectId } from "mongodb";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
+import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { currentUser } from "@clerk/nextjs/server";
 
 const Exam = async ({ params }: { params: { slug: string[] } }) => {
@@ -55,13 +56,29 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
       examId: new ObjectId(examId),
     });
     const answersRepo = new ListeningAndReadingAnswerRepository(mongoClient);
+    const writingRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
+
     const answers = await answersRepo.getAllListeningAndReadingAnswers({
       examId: examId,
       userId: user.id,
     });
 
-    const speakingAndWritingAnswers =
-      await answersRepo.findAnswersByExamIdAndUser(examId, user.id);
+    const writingAnswers = await writingRepo.getAllWritingAnswers({
+      examId: examId,
+      userId: user.id,
+      type: "WRITING",
+    }, 0, 100);
+
+    const speakingAnswers = await writingRepo.getAllWritingAnswers({
+      examId: examId,
+      userId: user.id,
+      type: "SPEAKING",
+    }, 0, 100);
+
+    const speakingAndWritingAnswers = [
+      ...writingAnswers.items,
+      ...speakingAnswers.items,
+    ];
 
     return (
       <main className=" bg-[#F2F6FF] min-h-screen flex w-full justify-center  max-w-[1280px] mx-auto">
@@ -100,6 +117,7 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
             practice={practice}
             partId={parseInt(partNumber)}
             examName={exam?.name}
+            examNumber={exam?.order}
           />
         )}
         {practice.type == "READING" && (
@@ -109,6 +127,7 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
             partId={parseInt(partNumber)}
             examId={examId}
             examName={exam?.name}
+            examNumber={exam?.order}
           />
         )}
         {practice.type == "WRITING" && (
@@ -118,6 +137,7 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
             partNumber={partNumber}
             examId={examId}
             examName={exam?.name}
+            examNumber={exam?.order}
           />
         )}
         {practice.type == "SPEAKING" && (
@@ -127,6 +147,7 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
             examId={examId}
             partNumber={partNumber}
             examName={exam?.name}
+            examNumber={exam?.order}
           />
         )}
       </div>
