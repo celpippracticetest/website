@@ -241,17 +241,6 @@ const BottomNavigation = () => {
                 </div>
             </div>
 
-            {/* Mobile Icon */}
-            <div className="pointer-events-auto screen744:hidden shrink-0">
-                <FloatingChatIcon
-                    autoOpen={false}
-                    onClick={(e) => {
-                        e.preventDefault();
-                        setOpen(!isOpen);
-                    }}
-                    className="static w-[64px] h-[64px] !bottom-[16px]"
-                />
-            </div>
         </div>
     );
 };

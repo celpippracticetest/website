@@ -106,14 +106,8 @@ const ExamHeader = forwardRef<HTMLDivElement, ExamHeaderProps>(
                             >
                                 <span className="flex">View Answers &amp; Score</span>
                             </a>
-                            <AskBeavoButton className="screen1280:block hidden" />
-                            <FloatingChatIcon
-                                autoOpen={false}
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    setOpen(!isOpen);
-                                }}
-                                className="hidden screen744:block screen1280:hidden !bottom-[16px] right-6"
+                            <AskBeavoButton
+                                className="screen744:block hidden screen744:!right-6 screen744:!left-auto screen744:!translate-x-0 screen744:!fixed screen744:!bottom-6 screen1280:!left-1/2 screen1280:!right-auto screen1280:!-translate-x-1/2"
                             />
                         </div>
                     </div>
@@ -127,7 +121,7 @@ const ExamHeader = forwardRef<HTMLDivElement, ExamHeaderProps>(
                         </div>
                         <SvgChevronDownExam className="text-[#37465C]" />
                     </div>
-                </div>
+                </div >
             </>
         );
     }
