@@ -99,7 +99,8 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create portal session");
+        const data = await response.json();
+        throw new Error(data.error || "Failed to create portal session");
       }
 
       const { url } = await response.json();
@@ -107,7 +108,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
     } catch (error) {
       console.error(error);
       setToastType("error");
-      setToastMessage("Failed to load subscription portal");
+      setToastMessage(error instanceof Error ? error.message : "Failed to load subscription portal");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } finally {
@@ -427,12 +428,6 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
             <div>
               {(user?.publicMetadata.plan == "premium" || user?.publicMetadata.plan == "pro" || subscriptionData) ? (
                 <div className="flex gap-[8px] screen744:!gap-[16px] items-center flex-row-reverse justify-start flex-wrap">
-                  <Link
-                    href={"/plans"}
-                    className="flex bg-[#4A7DFF] text-white items-center justify-center   rounded-[24px]  font-normal text-[14px] w-[113px] h-[40px]"
-                  >
-                    See Plans
-                  </Link>
                   <button
                     onClick={handleManageSubscription}
                     disabled={loadingPortal}
