@@ -26,6 +26,7 @@ import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import { PRACTICE_PARTS } from "@/constants";
+import ExamHeader from "./components/ExamHeader";
 
 interface SpeakingExamViewProps {
   practice: TPracticeDto;
@@ -365,88 +366,8 @@ const SpeakingExamView = ({
       )}
 
       <div className="flex flex-col w-full">
-        <div>
-          <div
-            className={`z-[999] fixed inset-0 flex items-center justify-center px-[14px] screen744:!px-[16px] screen1280:!px-[20px] transition-opacity ${menuShowModal
-              ? "opacity-100 pointer-events-auto"
-              : "opacity-0 pointer-events-none"
-              }`}
-          >
-            <div
-              ref={ref}
-              className={`max-w-[725px] w-full h-[90vh] screen1280:!h-[828px] p-[24px] bg-white rounded-[16px] transform transition-all duration-300 ease-out overflow-y-auto ${menuShowModal
-                ? "scale-100 translate-y-0"
-                : "scale-95 translate-y-2"
-                }`}
-            >
-              <div className="w-full flex flex-col screen1280:!flex-row gap-[16px]">
-                {practiceSections.map((section) => (
-                  <div
-                    key={section.title}
-                    className="flex w-full screen1280:!max-w-[220px] flex-col gap-4"
-                  >
-                    <div
-                      className={`flex  justify-center rounded-[12px] items-center h-[60px] ${section.color} ${section.bgColor}`}
-                    >
-                      {section.icon}
-                      <h2 className="text-[16px] screen1280:!text-[16px] text-[#37465C] font-semibold ml-2">
-                        {section.title}
-                      </h2>
-                    </div>
-                    <div className="grid grid-cols-1 screen744:!grid-cols-2 screen1280:!grid-cols-1 gap-[16px] mb-[16px]">
-                      {getPartsForSection(section.route).map((p) => {
-                        return (
-                          <button
-                            key={p.index}
-                            onClick={() => {
-                              setShowModal(false);
-                              router.push(
-                                `/exams/exam_${examId}/part${p.index.toString()}`
-                              );
-                            }}
-                            className={`${partId === p.index ? "bg-[#F7F9FF]" : "bg-white"
-                              } w-full min-h-[60px] cursor-pointer  h-auto text-left border border-[#D5D6D8]  hover:bg-[#F7F9FF] transition-colors rounded-[12px] p-[12px]`}
-                          >
-                            <div className="text-[14px] text-[#37465C] font-medium leading-[28px]">
-                              {p.title}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-col screen744:!flex-row flex-wrap  justify-between my-[24px] w-full h-auto min-h-[56px] gap-[20px]">
-            <div className="flex gap-[10px]  screen744:!gap-[40px] items-center">
-              <span className="shrink-0">
-                Exam{" "}
-                {(examName ?? "").replace(/Mock\s+(Set|Test)/gi, "").trim()}
-              </span>
-              <div className="flex gap-[10px]">
-                <a
-                  className="relative rounded-[24px] flex-wrap px-[16px] shrink-0   text-[14px] font-normal border-[1px] bg-white flex items-center justify-center border-[#76808F] max-w-[186px] w-full h-[40px]"
-                  href={`/exams/exam_${examId}/results?partNumber=part${partId}${searchParams.get("attemptId") && searchParams.get("attemptId") !== "null" ? `&attemptId=${searchParams.get("attemptId")}` : ""}`}
-                >
-                  <span className="flex">View Answers &amp; Score</span>
-                </a>
-                <AskBeavoButton />
-              </div>
-            </div>
-            <div
-              onClick={() => setMenuShowModal(true)}
-              className="max-w-[442px] justify-between cursor-pointer border px-[16px] border-[#D5D6D8] rounded-[12px] gap-[4px] w-full flex items-center h-[56px]"
-            >
-              <div className="text-[#37465C] text-[16px]">
-                <span className="font-normal">Speaking Part{partId}:</span>
-                <span className="font-bold">{PRACTICE_PARTS[partId - 1]}</span>
-              </div>
-              <SvgChevronDownExam className="text-[#37465C]" />
-            </div>
-          </div>
-        </div>
+        <ExamHeader examPractice="Speaking" ref={ref} setShowModal={setMenuShowModal} menuShowModal={menuShowModal} examId={practice.taskId} partId={partId} examName={practice.name} practiceSections={practiceSections} getPartsForSection={getPartsForSection} />
+
 
         <div className="bg-white rounded-xl flex flex-col screen1280:!h-[920px] overflow-scroll border border-[#D5D6D8] w-full">
           <div className="flex justify-between pb-[21px]  lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
