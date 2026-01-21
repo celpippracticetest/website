@@ -3,12 +3,13 @@
 import React from "react";
 import SvgBeavo from "../icons/Beavo";
 import { useAskBeavoStore } from "@/stores/askBeavoStore";
+import { cn } from "@/lib/utils";
 
-const AskBeavoButton: React.FC = () => {
+const AskBeavoButton: React.FC<{ className?: string }> = ({ className }) => {
   const { isOpen, setOpen } = useAskBeavoStore();
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+    <div className={cn("fixed bottom-6 left-1/2 -translate-x-1/2 z-50", className)}>
       <button
         onClick={() => setOpen(!isOpen)}
         className="relative flex items-center cursor-pointer justify-center text-[#212E42] text-[14px] h-[40px] w-[134px] gap-[8px] rounded-[24px] px-[16px] pl-[8px] font-normal

@@ -51,7 +51,7 @@ export async function POST(req: Request) {
         }
 
         if (!stripeCustomerId) {
-            return NextResponse.json({ error: `No active subscription found. Debug: ${debugInfo}` }, { status: 400 });
+            return NextResponse.json({ error: `No active subscription found` }, { status: 400 });
         }
 
         // Create a billing portal session

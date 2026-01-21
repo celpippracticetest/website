@@ -14,10 +14,17 @@ import SvgBook from "../icons/animated/book/Book";
 import SvgArticle from "../icons/animated/article/Article";
 import SvgCheck from "../icons/animated/check/Check";
 import SvgWord from "../icons/Word";
+import dynamic from "next/dynamic";
+import { useAskBeavoStore } from "@/stores/askBeavoStore";
+
+const FloatingChatIcon = dynamic(() => import("../AskBeavo/FloatingChatIcon"), {
+    ssr: false,
+});
 
 const BottomNavigation = () => {
     const pathname = usePathname();
     const router = useRouter();
+    const { isOpen, setOpen } = useAskBeavoStore();
 
     const [practice, setPractice] = useState(false);
     const [mockTest, setMockTest] = useState(false);
@@ -59,177 +66,191 @@ const BottomNavigation = () => {
     };
 
     return (
-        <div
-            className="fixed bottom-[16px] left-1/2 z-20 -translate-x-1/2 w-[calc(100%-32px)] max-w-[400px] screen1280:!hidden"
-            style={{ height: 70, pointerEvents: "none" }}
-        >
-            {/* White pill background */}
-            <div className="absolute inset-0 w-full h-full bg-white rounded-full shadow-[0px_4px_24px_0px_rgba(0,0,0,0.08)]" />
-
-            {/* Navigation items */}
+        <div className="fixed bottom-[16px] left-0 w-full flex justify-center items-center z-20 pointer-events-none screen1280:!hidden gap-[12px]">
             <div
-                className="relative z-10 grid grid-cols-4 items-center justify-items-center h-full px-4"
-                style={{ pointerEvents: "auto" }}
+                className="relative w-[calc(100%-90px)] screen744:w-[calc(100%-32px)] max-w-[400px]"
+                style={{ height: 70, pointerEvents: "auto" }}
             >
-                {/* Practice */}
-                <Link
-                    href="/practice-overview"
-                    prefetch={true}
-                    className="relative w-full h-full flex items-center justify-center"
-                >
-                    {practice && (
-                        <motion.div
-                            className="absolute w-[80px] h-[56px] bg-[#E8ECF4] rounded-full -z-10"
-                            variants={vibrationVariants}
-                            initial="initial"
-                            animate="animate"
-                        />
-                    )}
-                    <motion.div
-                        key={practice ? "active" : "inactive"}
-                        initial={practice ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
-                        animate={{ opacity: practice ? 1 : 0.6, scale: practice ? 1 : 0.95 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                        className="flex flex-col items-center gap-1 cursor-pointer"
-                    >
-                        <div className="w-[24px] h-[24px]">
-                            {practice ? (
-                                <AnimatedIcon
-                                    animationData={bookAnimation}
-                                    isActive={true}
-                                />
-                            ) : (
-                                <SvgBook />
-                            )}
-                        </div>
-                        <span
-                            className={clsx(
-                                "text-xs",
-                                practice ? "text-black" : "text-[#37465C]"
-                            )}
-                        >
-                            Practice
-                        </span>
-                    </motion.div>
-                </Link>
+                {/* White pill background */}
+                <div className="absolute inset-0 w-full h-full bg-white rounded-full shadow-[0px_4px_24px_0px_rgba(0,0,0,0.08)]" />
 
-                {/* Exams */}
+                {/* Navigation items */}
                 <div
-                    className="relative w-full h-full flex items-center justify-center cursor-pointer"
-                    onClick={() => router.push("/exam-overview")}
+                    className="relative z-10 grid grid-cols-4 items-center justify-items-center h-full px-4"
+                    style={{ pointerEvents: "auto" }}
                 >
-                    {mockTest && (
-                        <motion.div
-                            className="absolute w-[80px] h-[56px] bg-[#E8ECF4] rounded-full -z-10"
-                            variants={vibrationVariants}
-                            initial="initial"
-                            animate="animate"
-                        />
-                    )}
-                    <motion.div
-                        key={mockTest ? "active" : "inactive"}
-                        initial={mockTest ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
-                        animate={{ opacity: mockTest ? 1 : 0.6, scale: mockTest ? 1 : 0.95 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                        className="flex flex-col items-center gap-1"
+                    {/* Practice */}
+                    <Link
+                        href="/practice-overview"
+                        prefetch={true}
+                        className="relative w-full h-full flex items-center justify-center"
                     >
-                        <div className="w-[24px] h-[24px]">
-                            {mockTest ? (
-                                <AnimatedIcon
-                                    animationData={articleAnimation}
-                                    isActive={true}
-                                />
-                            ) : (
-                                <SvgArticle />
-                            )}
-                        </div>
-                        <span
-                            className={clsx(
-                                "text-xs",
-                                mockTest ? "text-black" : "text-[#37465C]"
-                            )}
+                        {practice && (
+                            <motion.div
+                                className="absolute w-[80px] h-[56px] bg-[#E8ECF4] rounded-full -z-10"
+                                variants={vibrationVariants}
+                                initial="initial"
+                                animate="animate"
+                            />
+                        )}
+                        <motion.div
+                            key={practice ? "active" : "inactive"}
+                            initial={practice ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
+                            animate={{ opacity: practice ? 1 : 0.6, scale: practice ? 1 : 0.95 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                            className="flex flex-col items-center gap-1 cursor-pointer"
                         >
-                            Exams
-                        </span>
-                    </motion.div>
+                            <div className="w-[24px] h-[24px]">
+                                {practice ? (
+                                    <AnimatedIcon
+                                        animationData={bookAnimation}
+                                        isActive={true}
+                                    />
+                                ) : (
+                                    <SvgBook />
+                                )}
+                            </div>
+                            <span
+                                className={clsx(
+                                    "text-xs",
+                                    practice ? "text-black" : "text-[#37465C]"
+                                )}
+                            >
+                                Practice
+                            </span>
+                        </motion.div>
+                    </Link>
+
+                    {/* Exams */}
+                    <div
+                        className="relative w-full h-full flex items-center justify-center cursor-pointer"
+                        onClick={() => router.push("/exam-overview")}
+                    >
+                        {mockTest && (
+                            <motion.div
+                                className="absolute w-[80px] h-[56px] bg-[#E8ECF4] rounded-full -z-10"
+                                variants={vibrationVariants}
+                                initial="initial"
+                                animate="animate"
+                            />
+                        )}
+                        <motion.div
+                            key={mockTest ? "active" : "inactive"}
+                            initial={mockTest ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
+                            animate={{ opacity: mockTest ? 1 : 0.6, scale: mockTest ? 1 : 0.95 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                            className="flex flex-col items-center gap-1"
+                        >
+                            <div className="w-[24px] h-[24px]">
+                                {mockTest ? (
+                                    <AnimatedIcon
+                                        animationData={articleAnimation}
+                                        isActive={true}
+                                    />
+                                ) : (
+                                    <SvgArticle />
+                                )}
+                            </div>
+                            <span
+                                className={clsx(
+                                    "text-xs",
+                                    mockTest ? "text-black" : "text-[#37465C]"
+                                )}
+                            >
+                                Exams
+                            </span>
+                        </motion.div>
+                    </div>
+
+                    {/* Learnings */}
+                    <Link
+                        href="/learning"
+                        prefetch={true}
+                        className="relative w-full h-full flex items-center justify-center"
+                    >
+                        {isLearning && (
+                            <motion.div
+                                className="absolute w-[80px] h-[56px] bg-[#E8ECF4] rounded-full -z-10"
+                                variants={vibrationVariants}
+                                initial="initial"
+                                animate="animate"
+                            />
+                        )}
+                        <motion.div
+                            key={isLearning ? "active" : "inactive"}
+                            initial={isLearning ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
+                            animate={{ opacity: isLearning ? 1 : 0.6, scale: isLearning ? 1 : 0.95 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                            className="flex flex-col items-center gap-1 cursor-pointer"
+                        >
+                            <div className="w-[24px] h-[24px]">
+                                {isLearning ? (
+                                    <AnimatedIcon
+                                        animationData={checkAnimation}
+                                        isActive={true}
+                                    />
+                                ) : (
+                                    <SvgCheck />
+                                )}
+                            </div>
+                            <span
+                                className={clsx(
+                                    "text-xs",
+                                    isLearning ? "text-black" : "text-[#37465C]"
+                                )}
+                            >
+                                Learnings
+                            </span>
+                        </motion.div>
+                    </Link>
+
+                    {/* Words */}
+                    <Link
+                        href="/words"
+                        prefetch={true}
+                        className="relative w-full h-full flex items-center justify-center"
+                    >
+                        {isWords && (
+                            <motion.div
+                                className="absolute w-[80px] h-[56px] bg-[#E8ECF4] rounded-full -z-10"
+                                variants={vibrationVariants}
+                                initial="initial"
+                                animate="animate"
+                            />
+                        )}
+                        <motion.div
+                            key={isWords ? "active" : "inactive"}
+                            initial={isWords ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
+                            animate={{ opacity: isWords ? 1 : 0.6, scale: isWords ? 1 : 0.95 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                            className="flex flex-col items-center gap-1 cursor-pointer"
+                        >
+                            <div className="w-[24px] h-[24px] flex items-center justify-center">
+                                <SvgWord />
+                            </div>
+                            <span
+                                className={clsx(
+                                    "text-[10px]",
+                                    isWords ? "text-black" : "text-[#37465C]"
+                                )}
+                            >
+                                Words
+                            </span>
+                        </motion.div>
+                    </Link>
                 </div>
+            </div>
 
-                {/* Learnings */}
-                <Link
-                    href="/learning"
-                    prefetch={true}
-                    className="relative w-full h-full flex items-center justify-center"
-                >
-                    {isLearning && (
-                        <motion.div
-                            className="absolute w-[80px] h-[56px] bg-[#E8ECF4] rounded-full -z-10"
-                            variants={vibrationVariants}
-                            initial="initial"
-                            animate="animate"
-                        />
-                    )}
-                    <motion.div
-                        key={isLearning ? "active" : "inactive"}
-                        initial={isLearning ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
-                        animate={{ opacity: isLearning ? 1 : 0.6, scale: isLearning ? 1 : 0.95 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                        className="flex flex-col items-center gap-1 cursor-pointer"
-                    >
-                        <div className="w-[24px] h-[24px]">
-                            {isLearning ? (
-                                <AnimatedIcon
-                                    animationData={checkAnimation}
-                                    isActive={true}
-                                />
-                            ) : (
-                                <SvgCheck />
-                            )}
-                        </div>
-                        <span
-                            className={clsx(
-                                "text-xs",
-                                isLearning ? "text-black" : "text-[#37465C]"
-                            )}
-                        >
-                            Learnings
-                        </span>
-                    </motion.div>
-                </Link>
-
-                {/* Words */}
-                <Link
-                    href="/words"
-                    prefetch={true}
-                    className="relative w-full h-full flex items-center justify-center"
-                >
-                    {isWords && (
-                        <motion.div
-                            className="absolute w-[80px] h-[56px] bg-[#E8ECF4] rounded-full -z-10"
-                            variants={vibrationVariants}
-                            initial="initial"
-                            animate="animate"
-                        />
-                    )}
-                    <motion.div
-                        key={isWords ? "active" : "inactive"}
-                        initial={isWords ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
-                        animate={{ opacity: isWords ? 1 : 0.6, scale: isWords ? 1 : 0.95 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                        className="flex flex-col items-center gap-1 cursor-pointer"
-                    >
-                        <div className="w-[24px] h-[24px] flex items-center justify-center">
-                            <SvgWord />
-                        </div>
-                        <span
-                            className={clsx(
-                                "text-[10px]",
-                                isWords ? "text-black" : "text-[#37465C]"
-                            )}
-                        >
-                            Words
-                        </span>
-                    </motion.div>
-                </Link>
+            {/* Mobile Icon */}
+            <div className="pointer-events-auto screen744:hidden shrink-0">
+                <FloatingChatIcon
+                    autoOpen={false}
+                    onClick={(e) => {
+                        e.preventDefault();
+                        setOpen(!isOpen);
+                    }}
+                    className="static w-[64px] h-[64px] !bottom-[16px]"
+                />
             </div>
         </div>
     );

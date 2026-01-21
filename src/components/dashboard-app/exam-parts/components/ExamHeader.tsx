@@ -3,6 +3,12 @@ import SvgChevronDownExam from "@/components/icons/ChevronDownExam";
 import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { forwardRef } from "react";
+import dynamic from "next/dynamic";
+import { useAskBeavoStore } from "@/stores/askBeavoStore";
+
+const FloatingChatIcon = dynamic(() => import("../../../AskBeavo/FloatingChatIcon"), {
+    ssr: false,
+});
 
 interface ExamHeaderProps {
     setShowModal: (show: boolean) => void;
@@ -31,6 +37,7 @@ const ExamHeader = forwardRef<HTMLDivElement, ExamHeaderProps>(
     ) => {
         const router = useRouter();
         const searchParams = useSearchParams();
+        const { isOpen, setOpen } = useAskBeavoStore();
 
         return (
             <>
@@ -99,7 +106,15 @@ const ExamHeader = forwardRef<HTMLDivElement, ExamHeaderProps>(
                             >
                                 <span className="flex">View Answers &amp; Score</span>
                             </a>
-                            <AskBeavoButton />
+                            <AskBeavoButton className="screen1280:block hidden" />
+                            <FloatingChatIcon
+                                autoOpen={false}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    setOpen(!isOpen);
+                                }}
+                                className="hidden screen744:block screen1280:hidden !bottom-[16px] right-6"
+                            />
                         </div>
                     </div>
                     <div
