@@ -8,7 +8,7 @@ const WritingAnswerRequestSchema = z.object({
   practiceId: z.string().optional(),
   examId: z.string().optional(),
   partId: z.number().optional(),
-  attemptId: z.string().optional(),
+  attemptId: z.string().nullable().optional(),
 });
 
 const ListeningAndReadingAnswerSchemaRequest = z.object({
@@ -16,7 +16,7 @@ const ListeningAndReadingAnswerSchemaRequest = z.object({
   practiceId: z.string().optional(),
   examId: z.string().optional(),
   partId: z.number().optional(),
-  attemptId: z.string().optional()
+  attemptId: z.string().nullable().optional()
 });
 const ListeningAndReadingAnswer = z.object({
   _id: z.instanceof(ObjectId),
@@ -26,7 +26,7 @@ const ListeningAndReadingAnswer = z.object({
   examId: z.string().optional(),
   partId: z.number().optional(),
   userId: z.string(),
-  attemptId: z.string().optional(),
+  attemptId: z.string().nullable().optional(),
   type: ExamType.optional(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
@@ -41,7 +41,7 @@ const WritingAnswerSchema = z.object({
   examId: z.string().optional(),
   partId: z.number().optional(),
   overalScore: z.number().optional(),
-  attemptId: z.string().optional(),
+  attemptId: z.string().nullable().optional(),
   type: z.enum(["WRITING", "SPEAKING"]).optional(),
   result: z
     .object({

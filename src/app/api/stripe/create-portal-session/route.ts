@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     try {
         const user = await currentUser();
 
-        if (!user || notAuthenticated(user)) {
+        if (!user || !user.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
@@ -35,6 +35,7 @@ export async function POST(req: Request) {
         // Fallback: If no local checkout is found, or Stripe session lookup failed,
         // try to find the customer by email directly in Stripe
         if (!stripeCustomerId) {
+            // Try primary email first
             if (email) {
                 const customers = await stripe.customers.list({
                     email: email,
@@ -45,29 +46,48 @@ export async function POST(req: Request) {
                 } else {
                     debugInfo += `No Stripe customer found for email ${email}. `;
                 }
-            } else {
-                debugInfo += "No primary email found for user. ";
+            }
+            
+            // If not found, try other emails
+            if (!stripeCustomerId) {
+                 for (const userEmail of user.emailAddresses) {
+                    if (userEmail.emailAddress === email) continue; // Skip primary already checked
+                    
+                    const customers = await stripe.customers.list({
+                        email: userEmail.emailAddress,
+                        limit: 1,
+                    });
+                    
+                    if (customers.data.length > 0) {
+                        stripeCustomerId = customers.data[0].id;
+                        break; 
+                    }
+                 }
             }
         }
 
         if (!stripeCustomerId) {
-            return NextResponse.json({ error: `No active subscription found` }, { status: 400 });
+            console.error(`[STRIPE_PORTAL] No customer found. Debug: ${debugInfo}`);
+            return NextResponse.json({ error: `No active subscription found. Please contact support.` }, { status: 400 });
         }
+
+        // Determine return URL
+        const returnUrl = process.env.NEXT_PUBLIC_APP_URL 
+            ? `${process.env.NEXT_PUBLIC_APP_URL}/profile`
+            : `${req.headers.get("origin")}/profile`;
 
         // Create a billing portal session
         // The return_url is where Stripe will redirect the user after they are done managing their subscription
         const portalSession = await stripe.billingPortal.sessions.create({
             customer: stripeCustomerId,
-            return_url: `${process.env.NEXT_PUBLIC_APP_URL}/profile`,
+            return_url: returnUrl,
         });
 
         return NextResponse.json({ url: portalSession.url });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("[STRIPE_PORTAL]", error);
-        return NextResponse.json({ error: `Internal Error: ${error.message}` }, { status: 500 });
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        return NextResponse.json({ error: `Internal Error: ${errorMessage}` }, { status: 500 });
     }
 }
 
-function notAuthenticated(user: any) {
-    return !user.id;
-}

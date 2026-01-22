@@ -5,7 +5,7 @@ import ReadingResultView from "./ReadingResultView";
 import WritingResultView from "./WritingResultView";
 import SpeakingResultView from "./SpeakingResultView";
 import { TExamPartSchemaDto } from "@/models/examParts.model";
-import { TListeningAndReadingAnswerDto } from "@/models/answer";
+import { TListeningAndReadingAnswerDto, TWritingAnswerDto } from "@/models/answer";
 import { TExamSchemaDto } from "@/models/exam.model";
 import { useRouter } from "nextjs-toploader/app";
 import { useUser } from "@clerk/nextjs";
@@ -17,6 +17,7 @@ import IncompletePartsModal from "@/components/modal/IncompletePartsModal";
 import { useSearchParams } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
+import { TQuestion } from "@/models/question.model";
 
 function scaleToBand(weightedPercent: number): number {
   if (isNaN(weightedPercent)) return 0;
@@ -32,7 +33,7 @@ const ResultExamView = ({
   exams: TExamSchemaDto;
   examParts: TExamPartSchemaDto[];
   answers: (TListeningAndReadingAnswerDto & { overalScore?: number })[];
-  speakingAndWritingAnswers: any;
+  speakingAndWritingAnswers: TWritingAnswerDto[];
 }) => {
   const route = useRouter();
   const searchParams = useSearchParams();
@@ -53,7 +54,12 @@ const ResultExamView = ({
       .sort((a, b) => (b.date?.getTime() || 0) - (a.date?.getTime() || 0));
   }, [allAnswers, allSpeakingAndWritingAnswers]);
 
-  const selectedAttemptId = currentAttemptId || attempts[0]?.id;
+  const selectedAttemptId = useMemo(() => {
+    if (currentAttemptId && attempts.some((a) => a.id === currentAttemptId)) {
+      return currentAttemptId;
+    }
+    return attempts[0]?.id;
+  }, [currentAttemptId, attempts]);
 
   const answers = useMemo(() => {
     if (!selectedAttemptId) return allAnswers;
@@ -62,7 +68,7 @@ const ResultExamView = ({
 
   const speakingAndWritingAnswers = useMemo(() => {
     if (!selectedAttemptId) return allSpeakingAndWritingAnswers;
-    return allSpeakingAndWritingAnswers.filter((a: any) => (a.attemptId || "legacy") === selectedAttemptId);
+    return allSpeakingAndWritingAnswers.filter((a) => (a.attemptId || "legacy") === selectedAttemptId);
   }, [allSpeakingAndWritingAnswers, selectedAttemptId]);
 
   const { user, isLoaded } = useUser();
@@ -92,13 +98,13 @@ const ResultExamView = ({
 
     // Check Writing (parts 11-12) - if NO answer records exist at all
     const hasWriting = speakingAndWritingAnswers.some(
-      (a: any) => a.partId && a.partId >= 11 && a.partId <= 12
+      (a) => a.partId && a.partId >= 11 && a.partId <= 12
     );
     if (!hasWriting) sections.push({ name: "Writing", startPart: 11 });
 
     // Check Speaking (parts 13-20) - if NO answer records exist at all
     const hasSpeaking = speakingAndWritingAnswers.some(
-      (a: any) => a.partId && a.partId >= 13 && a.partId <= 20
+      (a) => a.partId && a.partId >= 13 && a.partId <= 20
     );
     if (!hasSpeaking) sections.push({ name: "Speaking", startPart: 13 });
 
@@ -120,14 +126,14 @@ const ResultExamView = ({
           return 0;
         const examPart = examParts.find((e) => e.partId == index + 1);
         const allQuestions = examPart?.passages?.reduce(
-          (questions: any, passage) => {
+          (questions: TQuestion[], passage) => {
             return questions.concat(passage.questions || []);
           },
           []
         ) || [];
         if (allQuestions.length === 0) return 0;
         const numberOfCorrect = allQuestions.filter(
-          (q: any, index: any) =>
+          (q: TQuestion, index: number) =>
             userAnswer?.answers[index] &&
             q.answer === userAnswer?.answers[index]
         ).length;
@@ -154,14 +160,14 @@ const ResultExamView = ({
           return 0;
         const examPart = examParts.find((e) => e.partId == index + 7);
         const allQuestions = examPart?.passages?.reduce(
-          (questions: any, passage: any) => {
+          (questions: TQuestion[], passage) => {
             return questions.concat(passage.questions || []);
           },
           []
         ) || [];
         if (allQuestions.length === 0) return 0;
         const numberOfCorrect = allQuestions.filter(
-          (q: any, index: any) =>
+          (q: TQuestion, index: number) =>
             userAnswer?.answers[index] &&
             q.answer === userAnswer?.answers[index]
         ).length;
@@ -181,7 +187,7 @@ const ResultExamView = ({
     const weightedPercent = tasks
       .map(({ partId, weight }) => {
         const ans = speakingAndWritingAnswers.find(
-          (a: any) => a.partId === partId
+          (a) => a.partId === partId
         );
         return ((ans?.overalScore ?? 0) / 12) * 100 * weight;
       })
@@ -192,12 +198,11 @@ const ResultExamView = ({
   const speakingAverage = (() => {
     const sectionCount = 8;
     const weight = 1 / sectionCount;
-
     const weightedPercent = Array.from({ length: sectionCount })
       .map((_, i) => {
         const partId = 13 + i;
         const ans = speakingAndWritingAnswers.find(
-          (a: any) => a.partId === partId
+          (a) => a.partId === partId
         );
 
         return ((ans?.overalScore ?? 0) / 12) * 100 * weight;
@@ -222,7 +227,7 @@ const ResultExamView = ({
           <div className="flex items-center gap-2 font-normal text-[14px]">
             <span className="hidden screen744:!inline">Attempt History:</span>
             <Select
-              value={selectedAttemptId}
+              value={selectedAttemptId || ""}
               onValueChange={(val) => {
                 route.push(`/exams/exam_${exams.id}/results?attemptId=${val}`);
               }}
