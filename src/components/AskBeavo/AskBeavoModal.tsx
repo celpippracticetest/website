@@ -5,6 +5,7 @@ import { useUserContext } from "@/hooks/useUserContext";
 import SvgClose from "../icons/Close";
 import SvgChatBotSend from "../icons/ChatBotSend";
 import { useAskBeavoStore } from "@/stores/askBeavoStore";
+import ReactMarkdown from "react-markdown";
 
 interface Message {
     id: string;
@@ -170,11 +171,11 @@ const AskBeavoModal: React.FC = () => {
                                     📢 Speaking (Task 1: Giving Advice)
                                 </div>
                                 <div className="text-gray-600 italic">
-                                    "Your friend is moving to a new city. Give some advice
-                                    about finding a place to live."
+                                    &quot;Your friend is moving to a new city. Give some advice
+                                    about finding a place to live.&quot;
                                 </div>
                                 <div className="text-gray-500 text-xs mt-1">
-                                    You can type your answer, and I'll review it for clarity,
+                                    You can type your answer, and I&apos;ll review it for clarity,
                                     grammar, tone, and vocabulary.
                                 </div>
                             </div>
@@ -184,11 +185,11 @@ const AskBeavoModal: React.FC = () => {
                                     ✍️ Writing (Task 1: Responding to a Survey)
                                 </div>
                                 <div className="text-gray-600 italic">
-                                    "Your city is deciding whether to build a new public
-                                    library or a sports complex. Which do you support?"
+                                    &quot;Your city is deciding whether to build a new public
+                                    library or a sports complex. Which do you support?&quot;
                                 </div>
                                 <div className="text-gray-500 text-xs mt-1">
-                                    You can write your opinion, and I'll help you refine it.
+                                    You can write your opinion, and I&apos;ll help you refine it.
                                 </div>
                             </div>
 
@@ -222,9 +223,15 @@ const AskBeavoModal: React.FC = () => {
                                     : "bg-gray-100 text-gray-900"
                                     }`}
                             >
-                                <p className="text-sm whitespace-pre-wrap">
-                                    {message.content}
-                                </p>
+                                <div
+                                    className={`text-sm prose prose-sm max-w-none break-words leading-relaxed ${
+                                        message.type === "user"
+                                            ? "prose-invert prose-p:text-white prose-headings:text-white prose-strong:text-white prose-li:text-white prose-code:text-white prose-pre:text-white"
+                                            : "prose-p:text-gray-900 prose-headings:text-gray-900 prose-strong:text-gray-900 prose-li:text-gray-900"
+                                    }`}
+                                >
+                                    <ReactMarkdown>{message.content}</ReactMarkdown>
+                                </div>
                                 <p className="text-xs opacity-70 mt-1">
                                     {message.timestamp.toLocaleTimeString([], {
                                         hour: "2-digit",
