@@ -100,7 +100,19 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
       parseInt(partNumber)
     );
   if (!part) {
-    redirect("/exam-overview", RedirectType.push);
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <h1 className="text-2xl font-bold text-red-600 mb-4">Exam Part Not Found</h1>
+        <p className="text-gray-700 mb-2">Could not find exam part for:</p>
+        <ul className="text-sm text-gray-600 list-disc mb-6">
+          <li>Exam ID: {examId}</li>
+          <li>Part Number: {partNumber}</li>
+        </ul>
+        <a href="/exam-overview" className="text-blue-600 hover:underline">
+          Return to Exam Overview
+        </a>
+      </div>
+    );
   }
   const practice = PracticeDtoSchema.parse({
     ...part,
