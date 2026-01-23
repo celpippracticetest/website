@@ -6,8 +6,7 @@ import { ArrowLeft, CircleAlert, LoaderCircle } from "lucide-react";
 import { TPracticeDto } from "@/models/practice.model";
 import useStore from "@/store";
 
-import { useRouter } from "nextjs-toploader/app";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 
@@ -29,21 +28,16 @@ import ExamHeader from "./components/ExamHeader";
 interface SpeakingExamViewProps {
   practice: TPracticeDto;
   partId: number;
-  examId?: string;
-  examName?: string;
-  partNumber?: string;
   examNumber?: number;
 }
 
 const SpeakingExamView = ({
   practice,
   partId,
-  examId,
-  examName,
-  partNumber,
   examNumber,
 }: SpeakingExamViewProps) => {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const section = searchParams.get("section");
   const [sendingResult] = useState(false);
@@ -101,7 +95,7 @@ const SpeakingExamView = ({
   );
 
   if (isLoaded && (!user || (user && user.publicMetadata.plan !== "premium"))) {
-    router.push("exam-overview");
+    router.push("/exam-overview");
   }
   const startRecording = async () => {
     try {
@@ -180,7 +174,7 @@ const SpeakingExamView = ({
       }
       setProgressBar(100);
 
-      const result = await response.json();
+      await response.json();
       // Log mock exam part completed
       const loggerAttemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
       await ActivityLogger.mockCompleted(
@@ -298,8 +292,8 @@ const SpeakingExamView = ({
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function handleClickOutside(event: any) {
-      if (ref.current && !ref.current.contains(event.target)) {
+    function handleClickOutside(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
         setMenuShowModal(false);
       }
     }
@@ -389,23 +383,32 @@ const SpeakingExamView = ({
                       if (partId === 1 || (section === "speaking" && partId === 13)) {
                         router.push("/exam-overview");
                       } else {
-                        router.push(
-                          "/exams/exam_" +
-                          practice.taskId +
-                          "/part" +
-                          `/exams/exam_${practice.taskId}/part${(partId - 1).toString()}?attemptId=${searchParams.get("attemptId")}${query ? "&" + query.replace("?", "") : ""}`
-                        );
+                        const attemptId = searchParams.get("attemptId");
+                        const attemptQuery = attemptId ? `attemptId=${attemptId}` : "";
+                        const finalQuery = query 
+                          ? (attemptQuery ? `?${attemptQuery}&${query.replace("?", "")}` : query) 
+                          : (attemptQuery ? `?${attemptQuery}` : "");
+                        
+                        const prevPartId = partId - 1;
+                        const prevUrl = pathname.includes(`/part${partId}`)
+                          ? pathname.replace(`/part${partId}`, `/part${prevPartId}`) + finalQuery
+                          : `/exams/exam_${practice.taskId}/part${prevPartId}${finalQuery}`;
+                        router.push(prevUrl);
                       }
                     } else if (page == "question" && partId === 13) {
                       setPage("description");
                     } else if (page == "question") {
-                      router.push(
-                        "/exams/exam_" +
-                        practice.taskId +
-                        "/part" +
-                        (partId - 1).toString() +
-                        query
-                      );
+                      const attemptId = searchParams.get("attemptId");
+                      const attemptQuery = attemptId ? `attemptId=${attemptId}` : "";
+                      const finalQuery = query 
+                        ? (attemptQuery ? `?${attemptQuery}&${query.replace("?", "")}` : query) 
+                        : (attemptQuery ? `?${attemptQuery}` : "");
+
+                      const prevPartId = partId - 1;
+                      const prevUrl = pathname.includes(`/part${partId}`)
+                        ? pathname.replace(`/part${partId}`, `/part${prevPartId}`) + finalQuery
+                        : `/exams/exam_${practice.taskId}/part${prevPartId}${finalQuery}`;
+                      router.push(prevUrl);
                     } else if (page == "evaluateResult") {
                       setPage("question");
                     }
@@ -427,12 +430,17 @@ const SpeakingExamView = ({
                         setPage("evaluateResult");
                         setTime(10);
                       } else {
-                        router.push(
-                          "/exams/exam_" +
-                          practice.taskId +
-                          "/part" +
-                          `/exams/exam_${practice.taskId}/part${(partId + 1).toString()}?attemptId=${searchParams.get("attemptId")}${query ? "&" + query.replace("?", "") : ""}`
-                        );
+                        const attemptId = searchParams.get("attemptId");
+                        const attemptQuery = attemptId ? `attemptId=${attemptId}` : "";
+                        const finalQuery = query 
+                          ? (attemptQuery ? `?${attemptQuery}&${query.replace("?", "")}` : query) 
+                          : (attemptQuery ? `?${attemptQuery}` : "");
+                        
+                        const nextPartId = partId + 1;
+                        const nextUrl = pathname.includes(`/part${partId}`)
+                          ? pathname.replace(`/part${partId}`, `/part${nextPartId}`) + finalQuery
+                          : `/exams/exam_${practice.taskId}/part${nextPartId}${finalQuery}`;
+                        router.push(nextUrl);
                         setTime(partId == 17 || partId == 18 ? 60 : 30);
                       }
                     } else if (page == "evaluateResult") {
