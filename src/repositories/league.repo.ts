@@ -1943,6 +1943,12 @@ export class LeagueRepository {
               leagueId: targetLeague._id,
               groupId: null, // Will be assigned to group when they earn points
               updatedAt: new Date(),
+              lastSeasonResult: {
+                leagueType: userMove.currentLeague,
+                status: userMove.status,
+                viewed: false,
+                processedAt: new Date()
+              }
             },
           }
         );
@@ -2322,6 +2328,25 @@ export class LeagueRepository {
     } catch (error) {
       console.error("Error getting top users for league:", error);
       return [];
+    }
+  }
+
+  // Mark last season result as viewed
+  async markSeasonResultViewed(userId: string): Promise<boolean> {
+    try {
+      const result = await this.db.collection(this.userLeaguePointsCollection).updateOne(
+        { userId },
+        {
+          $set: {
+            "lastSeasonResult.viewed": true,
+            updatedAt: new Date()
+          }
+        }
+      );
+      return result.modifiedCount > 0;
+    } catch (error) {
+      console.error("Error marking season result as viewed:", error);
+      return false;
     }
   }
 }

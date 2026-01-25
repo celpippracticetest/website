@@ -1,3 +1,4 @@
+import PromotionManager from "@/components/league/PromotionManager";
 import PremiumPlanModal from "@/components/premium-plan/PremiumPlanModal";
 import "./globals.css";
 import "../../sentry.client.config"; // Initialize Sentry on client
@@ -222,6 +223,7 @@ export default async function RootLayout({
             </ErrorBoundary>
           </ReactQueryProvider>
           <PremiumPlanModal />
+          <PromotionManager />
           <LazyIntercom />
           <PerformanceMonitor />
           <CriticalCSS />
