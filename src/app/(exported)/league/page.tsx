@@ -2,18 +2,13 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Bronz40,
   CircleCheck,
-  Gold24,
-  Gold40,
   LearningGuide,
   LearningListening,
   LearningMockExam,
   LearningReading,
   LearningSpeaking,
   LearningWriting,
-  Silver24,
-  Silver40,
 } from "@/components/icons";
 import SvgSvgBeforeTypingWord from "@/components/icons/SvgBeforeTypingWord";
 import SvgLearningArrowUp from "@/components/icons/LearningArrowUp";
@@ -25,13 +20,7 @@ import { ActivityLogger } from "@/lib/userActivity";
 import SvgLeagueKados from "@/components/icons/LeagueKados";
 import SvgLeagueKados24 from "@/components/icons/LeagueKados24";
 import SvgCheck from "@/components/icons/Check";
-import SvgBronz96 from "@/components/icons/Bronz96";
-import SvgGold80 from "@/components/icons/Gold80";
-import SvgGold96 from "@/components/icons/Gold96";
-import SvgSilver80 from "@/components/icons/Silver80";
-import SvgSilver96 from "@/components/icons/Silver96";
 import { useRouter, usePathname } from "next/navigation";
-import SvgBronz80 from "@/components/icons/Bronz80";
 
 type Skill = {
   label: string;
@@ -1447,23 +1436,23 @@ const Page = () => {
                 <div className="w-full lg:w-1/2">
                   <div className="flex items-center justify-center lg:justify-start gap-[16px] md:gap-[24px] mt-[24px]">
                     {currentLeague?.type === "gold" ? (
-                      <>
-                        <SvgBronz80 />
-                        <SvgSilver80 />
-                        <SvgGold96 />
-                      </>
+                      <div className="flex items-center gap-[16px] md:gap-[24px]">
+                        <span className="text-[64px] md:text-[80px]">🥉</span>
+                        <span className="text-[64px] md:text-[80px]">🥈</span>
+                        <span className="text-[80px] md:text-[96px]">🥇</span>
+                      </div>
                     ) : currentLeague?.type === "silver" ? (
-                      <>
-                        <SvgBronz80 />
-                        <SvgSilver96 />
-                        <SvgGold80 />
-                      </>
+                      <div className="flex items-center gap-[16px] md:gap-[24px]">
+                        <span className="text-[64px] md:text-[80px]">🥉</span>
+                        <span className="text-[80px] md:text-[96px]">🥈</span>
+                        <span className="text-[64px] md:text-[80px]">🥇</span>
+                      </div>
                     ) : (
-                      <>
-                        <SvgBronz96 />
-                        <SvgSilver80 />
-                        <SvgGold80 />
-                      </>
+                      <div className="flex items-center gap-[16px] md:gap-[24px]">
+                        <span className="text-[80px] md:text-[96px]">🥉</span>
+                        <span className="text-[64px] md:text-[80px]">🥈</span>
+                        <span className="text-[64px] md:text-[80px]">🥇</span>
+                      </div>
                     )}
                   </div>
 
@@ -1572,52 +1561,51 @@ const Page = () => {
               <div className="w-full lg:w-1/2">
                 <div className="flex items-center justify-center lg:justify-start gap-[16px] md:gap-[24px] mt-[24px]">
                   {selectedLeague === "gold" ? (
-                    <>
+                    <div className="flex items-center gap-[16px] md:gap-[24px]">
                       <span
-                        className={`cursor-pointer ${currentLeague?.type && currentLeague.type !== "bronze" ? "" : ""}`}
+                        className="cursor-pointer text-[64px] md:text-[80px]"
                         onClick={() => {
-                          // Allow switching to bronze only if user isn't in a higher league OR always allow preview for guests
                           if (!currentLeague || currentLeague.type === "bronze" || noUser) {
                             setSelectedLeague("bronze");
                           }
                         }}
                       >
-                        <SvgBronz80 />
+                        🥉
                       </span>
                       <span
-                        className="cursor-pointer"
+                        className="cursor-pointer text-[64px] md:text-[80px]"
                         onClick={() => { setSelectedLeague("silver"); }}
                       >
-                        <SvgSilver80 />
+                        🥈
                       </span>
-                      <span className="cursor-pointer" onClick={() => { setSelectedLeague("gold"); }}>
-                        <SvgGold96 />
+                      <span className="cursor-pointer text-[80px] md:text-[96px]" onClick={() => { setSelectedLeague("gold"); }}>
+                        🥇
                       </span>
-                    </>
+                    </div>
                   ) : selectedLeague === "silver" ? (
-                    <>
-                      <span className="cursor-pointer" onClick={() => { setSelectedLeague("bronze"); }}>
-                        <SvgBronz80 />
+                    <div className="flex items-center gap-[16px] md:gap-[24px]">
+                      <span className="cursor-pointer text-[64px] md:text-[80px]" onClick={() => { setSelectedLeague("bronze"); }}>
+                        🥉
                       </span>
-                      <span className="cursor-pointer" onClick={() => { setSelectedLeague("silver"); }}>
-                        <SvgSilver96 />
+                      <span className="cursor-pointer text-[80px] md:text-[96px]" onClick={() => { setSelectedLeague("silver"); }}>
+                        🥈
                       </span>
-                      <span className="cursor-pointer" onClick={() => { setSelectedLeague("gold"); }}>
-                        <SvgGold80 />
+                      <span className="cursor-pointer text-[64px] md:text-[80px]" onClick={() => { setSelectedLeague("gold"); }}>
+                        🥇
                       </span>
-                    </>
+                    </div>
                   ) : (
-                    <>
-                      <span className="cursor-pointer" onClick={() => { setSelectedLeague("bronze"); }}>
-                        <SvgBronz96 />
+                    <div className="flex items-center gap-[16px] md:gap-[24px]">
+                      <span className="cursor-pointer text-[80px] md:text-[96px]" onClick={() => { setSelectedLeague("bronze"); }}>
+                        🥉
                       </span>
-                      <span className="cursor-pointer" onClick={() => { setSelectedLeague("silver"); }}>
-                        <SvgSilver80 />
+                      <span className="cursor-pointer text-[64px] md:text-[80px]" onClick={() => { setSelectedLeague("silver"); }}>
+                        🥈
                       </span>
-                      <span className="cursor-pointer" onClick={() => { setSelectedLeague("gold"); }}>
-                        <SvgGold80 />
+                      <span className="cursor-pointer text-[64px] md:text-[80px]" onClick={() => { setSelectedLeague("gold"); }}>
+                        🥇
                       </span>
-                    </>
+                    </div>
                   )}
                 </div>
 
@@ -1695,7 +1683,7 @@ const Page = () => {
                   <div className="min-h-[232px] rounded-[12px] p-[12px] md:p-[16px] bg-white mt-[24px] cursor-pointer" onClick={() => setSelectedLeague("bronze")}>
                     <div className="flex flex-col sm:flex-row justify-between gap-[8px] sm:gap-0">
                       <div className="flex gap-[6px] items-center">
-                        <Bronz40 />
+                        <span className="text-[24px]">🥉</span>
                         <span className="text-[14px] md:text-[16px] text-[#212E42] font-semibold">
                           Bronz League
                         </span>
@@ -1731,7 +1719,7 @@ const Page = () => {
                         ></div>
                       </div>
                       <div className="flex gap-[4px] items-center shrink-0">
-                        <Silver24 />
+                        <span className="text-[20px]">🥈</span>
                         <span className="text-[12px] md:text-[14px]">Silver League</span>
                       </div>
                     </div>
@@ -1749,7 +1737,7 @@ const Page = () => {
                   <div className="min-h-[232px] rounded-[12px] mt-[24px] p-[16px] bg-white cursor-pointer" onClick={() => setSelectedLeague("silver")}>
                     <div className="flex justify-between">
                       <div className="flex gap-[6px] items-center">
-                        <Silver40 />
+                        <span className="text-[24px]">🥈</span>
                         <span className="text-[16px] text-[#212E42] font-semibold">
                           Silver League
                         </span>
@@ -1790,7 +1778,7 @@ const Page = () => {
                         ></div>
                       </div>
                       <div className="flex gap-[4px] items-center shrink-0">
-                        <Gold24 />
+                        <span className="text-[20px]">🥇</span>
                         <span className="text-[14px]">Gold League</span>
                       </div>
                     </div>
@@ -1809,7 +1797,7 @@ const Page = () => {
                   <div className="min-h-[232px] rounded-[12px] mt-[24px] p-[16px] bg-white cursor-pointer" onClick={() => setSelectedLeague("gold")}>
                     <div className="flex justify-between">
                       <div className="flex gap-[6px] items-center">
-                        <Gold40 />
+                        <span className="text-[24px]">🥇</span>
                         <span className="text-[16px] text-[#212E42] font-semibold">
                           Gold League
                         </span>
