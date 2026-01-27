@@ -4,8 +4,6 @@ import React from "react";
 import { usePathname } from "next/navigation";
 // import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Trophy, Star, Clock, Target } from "lucide-react";
 import SvgBeavoShowsTime from "../icons/BeavoShowsTime";
 
 interface TrophyModalProps {
@@ -35,13 +33,13 @@ const TrophyModal: React.FC<TrophyModalProps> = ({
   timeSpent,
 }) => {
   const pathname = usePathname();
-  
+
   if (!trophy) return null;
 
   // Determine if we're on a practice page or exam page
   const isPracticePage = pathname.includes('/practice') || pathname.includes('/listening') || pathname.includes('/reading') || pathname.includes('/writing') || pathname.includes('/speaking');
   const isExamPage = pathname.includes('/exam') || pathname.includes('/mock');
-  
+
   const buttonText = isExamPage ? 'Back to Exam' : 'Back to Practice';
 
   const getLeagueColor = (leagueType: string) => {
@@ -72,34 +70,33 @@ const TrophyModal: React.FC<TrophyModalProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center ${
-        isOpen ? "block" : "hidden"
-      }`}
+      className={`fixed inset-0 z-50 flex items-center justify-center ${isOpen ? "block" : "hidden"
+        }`}
     >
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
         <div className="flex flex-col items-center space-y-6 p-6">
-       
-       <SvgBeavoShowsTime/>
+
+          <SvgBeavoShowsTime />
 
 
 
           {/* Trophy Title */}
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Well Done!
+              {trophy.title}
             </h2>
             <p className="text-lg text-gray-600 mb-1">
-              You've Earned New Points
+              {trophy.description}
             </p>
             <p className="text-sm text-gray-500">
-              Each practice gets you closer to your goals
+              Keep practicing to rise up the ranks!
             </p>
           </div>
 
           {/* Trophy Details */}
           <div className="w-full space-y-4">
-     
+
 
             {/* Points Cards */}
             <div className="grid grid-cols-2 gap-4">
