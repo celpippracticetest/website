@@ -48,6 +48,7 @@ const ListeningPracticeView = ({
   allPractices,
   selectedPracticeId,
   selectedTaskId,
+  previousAnswer,
   completedPractice,
   isFromFirstPage,
   setIsFromFirstPage,
@@ -123,7 +124,31 @@ const ListeningPracticeView = ({
     setQuestionIndexInPractice(0);
     setPassageIndex(0);
     setQuestionIndex(0);
-    setSelectedAnswers({});
+
+    const fetchPreviousAnswers = async () => {
+      if (!user || !selectedPracticeId) return;
+      try {
+        const response = await fetch(
+          `/api/answers?practiceId=${selectedPracticeId}&userId=${user.id}&type=LISTENING`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.answers) {
+            setSelectedAnswers(data.answers);
+            setPage("answer");
+            return;
+          }
+        }
+        setSelectedAnswers({});
+        setPage("instructions");
+      } catch (error) {
+        console.error("Error fetching previous answers:", error);
+        setSelectedAnswers({});
+        setPage("instructions");
+      }
+    };
+
+    fetchPreviousAnswers();
 
     // Log practice started
     if (user && selectedPracticeId) {
@@ -137,7 +162,7 @@ const ListeningPracticeView = ({
   }, [selectedPracticeId, user]);
 
   useEffect(() => {
-    if (page === "answer" && user && !isFromFirstPage) {
+    if (page === "answer" && user) {
       const submitAnswers = async () => {
         try {
           const response = await fetch("/api/answers", {
@@ -189,32 +214,18 @@ const ListeningPracticeView = ({
           console.error("Failed to submit answers:", error);
         }
       };
-      submitAnswers();
+
+      // Only submit if we are NOT in viewed mode (i.e., user just finished)
+      // We can check if selectedAnswers is not empty as a heuristic, 
+      // but it's better to have a flag. For now, just ensuring it's not a fresh navigation.
+      if (Object.keys(selectedAnswers).length > 0) {
+        submitAnswers();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, user]);
 
-  useEffect(() => {
-    if (page === "answer" && user && isFromFirstPage) {
-      const fetchAnswers = async () => {
-        try {
-          const response = await fetch(
-            `/api/answers?practiceId=${practice.id}&userId=${user.id}&type=LISTENING`
-          );
-          if (!response.ok) {
-            throw new Error("Failed to fetch answers");
-          }
-          const data = await response.json();
-          if (data.answers) {
-            setSelectedAnswers(data.answers);
-          }
-        } catch (error) {
-          console.error("Error fetching previous answers:", error);
-        }
-      };
-      fetchAnswers();
-    }
-  }, [page, user, isFromFirstPage, practice.id]);
+
 
   const handleAnswerSelect = (questionId: number, answerId: string) => {
     setSelectedAnswers((prev) => ({

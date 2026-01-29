@@ -36,58 +36,23 @@ export const useTrophySystem = () => {
   const trophies: Trophy[] = [
     {
       id: "first-practice",
-      title: "First Steps",
-      description: "Complete your first practice session",
+      title: "League Entry",
+      description: "Welcome to the Bronze League!",
       points: 10,
-      leagueType: "bronze",
-    },
-    {
-      id: "first-mock",
-      title: "Mock Master",
-      description: "Complete your first mock exam",
-      points: 20,
-      leagueType: "bronze",
-    },
-    {
-      id: "ai-feedback",
-      title: "AI Assistant",
-      description: "Get AI feedback on your work",
-      points: 5,
-      leagueType: "bronze",
-    },
-    {
-      id: "bronze-league",
-      title: "Bronze Achiever",
-      description: "Reach Bronze League (50+ points)",
-      points: 50,
       leagueType: "bronze",
     },
     {
       id: "silver-league",
       title: "Silver Star",
-      description: "Reach Silver League (100+ points)",
+      description: "Promoted to Silver League!",
       points: 100,
       leagueType: "silver",
     },
     {
       id: "gold-league",
       title: "Gold Champion",
-      description: "Reach Gold League (150+ points)",
+      description: "Promoted to Gold League!",
       points: 150,
-      leagueType: "gold",
-    },
-    {
-      id: "practice-streak",
-      title: "Consistent Learner",
-      description: "Complete 3 practice sessions in a row",
-      points: 30,
-      leagueType: "silver",
-    },
-    {
-      id: "mock-master",
-      title: "Exam Expert",
-      description: "Complete 5 mock exams",
-      points: 100,
       leagueType: "gold",
     },
   ];
@@ -114,7 +79,7 @@ export const useTrophySystem = () => {
         );
 
         for (const trophy of activityTrophies) {
-          if (shouldShowActivityTrophy(trophy, pointsType, currentTotal)) {
+          if (shouldShowActivityTrophy(trophy, pointsType, currentTotal, previousTotal)) {
             showTrophy(
               trophy,
               {
@@ -161,21 +126,14 @@ export const useTrophySystem = () => {
   const shouldShowActivityTrophy = (
     trophy: Trophy,
     pointsType: string,
-    currentTotal: number
+    currentTotal: number,
+    previousTotal: number
   ): boolean => {
     switch (trophy.id) {
       case "first-practice":
-        return pointsType === "practiceSessions" && currentTotal >= 10;
-      case "first-mock":
-        return pointsType === "mockExams" && currentTotal >= 20;
-      case "ai-feedback":
-        return pointsType === "aiFeedback";
-      case "practice-streak":
-        // This would need more complex logic to track streaks
-        return false;
-      case "mock-master":
-        // This would need to track total mock exams completed
-        return false;
+        // Show if we just crossed the 10 point threshold (League Entry)
+        // We check for minimal points to ensure they actually have points now
+        return previousTotal < 10 && currentTotal >= 10;
       default:
         return false;
     }

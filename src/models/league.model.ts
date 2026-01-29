@@ -77,6 +77,12 @@ const UserLeaguePointsSchema = z.object({
     timeSpent: z.number().default(0), // in minutes
   }),
   tasksCompleted: z.array(z.string()).default([]),
+  lastSeasonResult: z.object({
+    leagueType: LeagueTypeSchema,
+    status: UserLeagueStatusSchema,
+    viewed: z.boolean().default(false),
+    processedAt: z.date().default(() => new Date()),
+  }).optional(),
   lastActivityAt: z.date().default(() => new Date()),
   createdAt: z.date().default(() => new Date()),
   updatedAt: z.date().default(() => new Date()),

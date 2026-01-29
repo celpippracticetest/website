@@ -49,6 +49,7 @@ const ReadingPracticeView = ({
   allPractices,
   selectedPracticeId,
   selectedTaskId,
+  previousAnswer,
   completedPractice,
   onBackClick,
 }: ReadingPracticeViewProps) => {
@@ -113,7 +114,31 @@ const ReadingPracticeView = ({
     setQuestionIndexInPractice(0);
     setPassageIndex(0);
     setQuestionIndex(0);
-    setSelectedAnswers({});
+
+    const fetchPreviousAnswers = async () => {
+      if (!user || !selectedPracticeId) return;
+      try {
+        const response = await fetch(
+          `/api/answers?practiceId=${selectedPracticeId}&userId=${user.id}&type=${practice.type}`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.answers) {
+            setSelectedAnswers(data.answers);
+            setPage("answer");
+            return;
+          }
+        }
+        setSelectedAnswers({});
+        setPage("question");
+      } catch (error) {
+        console.error("Error fetching previous answers:", error);
+        setSelectedAnswers({});
+        setPage("question");
+      }
+    };
+
+    fetchPreviousAnswers();
 
     // Log practice started
     if (user && selectedPracticeId) {

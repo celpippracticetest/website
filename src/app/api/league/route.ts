@@ -23,7 +23,8 @@ export async function GET(request: NextRequest) {
     try {
       const authResult = await auth();
       userId = authResult.userId;
-      console.log("Auth result:", { userId: userId ? "present" : "missing" });
+      console.log("League API GET: Authenticated userId:", userId);
+      console.log("Auth result details:", { userId: userId ? "present" : "missing" });
     } catch (authError) {
       console.error("Auth error:", authError);
       // Don't return error, just continue without userId
@@ -177,6 +178,13 @@ export async function GET(request: NextRequest) {
         userId,
         currentSeason!.seasonId
       );
+      console.log("League API GET: User points record:", {
+        userId,
+        seasonId: currentSeason!.seasonId,
+        hasPointsRecord: !!userPoints,
+        hasLastSeasonResult: !!userPoints?.lastSeasonResult,
+        viewed: userPoints?.lastSeasonResult?.viewed
+      });
     }
 
     // Get all leagues
