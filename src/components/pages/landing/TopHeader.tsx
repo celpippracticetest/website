@@ -14,6 +14,7 @@ import {
 } from "@/components/icons";
 import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
 import SvgWord from "@/components/icons/Word";
+import SvgReferral from "@/components/icons/Referral";
 
 const SvgClose = dynamic(() => import("../../icons/Close"), { ssr: false });
 const SvgHamburger = dynamic(() => import("../../icons/Hamburger"), {
@@ -21,7 +22,7 @@ const SvgHamburger = dynamic(() => import("../../icons/Hamburger"), {
 });
 const TopHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const hrefs = ["/exam-overview", "/practice-overview", "/learning", "/words"];
+  const hrefs = ["/exam-overview", "/practice-overview", "/learning", "/words", "/earn100"];
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const sidebarMenuRef = useRef<HTMLDivElement>(null);
 
@@ -104,6 +105,14 @@ const TopHeader = () => {
       <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
         <SvgMockTestTopNavigationHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
       </div>
+    </div>,
+    <div key="earn-icon" className="relative  flex items-center justify-center">
+      <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
+        <SvgReferral className="  text-[#76808F]  duration-200 " />
+      </div>
+      <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
+        <SvgReferral className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
+      </div>
     </div>
   ];
 
@@ -151,7 +160,7 @@ const TopHeader = () => {
           </Link>
         </div>
         <nav className="gap-[24px] hidden screen1280:!flex">
-          {["Mock Exams", "Practice Overview", "Learning", "Words"].map(
+          {["Mock Exams", "Practice Overview", "Learning", "Words", "Earn"].map(
             (label, index) => (
               <React.Fragment key={label}>
                 <Link
@@ -160,7 +169,7 @@ const TopHeader = () => {
                 >
                   <span className=" text-[16px] font-normal">{label}</span>
                 </Link>
-                {index != 3 && (
+                {index != 4 && (
                   <div className="bg-outline w-[1px] h-[35px] rounded-[15px]"></div>
                 )}
               </React.Fragment>
@@ -201,7 +210,7 @@ const TopHeader = () => {
           </span>
         </div>
         <div className=" mt-[32px] gap-[16px]">
-          {["Mock Exams", "Practice Overview", "Learning", "Words"].map(
+          {["Mock Exams", "Practice Overview", "Learning", "Words", "Earn"].map(
             (label, index) => (
               <React.Fragment key={label}>
                 <Link

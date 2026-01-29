@@ -18,6 +18,7 @@ import SvgBook from "../icons/animated/book/Book";
 import SvgArticle from "../icons/animated/article/Article";
 import SvgCheck from "../icons/animated/check/Check";
 import SvgWord from "../icons/Word";
+import SvgReferral from "../icons/Referral";
 
 const DesktopNavigation = () => {
     const pathname = usePathname();
@@ -81,6 +82,12 @@ const DesktopNavigation = () => {
             href: "/words",
             isActive: isWords,
             StaticIcon: SvgWord,
+        },
+        {
+            label: "Earn",
+            href: "/earn100",
+            isActive: pathname === "/earn100",
+            StaticIcon: SvgReferral,
         },
     ];
 

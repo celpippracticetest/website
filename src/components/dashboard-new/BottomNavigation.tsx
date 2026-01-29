@@ -14,6 +14,7 @@ import SvgBook from "../icons/animated/book/Book";
 import SvgArticle from "../icons/animated/article/Article";
 import SvgCheck from "../icons/animated/check/Check";
 import SvgWord from "../icons/Word";
+import SvgReferral from "../icons/Referral";
 
 const BottomNavigation = () => {
     const pathname = usePathname();
@@ -68,7 +69,7 @@ const BottomNavigation = () => {
 
             {/* Navigation items */}
             <div
-                className="relative z-10 grid grid-cols-4 items-center justify-items-center h-full px-4"
+                className="relative z-10 grid grid-cols-5 items-center justify-items-center h-full px-4"
                 style={{ pointerEvents: "auto" }}
             >
                 {/* Practice */}
@@ -227,6 +228,41 @@ const BottomNavigation = () => {
                             )}
                         >
                             Words
+                        </span>
+                    </motion.div>
+                </Link>
+
+                {/* Earn */}
+                <Link
+                    href="/earn100"
+                    prefetch={true}
+                    className="relative w-full h-full flex items-center justify-center"
+                >
+                    {pathname === "/earn100" && (
+                        <motion.div
+                            className="absolute w-[80px] h-[56px] bg-[#E8ECF4] rounded-full -z-10"
+                            variants={vibrationVariants}
+                            initial="initial"
+                            animate="animate"
+                        />
+                    )}
+                    <motion.div
+                        key={pathname === "/earn100" ? "active" : "inactive"}
+                        initial={pathname === "/earn100" ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
+                        animate={{ opacity: pathname === "/earn100" ? 1 : 0.6, scale: pathname === "/earn100" ? 1 : 0.95 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                        className="flex flex-col items-center gap-1 cursor-pointer"
+                    >
+                        <div className="w-[24px] h-[24px] flex items-center justify-center">
+                            <SvgReferral />
+                        </div>
+                        <span
+                            className={clsx(
+                                "text-[10px]",
+                                pathname === "/earn100" ? "text-black" : "text-[#37465C]"
+                            )}
+                        >
+                            Earn
                         </span>
                     </motion.div>
                 </Link>
