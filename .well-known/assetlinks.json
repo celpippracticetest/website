@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.celpippracticetest.app",
+      "sha256_cert_fingerprints": [
+        "AE:BA:39:49:69:4F:71:0A:27:AA:96:8C:18:21:C9:A8:F7:FF:09:D1:A7:5F:10:F5:78:B2:D8:F9:08:21:A9:F8"
+      ]
+    }
+  }
+]
