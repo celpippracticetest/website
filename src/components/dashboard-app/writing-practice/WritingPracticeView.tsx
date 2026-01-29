@@ -291,7 +291,8 @@ const WritingPracticeView = ({
     setText("");
     setProgressBar(0);
     setIsSubmit(false);
-    setIsSubmit(false);
+
+    fetchUsersAnswer();
 
     // Log practice started
     if (user && selectedPracticeId) {
