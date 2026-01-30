@@ -80,6 +80,12 @@ const AuthButtons = () => {
                   League
                 </Link>
                 <Link
+                  href="/earn100"
+                  className="block text-left px-4 py-2 text-[14px] text-gray-700"
+                >
+                  Referral
+                </Link>
+                <Link
                   href="/profile"
                   className="block text-left px-4 py-2 text-[14px] text-gray-700"
                 >
