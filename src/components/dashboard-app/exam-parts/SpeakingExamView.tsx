@@ -45,7 +45,7 @@ const SpeakingExamView = ({
 
   const [time, setTime] = useState(partId == 17 || partId == 18 ? 60 : 30);
   const [recordingTime, setRecordingTime] = useState(
-    partId == 13 || partId == 18 || partId == 19 ? 90 : 60
+    partId == 18 || partId == 19 ? 90 : 60
   );
 
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -385,10 +385,10 @@ const SpeakingExamView = ({
                       } else {
                         const attemptId = searchParams.get("attemptId");
                         const attemptQuery = attemptId ? `attemptId=${attemptId}` : "";
-                        const finalQuery = query 
-                          ? (attemptQuery ? `?${attemptQuery}&${query.replace("?", "")}` : query) 
+                        const finalQuery = query
+                          ? (attemptQuery ? `?${attemptQuery}&${query.replace("?", "")}` : query)
                           : (attemptQuery ? `?${attemptQuery}` : "");
-                        
+
                         const prevPartId = partId - 1;
                         const prevUrl = pathname.includes(`/part${partId}`)
                           ? pathname.replace(`/part${partId}`, `/part${prevPartId}`) + finalQuery
@@ -400,8 +400,8 @@ const SpeakingExamView = ({
                     } else if (page == "question") {
                       const attemptId = searchParams.get("attemptId");
                       const attemptQuery = attemptId ? `attemptId=${attemptId}` : "";
-                      const finalQuery = query 
-                        ? (attemptQuery ? `?${attemptQuery}&${query.replace("?", "")}` : query) 
+                      const finalQuery = query
+                        ? (attemptQuery ? `?${attemptQuery}&${query.replace("?", "")}` : query)
                         : (attemptQuery ? `?${attemptQuery}` : "");
 
                       const prevPartId = partId - 1;
@@ -432,10 +432,10 @@ const SpeakingExamView = ({
                       } else {
                         const attemptId = searchParams.get("attemptId");
                         const attemptQuery = attemptId ? `attemptId=${attemptId}` : "";
-                        const finalQuery = query 
-                          ? (attemptQuery ? `?${attemptQuery}&${query.replace("?", "")}` : query) 
+                        const finalQuery = query
+                          ? (attemptQuery ? `?${attemptQuery}&${query.replace("?", "")}` : query)
                           : (attemptQuery ? `?${attemptQuery}` : "");
-                        
+
                         const nextPartId = partId + 1;
                         const nextUrl = pathname.includes(`/part${partId}`)
                           ? pathname.replace(`/part${partId}`, `/part${nextPartId}`) + finalQuery
@@ -552,7 +552,7 @@ const SpeakingExamView = ({
                       <p className="text-[14px] mt-[8px] text-slate-500">
                         Recording time:{" "}
                         <b className="text-[#F27059] text-[16px]">
-                          {partId == 13 || partId == 18 || partId == 19
+                          {partId == 18 || partId == 19
                             ? 90
                             : 60}
                           s
