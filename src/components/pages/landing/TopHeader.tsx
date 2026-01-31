@@ -160,7 +160,7 @@ const TopHeader = () => {
           </Link>
         </div>
         <nav className="gap-[24px] hidden screen1280:!flex">
-          {["Mock Exams", "Practice Overview", "Learning", "Words", "Earn"].map(
+          {["Mock Exams", "Practice Overview", "Learning", "Words"].map(
             (label, index) => (
               <React.Fragment key={label}>
                 <Link
@@ -169,7 +169,7 @@ const TopHeader = () => {
                 >
                   <span className=" text-[16px] font-normal">{label}</span>
                 </Link>
-                {index != 4 && (
+                {index != 3 && (
                   <div className="bg-outline w-[1px] h-[35px] rounded-[15px]"></div>
                 )}
               </React.Fragment>
@@ -210,7 +210,7 @@ const TopHeader = () => {
           </span>
         </div>
         <div className=" mt-[32px] gap-[16px]">
-          {["Mock Exams", "Practice Overview", "Learning", "Words", "Earn"].map(
+          {["Mock Exams", "Practice Overview", "Learning", "Words"].map(
             (label, index) => (
               <React.Fragment key={label}>
                 <Link

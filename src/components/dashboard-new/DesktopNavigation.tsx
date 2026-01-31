@@ -83,12 +83,6 @@ const DesktopNavigation = () => {
             isActive: isWords,
             StaticIcon: SvgWord,
         },
-        {
-            label: "Earn",
-            href: "/earn100",
-            isActive: pathname === "/earn100",
-            StaticIcon: SvgReferral,
-        },
     ];
 
     return (
