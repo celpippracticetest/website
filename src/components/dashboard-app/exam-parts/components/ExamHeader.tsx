@@ -72,10 +72,16 @@ const ExamHeader = forwardRef<HTMLDivElement, ExamHeaderProps>(
                                                 <button
                                                     key={p.index}
                                                     onClick={() => {
-                                                        setShowModal(false);
+                                                        const params = new URLSearchParams();
+                                                        const attemptId = searchParams.get("attemptId");
+                                                        if (attemptId) params.set("attemptId", attemptId);
+                                                        const section = searchParams.get("section");
+                                                        if (section) params.set("section", section);
+                                                        const queryString = params.toString() ? `?${params.toString()}` : "";
+
                                                         router.push(
-                                                            `/exams/exam_${examId}/part${p.index.toString()}`
-                                                        )
+                                                            `/exams/exam_${examId}/part${p.index.toString()}${queryString}`
+                                                        );
                                                     }}
                                                     className={`${partId === p.index ? "bg-[#F7F9FF]" : "bg-white"
                                                         } w-full min-h-[60px] cursor-pointer  h-auto text-left border border-[#D5D6D8]  hover:bg-[#F7F9FF] transition-colors rounded-[12px] p-[12px]`}

@@ -151,6 +151,8 @@ const ListeningExamView = ({
         if (section === "listening" && partId >= 6) {
           setShowContinueModal(true);
         } else {
+          const attemptId = searchParams.get("attemptId");
+          const query = section ? `?section=${section}&attemptId=${attemptId}` : `?attemptId=${attemptId}`;
           router.push(
             "/exams/exam_" +
             practice.taskId +
@@ -298,7 +300,7 @@ const ListeningExamView = ({
                         practice.taskId +
                         "/part" +
                         (partId - 1).toString() +
-                        query
+                        (query ? query + "&" : "?") + `attemptId=${searchParams.get("attemptId")}`
                       );
                     }
                   } else if (page == "instructions" && passageIndex == 0) {
