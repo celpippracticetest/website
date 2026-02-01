@@ -156,6 +156,8 @@ const ReadingExamView = ({
         if (section === "reading" && partId >= 10) {
           setShowContinueModal(true);
         } else {
+          const attemptId = searchParams.get("attemptId");
+          const query = section ? `?section=${section}&attemptId=${attemptId}` : `?attemptId=${attemptId}`;
           router.push(
             "/exams/exam_" +
             practice.taskId +
@@ -319,7 +321,7 @@ const ReadingExamView = ({
                         practice.taskId +
                         "/part" +
                         (partId - 1).toString() +
-                        query
+                        (query ? query + "&" : "?") + `attemptId=${searchParams.get("attemptId")}`
                       );
                     }
                     setTime(timerTime);
