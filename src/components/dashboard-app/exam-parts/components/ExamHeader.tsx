@@ -75,7 +75,7 @@ const ExamHeader = forwardRef<HTMLDivElement, ExamHeaderProps>(
                                                         setShowModal(false);
                                                         router.push(
                                                             `/exams/exam_${examId}/part${p.index.toString()}`
-                                                        );
+                                                        )
                                                     }}
                                                     className={`${partId === p.index ? "bg-[#F7F9FF]" : "bg-white"
                                                         } w-full min-h-[60px] cursor-pointer  h-auto text-left border border-[#D5D6D8]  hover:bg-[#F7F9FF] transition-colors rounded-[12px] p-[12px]`}
