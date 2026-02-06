@@ -150,13 +150,12 @@ const PracticeOverview = ({
   ];
 
   return (
-    <div className="flex flex-col w-full px-[16px] screen1280:!px-[40px] bg-[#F4F7FF] pt-[16px] gap-6 pb-20">
+    <div className="flex flex-col w-full px-[16px] screen1280:!px-[40px] bg-[#F4F7FF] py-18 screen1280:!py-24 gap-6">
       {/* Mobile Header (Hidden on Desktop) */}
-      <div className="flex h-[52px] screen1280:hidden gap-[8px] flex-col w-full items-start">
+      <div className="flex h-[24px] screen1280:hidden gap-[8px] flex-col w-full items-start">
         <span className="text-[18px] text-[#37465C] font-semibold">
-          Practice
+          Practices
         </span>
-        <span className="text-[14px] text-[#76808F] font-normal">All</span>
       </div>
 
       {/* Desktop Grid Layout (>= 1280px) */}

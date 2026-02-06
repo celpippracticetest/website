@@ -11,6 +11,7 @@ import { useEffect } from "react";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 
 interface ReadingPracticeProps {
+  showHeader?: boolean;
   allPractices: TPracticeDto[];
   selectedPractice: TPracticeDto | null;
   task: TTaskSchemaDto;
@@ -19,6 +20,7 @@ interface ReadingPracticeProps {
 }
 
 const ReadingPractice = ({
+  showHeader = true,
   allPractices,
   selectedPractice,
   task,
@@ -41,7 +43,7 @@ const ReadingPractice = ({
   };
 
   return selectedPractice ? (
-    <div className="flex flex-col mx-auto  w-full max-w-[1280px]">
+    <div className="flex flex-col mx-auto  w-full max-w-[1280px] pt-[24px] pb-[200px]">
       <div className="pl-[40px] text-[#76808F] text-[14px] mt-[24px] mb-[28px] items-center flex gap-[8px]">
         <div
           className="cursor-pointer"

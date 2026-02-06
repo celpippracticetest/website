@@ -575,11 +575,11 @@ const ReadingPracticeView = ({
                   </div>
                   <div className="p-4 overflow-y-scroll [&::-webkit-scrollbar]:w-2  [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full  [&::-webkit-scrollbar-track]:bg-slate-100">
                     <div className="flex flex-col gap-4">
-                      {practice.passages[0].questions.map((question, index) => (
+                      {practice.passages[0]?.questions?.map((question, index) => (
                         <ReadingQuestionList
                           key={index}
                           questionIndex={index}
-                          totalQuestions={practice.totalQuestion}
+                          totalQuestions={practice.totalQuestion ?? 0}
                           question={question}
                           onAnswerSelect={(
                             questionId: number,
@@ -611,21 +611,21 @@ const ReadingPracticeView = ({
                                       <Popover.Root>
                                         <Popover.Trigger className="PopoverTrigger bg-[#F7B267] cursor-pointer px-2 rounded font-semibold text-[#212E42] text-[14px] py-1">
                                           {parseInt(
-                                            practice.passages[1].questions[0].id
+                                            practice.passages[1]?.questions?.[0]?.id ?? "0"
                                           ) + index}
                                           {selectedAnswers[
-                                            practice.passages[0].questions
-                                              .length + index
+                                            (practice.passages[0]?.questions
+                                              ?.length ?? 0) + index
                                           ]
                                             ? ". " +
-                                            practice.passages[1].questions[
+                                            practice.passages[1]?.questions?.[
                                               index
-                                            ].choices.find(
+                                            ]?.choices?.find(
                                               (choice) =>
                                                 choice.id ===
                                                 selectedAnswers[
-                                                practice.passages[0]
-                                                  .questions.length + index
+                                                (practice.passages[0]
+                                                  ?.questions?.length ?? 0) + index
                                                 ]
                                             )?.text
                                             : "..."}
@@ -637,9 +637,9 @@ const ReadingPracticeView = ({
                                           >
                                             <div className="flex flex-col">
                                               <p className="text-[14px] font-medium mb-2"></p>
-                                              {practice.passages[1].questions[
+                                              {practice.passages[1]?.questions?.[
                                                 index
-                                              ].choices.map(
+                                              ]?.choices?.map(
                                                 (choice, indexChoice) => (
                                                   <Popover.Close
                                                     asChild
@@ -652,9 +652,9 @@ const ReadingPracticeView = ({
                                                           shouldShowPractice
                                                         ) {
                                                           handleAnswerSelect(
-                                                            practice.passages[0]
-                                                              .questions
-                                                              .length + index,
+                                                            (practice.passages[0]
+                                                              ?.questions
+                                                              ?.length ?? 0) + index,
                                                             choice.id
                                                           );
                                                         } else {
@@ -663,8 +663,8 @@ const ReadingPracticeView = ({
                                                       }}
                                                     >
                                                       {selectedAnswers[
-                                                        practice.passages[0]
-                                                          .questions.length +
+                                                        (practice.passages[0]
+                                                          ?.questions?.length ?? 0) +
                                                         index
                                                       ] === choice.id ? (
                                                         <SvgCheckCircle className=" shrink-0 mr-2" />
@@ -736,11 +736,11 @@ const ReadingPracticeView = ({
                             <ReadingQuestionList
                               key={index}
                               questionIndex={
-                                practice.passages[0].questions?.length +
-                                practice.passages[1].questions?.length +
+                                (practice.passages[0]?.questions?.length ?? 0) +
+                                (practice.passages[1]?.questions?.length ?? 0) +
                                 index
                               }
-                              totalQuestions={practice.totalQuestion}
+                              totalQuestions={practice.totalQuestion ?? 0}
                               question={question}
                               onAnswerSelect={(
                                 questionId: number,
@@ -748,8 +748,8 @@ const ReadingPracticeView = ({
                               ) => {
                                 if (shouldShowPractice) {
                                   handleAnswerSelect(
-                                    practice.passages[0].questions?.length +
-                                    practice.passages[1].questions?.length +
+                                    (practice.passages[0]?.questions?.length ?? 0) +
+                                    (practice.passages[1]?.questions?.length ?? 0) +
                                     index,
                                     answerId
                                   );

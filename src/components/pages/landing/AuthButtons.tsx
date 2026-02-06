@@ -7,6 +7,7 @@ import Link from "next/link";
 
 import { useState, useEffect, useRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useHasEverPurchased } from "@/hooks/useHasEverPurchased";
 
 const AuthButtons = () => {
   const { isSignedIn, user, isLoaded } = useUser();
@@ -16,6 +17,7 @@ const AuthButtons = () => {
     | undefined;
   const { signOut } = useClerk();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { hasEverPurchased } = useHasEverPurchased();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -79,12 +81,14 @@ const AuthButtons = () => {
                 >
                   League
                 </Link>
-                <Link
-                  href="/earn100"
-                  className="block text-left px-4 py-2 text-[14px] text-gray-700"
-                >
-                  Referral
-                </Link>
+                {hasEverPurchased && (
+                  <Link
+                    href="/earn100"
+                    className="block text-left px-4 py-2 text-[14px] text-gray-700"
+                  >
+                    Referral
+                  </Link>
+                )}
                 <Link
                   href="/profile"
                   className="block text-left px-4 py-2 text-[14px] text-gray-700"

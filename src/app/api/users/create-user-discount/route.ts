@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { clerkClient } from "@clerk/express";
+import { clerkClient } from "@clerk/nextjs/server";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -15,7 +15,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const user = await clerkClient.users.getUser(userId);
+    const client = await clerkClient();
+    const user = await client.users.getUser(userId);
     const userMetadata = user.publicMetadata as any;
 
     // Check if user already has a referral discount or has used any discount
@@ -60,7 +61,7 @@ export async function POST(req: Request) {
       code: visibleCode,
     });
 
-    await clerkClient.users.updateUser(userId, {
+    await client.users.updateUser(userId, {
       publicMetadata: {
         ...user.publicMetadata,
         couponId: coupon.id,
@@ -71,9 +72,12 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ couponId: coupon.id, couponCode: visibleCode });
   } catch (error) {
-    console.error("Stripe error:", error);
+    console.error("create-user-discount error:", error);
     return NextResponse.json(
-      { error: "Failed to create coupon" },
+      {
+        error: "Failed to create coupon",
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }

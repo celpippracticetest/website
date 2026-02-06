@@ -11,7 +11,7 @@ const ShowTasks = ({ tasks }: any) => {
   const router = useRouter();
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
   const isMobile = useIsMobile();
-  const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set());
+  const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set([0]));
 
   const toggleSection = (index: number) => {
     const newExpanded = new Set(expandedSections);
@@ -91,7 +91,7 @@ const ShowTasks = ({ tasks }: any) => {
             {(section.title || section.icon || section.route) && (
               <div
                 onClick={() => toggleSection(sectionIndex)}
-                className="flex items-center justify-between p-4 screen1280:p-6 cursor-pointer hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-between px-4 screen1280:px-6 h-[60px] shrink-0 cursor-pointer hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-center gap-4">
                   {section.icon && (
