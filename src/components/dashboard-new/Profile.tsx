@@ -512,24 +512,24 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
             <div key={session.id}>
               <div className="flex gap-y-[24px] items-center flex-wrap mt-[24px] text-[12px] screen744:!text-[14px] justify-between text-[#212E42] font-medium">
                 <div className="flex  gap-[16px] justify-center items-center">
-                  {session.latestActivity.isMobile ? (
+                  {session?.latestActivity?.isMobile ? (
                     <SvgPhone />
                   ) : (
                     <SvgDesktop />
                   )}
                   <span>
-                    {`${session.latestActivity.isMobile ? "Phone " : "Desktop "
-                      }${session.latestActivity.deviceType}, ${session.latestActivity.browserName
-                      }, ${session.latestActivity?.city}, ${session.latestActivity?.country
+                    {`${session?.latestActivity?.isMobile ? "Phone " : "Desktop "
+                      }${session?.latestActivity?.deviceType}, ${session?.latestActivity?.browserName
+                      }, ${session?.latestActivity?.city}, ${session?.latestActivity?.country
                       }`}
                   </span>
                 </div>
                 <span>
                   {new Date(
-                    session.latestActivity?.updatedAt || session.updatedAt
+                    session?.latestActivity?.updatedAt || session.updatedAt
                   ).toLocaleString()}
                 </span>
-                <span>IP {session.latestActivity?.ipAddress || "Unknown"}</span>
+                <span>IP {session?.latestActivity?.ipAddress || "Unknown"}</span>
                 <button
                   className="cursor-pointer"
                   onClick={() =>
