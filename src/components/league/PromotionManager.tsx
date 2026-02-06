@@ -77,7 +77,12 @@ const PromotionManager = () => {
         checkPromotion();
 
         // Polling for immediate feedback
-        const interval = setInterval(() => checkPromotion(), 10000);
+        const interval = setInterval(() => {
+            // Only poll if the document is visible
+            if (document.visibilityState === 'visible') {
+                checkPromotion();
+            }
+        }, 60000); // Poll every 60 seconds instead of 10s
 
         return () => clearInterval(interval);
     }, [isLoaded, isSignedIn, user?.id, isPageReady]);

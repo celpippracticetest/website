@@ -8,7 +8,8 @@ export const createUserDiscount = async (userId: string) => {
   });
 
   if (!res.ok) {
-    throw new Error("Failed to create discount coupon");
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || "Failed to create discount coupon");
   }
 
   return res.json();

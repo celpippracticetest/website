@@ -96,15 +96,13 @@ const DashboardApp = async ({
   if (!selectedPracticeId && !taskId) {
     return (
       <ShowTaskHeader>
-        <div className="flex  h-[52px] screen744:!hidden gap-[8px] flex-col w-full items-start">
-          <span className="text-[18px] text-[#37465C] font-semibold">
-            Practice
-          </span>
-          <span className="text-[14px] text-[#76808F] font-normal">
-            Listening
-          </span>
+        <div className="flex mt-[32px]  screen744:!mt-[0] items-center justify-center gap-[8px] max-w-[1200px] w-full !h-[60px] shrink-0 rounded-[12px] bg-[#E3ECFF]">
+          <SvgListeningPart className="text-[#316BFF]" />
+          <h1 className="text-[#37465C] font-semibold text-[20px]">
+            Listening Practice
+          </h1>
         </div>
-        <ShowTasks tasks={listeningTasks.map(t => ({ ...t, icon: <SvgListeningPart className="text-[#316BFF]" />, title: "Listening Practice" }))} />
+        <ShowTasks tasks={listeningTasks} />
       </ShowTaskHeader>
     );
   }
@@ -159,18 +157,15 @@ const DashboardApp = async ({
   }
 
   return (
-    <main className=" bg-[#F2F6FF] min-h-screen flex w-full justify-center  max-w-[1280px] mx-auto">
-      <div className="w-f"></div>
-      <div className="w-full">
-        <ListeningPractice
-          showHeader={true}
-          allPractices={practices.items}
-          selectedPractice={selectedPractice}
-          task={task}
-          previousAnswer={answers}
-          completedPractice={completedPractice}
-        />
-      </div>
+    <main className=" bg-[#F2F6FF] min-h-screen flex w-full justify-center ">
+      <ListeningPractice
+        showHeader={true}
+        allPractices={practices.items}
+        selectedPractice={selectedPractice}
+        task={task}
+        previousAnswer={answers}
+        completedPractice={completedPractice}
+      />
     </main>
   );
 };

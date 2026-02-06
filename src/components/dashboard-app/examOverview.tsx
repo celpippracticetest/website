@@ -61,6 +61,9 @@ const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
     <main
       className={`w-full pt-[24px] mx-auto max-w-[1280px] px-[16px] screen744:!px-0`}
     >
+      <h1 className="text-2xl font-bold text-[#37465C] mb-4 text-center screen744:text-left">
+        CELPIP Mock Exams
+      </h1>
       {freeUser ? (
         showUpgradeModal && <UpgradeModal setShowModal={setShowUpgradeModal} />
       ) : noUser ? (
