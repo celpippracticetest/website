@@ -1,11 +1,7 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
-  CircleCheck,
-  Circle,
-  FileCheck,
-  LockOpen,
 } from "lucide-react";
 import { TPracticeDto } from "@/models/practice.model";
 import ListeningSideMenu from "../listening-practice/ListeningSideMenu";

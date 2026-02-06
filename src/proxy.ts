@@ -104,14 +104,11 @@ export default clerkMiddleware(async (auth, req) => {
       ?.referralCode;
 
     if (!hasReferralCode) {
-      logger.info(
-        "User is premium but has no referral code, creating one",
-        {
-          component: "middleware",
-          action: "create_referral_code",
-          userId: authenticate.userId,
-        }
-      );
+      logger.info("User is premium but has no referral code, creating one", {
+        component: "middleware",
+        action: "create_referral_code",
+        userId: authenticate.userId,
+      });
 
       try {
         const headers: Record<string, string> = {
@@ -210,26 +207,20 @@ export default clerkMiddleware(async (auth, req) => {
           );
 
           if (discountResponse.ok) {
-            logger.info(
-              "Referral discount applied successfully",
-              {
-                component: "middleware",
-                action: "referral_discount_applied",
-                userId: authenticate.userId,
-                metadata: { referralCode },
-              }
-            );
+            logger.info("Referral discount applied successfully", {
+              component: "middleware",
+              action: "referral_discount_applied",
+              userId: authenticate.userId,
+              metadata: { referralCode },
+            });
           } else {
             const errorData = await discountResponse.json();
-            logger.error(
-              "Failed to apply referral discount",
-              {
-                component: "middleware",
-                action: "referral_discount_failed",
-                userId: authenticate.userId,
-                metadata: { referralCode, error: errorData },
-              }
-            );
+            logger.error("Failed to apply referral discount", {
+              component: "middleware",
+              action: "referral_discount_failed",
+              userId: authenticate.userId,
+              metadata: { referralCode, error: errorData },
+            });
           }
         } catch (error) {
           captureException(error, {
@@ -269,35 +260,29 @@ export default clerkMiddleware(async (auth, req) => {
             const errorText = await response
               .text()
               .catch(() => "No error body");
-            logger.error(
-              "Failed to track signup",
-              {
-                component: "middleware",
-                action: "track_signup_failed",
-                userId: authenticate.userId,
-                metadata: {
-                  status: response.status,
-                  statusText: response.statusText,
-                  errorText,
-                  referralCode,
-                },
-              }
-            );
+            logger.error("Failed to track signup", {
+              component: "middleware",
+              action: "track_signup_failed",
+              userId: authenticate.userId,
+              metadata: {
+                status: response.status,
+                statusText: response.statusText,
+                errorText,
+                referralCode,
+              },
+            });
           } else {
             // Try to parse JSON but don't fail if it's empty
             let data: unknown = null;
             try {
               data = await response.json();
-            } catch { }
-            logger.info(
-              "Successfully tracked signup for referral code",
-              {
-                component: "middleware",
-                action: "signup_tracked",
-                userId: authenticate.userId,
-                metadata: { referralCode, data },
-              }
-            );
+            } catch {}
+            logger.info("Successfully tracked signup for referral code", {
+              component: "middleware",
+              action: "signup_tracked",
+              userId: authenticate.userId,
+              metadata: { referralCode, data },
+            });
           }
         } catch (error) {
           captureException(error, {

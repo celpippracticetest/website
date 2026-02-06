@@ -11,7 +11,7 @@ import ReactQueryProvider from "@/components/ReactQueryProvider";
 import { LazyIntercom } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import CriticalCSS from "@/components/CriticalCSS";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -26,11 +26,18 @@ const jakarta = Plus_Jakarta_Sans({
 
 const GTM_ID = "GTM-M24FJ7JC";
 
+export function generateViewport(): Viewport {
+  return {
+    themeColor: "#3B82F6",
+  };
+}
+
 export async function generateMetadata(): Promise<Metadata> {
-  const appBaseUrl = process.env.APP_BASE_URL || "";
+  const appBaseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
   const isPreview = appBaseUrl.includes("vercel.app");
 
   return {
+    metadataBase: new URL(appBaseUrl),
     title: "CELPIP Practice Test Online | Instant Scoring, Expert Tips",
     description:
       "Celpip Practice Test platform designed to boost your score with real exam questions, instant results, and expert tips for Listening, Reading, Writing & Speaking.",
@@ -68,11 +75,30 @@ export async function generateMetadata(): Promise<Metadata> {
       ],
     },
     manifest: "/manifest.json",
-    themeColor: "#3B82F6",
-    appleWebApp: {
-      capable: true,
-      statusBarStyle: "default",
-      title: "CELPIP Test",
+    openGraph: {
+      title: "CELPIP Practice Test Online | Instant Scoring, Expert Tips",
+      description: "Celpip Practice Test platform designed to boost your score with real exam questions, instant results, and expert tips for Listening, Reading, Writing & Speaking.",
+      url: appBaseUrl,
+      siteName: "CELPIP Practice Test",
+      locale: "en_US",
+      type: "website",
+      images: [
+        {
+          url: "/images/hero.png",
+          width: 1200,
+          height: 630,
+          alt: "CELPIP Practice Test Hero Image",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "CELPIP Practice Test Online | Instant Scoring, Expert Tips",
+      description: "Celpip Practice Test platform designed to boost your score with real exam questions, instant results, and expert tips for Listening, Reading, Writing & Speaking.",
+      images: ["/images/hero.png"],
+    },
+    alternates: {
+      canonical: "/",
     },
     robots: { index: !isPreview, follow: !isPreview },
   };

@@ -98,9 +98,9 @@ const DashboardApp = async ({
       <ShowTaskHeader>
         <div className="flex mt-[32px]  screen744:!mt-[0] items-center justify-center gap-[8px] max-w-[1200px] w-full !h-[60px] shrink-0 rounded-[12px] bg-[#E3ECFF]">
           <SvgListeningPart className="text-[#316BFF]" />
-          <span className="text-[#37465C] font-semibold text-[20px]">
+          <h1 className="text-[#37465C] font-semibold text-[20px]">
             Listening Practice
-          </span>
+          </h1>
         </div>
         <ShowTasks tasks={listeningTasks} />
       </ShowTaskHeader>

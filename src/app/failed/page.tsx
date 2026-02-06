@@ -29,9 +29,9 @@ export default function Success() {
       <div className="flex flex-col items-center justify-center   ">
         <div className="flex flex-col items-center gap-[24px]">
           <SvgFailed />
-          <span className="text-[28px] font-medium text-[#212E42]">
+          <h1 className="text-[28px] font-medium text-[#212E42]">
             Payment Failed
-          </span>
+          </h1>
         </div>
 
         <div className="mt-[40px] text-[20px] font-normal text-[#76808F]">

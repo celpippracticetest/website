@@ -92,9 +92,9 @@ const ReadingPage = async ({
       <ShowTaskHeader>
         <div className="flex mt-[32px]  screen744:!mt-[0] items-center justify-center gap-[8px] max-w-[1200px] w-full !h-[60px] shrink-0 rounded-[12px] bg-[#FFEBD6]">
           <SvgReadingPart className="text-[#F27059]" />
-          <span className="text-[#37465C] font-semibold text-[20px]">
+          <h1 className="text-[#37465C] font-semibold text-[20px]">
             Reading Practice
-          </span>
+          </h1>
         </div>
         <ShowTasks tasks={readingTasks} />
       </ShowTaskHeader>

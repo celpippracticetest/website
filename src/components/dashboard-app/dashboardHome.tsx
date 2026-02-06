@@ -22,9 +22,9 @@ const DashboardHome = ({
       <div className="flex flex-col max-w-[456px] w-full items-center justify-center   ">
         <div className="flex flex-col items-center gap-[24px]">
           <SvgSuccess />
-          <span className="text-[28px] font-medium text-[#212E42]">
+          <h1 className="text-[28px] font-medium text-[#212E42]">
             Payment Successful
-          </span>
+          </h1>
         </div>
         <div className="flex flex-col w-full max-w-[456px] gap-[24px] mt-[40px] px-[16px]">
           <div className="flex items-center justify-between">

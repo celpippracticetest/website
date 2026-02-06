@@ -1,7 +1,6 @@
 "use client";
-import { useListeningPracticeCompletion } from "./hooks/useListeningPracticeCompletion";
 import { TPracticeDto } from "@/models/practice.model";
-import { redirect, RedirectType, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import ReadingPracticeView from "./ReadingPracticeView";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import ListeningTaskView from "../listening-practice/ListeningTaskView";

@@ -119,6 +119,7 @@ export default function SignUpPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-full max-w-md">
+        <h1 className="sr-only">Sign Up</h1>
         {referralCode && (
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="text-sm text-blue-800 mb-2">
@@ -142,17 +143,8 @@ export default function SignUpPage() {
               card: "shadow-lg",
             },
           }}
-          afterSignUpUrl="/practice-overview"
-          redirectUrl="/practice-overview"
-          signUpMode="modal"
-          onError={(error) => {
-            console.error("SignUp error:", error);
-            if (error.message.includes("Network error")) {
-              alert(
-                "Network error occurred. Please check your internet connection and try again."
-              );
-            }
-          }}
+          forceRedirectUrl="/practice-overview"
+          fallbackRedirectUrl="/practice-overview"
         />
       </div>
     </div>
