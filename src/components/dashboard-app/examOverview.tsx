@@ -1,5 +1,6 @@
 "use client";
 
+import { Box } from "@/components/ui/Box";
 import { TExamSchemaDto } from "@/models/exam.model";
 import { useSelectedExam } from "@/store/useSelectedExam.store";
 import { useUser } from "@clerk/nextjs";
@@ -58,12 +59,7 @@ const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
   };
 
   return (
-    <main
-      className={`w-full pt-[24px] mx-auto max-w-[1280px] px-[16px] screen744:!px-0`}
-    >
-      <h1 className="text-2xl font-bold text-[#37465C] mb-4 text-center screen744:text-left">
-        CELPIP Mock Exams
-      </h1>
+    <>
       {freeUser ? (
         showUpgradeModal && <UpgradeModal setShowModal={setShowUpgradeModal} />
       ) : noUser ? (
@@ -75,7 +71,7 @@ const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
         <div className="flex flex-wrap w-full gap-[16px] pb-[10px]">
           {exams.map((exam: TExamSchemaDto, i: number) => {
             return (
-              <div
+              <Box
                 key={i}
                 className="flex grow basis-0 min-w-[calc(50%-8px)] screen744:min-w-[calc(25%-12px)] max-w-full screen744:max-w-[calc(25%-12px)] rounded-[12px] h-[124px] bg-white overflow-hidden cursor-pointer items-center justify-center flex-col hover:shadow-md transition-shadow"
               >
@@ -125,12 +121,12 @@ const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
                     </DropdownMenu>
                   </div>
                 </div>
-              </div>
+              </Box>
             );
           })}
         </div>
       </div>
-    </main>
+    </>
   );
 };
 

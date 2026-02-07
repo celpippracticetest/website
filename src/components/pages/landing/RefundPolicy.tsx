@@ -1,7 +1,6 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import TopHeader from "./TopHeader";
-import Footer from "./Footer";
 
 const RefundPolicy = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -54,10 +53,10 @@ The Services are digital, non-tangible services delivered electronically and acc
       description: `Refunds are eligible only for the first subscription purchase and only if all of the following conditions are met:`,
       lists: [
         "The request relates to the user’s first successful payment",
-        "The refund request is submitted within 7 days of the charge date",
+        "The refund request is submitted within 48 hours of the charge date",
         "The user has not completed more than one mock exam",
         "The user has not completed more than two practice activities in any single skill",
-        "Refund requests submitted outside the 7-day submission window are automatically rejected and not eligible for review.",
+        "Refund requests submitted outside the 48-hour submission window are automatically rejected and not eligible for review.",
       ],
       sub: [
         {
@@ -67,7 +66,7 @@ The Services are digital, non-tangible services delivered electronically and acc
             "Subscription renewals or repeat payments",
             "Accounts that exceed the usage limits above",
             "Requests based solely on forgetting to cancel a subscription",
-            "Requests submitted outside the 7-day submission window",
+            "Requests submitted outside the 48-hour submission window",
           ],
         },
       ],
@@ -110,7 +109,7 @@ Initiating a chargeback, payment dispute, or bank claim does not override this p
           Refund Policy
         </h1>
         <span className="mt-[16px] font-normal text-[16px] text-text3">
-          Last Updated: Jan 08, 2026
+          Last Updated: Feb 06, 2026
         </span>
         {data?.map((element, index) => (
           <div key={index} className="mt-[40px]">
@@ -160,7 +159,6 @@ Initiating a chargeback, payment dispute, or bank claim does not override this p
           </div>
         ))}
       </div>
-      <Footer />
     </>
   );
 };

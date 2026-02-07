@@ -17,6 +17,7 @@ import img7 from "@/images/attachment7.png";
 import img8 from "@/images/attachment8.png";
 import img9 from "@/images/attachment9.png";
 import SvgDiamond from "../icons/Diamond";
+import { useModalTracking } from "@/hooks/useTracking";
 
 const Svg5Star = dynamic(() => import("@/components/icons/5Star"), { ssr: false });
 
@@ -110,17 +111,25 @@ const AvatarCarousel = () => {
 const PremiumPlanModal = () => {
     const { isPremiumPlanModalOpen, setPremiumPlanModalState } = useStore();
     const { plans } = usePlans();
+    const { viewed, closed } = useModalTracking();
 
     useEffect(() => {
         if (isPremiumPlanModalOpen) {
             document.body.style.overflow = "hidden";
+            // Track modal viewed
+            viewed("Premium Plan Modal", "upgrade_prompt");
         } else {
             document.body.style.overflow = "unset";
         }
         return () => {
             document.body.style.overflow = "unset";
         };
-    }, [isPremiumPlanModalOpen]);
+    }, [isPremiumPlanModalOpen, viewed]);
+
+    const handleClose = () => {
+        closed("Premium Plan Modal", "dismissed");
+        setPremiumPlanModalState();
+    };
 
     const testimonials = [
         {
@@ -200,7 +209,7 @@ const PremiumPlanModal = () => {
 
                         {/* Close Button */}
                         <button
-                            onClick={() => setPremiumPlanModalState()}
+                            onClick={handleClose}
                             className="absolute top-4 right-4 z-10 bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors"
                         >
                             <X className="w-5 h-5 text-gray-600" />

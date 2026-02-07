@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from 'next/link'
 import { ArrowRight, Search } from "lucide-react";
 import Header from "@/components/header/Header";
-import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -162,8 +161,6 @@ const WikiArticleClient = ({ currentArticle, slug }: WikiArticleClientProps) => 
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };

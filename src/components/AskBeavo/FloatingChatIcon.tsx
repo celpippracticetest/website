@@ -3,6 +3,7 @@
 import React, { useEffect } from "react";
 import SvgBeavo from "../icons/Beavo";
 import { cn } from "@/lib/utils";
+import { useEngagementTracking } from "@/hooks/useTracking";
 
 interface FloatingChatIconProps {
     autoOpen?: boolean;
@@ -11,18 +12,25 @@ interface FloatingChatIconProps {
 }
 
 const FloatingChatIcon: React.FC<FloatingChatIconProps> = ({ autoOpen = false, className, onClick }) => {
+    const { chatbotMessageSent } = useEngagementTracking();
+
     // Auto-open Intercom on mount if autoOpen is true
     useEffect(() => {
         if (autoOpen && typeof window !== "undefined" && (window as any).Intercom) {
             const timer = setTimeout(() => {
                 (window as any).Intercom("show");
+                chatbotMessageSent("auto_open");
             }, 500); // Small delay for better UX
             return () => clearTimeout(timer);
         }
-    }, [autoOpen]);
+    }, [autoOpen, chatbotMessageSent]);
 
     const handleClick = (e: React.MouseEvent) => {
         e.preventDefault();
+
+        // Track chatbot interaction
+        chatbotMessageSent("manual_open");
+
         if (onClick) {
             onClick(e);
             return;

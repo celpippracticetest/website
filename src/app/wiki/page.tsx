@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { Search, ChevronRight } from "lucide-react";
 import Header from "@/components/header/Header";
-import Footer from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,15 +42,15 @@ const WikiIndex = () => {
   // Filter articles based on search query
   const filteredArticles = searchQuery
     ? wikiArticles.filter(
-        (article) =>
-          article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          article.description?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      (article) =>
+        article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        article.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
     : wikiArticles;
 
   return (
     <div className={`min-h-screen flex flex-col ${isDarkMode ? "dark" : ""}`}>
-      <Header />
+      <Header viewMode={null} currentPage={null} />
 
       <main className="bg-slate-200 flex-grow bg-background   lg:pt-30 md:pt-20 pt-30">
         {/* Banner with colored air movement style */}
@@ -141,8 +140,6 @@ const WikiIndex = () => {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };

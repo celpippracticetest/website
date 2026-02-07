@@ -3,6 +3,7 @@ import React from "react";
 import Image from "next/image";
 import { useInView } from "react-intersection-observer";
 import { useEffect, useState } from "react";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 const Svg5Star = dynamic(() => import("../../icons/5Star"), { ssr: false });
 
@@ -64,6 +65,29 @@ const Comments = () => {
   const [animate, setAnimate] = useState(false);
   const { ref: sectionRef, inView } = useInView({ threshold: 0.2 });
 
+  const reviewsSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "CELPIP Practice Test Platform",
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "5",
+      "reviewCount": allPersons.length.toString()
+    },
+    "review": allPersons.map(person => ({
+      "@type": "Review",
+      "author": {
+        "@type": "Person",
+        "name": person.name
+      },
+      "reviewRating": {
+        "@type": "Rating",
+        "ratingValue": "5"
+      },
+      "reviewBody": person.comment
+    }))
+  };
+
   useEffect(() => {
     if (inView) {
       const timer = setTimeout(() => setAnimate(true), 700);
@@ -77,6 +101,7 @@ const Comments = () => {
       aria-labelledby="comments-heading"
       className="flex mt-[40px] screen744:!mt-[80px] screen1280:!mt-[104px] overflow-x-hidden overflow-y-hidden flex-col max-w-[1440px] mx-auto"
     >
+      <JsonLd data={reviewsSchema} />
       <h2
         id="comments-heading"
         className="text-center text-[24px] screen744:!text-[28px] screen1280:!text-[32px] px-[16px] text-text1 mx-auto font-medium"

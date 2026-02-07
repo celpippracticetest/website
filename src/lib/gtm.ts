@@ -1,0 +1,505 @@
+// Google Tag Manager utility functions
+import type { GTMEvent, UserContext } from "@/types/analytics";
+
+// Check if we're in a browser environment
+const isBrowser = typeof window !== "undefined";
+
+// Debug mode - logs events to console in development
+const DEBUG = process.env.NODE_ENV === "development";
+
+/**
+ * Initialize or get the dataLayer array
+ */
+function getDataLayer(): any[] {
+  if (!isBrowser) return [];
+
+  if (!window.dataLayer) {
+    window.dataLayer = [];
+  }
+
+  return window.dataLayer;
+}
+
+/**
+ * Get current user context from Clerk
+ */
+function getUserContext(): UserContext {
+  if (!isBrowser) return {};
+
+  try {
+    // Get user data from Clerk's __clerk_db_jwt cookie or session
+    // This is a basic implementation - adjust based on your Clerk setup
+    const userData = (window as any).__clerk_user;
+
+    return {
+      userId: userData?.id,
+      userPlan: userData?.publicMetadata?.plan || "free",
+      isAuthenticated: !!userData?.id,
+    };
+  } catch (error) {
+    return {};
+  }
+}
+
+/**
+ * Push an event to the GTM dataLayer
+ * @param event - The GTM event object
+ * @param enrichContext - Whether to enrich with user context (default: true)
+ */
+export function pushToDataLayer(
+  event: GTMEvent,
+  enrichContext: boolean = true
+): void {
+  if (!isBrowser) {
+    if (DEBUG) {
+      console.log("[GTM] Server-side render detected, skipping event:", event);
+    }
+    return;
+  }
+
+  try {
+    const dataLayer = getDataLayer();
+
+    // Enrich event with user context if requested
+    const enrichedEvent = enrichContext
+      ? { ...event, ...getUserContext(), timestamp: new Date().toISOString() }
+      : event;
+
+    // Push to dataLayer
+    dataLayer.push(enrichedEvent);
+
+    // Debug logging
+    if (DEBUG) {
+      console.log("[GTM] Event pushed:", enrichedEvent);
+    }
+  } catch (error) {
+    console.error("[GTM] Error pushing event to dataLayer:", error);
+  }
+}
+
+/**
+ * Track page view
+ */
+export function trackPageView(path: string, title?: string): void {
+  pushToDataLayer({
+    event: "page_view",
+    page_path: path,
+    page_title: title || document.title,
+  });
+}
+
+/**
+ * Track CTA click
+ */
+export function trackCTAClick(ctaText: string, ctaLocation: string): void {
+  pushToDataLayer({
+    event: "cta_click",
+    cta_text: ctaText,
+    cta_location: ctaLocation,
+  });
+}
+
+/**
+ * Track navigation click
+ */
+export function trackNavClick(
+  linkText: string,
+  linkUrl: string,
+  navType: "header" | "footer" | "mobile" | "bottom"
+): void {
+  pushToDataLayer({
+    event: "nav_click",
+    link_text: linkText,
+    link_url: linkUrl,
+    nav_type: navType,
+  });
+}
+
+/**
+ * Track authentication events
+ */
+export const trackAuth = {
+  signUpInitiated: (method?: string, source?: string) => {
+    pushToDataLayer({
+      event: "sign_up_initiated",
+      method,
+      source,
+    });
+  },
+
+  signUpCompleted: (userId: string, method?: string) => {
+    pushToDataLayer({
+      event: "sign_up_completed",
+      user_id: userId,
+      method,
+    });
+  },
+
+  loginInitiated: (method?: string) => {
+    pushToDataLayer({
+      event: "login_initiated",
+      method,
+    });
+  },
+
+  loginCompleted: (userId: string, method?: string) => {
+    pushToDataLayer({
+      event: "login_completed",
+      user_id: userId,
+      method,
+    });
+  },
+
+  logout: (userId?: string) => {
+    pushToDataLayer({
+      event: "logout",
+      user_id: userId,
+    });
+  },
+};
+
+/**
+ * Track modal events
+ */
+export const trackModal = {
+  viewed: (modalName: string, triggerSource?: string) => {
+    pushToDataLayer({
+      event: "modal_viewed",
+      modal_name: modalName,
+      trigger_source: triggerSource,
+    });
+  },
+
+  closed: (modalName: string, userAction?: "dismissed" | "completed") => {
+    pushToDataLayer({
+      event: "modal_closed",
+      modal_name: modalName,
+      user_action: userAction,
+    });
+  },
+};
+
+/**
+ * Track exam events
+ */
+export const trackExam = {
+  overviewViewed: (userPlan?: string) => {
+    pushToDataLayer({
+      event: "exam_overview_viewed",
+      user_plan: userPlan,
+    });
+  },
+
+  started: (
+    examId: string,
+    partId?: string,
+    sectionType?: string,
+    userPlan?: string
+  ) => {
+    pushToDataLayer({
+      event: "exam_started",
+      exam_id: examId,
+      part_id: partId,
+      section_type: sectionType,
+      user_plan: userPlan,
+    });
+  },
+
+  partStarted: (examId: string, partId: string, sectionType: string) => {
+    pushToDataLayer({
+      event: "exam_part_started",
+      exam_id: examId,
+      part_id: partId,
+      section_type: sectionType,
+    });
+  },
+
+  questionAnswered: (
+    examId: string,
+    partId: string,
+    questionNumber: number,
+    sectionType: string
+  ) => {
+    pushToDataLayer({
+      event: "exam_question_answered",
+      exam_id: examId,
+      part_id: partId,
+      question_number: questionNumber,
+      section_type: sectionType,
+    });
+  },
+
+  partCompleted: (
+    examId: string,
+    partId: string,
+    sectionType: string,
+    timeSpent?: number,
+    score?: number
+  ) => {
+    pushToDataLayer({
+      event: "exam_part_completed",
+      exam_id: examId,
+      part_id: partId,
+      section_type: sectionType,
+      time_spent: timeSpent,
+      score,
+    });
+  },
+
+  completed: (examId: string, totalScore?: number, timeSpent?: number) => {
+    pushToDataLayer({
+      event: "exam_completed",
+      exam_id: examId,
+      total_score: totalScore,
+      time_spent: timeSpent,
+    });
+  },
+
+  resultsViewed: (examId: string, score?: number) => {
+    pushToDataLayer({
+      event: "exam_results_viewed",
+      exam_id: examId,
+      score,
+    });
+  },
+
+  abandoned: (
+    examId: string,
+    partId?: string,
+    completionPercentage?: number
+  ) => {
+    pushToDataLayer({
+      event: "exam_abandoned",
+      exam_id: examId,
+      part_id: partId,
+      completion_percentage: completionPercentage,
+    });
+  },
+};
+
+/**
+ * Track practice events
+ */
+export const trackPractice = {
+  overviewViewed: (skillType?: string) => {
+    pushToDataLayer({
+      event: "practice_overview_viewed",
+      skill_type: skillType,
+    });
+  },
+
+  started: (
+    practiceId: string,
+    skillType: string,
+    difficultyLevel?: string
+  ) => {
+    pushToDataLayer({
+      event: "practice_started",
+      practice_id: practiceId,
+      skill_type: skillType,
+      difficulty_level: difficultyLevel,
+    });
+  },
+
+  completed: (
+    practiceId: string,
+    skillType: string,
+    score?: number,
+    timeSpent?: number
+  ) => {
+    pushToDataLayer({
+      event: "practice_completed",
+      practice_id: practiceId,
+      skill_type: skillType,
+      score,
+      time_spent: timeSpent,
+    });
+  },
+
+  resultsViewed: (practiceId: string, skillType: string, score?: number) => {
+    pushToDataLayer({
+      event: "practice_results_viewed",
+      practice_id: practiceId,
+      skill_type: skillType,
+      score,
+    });
+  },
+
+  aiFeedbackViewed: (
+    context: "practice" | "exam",
+    practiceId?: string,
+    examId?: string
+  ) => {
+    pushToDataLayer({
+      event: "ai_feedback_viewed",
+      practice_id: practiceId,
+      exam_id: examId,
+      context,
+    });
+  },
+};
+
+/**
+ * Track e-commerce events (GA4 standard)
+ */
+export const trackEcommerce = {
+  viewItemList: (items: any[], itemListId?: string, itemListName?: string) => {
+    pushToDataLayer({
+      event: "view_item_list",
+      item_list_id: itemListId,
+      item_list_name: itemListName,
+      items,
+    });
+  },
+
+  selectItem: (items: any[], itemListId?: string, itemListName?: string) => {
+    pushToDataLayer({
+      event: "select_item",
+      item_list_id: itemListId,
+      item_list_name: itemListName,
+      items,
+    });
+  },
+
+  beginCheckout: (
+    items: any[],
+    currency: string,
+    value: number,
+    coupon?: string
+  ) => {
+    pushToDataLayer({
+      event: "begin_checkout",
+      currency,
+      value,
+      items,
+      coupon,
+    });
+  },
+
+  purchase: (
+    transactionId: string,
+    items: any[],
+    currency: string,
+    value: number,
+    coupon?: string
+  ) => {
+    pushToDataLayer({
+      event: "purchase",
+      transaction_id: transactionId,
+      currency,
+      value,
+      items,
+      coupon,
+    });
+  },
+
+  refund: (transactionId: string, currency: string, value: number) => {
+    pushToDataLayer({
+      event: "refund",
+      transaction_id: transactionId,
+      currency,
+      value,
+    });
+  },
+};
+
+/**
+ * Track engagement events
+ */
+export const trackEngagement = {
+  faqClick: (question: string, category?: string) => {
+    pushToDataLayer({
+      event: "faq_click",
+      faq_question: question,
+      faq_category: category,
+    });
+  },
+
+  videoStarted: (title?: string, url?: string) => {
+    pushToDataLayer({
+      event: "video_started",
+      video_title: title,
+      video_url: url,
+    });
+  },
+
+  videoCompleted: (title?: string, url?: string) => {
+    pushToDataLayer({
+      event: "video_completed",
+      video_title: title,
+      video_url: url,
+    });
+  },
+
+  chatbotMessageSent: (messageType?: string) => {
+    pushToDataLayer({
+      event: "chatbot_message_sent",
+      message_type: messageType,
+    });
+  },
+
+  wordViewed: (wordId?: string, wordText?: string) => {
+    pushToDataLayer({
+      event: "word_viewed",
+      word_id: wordId,
+      word_text: wordText,
+    });
+  },
+
+  wordMastered: (wordId?: string, wordText?: string) => {
+    pushToDataLayer({
+      event: "word_mastered",
+      word_id: wordId,
+      word_text: wordText,
+    });
+  },
+
+  audioPlayed: (audioType: string, audioSource?: string) => {
+    pushToDataLayer({
+      event: "audio_played",
+      audio_type: audioType,
+      audio_source: audioSource,
+    });
+  },
+};
+
+/**
+ * Track referral events
+ */
+export const trackReferral = {
+  pageViewed: (userId?: string) => {
+    pushToDataLayer({
+      event: "referral_page_viewed",
+      user_id: userId,
+    });
+  },
+
+  codeCopied: (referralCode: string) => {
+    pushToDataLayer({
+      event: "referral_code_copied",
+      referral_code: referralCode,
+    });
+  },
+
+  inviteSent: (inviteMethod: string) => {
+    pushToDataLayer({
+      event: "referral_invite_sent",
+      invite_method: inviteMethod,
+    });
+  },
+
+  withdrawalRequested: (amount: number, currency: string) => {
+    pushToDataLayer({
+      event: "withdrawal_requested",
+      amount,
+      currency,
+    });
+  },
+};
+
+// Declare dataLayer on window
+declare global {
+  interface Window {
+    dataLayer: any[];
+  }
+}

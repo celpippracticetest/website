@@ -12,6 +12,7 @@ import SvgMedalMd from "@/components/v2/icons/medal-md";
 import { SvgLearning } from "@/components/icons";
 import SvgWord from "@/components/icons/Word";
 import { cn } from "@/lib/utils";
+import { useEventTracker } from "@/hooks/useTracking";
 
 const SvgMockExamLight = dynamic(() => import("../../icons/MockExamsLight"), {
   ssr: false,
@@ -40,6 +41,11 @@ const Hero = () => {
   const { setVisible, isVisible, isInFooter } = useButtonVisibleStore(
     (state) => state
   );
+  const { trackCTA } = useEventTracker();
+
+  const handleCTAClick = (location: string) => {
+    trackCTA("Start Your Free Practice", location);
+  };
 
   useEffect(() => {
     const onScroll = () => {
@@ -86,7 +92,12 @@ const Hero = () => {
     left-1/2 -translate-x-1/2 transition-all duration-500 
     ease-in-out transform bottom-0`}
       >
-        <Button size="lg" href="/practice-overview" aria-label="Start your free CELPIP practice">
+        <Button
+          size="lg"
+          href="/practice-overview"
+          aria-label="Start your free CELPIP practice"
+          onClick={() => handleCTAClick("hero_floating_bottom")}
+        >
           <SvgPlus />
           <span className="hidden sm:!flex">Start Your Free Practice</span>
           <span className="flex sm:!hidden">Free Practice</span>
@@ -180,7 +191,12 @@ const Hero = () => {
               </div>
               <div className="font-inter font-semibold text-xs leading-5 tracking-normal text-center screen744:!hidden flex justify-center">60 mock exams · 3,000+ questions · Instant AI scoring</div>
               <div className="flex screen744:!justify-start justify-center">
-                <Button href="/practice-overview" size="lg" className="mt-[24px]">
+                <Button
+                  href="/practice-overview"
+                  size="lg"
+                  className="mt-[24px]"
+                  onClick={() => handleCTAClick("hero_main")}
+                >
                   <SvgPlus />
                   <span>Start Your Free Practice</span>
                 </Button>
@@ -223,7 +239,7 @@ const Hero = () => {
                   bgColor={exam.bgColor}
                   isLast={isLast}
                   link={exam.link}
-                  className={cn("screen744:!w-auto", {"!w-[calc(50%-6px)]": !isLast, 'w-full': isLast})}
+                  className={cn("screen744:!w-auto", { "!w-[calc(50%-6px)]": !isLast, 'w-full': isLast })}
                 />
               );
             })}

@@ -1,7 +1,6 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import TopHeader from "./TopHeader";
-import Footer from "./Footer";
 
 const PrivacyPolicy = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -206,9 +205,7 @@ const PrivacyPolicy = () => {
           CELPIPPRACTICETEST.com is not affiliated with, endorsed by, or
           sponsored by any official testing organization.
         </span>
-      </div>
-      <Footer />
-    </>
+      </div>    </>
   );
 };
 

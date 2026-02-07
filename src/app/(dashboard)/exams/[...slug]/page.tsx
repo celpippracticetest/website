@@ -3,13 +3,25 @@ import mongoClient from "@/lib/mongodb";
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
 import { TExamPartSchemaDto } from "@/models/examParts.model";
 import { PracticeDtoSchema } from "@/models/practice.model";
-import ListeningExamView from "@/components/dashboard-app/exam-parts/ListeningExamView";
 import { ExamRepository } from "@/repositories/exams.repo";
 import { TExamSchemaDto } from "@/models/exam.model";
-import ReadingExamView from "@/components/dashboard-app/exam-parts/ReadingExamView";
-import WritingExamView from "@/components/dashboard-app/exam-parts/WritingExamView";
-import SpeakingExamView from "@/components/dashboard-app/exam-parts/SpeakingExamView";
-import ResultExamView from "@/components/dashboard-app/exam-parts/ResultExamView";
+import dynamic from "next/dynamic";
+
+const ListeningExamView = dynamic(() => import("@/components/dashboard-app/exam-parts/ListeningExamView"), {
+  loading: () => <p>Loading Listening Exam...</p>,
+});
+const ReadingExamView = dynamic(() => import("@/components/dashboard-app/exam-parts/ReadingExamView"), {
+  loading: () => <p>Loading Reading Exam...</p>,
+});
+const WritingExamView = dynamic(() => import("@/components/dashboard-app/exam-parts/WritingExamView"), {
+  loading: () => <p>Loading Writing Exam...</p>,
+});
+const SpeakingExamView = dynamic(() => import("@/components/dashboard-app/exam-parts/SpeakingExamView"), {
+  loading: () => <p>Loading Speaking Exam...</p>,
+});
+const ResultExamView = dynamic(() => import("@/components/dashboard-app/exam-parts/ResultExamView"), {
+  loading: () => <p>Loading Results...</p>,
+});
 import { ObjectId } from "mongodb";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";

@@ -5,16 +5,22 @@ import { usePlans } from "@/hooks/usePlans";
 import Image from "next/image";
 import PlanCard from "../pages/dashboard/PlanCard";
 import SvgClose from "../icons/Close";
+import { useModalTracking } from "@/hooks/useTracking";
 
 const UpgradeModal = (params: any) => {
   const { setShowModal } = params;
   const { plans } = usePlans();
+  const { viewed, closed } = useModalTracking();
 
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Track modal viewed on mount
+    viewed("Upgrade Modal", "promotional");
+
     function handleClickOutside(event: any) {
       if (ref.current && !ref.current.contains(event.target)) {
+        closed("Upgrade Modal", "dismissed");
         setShowModal(false);
       }
     }
@@ -23,7 +29,12 @@ const UpgradeModal = (params: any) => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
+  }, [viewed, closed]);
+
+  const handleClose = () => {
+    closed("Upgrade Modal", "dismissed");
+    setShowModal(false);
+  };
 
   return (
     <div className="z-[999] fixed top-0 items-center left-0 px-[14px] screen744:!px-[16px] screen1280:!px-[20px] right-0 bottom-0 overflow-y-auto bg-[#17161680] flex justify-center">
@@ -32,7 +43,7 @@ const UpgradeModal = (params: any) => {
         className="flex-col mt-[80px] mb-[40px] relative w-full h-auto   screen1280:!w-[670px] screen744:!w-[584px] pt-[20px]  pb-[24px]  min-h-[474px] rounded-[24px] bg-[#F2F6FF] flex bg-[linear-gradient(to_right,_#F4845F26,_#759CFF26)]"
       >
         <div
-          onClick={() => setShowModal(false)}
+          onClick={handleClose}
           className="absolute right-[20px] cursor-pointer"
         >
           <SvgClose />

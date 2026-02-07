@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import SvgCheck from "../../icons/Check";
+import { useEcommerceTracking } from "@/hooks/useTracking";
 
 interface IPlanCard {
   title: string;
@@ -30,23 +31,42 @@ const PlanCard = ({
   currentPlanTitle,
   planTitle,
 }: IPlanCard) => {
+  const { selectItem, beginCheckout } = useEcommerceTracking();
+
+  const handlePlanClick = () => {
+    // Track plan selection
+    const item = {
+      item_id: planTitle,
+      item_name: title,
+      price: parseFloat(price),
+      quantity: 1,
+      item_brand: 'CELPIP Practice Test',
+      item_category: 'Subscription',
+    };
+
+    selectItem([item], 'plans_page', 'Pricing Plans');
+
+    // Track beginning of checkout
+    beginCheckout([item], 'CAD', parseFloat(price));
+  };
+
   return (
     <form
       className="relative w-full screen1280:!max-w-[420px]"
       action={
         type == "Easy Start"
           ? "/api/checkout_session?product=" +
-            process.env.NEXT_PUBLIC_MONTHLY_ACCESS_PRODUCT
+          process.env.NEXT_PUBLIC_MONTHLY_ACCESS_PRODUCT
           : type == "Weekly"
-          ? "/api/checkout_session?product=" +
+            ? "/api/checkout_session?product=" +
             process.env.NEXT_PUBLIC_WEEKLY_ACCESS_PRODUCT
-          : type == "Best Seller"
-          ? "/api/checkout_session?product=" +
-            process.env.NEXT_PUBLIC_QUARTER_ACCESS_PRODUCT
-          : type == "Best Value"
-          ? "/api/checkout_session?product=" +
-            process.env.NEXT_PUBLIC_YEARLY_ACCESS_PRODUCT
-          : ""
+            : type == "Best Seller"
+              ? "/api/checkout_session?product=" +
+              process.env.NEXT_PUBLIC_QUARTER_ACCESS_PRODUCT
+              : type == "Best Value"
+                ? "/api/checkout_session?product=" +
+                process.env.NEXT_PUBLIC_YEARLY_ACCESS_PRODUCT
+                : ""
       }
       method="POST"
     >
@@ -73,16 +93,14 @@ const PlanCard = ({
         </div>
 
         <div
-          className={`flex mt-[24px] flex-col-reverse screen1280:!flex-row ${
-            type === "Free"
+          className={`flex mt-[24px] flex-col-reverse screen1280:!flex-row ${type === "Free"
               ? "justify-end screen1280:!justify-start h-[22px]"
               : "screen1280:!justify-between h-[69px] screen1280:!h-fit"
-          } `}
+            } `}
         >
           <h3
-            className={`${
-              type === "Free" ? "h-[29px]" : "h-[35px]"
-            } flex items-center mt-[12px] screen1280:!mt-0 text-[18px]  screen1280:!text-[20px] font-medium text-text1`}
+            className={`${type === "Free" ? "h-[29px]" : "h-[35px]"
+              } flex items-center mt-[12px] screen1280:!mt-0 text-[18px]  screen1280:!text-[20px] font-medium text-text1`}
           >
             {title}
           </h3>
@@ -100,11 +118,10 @@ const PlanCard = ({
                   <span className="relative text-text3 text-[16px] screen744:!text-[28px] screen1280:!text-[26px] font-medium">
                     $ {oldPrice}
                     <span
-                      className={`${
-                        id == 1
+                      className={`${id == 1
                           ? "-left-2 screen1280:!left-0 w-[101px]"
                           : "-left-2 screen1280:!left-[12px] w-[112px]"
-                      } absolute  screen1280:!flex top-[13px]   screen744:!top-[20px] screen1280:!top-[22px]  screen1280:!w-[129px] h-[2px] bg-error1 -translate-y-1/2`}
+                        } absolute  screen1280:!flex top-[13px]   screen744:!top-[20px] screen1280:!top-[22px]  screen1280:!w-[129px] h-[2px] bg-error1 -translate-y-1/2`}
                     ></span>
                   </span>
 
@@ -128,6 +145,7 @@ const PlanCard = ({
 
         <button
           type="submit"
+          onClick={handlePlanClick}
           aria-label={`Select ${title} plan`}
           className="relative z-[2] mt-[24px] hover:cursor-pointer hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]  shadow-startButton  flex gap-[8px] px-[24px] w-full bg-primary2 mw-full h-[40px] rounded-[24px] items-center justify-center"
         >
@@ -138,7 +156,7 @@ const PlanCard = ({
         <ul className="flex flex-col gap-[6px] mt-[16px] screen1280:mt-[24px]">
           {features.map((item, index) => (
             <li className="flex gap-[8px] items-center" key={index}>
-              <SvgCheck className="text-[0DAA94]"/>
+              <SvgCheck className="text-[0DAA94]" />
               <span className="text-text2 font-normal text-[14px] screen1280:!text-[16px] leading-[16px]">
                 {item}
               </span>

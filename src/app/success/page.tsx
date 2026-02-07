@@ -6,6 +6,7 @@ import Script from "next/script";
 import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
 import { Analytics } from "@customerio/cdp-analytics-node";
+import SuccessPageTracking from "@/components/analytics/SuccessPageTracking";
 
 export default async function Success({ searchParams }: any) {
   const { session_id } = await searchParams;
@@ -117,6 +118,13 @@ export default async function Success({ searchParams }: any) {
       });
   `}
         </Script>
+
+        <SuccessPageTracking
+          transactionId={session?.invoice as string}
+          value={(amountTotal ?? 0) / 100}
+          currency={currency?.toUpperCase() || 'CAD'}
+          items={lineItems || []}
+        />
 
         <DashboardHome session={sessionData} email={customerEmail} />
       </div>

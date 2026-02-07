@@ -1,10 +1,16 @@
 import React, { useState } from "react";
 import SvgChevronDown from "../../icons/ChevronDown";
+import { useEngagementTracking } from "@/hooks/useTracking";
 
 const FAQ = () => {
     const [openIndex, setOpenIndex] = useState<number | null>(null);
+    const { faqClick } = useEngagementTracking();
 
-    const toggleAccordion = (index: number) => {
+    const toggleAccordion = (index: number, question: string) => {
+        if (openIndex !== index) {
+            // Track FAQ click when opening
+            faqClick(question, "Landing Page");
+        }
         setOpenIndex(openIndex === index ? null : index);
     };
 
@@ -66,7 +72,7 @@ const FAQ = () => {
                         className="border border-[#E0E0E0] rounded-[16px] overflow-hidden bg-[#F8F9FC]"
                     >
                         <button
-                            onClick={() => toggleAccordion(index)}
+                            onClick={() => toggleAccordion(index, faq.question)}
                             className="w-full flex justify-between items-center p-[24px] text-left bg-[#F8F9FC] hover:bg-[#F1F3F9] transition-colors"
                             aria-expanded={openIndex === index}
                         >
