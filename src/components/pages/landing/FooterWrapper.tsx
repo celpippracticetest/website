@@ -23,6 +23,6 @@ export default function FooterWrapper({ isSignedIn }: { isSignedIn: boolean }) {
   const isDashboard =
     firstSegment && DASHBOARD_FIRST_SEGMENTS.has(firstSegment);
 
-  if (isDashboard) return null;
+  if (isSignedIn || isDashboard) return null;
   return <Footer isSignedIn={isSignedIn} />;
 }
