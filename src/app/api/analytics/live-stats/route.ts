@@ -19,9 +19,21 @@ export const revalidate = 0;
 export async function GET() {
   try {
     const ga4PropertyId = process.env.GA4_PROPERTY_ID;
-    if (!ga4PropertyId) {
-      throw new Error(
-        "GA4_PROPERTY_ID is required. Get it from GA4 Admin → Property settings (numeric ID)."
+    if (!ga4PropertyId?.trim()) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "GA4_PROPERTY_ID is not set. Add it in Vercel (Project → Settings → Environment Variables) for Preview/Development. Get the numeric ID from GA4 Admin → Property settings.",
+          stats: {
+            onlineUsers: 0,
+            recentSignups: 0,
+            practicingUsers: 0,
+            recentPractices: 0,
+            skillBreakdown: { Speaking: 0, Writing: 0, Listening: 0, Reading: 0 },
+          },
+        },
+        { status: 503 }
       );
     }
 
@@ -71,6 +83,7 @@ export async function GET() {
     let activeUsersNow = 0;
     let totalUsers24h = 0;
     let newUsers24h = 0;
+    const warnings: string[] = [];
 
     try {
       const [realtimeResponse] =
@@ -82,10 +95,9 @@ export async function GET() {
         realtimeResponse.rows?.[0]?.metricValues?.[0]?.value || "0"
       );
     } catch (err) {
-      console.warn(
-        "[GA4] Realtime report failed:",
-        err instanceof Error ? err.message : err
-      );
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn("[GA4] Realtime report failed:", msg);
+      warnings.push(`Realtime: ${msg}`);
     }
 
     try {
@@ -109,10 +121,9 @@ export async function GET() {
         last24HoursResponse.rows?.[0]?.metricValues?.[1]?.value || "0"
       );
     } catch (err) {
-      console.warn(
-        "[GA4] 24h report failed:",
-        err instanceof Error ? err.message : err
-      );
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn("[GA4] 24h report failed:", msg);
+      warnings.push(`24h report: ${msg}`);
     }
 
     // Practice events by skill. Requires a GA4 custom dimension: Admin → Custom definitions
@@ -255,6 +266,7 @@ export async function GET() {
       source: useServiceAccount
         ? "google_analytics_4_service_account"
         : "google_analytics_4_oauth",
+      ...(warnings.length > 0 && { warnings }),
     });
   } catch (error) {
     console.error("Error fetching GA4 live stats:", error);
