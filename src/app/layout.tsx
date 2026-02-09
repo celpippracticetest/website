@@ -16,7 +16,7 @@ import type { Metadata, Viewport } from "next";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ActiveUsersTracker from "@/components/analytics/ActiveUsersTracker";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
-import Footer from "@/components/pages/landing/Footer";
+import FooterWrapper from "@/components/pages/landing/FooterWrapper";
 
 const jakarta = Plus_Jakarta_Sans({
   display: "swap",
@@ -252,7 +252,7 @@ export default async function RootLayout({
           <ReactQueryProvider>
             <ErrorBoundary>
               {children}
-              <Footer isSignedIn={isSignedIn} />
+              <FooterWrapper isSignedIn={isSignedIn} />
             </ErrorBoundary>
           </ReactQueryProvider>
           <PremiumPlanModal />

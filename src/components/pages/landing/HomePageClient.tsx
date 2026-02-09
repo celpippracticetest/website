@@ -2,6 +2,7 @@
 
 import { ErrorBoundary } from "react-error-boundary";
 import dynamic from "next/dynamic";
+import { useAuth } from "@clerk/nextjs";
 import Practice from "./Practice";
 import FAQ from "./FAQ";
 import { useChunkErrorHandler } from "@/hooks/useChunkErrorHandler";
@@ -37,6 +38,7 @@ function ErrorFallback() {
 
 export default function HomePageClient() {
   const shouldReload = useChunkErrorHandler();
+  const { isSignedIn } = useAuth();
   if (shouldReload) return null;
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
@@ -47,9 +49,11 @@ export default function HomePageClient() {
         <Practice />
         {/* <Blog /> */}
         <FAQ />
-        <div className="fixed bottom-28 right-4 z-40">
-          <OnlineUsersCount variant="marketing" />
-        </div>
+        {!isSignedIn && (
+          <div className="fixed bottom-28 right-4 z-40">
+            <OnlineUsersCount variant="marketing" />
+          </div>
+        )}
         <FloatingChatIcon autoOpen={false} />
       </div>
     </ErrorBoundary>

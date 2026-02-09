@@ -30,7 +30,7 @@
 # misc
 .DS_Store
 *.pem
-
+celpiplive-d6171ab7a52e.json
 # debug
 npm-debug.log*
 yarn-debug.log*
