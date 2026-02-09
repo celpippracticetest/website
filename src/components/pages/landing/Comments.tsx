@@ -63,7 +63,7 @@ const Comments = () => {
 
   const allPersons = [...personsTop, ...personsBottom];
   const [animate, setAnimate] = useState(false);
-  const { ref: sectionRef, inView } = useInView({ threshold: 0.2 });
+  const { ref: sectionRef, inView } = useInView({ threshold: 0, rootMargin: "0px 0px 120px 0px" });
 
   const reviewsSchema = {
     "@context": "https://schema.org",
@@ -90,7 +90,7 @@ const Comments = () => {
 
   useEffect(() => {
     if (inView) {
-      const timer = setTimeout(() => setAnimate(true), 700);
+      const timer = setTimeout(() => setAnimate(true), 50);
       return () => clearTimeout(timer);
     }
   }, [inView]);
@@ -115,11 +115,11 @@ const Comments = () => {
           <div
             key={index}
             role="article"
-            style={{ transitionDelay: `${index * 100}ms` }}
+            style={{ transitionDelay: `${index * 40}ms` }}
             className={`flex flex-col flex-shrink-0 min-w-[280px] max-w-[316px] h-[230px] bg-white shadow-[2px_2px_8px_0px_#212E4214] hover:!shadow-[0px_10px_35px_0px_#212E421A] p-[16px] rounded-[24px] ${animate
               ? "translate-x-0 opacity-100"
               : "-translate-x-full opacity-0"
-              } transition-all duration-700 ease-out transform`}
+              } transition-all duration-300 ease-out transform`}
           >
             <div className="flex gap-[10px] h-[56px]">
               <div>
@@ -152,11 +152,11 @@ const Comments = () => {
           <div
             key={index}
             role="article"
-            style={{ transitionDelay: `${index * 100}ms` }}
+            style={{ transitionDelay: `${index * 40}ms` }}
             className={`flex flex-col shadow-[2px_2px_8px_0px_#212E4214] hover:!shadow-[0px_10px_35px_0px_#212E421A] p-[16px] rounded-[24px] w-full max-w-[340px] h-[200px] screen1280:!max-w-[437px] screen1280:!h-[235px] bg-white ${animate
               ? "translate-y-0 opacity-100"
               : "translate-y-10 opacity-0"
-              } transition-all duration-700 ease-out transform`}
+              } transition-all duration-300 ease-out transform`}
           >
             <div className="flex gap-[10px] h-[56px]">
               <div>
