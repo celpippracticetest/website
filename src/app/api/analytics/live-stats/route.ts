@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
 import { JWT } from "google-auth-library";
-import { OAuth2Client } from "google-auth-library";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -13,7 +12,7 @@ export const revalidate = 0;
  * - Total users (last 24 hours)
  * - Practice events by skill type
  *
- * Auth: prefers service account (ANALYTICS_CLIENT_EMAIL + ANALYTICS_PRIVATE_KEY), else OAuth2 (GOOGLE_*).
+ * Auth: service account using ANALYTICS_CLIENT_EMAIL (or ANALYTICS_CLIENT_ID), ANALYTICS_PRIVATE_KEY.
  * GA4 Data API requires GA4_PROPERTY_ID (numeric, from Admin → Property settings).
  */
 export async function GET() {
@@ -39,36 +38,35 @@ export async function GET() {
 
     const propertyId = `properties/${ga4PropertyId}`;
 
-    const analyticsClientEmail = process.env.ANALYTICS_CLIENT_EMAIL;
+    const analyticsClientEmail =
+      process.env.ANALYTICS_CLIENT_EMAIL || process.env.ANALYTICS_CLIENT_ID;
     const analyticsPrivateKey = process.env.ANALYTICS_PRIVATE_KEY;
-    const useServiceAccount =
-      Boolean(analyticsClientEmail) && Boolean(analyticsPrivateKey);
 
-    let analyticsDataClient: BetaAnalyticsDataClient;
-
-    if (useServiceAccount) {
-      const privateKey = analyticsPrivateKey!.replace(/\\n/g, "\n");
-      const authClient = new JWT({
-        email: analyticsClientEmail,
-        key: privateKey,
-        scopes: ["https://www.googleapis.com/auth/analytics.readonly"],
-      });
-      analyticsDataClient = new BetaAnalyticsDataClient({ authClient });
-    } else {
-      const clientId = process.env.GOOGLE_CLIENT_ID;
-      const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-      const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
-      if (!clientId || !clientSecret || !refreshToken) {
-        throw new Error(
-          "Set either (ANALYTICS_CLIENT_EMAIL + ANALYTICS_PRIVATE_KEY) or (GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET + GOOGLE_REFRESH_TOKEN)."
-        );
-      }
-      const oauth2Client = new OAuth2Client(clientId, clientSecret);
-      oauth2Client.setCredentials({ refresh_token: refreshToken });
-      analyticsDataClient = new BetaAnalyticsDataClient({
-        authClient: oauth2Client,
-      });
+    if (!analyticsClientEmail?.trim() || !analyticsPrivateKey?.trim()) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "ANALYTICS_CLIENT_EMAIL (or ANALYTICS_CLIENT_ID) and ANALYTICS_PRIVATE_KEY are required. Set them in Vercel Environment Variables.",
+          stats: {
+            onlineUsers: 0,
+            recentSignups: 0,
+            practicingUsers: 0,
+            recentPractices: 0,
+            skillBreakdown: { Speaking: 0, Writing: 0, Listening: 0, Reading: 0 },
+          },
+        },
+        { status: 503 }
+      );
     }
+
+    const privateKey = analyticsPrivateKey.replace(/\\n/g, "\n");
+    const authClient = new JWT({
+      email: analyticsClientEmail.trim(),
+      key: privateKey,
+      scopes: ["https://www.googleapis.com/auth/analytics.readonly"],
+    });
+    const analyticsDataClient = new BetaAnalyticsDataClient({ authClient });
 
     console.log(
       "[GA4] Fetching realtime and 24h data for property:",
@@ -243,8 +241,7 @@ export async function GET() {
       Math.floor(totalPracticing * 1.5)
     );
 
-    const authSource = useServiceAccount ? "service_account" : "oauth";
-    console.log(`[GA4 Live Stats - ${authSource}]`, {
+    console.log("[GA4 Live Stats - service_account]", {
       activeUsersNow,
       totalUsers24h,
       newUsers24h,
@@ -263,9 +260,7 @@ export async function GET() {
         skillBreakdown,
       },
       timestamp: new Date().toISOString(),
-      source: useServiceAccount
-        ? "google_analytics_4_service_account"
-        : "google_analytics_4_oauth",
+      source: "google_analytics_4_service_account",
       ...(warnings.length > 0 && { warnings }),
     });
   } catch (error) {
@@ -280,9 +275,9 @@ export async function GET() {
     }
 
     const rawMessage = error instanceof Error ? error.message : "Failed to fetch GA4 stats";
-    const isInvalidClient = rawMessage.includes("invalid_client") || (error as { code?: number })?.code === 401;
-    const errorMessage = isInvalidClient
-      ? "OAuth invalid_client: Check GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in Google Cloud Console (APIs & Services → Credentials). If you regenerated the client secret, get a new refresh token via OAuth Playground with scope https://www.googleapis.com/auth/analytics.readonly"
+    const isAuthError = rawMessage.includes("invalid_grant") || rawMessage.includes("unauthorized") || (error as { code?: number })?.code === 401;
+    const errorMessage = isAuthError
+      ? "GA4 auth failed: Check ANALYTICS_CLIENT_EMAIL (or ANALYTICS_CLIENT_ID), ANALYTICS_PRIVATE_KEY, and that the service account has access to the GA4 property."
       : rawMessage;
 
     // Return zeros on error so widget doesn't show
