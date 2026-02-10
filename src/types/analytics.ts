@@ -1,5 +1,19 @@
 // TypeScript interfaces for analytics and GTM events
 
+export interface UserData {
+  email?: string;
+  phone_number?: string;
+  address?: {
+    first_name?: string;
+    last_name?: string;
+    street?: string;
+    city?: string;
+    region?: string;
+    postal_code?: string;
+    country?: string;
+  };
+}
+
 export interface GTMEvent {
   event: string;
   [key: string]: any;
@@ -26,6 +40,7 @@ export interface SignUpCompletedEvent extends GTMEvent {
   event: "sign_up_completed";
   method?: string;
   user_id: string;
+  user_data?: UserData;
 }
 
 export interface LoginInitiatedEvent extends GTMEvent {
@@ -37,6 +52,7 @@ export interface LoginCompletedEvent extends GTMEvent {
   event: "login_completed";
   method?: string;
   user_id: string;
+  user_data?: UserData;
 }
 
 export interface LogoutEvent extends GTMEvent {
@@ -196,6 +212,7 @@ export interface BeginCheckoutEvent extends GTMEvent {
   value: number;
   items: EcommerceItem[];
   coupon?: string;
+  user_data?: UserData;
 }
 
 export interface PurchaseEvent extends GTMEvent {
@@ -205,6 +222,7 @@ export interface PurchaseEvent extends GTMEvent {
   value: number;
   items: EcommerceItem[];
   coupon?: string;
+  user_data?: UserData;
 }
 
 export interface RefundEvent extends GTMEvent {
@@ -283,4 +301,71 @@ export interface UserContext {
   userId?: string;
   userPlan?: "free" | "premium";
   isAuthenticated?: boolean;
+}
+
+// Marketing Metrics
+export interface SubscriptionMetrics {
+  newSubscriptions: number;
+  activeSubscriptions: number;
+  cancelledSubscriptions: number;
+  byPlan: { free: number; premium: number; pro: number };
+  churnRate: number;
+  conversionRate: number;
+}
+
+export interface RevenueMetrics {
+  totalRevenue: number;
+  currency: string;
+  paymentCount: number;
+  byPlan: { premium: number; pro: number };
+  averageTransaction: number;
+  refunds: number;
+  disputes: number;
+  mrr: number;
+}
+
+export interface OnboardingMetrics {
+  completionRate: number;
+  totalUsers: number;
+  completedUsers: number;
+}
+
+export interface EngagementMetrics {
+  practiceAttempts: number;
+  practiceCompletions: number;
+  practiceCompletionRate: number;
+  examAttempts: number;
+  examCompletions: number;
+  examCompletionRate: number;
+}
+
+export interface ReferralMetrics {
+  totalInvitations: number;
+  completedInvitations: number;
+  conversionRate: number;
+  totalRevenueFromReferrals: number;
+  averageRevenuePerReferral: number;
+}
+
+export interface RetentionMetrics {
+  dau: number;
+  mau: number;
+  activeUsersCount: number;
+  newUsersCount: number;
+  returningUsersCount: number;
+  retentionRate: number;
+}
+
+export interface MetricsResponse {
+  success: boolean;
+  range: string;
+  data: {
+    subscriptions: SubscriptionMetrics;
+    revenue: RevenueMetrics;
+    onboarding: OnboardingMetrics;
+    engagement: EngagementMetrics;
+    referrals: ReferralMetrics;
+    retention: RetentionMetrics;
+  };
+  timestamp: string;
 }

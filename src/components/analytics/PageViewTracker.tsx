@@ -24,7 +24,12 @@ export default function PageViewTracker() {
     const title = document.title;
 
     // Track the page view
-    trackPageView(url, title);
+    trackPageView(
+      url,
+      title,
+      user?.id,
+      (user?.publicMetadata?.plan as string) || "free"
+    );
 
     // Optional: Log for debugging in development
     if (process.env.NODE_ENV === 'development') {

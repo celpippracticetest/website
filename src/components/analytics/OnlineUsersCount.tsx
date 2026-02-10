@@ -135,65 +135,63 @@ export default function OnlineUsersCount({
     return null;
   }
 
-  // Marketing variant - Show all stats with motivation
+  // Marketing variant - Show all stats with motivation (landing section style)
   if (variant === "marketing") {
 
     return (
       <Box
-        className={`inline-flex flex-col gap-3 px-4 py-3 rounded-2xl bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 border border-blue-200 dark:border-blue-800 shadow-lg backdrop-blur-sm ${className}`}
+        className={`flex flex-col gap-4 pt-[16px] px-[24px] pb-[29px] rounded-[16px] bg-white ${className}`}
       >
-        <Box className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
-          <TrendingUp className="h-4 w-4 text-blue-600" />
-          <span>Live Activity</span>
+        <Box className="flex items-center gap-2 text-text1 font-medium text-[18px] screen1280:!text-[20px]">
+          <TrendingUp className="h-5 w-5 text-text1" />
+          <span>Real-time stats</span>
         </Box>
 
-        <Box className="grid grid-cols-3 gap-3">
+        <Box className="flex flex-wrap gap-3">
           {/* Online Users */}
-          <Box className="flex flex-col items-center p-2 rounded-lg bg-white/60 dark:bg-gray-800/60">
+          <Box className="flex flex-col items-center flex-1 min-w-[80px] p-3 rounded-[16px] bg-[#F4F7FF]">
             <Box className="relative">
-              <Users className="h-5 w-5 text-green-600" />
+              <Users className="h-5 w-5 text-text1" />
               <span className="absolute -top-1 -right-1 flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
               </span>
             </Box>
-            <span className="text-lg font-bold text-gray-900 dark:text-gray-100 mt-1">
+            <span className="text-[18px] screen1280:!text-[20px] font-bold text-text1 mt-1">
               {stats.onlineUsers.toLocaleString()}
             </span>
-            <span className="text-xs text-gray-600 dark:text-gray-400">Active Now</span>
+            <span className="text-text2 text-[12px] screen1280:!text-[14px]">Active Now</span>
           </Box>
 
           {/* Recent Signups */}
-          <Box className="flex flex-col items-center p-2 rounded-lg bg-white/60 dark:bg-gray-800/60">
-            <UserPlus className="h-5 w-5 text-blue-600" />
-            <span className="text-lg font-bold text-gray-900 dark:text-gray-100 mt-1">
+          <Box className="flex flex-col items-center flex-1 min-w-[80px] p-3 rounded-[16px] bg-[#F4F7FF]">
+            <UserPlus className="h-5 w-5 text-text1" />
+            <span className="text-[18px] screen1280:!text-[20px] font-bold text-text1 mt-1">
               {stats.recentSignups.toLocaleString()}
             </span>
-            <span className="text-xs text-gray-600 dark:text-gray-400">Joined Today</span>
+            <span className="text-text2 text-[12px] screen1280:!text-[14px]">Joined Today</span>
           </Box>
 
           {/* Practicing Users */}
-          <Box className="flex flex-col items-center p-2 rounded-lg bg-white/60 dark:bg-gray-800/60">
+          <Box className="flex flex-col items-center flex-1 min-w-[80px] p-3 rounded-[16px] bg-[#F4F7FF]">
             <Box className="relative">
-              <Activity className="h-5 w-5 text-purple-600" />
+              <Activity className="h-5 w-5 text-text1" />
               <span className="absolute -top-0.5 -right-0.5 flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-purple-500"></span>
               </span>
             </Box>
-            <span className="text-lg font-bold text-gray-900 dark:text-gray-100 mt-1">
+            <span className="text-[18px] screen1280:!text-[20px] font-bold text-text1 mt-1">
               {totalPracticing.toLocaleString()}
             </span>
-            <span className="text-xs text-gray-600 dark:text-gray-400">Practicing Now</span>
+            <span className="text-text2 text-[12px] screen1280:!text-[14px]">Practicing Now</span>
           </Box>
         </Box>
 
         <Box
-          className={`flex items-center justify-center gap-1.5 text-xs text-gray-700 dark:text-gray-300 font-medium transition-opacity duration-300 ${fade ? "opacity-100" : "opacity-0"
-            }`}
+          className={`flex items-center justify-center gap-1.5 text-text2 text-[12px] screen1280:!text-[14px] font-normal transition-opacity duration-300 ${fade ? "opacity-100" : "opacity-0"}`}
         >
-          {/* <span className="text-base">🔥</span> */}
-          <CurrentIcon className={`h-3.5 w-3.5 ${messages[currentMessageIndex].color}`} />
+          <CurrentIcon className="h-3.5 w-3.5 flex-shrink-0 text-text1" />
           <span>{messages[currentMessageIndex].text}</span>
         </Box>
       </Box>

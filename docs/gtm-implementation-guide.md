@@ -115,6 +115,7 @@ This guide covers the complete GTM implementation for CELPIP Practice Test platf
 - `value` - Transaction amount
 - `items[]` - Purchased items
 - `coupon` - Referral code (if applicable)
+- `user_data` - User details for Enhanced Conversions (email, phone, address)
 
 ---
 
@@ -159,6 +160,7 @@ This guide covers the complete GTM implementation for CELPIP Practice Test platf
 
 - `user_id` - New user ID
 - `method` - Sign-up method used
+- `user_data` - User details for Enhanced Conversions
 
 #### Login Initiated
 
@@ -613,14 +615,47 @@ Enable these Built-in Variables:
 
 ## Advanced Configuration
 
+### Enhanced Conversions (Google Ads)
+
+To support Google Ads Enhanced Conversions, send user data (email, phone, address) with conversion events (`purchase`, `begin_checkout`, `sign_up_completed`).
+
+**Parameters:**
+
+- `user_data` - Object containing:
+  - `email`
+  - `phone_number`
+  - `address` (first_name, last_name, street, city, region, postal_code, country)
+
+**Example:**
+
+```typescript
+trackEcommerce.purchase(
+  transactionId,
+  items,
+  currency,
+  value,
+  coupon,
+  {
+    email: user.email,
+    phone_number: user.phone,
+    address: {
+      first_name: user.firstName,
+      last_name: user.lastName,
+      // ...
+    }
+  }
+);
+```
+
 ### Consent Mode
 
 The implementation includes default consent mode (all denied). To update consent based on user preferences:
 
 ```javascript
+import { updateConsent } from "@/lib/gtm";
+
 // When user accepts cookies
-window.dataLayer.push({
-  event: "consent_update",
+updateConsent({
   analytics_storage: "granted",
   ad_storage: "granted",
   ad_user_data: "granted",

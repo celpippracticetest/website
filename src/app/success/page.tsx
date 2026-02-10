@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { stripe } from "../../lib/stripe";
 import DashboardHome from "@/components/dashboard-app/dashboardHome";
 import mongoClient from "@/lib/mongodb";
-import Script from "next/script";
 import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
 import { Analytics } from "@customerio/cdp-analytics-node";
@@ -88,42 +87,12 @@ export default async function Success({ searchParams }: any) {
 
     return (
       <div className="bg-[#F4F7FF]  min-h-screen flex w-full lg:pt-[108px] pt-[70px]">
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=AW-16871603801"
-          strategy="afterInteractive"
-        />
-        <Script id="gtag-init" strategy="afterInteractive">
-          {`
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'AW-16871603801');
-    `}
-        </Script>
-        <Script id="enhanced-conversions" strategy="afterInteractive">
-          {`
-      gtag('set', 'user_data', {
-        email: '${customerEmail?.trim().toLowerCase()}'
-      });
-  `}
-        </Script>
-        <Script id="conversion" strategy="afterInteractive">
-          {`
-      gtag('event', 'conversion', {
-        send_to: 'AW-17024504219/OTSDCOvziL4aEJuj9bU_',
-        transaction_id: '${session?.invoice}',
-        value: ${(amountTotal ?? 0) / 100},
-        currency: '${currency?.toUpperCase()}',
-        
-      });
-  `}
-        </Script>
-
         <SuccessPageTracking
           transactionId={session?.invoice as string}
           value={(amountTotal ?? 0) / 100}
           currency={currency?.toUpperCase() || 'CAD'}
           items={lineItems || []}
+          email={customerEmail?.trim().toLowerCase()}
         />
 
         <DashboardHome session={sessionData} email={customerEmail} />

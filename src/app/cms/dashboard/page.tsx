@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import Link from "next/link";
 
 import "chart.js/auto";
 import * as XLSX from "xlsx";
@@ -272,7 +273,15 @@ export default async function CMSDashboard({
       )}
 
       {tab === "reports" && (
-        <div className="text-sm text-gray-700">Reports module goes here.</div>
+        <div className="text-sm text-gray-700">
+          <Link
+            href="/cms/dashboard/reports"
+            className="text-blue-600 hover:text-blue-800 underline"
+          >
+            View marketing and analytics reports
+          </Link>
+          {" "}(real-time, 24h, 7d, 30d, 90d).
+        </div>
       )}
 
       {tab === "settings" && (

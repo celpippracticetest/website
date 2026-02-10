@@ -8,6 +8,7 @@ interface SuccessPageTrackingProps {
   value: number;
   currency: string;
   items: any[];
+  email?: string;
 }
 
 /**
@@ -19,6 +20,7 @@ export default function SuccessPageTracking({
   value,
   currency,
   items,
+  email,
 }: SuccessPageTrackingProps) {
   const { purchase } = useEcommerceTracking();
 
@@ -31,14 +33,20 @@ export default function SuccessPageTracking({
       quantity: item.quantity || 1,
       item_brand: 'CELPIP Practice Test',
       item_category: 'Subscription',
+      item_category2: 'Digital Service',
     }));
+
+    // Construct user data for Enhanced Conversions
+    const userData = email ? { email } : undefined;
 
     // Track purchase event
     purchase(
       transactionId,
       formattedItems,
       currency,
-      value
+      value,
+      undefined, // coupon
+      userData
     );
 
     if (process.env.NODE_ENV === 'development') {
@@ -47,9 +55,10 @@ export default function SuccessPageTracking({
         value,
         currency,
         items: formattedItems,
+        userData
       });
     }
-  }, [transactionId, value, currency, items, purchase]);
+  }, [transactionId, value, currency, items, email, purchase]);
 
   return null;
 }

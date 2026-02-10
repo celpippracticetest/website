@@ -1,5 +1,5 @@
 // Google Tag Manager utility functions
-import type { GTMEvent, UserContext } from "@/types/analytics";
+import type { GTMEvent, UserContext, UserData } from "@/types/analytics";
 
 // Check if we're in a browser environment
 const isBrowser = typeof window !== "undefined";
@@ -78,13 +78,35 @@ export function pushToDataLayer(
 }
 
 /**
+ * Update consent state
+ */
+export function updateConsent(consentState: {
+  ad_storage?: "granted" | "denied";
+  analytics_storage?: "granted" | "denied";
+  ad_user_data?: "granted" | "denied";
+  ad_personalization?: "granted" | "denied";
+}): void {
+  pushToDataLayer({
+    event: "consent_update",
+    ...consentState,
+  });
+}
+
+/**
  * Track page view
  */
-export function trackPageView(path: string, title?: string): void {
+export function trackPageView(
+  path: string,
+  title?: string,
+  userId?: string,
+  userPlan?: string
+): void {
   pushToDataLayer({
     event: "page_view",
     page_path: path,
     page_title: title || document.title,
+    user_id: userId,
+    user_plan: userPlan,
   });
 }
 
@@ -127,11 +149,12 @@ export const trackAuth = {
     });
   },
 
-  signUpCompleted: (userId: string, method?: string) => {
+  signUpCompleted: (userId: string, method?: string, userData?: UserData) => {
     pushToDataLayer({
       event: "sign_up_completed",
       user_id: userId,
       method,
+      user_data: userData,
     });
   },
 
@@ -142,11 +165,12 @@ export const trackAuth = {
     });
   },
 
-  loginCompleted: (userId: string, method?: string) => {
+  loginCompleted: (userId: string, method?: string, userData?: UserData) => {
     pushToDataLayer({
       event: "login_completed",
       user_id: userId,
       method,
+      user_data: userData,
     });
   },
 
@@ -365,7 +389,8 @@ export const trackEcommerce = {
     items: any[],
     currency: string,
     value: number,
-    coupon?: string
+    coupon?: string,
+    userData?: UserData
   ) => {
     pushToDataLayer({
       event: "begin_checkout",
@@ -373,6 +398,7 @@ export const trackEcommerce = {
       value,
       items,
       coupon,
+      user_data: userData,
     });
   },
 
@@ -381,7 +407,8 @@ export const trackEcommerce = {
     items: any[],
     currency: string,
     value: number,
-    coupon?: string
+    coupon?: string,
+    userData?: UserData
   ) => {
     pushToDataLayer({
       event: "purchase",
@@ -390,6 +417,7 @@ export const trackEcommerce = {
       value,
       items,
       coupon,
+      user_data: userData,
     });
   },
 

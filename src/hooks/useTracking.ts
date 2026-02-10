@@ -12,7 +12,9 @@ import {
   trackEcommerce,
   trackEngagement,
   trackReferral,
+  updateConsent,
 } from "@/lib/gtm";
+import { UserData } from "@/types/analytics";
 
 /**
  * Generic event tracker hook
@@ -27,6 +29,19 @@ export function useEventTracker() {
   }, [user]);
 
   return {
+    // Consent management
+    updateConsent: useCallback(
+      (consentState: {
+        ad_storage?: "granted" | "denied";
+        analytics_storage?: "granted" | "denied";
+        ad_user_data?: "granted" | "denied";
+        ad_personalization?: "granted" | "denied";
+      }) => {
+        updateConsent(consentState);
+      },
+      []
+    ),
+
     // CTA tracking
     trackCTA: useCallback((ctaText: string, ctaLocation: string) => {
       trackCTAClick(ctaText, ctaLocation);
@@ -51,9 +66,9 @@ export function useEventTracker() {
       }, []),
 
       signUpCompleted: useCallback(
-        (method?: string) => {
+        (method?: string, userData?: UserData) => {
           if (userId) {
-            trackAuth.signUpCompleted(userId, method);
+            trackAuth.signUpCompleted(userId, method, userData);
           }
         },
         [userId]
@@ -64,9 +79,9 @@ export function useEventTracker() {
       }, []),
 
       loginCompleted: useCallback(
-        (method?: string) => {
+        (method?: string, userData?: UserData) => {
           if (userId) {
-            trackAuth.loginCompleted(userId, method);
+            trackAuth.loginCompleted(userId, method, userData);
           }
         },
         [userId]
@@ -225,8 +240,8 @@ export function useEcommerceTracking() {
     ),
 
     beginCheckout: useCallback(
-      (items: any[], currency: string, value: number, coupon?: string) => {
-        trackEcommerce.beginCheckout(items, currency, value, coupon);
+      (items: any[], currency: string, value: number, coupon?: string, userData?: UserData) => {
+        trackEcommerce.beginCheckout(items, currency, value, coupon, userData);
       },
       []
     ),
@@ -237,9 +252,10 @@ export function useEcommerceTracking() {
         items: any[],
         currency: string,
         value: number,
-        coupon?: string
+        coupon?: string,
+        userData?: UserData
       ) => {
-        trackEcommerce.purchase(transactionId, items, currency, value, coupon);
+        trackEcommerce.purchase(transactionId, items, currency, value, coupon, userData);
       },
       []
     ),

@@ -29,10 +29,15 @@ export async function GET() {
             recentSignups: 0,
             practicingUsers: 0,
             recentPractices: 0,
-            skillBreakdown: { Speaking: 0, Writing: 0, Listening: 0, Reading: 0 },
+            skillBreakdown: {
+              Speaking: 0,
+              Writing: 0,
+              Listening: 0,
+              Reading: 0,
+            },
           },
         },
-        { status: 503 }
+        { status: 503 },
       );
     }
 
@@ -53,14 +58,50 @@ export async function GET() {
             recentSignups: 0,
             practicingUsers: 0,
             recentPractices: 0,
-            skillBreakdown: { Speaking: 0, Writing: 0, Listening: 0, Reading: 0 },
+            skillBreakdown: {
+              Speaking: 0,
+              Writing: 0,
+              Listening: 0,
+              Reading: 0,
+            },
           },
         },
-        { status: 503 }
+        { status: 503 },
       );
     }
 
-    const privateKey = analyticsPrivateKey.replace(/\\n/g, "\n");
+    // Normalize PEM: env vars often store newlines as literal \n (or double-escaped \\n)
+    const privateKey = analyticsPrivateKey
+      .replace(/\\n/g, "\n")
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n")
+      .trim();
+    if (
+      !privateKey.includes("-----BEGIN") ||
+      !privateKey.includes("-----END")
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "ANALYTICS_PRIVATE_KEY must be a valid PEM key (starts with -----BEGIN PRIVATE KEY-----). In Vercel, paste the key as one line and replace each real newline with backslash-n (\\n).",
+          stats: {
+            onlineUsers: 0,
+            recentSignups: 0,
+            practicingUsers: 0,
+            recentPractices: 0,
+            skillBreakdown: {
+              Speaking: 0,
+              Writing: 0,
+              Listening: 0,
+              Reading: 0,
+            },
+          },
+        },
+        { status: 503 },
+      );
+    }
+
     const authClient = new JWT({
       email: analyticsClientEmail.trim(),
       key: privateKey,
@@ -70,7 +111,7 @@ export async function GET() {
 
     console.log(
       "[GA4] Fetching realtime and 24h data for property:",
-      propertyId
+      propertyId,
     );
 
     const today = new Date();
@@ -84,13 +125,12 @@ export async function GET() {
     const warnings: string[] = [];
 
     try {
-      const [realtimeResponse] =
-        await analyticsDataClient.runRealtimeReport({
-          property: propertyId,
-          metrics: [{ name: "activeUsers" }],
-        });
+      const [realtimeResponse] = await analyticsDataClient.runRealtimeReport({
+        property: propertyId,
+        metrics: [{ name: "activeUsers" }],
+      });
       activeUsersNow = parseInt(
-        realtimeResponse.rows?.[0]?.metricValues?.[0]?.value || "0"
+        realtimeResponse.rows?.[0]?.metricValues?.[0]?.value || "0",
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -107,16 +147,13 @@ export async function GET() {
             endDate: dateFmt(today),
           },
         ],
-        metrics: [
-          { name: "totalUsers" },
-          { name: "newUsers" },
-        ],
+        metrics: [{ name: "totalUsers" }, { name: "newUsers" }],
       });
       totalUsers24h = parseInt(
-        last24HoursResponse.rows?.[0]?.metricValues?.[0]?.value || "0"
+        last24HoursResponse.rows?.[0]?.metricValues?.[0]?.value || "0",
       );
       newUsers24h = parseInt(
-        last24HoursResponse.rows?.[0]?.metricValues?.[1]?.value || "0"
+        last24HoursResponse.rows?.[0]?.metricValues?.[1]?.value || "0",
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -134,26 +171,25 @@ export async function GET() {
     let totalPracticingFromGa4 = 0;
 
     try {
-      const [practiceEventsResponse] =
-        await analyticsDataClient.runReport({
-          property: propertyId,
-          dateRanges: [
-            {
-              startDate: dateFmt(yesterday),
-              endDate: dateFmt(today),
-            },
-          ],
-          dimensions: [{ name: "customEvent:skill_type" }],
-          metrics: [{ name: "eventCount" }],
-          dimensionFilter: {
-            filter: {
-              fieldName: "eventName",
-              inListFilter: {
-                values: ["practice_started", "practice_completed"],
-              },
+      const [practiceEventsResponse] = await analyticsDataClient.runReport({
+        property: propertyId,
+        dateRanges: [
+          {
+            startDate: dateFmt(yesterday),
+            endDate: dateFmt(today),
+          },
+        ],
+        dimensions: [{ name: "customEvent:skill_type" }],
+        metrics: [{ name: "eventCount" }],
+        dimensionFilter: {
+          filter: {
+            fieldName: "eventName",
+            inListFilter: {
+              values: ["practice_started", "practice_completed"],
             },
           },
-        });
+        },
+      });
 
       const skillBreakdownMap: Record<string, number> = {};
       practiceEventsResponse.rows?.forEach((row) => {
@@ -172,7 +208,7 @@ export async function GET() {
     } catch (practiceErr) {
       console.warn(
         "[GA4] Practice-by-skill report failed (create custom dimension 'skill_type' in GA4 Admin → Custom definitions for breakdown). Error:",
-        practiceErr instanceof Error ? practiceErr.message : practiceErr
+        practiceErr instanceof Error ? practiceErr.message : practiceErr,
       );
       // Fallback: total practice count by event name only (no skill breakdown)
       try {
@@ -194,9 +230,8 @@ export async function GET() {
         });
         totalPracticingFromGa4 =
           eventOnlyResponse.rows?.reduce(
-            (sum, row) =>
-              sum + parseInt(row.metricValues?.[0]?.value || "0"),
-            0
+            (sum, row) => sum + parseInt(row.metricValues?.[0]?.value || "0"),
+            0,
           ) || 0;
       } catch {
         // ignore
@@ -214,7 +249,7 @@ export async function GET() {
     // Split totalPracticing among skills with time-varying weights (changes over time)
     const skillPhases = [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2];
     const rawWeights = skillPhases.map((phase) =>
-      Math.max(0.1, 0.25 + 0.12 * Math.sin(cycle + phase))
+      Math.max(0.1, 0.25 + 0.12 * Math.sin(cycle + phase)),
     );
     const sumWeights = rawWeights.reduce((a, b) => a + b, 0);
     const shares = rawWeights.map((w) => (w / sumWeights) * totalPracticing);
@@ -238,7 +273,7 @@ export async function GET() {
     const calculatedActiveUsers = Math.max(
       activeUsersNow,
       totalUsers24h,
-      Math.floor(totalPracticing * 1.5)
+      Math.floor(totalPracticing * 1.5),
     );
 
     console.log("[GA4 Live Stats - service_account]", {
@@ -249,6 +284,36 @@ export async function GET() {
       skillBreakdown,
       calculatedActiveUsers,
     });
+
+    // Private key format error: return clear 503 so user can fix ANALYTICS_PRIVATE_KEY
+    const isDecoderError = warnings.some(
+      (w) =>
+        w.includes("DECODER") ||
+        w.includes("unsupported") ||
+        w.includes("Getting metadata from plugin failed"),
+    );
+    if (isDecoderError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'ANALYTICS_PRIVATE_KEY is invalid (decoder/format error). Paste the full PEM key in one line and use literal backslash-n (\\n) for line breaks. Example: "-----BEGIN PRIVATE KEY-----\\nMIIE...\\n-----END PRIVATE KEY-----\\n"',
+          stats: {
+            onlineUsers: 0,
+            recentSignups: 0,
+            practicingUsers: 0,
+            recentPractices: 0,
+            skillBreakdown: {
+              Speaking: 0,
+              Writing: 0,
+              Listening: 0,
+              Reading: 0,
+            },
+          },
+        },
+        { status: 503 },
+      );
+    }
 
     return NextResponse.json({
       success: true,
@@ -274,10 +339,15 @@ export async function GET() {
       });
     }
 
-    const rawMessage = error instanceof Error ? error.message : "Failed to fetch GA4 stats";
-    const isAuthError = rawMessage.includes("invalid_grant") || rawMessage.includes("unauthorized") || (error as { code?: number })?.code === 401;
-    const errorMessage = isAuthError
-      ? "GA4 auth failed: Check ANALYTICS_CLIENT_EMAIL (or ANALYTICS_CLIENT_ID), ANALYTICS_PRIVATE_KEY, and that the service account has access to the GA4 property."
+    const rawMessage =
+      error instanceof Error ? error.message : "Failed to fetch GA4 stats";
+    const isAuthError =
+      rawMessage.includes("invalid_grant") ||
+      rawMessage.includes("unauthorized") ||
+      (error as { code?: number })?.code === 401;
+    const errorMessage =
+      isAuthError ?
+        "GA4 auth failed: Check ANALYTICS_CLIENT_EMAIL (or ANALYTICS_CLIENT_ID), ANALYTICS_PRIVATE_KEY, and that the service account has access to the GA4 property."
       : rawMessage;
 
     // Return zeros on error so widget doesn't show
@@ -298,7 +368,7 @@ export async function GET() {
           },
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
