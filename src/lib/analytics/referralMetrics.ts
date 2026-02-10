@@ -10,11 +10,11 @@ export interface ReferralMetrics {
 
 export async function getReferralMetrics(
   startDate: Date,
-  endDate: Date
+  endDate: Date,
 ): Promise<ReferralMetrics> {
   try {
     const client = await clientPromise;
-    const db = client.db("test");
+    const db = client.db("prod");
 
     // Total invitations created in period
     const totalInvitations = await db
@@ -32,9 +32,9 @@ export async function getReferralMetrics(
       });
 
     const conversionRate =
-      totalInvitations > 0
-        ? (completedInvitations / totalInvitations) * 100
-        : 0;
+      totalInvitations > 0 ?
+        (completedInvitations / totalInvitations) * 100
+      : 0;
 
     // Total revenue from referrals (from referralRewards)
     const rewards = await db
@@ -50,19 +50,19 @@ export async function getReferralMetrics(
     });
 
     const averageRevenuePerReferral =
-      completedInvitations > 0
-        ? totalRevenueFromReferrals / completedInvitations
-        : 0;
+      completedInvitations > 0 ?
+        totalRevenueFromReferrals / completedInvitations
+      : 0;
 
     return {
       totalInvitations,
       completedInvitations,
       conversionRate: parseFloat(conversionRate.toFixed(2)),
       totalRevenueFromReferrals: parseFloat(
-        totalRevenueFromReferrals.toFixed(2)
+        totalRevenueFromReferrals.toFixed(2),
       ),
       averageRevenuePerReferral: parseFloat(
-        averageRevenuePerReferral.toFixed(2)
+        averageRevenuePerReferral.toFixed(2),
       ),
     };
   } catch (error) {

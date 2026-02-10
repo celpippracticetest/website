@@ -11,7 +11,7 @@ export const revalidate = 0;
 export async function GET() {
   try {
     const client = await clientPromise;
-    const db = client.db("test");
+    const db = client.db("prod");
     const collection = db.collection("user_activity");
 
     // Count users active in the last 5 minutes
@@ -31,7 +31,7 @@ export async function GET() {
     console.error("Error fetching active users:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch active users" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

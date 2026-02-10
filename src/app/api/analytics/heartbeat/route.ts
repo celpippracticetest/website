@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       "unknown";
 
     const client = await clientPromise;
-    const db = client.db("test");
+    const db = client.db("prod");
     const collection = db.collection("user_activity");
 
     const sessionId = body.sessionId || `session-${Date.now()}`;
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
           createdAt: now,
         },
       },
-      { upsert: true }
+      { upsert: true },
     );
 
     // Send event to Google Analytics 4 via Measurement Protocol
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(ga4Payload),
-        }
+        },
       ).catch((err) => console.error("GA4 tracking error:", err));
     }
 
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     console.error("Error recording heartbeat:", error);
     return NextResponse.json(
       { success: false, error: "Failed to record heartbeat" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -106,12 +106,12 @@ export async function DELETE(request: NextRequest) {
     if (!userId && !sessionId) {
       return NextResponse.json(
         { success: false, error: "No user or session identified" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const client = await clientPromise;
-    const db = client.db("test");
+    const db = client.db("prod");
     const collection = db.collection("user_activity");
 
     await collection.updateMany(
@@ -123,7 +123,7 @@ export async function DELETE(request: NextRequest) {
           status: "offline",
           lastOfflineAt: new Date(),
         },
-      }
+      },
     );
 
     return NextResponse.json({
@@ -134,7 +134,7 @@ export async function DELETE(request: NextRequest) {
     console.error("Error marking user offline:", error);
     return NextResponse.json(
       { success: false, error: "Failed to mark user offline" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

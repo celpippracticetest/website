@@ -1,19 +1,5 @@
 // TypeScript interfaces for analytics and GTM events
 
-export interface UserData {
-  email?: string;
-  phone_number?: string;
-  address?: {
-    first_name?: string;
-    last_name?: string;
-    street?: string;
-    city?: string;
-    region?: string;
-    postal_code?: string;
-    country?: string;
-  };
-}
-
 export interface GTMEvent {
   event: string;
   [key: string]: any;
@@ -40,7 +26,6 @@ export interface SignUpCompletedEvent extends GTMEvent {
   event: "sign_up_completed";
   method?: string;
   user_id: string;
-  user_data?: UserData;
 }
 
 export interface LoginInitiatedEvent extends GTMEvent {
@@ -52,7 +37,6 @@ export interface LoginCompletedEvent extends GTMEvent {
   event: "login_completed";
   method?: string;
   user_id: string;
-  user_data?: UserData;
 }
 
 export interface LogoutEvent extends GTMEvent {
@@ -212,7 +196,6 @@ export interface BeginCheckoutEvent extends GTMEvent {
   value: number;
   items: EcommerceItem[];
   coupon?: string;
-  user_data?: UserData;
 }
 
 export interface PurchaseEvent extends GTMEvent {
@@ -222,7 +205,6 @@ export interface PurchaseEvent extends GTMEvent {
   value: number;
   items: EcommerceItem[];
   coupon?: string;
-  user_data?: UserData;
 }
 
 export interface RefundEvent extends GTMEvent {
@@ -296,11 +278,32 @@ export interface WithdrawalRequestedEvent extends GTMEvent {
   currency: string;
 }
 
+// Blog Events
+export interface BlogListViewedEvent extends GTMEvent {
+  event: "blog_list_viewed";
+  page_path: string;
+  page_title?: string;
+}
+
+export interface BlogArticleViewedEvent extends GTMEvent {
+  event: "blog_article_viewed";
+  article_title: string;
+  article_slug: string;
+  page_path: string;
+  page_title?: string;
+  article_categories?: string[];
+}
+
 // User Context
 export interface UserContext {
   userId?: string;
   userPlan?: "free" | "premium";
   isAuthenticated?: boolean;
+}
+
+/** Optional user payload for GTM (e.g. sign_up_completed, login_completed, purchase) */
+export interface UserData {
+  [key: string]: unknown;
 }
 
 // Marketing Metrics
@@ -309,6 +312,8 @@ export interface SubscriptionMetrics {
   activeSubscriptions: number;
   cancelledSubscriptions: number;
   byPlan: { free: number; premium: number; pro: number };
+  newPremiumInPeriod: number;
+  newProInPeriod: number;
   churnRate: number;
   conversionRate: number;
 }

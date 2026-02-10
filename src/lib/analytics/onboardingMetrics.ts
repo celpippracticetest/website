@@ -8,17 +8,24 @@ export interface OnboardingMetrics {
 
 export async function getOnboardingMetrics(
   startDate: Date,
-  endDate: Date
+  endDate: Date,
 ): Promise<OnboardingMetrics> {
   try {
     const client = await clientPromise;
-    const db = client.db("test");
+    const db = client.db("prod");
 
     // Count users who signed up in the period
-    const totalUsers = await db.collection("useractivities").countDocuments({
+    let totalUsers = await db.collection("useractivities").countDocuments({
       eventType: "signup",
-      timestamp: { $gte: startDate, $lte: endDate },
+      timestampUtc: { $gte: startDate, $lte: endDate },
     });
+
+    // Fallback: count users created in period
+    if (totalUsers === 0) {
+      totalUsers = await db.collection("users").countDocuments({
+        createdAt: { $gte: startDate, $lte: endDate },
+      });
+    }
 
     // Count completed onboarding records in the period
     // Check both old and new onboarding collections

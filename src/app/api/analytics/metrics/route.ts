@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import clientPromise from "@/lib/mongodb";
 import { getSubscriptionMetrics } from "@/lib/analytics/subscriptionMetrics";
 import { getRevenueMetrics } from "@/lib/analytics/revenueMetrics";
 import { getOnboardingMetrics } from "@/lib/analytics/onboardingMetrics";
@@ -56,9 +57,18 @@ export async function GET(request: Request) {
 
     const { startDate, endDate, isRealtime } = getDateRangeForPeriod(range);
 
+    // Debug: check which database we're connected to
+    const client = await clientPromise;
+    const db = client.db("prod");
+    const usersCount = await db.collection("users").countDocuments();
+
     console.log(`[Metrics API] Fetching metrics for range: ${range}`, {
+      database: db.databaseName,
+      totalUsersInDB: usersCount,
+      mongoUri: process.env.MONGODB_URI?.substring(0, 30) + "...",
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
+      isRealtime,
     });
 
     // Fetch all metrics in parallel
@@ -77,6 +87,15 @@ export async function GET(request: Request) {
       getReferralMetrics(startDate, endDate),
       getRetentionMetrics(startDate, endDate, isRealtime),
     ]);
+
+    console.log(`[Metrics API] Results for ${range}:`, {
+      subscriptions,
+      revenue,
+      onboarding,
+      engagement,
+      referrals,
+      retention,
+    });
 
     return NextResponse.json({
       success: true,
@@ -111,7 +130,7 @@ export async function GET(request: Request) {
           },
           revenue: {
             totalRevenue: 0,
-            currency: "USD",
+            currency: "CAD",
             paymentCount: 0,
             byPlan: { premium: 0, pro: 0 },
             averageTransaction: 0,
@@ -149,7 +168,7 @@ export async function GET(request: Request) {
           },
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

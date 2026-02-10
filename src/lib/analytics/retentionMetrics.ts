@@ -16,7 +16,7 @@ export async function getRetentionMetrics(
 ): Promise<RetentionMetrics> {
   try {
     const client = await clientPromise;
-    const db = client.db("test");
+    const db = client.db("prod");
 
     // Active users: users who had any activity in the period
     const activeUsersData = await db
@@ -24,7 +24,7 @@ export async function getRetentionMetrics(
       .aggregate([
         {
           $match: {
-            timestamp: { $gte: startDate, $lte: endDate },
+            timestampUtc: { $gte: startDate, $lte: endDate },
           },
         },
         {
@@ -41,13 +41,13 @@ export async function getRetentionMetrics(
     const activeUsersCount = activeUsersData[0]?.total || 0;
 
     // New users: users who signed up in the period
-    const newUsersData = await db
+    let newUsersData = await db
       .collection("useractivities")
       .aggregate([
         {
           $match: {
             eventType: "signup",
-            timestamp: { $gte: startDate, $lte: endDate },
+            timestampUtc: { $gte: startDate, $lte: endDate },
           },
         },
         {
@@ -61,7 +61,14 @@ export async function getRetentionMetrics(
       ])
       .toArray();
 
-    const newUsersCount = newUsersData[0]?.total || 0;
+    let newUsersCount = newUsersData[0]?.total || 0;
+
+    // Fallback: count users created in period
+    if (newUsersCount === 0) {
+      newUsersCount = await db.collection("users").countDocuments({
+        createdAt: { $gte: startDate, $lte: endDate },
+      });
+    }
 
     // Returning users: active users who are not new in this period
     const returningUsersCount = Math.max(0, activeUsersCount - newUsersCount);

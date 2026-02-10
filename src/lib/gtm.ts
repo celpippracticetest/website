@@ -101,12 +101,48 @@ export function trackPageView(
   userId?: string,
   userPlan?: string
 ): void {
-  pushToDataLayer({
+  const payload: Record<string, unknown> = {
     event: "page_view",
     page_path: path,
-    page_title: title || document.title,
+    page_title: title || (isBrowser ? document.title : undefined),
     user_id: userId,
     user_plan: userPlan,
+  };
+  if (path === "/blog") {
+    payload.page_type = "blog_list";
+  } else if (path.startsWith("/blog/") && path !== "/blog") {
+    payload.page_type = "blog_article";
+    payload.blog_slug = path.replace(/^\/blog\//, "").split("?")[0];
+  }
+  pushToDataLayer(payload as GTMEvent, true);
+}
+
+/**
+ * Track blog list view (GTM blog-specific event)
+ */
+export function trackBlogListView(path: string, title?: string): void {
+  pushToDataLayer({
+    event: "blog_list_viewed",
+    page_path: path,
+    page_title: title || (isBrowser ? document.title : undefined),
+  });
+}
+
+/**
+ * Track blog article view (GTM blog-specific event)
+ */
+export function trackBlogArticleView(
+  articleTitle: string,
+  articleSlug: string,
+  options?: { pagePath?: string; pageTitle?: string; categories?: string[] }
+): void {
+  pushToDataLayer({
+    event: "blog_article_viewed",
+    article_title: articleTitle,
+    article_slug: articleSlug,
+    page_path: options?.pagePath || (isBrowser ? window.location.pathname : ""),
+    page_title: options?.pageTitle || (isBrowser ? document.title : undefined),
+    article_categories: options?.categories,
   });
 }
 

@@ -12,7 +12,6 @@ import {
   PenTool,
   Headphones,
   BookOpen,
-  DollarSign,
   TrendingUp,
   CheckCircle,
   Target,
@@ -22,7 +21,6 @@ import {
 import type {
   MetricsResponse,
   SubscriptionMetrics,
-  RevenueMetrics,
   OnboardingMetrics,
   EngagementMetrics,
   ReferralMetrics,
@@ -218,7 +216,7 @@ function SubscriptionsCard({
           <Box className="flex items-center gap-2">
             <UserCheck className="h-5 w-5 text-gray-600" />
             <span className="font-semibold text-base text-gray-800">
-              Subscriptions
+              Users & Subscriptions
             </span>
           </Box>
           <DurationSelector value={selectedRange} onChange={onRangeChange} />
@@ -227,6 +225,9 @@ function SubscriptionsCard({
       </Box>
     );
   }
+
+  const totalUsers =
+    data.byPlan.free + data.byPlan.premium + data.byPlan.pro;
 
   return (
     <Box className="flex flex-col gap-4 p-5 rounded-xl bg-white border border-gray-200 shadow-sm">
@@ -234,7 +235,7 @@ function SubscriptionsCard({
         <Box className="flex items-center gap-2">
           <UserCheck className="h-5 w-5 text-gray-600" />
           <span className="font-semibold text-base text-gray-800">
-            Subscriptions
+            Users & Subscriptions
           </span>
         </Box>
         <DurationSelector value={selectedRange} onChange={onRangeChange} />
@@ -242,126 +243,67 @@ function SubscriptionsCard({
 
       <Box className="flex flex-wrap gap-3">
         <StatCard
+          icon={Users}
+          value={totalUsers}
+          label="Total Users"
+          colorClass="text-blue-600"
+        />
+        <StatCard
           icon={UserPlus}
           value={data.newSubscriptions}
-          label="New"
+          label="New (period)"
           colorClass="text-green-600"
         />
         <StatCard
-          icon={Users}
+          icon={UserCheck}
           value={data.activeSubscriptions}
-          label="Active"
-          colorClass="text-blue-600"
-        />
-        <StatCard
-          icon={TrendingUp}
-          value={data.cancelledSubscriptions}
-          label="Cancelled"
-          colorClass="text-red-600"
-        />
-      </Box>
-
-      <Box className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
-        <Box className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-gray-50 text-gray-800 text-sm">
-          <span>Free: {data.byPlan.free.toLocaleString()}</span>
-        </Box>
-        <Box className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-blue-50 text-blue-800 text-sm">
-          <span>Premium: {data.byPlan.premium.toLocaleString()}</span>
-        </Box>
-        <Box className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-purple-50 text-purple-800 text-sm">
-          <span>Pro: {data.byPlan.pro.toLocaleString()}</span>
-        </Box>
-      </Box>
-
-      <Box className="flex flex-wrap gap-3 text-sm text-gray-600">
-        <span>Churn rate: {data.churnRate}%</span>
-        <span>Conversion rate: {data.conversionRate}%</span>
-      </Box>
-    </Box>
-  );
-}
-
-function RevenueCard({
-  selectedRange,
-  onRangeChange,
-  data,
-  loading,
-}: {
-  selectedRange: RangeType;
-  onRangeChange: (range: RangeType) => void;
-  data: RevenueMetrics | null;
-  loading: boolean;
-}) {
-  if (loading || !data) {
-    return (
-      <Box className="flex flex-col gap-4 p-5 rounded-xl bg-white border border-gray-200 shadow-sm">
-        <Box className="flex items-center justify-between">
-          <Box className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-gray-600" />
-            <span className="font-semibold text-base text-gray-800">
-              Revenue
-            </span>
-          </Box>
-          <DurationSelector value={selectedRange} onChange={onRangeChange} />
-        </Box>
-        <Box className="text-sm text-gray-500">Loading...</Box>
-      </Box>
-    );
-  }
-
-  return (
-    <Box className="flex flex-col gap-4 p-5 rounded-xl bg-white border border-gray-200 shadow-sm">
-      <Box className="flex items-center justify-between">
-        <Box className="flex items-center gap-2">
-          <DollarSign className="h-5 w-5 text-gray-600" />
-          <span className="font-semibold text-base text-gray-800">Revenue</span>
-        </Box>
-        <DurationSelector value={selectedRange} onChange={onRangeChange} />
-      </Box>
-
-      <Box className="flex flex-wrap gap-3">
-        <StatCard
-          icon={DollarSign}
-          value={`${data.currency} ${data.totalRevenue.toLocaleString()}`}
-          label="Total Revenue"
-          colorClass="text-green-600"
-        />
-        <StatCard
-          icon={Activity}
-          value={data.paymentCount}
-          label="Payments"
-          colorClass="text-blue-600"
-        />
-        <StatCard
-          icon={TrendingUp}
-          value={`${data.currency} ${data.averageTransaction.toLocaleString()}`}
-          label="Avg Transaction"
+          label="Premium/Pro"
           colorClass="text-purple-600"
         />
       </Box>
 
-      <Box className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
-        <Box className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-blue-50 text-blue-800 text-sm">
-          <span>
-            Premium: {data.currency} {data.byPlan.premium.toLocaleString()}
-          </span>
+      <Box className="flex flex-col gap-2 pt-2 border-t border-gray-100">
+        <Box className="text-xs text-gray-500 font-medium">Current Total by Plan</Box>
+        <Box className="flex flex-wrap gap-2">
+          <Box className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-gray-50 text-gray-800 text-sm">
+            <span>Free: {data.byPlan.free.toLocaleString()}</span>
+          </Box>
+          <Box className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-blue-50 text-blue-800 text-sm">
+            <span>Premium: {data.byPlan.premium.toLocaleString()}</span>
+          </Box>
+          <Box className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-purple-50 text-purple-800 text-sm">
+            <span>Pro: {data.byPlan.pro.toLocaleString()}</span>
+          </Box>
         </Box>
-        <Box className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-purple-50 text-purple-800 text-sm">
-          <span>
-            Pro: {data.currency} {data.byPlan.pro.toLocaleString()}
-          </span>
-        </Box>
-      </Box>
-
-      <Box className="flex flex-wrap gap-3 text-sm text-gray-600">
-        <span>Refunds: {data.refunds}</span>
-        <span>Disputes: {data.disputes}</span>
-        {data.mrr > 0 && (
-          <span>
-            MRR: {data.currency} {data.mrr.toLocaleString()}
-          </span>
+        
+        {(data.newPremiumInPeriod > 0 || data.newProInPeriod > 0) && (
+          <Box className="pt-2 border-t border-gray-100">
+            <Box className="text-xs text-gray-500 font-medium mb-1.5">New in Period</Box>
+            <Box className="flex flex-wrap gap-2">
+              {data.newPremiumInPeriod > 0 && (
+                <Box className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-green-50 text-green-800 text-sm">
+                  <span>+{data.newPremiumInPeriod} Premium</span>
+                </Box>
+              )}
+              {data.newProInPeriod > 0 && (
+                <Box className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-green-50 text-green-800 text-sm">
+                  <span>+{data.newProInPeriod} Pro</span>
+                </Box>
+              )}
+            </Box>
+          </Box>
         )}
       </Box>
+
+      {data.cancelledSubscriptions > 0 && (
+        <Box className="flex flex-wrap gap-3 text-sm text-gray-600 pt-2 border-t border-gray-100">
+          <span>Cancelled in period: {data.cancelledSubscriptions}</span>
+          {data.churnRate > 0 && <span>Churn rate: {data.churnRate}%</span>}
+          {data.conversionRate > 0 && (
+            <span>Conversion rate: {data.conversionRate}%</span>
+          )}
+        </Box>
+      )}
     </Box>
   );
 }
@@ -681,7 +623,7 @@ function RetentionCard({
 }
 
 export default function ReportsPage() {
-  const [selectedRange, setSelectedRange] = useState<RangeType>("last24h");
+  const [selectedRange, setSelectedRange] = useState<RangeType>("last30d");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [marketingData, setMarketingData] = useState<ReportData | null>(null);
@@ -775,13 +717,6 @@ export default function ReportsPage() {
             selectedRange={selectedRange}
             onRangeChange={handleRangeChange}
             data={metricsData?.subscriptions || null}
-            loading={loading}
-          />
-
-          <RevenueCard
-            selectedRange={selectedRange}
-            onRangeChange={handleRangeChange}
-            data={metricsData?.revenue || null}
             loading={loading}
           />
 

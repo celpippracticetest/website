@@ -59,18 +59,20 @@ export type ProfessionPageConfig = {
   ctaTitle: string;
   accent: "blue" | "teal" | "amber" | "emerald" | "rose" | "cyan" | "indigo" | "violet" | "slate";
   icon: keyof typeof iconMap;
+  relatedArticles?: { title: string; url: string; }[];
+  relatedProfessions?: { title: string; url: string; }[];
 };
 
 const accentClasses = {
-  blue: { badge: "bg-blue-50 text-blue-700", btn: "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20", card: "border-t-blue-500", icon: "bg-blue-100 text-blue-600", cta: "from-blue-500" },
-  teal: { badge: "bg-teal-50 text-teal-700", btn: "bg-teal-600 hover:bg-teal-700 shadow-teal-600/20", card: "border-t-teal-500", icon: "bg-teal-100 text-teal-600", cta: "from-teal-500" },
-  amber: { badge: "bg-amber-50 text-amber-700", btn: "bg-amber-600 hover:bg-amber-700 shadow-amber-600/20", card: "border-t-amber-500", icon: "bg-amber-100 text-amber-600", cta: "from-amber-500" },
-  emerald: { badge: "bg-emerald-50 text-emerald-700", btn: "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20", card: "border-t-emerald-500", icon: "bg-emerald-100 text-emerald-600", cta: "from-emerald-500" },
-  rose: { badge: "bg-rose-50 text-rose-700", btn: "bg-rose-600 hover:bg-rose-700 shadow-rose-600/20", card: "border-t-rose-500", icon: "bg-rose-100 text-rose-600", cta: "from-rose-500" },
-  cyan: { badge: "bg-cyan-50 text-cyan-700", btn: "bg-cyan-600 hover:bg-cyan-700 shadow-cyan-600/20", card: "border-t-cyan-500", icon: "bg-cyan-100 text-cyan-600", cta: "from-cyan-500" },
-  indigo: { badge: "bg-indigo-50 text-indigo-700", btn: "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20", card: "border-t-indigo-500", icon: "bg-indigo-100 text-indigo-600", cta: "from-indigo-500" },
-  violet: { badge: "bg-violet-50 text-violet-700", btn: "bg-violet-600 hover:bg-violet-700 shadow-violet-600/20", card: "border-t-violet-500", icon: "bg-violet-100 text-violet-600", cta: "from-violet-500" },
-  slate: { badge: "bg-slate-100 text-slate-700", btn: "bg-slate-600 hover:bg-slate-700 shadow-slate-600/20", card: "border-t-slate-500", icon: "bg-slate-100 text-slate-600", cta: "from-slate-500" },
+  blue: { badge: "bg-blue-50 text-blue-700", btn: "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20", card: "border-t-blue-500", icon: "bg-blue-100 text-blue-600", cta: "from-blue-500", highlight: "text-blue-600" },
+  teal: { badge: "bg-teal-50 text-teal-700", btn: "bg-teal-600 hover:bg-teal-700 shadow-teal-600/20", card: "border-t-teal-500", icon: "bg-teal-100 text-teal-600", cta: "from-teal-500", highlight: "text-teal-600" },
+  amber: { badge: "bg-amber-50 text-amber-700", btn: "bg-amber-600 hover:bg-amber-700 shadow-amber-600/20", card: "border-t-amber-500", icon: "bg-amber-100 text-amber-600", cta: "from-amber-500", highlight: "text-amber-600" },
+  emerald: { badge: "bg-emerald-50 text-emerald-700", btn: "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20", card: "border-t-emerald-500", icon: "bg-emerald-100 text-emerald-600", cta: "from-emerald-500", highlight: "text-emerald-600" },
+  rose: { badge: "bg-rose-50 text-rose-700", btn: "bg-rose-600 hover:bg-rose-700 shadow-rose-600/20", card: "border-t-rose-500", icon: "bg-rose-100 text-rose-600", cta: "from-rose-500", highlight: "text-rose-600" },
+  cyan: { badge: "bg-cyan-50 text-cyan-700", btn: "bg-cyan-600 hover:bg-cyan-700 shadow-cyan-600/20", card: "border-t-cyan-500", icon: "bg-cyan-100 text-cyan-600", cta: "from-cyan-500", highlight: "text-cyan-600" },
+  indigo: { badge: "bg-indigo-50 text-indigo-700", btn: "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20", card: "border-t-indigo-500", icon: "bg-indigo-100 text-indigo-600", cta: "from-indigo-500", highlight: "text-indigo-600" },
+  violet: { badge: "bg-violet-50 text-violet-700", btn: "bg-violet-600 hover:bg-violet-700 shadow-violet-600/20", card: "border-t-violet-500", icon: "bg-violet-100 text-violet-600", cta: "from-violet-500", highlight: "text-violet-600" },
+  slate: { badge: "bg-slate-100 text-slate-700", btn: "bg-slate-600 hover:bg-slate-700 shadow-slate-600/20", card: "border-t-slate-500", icon: "bg-slate-100 text-slate-600", cta: "from-slate-500", highlight: "text-slate-600" },
 };
 
 export function ProfessionPageTemplate({ config }: { config: ProfessionPageConfig }) {
@@ -157,6 +159,61 @@ export function ProfessionPageTemplate({ config }: { config: ProfessionPageConfi
             </Table>
           </Card>
         </Box>
+
+        {/* Related Resources Section */}
+        {(config.relatedArticles?.length || config.relatedProfessions?.length) ? (
+          <Box className="mb-20">
+            <h2 className="text-3xl font-bold mb-8 text-center text-slate-900">Related Resources</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+              {config.relatedArticles && config.relatedArticles.length > 0 && (
+                <Card className={`h-full border-t-4 ${c.card} shadow-sm hover:shadow-md transition-shadow`}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BookOpen className={`w-5 h-5 ${c.icon.split(' ')[1]}`} />
+                      Helpful Guides
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-3">
+                      {config.relatedArticles.map((article, i) => (
+                        <li key={i}>
+                          <Link href={article.url} className="flex items-center text-slate-700 hover:text-slate-900 font-medium transition-colors group">
+                            <ArrowRight className={`w-4 h-4 mr-2 ${c.icon.split(' ')[1]}`} />
+                            {article.title}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
+
+              {config.relatedProfessions && config.relatedProfessions.length > 0 && (
+                <Card className={`h-full border-t-4 ${c.card} shadow-sm hover:shadow-md transition-shadow`}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Briefcase className={`w-5 h-5 ${c.icon.split(' ')[1]}`} />
+                      Related Professions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-3">
+                      {config.relatedProfessions.map((prof, i) => (
+                        <li key={i}>
+                          <Link href={prof.url} className="flex items-center text-slate-700 hover:text-slate-900 font-medium transition-colors group">
+                            <ArrowRight className={`w-4 h-4 mr-2 ${c.icon.split(' ')[1]}`} />
+                            {prof.title}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </Box>
+        ) : null}
+
         <Box className="max-w-3xl mx-auto mb-20">
           <h2 className="text-3xl font-bold mb-8 text-center text-slate-900">Frequently Asked Questions</h2>
           <Accordion type="single" collapsible className="w-full">

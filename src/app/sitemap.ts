@@ -1,9 +1,10 @@
 import { MetadataRoute } from "next";
 import { wikiArticles } from "@/data/wiki";
+import { getPublishedBlogSlugs } from "@/lib/blog/public";
 
 const BASE_URL = process.env.APP_BASE_URL || "https://celpippracticetest.com";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const routes = [
     "",
     "/listening",
@@ -12,6 +13,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/speaking",
     "/exam-overview",
     "/wiki",
+    "/blog",
     "/practice-overview",
     "/terms-of-service",
     "/privacy-policy",
@@ -53,5 +55,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }));
 
-  return [...routes, ...wikiRoutes];
+  const blogSlugs = await getPublishedBlogSlugs();
+  const blogRoutes = blogSlugs.map((post) => ({
+    url: `${BASE_URL}/blog/${post.slug}`,
+    lastModified: post.updatedAt || new Date(),
+    changeFrequency: "weekly" as const,
+    priority: 0.75,
+  }));
+
+  return [...routes, ...wikiRoutes, ...blogRoutes];
 }

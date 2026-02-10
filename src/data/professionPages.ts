@@ -31,6 +31,16 @@ export const professionConfigs: Record<string, ProfessionPageConfig> = {
     ctaTitle: "Ready to Meet Your PT Licensing Requirements?",
     accent: "blue",
     icon: "Briefcase",
+    relatedArticles: [
+      { title: "Speaking Score Guide", url: "/wiki/speaking/speaking-score-guide" },
+      { title: "Writing Score Guide", url: "/wiki/writing/writing-score-guide" },
+      { title: "CELPIP Overview", url: "/wiki/general/celpip-overview" },
+    ],
+    relatedProfessions: [
+      { title: "Dentists", url: "/celpip-for-dentist-dental-hygienist" },
+      { title: "Midwives", url: "/celpip-for-midwife" },
+      { title: "Social Workers", url: "/celpip-for-social-worker" },
+    ]
   },
   "celpip-for-commercial-truck-driver": {
     slug: "celpip-for-commercial-truck-driver",
@@ -61,6 +71,13 @@ export const professionConfigs: Record<string, ProfessionPageConfig> = {
     ctaTitle: "Ready to Meet Your Language Requirements?",
     accent: "amber",
     icon: "Truck",
+    relatedArticles: [
+      { title: "Listening Score Guide", url: "/wiki/listening/listening-score-guide" },
+      { title: "Reading Score Guide", url: "/wiki/reading/reading-score-guide" },
+    ],
+    relatedProfessions: [
+      { title: "Skilled Trades", url: "/celpip-for-skilled-trades" },
+    ]
   },
   "celpip-for-caregiver-home-support": {
     slug: "celpip-for-caregiver-home-support",
@@ -91,6 +108,14 @@ export const professionConfigs: Record<string, ProfessionPageConfig> = {
     ctaTitle: "Ready to Meet Your Caregiver Requirements?",
     accent: "teal",
     icon: "Heart",
+    relatedArticles: [
+      { title: "Speaking Score Guide", url: "/wiki/speaking/speaking-score-guide" },
+      { title: "Listening Score Guide", url: "/wiki/listening/listening-score-guide" },
+    ],
+    relatedProfessions: [
+      { title: "Social Workers", url: "/celpip-for-social-worker" },
+      { title: "Midwives", url: "/celpip-for-midwife" },
+    ]
   },
   "celpip-for-skilled-trades": {
     slug: "celpip-for-skilled-trades",
@@ -121,6 +146,14 @@ export const professionConfigs: Record<string, ProfessionPageConfig> = {
     ctaTitle: "Ready to Meet Your Skilled Trades Requirements?",
     accent: "emerald",
     icon: "Wrench",
+    relatedArticles: [
+      { title: "CELPIP Overview", url: "/wiki/general/celpip-overview" },
+      { title: "Speaking Score Guide", url: "/wiki/speaking/speaking-score-guide" },
+    ],
+    relatedProfessions: [
+      { title: "Truck Drivers", url: "/celpip-for-commercial-truck-driver" },
+      { title: "Tech Workers", url: "/celpip-for-tech-worker" },
+    ]
   },
   "celpip-for-dentist-dental-hygienist": {
     slug: "celpip-for-dentist-dental-hygienist",
@@ -151,6 +184,14 @@ export const professionConfigs: Record<string, ProfessionPageConfig> = {
     ctaTitle: "Ready to Meet Your Dental Licensing Requirements?",
     accent: "cyan",
     icon: "Smile",
+    relatedArticles: [
+      { title: "Speaking Score Guide", url: "/wiki/speaking/speaking-score-guide" },
+      { title: "Writing Score Guide", url: "/wiki/writing/writing-score-guide" },
+    ],
+    relatedProfessions: [
+      { title: "Physiotherapists", url: "/celpip-for-physiotherapist" },
+      { title: "Midwives", url: "/celpip-for-midwife" },
+    ]
   },
   "celpip-for-startup-visa-entrepreneur": {
     slug: "celpip-for-startup-visa-entrepreneur",
@@ -181,6 +222,13 @@ export const professionConfigs: Record<string, ProfessionPageConfig> = {
     ctaTitle: "Ready to Meet Your Start-Up Visa Language Requirements?",
     accent: "violet",
     icon: "Rocket",
+    relatedArticles: [
+      { title: "Business Vocabulary", url: "/wiki/speaking/task-1/advanced-vocabulary" },
+      { title: "CELPIP Overview", url: "/wiki/general/celpip-overview" },
+    ],
+    relatedProfessions: [
+      { title: "Tech Workers", url: "/celpip-for-tech-worker" },
+    ]
   },
   "celpip-for-social-worker": {
     slug: "celpip-for-social-worker",
@@ -210,6 +258,14 @@ export const professionConfigs: Record<string, ProfessionPageConfig> = {
     ctaTitle: "Ready to Meet Your Social Work Registration Requirements?",
     accent: "indigo",
     icon: "Users",
+    relatedArticles: [
+      { title: "Speaking Score Guide", url: "/wiki/speaking/speaking-score-guide" },
+      { title: "Listening Score Guide", url: "/wiki/listening/listening-score-guide" },
+    ],
+    relatedProfessions: [
+      { title: "Caregivers", url: "/celpip-for-caregiver-home-support" },
+      { title: "Physiotherapists", url: "/celpip-for-physiotherapist" },
+    ]
   },
   "celpip-for-midwife": {
     slug: "celpip-for-midwife",
@@ -240,6 +296,14 @@ export const professionConfigs: Record<string, ProfessionPageConfig> = {
     ctaTitle: "Ready to Meet Your Midwifery Licensing Requirements?",
     accent: "rose",
     icon: "Baby",
+    relatedArticles: [
+      { title: "Speaking Score Guide", url: "/wiki/speaking/speaking-score-guide" },
+      { title: "Writing Score Guide", url: "/wiki/writing/writing-score-guide" },
+    ],
+    relatedProfessions: [
+      { title: "Physiotherapists", url: "/celpip-for-physiotherapist" },
+      { title: "Caregivers", url: "/celpip-for-caregiver-home-support" },
+    ]
   },
   "celpip-for-tech-worker": {
     slug: "celpip-for-tech-worker",
@@ -270,6 +334,14 @@ export const professionConfigs: Record<string, ProfessionPageConfig> = {
     ctaTitle: "Ready to Meet Your Tech Worker Language Requirements?",
     accent: "slate",
     icon: "Cpu",
+    relatedArticles: [
+      { title: "CELPIP Overview", url: "/wiki/general/celpip-overview" },
+      { title: "Reading Score Guide", url: "/wiki/reading/reading-score-guide" },
+    ],
+    relatedProfessions: [
+      { title: "Entrepreneurs", url: "/celpip-for-startup-visa-entrepreneur" },
+      { title: "Skilled Trades", url: "/celpip-for-skilled-trades" },
+    ]
   },
 };
 

@@ -18,28 +18,36 @@ export async function getRevenueMetrics(
 ): Promise<RevenueMetrics> {
   try {
     const client = await clientPromise;
-    const db = client.db("test");
+    const db = client.db("prod");
 
     // Get all successful payments in the period
     const payments = await db
       .collection("useractivities")
       .find({
         eventType: "payment_successful",
-        timestamp: { $gte: startDate, $lte: endDate },
+        timestampUtc: { $gte: startDate, $lte: endDate },
       })
       .toArray();
 
     let totalRevenue = 0;
-    let currency = "USD";
+    let currency = "CAD"; // Default to CAD for Canadian market
     const planRevenue = { premium: 0, pro: 0 };
+    const currencies: Record<string, number> = {};
+    let paymentCount = payments.length;
 
     payments.forEach((payment: any) => {
       const amount = payment.metadata?.amount || 0;
       const planId = payment.metadata?.planId || "";
+      const paymentCurrency = (payment.metadata?.currency || "cad").toUpperCase();
+      
       totalRevenue += amount;
 
+      // Track currency usage
+      currencies[paymentCurrency] = (currencies[paymentCurrency] || 0) + amount;
+
+      // Use the most common currency
       if (payment.metadata?.currency) {
-        currency = payment.metadata.currency.toUpperCase();
+        currency = paymentCurrency;
       }
 
       if (planId.toLowerCase().includes("premium")) {
@@ -49,9 +57,27 @@ export async function getRevenueMetrics(
       }
     });
 
-    const paymentCount = payments.length;
+    // Fallback: use checkouts if no payment events
+    if (paymentCount === 0) {
+      const checkouts = await db
+        .collection("checkouts")
+        .find({
+          status: "complete",
+          createdAt: { $gte: startDate, $lte: endDate },
+        })
+        .toArray();
+
+      paymentCount = checkouts.length;
+      // Note: checkouts don't have amount, so revenue will be 0
+      // This is expected until payment_successful events are logged
+    }
     const averageTransaction =
       paymentCount > 0 ? totalRevenue / paymentCount : 0;
+
+    // Use the primary currency if multiple currencies exist
+    if (Object.keys(currencies).length > 0) {
+      currency = getPrimaryCurrency(currencies);
+    }
 
     // Get refunds
     const refundedCheckouts = await db
@@ -64,7 +90,7 @@ export async function getRevenueMetrics(
     // Get disputes
     const disputes = await db.collection("useractivities").countDocuments({
       eventType: "dispute_created",
-      timestamp: { $gte: startDate, $lte: endDate },
+      timestampUtc: { $gte: startDate, $lte: endDate },
     });
 
     // Calculate MRR (Monthly Recurring Revenue)
@@ -92,7 +118,7 @@ export async function getRevenueMetrics(
     console.error("Error fetching revenue metrics:", error);
     return {
       totalRevenue: 0,
-      currency: "USD",
+      currency: "CAD",
       paymentCount: 0,
       byPlan: { premium: 0, pro: 0 },
       averageTransaction: 0,
@@ -101,4 +127,13 @@ export async function getRevenueMetrics(
       mrr: 0,
     };
   }
+}
+
+// Helper function to get the primary currency from multiple currencies
+function getPrimaryCurrency(currencies: Record<string, number>): string {
+  if (Object.keys(currencies).length === 0) return "CAD";
+  
+  // Return the currency with the highest total amount
+  const sorted = Object.entries(currencies).sort((a, b) => b[1] - a[1]);
+  return sorted[0][0];
 }

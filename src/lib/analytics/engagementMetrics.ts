@@ -11,43 +11,41 @@ export interface EngagementMetrics {
 
 export async function getEngagementMetrics(
   startDate: Date,
-  endDate: Date
+  endDate: Date,
 ): Promise<EngagementMetrics> {
   try {
     const client = await clientPromise;
-    const db = client.db("test");
+    const db = client.db("prod");
 
     // Practice metrics
     const practiceAttempts = await db
       .collection("useractivities")
       .countDocuments({
         eventType: "practice_attempt_started",
-        timestamp: { $gte: startDate, $lte: endDate },
+        timestampUtc: { $gte: startDate, $lte: endDate },
       });
 
     const practiceCompletions = await db
       .collection("useractivities")
       .countDocuments({
         eventType: "practice_attempt_completed",
-        timestamp: { $gte: startDate, $lte: endDate },
+        timestampUtc: { $gte: startDate, $lte: endDate },
       });
 
     const practiceCompletionRate =
-      practiceAttempts > 0
-        ? (practiceCompletions / practiceAttempts) * 100
-        : 0;
+      practiceAttempts > 0 ? (practiceCompletions / practiceAttempts) * 100 : 0;
 
     // Exam/Mock metrics
     const examAttempts = await db.collection("useractivities").countDocuments({
       eventType: "mock_attempt_started",
-      timestamp: { $gte: startDate, $lte: endDate },
+      timestampUtc: { $gte: startDate, $lte: endDate },
     });
 
     const examCompletions = await db
       .collection("useractivities")
       .countDocuments({
         eventType: "mock_attempt_completed",
-        timestamp: { $gte: startDate, $lte: endDate },
+        timestampUtc: { $gte: startDate, $lte: endDate },
       });
 
     const examCompletionRate =
