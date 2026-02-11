@@ -5,9 +5,12 @@ import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
 
-const R2_ENDPOINT = process.env.BLOG_IMAGE_R2_ENDPOINT;
-const R2_BUCKET = "celpip-blog-images";
-const BLOG_IMAGE_PUBLIC_BASE_URL = process.env.BLOG_IMAGE_PUBLIC_BASE_URL || "";
+const R2_ENDPOINT =
+  process.env.BLOG_IMAGE_R2_ENDPOINT ||
+  "https://acac98ae11ea860f690cce3ad5dcb630.r2.cloudflarestorage.com";
+const R2_BUCKET = process.env.BLOG_IMAGE_R2_BUCKET || "celpip-blog-images";
+const BLOG_IMAGE_PUBLIC_BASE_URL =
+  process.env.BLOG_IMAGE_PUBLIC_BASE_URL || `${R2_ENDPOINT}/${R2_BUCKET}`;
 const MAX_UPLOAD_SIZE_BYTES = Number(
   process.env.BLOG_IMAGE_MAX_SIZE_BYTES || 10 * 1024 * 1024,
 );
@@ -16,22 +19,22 @@ function buildS3Client() {
   const accessKeyId = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID;
   const secretAccessKey = process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY;
 
-  if (accessKeyId && secretAccessKey) {
-    return new S3Client({
-      region: "auto",
-      endpoint: R2_ENDPOINT,
-      forcePathStyle: true,
-      credentials: {
-        accessKeyId,
-        secretAccessKey,
-      },
-    });
+  if (!R2_ENDPOINT) {
+    throw new Error("Missing BLOG_IMAGE_R2_ENDPOINT.");
+  }
+
+  if (!accessKeyId || !secretAccessKey) {
+    throw new Error("Missing CLOUDFLARE_R2_ACCESS_KEY_ID or CLOUDFLARE_R2_SECRET_ACCESS_KEY.");
   }
 
   return new S3Client({
     region: "auto",
     endpoint: R2_ENDPOINT,
     forcePathStyle: true,
+    credentials: {
+      accessKeyId,
+      secretAccessKey,
+    },
   });
 }
 
