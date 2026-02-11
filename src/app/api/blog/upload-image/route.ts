@@ -10,7 +10,8 @@ const R2_ENDPOINT =
   "https://acac98ae11ea860f690cce3ad5dcb630.r2.cloudflarestorage.com";
 const R2_BUCKET = process.env.BLOG_IMAGE_R2_BUCKET || "celpip-blog-images";
 const BLOG_IMAGE_PUBLIC_BASE_URL =
-  process.env.BLOG_IMAGE_PUBLIC_BASE_URL || `${R2_ENDPOINT}/${R2_BUCKET}`;
+  process.env.BLOG_IMAGE_PUBLIC_BASE_URL ||
+  "https://pub-4e7dbebb45ca4fc1bdc4e071081759ca.r2.dev";
 const MAX_UPLOAD_SIZE_BYTES = Number(
   process.env.BLOG_IMAGE_MAX_SIZE_BYTES || 10 * 1024 * 1024,
 );
@@ -47,6 +48,18 @@ function getFileExtension(fileName: string): string {
 }
 
 function buildUploadedFileUrl(objectKey: string): string {
+  if (!BLOG_IMAGE_PUBLIC_BASE_URL.trim()) {
+    throw new Error(
+      "Missing BLOG_IMAGE_PUBLIC_BASE_URL. Use a public R2 URL (r2.dev or custom domain).",
+    );
+  }
+
+  if (BLOG_IMAGE_PUBLIC_BASE_URL.includes("r2.cloudflarestorage.com")) {
+    throw new Error(
+      "BLOG_IMAGE_PUBLIC_BASE_URL must be a public URL (r2.dev/custom domain), not the R2 API endpoint.",
+    );
+  }
+
   const baseUrl = BLOG_IMAGE_PUBLIC_BASE_URL.trim().replace(/\/+$/, "");
   return `${baseUrl}/${objectKey}`;
 }
@@ -61,6 +74,9 @@ function getUploadErrorMessage(error: unknown): string {
 
   if (errorName.includes("Credentials")) {
     return "Missing or invalid Cloudflare R2 credentials for blog image upload.";
+  }
+  if (errorMessage.includes("BLOG_IMAGE_PUBLIC_BASE_URL")) {
+    return errorMessage;
   }
   if (errorName.includes("AccessDenied")) {
     return "Cloudflare R2 access denied while uploading image. Check token permissions.";

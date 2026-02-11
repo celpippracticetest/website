@@ -233,6 +233,11 @@ const nextConfig: NextConfig = {
         hostname: "*.r2.dev",
         port: "",
       },
+      {
+        protocol: "https",
+        hostname: "pub-4e7dbebb45ca4fc1bdc4e071081759ca.r2.dev",
+        port: "",
+      },
     ],
   },
 
