@@ -5,11 +5,13 @@ import MobileHeader from "./mobileHeader";
 import { useState } from "react";
 import useStore from "@/store";
 import { useRouter } from 'nextjs-toploader/app';
+import { useEventTracker } from "@/hooks/useTracking";
 
 
 const Header = ({ viewMode, currentPage }: { viewMode: "practice" | "exams" | null; currentPage: string | null }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
+  const { trackNav } = useEventTracker();
   const setViewMode = useStore((state) => state.dashboard.setView);
   const setCurrentPage = useStore((state) => state.dashboard.setCurrentPage);
   const navLinks = [
@@ -19,6 +21,7 @@ const Header = ({ viewMode, currentPage }: { viewMode: "practice" | "exams" | nu
       path: "/exams",
       icon: <BookOpenCheck className="w-5 h-5 text-orange-500" />,
       onClick: () => {
+        trackNav("Mock Exams", "/exam-overview", "header");
         setViewMode("exams");
         setCurrentPage("exams");
         router.push("/exam-overview");
@@ -30,6 +33,7 @@ const Header = ({ viewMode, currentPage }: { viewMode: "practice" | "exams" | nu
       path: "/practice-overview",
       icon: <Headphones className="w-5 h-5 text-blue-500" />,
       onClick: () => {
+        trackNav("Practice Overview", "/practice-overview", "header");
         setViewMode("practice");
         setCurrentPage("practice-overview");
         router.push("/practice-overview");
@@ -41,6 +45,7 @@ const Header = ({ viewMode, currentPage }: { viewMode: "practice" | "exams" | nu
       path: "/wiki",
       icon: <Library className="w-5 h-5 text-yellow-500" />,
       onClick: () => {
+        trackNav("CELPIP Wiki", "/wiki", "header");
         router.push("/wiki");
       },
     },

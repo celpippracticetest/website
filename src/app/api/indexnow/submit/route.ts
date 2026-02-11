@@ -30,16 +30,36 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const sitemapRes = await fetch(`${SITE_URL}/sitemap-0.xml`);
-    if (!sitemapRes.ok) {
+    // Fetch sitemap index and follow all main-domain sitemaps
+    const indexRes = await fetch(`${SITE_URL}/sitemap.xml`);
+    if (!indexRes.ok) {
       return NextResponse.json(
-        { error: "Failed to fetch sitemap", status: sitemapRes.status },
+        { error: "Failed to fetch sitemap index", status: indexRes.status },
         { status: 502 }
       );
     }
-    const xml = await sitemapRes.text();
-    const urlMatches = xml.matchAll(/<loc>([^<]+)<\/loc>/g);
-    const urls = [...urlMatches].map((m) => m[1]).filter((u) => u.startsWith(SITE_URL));
+    const indexXml = await indexRes.text();
+    const sitemapLocMatches = indexXml.matchAll(/<loc>([^<]+)<\/loc>/g);
+    const sitemapUrls = [...sitemapLocMatches].map((m) => m[1]);
+
+    // Only follow sitemaps that belong to our main domain (skip blog subdomain, etc.)
+    const mainDomainSitemaps = sitemapUrls.filter((u) =>
+      u.startsWith(SITE_URL + "/")
+    );
+
+    const allUrls: string[] = [];
+    for (const sitemapUrl of mainDomainSitemaps) {
+      const res = await fetch(sitemapUrl);
+      if (!res.ok) continue;
+      const xml = await res.text();
+      const urlMatches = xml.matchAll(/<loc>([^<]+)<\/loc>/g);
+      const pageUrls = [...urlMatches]
+        .map((m) => m[1])
+        .filter((u) => u.startsWith(SITE_URL));
+      allUrls.push(...pageUrls);
+    }
+
+    const urls = [...new Set(allUrls)];
 
     if (urls.length === 0) {
       return NextResponse.json({

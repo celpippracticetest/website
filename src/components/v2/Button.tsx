@@ -41,7 +41,7 @@ type ButtonBaseProps = VariantProps<typeof v2ButtonVariants> & {
   children?: React.ReactNode;
 };
 type ButtonLinkProps = ButtonBaseProps &
-  Omit<AnchorProps, keyof React.ButtonHTMLAttributes<HTMLButtonElement>> & {
+  AnchorProps & {
     href: string;
   };
 type ButtonButtonProps = ButtonBaseProps &
@@ -74,7 +74,7 @@ const Button = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPro
     }
 
     return (
-      <button className={classes} ref={ref as React.Ref<HTMLButtonElement>} {...props}>
+      <button className={classes} ref={ref as React.Ref<HTMLButtonElement>} {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}>
         {children}
       </button>
     );

@@ -8,6 +8,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import useStore from "@/store";
 import { useRouter } from "nextjs-toploader/app";
 import { useUser } from "@clerk/nextjs";
+import { useEventTracker } from "@/hooks/useTracking";
 import {
   SignedIn,
   SignedOut,
@@ -34,6 +35,7 @@ const MobileHeader = (props: {
 }) => {
   const { signOut } = useClerk();
   const router = useRouter();
+  const { trackNav, trackCTA, auth } = useEventTracker();
   const isMobile = useIsMobile();
   const [isUserDropDownOpen, setUserDropDownOpen] = useState(false);
   const { user } = useUser();
@@ -45,6 +47,7 @@ const MobileHeader = (props: {
   const setViewMode = useStore((state) => state.dashboard.setView);
   const setCurrentPage = useStore((state) => state.dashboard.setCurrentPage);
   const onViewModeChange = (value: string | undefined) => {
+    trackNav(`View Mode: ${value}`, value === "practice" ? "/practice-overview" : "/exam-overview", "header");
     if (value === "practice") {
       setViewMode("practice");
       setCurrentPage("practice-overview");
@@ -147,6 +150,7 @@ const MobileHeader = (props: {
                 user?.publicMetadata.plan !== "pro")) && (
               <div
                 onClick={() => {
+                  trackCTA("Upgrade Button", "header");
                   setPremiumPlanModalState();
                 }}
                 className="relative border border-slate-300 rounded-full pl-1 pr-1 shadow-sm min-w-13 min-h-10 justify-center outline-none flex items-center gap-2 cursor-pointer hover:-translate-y-0.5 transition-all duration-300 hover:shadow-md"
@@ -171,20 +175,24 @@ const MobileHeader = (props: {
             )}
             <div className="flex items-center space-x-1">
               <SignedOut>
-                <SignInButton>
-                  <Button
-                    hidden={isMobile}
-                    variant="outline"
-                    className="rounded-full border-2 border-gray-200 font-medium cursor-pointer"
-                  >
-                    Log in
-                  </Button>
-                </SignInButton>
-                <SignUpButton>
-                  <Button className="bg-slate-800 hover:bg-slate-800/90 rounded-full text-white font-medium  cursor-pointer">
-                    Signup
-                  </Button>
-                </SignUpButton>
+                <div onClick={() => auth.loginInitiated("header")}>
+                  <SignInButton>
+                    <Button
+                      hidden={isMobile}
+                      variant="outline"
+                      className="rounded-full border-2 border-gray-200 font-medium cursor-pointer"
+                    >
+                      Log in
+                    </Button>
+                  </SignInButton>
+                </div>
+                <div onClick={() => auth.signUpInitiated("header")}>
+                  <SignUpButton>
+                    <Button className="bg-slate-800 hover:bg-slate-800/90 rounded-full text-white font-medium  cursor-pointer">
+                      Signup
+                    </Button>
+                  </SignUpButton>
+                </div>
               </SignedOut>
               <SignedIn>
                 <button
@@ -245,6 +253,7 @@ const MobileHeader = (props: {
           <div className="py-1" role="none">
             <a
               href="/profile"
+              onClick={() => trackNav("Profile", "/profile", "header")}
               className="block px-4 py-2 text-[14px] text-gray-700"
               role="menuitem"
               tabIndex={-1}
@@ -254,6 +263,7 @@ const MobileHeader = (props: {
             </a>
             <button
               onClick={() => {
+                trackNav("Support", "chat:open", "header");
                 if (typeof window !== "undefined" && (window as any).$crisp) {
                   (window as any).$crisp.push(["do", "chat:show"]);
                   (window as any).$crisp.push(["do", "chat:open"]);
@@ -271,6 +281,7 @@ const MobileHeader = (props: {
               user.publicMetadata.roles.includes("admin") && (
                 <a
                   href="/cms/practice"
+                  onClick={() => trackNav("CMS Practices", "/cms/practice", "header")}
                   className="block px-4 py-2 text-[14px] text-gray-700"
                   role="menuitem"
                   tabIndex={-1}
@@ -283,7 +294,8 @@ const MobileHeader = (props: {
               user.publicMetadata.roles &&
               user.publicMetadata.roles.includes("admin") && (
                 <a
-                  href="/cms/practice"
+                  href="/cms/exam"
+                  onClick={() => trackNav("CMS Exam", "/cms/exam", "header")}
                   className="block px-4 py-2 text-[14px] text-gray-700"
                   role="menuitem"
                   tabIndex={-1}
@@ -294,7 +306,10 @@ const MobileHeader = (props: {
               )}
 
             <button
-              onClick={() => signOut()}
+              onClick={() => {
+                auth.logout();
+                signOut();
+              }}
               className="block px-4 py-2 text-[14px] text-gray-700 cursor-pointer"
               role="menuitem"
               tabIndex={-1}

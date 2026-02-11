@@ -31,6 +31,8 @@ const Svg5Star = dynamic(() => import("@/components/icons/5Star"), {
   ssr: false,
 });
 
+import { useEngagementTracking } from "@/hooks/useTracking";
+
 const FAQItem = ({
   question,
   answer,
@@ -39,11 +41,19 @@ const FAQItem = ({
   answer: string;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { faqClick } = useEngagementTracking();
+
+  const handleToggle = () => {
+    if (!isOpen) {
+      faqClick(question, "pricing_page");
+    }
+    setIsOpen(!isOpen);
+  };
 
   return (
     <Box className="border border-gray-200 rounded-lg mb-3 overflow-hidden bg-white">
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         className="w-full flex items-center justify-between p-4 text-left bg-gray-50 hover:bg-gray-100 transition-colors"
       >
         <span className="font-medium text-gray-800 text-sm md:text-base">

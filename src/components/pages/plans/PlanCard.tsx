@@ -32,8 +32,11 @@ const PlanCard = ({
   planTitle,
 }: IPlanCard) => {
   const { selectItem, beginCheckout } = useEcommerceTracking();
+  const formRef = React.useRef<HTMLFormElement>(null);
 
-  const handlePlanClick = () => {
+  const handlePlanClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
     // Track plan selection
     const item = {
       item_id: planTitle,
@@ -48,10 +51,18 @@ const PlanCard = ({
 
     // Track beginning of checkout
     beginCheckout([item], 'CAD', parseFloat(price));
+
+    // Submit form after a short delay to ensure tracking events are sent
+    setTimeout(() => {
+      if (formRef.current) {
+        formRef.current.submit();
+      }
+    }, 300);
   };
 
   return (
     <form
+      ref={formRef}
       className="relative w-full screen1280:!max-w-[420px]"
       action={
         type == "Easy Start"

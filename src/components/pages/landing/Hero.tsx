@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import ExamSectionCard from "./ExamSectionCard";
 import { motion } from "framer-motion";
 import { useButtonVisibleStore } from "@/store/buttonVisible.store";
@@ -36,15 +37,21 @@ const SvgMockExamsColorful = dynamic(
   { ssr: false }
 );
 
+const CTA_HREF = "/practice-overview";
+
 const Hero = () => {
+  const router = useRouter();
   const { ref } = useInView();
   const { setVisible, isVisible, isInFooter } = useButtonVisibleStore(
     (state) => state
   );
   const { trackCTA } = useEventTracker();
 
-  const handleCTAClick = (location: string) => {
+  const handleCTAClick = (e: React.MouseEvent, location: string) => {
+    e.preventDefault();
     trackCTA("Start Your Free Practice", location);
+    // Delay navigation so GTM can process the dataLayer event before page change
+    setTimeout(() => router.push(CTA_HREF), 300);
   };
 
   useEffect(() => {
@@ -94,9 +101,9 @@ const Hero = () => {
       >
         <Button
           size="lg"
-          href="/practice-overview"
+          href={CTA_HREF}
           aria-label="Start your free CELPIP practice"
-          onClick={() => handleCTAClick("hero_floating_bottom")}
+          onClick={(e) => handleCTAClick(e, "hero_floating_bottom")}
         >
           <SvgPlus />
           <span className="hidden sm:!flex">Start Your Free Practice</span>
@@ -192,10 +199,10 @@ const Hero = () => {
               <div className="font-inter font-semibold text-xs leading-5 tracking-normal text-center screen744:!hidden flex justify-center">60 mock exams · 3,000+ questions · Instant AI scoring</div>
               <div className="flex screen744:!justify-start justify-center">
                 <Button
-                  href="/practice-overview"
+                  href={CTA_HREF}
                   size="lg"
                   className="mt-[24px]"
-                  onClick={() => handleCTAClick("hero_main")}
+                  onClick={(e) => handleCTAClick(e, "hero_main")}
                 >
                   <SvgPlus />
                   <span>Start Your Free Practice</span>

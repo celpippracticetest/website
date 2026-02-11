@@ -6,6 +6,7 @@ import useStore from "@/store";
 import { LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useEngagementTracking, usePracticeTracking } from "@/hooks/useTracking";
 import SvgListeningPart from "../icons/ListeningPart";
 import SvgReadingPart from "../icons/ReadingPart";
 import SvgWritingPart from "../icons/WritingPart";
@@ -36,6 +37,9 @@ const PracticeOverview = ({
   const setTaskInStore = useStore((state) => state.setTasks);
   setTaskInStore(tasks);
   const isMobile = useIsMobile();
+  const { started } = usePracticeTracking();
+  const { faqClick } = useEngagementTracking(); // Using faqClick for accordion toggle as it's similar engagement
+
   useEffect(() => {
     if (!selectedTask) {
       return;
@@ -43,6 +47,7 @@ const PracticeOverview = ({
     if (!isMobile) {
       fetchPractices(selectedTask);
     } else {
+      started(selectedTask?.id || "unknown", selectedTask?.category || "unknown");
       setRedirectUrl(selectedTask?.category + "?taskId=" + selectedTask.id);
     }
   }, [selectedTask]);
@@ -68,6 +73,8 @@ const PracticeOverview = ({
         return;
       }
 
+      started(data.items[0].id, task.category);
+
       setRedirectUrl(
         task.category +
         "?selectedPracticeId=" +
@@ -81,6 +88,7 @@ const PracticeOverview = ({
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
   const toggleSection = (title: string) => {
+    faqClick(title, "practice_overview_accordion");
     const newExpanded = new Set(expandedSections);
     if (newExpanded.has(title)) {
       newExpanded.delete(title);
