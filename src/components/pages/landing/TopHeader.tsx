@@ -14,6 +14,7 @@ import {
 } from "@/components/icons";
 import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
 import SvgWord from "@/components/icons/Word";
+import SvgReferral from "@/components/icons/Referral";
 
 const SvgClose = dynamic(() => import("../../icons/Close"), { ssr: false });
 const SvgHamburger = dynamic(() => import("../../icons/Hamburger"), {
@@ -21,7 +22,7 @@ const SvgHamburger = dynamic(() => import("../../icons/Hamburger"), {
 });
 const TopHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const hrefs = ["/exam-overview", "/practice-overview", "/learning", "/words"];
+  const hrefs = ["/exam-overview", "/practice-overview", "/learning", "/words", "/earn100"];
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const sidebarMenuRef = useRef<HTMLDivElement>(null);
 
@@ -103,6 +104,14 @@ const TopHeader = () => {
       </div>
       <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
         <SvgMockTestTopNavigationHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
+      </div>
+    </div>,
+    <div key="earn-icon" className="relative  flex items-center justify-center">
+      <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
+        <SvgReferral className="  text-[#76808F]  duration-200 " />
+      </div>
+      <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
+        <SvgReferral className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
       </div>
     </div>
   ];

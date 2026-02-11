@@ -410,7 +410,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
           </>
         )}
 
-        {proUser && (
+        {user && (
           <>
             <div
               className={`relative p-[8px] flex flex-col z-[999] justify-none screen744:!justify-start screen1280:!justify-none items-start left-0 right-0 mx-auto  mt-[40px] rounded-[8px] max-w-[202px] screen744:!max-w-[132px] screen1280:!max-w-[202px] h-[114px] screen744:!h-[202px]  screen1280:!h-[114px] bg-[#B86DF9]`}
@@ -719,7 +719,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
             />
           )}
 
-          {user && hasEverPurchased && (
+          {user && (
             <NavItem
               link="/earn100"
               icon={<SvgReferral />}
