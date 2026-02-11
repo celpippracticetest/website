@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from 'next/link'
 import { ArrowRight, Search, BookOpen } from "lucide-react";
 import Header from "@/components/header/Header";
@@ -28,9 +28,11 @@ const WikiArticleClient = ({ currentArticle, slug }: WikiArticleClientProps) => 
   const [searchQuery, setSearchQuery] = useState("");
   const [isDarkMode, setIsDarkMode] = useState(false);
 
+  const [linkedContent, setLinkedContent] = useState(currentArticle.content);
+
   // Process article content to add internal links
-  const linkedContent = useMemo(() => {
-    return linkContent(currentArticle.content);
+  useEffect(() => {
+    linkContent(currentArticle.content).then(setLinkedContent);
   }, [currentArticle.content]);
 
   // Find the next article in sequence

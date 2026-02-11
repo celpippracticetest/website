@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import SvgLinkedIn from "@/components/icons/LinkedIn";
+import SvgYouTube from "@/components/icons/YouTube";
 import { Box } from "@/components/ui/Box";
 import FooterVisibilityObserver from "./FooterVisibilityObserver";
 
@@ -48,15 +49,26 @@ const FooterBase = ({ sections }: FooterBaseProps) => {
                 Enterprises or the official CELPIP test
               </span>
             </Box>
-            <Link
-              href="https://www.linkedin.com/company/celpippracticetest"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-text2 font-normal text-[13px] flex items-center mt-[12px]"
-              aria-label="Visit our LinkedIn page"
-            >
-              <SvgLinkedIn className="w-5 h-5" />
-            </Link>
+            <Box className="flex items-center gap-[12px] mt-[12px]">
+              <Link
+                href="https://www.linkedin.com/company/celpippracticetest"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-text2 font-normal text-[13px] flex items-center"
+                aria-label="Visit our LinkedIn page"
+              >
+                <SvgLinkedIn className="w-5 h-5" />
+              </Link>
+              <Link
+                href="https://www.youtube.com/@CELPIPPracticeTestChannel"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-text2 font-normal text-[13px] flex items-center"
+                aria-label="Visit our YouTube channel"
+              >
+                <SvgYouTube className="w-5 h-5" />
+              </Link>
+            </Box>
 
           </Box>
 

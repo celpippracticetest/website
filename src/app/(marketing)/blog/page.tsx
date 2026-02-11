@@ -102,8 +102,8 @@ export default async function BlogListingPage() {
       <JsonLd data={itemListSchema} />
 
       {/* Hero Section */}
-      <Box className="relative overflow-hidden bg-white pb-16 pt-24 border-b border-slate-200">
-        <Box className="absolute inset-0 z-0 opacity-30">
+      <Box className="relative isolate overflow-hidden border-b border-slate-200 bg-white pb-16 pt-24">
+        <Box className="pointer-events-none absolute inset-0 -z-10 opacity-30">
           <Box className="absolute -left-10 -top-10 h-96 w-96 rounded-full bg-blue-100 blur-3xl" />
           <Box className="absolute right-0 top-20 h-80 w-80 rounded-full bg-indigo-50 blur-3xl" />
         </Box>
