@@ -1,6 +1,11 @@
-import { internalLinks as fallbackLinks } from "@/data/internal-links";
-import { getDb } from "@/lib/mongodb";
-import { unstable_cache } from "next/cache";
+/**
+ * Core interface for internal links used by the linker
+ */
+export interface LinkerConfig {
+  keyword: string;
+  url: string;
+  exactMatch: boolean;
+}
 
 /**
  * Escapes special characters in string for RegExp
@@ -10,39 +15,12 @@ function escapeRegExp(string: string) {
 }
 
 /**
- * Fetches internal links from the database (cached)
- */
-const getCachedInternalLinks = unstable_cache(
-  async () => {
-    try {
-      const db = await getDb();
-      const links = await db.collection("internalLinks").find().toArray();
-      
-      if (links.length === 0) return fallbackLinks;
-
-      return links.map(link => ({
-        keyword: link.keyword,
-        url: link.url,
-        exactMatch: link.exactMatch || false
-      }));
-    } catch (error) {
-      console.error("Failed to fetch internal links, using fallback:", error);
-      return fallbackLinks;
-    }
-  },
-  ["internal-links"],
-  { revalidate: 3600 } // Cache for 1 hour
-);
-
-/**
- * Injects internal links into HTML content by replacing keywords with anchor tags.
+ * Pure function to inject internal links into HTML content.
+ * Does NOT fetch data - requires links to be passed in.
  * Safely handles existing tags to avoid breaking HTML structure.
- * Now async to support DB fetching.
  */
-export async function linkContent(html: string): Promise<string> {
-  if (!html) return html;
-
-  const links = await getCachedInternalLinks();
+export function linkContentCore(html: string, links: LinkerConfig[]): string {
+  if (!html || !links || links.length === 0) return html;
 
   // Sort links by length (descending) to prioritize longer phrases and specific matches
   const sortedLinks = [...links].sort((a, b) => b.keyword.length - a.keyword.length);

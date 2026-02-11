@@ -7,7 +7,7 @@ import {
   getPublishedBlogPostBySlug,
   getRelatedPublishedPosts,
 } from "@/lib/blog/public";
-import { linkContent } from "@/lib/content-linker";
+import { linkContentServer } from "@/lib/content-linker-server";
 import { BlogCtaSection } from "@/components/pages/blog/BlogCtaSection";
 import BlogArticleGtm from "@/components/analytics/BlogArticleGtm";
 import {
@@ -185,7 +185,7 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
         }
       : null;
 
-  const linkedContent = linkContent(post.contentHtml);
+  const linkedContent = await linkContentServer(post.contentHtml);
 
   return (
     <Box className="cel-container py-10 md:py-14">

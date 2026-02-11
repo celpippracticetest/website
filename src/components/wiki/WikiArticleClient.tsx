@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import WikiBanner from "@/components/WikiBanner";
 import { WikiArticle, wikiArticles } from "@/data/wiki";
-import { linkContent } from "@/lib/content-linker";
+import { linkContentCore, LinkerConfig } from "@/lib/content-linker-core";
 
 interface WikiArticleClientProps {
   currentArticle: WikiArticle;
@@ -30,9 +30,22 @@ const WikiArticleClient = ({ currentArticle, slug }: WikiArticleClientProps) => 
 
   const [linkedContent, setLinkedContent] = useState(currentArticle.content);
 
-  // Process article content to add internal links
+  // Fetch internal links and process content
   useEffect(() => {
-    linkContent(currentArticle.content).then(setLinkedContent);
+    async function processContent() {
+      try {
+        const res = await fetch('/api/internal-links');
+        const links: LinkerConfig[] = await res.json();
+        const processed = linkContentCore(currentArticle.content, links);
+        setLinkedContent(processed);
+      } catch (error) {
+        console.error("Failed to load internal links:", error);
+        // Fallback to original content if fetch fails
+        setLinkedContent(currentArticle.content);
+      }
+    }
+    
+    processContent();
   }, [currentArticle.content]);
 
   // Find the next article in sequence
