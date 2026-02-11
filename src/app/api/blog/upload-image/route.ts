@@ -132,8 +132,8 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const result = await upload.done();
-    const uploadedUrl = result.Location || buildUploadedFileUrl(objectKey);
+    await upload.done();
+    const uploadedUrl = buildUploadedFileUrl(objectKey);
 
     return NextResponse.json(
       { url: uploadedUrl, key: objectKey },
