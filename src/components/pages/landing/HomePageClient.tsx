@@ -3,16 +3,15 @@
 import { ErrorBoundary } from "react-error-boundary";
 import dynamic from "next/dynamic";
 import Practice from "./Practice";
-import Blog from "./Blog";
 import FAQ from "./FAQ";
 import { useChunkErrorHandler } from "@/hooks/useChunkErrorHandler";
+import OnlineUsersCount from "@/components/analytics/OnlineUsersCount";
 
 const Hero = dynamic(() => import("./Hero"), { ssr: true });
 const Comments = dynamic(() => import("./Comments"), { ssr: false });
 const UserResponseReview = dynamic(() => import("./UserResponseReview"), {
   ssr: false,
 });
-const Footer = dynamic(() => import("./Footer"), { ssr: true });
 const FloatingChatIcon = dynamic(() => import("../../AskBeavo/FloatingChatIcon"), {
   ssr: false,
 });
@@ -44,11 +43,17 @@ export default function HomePageClient() {
       <div className="bg-[#F4F7FF]">
         <Hero />
         <UserResponseReview />
+        <div className="flex flex-col mt-[40px] screen744:!mt-[80px] screen1280:!mt-[104px] max-w-[1440px] mx-auto justify-center w-full">
+          <div className="flex justify-center px-[16px]">
+            <div className="max-w-[1160px] w-full">
+              <OnlineUsersCount variant="marketing" className="w-full" />
+            </div>
+          </div>
+        </div>
         <Comments />
         <Practice />
         {/* <Blog /> */}
         <FAQ />
-        <Footer />
         <FloatingChatIcon autoOpen={false} />
       </div>
     </ErrorBoundary>

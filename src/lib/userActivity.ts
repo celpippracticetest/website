@@ -1,23 +1,24 @@
 // Utility functions for logging user activities
+import { trackExam, trackPractice, trackAuth, trackEcommerce } from "./gtm";
 
 export interface ActivityLogData {
   eventType:
-  | "practice_attempt_started"
-  | "practice_attempt_completed"
-  | "mock_attempt_started"
-  | "mock_attempt_completed"
-  | "ai_feedback_generated"
-  | "learning_attempt_started"
-  | "score_report_viewed"
-  | "signup"
-  | "login"
-  | "logout"
-  | "payment_successful"
-  | "payment_failed"
-  | "subscription_created"
-  | "subscription_cancelled"
-  | "dispute_created"
-  | "dispute_resolved";
+    | "practice_attempt_started"
+    | "practice_attempt_completed"
+    | "mock_attempt_started"
+    | "mock_attempt_completed"
+    | "ai_feedback_generated"
+    | "learning_attempt_started"
+    | "score_report_viewed"
+    | "signup"
+    | "login"
+    | "logout"
+    | "payment_successful"
+    | "payment_failed"
+    | "subscription_created"
+    | "subscription_cancelled"
+    | "dispute_created"
+    | "dispute_resolved";
   context: "practice" | "mock" | "learning" | "system" | "payment";
   skill?: "Listening" | "Reading" | "Writing" | "Speaking";
   attemptId?: string;
@@ -116,6 +117,10 @@ export const ActivityLogger = {
     contentId: string,
     skill: "Listening" | "Reading" | "Writing" | "Speaking"
   ) {
+    // Track in GTM
+    trackPractice.started(contentId, skill);
+
+    // Track in MongoDB
     return logUserActivity({
       eventType: "practice_attempt_started",
       context: "practice",
@@ -134,6 +139,10 @@ export const ActivityLogger = {
     scoreBreakdown?: Record<string, any>,
     durationSeconds?: number
   ) {
+    // Track in GTM
+    trackPractice.completed(contentId, skill, scoreOverall, durationSeconds);
+
+    // Track in MongoDB
     return logUserActivity({
       eventType: "practice_attempt_completed",
       context: "practice",
@@ -151,6 +160,10 @@ export const ActivityLogger = {
 
   // Mock exam activities
   async mockStarted(attemptId: string, contentId: string) {
+    // Track in GTM
+    trackExam.started(contentId);
+
+    // Track in MongoDB
     return logUserActivity({
       eventType: "mock_attempt_started",
       context: "mock",
@@ -167,6 +180,10 @@ export const ActivityLogger = {
     scoreBreakdown?: Record<string, any>,
     durationSeconds?: number
   ) {
+    // Track in GTM
+    trackExam.completed(contentId, scoreOverall, durationSeconds);
+
+    // Track in MongoDB
     return logUserActivity({
       eventType: "mock_attempt_completed",
       context: "mock",
@@ -212,6 +229,10 @@ export const ActivityLogger = {
 
   // Authentication activities
   async userSignup(userId: string) {
+    // Track in GTM
+    trackAuth.signUpCompleted(userId);
+
+    // Track in MongoDB
     return logUserActivity({
       eventType: "signup",
       context: "system",
@@ -220,6 +241,10 @@ export const ActivityLogger = {
   },
 
   async userLogin() {
+    // Track in GTM (userId will be enriched automatically by GTM utility)
+    trackAuth.loginCompleted("", "email");
+
+    // Track in MongoDB
     return logUserActivity({
       eventType: "login",
       context: "system",
@@ -227,6 +252,10 @@ export const ActivityLogger = {
   },
 
   async userLogout() {
+    // Track in GTM
+    trackAuth.logout();
+
+    // Track in MongoDB
     return logUserActivity({
       eventType: "logout",
       context: "system",
@@ -239,6 +268,10 @@ export const ActivityLogger = {
     currency: string,
     metadata?: Record<string, any>
   ) {
+    // Note: Purchase tracking is handled in SuccessPageTracking component
+    // to capture full transaction details from Stripe
+
+    // Track in MongoDB
     return logUserActivity({
       eventType: "payment_successful",
       context: "payment",
@@ -337,6 +370,14 @@ export const ActivityLogger = {
     context: "practice" | "mock",
     skill?: "Listening" | "Reading" | "Writing" | "Speaking"
   ) {
+    // Track in GTM
+    if (context === "practice" && skill) {
+      trackPractice.resultsViewed(attemptId, skill);
+    } else if (context === "mock") {
+      trackExam.resultsViewed(attemptId);
+    }
+
+    // Track in MongoDB
     return logUserActivity({
       eventType: "score_report_viewed",
       context,

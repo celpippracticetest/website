@@ -29,7 +29,7 @@ const QuestionOption = ({
   return (
     <div
       className={cn(
-        " cursor-pointer min-h-[36px] pb-[10px] pl-[4px] flex items-center text-[14px] text-[#212E42] rounded-[8px] leading-[20px]",
+        " cursor-pointer min-h-[44px] pb-[10px] pl-[4px] flex items-center text-[14px] text-[#212E42] rounded-[8px] leading-[20px] touch-manipulation",
         isSelected ? "bg-[#F2F6FF]" : "",
         showResults && isCorrect ? "border-green-400 bg-white" : "",
         isWrongSelection ? "border-red-400 bg-white" : ""

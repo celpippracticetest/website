@@ -192,6 +192,27 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                 </Link>
               </li>
 
+              <li className="mt-3">
+                <Link
+                  href="/cms/dashboard/reports"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center ${collapsed ? "justify-center" : "justify-start"
+                    } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${pathname.startsWith("/cms/dashboard/reports")
+                      ? "bg-gray-100 text-gray-900"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    }`}
+                  aria-current={
+                    pathname.startsWith("/cms/dashboard/reports")
+                      ? "page"
+                      : undefined
+                  }
+                  title="Reports"
+                >
+                  <span aria-hidden>📊</span>
+                  {!collapsed && <span>Reports</span>}
+                </Link>
+              </li>
+
               {/* Users Management */}
               <li className="mt-3">
                 <Link
@@ -319,6 +340,58 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                     >
                       <span aria-hidden>✅</span>
                       {!collapsed && <span>Tasks</span>}
+                    </Link>
+                  </li>
+                </ul>
+              </li>
+
+              <li className="mt-1 md:mt-3">
+                {!collapsed && (
+                  <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Blog
+                  </div>
+                )}
+                <ul className={`${collapsed ? "ml-0" : "ml-2"} space-y-1`}>
+                  <li>
+                    <Link
+                      href="/cms/dashboard/blog"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center ${collapsed ? "justify-center" : "justify-start"
+                        } gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${pathname.startsWith("/cms/dashboard/blog")
+                          ? "bg-gray-100 text-gray-900"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        }`}
+                      aria-current={pathname.startsWith("/cms/dashboard/blog") ? "page" : undefined}
+                      title="Blog"
+                    >
+                      <span aria-hidden>📝</span>
+                      {!collapsed && <span>Blog</span>}
+                    </Link>
+                  </li>
+                </ul>
+              </li>
+
+              <li className="mt-1 md:mt-3">
+                {!collapsed && (
+                  <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    SEO
+                  </div>
+                )}
+                <ul className={`${collapsed ? "ml-0" : "ml-2"} space-y-1`}>
+                  <li>
+                    <Link
+                      href="/cms/dashboard/seo/internal-links"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center ${collapsed ? "justify-center" : "justify-start"
+                        } gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${pathname.startsWith("/cms/dashboard/seo/internal-links")
+                          ? "bg-gray-100 text-gray-900"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        }`}
+                      aria-current={pathname.startsWith("/cms/dashboard/seo/internal-links") ? "page" : undefined}
+                      title="Internal Links"
+                    >
+                      <span aria-hidden>🔗</span>
+                      {!collapsed && <span>Internal Links</span>}
                     </Link>
                   </li>
                 </ul>

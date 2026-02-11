@@ -5,6 +5,7 @@ import "../../sentry.client.config"; // Initialize Sentry on client
 import NextTopLoader from "nextjs-toploader";
 import { Analytics } from "@vercel/analytics/react";
 import { ClerkProvider } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import ReactQueryProvider from "@/components/ReactQueryProvider";
@@ -13,6 +14,9 @@ import PerformanceMonitor from "@/components/PerformanceMonitor";
 import CriticalCSS from "@/components/CriticalCSS";
 import type { Metadata, Viewport } from "next";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import ActiveUsersTracker from "@/components/analytics/ActiveUsersTracker";
+import PageViewTracker from "@/components/analytics/PageViewTracker";
+import FooterWrapper from "@/components/pages/landing/FooterWrapper";
 
 const jakarta = Plus_Jakarta_Sans({
   display: "swap",
@@ -24,7 +28,7 @@ const jakarta = Plus_Jakarta_Sans({
   fallback: ["system-ui", "arial"],
 });
 
-const GTM_ID = "GTM-M24FJ7JC";
+const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || "GTM-M24FJ7JC";
 
 export function generateViewport(): Viewport {
   return {
@@ -110,6 +114,8 @@ export default async function RootLayout({
   const baseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
   const enableGtm =
     process.env.NODE_ENV === "production" && !baseUrl.includes("vercel.app");
+  const { userId } = await auth();
+  const isSignedIn = Boolean(userId);
 
   return (
     <ClerkProvider>
@@ -246,6 +252,7 @@ export default async function RootLayout({
           <ReactQueryProvider>
             <ErrorBoundary>
               {children}
+              <FooterWrapper isSignedIn={isSignedIn} />
             </ErrorBoundary>
           </ReactQueryProvider>
           <PremiumPlanModal />
@@ -254,6 +261,8 @@ export default async function RootLayout({
           <PerformanceMonitor />
           <CriticalCSS />
           <Analytics />
+          <ActiveUsersTracker />
+          <PageViewTracker />
 
 
           {enableGtm && (

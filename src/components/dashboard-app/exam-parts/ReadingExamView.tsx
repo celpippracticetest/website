@@ -11,6 +11,7 @@ import useStore from "@/store";
 import { Popover } from "radix-ui";
 import { useUser } from "@clerk/nextjs";
 import React from "react";
+import Image from "next/image";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
@@ -390,12 +391,16 @@ const ReadingExamView = ({
                           <p className="text-[14px] text-gray-400 mb-2">
                             Read the following Message, Photo or Diagram
                           </p>
-                          <img
-                            src={practice.passages[0].pictureUrl}
-                            alt={practice.passages[0].title}
-                            className={`w-full h-auto mb-4 rounded-lg shadow-md ${!shouldShowPractice ? "blur-sm" : ""
-                              }`}
-                          />
+                          <div className={`relative w-full mb-4 rounded-lg shadow-md overflow-hidden ${!shouldShowPractice ? "blur-sm" : ""}`}>
+                            <Image
+                              src={practice.passages[0].pictureUrl}
+                              alt={practice.passages[0].title || "Reading passage image"}
+                              width={800}
+                              height={600}
+                              className="w-full h-auto"
+                              priority={true}
+                            />
+                          </div>
                         </>
                       )}
                       {practice.passages[0].body &&
@@ -482,7 +487,7 @@ const ReadingExamView = ({
                                       {p}
                                       {index !== arr.length - 1 && (
                                         <Popover.Root>
-                                          <Popover.Trigger className="PopoverTrigger bg-[#F7B267] cursor-pointer px-2 rounded font-semibold text-[#212E42] text-[14px] py-1">
+                                          <Popover.Trigger className="PopoverTrigger bg-[#F7B267] cursor-pointer px-3 py-2 rounded font-semibold text-[#212E42] text-[14px] leading-none mx-1 touch-manipulation">
                                             {parseInt(
                                               practice.passages[1]?.questions?.[0]?.id || "0"
                                             ) + index}
@@ -517,7 +522,7 @@ const ReadingExamView = ({
                                                       key={indexChoice}
                                                     >
                                                       <div
-                                                        className="flex items-center p-2 rounded-md transition-all cursor-pointer hover:bg-blue-50 "
+                                                        className="flex items-center p-3 rounded-md transition-all cursor-pointer hover:bg-blue-50 active:bg-blue-100 min-h-[44px]"
                                                         onClick={(e) => {
                                                           if (
                                                             shouldShowPractice

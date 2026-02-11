@@ -1,0 +1,314 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Box } from "@/components/ui/Box";
+import { JsonLd } from "@/components/seo/JsonLd";
+import {
+  getPublishedBlogPostBySlug,
+  getRelatedPublishedPosts,
+} from "@/lib/blog/public";
+import { linkContentServer } from "@/lib/content-linker-server";
+import { BlogCtaSection } from "@/components/pages/blog/BlogCtaSection";
+import BlogArticleGtm from "@/components/analytics/BlogArticleGtm";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { ChevronRight } from "lucide-react";
+
+export const dynamic = "force-dynamic";
+
+interface BlogPageProps {
+  params: Promise<{ slug: string }>;
+}
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function formatDate(value?: Date | string | null): string {
+  if (!value) {
+    return "";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  return date.toLocaleDateString();
+}
+
+export async function generateMetadata({ params }: BlogPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const post = await getPublishedBlogPostBySlug(slug);
+
+  if (!post) {
+    return {
+      title: "Blog Post Not Found | CELPIP Practice Test",
+      description: "The requested blog post could not be found.",
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
+
+  const fallbackDescription =
+    post.excerpt || stripHtml(post.contentHtml).slice(0, 155) || "CELPIP preparation article.";
+  const title = post.seo?.metaTitle || `${post.title} | CELPIP Blog`;
+  const description = post.seo?.metaDescription || fallbackDescription;
+  const canonical = post.seo?.canonicalUrl || `/blog/${post.slug}`;
+  const ogImage = post.seo?.ogImageUrl || post.featuredImage?.url || "/images/hero.png";
+  const ogImageAlt = post.seo?.ogImageAlt || post.featuredImage?.alt || post.title;
+
+  return {
+    title,
+    description,
+    keywords: post.seo?.keywords ?? [],
+    alternates: {
+      canonical,
+    },
+    openGraph: {
+      title,
+      description,
+      type: "article",
+      url: `/blog/${post.slug}`,
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: ogImageAlt,
+        },
+      ],
+      authors: [post.authorName],
+      publishedTime: post.publishedAt ? new Date(post.publishedAt).toISOString() : undefined,
+      tags: post.tags,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage],
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+  };
+}
+
+export default async function BlogPostPage({ params }: BlogPageProps) {
+  const { slug } = await params;
+  const post = await getPublishedBlogPostBySlug(slug);
+
+  if (!post) {
+    notFound();
+  }
+
+  const relatedPosts = await getRelatedPublishedPosts(post.id, post.categories, post.tags, 3);
+  const canonicalUrl = post.seo?.canonicalUrl || `https://celpippracticetest.com/blog/${post.slug}`;
+  const ogImage = post.seo?.ogImageUrl || post.featuredImage?.url || "/images/hero.png";
+  const ogImageAlt = post.seo?.ogImageAlt || post.featuredImage?.alt || post.title;
+
+  const blogPostingSchema = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.title,
+    description: post.seo?.metaDescription || post.excerpt,
+    image: ogImage,
+    author: {
+      "@type": "Person",
+      name: post.authorName,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "CELPIP Practice Test",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://celpippracticetest.com/logo.png",
+      },
+    },
+    datePublished: post.publishedAt ? new Date(post.publishedAt).toISOString() : undefined,
+    dateModified: new Date(post.updatedAt).toISOString(),
+    mainEntityOfPage: canonicalUrl,
+  };
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: "https://celpippracticetest.com/",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Blog",
+        item: "https://celpippracticetest.com/blog",
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: post.title,
+        item: canonicalUrl,
+      },
+    ],
+  };
+
+  const fullFaq = [
+    ...(post.aiSnippet?.question && post.aiSnippet?.answer
+      ? [{ question: post.aiSnippet.question, answer: post.aiSnippet.answer }]
+      : []),
+    ...(post.faq || []),
+  ];
+
+  const faqSchema =
+    fullFaq.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: fullFaq.map((item) => ({
+            "@type": "Question",
+            name: item.question,
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: item.answer,
+            },
+          })),
+        }
+      : null;
+
+  const linkedContent = await linkContentServer(post.contentHtml);
+
+  return (
+    <Box className="cel-container py-10 md:py-14">
+      <BlogArticleGtm
+        articleTitle={post.title}
+        articleSlug={post.slug}
+        categories={post.categories}
+      />
+      <JsonLd data={blogPostingSchema} />
+      <JsonLd data={breadcrumbSchema} />
+      {faqSchema ? <JsonLd data={faqSchema} /> : null}
+
+      <Box className="mx-auto max-w-4xl rounded-2xl border border-slate-200 bg-white p-6 md:p-10">
+        <Box className="mb-4 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+          <Link href="/" className="hover:text-slate-900">
+            Home
+          </Link>
+          <span>/</span>
+          <Link href="/blog" className="hover:text-slate-900">
+            Blog
+          </Link>
+          <span>/</span>
+          <span className="text-slate-700">{post.title}</span>
+        </Box>
+
+        <p className="text-sm font-medium uppercase tracking-wide text-blue-600">CELPIP Blog</p>
+        <h1 className="mt-3 text-3xl font-bold leading-tight text-slate-900 md:text-5xl">
+          {post.title}
+        </h1>
+        <Box className="mt-4 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+          <span>{formatDate(post.publishedAt)}</span>
+          <span>-</span>
+          <span>{post.authorName}</span>
+          {post.categories.length ? (
+            <>
+              <span>-</span>
+              <span>{post.categories.join(", ")}</span>
+            </>
+          ) : null}
+        </Box>
+
+        {post.featuredImage?.url ? (
+          <Box className="mt-6 overflow-hidden rounded-xl border border-slate-200">
+            <img
+              src={post.featuredImage.url}
+              alt={post.featuredImage.alt || ogImageAlt}
+              className="h-auto w-full object-cover"
+            />
+          </Box>
+        ) : null}
+
+        <article
+          className="article-content prose prose-blue mt-8 max-w-none"
+          dangerouslySetInnerHTML={{ __html: linkedContent }}
+        />
+
+        {fullFaq.length > 0 ? (
+          <Box className="mt-10 border-t border-slate-200 pt-10">
+            <h2 className="text-xl font-bold text-slate-900">Frequently Asked Questions</h2>
+            <Accordion type="single" collapsible className="mt-4 w-full">
+              {fullFaq.map((item, index) => (
+                <AccordionItem key={index} value={`faq-${index}`}>
+                  <AccordionTrigger className="text-left font-medium text-slate-900">
+                    {item.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-slate-600">
+                    {item.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </Box>
+        ) : null}
+      </Box>
+
+      <Box className="mx-auto mt-12 max-w-4xl">
+        <BlogCtaSection />
+      </Box>
+
+      {relatedPosts.length ? (
+        <Box className="mx-auto mt-12 flex max-w-4xl flex-col gap-4">
+          <h2 className="text-2xl font-bold text-slate-900">Related Articles</h2>
+          <Box className="flex flex-col gap-4">
+            {relatedPosts.map((related) => (
+              <Link key={related.id} href={`/blog/${related.slug}`} className="group block">
+                <Card className="overflow-hidden border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md">
+                  <Box className="flex flex-col sm:flex-row sm:items-stretch">
+                    <Box className="relative w-full shrink-0 aspect-video sm:h-[180px] sm:w-80 sm:shrink-0 sm:aspect-auto">
+                      {related.featuredImage?.url ? (
+                        <img
+                          src={related.featuredImage.url}
+                          alt={related.featuredImage.alt || related.title}
+                          className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <Box className="absolute inset-0 flex items-center justify-center bg-slate-50">
+                          <span className="text-2xl font-bold text-slate-200">Blog</span>
+                        </Box>
+                      )}
+                    </Box>
+                    <CardContent className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden p-5 sm:h-[180px]">
+                      {related.categories.length > 0 && (
+                        <Badge className="mb-2 w-fit bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs">
+                          {related.categories[0]}
+                        </Badge>
+                      )}
+                      <p className="text-lg font-semibold text-slate-900 group-hover:text-blue-700 transition-colors">
+                        {related.title}
+                      </p>
+                      <p className="mt-1 line-clamp-2 text-sm text-slate-600 leading-relaxed">
+                        {related.excerpt || "Read the full article."}
+                      </p>
+                      <span className="mt-3 inline-flex items-center text-sm font-medium text-blue-600 group-hover:underline">
+                        Read article <ChevronRight className="ml-0.5 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                      </span>
+                    </CardContent>
+                  </Box>
+                </Card>
+              </Link>
+            ))}
+          </Box>
+        </Box>
+      ) : null}
+    </Box>
+  );
+}

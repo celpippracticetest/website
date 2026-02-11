@@ -1,4 +1,6 @@
 import PlanCard from "@/components/pages/plans/PlanCard";
+import PlansPageTracking from "@/components/analytics/PlansPageTracking";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
 import { currentUser } from "@clerk/nextjs/server";
 import mongoClient from "@/lib/mongodb";
@@ -35,8 +37,34 @@ const Plans = async () => {
 
   const currentPlanTitle = prevCheckout?.lineItems?.[0]?.description || "";
 
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "itemListElement": plans.map((plan, index) => ({
+      "@type": "ListItem",
+      "position": index + 1,
+      "item": {
+        "@type": "Course",
+        "name": plan.planTitle || plan.title,
+        "description": plan.features?.join(". ") || "CELPIP Practice Plan",
+        "provider": {
+          "@type": "Organization",
+          "name": "CELPIP Practice Test",
+          "sameAs": "https://celpippracticetest.com"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": plan.price?.toString().replace(/[^0-9.]/g, "") || "0",
+          "priceCurrency": "CAD"
+        }
+      }
+    }))
+  };
+
   return (
     <>
+      <JsonLd data={schemaData} />
+      <PlansPageTracking plans={plans} />
       <section id="plans" className={"w-full"} aria-labelledby="plans-heading">
         <h2
           id="plans-heading"

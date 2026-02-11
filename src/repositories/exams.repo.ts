@@ -73,7 +73,7 @@ export class ExamRepository {
       },
       {
         $sort: {
-          order: -1,
+          order: 1,
         },
       },
       {
@@ -196,7 +196,7 @@ export class ExamRepository {
       return this.findExamById((filter._id as ObjectId)?.toHexString?.() || "");
     }
 
-    const { value } = await this.getExamCollection().findOneAndUpdate(
+    const value = await this.getExamCollection().findOneAndUpdate(
       filter,
       { $set: candidate },
       { returnDocument: "after" }

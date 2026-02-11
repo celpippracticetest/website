@@ -1,9 +1,10 @@
 import { MetadataRoute } from "next";
 import { wikiArticles } from "@/data/wiki";
+import { getPublishedBlogSlugs } from "@/lib/blog/public";
 
 const BASE_URL = process.env.APP_BASE_URL || "https://celpippracticetest.com";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const routes = [
     "",
     "/listening",
@@ -12,10 +13,32 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/speaking",
     "/exam-overview",
     "/wiki",
+    "/blog",
     "/practice-overview",
     "/terms-of-service",
     "/privacy-policy",
     "/refund-policy",
+    "/pricing",
+    "/celpip-for-nurses",
+    "/celpip-for-immigration-consultant",
+    "/celpip-for-real-estate",
+    "/celpip-for-professional-licensure",
+    "/celpip-for-physicians-surgeons",
+    "/celpip-for-early-childhood-educator",
+    "/celpip-for-mortgage-broker",
+    "/celpip-for-pharmacist",
+    "/celpip-for-medical-laboratory-technologist",
+    "/celpip-for-teacher-certification",
+    "/celpip-for-health-care-aide",
+    "/celpip-for-physiotherapist",
+    "/celpip-for-commercial-truck-driver",
+    "/celpip-for-caregiver-home-support",
+    "/celpip-for-skilled-trades",
+    "/celpip-for-dentist-dental-hygienist",
+    "/celpip-for-startup-visa-entrepreneur",
+    "/celpip-for-social-worker",
+    "/celpip-for-midwife",
+    "/celpip-for-tech-worker",
     "/words",
     "/learning",
   ].map((route) => ({
@@ -32,5 +55,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }));
 
-  return [...routes, ...wikiRoutes];
+  const blogSlugs = await getPublishedBlogSlugs();
+  const blogRoutes = blogSlugs.map((post) => ({
+    url: `${BASE_URL}/blog/${post.slug}`,
+    lastModified: post.updatedAt || new Date(),
+    changeFrequency: "weekly" as const,
+    priority: 0.75,
+  }));
+
+  return [...routes, ...wikiRoutes, ...blogRoutes];
 }

@@ -1,10 +1,9 @@
 "use client"
 
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from 'next/link'
-import { ArrowRight, Search } from "lucide-react";
+import { ArrowRight, Search, BookOpen } from "lucide-react";
 import Header from "@/components/header/Header";
-import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +17,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import WikiBanner from "@/components/WikiBanner";
 import { WikiArticle, wikiArticles } from "@/data/wiki";
+import { linkContentCore, LinkerConfig } from "@/lib/content-linker-core";
 
 interface WikiArticleClientProps {
   currentArticle: WikiArticle;
@@ -28,11 +28,42 @@ const WikiArticleClient = ({ currentArticle, slug }: WikiArticleClientProps) => 
   const [searchQuery, setSearchQuery] = useState("");
   const [isDarkMode, setIsDarkMode] = useState(false);
 
+  const [linkedContent, setLinkedContent] = useState(currentArticle.content);
+
+  // Fetch internal links and process content
+  useEffect(() => {
+    async function processContent() {
+      try {
+        const res = await fetch('/api/internal-links');
+        const links: LinkerConfig[] = await res.json();
+        const processed = linkContentCore(currentArticle.content, links);
+        setLinkedContent(processed);
+      } catch (error) {
+        console.error("Failed to load internal links:", error);
+        // Fallback to original content if fetch fails
+        setLinkedContent(currentArticle.content);
+      }
+    }
+    
+    processContent();
+  }, [currentArticle.content]);
+
   // Find the next article in sequence
   const currentIndex = wikiArticles.findIndex(article => article.slug === slug);
   const nextArticle = currentIndex < wikiArticles.length - 1
     ? wikiArticles[currentIndex + 1]
     : null;
+    
+  // Find related articles (same category, excluding current and next)
+  const relatedArticles = useMemo(() => {
+    return wikiArticles
+      .filter(article => 
+        article.category === currentArticle.category && 
+        article.slug !== slug && 
+        (!nextArticle || article.slug !== nextArticle.slug)
+      )
+      .slice(0, 2); // Show up to 2 related articles
+  }, [currentArticle.category, slug, nextArticle]);
 
   // Toggle dark mode
   const toggleDarkMode = () => {
@@ -131,39 +162,64 @@ const WikiArticleClient = ({ currentArticle, slug }: WikiArticleClientProps) => 
               <article className="prose prose-blue dark:prose-invert max-w-none">
                 <div
                   className="article-content"
-                  dangerouslySetInnerHTML={{ __html: currentArticle.content }}
+                  dangerouslySetInnerHTML={{ __html: linkedContent }}
                 />
               </article>
 
-              {/* Next Article Preview Card */}
-              {nextArticle && (
-                <div className="mt-12 border-t pt-8">
-                  <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                    <Link href={`/wiki/${nextArticle.slug}`}>
-                      <CardHeader>
-                        <CardTitle className="flex items-center justify-between">
-                          <span>Next: {nextArticle.title}</span>
-                          <ArrowRight className="h-5 w-5" />
-                        </CardTitle>
-                        {nextArticle.summary && (
-                          <CardDescription>{nextArticle.summary}</CardDescription>
-                        )}
-                      </CardHeader>
-                      <CardFooter>
-                        <Button variant="ghost" className="ml-auto">
-                          Read Next
-                        </Button>
-                      </CardFooter>
-                    </Link>
-                  </Card>
+              {/* Related & Next Articles */}
+              <div className="mt-12 border-t pt-8">
+                <h3 className="text-2xl font-bold mb-6">Continue Reading</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Next Article Preview Card */}
+                  {nextArticle && (
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow h-full flex flex-col">
+                      <Link href={`/wiki/${nextArticle.slug}`} className="flex flex-col h-full">
+                        <CardHeader>
+                          <div className="text-sm font-medium text-primary mb-2">Next Article</div>
+                          <CardTitle className="flex items-center justify-between gap-2">
+                            <span>{nextArticle.title}</span>
+                            <ArrowRight className="h-5 w-5 flex-shrink-0" />
+                          </CardTitle>
+                          {nextArticle.summary && (
+                            <CardDescription className="line-clamp-2">{nextArticle.summary}</CardDescription>
+                          )}
+                        </CardHeader>
+                        <CardFooter className="mt-auto">
+                          <Button variant="ghost" className="w-full justify-start pl-0 hover:pl-2 transition-all">
+                            Read Next
+                          </Button>
+                        </CardFooter>
+                      </Link>
+                    </Card>
+                  )}
+                  
+                  {/* Related Articles */}
+                  {relatedArticles.map((article) => (
+                    <Card key={article.slug} className="cursor-pointer hover:shadow-md transition-shadow h-full flex flex-col">
+                      <Link href={`/wiki/${article.slug}`} className="flex flex-col h-full">
+                        <CardHeader>
+                          <div className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                            <BookOpen className="h-3 w-3" /> Related in {article.category}
+                          </div>
+                          <CardTitle>{article.title}</CardTitle>
+                          {article.summary && (
+                            <CardDescription className="line-clamp-2">{article.summary}</CardDescription>
+                          )}
+                        </CardHeader>
+                        <CardFooter className="mt-auto">
+                          <Button variant="ghost" className="w-full justify-start pl-0 hover:pl-2 transition-all">
+                            Read Article
+                          </Button>
+                        </CardFooter>
+                      </Link>
+                    </Card>
+                  ))}
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };

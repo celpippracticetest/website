@@ -223,6 +223,21 @@ const nextConfig: NextConfig = {
         hostname: "img.clerk.com",
         port: "",
       },
+      {
+        protocol: "https",
+        hostname: "acac98ae11ea860f690cce3ad5dcb630.r2.cloudflarestorage.com",
+        port: "",
+      },
+      {
+        protocol: "https",
+        hostname: "*.r2.dev",
+        port: "",
+      },
+      {
+        protocol: "https",
+        hostname: "pub-4e7dbebb45ca4fc1bdc4e071081759ca.r2.dev",
+        port: "",
+      },
     ],
   },
 
