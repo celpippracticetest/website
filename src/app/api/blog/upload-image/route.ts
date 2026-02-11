@@ -5,12 +5,15 @@ import { randomUUID } from "crypto";
 
 const S3_REGION = process.env.AWS_REGION || "eu-north-1";
 const S3_BUCKET = process.env.BLOG_IMAGE_S3_BUCKET || "celtest-audio";
+const BLOG_IMAGE_PUBLIC_BASE_URL = process.env.BLOG_IMAGE_PUBLIC_BASE_URL;
 
 function buildS3Client() {
   const accessKeyId =
     process.env.AWS_ACCESS_KEY_ID || process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID;
   const secretAccessKey =
-    process.env.AWS_SECRET_ACCESS_KEY || process.env.NEXT_PUBLIC_AWS_SECRETE_ACCESS_KEY;
+    process.env.AWS_SECRET_ACCESS_KEY ||
+    process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY ||
+    process.env.NEXT_PUBLIC_AWS_SECRETE_ACCESS_KEY;
 
   if (accessKeyId && secretAccessKey) {
     return new S3Client({
@@ -33,6 +36,19 @@ function getFileExtension(fileName: string): string {
     return "jpg";
   }
   return splitName[splitName.length - 1].toLowerCase();
+}
+
+function buildUploadedFileUrl(objectKey: string): string {
+  if (BLOG_IMAGE_PUBLIC_BASE_URL?.trim()) {
+    const baseUrl = BLOG_IMAGE_PUBLIC_BASE_URL.trim().replace(/\/+$/, "");
+    return `${baseUrl}/${objectKey}`;
+  }
+
+  if (S3_REGION === "us-east-1") {
+    return `https://${S3_BUCKET}.s3.amazonaws.com/${objectKey}`;
+  }
+
+  return `https://${S3_BUCKET}.s3.${S3_REGION}.amazonaws.com/${objectKey}`;
 }
 
 export async function POST(req: NextRequest) {
@@ -65,11 +81,7 @@ export async function POST(req: NextRequest) {
     });
 
     const result = await upload.done();
-    const uploadedUrl = result.Location;
-
-    if (!uploadedUrl) {
-      return NextResponse.json({ message: "Upload failed." }, { status: 500 });
-    }
+    const uploadedUrl = result.Location || buildUploadedFileUrl(objectKey);
 
     return NextResponse.json({ url: uploadedUrl, key: objectKey }, { status: 200 });
   } catch (error) {
