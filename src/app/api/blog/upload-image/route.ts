@@ -5,28 +5,22 @@ import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
 
-const S3_REGION =
-  process.env.BLOG_IMAGE_S3_REGION ||
-  process.env.AWS_REGION ||
-  process.env.AWS_DEFAULT_REGION ||
-  "eu-north-1";
-const S3_BUCKET = process.env.BLOG_IMAGE_S3_BUCKET || "celtest-blog-images";
-const BLOG_IMAGE_PUBLIC_BASE_URL = process.env.BLOG_IMAGE_PUBLIC_BASE_URL;
+const R2_ENDPOINT = process.env.BLOG_IMAGE_R2_ENDPOINT;
+const R2_BUCKET = "celpip-blog-images";
+const BLOG_IMAGE_PUBLIC_BASE_URL = process.env.BLOG_IMAGE_PUBLIC_BASE_URL || "";
 const MAX_UPLOAD_SIZE_BYTES = Number(
   process.env.BLOG_IMAGE_MAX_SIZE_BYTES || 10 * 1024 * 1024,
 );
 
 function buildS3Client() {
-  const accessKeyId =
-    process.env.AWS_ACCESS_KEY_ID || process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID;
-  const secretAccessKey =
-    process.env.AWS_SECRET_ACCESS_KEY ||
-    process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY ||
-    process.env.NEXT_PUBLIC_AWS_SECRETE_ACCESS_KEY;
+  const accessKeyId = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY;
 
   if (accessKeyId && secretAccessKey) {
     return new S3Client({
-      region: S3_REGION,
+      region: "auto",
+      endpoint: R2_ENDPOINT,
+      forcePathStyle: true,
       credentials: {
         accessKeyId,
         secretAccessKey,
@@ -35,7 +29,9 @@ function buildS3Client() {
   }
 
   return new S3Client({
-    region: S3_REGION,
+    region: "auto",
+    endpoint: R2_ENDPOINT,
+    forcePathStyle: true,
   });
 }
 
@@ -48,16 +44,8 @@ function getFileExtension(fileName: string): string {
 }
 
 function buildUploadedFileUrl(objectKey: string): string {
-  if (BLOG_IMAGE_PUBLIC_BASE_URL?.trim()) {
-    const baseUrl = BLOG_IMAGE_PUBLIC_BASE_URL.trim().replace(/\/+$/, "");
-    return `${baseUrl}/${objectKey}`;
-  }
-
-  if (S3_REGION === "us-east-1") {
-    return `https://${S3_BUCKET}.s3.amazonaws.com/${objectKey}`;
-  }
-
-  return `https://${S3_BUCKET}.s3.${S3_REGION}.amazonaws.com/${objectKey}`;
+  const baseUrl = BLOG_IMAGE_PUBLIC_BASE_URL.trim().replace(/\/+$/, "");
+  return `${baseUrl}/${objectKey}`;
 }
 
 function getUploadErrorMessage(error: unknown): string {
@@ -68,20 +56,14 @@ function getUploadErrorMessage(error: unknown): string {
   const errorName = (error as { name?: string }).name || "";
   const errorMessage = error.message || "";
 
-  if (
-    errorName.includes("PermanentRedirect") ||
-    errorMessage.includes("must be addressed using the specified endpoint")
-  ) {
-    return "S3 bucket region mismatch. Set BLOG_IMAGE_S3_REGION in Vercel to the bucket region (for example: us-east-1).";
-  }
   if (errorName.includes("Credentials")) {
-    return "Missing or invalid AWS credentials for blog image upload.";
+    return "Missing or invalid Cloudflare R2 credentials for blog image upload.";
   }
   if (errorName.includes("AccessDenied")) {
-    return "AWS access denied while uploading image. Check bucket permissions.";
+    return "Cloudflare R2 access denied while uploading image. Check token permissions.";
   }
   if (errorName.includes("Signature")) {
-    return "AWS signature mismatch. Verify region and credentials.";
+    return "Cloudflare R2 signature mismatch. Verify endpoint and R2 credentials.";
   }
 
   return errorMessage || "Failed to upload image.";
@@ -140,7 +122,7 @@ export async function POST(req: NextRequest) {
     const upload = new Upload({
       client: buildS3Client(),
       params: {
-        Bucket: S3_BUCKET,
+        Bucket: R2_BUCKET,
         Key: objectKey,
         Body: buffer,
         ContentType: file.type,
