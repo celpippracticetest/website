@@ -5,10 +5,16 @@ import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
 
-const S3_REGION = process.env.AWS_REGION || "eu-north-1";
-const S3_BUCKET = process.env.BLOG_IMAGE_S3_BUCKET || "celtest-audio";
+const S3_REGION =
+  process.env.BLOG_IMAGE_S3_REGION ||
+  process.env.AWS_REGION ||
+  process.env.AWS_DEFAULT_REGION ||
+  "eu-north-1";
+const S3_BUCKET = process.env.BLOG_IMAGE_S3_BUCKET || "celtest-blog-images";
 const BLOG_IMAGE_PUBLIC_BASE_URL = process.env.BLOG_IMAGE_PUBLIC_BASE_URL;
-const MAX_UPLOAD_SIZE_BYTES = Number(process.env.BLOG_IMAGE_MAX_SIZE_BYTES || 10 * 1024 * 1024);
+const MAX_UPLOAD_SIZE_BYTES = Number(
+  process.env.BLOG_IMAGE_MAX_SIZE_BYTES || 10 * 1024 * 1024,
+);
 
 function buildS3Client() {
   const accessKeyId =
@@ -60,6 +66,14 @@ function getUploadErrorMessage(error: unknown): string {
   }
 
   const errorName = (error as { name?: string }).name || "";
+  const errorMessage = error.message || "";
+
+  if (
+    errorName.includes("PermanentRedirect") ||
+    errorMessage.includes("must be addressed using the specified endpoint")
+  ) {
+    return "S3 bucket region mismatch. Set BLOG_IMAGE_S3_REGION in Vercel to the bucket region (for example: us-east-1).";
+  }
   if (errorName.includes("Credentials")) {
     return "Missing or invalid AWS credentials for blog image upload.";
   }
@@ -70,12 +84,12 @@ function getUploadErrorMessage(error: unknown): string {
     return "AWS signature mismatch. Verify region and credentials.";
   }
 
-  return error.message || "Failed to upload image.";
+  return errorMessage || "Failed to upload image.";
 }
 
 function getUploadErrorStatus(error: unknown): number {
-  const httpStatusCode = (error as { $metadata?: { httpStatusCode?: number } })?.$metadata
-    ?.httpStatusCode;
+  const httpStatusCode = (error as { $metadata?: { httpStatusCode?: number } })
+    ?.$metadata?.httpStatusCode;
   if (httpStatusCode && httpStatusCode >= 400 && httpStatusCode < 600) {
     return httpStatusCode;
   }
@@ -85,31 +99,35 @@ function getUploadErrorStatus(error: unknown): number {
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
-    const file = formData.get("file") as
-      | {
-          name?: string;
-          type?: string;
-          size?: number;
-          arrayBuffer?: () => Promise<ArrayBuffer>;
-        }
-      | null;
+    const file = formData.get("file") as {
+      name?: string;
+      type?: string;
+      size?: number;
+      arrayBuffer?: () => Promise<ArrayBuffer>;
+    } | null;
 
     if (!file || typeof file.arrayBuffer !== "function") {
-      return NextResponse.json({ message: "Image file is required." }, { status: 400 });
+      return NextResponse.json(
+        { message: "Image file is required." },
+        { status: 400 },
+      );
     }
 
     if (!file.type || !file.type.startsWith("image/")) {
-      return NextResponse.json({ message: "Only image files are supported." }, { status: 400 });
+      return NextResponse.json(
+        { message: "Only image files are supported." },
+        { status: 400 },
+      );
     }
 
     if (typeof file.size === "number" && file.size > MAX_UPLOAD_SIZE_BYTES) {
       return NextResponse.json(
         {
           message: `Image is too large. Max size is ${Math.round(
-            MAX_UPLOAD_SIZE_BYTES / (1024 * 1024)
+            MAX_UPLOAD_SIZE_BYTES / (1024 * 1024),
           )}MB.`,
         },
-        { status: 413 }
+        { status: 413 },
       );
     }
 
@@ -132,12 +150,15 @@ export async function POST(req: NextRequest) {
     const result = await upload.done();
     const uploadedUrl = result.Location || buildUploadedFileUrl(objectKey);
 
-    return NextResponse.json({ url: uploadedUrl, key: objectKey }, { status: 200 });
+    return NextResponse.json(
+      { url: uploadedUrl, key: objectKey },
+      { status: 200 },
+    );
   } catch (error) {
     console.error("Blog image upload failed:", error);
     return NextResponse.json(
       { message: getUploadErrorMessage(error) },
-      { status: getUploadErrorStatus(error) }
+      { status: getUploadErrorStatus(error) },
     );
   }
 }
