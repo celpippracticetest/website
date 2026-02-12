@@ -113,7 +113,7 @@ export default async function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const baseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
   const enableGtm =
-    process.env.NODE_ENV === "production" && !baseUrl.includes("vercel.app");
+    process.env.NODE_ENV === "production"
   const { userId } = await auth();
   const isSignedIn = Boolean(userId);
 
@@ -308,6 +308,10 @@ export default async function RootLayout({
                       s.src = 'https://www.googletagmanager.com/gtm.js?id=' + i;
                       document.head.appendChild(s);
                     }
+
+                    // Load GTM immediately so ad/analytics tag scanners can detect it
+                    // without requiring a prior user interaction.
+                    injectGTM();
 
                     ['click','scroll','mousemove','touchstart','keydown'].forEach(function(evt){
                       window.addEventListener(evt, injectGTM, { once: true, passive: true });
