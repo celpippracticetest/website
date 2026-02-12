@@ -220,6 +220,11 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
+        hostname: "celtest-audio.s3.eu-north-1.amazonaws.com",
+        port: "",
+      },
+      {
+        protocol: "https",
         hostname: "img.clerk.com",
         port: "",
       },
