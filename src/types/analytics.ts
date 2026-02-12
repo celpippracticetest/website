@@ -297,7 +297,7 @@ export interface BlogArticleViewedEvent extends GTMEvent {
 // User Context
 export interface UserContext {
   userId?: string;
-  userPlan?: "free" | "premium";
+  userPlan?: string;
   isAuthenticated?: boolean;
 }
 

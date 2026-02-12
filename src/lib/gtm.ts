@@ -7,6 +7,19 @@ const isBrowser = typeof window !== "undefined";
 // Debug mode - logs events to console in development
 const DEBUG = process.env.NODE_ENV === "development";
 
+// Store user context globally for the module
+let currentUserContext: UserContext = {};
+
+/**
+ * Set the user context for GTM events
+ */
+export function setUserContext(context: UserContext): void {
+  currentUserContext = context;
+  if (DEBUG) {
+    console.log("[GTM] User context updated:", context);
+  }
+}
+
 /**
  * Initialize or get the dataLayer array
  */
@@ -21,24 +34,10 @@ function getDataLayer(): any[] {
 }
 
 /**
- * Get current user context from Clerk
+ * Get current user context
  */
 function getUserContext(): UserContext {
-  if (!isBrowser) return {};
-
-  try {
-    // Get user data from Clerk's __clerk_db_jwt cookie or session
-    // This is a basic implementation - adjust based on your Clerk setup
-    const userData = (window as any).__clerk_user;
-
-    return {
-      userId: userData?.id,
-      userPlan: userData?.publicMetadata?.plan || "free",
-      isAuthenticated: !!userData?.id,
-    };
-  } catch (error) {
-    return {};
-  }
+  return currentUserContext;
 }
 
 /**

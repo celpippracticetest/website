@@ -40,12 +40,15 @@ export async function GET(request: NextRequest) {
     }
     const indexXml = await indexRes.text();
     const sitemapLocMatches = indexXml.matchAll(/<loc>([^<]+)<\/loc>/g);
-    const sitemapUrls = [...sitemapLocMatches].map((m) => m[1]);
+    const sitemapUrls = [...sitemapLocMatches].map((m) => m[1].trim());
 
     // Only follow sitemaps that belong to our main domain (skip blog subdomain, etc.)
-    const mainDomainSitemaps = sitemapUrls.filter((u) =>
+    let mainDomainSitemaps = sitemapUrls.filter((u) =>
       u.startsWith(SITE_URL + "/")
     );
+    if (mainDomainSitemaps.length === 0) {
+      mainDomainSitemaps = [`${SITE_URL}/sitemap-0.xml`];
+    }
 
     const allUrls: string[] = [];
     for (const sitemapUrl of mainDomainSitemaps) {
@@ -54,7 +57,7 @@ export async function GET(request: NextRequest) {
       const xml = await res.text();
       const urlMatches = xml.matchAll(/<loc>([^<]+)<\/loc>/g);
       const pageUrls = [...urlMatches]
-        .map((m) => m[1])
+        .map((m) => m[1].trim())
         .filter((u) => u.startsWith(SITE_URL));
       allUrls.push(...pageUrls);
     }
