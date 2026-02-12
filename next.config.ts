@@ -238,6 +238,11 @@ const nextConfig: NextConfig = {
         hostname: "pub-4e7dbebb45ca4fc1bdc4e071081759ca.r2.dev",
         port: "",
       },
+      {
+        protocol: "https",
+        hostname: "celtest-audio.s3.eu-north-1.amazonaws.com",
+        port: "",
+      },
     ],
   },
 
