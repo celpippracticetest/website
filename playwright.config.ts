@@ -42,7 +42,7 @@ export default defineConfig({
     : {
         command: "npm run dev -- --webpack --hostname 127.0.0.1 --port 3100",
         url: baseURL,
-        reuseExistingServer: false,
+        reuseExistingServer: true,
         timeout: 120 * 1000,
       },
 });

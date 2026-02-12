@@ -13,10 +13,14 @@ import { LazyIntercom } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import CriticalCSS from "@/components/CriticalCSS";
 import type { Metadata, Viewport } from "next";
+import { Suspense, type ComponentType } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ActiveUsersTracker from "@/components/analytics/ActiveUsersTracker";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
 import FooterWrapper from "@/components/pages/landing/FooterWrapper";
+
+const NextTopLoaderComponent =
+  NextTopLoader as unknown as ComponentType<Record<string, never>>;
 
 const jakarta = Plus_Jakarta_Sans({
   display: "swap",
@@ -203,7 +207,7 @@ export default async function RootLayout({
             </noscript>
           )}
 
-          <NextTopLoader />
+          <NextTopLoaderComponent />
           <ReactQueryProvider>
             <ErrorBoundary>
               {children}
@@ -217,7 +221,9 @@ export default async function RootLayout({
           <CriticalCSS />
           <Analytics />
           <ActiveUsersTracker />
-          <PageViewTracker />
+          <Suspense fallback={null}>
+            <PageViewTracker />
+          </Suspense>
 
 
           {enableGtm && (

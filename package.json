@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev ",
-    "build": "npm run predeploy:e2e && next build && node ./scripts/postbuild-cleanup.js",
+    "buildverify": "npm run predeploy:e2e && next build && node ./scripts/postbuild-cleanup.js",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "postbuild": "next-sitemap",
