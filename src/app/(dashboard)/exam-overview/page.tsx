@@ -71,6 +71,24 @@ const ExamsPage = async () => {
 
       <ExamOverview exams={result.items} />
 
+      {noUser && (
+        <Box className="w-full mt-10 mb-6 px-4 py-6 rounded-[16px] bg-white border border-[#E5EAF3]">
+          <h2 className="text-[24px] leading-[32px] font-semibold text-[#37465C]">
+            How to use CELPIP mock exams effectively
+          </h2>
+          <p className="mt-3 text-[16px] leading-[26px] text-[#526071]">
+            Full-length CELPIP practice tests are best used as checkpoints, not only as final
+            drills. Simulate real timing, complete all sections in one sitting, and review your
+            weakest question types immediately after each exam.
+          </p>
+          <p className="mt-3 text-[16px] leading-[26px] text-[#526071]">
+            Track score trends across multiple mock exams to identify whether your listening
+            accuracy, reading speed, writing organization, and speaking fluency are improving.
+            Consistent review between tests is what moves your score.
+          </p>
+        </Box>
+      )}
+
       {noUser && <ExamFAQ />}
     </main>
   );

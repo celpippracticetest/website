@@ -152,6 +152,41 @@ const WordsPage = () => {
     return (
         <div className="flex flex-col w-full max-h-screen">
             <div className="max-w-7xl flex justify-center items-center flex-col w-full mx-auto">
+                <h1 className="sr-only">CELPIP Vocabulary Builder</h1>
+                {!isSignedIn && (
+                    <section className="w-full px-4 screen1280:px-0 pt-6 pb-2">
+                        <h2 className="text-[28px] screen744:text-[34px] font-bold text-[#37465C]">
+                            CELPIP Vocabulary Builder
+                        </h2>
+                        <p className="mt-3 text-[16px] leading-[26px] text-[#526071] max-w-[960px]">
+                            Build and review a personal CELPIP word bank with examples, flashcards,
+                            and recommended vocabulary. Track mastered words and focus on practical
+                            terms that improve clarity and range in Speaking and Writing responses.
+                        </p>
+                        <p className="mt-2 text-[15px] leading-[24px] text-[#526071] max-w-[960px]">
+                            A consistent routine works best: add new words, review meaning and usage,
+                            and reuse them in short writing and speaking practice each day.
+                        </p>
+                        <p className="mt-2 text-[15px] leading-[24px] text-[#526071] max-w-[960px]">
+                            Strong CELPIP vocabulary is not about memorizing rare words. It is about
+                            choosing accurate, natural language for common real-life topics such as
+                            work, community services, daily routines, and personal opinions. Build your
+                            word bank by theme so recall becomes faster in exam conditions.
+                        </p>
+                        <p className="mt-2 text-[15px] leading-[24px] text-[#526071] max-w-[960px]">
+                            For each new word, learn a clear definition, one synonym, one collocation,
+                            and one example sentence. Then use that same word in a short speaking
+                            answer and a short writing paragraph. This transfer step helps move
+                            vocabulary from passive recognition into active, exam-ready usage.
+                        </p>
+                        <p className="mt-2 text-[15px] leading-[24px] text-[#526071] max-w-[960px]">
+                            Review mastered and unmastered words separately. Unmastered words should be
+                            recycled more often until they feel automatic. Over time, this process
+                            improves lexical range, precision, and fluency, which directly supports
+                            stronger CELPIP Speaking and Writing performance.
+                        </p>
+                    </section>
+                )}
 
                 {loading ? (
                     <div className="flex justify-center items-center h-64">

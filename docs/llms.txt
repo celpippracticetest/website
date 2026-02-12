@@ -22,12 +22,12 @@ contact: https://celpippracticetest.com/contact
 sitemap: https://celpippracticetest.com/sitemap.xml
 
 # Blog & Strategy Pages
-blog_index: https://blog.celpippracticetest.com/
-general_tips: https://blog.celpippracticetest.com/category/celpip-general-guides-tips/
-listening_tips: https://blog.celpippracticetest.com/category/celpip-listening-tips/
-reading_tips: https://blog.celpippracticetest.com/category/celpip-reading-tips/
-writing_tips: https://blog.celpippracticetest.com/category/celpip-writing-tips/
-speaking_tips: https://blog.celpippracticetest.com/category/celpip-speaking-tips/
+blog_index: https://celpippracticetest.com/blog
+general_tips: https://celpippracticetest.com/blog
+listening_tips: https://celpippracticetest.com/blog
+reading_tips: https://celpippracticetest.com/blog
+writing_tips: https://celpippracticetest.com/blog
+speaking_tips: https://celpippracticetest.com/blog
 
 # Semantic Cues
 focus: Test preparation, Canadian English, exam strategies, language improvement

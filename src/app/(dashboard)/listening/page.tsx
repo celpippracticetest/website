@@ -13,6 +13,7 @@ import { ObjectId } from "mongodb";
 import { redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
 import { skillPagesContent } from "@/data/skill-pages-content";
+import type { Metadata } from "next";
 
 interface PracticeTask {
   taskNumber: string;
@@ -23,9 +24,8 @@ interface PracticeSection {
   route: string;
 }
 
-export const metadata = {
-  title:
-    "Free CELPIP Listening Practice Tests & Mock Exams | CELPIPPRACTICETEST",
+const listeningMetadataBase: Metadata = {
+  title: "Free CELPIP Listening Practice Tests & Mock Exams | CELPIPPRACTICETEST",
   description:
     "Prepare for CELPIP Listening with authentic recordings, adaptive quizzes, and analytics. Improve accuracy, note‑taking, and exam‑day confidence | CELPIPPRACTICETEST.com",
   keywords: [
@@ -47,6 +47,28 @@ export const metadata = {
     canonical: "https://celpippracticetest.com/listening",
   },
 };
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | undefined }>;
+}): Promise<Metadata> {
+  const { taskId, selectedPracticeId } = await searchParams;
+  const isTaskVariant = Boolean(taskId || selectedPracticeId);
+
+  return {
+    ...listeningMetadataBase,
+    robots: isTaskVariant
+      ? {
+          index: false,
+          follow: false,
+        }
+      : {
+          index: true,
+          follow: true,
+        },
+  };
+}
 
 const DashboardApp = async ({
   searchParams,
@@ -157,15 +179,51 @@ const DashboardApp = async ({
   }
 
   return (
-    <main className=" bg-[#F2F6FF] min-h-screen flex w-full justify-center ">
-      <ListeningPractice
-        showHeader={true}
-        allPractices={practices.items}
-        selectedPractice={selectedPractice}
-        task={task}
-        previousAnswer={answers}
-        completedPractice={completedPractice}
-      />
+    <main className="bg-[#F2F6FF] min-h-screen flex w-full justify-center">
+      <div className="w-full max-w-[1280px]">
+        <h1 className="sr-only">CELPIP Listening Practice</h1>
+        <ListeningPractice
+          showHeader={true}
+          allPractices={practices.items}
+          selectedPractice={selectedPractice}
+          task={task}
+          previousAnswer={answers}
+          completedPractice={completedPractice}
+        />
+        {!user && (
+          <section className="px-4 pb-10">
+          <h2 className="text-[22px] font-semibold text-[#37465C]">
+            CELPIP Listening practice strategy
+          </h2>
+          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
+            Improve Listening by training note-taking, identifying key details, and tracking
+            distractors such as similar numbers, dates, or paraphrased options.
+          </p>
+          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
+            Review every missed item by question type, then repeat a similar task under timed
+            conditions to build accuracy and consistency for the real CELPIP test.
+          </p>
+          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
+            A high-scoring routine uses short, repeatable cycles. First, complete one listening
+            set without pausing. Second, review only your incorrect answers and identify exactly
+            why each distractor looked correct. Third, replay critical moments and practice
+            capturing keywords in fewer words. This improves both speed and attention.
+          </p>
+          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
+            Focus especially on transitions, speaker intent, and paraphrased details. Many losses
+            happen when learners search for exact words instead of meaning. Building this
+            paraphrase recognition skill makes your performance more stable across different topics
+            and accents.
+          </p>
+          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
+            In the final preparation phase, simulate real test pressure by practicing with strict
+            timing and no interruptions. Then compare results across several attempts to confirm
+            that your accuracy stays consistent. Consistency, not one perfect attempt, is the best
+            predictor of exam-day listening success.
+          </p>
+          </section>
+        )}
+      </div>
     </main>
   );
 };

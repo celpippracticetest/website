@@ -2,19 +2,14 @@
 
 import PracticeOverview from "@/components/dashboard-app/PracticeOverview";
 import { useEffect, useState } from "react";
-
-type TaskCategory = "speaking" | "listening" | "writing" | "reading";
-
-interface TaskItem {
-  category: TaskCategory;
-  [key: string]: any;
-}
+import { TTaskSchemaDto } from "@/models/tasks.model";
+import { useUser } from "@clerk/nextjs";
 
 interface TasksList {
-  speaking: TaskItem[];
-  listening: TaskItem[];
-  writing: TaskItem[];
-  reading: TaskItem[];
+  speaking: TTaskSchemaDto[];
+  listening: TTaskSchemaDto[];
+  writing: TTaskSchemaDto[];
+  reading: TTaskSchemaDto[];
 }
 
 // Skeleton loader component
@@ -40,6 +35,7 @@ const PracticeSkeletonLoader = () => (
 );
 
 const DashboardApp = () => {
+  const { isSignedIn } = useUser();
   const [tasks, setTasks] = useState<TasksList>({
     speaking: [],
     listening: [],
@@ -55,7 +51,7 @@ const DashboardApp = () => {
         if (response.ok) {
           const data = await response.json();
           const tasksList = data.items.reduce(
-            (current: TasksList, taskItem: TaskItem) => {
+            (current: TasksList, taskItem: TTaskSchemaDto) => {
               current[taskItem.category].push(taskItem);
               return current;
             },
@@ -73,15 +69,41 @@ const DashboardApp = () => {
     fetchTasks();
   }, []);
 
-  // Show skeleton loader while fetching - page renders instantly
-  if (isLoading) {
-    return <PracticeSkeletonLoader />;
-  }
-
   return (
-    <div className="flex flex-col w-full items-end mb-[120px]">
-      <PracticeOverview tasks={tasks} />
-    </div>
+    <main className="flex flex-col w-full items-end mb-[120px]">
+      <h1 className="sr-only">CELPIP Practice Overview</h1>
+      {!isSignedIn && (
+        <section className="w-full max-w-6xl mx-auto px-4 pt-6 pb-4">
+          <h2 className="text-[28px] screen744:text-[34px] font-bold text-[#37465C]">
+            CELPIP Practice Overview
+          </h2>
+          <p className="mt-3 text-[16px] leading-[26px] text-[#526071]">
+            Choose focused CELPIP practice by skill and train with realistic task formats for
+            Listening, Reading, Writing, and Speaking. This page helps you plan daily study,
+            pick the next task quickly, and build confidence before full mock exams.
+          </p>
+          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
+            The most effective preparation combines deliberate practice and repetition. Start with
+            your weakest skill, complete one timed task, and review every incorrect answer or weak
+            response. Then move to a second skill to improve stamina and concentration across
+            multiple sections, similar to the real CELPIP exam experience.
+          </p>
+          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
+            Use short cycles: practice, review, correct, and repeat. In Listening and Reading,
+            track question types you miss most often. In Writing and Speaking, focus on structure,
+            grammar control, and idea development. Small targeted improvements in each cycle are
+            more reliable than random high-volume practice.
+          </p>
+          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
+            If your exam date is close, prioritize consistency over intensity. Daily focused
+            sessions of 45 to 90 minutes usually outperform occasional long sessions. Keep notes
+            on recurring mistakes, revisit them weekly, and measure progress by accuracy, timing,
+            and confidence under test-like conditions.
+          </p>
+        </section>
+      )}
+      {isLoading ? <PracticeSkeletonLoader /> : <PracticeOverview tasks={tasks} />}
+    </main>
   );
 };
 

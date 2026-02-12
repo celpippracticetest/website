@@ -34,8 +34,11 @@ const PracticeOverview = ({
   const [selectedTask, setSelectedTask] = useState<TTaskSchemaDto | null>(null);
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
   const setTaskInStore = useStore((state) => state.setTasks);
-  setTaskInStore(tasks);
   const isMobile = useIsMobile();
+  useEffect(() => {
+    setTaskInStore(tasks);
+  }, [setTaskInStore, tasks]);
+
   useEffect(() => {
     if (!selectedTask) {
       return;

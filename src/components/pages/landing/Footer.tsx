@@ -241,7 +241,7 @@ const guestSections: FooterSection[] = [
     title: "Resources",
     links: [
       { href: "/pricing", label: "Pricing" },
-      { href: "https://blog.celpippracticetest.com/", label: "Blog" },
+      { href: "/blog", label: "Blog" },
       { href: "/celpip-vocabulary-pdf", label: "CELPIP Vocabulary PDF" },
       { href: "/reading-task-4-viewpoints", label: "Reading Task 4 Viewpoints" },
       { href: "/celpip-general-ls-practice", label: "CELPIP General LS Practice" },

@@ -1,5 +1,6 @@
 import LayoutClient from "@/components/dashboard-new/LayoutClient";
 import IntercomLoader from "@/components/IntercomLoader";
+import Footer from "@/components/pages/landing/Footer";
 import { daysSince } from "@/lib/utils";
 import { currentUser } from "@clerk/nextjs/server";
 import { Metadata } from "next";
@@ -54,6 +55,7 @@ export default async function RootLayout({
         showCompletedModal={showCompletedModal}
         children={children}
       />
+      {!user && <Footer isSignedIn={false} />}
     </>
   );
 }

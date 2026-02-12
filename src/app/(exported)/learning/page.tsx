@@ -51,6 +51,7 @@ const Page = () => {
   const isFreeUser = user?.publicMetadata?.plan === "free";
   const isPremiumUser = user?.publicMetadata?.plan === "premium";
   const noUser = isLoaded ? !isSignedIn : false;
+  const showSeoContent = !isSignedIn;
 
   const skills: Skill[] = [
     {
@@ -479,6 +480,38 @@ const Page = () => {
             <h2 className="text-[#76808F] text-[20px] screen744:!text-[16px] mb-[22px]">
               Ask CELPIP-style questions, get real-time answers.
             </h2>
+            {showSeoContent && (
+              <>
+                <p className="text-[#526071] text-[15px] leading-[24px] max-w-[900px] mx-auto mb-2">
+                  Use this learning assistant to practice CELPIP strategies, improve task
+                  structure, and get targeted guidance for Listening, Reading, Writing, and
+                  Speaking. Questions can be about timing, grammar, coherence, sample answers,
+                  or score improvement plans.
+                </p>
+                <p className="text-[#526071] text-[15px] leading-[24px] max-w-[900px] mx-auto mb-[22px]">
+                  The strongest study flow is simple: ask a focused question, apply the advice in
+                  your next practice task, then return with your result for personalized next steps.
+                </p>
+                <p className="text-[#526071] text-[15px] leading-[24px] max-w-[900px] mx-auto mb-2">
+                  This tool works best when your prompts include context: your target CLB level,
+                  recent practice score, and the specific task type where you struggle. For example,
+                  ask for help with Listening note-taking, Reading inference questions, Writing Task 2
+                  organization, or Speaking fluency under strict timing. Clear prompts produce more
+                  actionable feedback.
+                </p>
+                <p className="text-[#526071] text-[15px] leading-[24px] max-w-[900px] mx-auto mb-2">
+                  After receiving feedback, immediately apply one recommendation in your next attempt.
+                  Then compare results and ask a follow-up question. This feedback loop helps you
+                  improve faster than passive study because each step is linked to measurable task
+                  performance and exam-specific scoring criteria.
+                </p>
+                <p className="text-[#526071] text-[15px] leading-[24px] max-w-[900px] mx-auto mb-[22px]">
+                  Over a few weeks, consistent focused use of the learning assistant can improve
+                  accuracy, confidence, and timing discipline across all CELPIP sections. Treat it as
+                  a coach for targeted skill development, not just a chatbot for generic advice.
+                </p>
+              </>
+            )}
 
             {/* Plan Status Indicator */}
             {noUser && (

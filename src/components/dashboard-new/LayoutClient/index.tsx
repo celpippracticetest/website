@@ -320,7 +320,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
 
   const LoginModal = () => {
     return (
-      <div className="z-[999] px-[16px] fixed top-0 left-0 right-0 mx-auto w-full h-full bg-[#17161680] flex justify-center items-center">
+      <div className="z-[999] pb-[100px] px-[16px] fixed top-0 left-0 right-0 mx-auto w-full h-full bg-[#17161680] flex justify-center items-center">
         <div
           ref={loginRef}
           className="flex-col mx-[16px] relative w-[440px] pt-[24px] px-[16px] pb-[18px]  h-[270px] rounded-[24px] bg-white"

@@ -12,6 +12,7 @@ import { ObjectId } from "mongodb";
 import { redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
 import { skillPagesContent } from "@/data/skill-pages-content";
+import type { Metadata } from "next";
 interface PracticeTask {
   taskNumber: string;
   name: string;
@@ -21,7 +22,7 @@ interface PracticeSection {
   route: string;
 }
 
-export const metadata = {
+const writingMetadataBase: Metadata = {
   title: "Free CELPIP Writing Practice Tests & Mock Exams | CELPIPPRACTICETEST",
   description:
     "Get higher CELPIP Writing marks with practice prompts, instant AI feedback, and model answers. Hone grammar, coherence, task response fast | CELPIPPRACTICETEST.com",
@@ -42,6 +43,28 @@ export const metadata = {
     canonical: "https://celpippracticetest.com/writing",
   },
 };
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | undefined }>;
+}): Promise<Metadata> {
+  const { taskId, selectedPracticeId } = await searchParams;
+  const isTaskVariant = Boolean(taskId || selectedPracticeId);
+
+  return {
+    ...writingMetadataBase,
+    robots: isTaskVariant
+      ? {
+          index: false,
+          follow: false,
+        }
+      : {
+          index: true,
+          follow: true,
+        },
+  };
+}
 
 const WritingPage = async ({
   searchParams,
@@ -151,14 +174,48 @@ const WritingPage = async ({
   }
 
   return (
-    <main className=" bg-[#F2F6FF] min-h-screen flex w-full justify-center ">
-      <WritingPractice
-        showHeader={true}
-        allPractices={practices.items}
-        selectedPractice={selectedPractice}
-        task={task}
-        completedPracticeId={completedPracticeId}
-      />
+    <main className="bg-[#F2F6FF] min-h-screen flex w-full justify-center">
+      <div className="w-full max-w-[1280px]">
+        <h1 className="sr-only">CELPIP Writing Practice</h1>
+        <WritingPractice
+          showHeader={true}
+          allPractices={practices.items}
+          selectedPractice={selectedPractice}
+          task={task}
+          completedPracticeId={completedPracticeId}
+        />
+        {!user && (
+          <section className="px-4 pb-10">
+          <h2 className="text-[22px] font-semibold text-[#37465C]">
+            CELPIP Writing practice strategy
+          </h2>
+          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
+            Raise Writing performance by organizing each response with a clear purpose, logical
+            paragraph flow, and accurate grammar under exam timing.
+          </p>
+          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
+            After each task, review coherence, task response, vocabulary variety, and sentence
+            control to identify one priority fix for your next attempt.
+          </p>
+          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
+            A reliable method is to plan before you write. Spend one to two minutes defining your
+            purpose, main points, and tone. This short planning step prevents off-topic responses
+            and improves organization, which is critical for higher band scoring in CELPIP tasks.
+          </p>
+          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
+            During revision, prioritize high-impact edits: sentence clarity, verb tense
+            consistency, and linking phrases that improve flow. You do not need advanced language
+            in every sentence. You need clear, correct, and relevant communication from start to
+            finish.
+          </p>
+          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
+            Build confidence by comparing older and newer responses side by side. When you can see
+            stronger structure and fewer repeated errors over time, your writing process becomes
+            faster and more stable under exam timing.
+          </p>
+          </section>
+        )}
+      </div>
     </main>
   );
 };

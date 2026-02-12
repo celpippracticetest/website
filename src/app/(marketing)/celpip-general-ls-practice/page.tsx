@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button';
 import { JsonLd } from '@/components/seo/JsonLd';
 import Link from 'next/link';
 import SvgArrowRight from '@/components/icons/ArrowRight';
+import { useUser } from '@clerk/nextjs';
 
 export default function CelpipGeneralLSPage() {
+  const { isSignedIn } = useUser();
   const [citizenshipStatus, setCitizenshipStatus] = useState<string>('');
   const [isEligible, setIsEligible] = useState<boolean | null>(null);
 
@@ -45,11 +47,16 @@ export default function CelpipGeneralLSPage() {
       <JsonLd data={faqData} />
       <h1 className="text-3xl font-bold mb-6 text-slate-900">CELPIP General LS Practice</h1>
 
-      <Box className="mb-8">
-        <p className="text-lg text-slate-700 mb-4">
-          The CELPIP-General LS test focuses exclusively on <strong>Listening</strong> and <strong>Speaking</strong> skills. It is officially accepted by Immigration, Refugees and Citizenship Canada (IRCC) for <strong>Canadian Citizenship applications</strong>.
-        </p>
-      </Box>
+      {!isSignedIn && (
+        <Box className="mb-8">
+          <p className="text-lg text-slate-700 mb-4">
+            The CELPIP-General LS test focuses exclusively on <strong>Listening</strong> and <strong>Speaking</strong> skills. It is officially accepted by Immigration, Refugees and Citizenship Canada (IRCC) for <strong>Canadian Citizenship applications</strong>.
+          </p>
+          <p className="text-base text-slate-700 mb-4">
+            If your goal is citizenship, General LS is usually the right path because it targets practical communication in everyday Canadian contexts. A strong study plan includes timed listening drills, speaking response structure practice, and regular review of common mistakes such as missing key details, overlong pauses, and unclear pronunciation. Focus on clarity first, then fluency. Track progress weekly with short mock sessions so you can build confidence before test day and avoid preparing for unnecessary sections like Reading and Writing.
+          </p>
+        </Box>
+      )}
 
       <Box className="bg-slate-50 p-6 rounded-lg shadow-sm border border-slate-200 mb-8">
         <h2 className="text-2xl font-semibold mb-4 text-slate-800">Citizenship Eligibility Calculator</h2>

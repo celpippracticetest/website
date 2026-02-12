@@ -32,9 +32,9 @@ export const professionConfigs: Record<string, ProfessionPageConfig> = {
     accent: "blue",
     icon: "Briefcase",
     relatedArticles: [
-      { title: "Speaking Score Guide", url: "/wiki/speaking/speaking-score-guide" },
-      { title: "Writing Score Guide", url: "/wiki/writing/writing-score-guide" },
-      { title: "CELPIP Overview", url: "/wiki/general/celpip-overview" },
+      { title: "Speaking Score Guide", url: "/wiki/celpip-speaking-score-guide" },
+      { title: "Writing Score Guide", url: "/wiki/celpip-writing-score-guide" },
+      { title: "CELPIP Overview", url: "/wiki/celpip-exam-overview" },
     ],
     relatedProfessions: [
       { title: "Dentists", url: "/celpip-for-dentist-dental-hygienist" },
@@ -72,8 +72,8 @@ export const professionConfigs: Record<string, ProfessionPageConfig> = {
     accent: "amber",
     icon: "Truck",
     relatedArticles: [
-      { title: "Listening Score Guide", url: "/wiki/listening/listening-score-guide" },
-      { title: "Reading Score Guide", url: "/wiki/reading/reading-score-guide" },
+      { title: "Listening Score Guide", url: "/wiki/celpip-listening-score-guide" },
+      { title: "Reading Score Guide", url: "/wiki/celpip-reading-score-guide" },
     ],
     relatedProfessions: [
       { title: "Skilled Trades", url: "/celpip-for-skilled-trades" },
@@ -109,8 +109,8 @@ export const professionConfigs: Record<string, ProfessionPageConfig> = {
     accent: "teal",
     icon: "Heart",
     relatedArticles: [
-      { title: "Speaking Score Guide", url: "/wiki/speaking/speaking-score-guide" },
-      { title: "Listening Score Guide", url: "/wiki/listening/listening-score-guide" },
+      { title: "Speaking Score Guide", url: "/wiki/celpip-speaking-score-guide" },
+      { title: "Listening Score Guide", url: "/wiki/celpip-listening-score-guide" },
     ],
     relatedProfessions: [
       { title: "Social Workers", url: "/celpip-for-social-worker" },
@@ -147,8 +147,8 @@ export const professionConfigs: Record<string, ProfessionPageConfig> = {
     accent: "emerald",
     icon: "Wrench",
     relatedArticles: [
-      { title: "CELPIP Overview", url: "/wiki/general/celpip-overview" },
-      { title: "Speaking Score Guide", url: "/wiki/speaking/speaking-score-guide" },
+      { title: "CELPIP Overview", url: "/wiki/celpip-exam-overview" },
+      { title: "Speaking Score Guide", url: "/wiki/celpip-speaking-score-guide" },
     ],
     relatedProfessions: [
       { title: "Truck Drivers", url: "/celpip-for-commercial-truck-driver" },
@@ -185,8 +185,8 @@ export const professionConfigs: Record<string, ProfessionPageConfig> = {
     accent: "cyan",
     icon: "Smile",
     relatedArticles: [
-      { title: "Speaking Score Guide", url: "/wiki/speaking/speaking-score-guide" },
-      { title: "Writing Score Guide", url: "/wiki/writing/writing-score-guide" },
+      { title: "Speaking Score Guide", url: "/wiki/celpip-speaking-score-guide" },
+      { title: "Writing Score Guide", url: "/wiki/celpip-writing-score-guide" },
     ],
     relatedProfessions: [
       { title: "Physiotherapists", url: "/celpip-for-physiotherapist" },
@@ -223,8 +223,8 @@ export const professionConfigs: Record<string, ProfessionPageConfig> = {
     accent: "violet",
     icon: "Rocket",
     relatedArticles: [
-      { title: "Business Vocabulary", url: "/wiki/speaking/task-1/advanced-vocabulary" },
-      { title: "CELPIP Overview", url: "/wiki/general/celpip-overview" },
+      { title: "Business Vocabulary", url: "/wiki/celpip-speaking-task-1-guide" },
+      { title: "CELPIP Overview", url: "/wiki/celpip-exam-overview" },
     ],
     relatedProfessions: [
       { title: "Tech Workers", url: "/celpip-for-tech-worker" },
@@ -259,8 +259,8 @@ export const professionConfigs: Record<string, ProfessionPageConfig> = {
     accent: "indigo",
     icon: "Users",
     relatedArticles: [
-      { title: "Speaking Score Guide", url: "/wiki/speaking/speaking-score-guide" },
-      { title: "Listening Score Guide", url: "/wiki/listening/listening-score-guide" },
+      { title: "Speaking Score Guide", url: "/wiki/celpip-speaking-score-guide" },
+      { title: "Listening Score Guide", url: "/wiki/celpip-listening-score-guide" },
     ],
     relatedProfessions: [
       { title: "Caregivers", url: "/celpip-for-caregiver-home-support" },
@@ -297,8 +297,8 @@ export const professionConfigs: Record<string, ProfessionPageConfig> = {
     accent: "rose",
     icon: "Baby",
     relatedArticles: [
-      { title: "Speaking Score Guide", url: "/wiki/speaking/speaking-score-guide" },
-      { title: "Writing Score Guide", url: "/wiki/writing/writing-score-guide" },
+      { title: "Speaking Score Guide", url: "/wiki/celpip-speaking-score-guide" },
+      { title: "Writing Score Guide", url: "/wiki/celpip-writing-score-guide" },
     ],
     relatedProfessions: [
       { title: "Physiotherapists", url: "/celpip-for-physiotherapist" },
@@ -335,8 +335,8 @@ export const professionConfigs: Record<string, ProfessionPageConfig> = {
     accent: "slate",
     icon: "Cpu",
     relatedArticles: [
-      { title: "CELPIP Overview", url: "/wiki/general/celpip-overview" },
-      { title: "Reading Score Guide", url: "/wiki/reading/reading-score-guide" },
+      { title: "CELPIP Overview", url: "/wiki/celpip-exam-overview" },
+      { title: "Reading Score Guide", url: "/wiki/celpip-reading-score-guide" },
     ],
     relatedProfessions: [
       { title: "Entrepreneurs", url: "/celpip-for-startup-visa-entrepreneur" },
