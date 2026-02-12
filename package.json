@@ -4,11 +4,20 @@
   "private": true,
   "scripts": {
     "dev": "next dev ",
-    "build": "next build && node ./scripts/postbuild-cleanup.js",
+    "build": "npm run predeploy:e2e && next build && node ./scripts/postbuild-cleanup.js",
     "start": "next start",
     "lint": "next lint",
     "postbuild": "next-sitemap",
-    "svgr": "npx @svgr/cli --typescript --out-dir  src/components/icons/ -- icons/svg"
+    "svgr": "npx @svgr/cli --typescript --out-dir  src/components/icons/ -- icons/svg",
+    "playwright:install": "playwright install chromium firefox webkit",
+    "playwright:install:chromium": "playwright install chromium",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:ci": "playwright test --reporter=line",
+    "test:e2e:ci:chromium": "playwright test --project=chromium --reporter=line",
+    "verify": "npm run test:e2e:ci:chromium",
+    "predeploy:e2e": "npm run playwright:install:chromium && npm run test:e2e:ci:chromium"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
@@ -96,6 +105,7 @@
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.9.0",
     "@next/bundle-analyzer": "^15.3.4",
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4.1.4",
     "@tailwindcss/typography": "^0.5.16",
     "@types/diff": "^8.0.0",
