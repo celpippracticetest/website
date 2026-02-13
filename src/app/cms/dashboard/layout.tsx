@@ -374,6 +374,32 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
               <li className="mt-1 md:mt-3">
                 {!collapsed && (
                   <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Wiki
+                  </div>
+                )}
+                <ul className={`${collapsed ? "ml-0" : "ml-2"} space-y-1`}>
+                  <li>
+                    <Link
+                      href="/cms/dashboard/wiki"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center ${collapsed ? "justify-center" : "justify-start"
+                        } gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${pathname.startsWith("/cms/dashboard/wiki")
+                          ? "bg-gray-100 text-gray-900"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        }`}
+                      aria-current={pathname.startsWith("/cms/dashboard/wiki") ? "page" : undefined}
+                      title="Wiki"
+                    >
+                      <span aria-hidden>📚</span>
+                      {!collapsed && <span>Wiki</span>}
+                    </Link>
+                  </li>
+                </ul>
+              </li>
+
+              <li className="mt-1 md:mt-3">
+                {!collapsed && (
+                  <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     SEO
                   </div>
                 )}

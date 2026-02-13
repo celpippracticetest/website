@@ -1,5 +1,5 @@
 import { MetadataRoute } from "next";
-import { wikiArticles } from "@/data/wiki";
+import { getWikiSlugs } from "@/lib/wiki/public";
 import { getPublishedBlogSlugs } from "@/lib/blog/public";
 
 const BASE_URL = process.env.APP_BASE_URL || "https://celpippracticetest.com";
@@ -48,9 +48,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: route === "" ? 1 : 0.8,
   }));
 
-  const wikiRoutes = wikiArticles.map((article) => ({
-    url: `${BASE_URL}/wiki/${article.slug}`,
-    lastModified: new Date(),
+  const wikiSlugs = await getWikiSlugs();
+  const wikiRoutes = wikiSlugs.map((item) => ({
+    url: `${BASE_URL}/wiki/${item.slug}`,
+    lastModified: item.updatedAt || new Date(),
     changeFrequency: "weekly" as const,
     priority: 0.7,
   }));

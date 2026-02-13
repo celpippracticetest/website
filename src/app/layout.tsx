@@ -48,10 +48,11 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(appBaseUrl),
     title: "CELPIP Practice Test Online | Instant Scoring, Expert Tips",
     description:
-      "Celpip Practice Test platform designed to boost your score with real exam questions, instant results, and expert tips for Listening, Reading, Writing & Speaking.",
+      "Celpip Practice Test platform designed to boost your score with real exam questions, instant results, and expert tips for Listening, Reading, Writing & Speaking. Start your free celpip online practice test platform",
     keywords: [
       "CELPIP",
       "CELPIP practice test",
+      "celpip online practice test",
       "CELPIP mock exam",
       "CELPIP mock test",
       "CELPIP general practice test",
@@ -63,6 +64,10 @@ export async function generateMetadata(): Promise<Metadata> {
       "CELPIP reading",
       "CELPIP writing",
       "CELPIP speaking",
+      "CELPIP score",
+      "CELPIP score chart",
+      "CELPIP score calculation",
+      "CLB conversion",
       "AI scoring",
       "English test Canada",
     ],
