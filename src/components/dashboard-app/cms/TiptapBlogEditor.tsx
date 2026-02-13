@@ -10,6 +10,7 @@ import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import Image from "@tiptap/extension-image";
 import Underline from "@tiptap/extension-underline";
+import { TableKit } from "@tiptap/extension-table/kit";
 
 type TiptapBlogEditorProps = {
   initialContent?: JSONContent | null;
@@ -37,6 +38,7 @@ export default function TiptapBlogEditor({
         defaultProtocol: "https",
       }),
       Image,
+      TableKit,
       Placeholder.configure({
         placeholder,
       }),
@@ -155,6 +157,17 @@ export default function TiptapBlogEditor({
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={insertImage}>
           Image
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+          }
+          title="Insert table"
+        >
+          Table
         </Button>
         <Button
           type="button"

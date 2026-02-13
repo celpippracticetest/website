@@ -172,18 +172,41 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
   const faqSchema =
     fullFaq.length > 0
       ? {
-          "@context": "https://schema.org",
-          "@type": "FAQPage",
-          mainEntity: fullFaq.map((item) => ({
-            "@type": "Question",
-            name: item.question,
-            acceptedAnswer: {
-              "@type": "Answer",
-              text: item.answer,
-            },
-          })),
-        }
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: fullFaq.map((item) => ({
+          "@type": "Question",
+          name: item.question,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: item.answer,
+          },
+        })),
+      }
       : null;
+
+  const hasTable = /<table[\s>]/i.test(post.contentHtml ?? "");
+  const tableSchema = hasTable
+    ? {
+      "@context": "https://schema.org",
+      "@type": "Table",
+      name: post.seo?.metaTitle || `${post.title} – Conversion Chart`,
+      about: {
+        "@type": "Thing",
+        name: "CELPIP score conversion",
+        description:
+          "CELPIP raw score to level conversion chart for Reading and Listening.",
+      },
+      mainEntityOfPage: {
+        "@id": canonicalUrl,
+      },
+      isPartOf: {
+        "@type": "BlogPosting",
+        "@id": canonicalUrl,
+        headline: post.title,
+      },
+    }
+    : null;
 
   const linkedContent = await linkContentServer(post.contentHtml);
 
@@ -197,6 +220,7 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
       <JsonLd data={blogPostingSchema} />
       <JsonLd data={breadcrumbSchema} />
       {faqSchema ? <JsonLd data={faqSchema} /> : null}
+      {tableSchema ? <JsonLd data={tableSchema} /> : null}
 
       <Box className="mx-auto max-w-4xl rounded-2xl border border-slate-200 bg-white p-6 md:p-10">
         <Box className="mb-4 flex flex-wrap items-center gap-2 text-xs text-slate-500">
@@ -238,7 +262,7 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
         ) : null}
 
         <article
-          className="article-content prose prose-blue mt-8 max-w-none"
+          className="article-content prose prose-blue mt-8 max-w-none overflow-x-auto"
           dangerouslySetInnerHTML={{ __html: linkedContent }}
         />
 

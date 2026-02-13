@@ -7,10 +7,11 @@ import {
   getAllWikiArticles,
 } from "@/lib/wiki/public";
 import { linkContentServer } from "@/lib/content-linker-server";
-import WikiArticleClient from "@/components/wiki/WikiArticleClient";
+import WikiArticleContent from "@/components/wiki/WikiArticleContent";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ q?: string }>;
 }
 
 export async function generateMetadata({
@@ -39,8 +40,11 @@ export async function generateMetadata({
   };
 }
 
-export default async function WikiPage({ params }: PageProps) {
+export default async function WikiPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
+  const { q } = await searchParams;
+  const sidebarSearchQuery = (q ?? "").trim();
+
   const currentArticle = await getWikiArticleBySlug(slug);
 
   if (!currentArticle) {
@@ -55,14 +59,21 @@ export default async function WikiPage({ params }: PageProps) {
       getAllWikiArticles(),
     ]);
 
+  const filteredArticles = sidebarSearchQuery
+    ? allArticles.filter((article) =>
+        article.title.toLowerCase().includes(sidebarSearchQuery.toLowerCase())
+      )
+    : allArticles;
+
   return (
-    <WikiArticleClient
+    <WikiArticleContent
       currentArticle={currentArticle}
       slug={slug}
       linkedContent={linkedContent}
-      allArticles={allArticles}
+      filteredArticles={filteredArticles}
       nextArticle={nextArticle}
       relatedArticles={relatedArticles}
+      sidebarSearchQuery={sidebarSearchQuery}
     />
   );
 }

@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { Box } from "@/components/ui/Box";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/use-toast";
 import WikiArticlesTable from "@/components/dashboard-app/cms/WikiArticlesTable";
 import type { TWikiArticleSchemaDto } from "@/models/wiki.model";
+import { Download, Loader2 } from "lucide-react";
 
 type ApiResult = {
   items: TWikiArticleSchemaDto[];
@@ -17,6 +19,7 @@ export default function CmsWikiPage() {
   const [data, setData] = useState<ApiResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const fetchWiki = async () => {
     setIsLoading(true);
@@ -52,6 +55,31 @@ export default function CmsWikiPage() {
     }
   };
 
+  const handleImportFromCode = async () => {
+    setIsImporting(true);
+    try {
+      const response = await fetch("/api/wiki/seed", { method: "POST" });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || result.details || "Import failed.");
+      }
+      toast({
+        title: "Import complete",
+        description: result.message || `Imported ${result.count} articles.`,
+      });
+      await fetchWiki();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Import failed.";
+      toast({
+        title: "Import failed",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   return (
     <Box className="min-h-screen bg-slate-50 p-4 md:p-6">
       <Box className="mx-auto max-w-7xl space-y-4">
@@ -62,9 +90,28 @@ export default function CmsWikiPage() {
               Manage CELPIP Wiki content. Articles appear on /wiki and /wiki/[slug].
             </p>
           </Box>
-          <Button onClick={() => router.push("/cms/dashboard/wiki/create")}>
-            Create Article
-          </Button>
+          <Box className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={handleImportFromCode}
+              disabled={isImporting}
+            >
+              {isImporting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Importing...
+                </>
+              ) : (
+                <>
+                  <Download className="mr-2 h-4 w-4" />
+                  Import from code
+                </>
+              )}
+            </Button>
+            <Button onClick={() => router.push("/cms/dashboard/wiki/create")}>
+              Create Article
+            </Button>
+          </Box>
         </Box>
 
         <WikiArticlesTable

@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen } from "lucide-react";
+import { ArrowRight, Search, BookOpen } from "lucide-react";
 import {
   Card,
+  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -15,29 +16,30 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Box } from "@/components/ui/Box";
-import WikiArticleSidebar from "@/components/wiki/WikiArticleSidebar";
 import type { TWikiArticleSchemaDto } from "@/models/wiki.model";
 
-interface WikiArticleClientProps {
+interface WikiArticleContentProps {
   currentArticle: TWikiArticleSchemaDto;
   slug: string;
   linkedContent: string;
-  allArticles: TWikiArticleSchemaDto[];
+  filteredArticles: TWikiArticleSchemaDto[];
   nextArticle: TWikiArticleSchemaDto | null;
   relatedArticles: TWikiArticleSchemaDto[];
+  sidebarSearchQuery: string;
 }
 
-export default function WikiArticleClient({
+export default function WikiArticleContent({
   currentArticle,
   slug,
   linkedContent,
-  allArticles,
+  filteredArticles,
   nextArticle,
   relatedArticles,
-}: WikiArticleClientProps) {
+  sidebarSearchQuery,
+}: WikiArticleContentProps) {
   return (
     <Box className="min-h-screen bg-slate-50 pb-20">
-      {/* Hero - same pattern as blog / wiki index */}
+      {/* Hero */}
       <Box className="relative isolate overflow-hidden border-b border-slate-200 bg-white pb-12 pt-16">
         <Box className="pointer-events-none absolute inset-0 -z-10 opacity-30">
           <Box className="absolute -left-10 -top-10 h-96 w-96 rounded-full bg-blue-100 blur-3xl" />
@@ -81,14 +83,50 @@ export default function WikiArticleClient({
 
       <Box className="cel-container mt-8">
         <Box className="flex flex-col gap-6 lg:flex-row">
-          {/* Sidebar - client island for search */}
+          {/* Sidebar - form GET to current path so ?q= filters on server */}
           <Box className="w-full shrink-0 lg:order-1 lg:w-64">
-            <WikiArticleSidebar allArticles={allArticles} slug={slug} />
+            <div className="sticky top-24 space-y-4">
+              <form method="get" action={`/wiki/${slug}`} className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="search"
+                  name="q"
+                  placeholder="Search articles..."
+                  defaultValue={sidebarSearchQuery}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </form>
+              <Card className="border-0 shadow-sm">
+                <CardHeader className="py-4">
+                  <CardTitle className="text-sm font-semibold text-slate-900">
+                    All Articles
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="py-0">
+                  <ul className="space-y-1">
+                    {filteredArticles.map((article) => (
+                      <li key={article.slug}>
+                        <Link
+                          href={`/wiki/${article.slug}`}
+                          className={`block rounded-md px-3 py-2 text-sm transition-colors ${
+                            article.slug === slug
+                              ? "bg-blue-50 font-medium text-blue-700"
+                              : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                          }`}
+                        >
+                          {article.title}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
           </Box>
 
           {/* Article + Continue Reading */}
           <Box className="min-w-0 flex-1 lg:order-2">
-            <Box className="mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-10">
+            <Box className="mx-auto max-w-3xl overflow-x-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-10">
               <article className="prose prose-slate max-w-none prose-headings:text-slate-900 prose-p:text-slate-600 prose-a:text-blue-600 prose-strong:text-slate-900">
                 <div
                   className="article-content"

@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { getAllWikiArticles } from "@/lib/wiki/public";
-import WikiIndexClient from "@/components/wiki/WikiIndexClient";
+import WikiIndexContent from "@/components/wiki/WikiIndexContent";
 
 export const metadata: Metadata = {
   title: "CELPIP Wiki: Your Comprehensive Study Guide | CELPIP Practice Test",
@@ -11,8 +11,24 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function WikiIndexPage() {
-  const articles = await getAllWikiArticles();
+interface PageProps {
+  searchParams: Promise<{ q?: string }>;
+}
 
-  return <WikiIndexClient articles={articles} />;
+export default async function WikiIndexPage({ searchParams }: PageProps) {
+  const { q } = await searchParams;
+  const searchQuery = (q ?? "").trim();
+  const allArticles = await getAllWikiArticles();
+
+  const filteredArticles = searchQuery
+    ? allArticles.filter(
+        (article) =>
+          article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (article.description?.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : allArticles;
+
+  return (
+    <WikiIndexContent articles={filteredArticles} searchQuery={searchQuery} />
+  );
 }
