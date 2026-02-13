@@ -5,7 +5,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import type { JSONContent } from "@tiptap/core";
-import { Check, Loader2, PlusCircle, Trash2, Upload } from "lucide-react";
+import { Check, Loader2, PlusCircle, Sparkles, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Box } from "@/components/ui/Box";
 import {
@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "@/components/ui/use-toast";
 import { TBlogSchemaDto, TBlogWriteInput } from "@/models/blog.model";
 import TiptapBlogEditor from "./TiptapBlogEditor";
 
@@ -115,6 +116,9 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
   const [slugEdited, setSlugEdited] = useState(Boolean(initialData?.slug));
   const [isImageUploading, setIsImageUploading] = useState(false);
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [editorContentKey, setEditorContentKey] = useState(0);
 
   const defaultValues: BlogFormValues = useMemo(
     () => ({
@@ -175,6 +179,74 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
   }, [slug, canonicalUrl, form]);
 
   const featuredImageUrl = form.watch("featuredImageUrl");
+
+  const handleGenerateWithAi = async () => {
+    const prompt = aiPrompt.trim();
+    if (!prompt) {
+      toast({
+        title: "Prompt required",
+        description: "Enter a prompt to generate blog content.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsGenerating(true);
+    try {
+      const title = form.getValues("title")?.trim() || undefined;
+      const response = await fetch("/api/blog/generate-content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, title }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to generate content.");
+      }
+      // Fill all form fields from AI response
+      if (data.title != null) form.setValue("title", String(data.title).trim(), { shouldDirty: true });
+      if (data.slug != null) {
+        form.setValue("slug", slugify(String(data.slug)), { shouldDirty: true });
+        setSlugEdited(true);
+      }
+      if (data.excerpt != null) form.setValue("excerpt", String(data.excerpt).trim().slice(0, 320), { shouldDirty: true });
+      if (data.contentHtml != null) {
+        form.setValue("contentHtml", String(data.contentHtml).trim(), { shouldDirty: true });
+        form.setValue("contentJson", null, { shouldDirty: true });
+        setEditorContentKey((k) => k + 1);
+      }
+      if (data.metaTitle != null) form.setValue("metaTitle", String(data.metaTitle).trim().slice(0, 70), { shouldDirty: true });
+      if (data.metaDescription != null) form.setValue("metaDescription", String(data.metaDescription).trim().slice(0, 160), { shouldDirty: true });
+      if (data.keywordsInput != null) form.setValue("keywordsInput", String(data.keywordsInput).trim(), { shouldDirty: true });
+      if (data.categoriesInput != null) form.setValue("categoriesInput", String(data.categoriesInput).trim(), { shouldDirty: true });
+      if (data.tagsInput != null) form.setValue("tagsInput", String(data.tagsInput).trim(), { shouldDirty: true });
+      if (Array.isArray(data.faq) && data.faq.length > 0) {
+        form.setValue(
+          "faq",
+          data.faq.map((item: { question?: string; answer?: string }) => ({
+            question: String(item?.question ?? "").trim(),
+            answer: String(item?.answer ?? "").trim(),
+          })),
+          { shouldDirty: true }
+        );
+      }
+      if (data.aiSnippet && typeof data.aiSnippet === "object") {
+        form.setValue("aiSnippet.question", String(data.aiSnippet.question ?? "").trim(), { shouldDirty: true });
+        form.setValue("aiSnippet.answer", String(data.aiSnippet.answer ?? "").trim().slice(0, 400), { shouldDirty: true });
+      }
+      toast({
+        title: "Form filled with AI",
+        description: "All fields have been filled from your prompt. Review and edit before saving.",
+      });
+    } catch (err) {
+      toast({
+        title: "Generation failed",
+        description: err instanceof Error ? err.message : "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   useEffect(() => {
     if (featuredImageUrl?.trim() && !ogImageUrl?.trim()) {
@@ -369,6 +441,43 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
           )}
         />
 
+        <Box className="rounded-md border border-slate-200 bg-slate-50/50 p-4">
+          <h3 className="mb-2 flex items-center gap-2 text-base font-semibold text-slate-900">
+            <Sparkles className="h-4 w-4 text-amber-500" />
+            Fill entire form with AI
+          </h3>
+          <p className="mb-3 text-sm text-slate-500">
+            Describe the topic or outline. AI will fill title, slug, excerpt, full content, SEO fields, categories, tags, FAQ, and AI snippet. Optional: add a title above for context.
+          </p>
+          <Box className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <Textarea
+              placeholder="e.g. Explain how to improve CELPIP reading score in 4 weeks with a study plan and time management tips"
+              className="min-h-[80px] flex-1 bg-white"
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              disabled={isGenerating}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={isGenerating}
+              onClick={handleGenerateWithAi}
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Filling form...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Fill form with AI
+                </>
+              )}
+            </Button>
+          </Box>
+        </Box>
+
         <FormField
           control={form.control}
           name="contentHtml"
@@ -377,7 +486,11 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
               <FormLabel>Blog Content</FormLabel>
               <FormControl>
                 <TiptapBlogEditor
-                  initialContent={getInitialJson(form.getValues("contentJson"))}
+                  key={editorContentKey}
+                  initialContent={
+                    getInitialJson(form.getValues("contentJson")) ??
+                    (form.getValues("contentHtml")?.trim() || null)
+                  }
                   onChange={(payload) => {
                     form.setValue("contentHtml", payload.html, { shouldDirty: true });
                     form.setValue("contentJson", payload.json, { shouldDirty: true });

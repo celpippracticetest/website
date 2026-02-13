@@ -13,7 +13,8 @@ import Underline from "@tiptap/extension-underline";
 import { TableKit } from "@tiptap/extension-table/kit";
 
 type TiptapBlogEditorProps = {
-  initialContent?: JSONContent | null;
+  /** Initial content as ProseMirror JSON or HTML string (e.g. from AI generation). */
+  initialContent?: JSONContent | string | null;
   placeholder?: string;
   onChange: (payload: { json: JSONContent | null; html: string }) => void;
 };
@@ -43,7 +44,7 @@ export default function TiptapBlogEditor({
         placeholder,
       }),
     ],
-    content: initialContent ?? "<p></p>",
+    content: (typeof initialContent === "string" && initialContent.trim()) ? initialContent : (initialContent ?? "<p></p>"),
     editorProps: {
       attributes: {
         class:
