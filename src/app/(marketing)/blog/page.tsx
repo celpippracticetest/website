@@ -11,6 +11,8 @@ import BlogListGtm from "@/components/analytics/BlogListGtm";
 
 export const dynamic = "force-dynamic";
 
+const BASE_URL = process.env.APP_BASE_URL || "https://celpippracticetest.com";
+
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "CELPIP Blog | Tips, Strategies, and Score Guides",
@@ -25,14 +27,14 @@ export async function generateMetadata(): Promise<Metadata> {
       "CELPIP reading tips",
     ],
     alternates: {
-      canonical: "/blog",
+      canonical: `${BASE_URL}/blog`,
     },
     openGraph: {
       title: "CELPIP Blog | Tips, Strategies, and Score Guides",
       description:
         "Expert CELPIP resources covering exam strategy, scoring insights, and practical study plans.",
       type: "website",
-      url: "/blog",
+      url: `${BASE_URL}/blog`,
       images: [
         {
           url: "/images/hero.png",

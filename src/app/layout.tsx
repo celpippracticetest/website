@@ -111,7 +111,7 @@ export async function generateMetadata(): Promise<Metadata> {
       images: ["/images/hero.png"],
     },
     alternates: {
-      canonical: "/",
+      canonical: appBaseUrl,
     },
     robots: { index: !isPreview, follow: !isPreview },
   };

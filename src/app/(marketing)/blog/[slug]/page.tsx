@@ -56,11 +56,14 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
     };
   }
 
+  const baseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
   const fallbackDescription =
     post.excerpt || stripHtml(post.contentHtml).slice(0, 155) || "CELPIP preparation article.";
   const title = post.seo?.metaTitle || `${post.title} | CELPIP Blog`;
   const description = post.seo?.metaDescription || fallbackDescription;
-  const canonical = post.seo?.canonicalUrl || `/blog/${post.slug}`;
+  const canonicalPath = `/blog/${post.slug}`;
+  const path = post.seo?.canonicalUrl?.startsWith("http") ? null : (post.seo?.canonicalUrl || canonicalPath);
+  const canonical = path === null ? (post.seo?.canonicalUrl ?? "") : `${baseUrl}${path.startsWith("/") ? "" : "/"}${path}`;
   const ogImage = post.seo?.ogImageUrl || post.featuredImage?.url || "/images/hero.png";
   const ogImageAlt = post.seo?.ogImageAlt || post.featuredImage?.alt || post.title;
 
@@ -75,7 +78,7 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
       title,
       description,
       type: "article",
-      url: `/blog/${post.slug}`,
+      url: canonical,
       images: [
         {
           url: ogImage,

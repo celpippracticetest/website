@@ -27,6 +27,7 @@ export async function generateMetadata({
     };
   }
 
+  const baseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
   const description =
     currentArticle.description ||
     `Learn about ${currentArticle.title} in our comprehensive CELPIP guide.`;
@@ -35,7 +36,7 @@ export async function generateMetadata({
     title: `${currentArticle.title} | CELPIP Wiki`,
     description,
     alternates: {
-      canonical: `/wiki/${slug}`,
+      canonical: `${baseUrl}/wiki/${slug}`,
     },
   };
 }

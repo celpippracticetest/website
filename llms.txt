@@ -18,8 +18,13 @@ llm_contact: ai@celpippracticetest.com
 # Core Site Resources
 exam_overview: https://celpippracticetest.com/exam-overview
 practice_overview: https://celpippracticetest.com/practice-overview
+wiki_index: https://celpippracticetest.com/wiki
+pricing: https://celpippracticetest.com/pricing
 contact: https://celpippracticetest.com/contact
 sitemap: https://celpippracticetest.com/sitemap.xml
+
+# Legal & Policies
+refund_policy: https://celpippracticetest.com/refund-policy
 
 # Blog & Strategy Pages
 blog_index: https://celpippracticetest.com/blog
@@ -30,7 +35,8 @@ writing_tips: https://celpippracticetest.com/blog
 speaking_tips: https://celpippracticetest.com/blog
 
 # Semantic Cues
-focus: Test preparation, Canadian English, exam strategies, language improvement
+focus: Test preparation, Canadian English, exam strategies, language improvement, wiki study guides
 tone: Clear, friendly, educational, Canadian English style
 llm_optimized: true
 content_update: Weekly
+
