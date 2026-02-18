@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { useEcommerceTracking } from "@/hooks/useTracking";
 
 interface IPlanCard {
   title: string;
@@ -21,6 +22,25 @@ const PlanCard = ({
   iconWrapperColor,
   id,
 }: IPlanCard) => {
+  const { beginCheckout, selectItem } = useEcommerceTracking();
+
+  const handleCheckoutTracking = () => {
+    const amount = Number.parseFloat(price);
+    if (!Number.isFinite(amount) || amount <= 0 || type === "Free") return;
+
+    const item = {
+      item_id: type,
+      item_name: title,
+      price: amount,
+      quantity: 1,
+      item_brand: "CELPIP Practice Test",
+      item_category: "Subscription",
+    };
+
+    selectItem([item], "dashboard_pricing", "Dashboard Pricing Plans");
+    beginCheckout([item], "CAD", amount);
+  };
+
   return (
     <form
       className="relative mt-[12px] screen1280:!mt-[32px] w-full screen744:!w-[176px] screen744:!h-[214px] screen1280:!w-[202px] screen1280:!h-[215px]"
@@ -100,6 +120,7 @@ const PlanCard = ({
 
         <button
           type="submit"
+          onClick={handleCheckoutTracking}
           aria-label={`Select ${title} plan`}
           className="relative z-[2] mt-[24px] hover:cursor-pointer hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]  shadow-startButton  flex gap-[8px] px-[24px] w-full bg-primary2 mw-full h-[40px] rounded-[24px] items-center justify-center"
         >

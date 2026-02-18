@@ -3,6 +3,7 @@
 import { SignUp, useUser } from "@clerk/nextjs";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { trackAuth } from "@/lib/gtm";
 
 export default function SignUpPage() {
   const { user, isSignedIn } = useUser();
@@ -37,6 +38,23 @@ export default function SignUpPage() {
       localStorage.setItem("pendingInviterName", decodeURIComponent(inviter));
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!isSignedIn || !user?.id) return;
+
+    const dedupeKey = `signup_conversion_tracked_${user.id}`;
+    if (sessionStorage.getItem(dedupeKey) === "1") return;
+
+    trackAuth.signUpCompleted(user.id, "email", {
+      email: user.primaryEmailAddress?.emailAddress?.trim().toLowerCase(),
+      address: {
+        first_name: user.firstName || "",
+        last_name: user.lastName || "",
+      },
+    });
+
+    sessionStorage.setItem(dedupeKey, "1");
+  }, [isSignedIn, user]);
 
   const applyReferralDiscount = async (referralCode: string) => {
     try {

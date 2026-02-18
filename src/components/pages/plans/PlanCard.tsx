@@ -2,6 +2,7 @@
 import React from "react";
 import SvgCheck from "../../icons/Check";
 import { useEcommerceTracking } from "@/hooks/useTracking";
+import { useUser } from "@clerk/nextjs";
 
 interface IPlanCard {
   title: string;
@@ -32,6 +33,7 @@ const PlanCard = ({
   planTitle,
 }: IPlanCard) => {
   const { selectItem, beginCheckout } = useEcommerceTracking();
+  const { user } = useUser();
 
   const handlePlanClick = () => {
     // Track plan selection
@@ -47,7 +49,13 @@ const PlanCard = ({
     selectItem([item], 'plans_page', 'Pricing Plans');
 
     // Track beginning of checkout
-    beginCheckout([item], 'CAD', parseFloat(price));
+    beginCheckout([item], "CAD", parseFloat(price), undefined, {
+      email: user?.primaryEmailAddress?.emailAddress?.trim().toLowerCase(),
+      address: {
+        first_name: user?.firstName || "",
+        last_name: user?.lastName || "",
+      },
+    });
   };
 
   return (

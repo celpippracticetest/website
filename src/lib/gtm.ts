@@ -6,6 +6,15 @@ const isBrowser = typeof window !== "undefined";
 
 // Debug mode - logs events to console in development
 const DEBUG = process.env.NODE_ENV === "development";
+const GOOGLE_ADS_CONVERSION_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_ID || "";
+const GOOGLE_ADS_PURCHASE_LABEL =
+  process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL || "";
+const GOOGLE_ADS_SIGNUP_LABEL =
+  process.env.NEXT_PUBLIC_GOOGLE_ADS_SIGNUP_LABEL || "";
+const GOOGLE_ADS_BEGIN_CHECKOUT_LABEL =
+  process.env.NEXT_PUBLIC_GOOGLE_ADS_BEGIN_CHECKOUT_LABEL || "";
+const conversionDedupSet = new Set<string>();
 
 /**
  * Initialize or get the dataLayer array
@@ -39,6 +48,42 @@ function getUserContext(): UserContext {
   } catch (error) {
     return {};
   }
+}
+
+function getGoogleAdsSendTo(label?: string): string | undefined {
+  if (!GOOGLE_ADS_CONVERSION_ID || !label) return undefined;
+  return `${GOOGLE_ADS_CONVERSION_ID}/${label}`;
+}
+
+function normalizeUserData(userData?: UserData): UserData | undefined {
+  if (!userData || typeof userData !== "object") return undefined;
+
+  const normalized = { ...userData };
+  if (typeof normalized.email === "string") {
+    normalized.email = normalized.email.trim().toLowerCase();
+  }
+  if (typeof normalized.phone_number === "string") {
+    normalized.phone_number = normalized.phone_number.replace(/\s+/g, "");
+  }
+
+  return normalized;
+}
+
+function markDeduplicatedOnce(key: string): boolean {
+  if (!key) return false;
+  if (conversionDedupSet.has(key)) return true;
+
+  if (isBrowser) {
+    const storageKey = `gtm_once_${key}`;
+    if (sessionStorage.getItem(storageKey) === "1") {
+      conversionDedupSet.add(key);
+      return true;
+    }
+    sessionStorage.setItem(storageKey, "1");
+  }
+
+  conversionDedupSet.add(key);
+  return false;
 }
 
 /**
@@ -186,11 +231,20 @@ export const trackAuth = {
   },
 
   signUpCompleted: (userId: string, method?: string, userData?: UserData) => {
+    const dedupeKey = `sign_up_completed_${userId}`;
+    if (markDeduplicatedOnce(dedupeKey)) return;
+
+    const conversionLabel = GOOGLE_ADS_SIGNUP_LABEL;
     pushToDataLayer({
       event: "sign_up_completed",
       user_id: userId,
       method,
-      user_data: userData,
+      user_data: normalizeUserData(userData),
+      conversion_name: "sign_up_completed",
+      conversion_label: conversionLabel || undefined,
+      google_ads_send_to: getGoogleAdsSendTo(conversionLabel),
+      value: 1,
+      currency: "CAD",
     });
   },
 
@@ -428,13 +482,17 @@ export const trackEcommerce = {
     coupon?: string,
     userData?: UserData
   ) => {
+    const conversionLabel = GOOGLE_ADS_BEGIN_CHECKOUT_LABEL;
     pushToDataLayer({
       event: "begin_checkout",
       currency,
       value,
       items,
       coupon,
-      user_data: userData,
+      user_data: normalizeUserData(userData),
+      conversion_name: "begin_checkout",
+      conversion_label: conversionLabel || undefined,
+      google_ads_send_to: getGoogleAdsSendTo(conversionLabel),
     });
   },
 
@@ -446,6 +504,10 @@ export const trackEcommerce = {
     coupon?: string,
     userData?: UserData
   ) => {
+    const dedupeKey = `purchase_${transactionId}`;
+    if (markDeduplicatedOnce(dedupeKey)) return;
+
+    const conversionLabel = GOOGLE_ADS_PURCHASE_LABEL;
     pushToDataLayer({
       event: "purchase",
       transaction_id: transactionId,
@@ -453,7 +515,10 @@ export const trackEcommerce = {
       value,
       items,
       coupon,
-      user_data: userData,
+      user_data: normalizeUserData(userData),
+      conversion_name: "purchase",
+      conversion_label: conversionLabel || undefined,
+      google_ads_send_to: getGoogleAdsSendTo(conversionLabel),
     });
   },
 

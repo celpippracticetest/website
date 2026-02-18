@@ -92,16 +92,17 @@ const Hero = () => {
     left-1/2 -translate-x-1/2 transition-all duration-500 
     ease-in-out transform bottom-0`}
       >
-        <Button
-          size="lg"
-          href="/practice-overview"
-          aria-label="Start your free CELPIP practice"
-          onClick={() => handleCTAClick("hero_floating_bottom")}
-        >
-          <SvgPlus />
-          <span className="hidden sm:!flex">Start Your Free Practice</span>
-          <span className="flex sm:!hidden">Free Practice</span>
-        </Button>
+        <div onClick={() => handleCTAClick("hero_floating_bottom")}>
+          <Button
+            size="lg"
+            href="/practice-overview"
+            aria-label="Start your free CELPIP practice"
+          >
+            <SvgPlus />
+            <span className="hidden sm:!flex">Start Your Free Practice</span>
+            <span className="flex sm:!hidden">Free Practice</span>
+          </Button>
+        </div>
       </div>
 
       <section
@@ -191,15 +192,16 @@ const Hero = () => {
               </div>
               <div className="font-inter font-semibold text-xs leading-5 tracking-normal text-center screen744:!hidden flex justify-center">60 mock exams · 3,000+ questions · Instant AI scoring</div>
               <div className="flex screen744:!justify-start justify-center">
-                <Button
-                  href="/practice-overview"
-                  size="lg"
-                  className="mt-[24px]"
-                  onClick={() => handleCTAClick("hero_main")}
-                >
-                  <SvgPlus />
-                  <span>Start Your Free Practice</span>
-                </Button>
+                <div onClick={() => handleCTAClick("hero_main")}>
+                  <Button
+                    href="/practice-overview"
+                    size="lg"
+                    className="mt-[24px]"
+                  >
+                    <SvgPlus />
+                    <span>Start Your Free Practice</span>
+                  </Button>
+                </div>
               </div>
               <div className="flex flex-row screen1280:!mt-[8px] mt-[14px] screen744:!justify-start justify-center items-center gap-2">
                 <Image

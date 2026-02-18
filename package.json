@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "export:clerk:google-ads": "node ./scripts/export-clerk-users-google-ads.js",
     "postbuild": "next-sitemap",
     "svgr": "npx @svgr/cli --typescript --out-dir  src/components/icons/ -- icons/svg",
     "playwright:install": "playwright install chromium firefox webkit",

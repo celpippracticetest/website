@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useEcommerceTracking } from "@/hooks/useTracking";
 
 interface SuccessPageTrackingProps {
@@ -23,8 +23,18 @@ export default function SuccessPageTracking({
   email,
 }: SuccessPageTrackingProps) {
   const { purchase } = useEcommerceTracking();
+  const hasTrackedRef = useRef(false);
 
   useEffect(() => {
+    if (hasTrackedRef.current) return;
+    if (!transactionId) return;
+
+    const dedupeKey = `purchase_conversion_tracked_${transactionId}`;
+    if (sessionStorage.getItem(dedupeKey) === "1") {
+      hasTrackedRef.current = true;
+      return;
+    }
+
     // Format items for GA4 e-commerce
     const formattedItems = items.map((item) => ({
       item_id: item.price?.product || item.id || 'unknown',
@@ -48,6 +58,8 @@ export default function SuccessPageTracking({
       undefined, // coupon
       userData
     );
+    hasTrackedRef.current = true;
+    sessionStorage.setItem(dedupeKey, "1");
 
     if (process.env.NODE_ENV === 'development') {
       console.log('[E-commerce] Purchase tracked:', {

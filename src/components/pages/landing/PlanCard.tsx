@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import SvgCheck from "../../icons/Check";
 import { SignInButton, SignUpButton, useUser } from "@clerk/nextjs";
 import LoginModal from "@/components/modal/LoginModal";
+import { useEcommerceTracking } from "@/hooks/useTracking";
 
 interface IPlanCard {
   title: string;
@@ -32,9 +33,39 @@ const PlanCard = ({
   isModal = false,
 }: IPlanCard) => {
   const { user, isLoaded, isSignedIn } = useUser();
+  const { beginCheckout, selectItem } = useEcommerceTracking();
   const noUser = isLoaded ? !isSignedIn : false;
   const [showLoginModal, setShowLoginModal] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+
+  const handleCheckoutTracking = () => {
+    const amount = Number.parseFloat(price);
+    if (!Number.isFinite(amount) || amount <= 0 || type === "Free") return;
+
+    const item = {
+      item_id: type,
+      item_name: title,
+      price: amount,
+      quantity: 1,
+      item_brand: "CELPIP Practice Test",
+      item_category: "Subscription",
+    };
+
+    selectItem([item], "landing_pricing", "Landing Pricing Plans");
+    beginCheckout(
+      [item],
+      "CAD",
+      amount,
+      undefined,
+      {
+        email: user?.primaryEmailAddress?.emailAddress?.trim().toLowerCase(),
+        address: {
+          first_name: user?.firstName || "",
+          last_name: user?.lastName || "",
+        },
+      }
+    );
+  };
 
   return (
     <form
@@ -131,6 +162,7 @@ const PlanCard = ({
             if (noUser) {
               setShowLoginModal(true);
             } else {
+              handleCheckoutTracking();
               formRef.current?.submit();
             }
           }}
