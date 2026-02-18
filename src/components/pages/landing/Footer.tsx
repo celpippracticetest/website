@@ -60,7 +60,7 @@ const FooterBase = ({ sections }: FooterBaseProps) => {
                 <SvgLinkedIn className="w-5 h-5" />
               </Link>
               <Link
-                href="https://www.youtube.com/@CELPIPPracticeTestChannel"
+                href="https://www.youtube.com/@celpippracticetestcom"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-text2 font-normal text-[13px] flex items-center"

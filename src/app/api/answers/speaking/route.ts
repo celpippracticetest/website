@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoClient from "@/lib/mongodb";
-import {
-  S3Client,
-  type CompleteMultipartUploadOutput,
-} from "@aws-sdk/client-s3";
-import { Upload } from "@aws-sdk/lib-storage";
 import { createClient } from "@deepgram/sdk";
+import { uploadAudioBuffer } from "@/lib/s3-client";
 import { PracticeRepository } from "@/repositories/practice.repo";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { TPracticeDto } from "@/models/practice.model";
@@ -122,43 +118,6 @@ function toStoredEvaluation(e: EvaluationInput | null): StoredEvaluation {
         }))
       : [],
   };
-}
-
-// =============== S3 upload ===============
-async function uploadAudioBuffer(
-  buffer: Buffer,
-  fileName: string
-): Promise<string | null> {
-  const client = new S3Client({
-    region: "eu-north-1",
-    credentials: {
-      accessKeyId: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID ?? "",
-      secretAccessKey: process.env.NEXT_PUBLIC_AWS_SECRETE_ACCESS_KEY ?? "",
-    },
-  });
-
-  const upload = new Upload({
-    client,
-    params: {
-      Bucket: "celtest-audio",
-      Key: `RecordedSpeaking/${Date.now()}_${fileName}`,
-      Body: buffer,
-    },
-  });
-
-  try {
-    const result = (await upload.done()) as CompleteMultipartUploadOutput;
-    return result.Location ?? null;
-  } catch (error) {
-    console.error(
-      "Upload failed" +
-        process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID +
-        " " +
-        process.env.NEXT_PUBLIC_AWS_SECRETE_ACCESS_KEY,
-      error
-    );
-    return null;
-  }
 }
 
 // =============== Deepgram ===============
