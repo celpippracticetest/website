@@ -4,35 +4,10 @@ import { clerkClient } from "@clerk/express";
 
 import mongoClient from "@/lib/mongodb";
 import { WithdrawalRequestRepository } from "@/repositories/withdrawal-request.repo";
-import nodemailer from "nodemailer";
+import { sendEmailWithSender } from "@/lib/email/sender-client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-async function getTransporter() {
-  const host = process.env.SMTP_HOST!;
-  const port = Number(process.env.SMTP_PORT);
-  const user = process.env.SMTP_USER!;
-  const pass = process.env.SMTP_PASS!;
-
-  const secure = port === 465;
-
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    auth: { user, pass },
-    requireTLS: port === 587,
-  });
-
-  try {
-    await transporter.verify();
-  } catch (e) {
-    console.warn("[withdrawal-email] SMTP verify failed (continuing):", e);
-  }
-
-  return transporter;
-}
 
 async function isAdmin(userId: string): Promise<boolean> {
   try {
@@ -162,7 +137,9 @@ export async function PATCH(req: Request) {
 
 async function sendPaymentConfirmationEmail(withdrawalRequest: any) {
   try {
-    const transporter = await getTransporter();
+    if (!process.env.SENDER_API_TOKEN) {
+      throw new Error("Missing required env: SENDER_API_TOKEN");
+    }
 
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -187,20 +164,14 @@ async function sendPaymentConfirmationEmail(withdrawalRequest: any) {
       "[withdrawal-email] sending payment confirmation to",
       withdrawalRequest.userEmail
     );
-    const info = await transporter.sendMail({
+    await sendEmailWithSender({
       from:
         process.env.FROM_EMAIL || `Celpip Practice <${process.env.SMTP_USER}>`,
       to: withdrawalRequest.userEmail,
       subject: `Payment Confirmed - $${withdrawalRequest.amount}`,
       html: emailHtml,
     });
-    console.log("[withdrawal-email] sendMail result:", {
-      messageId: info.messageId,
-      response: info.response,
-      accepted: info.accepted,
-      rejected: info.rejected,
-      envelope: info.envelope,
-    });
+    console.log("[withdrawal-email] Sender API email sent successfully");
   } catch (error) {
     console.error("Failed to send payment confirmation email:", error);
   }
@@ -208,7 +179,9 @@ async function sendPaymentConfirmationEmail(withdrawalRequest: any) {
 
 async function sendRejectionEmail(withdrawalRequest: any, adminNotes: string) {
   try {
-    const transporter = await getTransporter();
+    if (!process.env.SENDER_API_TOKEN) {
+      throw new Error("Missing required env: SENDER_API_TOKEN");
+    }
 
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -233,20 +206,14 @@ async function sendRejectionEmail(withdrawalRequest: any, adminNotes: string) {
       "[withdrawal-email] sending rejection to",
       withdrawalRequest.userEmail
     );
-    const info = await transporter.sendMail({
+    await sendEmailWithSender({
       from:
         process.env.FROM_EMAIL || `Celpip Practice <${process.env.SMTP_USER}>`,
       to: withdrawalRequest.userEmail,
       subject: `Withdrawal Request Update - $${withdrawalRequest.amount}`,
       html: emailHtml,
     });
-    console.log("[withdrawal-email] sendMail result:", {
-      messageId: info.messageId,
-      response: info.response,
-      accepted: info.accepted,
-      rejected: info.rejected,
-      envelope: info.envelope,
-    });
+    console.log("[withdrawal-email] Sender API email sent successfully");
   } catch (error) {
     console.error("Failed to send rejection email:", error);
   }

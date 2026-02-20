@@ -250,6 +250,7 @@ const guestSections: FooterSection[] = [
   {
     title: "Legal",
     links: [
+      { href: "/contact-us", label: "Contact Us" },
       { href: "/terms-of-service", label: "Terms of Service" },
       { href: "/privacy-policy", label: "Privacy Policy" },
       { href: "/refund-policy", label: "Refund Policy" },

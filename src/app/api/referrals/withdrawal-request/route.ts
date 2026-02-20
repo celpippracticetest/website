@@ -6,8 +6,8 @@ import mongoClient from "@/lib/mongodb";
 import { ReferralRewardRepository } from "@/repositories/referral-reward.repo";
 import { WithdrawalRequestRepository } from "@/repositories/withdrawal-request.repo";
 import { ReferralInvitationRepository } from "@/repositories/referral-invitation.repo";
-import nodemailer from "nodemailer";
 import { clerkClient } from "@clerk/nextjs/server";
+import { sendEmailWithSender } from "@/lib/email/sender-client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -151,40 +151,11 @@ async function sendWithdrawalNotificationEmail({
   user: any;
   referralStats: any;
 }) {
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env as Record<
-    string,
-    string | undefined
-  >;
-  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
-    throw new Error(
-      "Missing required SMTP envs (SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS)"
-    );
+  const { SENDER_API_TOKEN } = process.env as Record<string, string | undefined>;
+  if (!SENDER_API_TOKEN) {
+    throw new Error("Missing required env: SENDER_API_TOKEN");
   }
   try {
-    const port = Number(process.env.SMTP_PORT);
-    const secure = port === 465;
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port,
-      secure,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-      requireTLS: port === 587,
-      pool: true,
-      maxConnections: 1,
-      maxMessages: 50,
-      logger: true,
-      debug: true,
-    });
-
-    try {
-      await transporter.verify();
-    } catch (e) {
-      console.warn("[withdrawal-request] SMTP verify failed (continuing):", e);
-    }
-
     const adminEmail =
       process.env.ADMIN_EMAIL ||
       process.env.FROM_EMAIL ||
@@ -263,25 +234,17 @@ async function sendWithdrawalNotificationEmail({
     console.log("[withdrawal-request] sending email", {
       from: process.env.FROM_EMAIL || process.env.SMTP_USER,
       to: adminEmail,
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: Number(process.env.SMTP_PORT) === 465,
+      provider: "sender.net",
     });
 
-    const info = await transporter.sendMail({
+    await sendEmailWithSender({
       from:
         process.env.FROM_EMAIL || `Celpip Practice <${process.env.SMTP_USER}>`,
       to: [adminEmail, "tejareh.amir@gmail.com"],
       subject: `Withdrawal Request - $${withdrawalRequest.amount} - ${user.emailAddresses[0]?.emailAddress}`,
       html: emailHtml,
     });
-    console.log("[withdrawal-request] sendMail result:", {
-      messageId: info?.messageId,
-      accepted: info?.accepted,
-      rejected: info?.rejected,
-      response: info?.response,
-      envelope: info?.envelope,
-    });
+    console.log("[withdrawal-request] Sender API email sent successfully");
   } catch (error) {
     console.error("Failed to send withdrawal notification email:", error);
     throw error;

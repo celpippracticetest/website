@@ -17,7 +17,7 @@
   "passages": [
     {
       "id": "1",
-      "audioUrl": "https://fmrxubhfxyhtrpmmnyso.supabase.co/storage/v1/object/public/Celpip//19%20Art%20Exhibition%20Discussion.mp3",
+      "audioUrl": "https://fmrxubhfxyhtrpmmnyso.supabase.co/storage/v1/object/public/Celpip/19%20Art%20Exhibition%20Discussion.mp3",
       "title": "Choosing a Guest Speaker for a Business Seminar",
       "setting": "A woman is asking a gym staff member about fitness class options.",
       "conversation": [
@@ -105,7 +105,7 @@
     },
     {
       "id": "2",
-      "audioUrl": "https://fmrxubhfxyhtrpmmnyso.supabase.co/storage/v1/object/public/Celpip//19%20Art%20Exhibition%20Discussion.mp3",
+      "audioUrl": "https://fmrxubhfxyhtrpmmnyso.supabase.co/storage/v1/object/public/Celpip/19%20Art%20Exhibition%20Discussion.mp3",
       "title": "Deciding on a Team Building Activity",
       "setting": "A man is speaking with a gallery staff member about a new exhibit.",
       "conversation": [
@@ -192,7 +192,7 @@
       ]
     },{
       "id": "3",
-      "audioUrl": "https://fmrxubhfxyhtrpmmnyso.supabase.co/storage/v1/object/public/Celpip//19%20Art%20Exhibition%20Discussion.mp3",
+      "audioUrl": "https://fmrxubhfxyhtrpmmnyso.supabase.co/storage/v1/object/public/Celpip/19%20Art%20Exhibition%20Discussion.mp3",
       "title": "Organizing a Class Group Project",
       "setting": "A man is speaking with a gallery staff member about a new exhibit.",
       "conversation": [
