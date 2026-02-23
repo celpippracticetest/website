@@ -12,6 +12,7 @@ import {
   Menu, 
   ChevronLeft, 
   ChevronRight, 
+  ChevronDown,
   ClipboardList, 
   BookOpen, 
   PenTool, 
@@ -32,6 +33,7 @@ interface SidebarItem {
   label: string;
   icon: any;
   href: string;
+  subItems?: SidebarItem[];
 }
 
 interface SidebarGroup {
@@ -46,7 +48,18 @@ const mainItems: SidebarGroup = {
     { key: "onboarding-new", label: "Onboarding New", icon: Compass, href: "/cms/dashboard?tab=onboarding-new" },
     { key: "plans", label: "Plans", icon: ClipboardList, href: "/cms/dashboard/plans" },
     { key: "withdrawal-requests", label: "Withdrawals", icon: FileText, href: "/cms/dashboard/withdrawal-requests" },
-    { key: "reports", label: "Reports", icon: BarChart2, href: "/cms/dashboard/reports" },
+    { 
+      key: "reports", 
+      label: "Reports", 
+      icon: BarChart2, 
+      href: "/cms/dashboard/reports",
+      subItems: [
+        { key: "reports-analytics", label: "Analytics", icon: BarChart2, href: "/cms/dashboard/reports/analytics" },
+        { key: "reports-google-ads", label: "Google Ads", icon: Globe, href: "/cms/dashboard/reports/google-ads" },
+        { key: "reports-search-console", label: "Search Console", icon: Globe, href: "/cms/dashboard/reports/search-console" },
+        { key: "reports-stripe", label: "Stripe", icon: ClipboardList, href: "/cms/dashboard/reports/stripe" },
+      ]
+    },
     { key: "users", label: "Users", icon: Users, href: "/cms/dashboard/users" },
     { key: "lead-capture", label: "Lead Capture", icon: Mail, href: "/cms/dashboard/lead-capture" },
     { key: "league", label: "League", icon: Trophy, href: "/cms/dashboard/league" },
@@ -92,6 +105,14 @@ export function AdminSidebar({
   const currentTab = searchParams.get("tab");
   const [collapsed, setCollapsed] = useState(false);
 
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+
+  const toggleExpand = (key: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setExpandedItems(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
   const isActive = (href: string, key: string) => {
     if (key === "overview") {
       return pathname === "/cms" || (pathname === "/cms/dashboard" && !currentTab);
@@ -122,27 +143,63 @@ export function AdminSidebar({
     return false;
   };
 
-  const NavItem = ({ item }: { item: SidebarItem }) => {
+  const NavItem = ({ item, isSubItem = false }: { item: SidebarItem, isSubItem?: boolean }) => {
     const active = isActive(item.href, item.key);
+    const hasSubItems = item.subItems && item.subItems.length > 0;
+    const isExpanded = expandedItems[item.key];
+
     return (
-      <Link
-        href={item.href}
-        onClick={() => setMobileOpen(false)}
-        className={cn(
-          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group relative overflow-hidden",
-          active
-            ? "bg-primary/10 text-primary hover:bg-primary/15"
-            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-          collapsed && "justify-center px-2"
+      <>
+        <div className="relative">
+          <Link
+            href={item.href}
+            onClick={(e) => {
+              if (hasSubItems) {
+                 // If it has subitems, clicking the main link should still navigate, 
+                 // but we might want to expand automatically or let the arrow handle it.
+                 // For now, let's just close mobile menu if it's a link.
+                 if (!mobileOpen) return;
+                 setMobileOpen(false);
+              } else {
+                 setMobileOpen(false);
+              }
+            }}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group relative overflow-hidden",
+              active
+                ? "bg-primary/10 text-primary hover:bg-primary/15"
+                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+              collapsed && "justify-center px-2",
+              isSubItem && "pl-9 text-xs"
+            )}
+            title={collapsed ? item.label : undefined}
+          >
+            <item.icon className={cn("h-4 w-4 shrink-0", active ? "text-primary" : "text-muted-foreground group-hover:text-accent-foreground")} />
+            {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
+            
+            {!collapsed && hasSubItems && (
+              <button
+                onClick={(e) => toggleExpand(item.key, e)}
+                className="ml-auto p-1 rounded-sm hover:bg-accent/50 text-muted-foreground"
+              >
+                {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+              </button>
+            )}
+
+            {active && !isSubItem && (
+              <Box className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-primary rounded-r-full" />
+            )}
+          </Link>
+        </div>
+        
+        {!collapsed && hasSubItems && isExpanded && (
+          <div className="mt-1 space-y-1">
+            {item.subItems!.map((subItem) => (
+              <NavItem key={subItem.key} item={subItem} isSubItem={true} />
+            ))}
+          </div>
         )}
-        title={collapsed ? item.label : undefined}
-      >
-        <item.icon className={cn("h-4 w-4 shrink-0", active ? "text-primary" : "text-muted-foreground group-hover:text-accent-foreground")} />
-        {!collapsed && <span>{item.label}</span>}
-        {active && (
-          <Box className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-primary rounded-r-full" />
-        )}
-      </Link>
+      </>
     );
   };
 
