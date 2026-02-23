@@ -9,7 +9,7 @@ import { auth } from "@clerk/nextjs/server";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import ReactQueryProvider from "@/components/ReactQueryProvider";
-import { LazyIntercom } from "@/components/LazyComponents";
+import { LazyIntercom, LazyLeadCapturePopup } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import CriticalCSS from "@/components/CriticalCSS";
 import type { Metadata, Viewport } from "next";
@@ -229,6 +229,7 @@ export default async function RootLayout({
           <Suspense fallback={null}>
             <PageViewTracker />
           </Suspense>
+          <LazyLeadCapturePopup />
 
 
           {enableGtm && (

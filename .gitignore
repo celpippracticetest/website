@@ -23,6 +23,8 @@
 /test-results
 /.playwright
 
+/scripts
+
 # next.js
 /.next/
 /out/

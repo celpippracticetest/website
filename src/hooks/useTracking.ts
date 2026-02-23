@@ -321,6 +321,17 @@ export function useEngagementTracking() {
     audioPlayed: useCallback((audioType: string, audioSource?: string) => {
       trackEngagement.audioPlayed(audioType, audioSource);
     }, []),
+
+    leadCaptureSubmitted: useCallback(
+      (location: string, triggerSource: string, leadCaptureId: string) => {
+        trackEngagement.leadCaptureSubmitted(
+          location,
+          triggerSource,
+          leadCaptureId
+        );
+      },
+      []
+    ),
   };
 }
 

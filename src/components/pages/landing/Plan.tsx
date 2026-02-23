@@ -1,11 +1,28 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import PlanCard from "./PlanCard";
 import { usePlans } from "@/hooks/usePlans";
+import { useEcommerceTracking } from "@/hooks/useTracking";
 
 const Plan = () => {
   const { plans, isLoading } = usePlans();
+  const { viewItemList } = useEcommerceTracking();
+
+  useEffect(() => {
+    if (!isLoading && plans.length > 0) {
+      const items = plans.map((plan) => ({
+        item_id: plan.type,
+        item_name: plan.title,
+        price: parseFloat(plan.price),
+        quantity: 1,
+        item_brand: "CELPIP Practice Test",
+        item_category: "Subscription",
+      }));
+      
+      viewItemList(items, "landing_page", "Landing Page Plans");
+    }
+  }, [isLoading, plans, viewItemList]);
 
   if (isLoading) {
     return (

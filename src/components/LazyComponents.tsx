@@ -9,6 +9,15 @@ export const LazyIntercom = dynamic(() => import("./IntercomLoader"), {
   ssr: false,
 });
 
+// Lazy load lead capture popup client-side only
+export const LazyLeadCapturePopup = dynamic(
+  () => import("./lead-capture/LeadCapturePopup"),
+  {
+    loading: () => null,
+    ssr: false,
+  }
+);
+
 // Generic loading component
 export const LoadingSpinner = () => (
   <div className="flex items-center justify-center h-32">

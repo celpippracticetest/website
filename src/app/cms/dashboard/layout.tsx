@@ -76,7 +76,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 transform ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-          } transition-transform duration-200 ease-in-out z-50 w-64 md:sticky md:top-0 md:z-30 md:translate-x-0 md:w-auto h-[100dvh] shrink-0 border-b md:border-b-0 md:border-r bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50 ${collapsed ? "md:w-16" : "md:w-64"
+          } transition-transform duration-200 ease-in-out z-50 w-64 md:sticky md:top-0 md:z-30 md:translate-x-0 md:w-auto h-dvh shrink-0 border-b md:border-b-0 md:border-r bg-white/70 backdrop-blur supports-backdrop-filter:bg-white/50 ${collapsed ? "md:w-16" : "md:w-64"
           }`}
       >
         <div className="px-3 py-3 md:py-6">
@@ -232,6 +232,26 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                 >
                   <span aria-hidden>👥</span>
                   {!collapsed && <span>Users</span>}
+                </Link>
+              </li>
+              <li className="mt-3">
+                <Link
+                  href="/cms/dashboard/lead-capture"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center ${collapsed ? "justify-center" : "justify-start"
+                    } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${pathname.startsWith("/cms/dashboard/lead-capture")
+                      ? "bg-gray-100 text-gray-900"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    }`}
+                  aria-current={
+                    pathname.startsWith("/cms/dashboard/lead-capture")
+                      ? "page"
+                      : undefined
+                  }
+                  title="Lead Capture"
+                >
+                  <span aria-hidden>📧</span>
+                  {!collapsed && <span>Lead Capture</span>}
                 </Link>
               </li>
 

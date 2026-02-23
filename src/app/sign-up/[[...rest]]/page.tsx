@@ -43,7 +43,7 @@ export default function SignUpPage() {
     if (!isSignedIn || !user?.id) return;
 
     const dedupeKey = `signup_conversion_tracked_${user.id}`;
-    if (sessionStorage.getItem(dedupeKey) === "1") return;
+    if (localStorage.getItem(dedupeKey) === "1") return;
 
     trackAuth.signUpCompleted(user.id, "email", {
       email: user.primaryEmailAddress?.emailAddress?.trim().toLowerCase(),
@@ -53,7 +53,7 @@ export default function SignUpPage() {
       },
     });
 
-    sessionStorage.setItem(dedupeKey, "1");
+    localStorage.setItem(dedupeKey, "1");
   }, [isSignedIn, user]);
 
   const applyReferralDiscount = async (referralCode: string) => {

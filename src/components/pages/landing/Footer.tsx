@@ -1,4 +1,4 @@
-import Link from "next/link";
+import TrackedLink from "@/components/analytics/TrackedLink";
 import Image from "next/image";
 import SvgLinkedIn from "@/components/icons/LinkedIn";
 import SvgYouTube from "@/components/icons/YouTube";
@@ -33,14 +33,14 @@ const FooterBase = ({ sections }: FooterBaseProps) => {
       <Box className="flex flex-col max-w-[1440px] w-full px-[24px] screen744:!px-[48px] screen1280:!px-[72px] py-[32px] screen744:!py-[56px] gap-[36px] screen744:!gap-[56px]">
         <Box className="flex flex-col screen744:!flex-row screen744:!gap-[80px] justify-between">
           <Box className="max-w-[520px]">
-            <Link href={"/"}>
+            <TrackedLink href={"/"} navType="footer">
               <Image
                 alt="logo"
                 width={133}
                 height={40}
                 src="/images/logo.png"
               />
-            </Link>
+            </TrackedLink>
 
             <Box className="mt-[16px] screen744:!max-w-238 screen1280:!max-w-[460px]">
               <span className="text-text3 font-light text-[14px] screen744:!text-[12px] screen1280:!text-[16px] flex text-left leading-[22px] screen1280:!leading-[26px]">
@@ -50,24 +50,26 @@ const FooterBase = ({ sections }: FooterBaseProps) => {
               </span>
             </Box>
             <Box className="flex items-center gap-[12px] mt-[12px]">
-              <Link
+              <TrackedLink
                 href="https://www.linkedin.com/company/celpippracticetest"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-text2 font-normal text-[13px] flex items-center"
                 aria-label="Visit our LinkedIn page"
+                navType="footer"
               >
                 <SvgLinkedIn className="w-5 h-5" />
-              </Link>
-              <Link
+              </TrackedLink>
+              <TrackedLink
                 href="https://www.youtube.com/@celpippracticetestcom"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-text2 font-normal text-[13px] flex items-center"
                 aria-label="Visit our YouTube channel"
+                navType="footer"
               >
                 <SvgYouTube className="w-5 h-5" />
-              </Link>
+              </TrackedLink>
             </Box>
 
           </Box>
@@ -86,7 +88,9 @@ const FooterBase = ({ sections }: FooterBaseProps) => {
                           key={link.href}
                           className="text-text2 font-normal text-[13px] leading-[20px]"
                         >
-                          <Link href={link.href}>{link.label}</Link>
+                          <TrackedLink href={link.href} navType="footer">
+                            {link.label}
+                          </TrackedLink>
                         </li>
                       ))}
                     </ul>

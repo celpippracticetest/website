@@ -36,14 +36,20 @@ function getUserContext(): UserContext {
   if (!isBrowser) return {};
 
   try {
-    // Get user data from Clerk's __clerk_db_jwt cookie or session
-    // This is a basic implementation - adjust based on your Clerk setup
-    const userData = (window as any).__clerk_user;
+    // Get user data from Clerk's global object if available
+    const clerk = (window as any).Clerk;
+    const user = clerk?.user;
+    
+    if (user) {
+      return {
+        user_id: user.id,
+        user_plan: (user.publicMetadata as any)?.plan || "free",
+        is_authenticated: true,
+      };
+    }
 
     return {
-      userId: userData?.id,
-      userPlan: userData?.publicMetadata?.plan || "free",
-      isAuthenticated: !!userData?.id,
+      is_authenticated: false,
     };
   } catch (error) {
     return {};
@@ -75,11 +81,11 @@ function markDeduplicatedOnce(key: string): boolean {
 
   if (isBrowser) {
     const storageKey = `gtm_once_${key}`;
-    if (sessionStorage.getItem(storageKey) === "1") {
+    if (localStorage.getItem(storageKey) === "1") {
       conversionDedupSet.add(key);
       return true;
     }
-    sessionStorage.setItem(storageKey, "1");
+    localStorage.setItem(storageKey, "1");
   }
 
   conversionDedupSet.add(key);
@@ -588,6 +594,19 @@ export const trackEngagement = {
       event: "audio_played",
       audio_type: audioType,
       audio_source: audioSource,
+    });
+  },
+
+  leadCaptureSubmitted: (
+    location: string,
+    triggerSource: string,
+    leadCaptureId: string
+  ) => {
+    pushToDataLayer({
+      event: "lead_capture_submitted",
+      location,
+      trigger_source: triggerSource,
+      lead_capture_id: leadCaptureId,
     });
   },
 };

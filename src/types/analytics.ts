@@ -297,8 +297,18 @@ export interface BlogArticleViewedEvent extends GTMEvent {
 // User Context
 export interface UserContext {
   userId?: string;
-  userPlan?: "free" | "premium";
+  user_id?: string;
+  userPlan?: string;
+  user_plan?: string;
   isAuthenticated?: boolean;
+  is_authenticated?: boolean;
+}
+
+export interface LeadCaptureSubmittedEvent extends GTMEvent {
+  event: "lead_capture_submitted";
+  location: string;
+  trigger_source: string;
+  lead_capture_id: string;
 }
 
 /** Optional user payload for GTM (e.g. sign_up_completed, login_completed, purchase) */
