@@ -48,18 +48,6 @@ const mainItems: SidebarGroup = {
     { key: "onboarding-new", label: "Onboarding New", icon: Compass, href: "/cms/dashboard?tab=onboarding-new" },
     { key: "plans", label: "Plans", icon: ClipboardList, href: "/cms/dashboard/plans" },
     { key: "withdrawal-requests", label: "Withdrawals", icon: FileText, href: "/cms/dashboard/withdrawal-requests" },
-    { 
-      key: "reports", 
-      label: "Reports", 
-      icon: BarChart2, 
-      href: "/cms/dashboard/reports",
-      subItems: [
-        { key: "reports-analytics", label: "Analytics", icon: BarChart2, href: "/cms/dashboard/reports/analytics" },
-        { key: "reports-google-ads", label: "Google Ads", icon: Globe, href: "/cms/dashboard/reports/google-ads" },
-        { key: "reports-search-console", label: "Search Console", icon: Globe, href: "/cms/dashboard/reports/search-console" },
-        { key: "reports-stripe", label: "Stripe", icon: ClipboardList, href: "/cms/dashboard/reports/stripe" },
-      ]
-    },
     { key: "users", label: "Users", icon: Users, href: "/cms/dashboard/users" },
     { key: "lead-capture", label: "Lead Capture", icon: Mail, href: "/cms/dashboard/lead-capture" },
     { key: "league", label: "League", icon: Trophy, href: "/cms/dashboard/league" },
@@ -78,6 +66,17 @@ const practiceItems: SidebarGroup = {
   label: "Practice",
   items: [
     { key: "practice-list", label: "List Practices", icon: BookOpen, href: "/cms/dashboard/practice" },
+  ],
+};
+
+const reportItems: SidebarGroup = {
+  label: "Reports",
+  items: [
+    { key: "reports-overview", label: "Overview", icon: BarChart2, href: "/cms/dashboard/reports" },
+    { key: "reports-analytics", label: "Analytics", icon: BarChart2, href: "/cms/dashboard/reports/analytics" },
+    { key: "reports-google-ads", label: "Google Ads", icon: Globe, href: "/cms/dashboard/reports/google-ads" },
+    { key: "reports-search-console", label: "Search Console", icon: Globe, href: "/cms/dashboard/reports/search-console" },
+    { key: "reports-stripe", label: "Stripe", icon: ClipboardList, href: "/cms/dashboard/reports/stripe" },
   ],
 };
 
@@ -257,7 +256,7 @@ export function AdminSidebar({
           </Box>
 
           {/* Grouped Items */}
-          {[examItems, practiceItems, contentItems].map((group, idx) => (
+          {[examItems, practiceItems, reportItems, contentItems].map((group, idx) => (
             <Box key={idx} className="space-y-1">
               {!collapsed && group.label && (
                 <h4 className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 mt-4">
