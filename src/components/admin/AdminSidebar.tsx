@@ -3,23 +3,23 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { 
-  LayoutDashboard, 
-  Compass, 
-  FileText, 
-  Users, 
-  Settings, 
-  Menu, 
-  ChevronLeft, 
-  ChevronRight, 
+import {
+  LayoutDashboard,
+  Compass,
+  FileText,
+  Users,
+  Settings,
+  Menu,
+  ChevronLeft,
+  ChevronRight,
   ChevronDown,
-  ClipboardList, 
-  BookOpen, 
-  PenTool, 
-  Mic, 
-  Headphones, 
-  Book, 
-  Globe, 
+  ClipboardList,
+  BookOpen,
+  PenTool,
+  Mic,
+  Headphones,
+  Book,
+  Globe,
   Trophy,
   Mail,
   BarChart2,
@@ -72,7 +72,6 @@ const practiceItems: SidebarGroup = {
 const reportItems: SidebarGroup = {
   label: "Reports",
   items: [
-    { key: "reports-overview", label: "Overview", icon: BarChart2, href: "/cms/dashboard/reports" },
     { key: "reports-analytics", label: "Analytics", icon: BarChart2, href: "/cms/dashboard/reports/analytics" },
     { key: "reports-google-ads", label: "Google Ads", icon: Globe, href: "/cms/dashboard/reports/google-ads" },
     { key: "reports-search-console", label: "Search Console", icon: Globe, href: "/cms/dashboard/reports/search-console" },
@@ -125,10 +124,10 @@ export function AdminSidebar({
     if (key === "withdrawal-requests") {
       return pathname === "/cms/dashboard" && currentTab === "withdrawal-requests";
     }
-    
+
     // Exact match for most items
     if (href === pathname) return true;
-    
+
     // Active state for parent routes
     if (key === "users" && pathname.startsWith("/cms/dashboard/users")) return true;
     if (key === "reports" && pathname.startsWith("/cms/dashboard/reports")) return true;
@@ -154,13 +153,13 @@ export function AdminSidebar({
             href={item.href}
             onClick={(e) => {
               if (hasSubItems) {
-                 // If it has subitems, clicking the main link should still navigate, 
-                 // but we might want to expand automatically or let the arrow handle it.
-                 // For now, let's just close mobile menu if it's a link.
-                 if (!mobileOpen) return;
-                 setMobileOpen(false);
+                // If it has subitems, clicking the main link should still navigate, 
+                // but we might want to expand automatically or let the arrow handle it.
+                // For now, let's just close mobile menu if it's a link.
+                if (!mobileOpen) return;
+                setMobileOpen(false);
               } else {
-                 setMobileOpen(false);
+                setMobileOpen(false);
               }
             }}
             className={cn(
@@ -175,7 +174,7 @@ export function AdminSidebar({
           >
             <item.icon className={cn("h-4 w-4 shrink-0", active ? "text-primary" : "text-muted-foreground group-hover:text-accent-foreground")} />
             {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
-            
+
             {!collapsed && hasSubItems && (
               <button
                 onClick={(e) => toggleExpand(item.key, e)}
@@ -190,7 +189,7 @@ export function AdminSidebar({
             )}
           </Link>
         </div>
-        
+
         {!collapsed && hasSubItems && isExpanded && (
           <div className="mt-1 space-y-1">
             {item.subItems!.map((subItem) => (
@@ -236,7 +235,7 @@ export function AdminSidebar({
           >
             {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </button>
-          
+
           {/* Mobile close button inside sidebar */}
           <button
             onClick={() => setMobileOpen(false)}
