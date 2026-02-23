@@ -71,6 +71,8 @@
     "clsx": "^2.1.1",
     "customerio-node": "^4.2.0",
     "diff": "^8.0.2",
+    "firebase": "^12.9.0",
+    "firebase-admin": "^13.6.1",
     "framer-motion": "^12.16.0",
     "jsonwebtoken": "^9.0.2",
     "lottie-react": "^2.4.1",
