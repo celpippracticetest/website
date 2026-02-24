@@ -72,6 +72,7 @@ const practiceItems: SidebarGroup = {
 const reportItems: SidebarGroup = {
   label: "Reports",
   items: [
+    { key: "reports-quick", label: "Quick Report", icon: BarChart2, href: "/cms/dashboard/reports/quick" },
     { key: "reports-analytics", label: "Analytics", icon: BarChart2, href: "/cms/dashboard/reports/analytics" },
     { key: "reports-google-ads", label: "Google Ads", icon: Globe, href: "/cms/dashboard/reports/google-ads" },
     { key: "reports-search-console", label: "Search Console", icon: Globe, href: "/cms/dashboard/reports/search-console" },
