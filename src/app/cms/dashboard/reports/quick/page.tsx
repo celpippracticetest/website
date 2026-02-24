@@ -26,6 +26,8 @@ import moment from "moment";
 
 interface ReportData {
   newUsers: MetricData;
+  activeSubscribers: MetricData;
+  cancelledSubscribers: MetricData;
   newSubscriptions: MetricData;
   revenue: MetricData;
   googleAdsCost: MetricData;
@@ -138,7 +140,7 @@ export default function QuickReportPage() {
             ))}
          </div>
       ) : data ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <MetricCard
             title="New Users"
             value={data.newUsers.current}
@@ -148,11 +150,29 @@ export default function QuickReportPage() {
             loading={loading}
           />
           <MetricCard
-            title="New Subscriptions"
+            title="New Subscriptions (Period)"
             value={data.newSubscriptions.current}
             previousValue={data.newSubscriptions.previous}
             change={data.newSubscriptions.change}
             icon={CreditCard}
+            loading={loading}
+          />
+          <MetricCard
+            title="Active Subscribers (Total)"
+            value={data.activeSubscribers.current}
+            previousValue={data.activeSubscribers.previous}
+            change={data.activeSubscribers.change}
+            icon={CreditCard}
+            loading={loading}
+          />
+          <MetricCard
+            title="Cancelled (Period)"
+            value={data.cancelledSubscribers.current}
+            previousValue={data.cancelledSubscribers.previous}
+            change={data.cancelledSubscribers.change}
+            icon={CreditCard}
+            inverse
+            isCost
             loading={loading}
           />
           <MetricCard
@@ -207,6 +227,19 @@ export default function QuickReportPage() {
                     current={data.newSubscriptions.current} 
                     previous={data.newSubscriptions.previous} 
                     change={data.newSubscriptions.change} 
+                />
+                <ComparisonRow 
+                    label="Active Subscribers (Total)" 
+                    current={data.activeSubscribers.current} 
+                    previous={data.activeSubscribers.previous} 
+                    change={data.activeSubscribers.change} 
+                />
+                <ComparisonRow 
+                    label="Cancelled Subscribers" 
+                    current={data.cancelledSubscribers.current} 
+                    previous={data.cancelledSubscribers.previous} 
+                    change={data.cancelledSubscribers.change} 
+                    inverse
                 />
                 <ComparisonRow 
                     label="Revenue" 

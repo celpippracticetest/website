@@ -63,9 +63,32 @@ export async function GET(request: NextRequest) {
       
       try {
         // Subscriptions
-        const subscriptions = await stripe.subscriptions.search({
-          query: `created>=${fromTs} AND created<=${toTs} AND status:'active'`,
-          limit: 1, // We only need total_count
+        // We include active and trialing to capture all valid new subscriptions
+        const newSubscriptions = await stripe.subscriptions.search({
+          query: `created>=${fromTs} AND created<=${toTs} AND (status:'active' OR status:'trialing')`,
+          limit: 1, 
+        });
+
+        // Active Subscribers (Total as of 'to' date)
+        // Note: Stripe search doesn't support historic state, so this will be current active count.
+        // To get historic active count, we would need to maintain our own snapshots or use Stripe Sigma/Reporting.
+        // For now, we will return the CURRENT active count for the 'current' period, and maybe 0 or same for previous?
+        // Actually, if we want to compare, it's tricky. 
+        // Best proxy for "Active Subscribers during this period" might be difficult.
+        // Let's just return CURRENT TOTAL active subscribers for the current period request.
+        // If it's a past period request, this number will be wrong (it will be today's number).
+        // LIMITATION: 'activeSubscribers' will always show CURRENT totals, not point-in-time.
+        const activeSubscribers = await stripe.subscriptions.search({
+            query: `status:'active' OR status:'trialing'`,
+            limit: 1,
+        });
+
+        // Cancelled Subscriptions in this period
+        // Search for subscriptions that were canceled in this period
+        // Stripe subscription object has 'canceled_at'.
+        const cancelledSubscribers = await stripe.subscriptions.search({
+            query: `canceled_at>=${fromTs} AND canceled_at<=${toTs}`,
+            limit: 1,
         });
 
         // Revenue (Charges) - Search might not be available for all objects or return sum directly.
@@ -90,12 +113,19 @@ export async function GET(request: NextRequest) {
         }, 0);
 
         return {
-          newSubscriptions: subscriptions.total_count || 0,
+          newSubscriptions: newSubscriptions.total_count || 0,
+          activeSubscribers: activeSubscribers.total_count || 0,
+          cancelledSubscribers: cancelledSubscribers.total_count || 0,
           revenue: revenue / 100, // Convert cents to dollars
         };
       } catch (e) {
         console.error("Stripe error:", e);
-        return { newSubscriptions: 0, revenue: 0 };
+        return { 
+            newSubscriptions: 0, 
+            activeSubscribers: 0, 
+            cancelledSubscribers: 0, 
+            revenue: 0 
+        };
       }
     };
 
@@ -136,6 +166,16 @@ export async function GET(request: NextRequest) {
           current: currentStripe.newSubscriptions,
           previous: previousStripe.newSubscriptions,
           change: calculateChange(currentStripe.newSubscriptions, previousStripe.newSubscriptions),
+        },
+        activeSubscribers: {
+          current: currentStripe.activeSubscribers,
+          previous: previousStripe.activeSubscribers,
+          change: calculateChange(currentStripe.activeSubscribers, previousStripe.activeSubscribers),
+        },
+        cancelledSubscribers: {
+            current: currentStripe.cancelledSubscribers,
+            previous: previousStripe.cancelledSubscribers,
+            change: calculateChange(currentStripe.cancelledSubscribers, previousStripe.cancelledSubscribers),
         },
         revenue: {
           current: currentStripe.revenue,
