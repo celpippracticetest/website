@@ -30,6 +30,13 @@
 # production
 /build
 
+# android
+android.keystore
+*.keystore
+*.jks
+app/build/
+.gradle/
+
 # misc
 .DS_Store
 *.pem
