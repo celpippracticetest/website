@@ -44,6 +44,8 @@ export default function QuickReportPage() {
     from: moment().subtract(7, "days").toDate(),
     to: new Date(),
   });
+  const [draftDate, setDraftDate] = useState<DateRange | undefined>(date);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -80,6 +82,35 @@ export default function QuickReportPage() {
     fetchData();
   }, [date]);
 
+  const formatDateRange = (range: DateRange | undefined) => {
+    if (!range?.from) return "Pick a date range";
+    if (!range.to) return moment(range.from).format("MMM DD, YYYY");
+    return `${moment(range.from).format("MMM DD, YYYY")} - ${moment(range.to).format("MMM DD, YYYY")}`;
+  };
+
+  const getSelectedDaysLabel = (range: DateRange | undefined) => {
+    if (!range?.from || !range?.to) return "Select start and end dates";
+    const days = moment(range.to).endOf("day").diff(moment(range.from).startOf("day"), "days") + 1;
+    return `${days} day${days > 1 ? "s" : ""} selected`;
+  };
+
+  const setPresetRange = (days: number) => {
+    const to = new Date();
+    const from = moment().subtract(days - 1, "days").toDate();
+    setDraftDate({ from, to });
+  };
+
+  const applyDateRange = () => {
+    if (!draftDate?.from) return;
+    setDate(draftDate);
+    setIsDatePickerOpen(false);
+  };
+
+  const cancelDateRangeChange = () => {
+    setDraftDate(date);
+    setIsDatePickerOpen(false);
+  };
+
   return (
     <Box className="w-full p-6 space-y-8">
       <Box className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -91,39 +122,76 @@ export default function QuickReportPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Popover>
+          <Popover
+            open={isDatePickerOpen}
+            onOpenChange={(open) => {
+              setIsDatePickerOpen(open);
+              if (open) setDraftDate(date);
+            }}
+          >
             <PopoverTrigger asChild>
               <Button
                 variant={"outline"}
                 className={cn(
-                  "w-[280px] justify-start text-left font-normal",
+                  "h-11 w-[320px] justify-start rounded-xl border-gray-200 bg-white px-3 text-left font-normal shadow-sm transition-colors hover:bg-gray-50",
                   !date && "text-muted-foreground"
                 )}
               >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {date?.from ? (
-                  date.to ? (
-                    <>
-                      {moment(date.from).format("MMM DD, YYYY")} -{" "}
-                      {moment(date.to).format("MMM DD, YYYY")}
-                    </>
-                  ) : (
-                    moment(date.from).format("MMM DD, YYYY")
-                  )
-                ) : (
-                  <span>Pick a date range</span>
-                )}
+                <CalendarIcon className="mr-3 h-4 w-4 shrink-0 text-gray-500" />
+                <Box className="flex min-w-0 flex-col items-start">
+                  <span className="truncate text-sm font-medium text-gray-900">
+                    {formatDateRange(date)}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {getSelectedDaysLabel(date)}
+                  </span>
+                </Box>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                initialFocus
-                mode="range"
-                defaultMonth={date?.from}
-                selected={date}
-                onSelect={setDate}
-                numberOfMonths={2}
-              />
+            <PopoverContent className="w-auto rounded-xl border border-gray-200 p-0 shadow-xl" align="end">
+              <Box className="flex flex-col bg-white">
+                <Box className="border-b border-gray-100 p-3">
+                  <p className="text-sm font-semibold text-gray-900">Select report period</p>
+                  <p className="text-xs text-gray-500">{getSelectedDaysLabel(draftDate)}</p>
+                </Box>
+
+                <Box className="flex flex-col md:flex-row">
+                  <Box className="flex flex-row gap-2 border-b border-gray-100 p-3 md:w-[180px] md:flex-col md:border-b-0 md:border-r">
+                    <Button variant="outline" className="h-9 rounded-lg text-xs" onClick={() => setPresetRange(7)}>
+                      Last 7 days
+                    </Button>
+                    <Button variant="outline" className="h-9 rounded-lg text-xs" onClick={() => setPresetRange(14)}>
+                      Last 14 days
+                    </Button>
+                    <Button variant="outline" className="h-9 rounded-lg text-xs" onClick={() => setPresetRange(30)}>
+                      Last 30 days
+                    </Button>
+                    <Button variant="outline" className="h-9 rounded-lg text-xs" onClick={() => setPresetRange(90)}>
+                      Last 90 days
+                    </Button>
+                  </Box>
+
+                  <Box className="p-2">
+                    <Calendar
+                      initialFocus
+                      mode="range"
+                      defaultMonth={draftDate?.from}
+                      selected={draftDate}
+                      onSelect={setDraftDate}
+                      numberOfMonths={2}
+                    />
+                  </Box>
+                </Box>
+
+                <Box className="flex items-center justify-end gap-2 border-t border-gray-100 p-3">
+                  <Button variant="outline" className="h-9 rounded-lg" onClick={cancelDateRangeChange}>
+                    Cancel
+                  </Button>
+                  <Button className="h-9 rounded-lg" onClick={applyDateRange} disabled={!draftDate?.from}>
+                    Apply
+                  </Button>
+                </Box>
+              </Box>
             </PopoverContent>
           </Popover>
           

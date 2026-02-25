@@ -306,10 +306,10 @@ export async function GET(request: NextRequest) {
           .find((e: any) => e.type === "subscription_created");
         if (lastStart) {
           subscriptionStartDate = lastStart.date;
-          subscriptionDurationDays = Math.round(
+          subscriptionDurationDays = Math.max(1, Math.ceil(
             (Date.now() - new Date(lastStart.date).getTime()) /
               (1000 * 60 * 60 * 24)
-          );
+          ));
         }
       } else {
         // Not active - check history
@@ -330,20 +330,20 @@ export async function GET(request: NextRequest) {
 
           if (cancellation) {
             subscriptionEndDate = cancellation.date;
-            subscriptionDurationDays = Math.round(
+            subscriptionDurationDays = Math.max(1, Math.ceil(
               (new Date(cancellation.date).getTime() -
                 new Date(lastStart.date).getTime()) /
                 (1000 * 60 * 60 * 24)
-            );
+            ));
           } else {
              // Started but no cancellation event found, yet status is not premium.
              // Could be expired or manually revoked.
              // We'll calculate duration until now as a fallback or 0.
              // Let's use duration until last activity or now.
-             subscriptionDurationDays = Math.round(
+             subscriptionDurationDays = Math.max(1, Math.ceil(
               (Date.now() - new Date(lastStart.date).getTime()) /
                 (1000 * 60 * 60 * 24)
-            );
+            ));
           }
         }
       }

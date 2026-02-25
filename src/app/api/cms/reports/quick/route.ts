@@ -2,6 +2,102 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import client from "@/lib/mongodb";
 import { stripe } from "@/lib/stripe";
+import Stripe from "stripe";
+import { BetaAnalyticsDataClient } from "@google-analytics/data";
+import { JWT } from "google-auth-library";
+
+const formatDateForGa4 = (date: Date) => date.toISOString().slice(0, 10);
+
+const getGa4Client = () => {
+  const ga4PropertyId = process.env.GA4_PROPERTY_ID;
+  const analyticsClientEmail =
+    process.env.ANALYTICS_CLIENT_EMAIL || process.env.ANALYTICS_CLIENT_ID;
+  const analyticsPrivateKey = process.env.ANALYTICS_PRIVATE_KEY;
+
+  if (!ga4PropertyId?.trim()) {
+    return null;
+  }
+
+  if (!analyticsClientEmail?.trim() || !analyticsPrivateKey?.trim()) {
+    return null;
+  }
+
+  const privateKey = analyticsPrivateKey
+    .replace(/\\n/g, "\n")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .trim();
+
+  if (
+    !privateKey.includes("-----BEGIN") ||
+    !privateKey.includes("-----END")
+  ) {
+    return null;
+  }
+
+  const authClient = new JWT({
+    email: analyticsClientEmail.trim(),
+    key: privateKey,
+    scopes: ["https://www.googleapis.com/auth/analytics.readonly"],
+  });
+
+  return {
+    propertyId: `properties/${ga4PropertyId}`,
+    client: new BetaAnalyticsDataClient({ authClient }),
+  };
+};
+
+const getGoogleAdsCost = async (from: Date, to: Date) => {
+  const ga4 = getGa4Client();
+  if (!ga4) return 0;
+
+  try {
+    const dateRange = {
+      startDate: formatDateForGa4(from),
+      endDate: formatDateForGa4(to),
+    };
+    const metricCandidates = [
+      // Match GA4 UI labels first ("Google Ads cost").
+      "googleAdsCost",
+      // Fallback candidates depending on property/reporting compatibility.
+      "advertiserAdCost",
+      "totalAdvertisingCost",
+    ] as const;
+
+    for (const metricName of metricCandidates) {
+      try {
+        const [response] = await ga4.client.runReport({
+          property: ga4.propertyId,
+          dateRanges: [dateRange],
+          dimensions: [{ name: "date" }],
+          metrics: [{ name: metricName }],
+        });
+
+        const totalCost =
+          response.rows?.reduce((sum, row) => {
+            const value = Number.parseFloat(
+              row.metricValues?.[0]?.value ?? "0"
+            );
+            return Number.isFinite(value) ? sum + value : sum;
+          }, 0) ?? 0;
+
+        if (totalCost > 0) {
+          return totalCost;
+        }
+      } catch (metricError) {
+        console.warn(
+          `GA4 metric unavailable for Google Ads cost: ${metricName}`,
+          metricError
+        );
+      }
+    }
+
+    return 0;
+  } catch (error) {
+    console.error("GA4 Google Ads cost fetch failed:", error);
+    return 0;
+  }
+};
 
 export async function GET(request: NextRequest) {
   try {
@@ -54,79 +150,137 @@ export async function GET(request: NextRequest) {
     };
 
     // Stripe helpers
-    const getStripeData = async (from: Date, to: Date) => {
-      const fromTs = Math.floor(from.getTime() / 1000);
-      const toTs = Math.floor(to.getTime() / 1000);
+    const countSubscriptions = async (params: Stripe.SubscriptionListParams) => {
+      let count = 0;
+      let startingAfter: string | undefined;
 
-      // We use search to get total counts if possible, otherwise list
-      // Stripe search query syntax: created>=123 AND created<=456
-      
-      try {
-        // Subscriptions
-        // We include active and trialing to capture all valid new subscriptions
-        const newSubscriptions = await stripe.subscriptions.search({
-          query: `created>=${fromTs} AND created<=${toTs} AND (status:'active' OR status:'trialing')`,
-          limit: 1, 
+      while (true) {
+        const page = await stripe.subscriptions.list({
+          ...params,
+          limit: 100,
+          ...(startingAfter ? { starting_after: startingAfter } : {}),
         });
 
-        // Active Subscribers (Total as of 'to' date)
-        // Note: Stripe search doesn't support historic state, so this will be current active count.
-        // To get historic active count, we would need to maintain our own snapshots or use Stripe Sigma/Reporting.
-        // For now, we will return the CURRENT active count for the 'current' period, and maybe 0 or same for previous?
-        // Actually, if we want to compare, it's tricky. 
-        // Best proxy for "Active Subscribers during this period" might be difficult.
-        // Let's just return CURRENT TOTAL active subscribers for the current period request.
-        // If it's a past period request, this number will be wrong (it will be today's number).
-        // LIMITATION: 'activeSubscribers' will always show CURRENT totals, not point-in-time.
-        const activeSubscribers = await stripe.subscriptions.search({
-            query: `status:'active' OR status:'trialing'`,
-            limit: 1,
-        });
+        count += page.data.length;
+        if (!page.has_more || page.data.length === 0) {
+          break;
+        }
 
-        // Cancelled Subscriptions in this period
-        // Search for subscriptions that were canceled in this period
-        // Stripe subscription object has 'canceled_at'.
-        const cancelledSubscribers = await stripe.subscriptions.search({
-            query: `canceled_at>=${fromTs} AND canceled_at<=${toTs}`,
-            limit: 1,
-        });
+        startingAfter = page.data[page.data.length - 1].id;
+      }
 
-        // Revenue (Charges) - Search might not be available for all objects or return sum directly.
-        // For revenue, we might need to list and sum. 
-        // Warning: iterating through all charges can be slow. 
-        // For "Quick Report", maybe limit to 100 recent charges and sum them? 
-        // Or use balance transactions.
-        // Let's try listing charges with a limit.
-        const charges = await stripe.charges.list({
+      return count;
+    };
+
+    const countStripeEvents = async (
+      types: Stripe.EventListParams["types"],
+      fromTs: number,
+      toTs: number
+    ) => {
+      let count = 0;
+      let startingAfter: string | undefined;
+
+      while (true) {
+        const page = await stripe.events.list({
+          types,
           created: {
             gte: fromTs,
             lte: toTs,
           },
-          limit: 100, // Limit to 100 for performance
+          limit: 100,
+          ...(startingAfter ? { starting_after: startingAfter } : {}),
         });
 
-        const revenue = charges.data.reduce((sum, charge) => {
-           if (charge.paid && !charge.refunded) {
-             return sum + (charge.amount - (charge.amount_refunded || 0));
-           }
-           return sum;
-        }, 0);
+        count += page.data.length;
+        if (!page.has_more || page.data.length === 0) {
+          break;
+        }
 
-        return {
-          newSubscriptions: newSubscriptions.total_count || 0,
-          activeSubscribers: activeSubscribers.total_count || 0,
-          cancelledSubscribers: cancelledSubscribers.total_count || 0,
-          revenue: revenue / 100, // Convert cents to dollars
-        };
-      } catch (e) {
-        console.error("Stripe error:", e);
-        return { 
-            newSubscriptions: 0, 
-            activeSubscribers: 0, 
-            cancelledSubscribers: 0, 
-            revenue: 0 
-        };
+        startingAfter = page.data[page.data.length - 1].id;
       }
+
+      return count;
+    };
+
+    const sumPaidCharges = async (fromTs: number, toTs: number) => {
+      let total = 0;
+      let startingAfter: string | undefined;
+
+      while (true) {
+        const page = await stripe.charges.list({
+          created: {
+            gte: fromTs,
+            lte: toTs,
+          },
+          limit: 100,
+          ...(startingAfter ? { starting_after: startingAfter } : {}),
+        });
+
+        for (const charge of page.data) {
+          if (charge.paid && !charge.refunded) {
+            total += charge.amount - (charge.amount_refunded || 0);
+          }
+        }
+
+        if (!page.has_more || page.data.length === 0) {
+          break;
+        }
+
+        startingAfter = page.data[page.data.length - 1].id;
+      }
+
+      return total / 100;
+    };
+
+    const safeStripeMetric = async (
+      metricName: string,
+      getValue: () => Promise<number>
+    ) => {
+      try {
+        return await getValue();
+      } catch (error) {
+        console.error(`Stripe quick report metric failed: ${metricName}`, error);
+        return 0;
+      }
+    };
+
+    const getStripeData = async (from: Date, to: Date) => {
+      const fromTs = Math.floor(from.getTime() / 1000);
+      const toTs = Math.floor(to.getTime() / 1000);
+
+      const [newSubscriptions, activeSubscribers, cancelledSubscribers, revenue] =
+        await Promise.all([
+          // Count all subscriptions created during the selected period.
+          safeStripeMetric("newSubscriptions", () =>
+            countSubscriptions({
+              status: "all",
+              created: {
+                gte: fromTs,
+                lte: toTs,
+              },
+            })
+          ),
+          // Active total is a current snapshot (active + trialing), not a historical point-in-time value.
+          safeStripeMetric("activeSubscribers", async () => {
+            const [activeCount, trialingCount] = await Promise.all([
+              countSubscriptions({ status: "active" }),
+              countSubscriptions({ status: "trialing" }),
+            ]);
+            return activeCount + trialingCount;
+          }),
+          // Cancellations are tracked via subscription deletion events in the selected period.
+          safeStripeMetric("cancelledSubscribers", () =>
+            countStripeEvents(["customer.subscription.deleted"], fromTs, toTs)
+          ),
+          safeStripeMetric("revenue", () => sumPaidCharges(fromTs, toTs)),
+        ]);
+
+      return {
+        newSubscriptions,
+        activeSubscribers,
+        cancelledSubscribers,
+        revenue,
+      };
     };
 
     // Parallel fetch
@@ -142,10 +296,10 @@ export async function GET(request: NextRequest) {
       getStripeData(previousStart, previousEnd),
     ]);
 
-    // Google Ads - Placeholder
-    // If we had an API, we would fetch here.
-    const googleAdsCost = 0; 
-    const previousGoogleAdsCost = 0;
+    const [googleAdsCost, previousGoogleAdsCost] = await Promise.all([
+      getGoogleAdsCost(start, end),
+      getGoogleAdsCost(previousStart, previousEnd),
+    ]);
 
     return NextResponse.json({
       period: {
