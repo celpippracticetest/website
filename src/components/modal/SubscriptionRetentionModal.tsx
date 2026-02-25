@@ -61,6 +61,25 @@ const SubscriptionRetentionModal = ({
 
   if (!isOpen) return null;
 
+  const submitSurvey = async () => {
+    try {
+      // Don't await this, let it run in background
+      fetch("/api/users/save-cancellation-survey", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reason,
+          otherReason: reason === "other" ? otherReason : undefined,
+          alternativeService: reason === "alternative" ? alternativeService : undefined,
+          scores: reason === "passed" ? scores : undefined,
+          serviceFeedback: reason === "passed" ? serviceFeedback : undefined,
+        }),
+      });
+    } catch (error) {
+      console.error("Failed to submit survey", error);
+    }
+  };
+
   const handleReasonSelect = (r: Reason) => {
     setReason(r);
   };
@@ -177,7 +196,10 @@ const SubscriptionRetentionModal = ({
     let primaryButtonText = "Keep Subscription";
     let primaryAction = onClose;
     let secondaryButtonText = "Continue to Cancel";
-    let secondaryAction = () => setStep("confirm");
+    let secondaryAction = () => {
+        submitSurvey();
+        setStep("confirm");
+    };
 
     if (reason === "expensive") {
         title = "Special Offer: 20% Off";
@@ -257,9 +279,7 @@ const SubscriptionRetentionModal = ({
       );
       primaryButtonText = "Submit & Continue";
       primaryAction = () => {
-        // Here you would typically send the scores and feedback to your backend
-        console.log("Submitted scores:", scores);
-        console.log("Submitted feedback:", serviceFeedback);
+        submitSurvey();
         setStep("confirm");
       };
       secondaryButtonText = "Skip";
