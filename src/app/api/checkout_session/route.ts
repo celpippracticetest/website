@@ -248,6 +248,7 @@ export async function POST(req: NextRequest) {
       ...(promotionCode && { discounts: [{ promotion_code: promotionCode }] }),
       metadata: {
         user_id: user.id,
+        plan_name: productDetails.name,
         referral_code: userMetadata?.referralCode || null,
         ...(referralDiscountApplied && {
           referral_discount_applied:
@@ -258,6 +259,7 @@ export async function POST(req: NextRequest) {
         subscription_data: {
           metadata: {
             user_id: user.id,
+            plan_name: productDetails.name,
             referral_code: userMetadata?.referralCode || null,
             ...(referralDiscountApplied && {
               referral_discount_applied:

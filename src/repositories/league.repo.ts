@@ -459,13 +459,19 @@ export class LeagueRepository {
           user.email = clerkUser.emailAddresses[0]?.emailAddress;
           user.avatar = clerkUser.imageUrl;
         } catch (error: any) {
-          if (error.status === 404) {
+          // Check for 404 status or specific error codes indicating resource not found
+          const isNotFound = 
+            error.status === 404 || 
+            (error.errors && Array.isArray(error.errors) && error.errors.some((e: any) => e.code === 'resource_not_found'));
+
+          if (isNotFound) {
             console.log(`User ${user.userId} not found in Clerk, using fallback.`);
           } else {
-            console.log("Error fetching user name for:", user.userId, error);
+            console.error(`Error fetching user name for ${user.userId}:`, error.message || error);
           }
           user.name = user.userId.slice(-8); // Fallback to last 8 chars of userId
           user.email = null;
+          user.avatar = null;
         }
       }
 

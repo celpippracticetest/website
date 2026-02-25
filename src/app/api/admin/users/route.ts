@@ -20,9 +20,34 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const sortBy = searchParams.get("sortBy") || "lastActivity";
     const sortOrder = searchParams.get("sortOrder") || "desc";
+    const subscriptionStatus = searchParams.get("subscriptionStatus");
 
     const db = client.db();
     const userActivityCollection = db.collection("useractivities");
+
+    // Build Subscription Filter
+    const subscriptionFilter = [];
+    if (subscriptionStatus === "active") {
+      subscriptionFilter.push({
+        $match: { plan: { $in: ["premium", "pro", "enterprise"] } },
+      });
+    } else if (subscriptionStatus === "unsubscribed") {
+      subscriptionFilter.push({
+        $match: {
+          plan: { $nin: ["premium", "pro", "enterprise"] },
+          subscriptionHistory: { $elemMatch: { type: "subscription_created" } },
+        },
+      });
+    } else if (subscriptionStatus === "never") {
+      subscriptionFilter.push({
+        $match: {
+          plan: { $nin: ["premium", "pro", "enterprise"] },
+          subscriptionHistory: {
+            $not: { $elemMatch: { type: "subscription_created" } },
+          },
+        },
+      });
+    }
 
     // Build Search Filter
     // Note: We apply search at the END of the pipeline to ensure we filter the merged result
@@ -124,6 +149,20 @@ export async function GET(request: NextRequest) {
               ],
             },
           },
+          subscriptionHistory: {
+            $push: {
+              $cond: [
+                {
+                  $in: [
+                    "$eventType",
+                    ["subscription_created", "subscription_cancelled"],
+                  ],
+                },
+                { type: "$eventType", date: "$timestampUtc" },
+                "$$REMOVE",
+              ],
+            },
+          },
         },
       },
       // 2. Union with Users Collection
@@ -140,6 +179,13 @@ export async function GET(request: NextRequest) {
                 lastName: 1,
                 plan: 1,
                 planType: 1,
+                purchaseAmount: { $ifNull: ["$publicMetadata.purchaseAmount", 0] },
+                purchaseCurrency: { $ifNull: ["$publicMetadata.purchaseCurrency", "CAD"] },
+                totalSpend: { $ifNull: ["$publicMetadata.totalSpend", 0] },
+                utm_source: { $ifNull: ["$publicMetadata.utm_source", null] },
+                utm_medium: { $ifNull: ["$publicMetadata.utm_medium", null] },
+                utm_campaign: { $ifNull: ["$publicMetadata.utm_campaign", null] },
+                gclid: { $ifNull: ["$publicMetadata.gclid", null] },
                 createdAt: 1,
                 // Mark these as from 'users' collection so we can prioritize profile data
                 isUserProfile: { $literal: true },
@@ -156,6 +202,13 @@ export async function GET(request: NextRequest) {
           // Profile Data
           plan: { $max: "$plan" },
           planType: { $max: "$planType" },
+          purchaseAmount: { $max: "$purchaseAmount" },
+          purchaseCurrency: { $max: "$purchaseCurrency" },
+          totalSpend: { $max: "$totalSpend" },
+          utm_source: { $max: "$utm_source" },
+          utm_medium: { $max: "$utm_medium" },
+          utm_campaign: { $max: "$utm_campaign" },
+          gclid: { $max: "$gclid" },
           createdAt: { $max: "$createdAt" },
           // Activity Stats (Summing works because one doc has stats, the other has 0/null)
           lastActivity: { $max: "$lastActivity" },
@@ -171,6 +224,7 @@ export async function GET(request: NextRequest) {
           // Arrays need to be merged
           ipAddresses: { $push: "$ipAddresses" },
           userAgents: { $push: "$userAgents" },
+          subscriptionHistory: { $push: "$subscriptionHistory" },
         },
       },
       // 4. Clean up Arrays (Flatten)
@@ -190,6 +244,13 @@ export async function GET(request: NextRequest) {
               in: { $setUnion: ["$$value", { $ifNull: ["$$this", []] }] },
             },
           },
+          subscriptionHistory: {
+            $reduce: {
+              input: "$subscriptionHistory",
+              initialValue: [],
+              in: { $setUnion: ["$$value", { $ifNull: ["$$this", []] }] },
+            },
+          },
           // Ensure defaults
           plan: { $ifNull: ["$plan", "free"] },
           createdAt: { $ifNull: ["$createdAt", "$firstActivity"] }, // Fallback to first activity if no profile
@@ -197,6 +258,7 @@ export async function GET(request: NextRequest) {
       },
       // 5. Apply Search Filter (on the merged result)
       searchMatch,
+      ...subscriptionFilter,
       // 6. Sort
       {
         $sort: {
@@ -222,7 +284,71 @@ export async function GET(request: NextRequest) {
     const totalCount = result[0].metadata[0]?.total || 0;
 
     // Format Response
-    const formattedUsers = data.map((user: any) => ({
+    const formattedUsers = data.map((user: any) => {
+      // Calculate subscription details
+      const subHistory = (user.subscriptionHistory || []).sort(
+        (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+      
+      let subscriptionStatus = "never";
+      let subscriptionDurationDays = 0;
+      let subscriptionStartDate = null;
+      let subscriptionEndDate = null;
+
+      const isPremium =
+        user.plan === "premium" || user.plan === "pro" || user.plan === "enterprise";
+
+      if (isPremium) {
+        subscriptionStatus = "active";
+        // Find the latest start date
+        const lastStart = [...subHistory]
+          .reverse()
+          .find((e: any) => e.type === "subscription_created");
+        if (lastStart) {
+          subscriptionStartDate = lastStart.date;
+          subscriptionDurationDays = Math.round(
+            (Date.now() - new Date(lastStart.date).getTime()) /
+              (1000 * 60 * 60 * 24)
+          );
+        }
+      } else {
+        // Not active - check history
+        const lastStart = [...subHistory]
+          .reverse()
+          .find((e: any) => e.type === "subscription_created");
+          
+        if (lastStart) {
+          subscriptionStatus = "unsubscribed";
+          subscriptionStartDate = lastStart.date;
+          
+          // Find cancellation after start
+          const cancellation = subHistory.find(
+            (e: any) =>
+              e.type === "subscription_cancelled" &&
+              new Date(e.date).getTime() > new Date(lastStart.date).getTime()
+          );
+
+          if (cancellation) {
+            subscriptionEndDate = cancellation.date;
+            subscriptionDurationDays = Math.round(
+              (new Date(cancellation.date).getTime() -
+                new Date(lastStart.date).getTime()) /
+                (1000 * 60 * 60 * 24)
+            );
+          } else {
+             // Started but no cancellation event found, yet status is not premium.
+             // Could be expired or manually revoked.
+             // We'll calculate duration until now as a fallback or 0.
+             // Let's use duration until last activity or now.
+             subscriptionDurationDays = Math.round(
+              (Date.now() - new Date(lastStart.date).getTime()) /
+                (1000 * 60 * 60 * 24)
+            );
+          }
+        }
+      }
+
+      return {
       userId: user._id,
       email: user.email ?? null,
       lastActivity: user.lastActivity || null,
@@ -242,7 +368,18 @@ export async function GET(request: NextRequest) {
       userAgents: (user.userAgents || []).slice(0, 3),
       plan: user.plan,
       planType: user.planType || null,
-    }));
+      purchaseAmount: user.purchaseAmount || 0,
+      purchaseCurrency: user.purchaseCurrency || "CAD",
+      totalSpend: user.totalSpend || 0,
+      utm_source: user.utm_source || null,
+      utm_medium: user.utm_medium || null,
+      utm_campaign: user.utm_campaign || null,
+      gclid: user.gclid || null,
+      subscriptionStatus,
+      subscriptionDurationDays,
+      subscriptionStartDate,
+      subscriptionEndDate,
+    }});
 
     return NextResponse.json({
       users: formattedUsers,

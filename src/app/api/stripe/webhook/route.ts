@@ -43,6 +43,9 @@ async function updateUserPublicMetadata(
 
       if (newFields.plan) updateDoc.plan = newFields.plan;
       if (newFields.planType) updateDoc.planType = newFields.planType;
+      if (newFields.purchaseAmount) updateDoc.purchaseAmount = newFields.purchaseAmount;
+      if (newFields.purchaseCurrency) updateDoc.purchaseCurrency = newFields.purchaseCurrency;
+      if (newFields.totalSpend) updateDoc.totalSpend = newFields.totalSpend;
 
       await usersCollection.updateOne(
         { clerkUserId: userId },
@@ -412,7 +415,11 @@ export async function POST(req: Request) {
             // Mark that user has made a purchase (no more discounts)
             hasEverPurchased: true,
             purchaseDate: new Date().toISOString(),
-            plan: (metadata.plan_name || "premium").toLowerCase().includes("pro") ? "pro" : "premium"
+            plan: (metadata.plan_name || "premium").toLowerCase().includes("pro") ? "pro" : "premium",
+            planType: metadata.plan_name,
+            purchaseAmount: (session.amount_total || 0) / 100,
+            purchaseCurrency: (session.currency || "cad").toUpperCase(),
+            totalSpend: ((userMetadata.totalSpend as number) || 0) + ((session.amount_total || 0) / 100)
           });
           logger.info(
             "Cleared all discount fields for user after purchase",
@@ -427,7 +434,11 @@ export async function POST(req: Request) {
             planCancelled: false,
             hasEverPurchased: true,
             purchaseDate: new Date().toISOString(),
-            plan: (metadata.plan_name || "premium").toLowerCase().includes("pro") ? "pro" : "premium"
+            plan: (metadata.plan_name || "premium").toLowerCase().includes("pro") ? "pro" : "premium",
+            planType: metadata.plan_name,
+            purchaseAmount: (session.amount_total || 0) / 100,
+            purchaseCurrency: (session.currency || "cad").toUpperCase(),
+            totalSpend: ((userMetadata.totalSpend as number) || 0) + ((session.amount_total || 0) / 100)
           });
         }
 

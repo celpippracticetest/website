@@ -24,7 +24,7 @@
 /.playwright
 
 /scripts
-
+/docs
 # next.js
 /.next/
 /out/

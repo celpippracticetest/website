@@ -44,6 +44,8 @@ function getUserContext(): UserContext {
       return {
         user_id: user.id,
         user_plan: (user.publicMetadata as any)?.plan || "free",
+        user_plan_type: (user.publicMetadata as any)?.planType,
+        user_total_spend: (user.publicMetadata as any)?.totalSpend || 0,
         is_authenticated: true,
       };
     }

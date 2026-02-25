@@ -31,6 +31,14 @@ interface User {
   userAgents: string[];
   plan?: string;
   planType?: string;
+  totalSpend?: number;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  subscriptionStatus?: "active" | "unsubscribed" | "never";
+  subscriptionDurationDays?: number;
+  subscriptionStartDate?: string;
+  subscriptionEndDate?: string;
 }
 
 interface UsersResponse {
@@ -50,6 +58,7 @@ export default function UsersPage() {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState("lastActivity");
   const [sortOrder, setSortOrder] = useState("desc");
+  const [subscriptionStatus, setSubscriptionStatus] = useState("all");
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
@@ -65,6 +74,7 @@ export default function UsersPage() {
         search,
         sortBy,
         sortOrder,
+        subscriptionStatus,
       });
 
       const response = await fetch(`/api/admin/users?${params}`);
@@ -83,7 +93,7 @@ export default function UsersPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, [page, search, sortBy, sortOrder]);
+  }, [page, search, sortBy, sortOrder, subscriptionStatus]);
 
   const getRiskColor = (riskScore: number) => {
     if (riskScore >= 70) return "text-red-600 bg-red-50";
@@ -157,6 +167,16 @@ export default function UsersPage() {
           </div>
           <div className="flex gap-2">
             <select
+              value={subscriptionStatus}
+              onChange={(e) => setSubscriptionStatus(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Users</option>
+              <option value="active">Active Plan</option>
+              <option value="unsubscribed">Unsubscribed</option>
+              <option value="never">Never Subscribed</option>
+            </select>
+            <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -166,6 +186,7 @@ export default function UsersPage() {
               <option value="totalActivities">Total Activities</option>
               <option value="riskScore">Risk Score</option>
               <option value="plan">Plan (Premium)</option>
+              <option value="totalSpend">Total Spend</option>
             </select>
             <select
               value={sortOrder}
@@ -211,6 +232,12 @@ export default function UsersPage() {
 
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Plan
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Revenue
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Source
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Activities
@@ -261,16 +288,63 @@ export default function UsersPage() {
 
                       {/* Plan Type */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.plan === "premium" || user.plan === "pro"
-                            ? "bg-purple-100 text-purple-800"
-                            : "bg-gray-100 text-gray-800"
+                        <div className="flex flex-col gap-1 items-start">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              user.plan === "premium" || user.plan === "pro"
+                                ? "bg-purple-100 text-purple-800"
+                                : "bg-gray-100 text-gray-800"
                             }`}
-                        >
-                          {user.plan === "premium" || user.plan === "pro"
-                            ? `Premium ${user.planType ? `(${user.planType})` : ""}`
-                            : "Free"}
-                        </span>
+                          >
+                            {user.plan === "premium" || user.plan === "pro"
+                              ? `Premium ${
+                                  user.planType ? `(${user.planType})` : ""
+                                }`
+                              : "Free"}
+                          </span>
+                          {user.subscriptionStatus === "unsubscribed" && (
+                            <div className="flex flex-col text-xs text-red-600 font-medium mt-1">
+                              <span>Unsubscribed</span>
+                              <span>
+                                Duration: {user.subscriptionDurationDays} days
+                              </span>
+                            </div>
+                          )}
+                          {user.subscriptionStatus === "active" &&
+                            (user.subscriptionDurationDays || 0) > 0 && (
+                              <span className="text-xs text-green-600 mt-1">
+                                Active: {user.subscriptionDurationDays} days
+                              </span>
+                            )}
+                        </div>
+                      </td>
+
+                      {/* Revenue */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${(user.totalSpend || 0).toFixed(2)}
+                      </td>
+
+                      {/* Source */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="flex flex-col">
+                          {user.utm_source ? (
+                            <>
+                              <span className="font-medium text-gray-900">
+                                {user.utm_source}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {user.utm_medium}
+                              </span>
+                              {user.utm_campaign && (
+                                <span className="text-xs text-gray-400 truncate max-w-[150px]" title={user.utm_campaign}>
+                                  {user.utm_campaign}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-gray-400 text-xs">Direct / Unknown</span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Activities */}

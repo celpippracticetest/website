@@ -17,6 +17,8 @@ import { useClerk } from "@clerk/nextjs";
 import { useDeleteUserEmail } from "@/hooks/useDeleteUserEmail";
 import SvgCloseCircle from "@/components/icons/CloseCircle";
 import Link from "next/link";
+import SubscriptionRetentionModal from "@/components/modal/SubscriptionRetentionModal";
+import ChangePlanModal from "@/components/modal/ChangePlanModal";
 export default function Profile({ prevCheckout, subscriptionData }: any) {
   const { user } = useUser();
   const [planNameDisplay, setPlanNameDisplay] = useState<string>("");
@@ -90,8 +92,35 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
   const [confirmEmailId, setConfirmEmailId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [loadingPortal, setLoadingPortal] = useState(false);
+  const [showRetentionModal, setShowRetentionModal] = useState(false);
+  const [showChangePlanModal, setShowChangePlanModal] = useState(false);
+  const [availablePlans, setAvailablePlans] = useState([]);
+  const [loadingPlans, setLoadingPlans] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [isResubscribing, setIsResubscribing] = useState(false);
 
-  const handleManageSubscription = async () => {
+  const fetchAvailablePlans = async () => {
+    try {
+      setLoadingPlans(true);
+      const response = await fetch("/api/plans/available");
+      if (response.ok) {
+        const data = await response.json();
+        setAvailablePlans(data.plans || []);
+      }
+    } catch (error) {
+      console.error("Error fetching plans:", error);
+    } finally {
+      setLoadingPlans(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showChangePlanModal && availablePlans.length === 0) {
+      fetchAvailablePlans();
+    }
+  }, [showChangePlanModal]);
+
+  const redirectToPortal = async () => {
     try {
       setLoadingPortal(true);
       const response = await fetch("/api/stripe/create-portal-session", {
@@ -111,8 +140,105 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
       setToastMessage(error instanceof Error ? error.message : "Failed to load subscription portal");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
-    } finally {
       setLoadingPortal(false);
+    }
+    // Note: We don't set loadingPortal(false) on success because we are redirecting
+  };
+
+  const handleManageSubscription = () => {
+    setShowChangePlanModal(true);
+  };
+
+  const handleCancelSubscription = () => {
+    setShowRetentionModal(true);
+  };
+
+  const confirmCancellation = async () => {
+    try {
+      setIsCancelling(true);
+      const response = await fetch("/api/users/cancel-subscription", {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to cancel subscription");
+      }
+
+      setToastType("success");
+      setToastMessage("Subscription cancelled successfully");
+      setShowToast(true);
+      setShowRetentionModal(false);
+      await user?.reload();
+      router.refresh();
+
+    } catch (error: any) {
+      setToastType("error");
+      setToastMessage(error.message || "Failed to cancel subscription");
+      setShowToast(true);
+    } finally {
+      setIsCancelling(false);
+      setTimeout(() => setShowToast(false), 3000);
+    }
+  };
+
+  const handleChangePlan = async (priceId: string) => {
+    try {
+      setLoadingPlans(true);
+      const response = await fetch("/api/users/update-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPriceId: priceId }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update subscription");
+      }
+
+      setToastType("success");
+      setToastMessage("Plan updated successfully");
+      setShowToast(true);
+      setShowChangePlanModal(false);
+      await user?.reload();
+      // Reload page or re-fetch subscription data to update UI
+      router.refresh();
+
+    } catch (error: any) {
+      setToastType("error");
+      setToastMessage(error.message || "Failed to update subscription");
+      setShowToast(true);
+    } finally {
+      setLoadingPlans(false);
+      setTimeout(() => setShowToast(false), 3000);
+    }
+  };
+
+  const handleResubscribe = async () => {
+    try {
+      setIsResubscribing(true);
+      const response = await fetch("/api/users/reactivate-subscription", {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to resubscribe");
+      }
+
+      setToastType("success");
+      setToastMessage("Subscription reactivated successfully!");
+      setShowToast(true);
+      await user?.reload();
+      router.refresh();
+
+    } catch (error: any) {
+      setToastType("error");
+      setToastMessage(error.message || "Failed to resubscribe");
+      setShowToast(true);
+    } finally {
+      setIsResubscribing(false);
+      setTimeout(() => setShowToast(false), 3000);
     }
   };
 
@@ -120,7 +246,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
     if (!user) return;
     handleDeleteUserEmail(emailId, {
       onSuccess: () => {
-        user.reload().then(() => {
+        user?.reload().then(() => {
           setToastType("success");
           setToastMessage("Email removed successfully");
           setShowToast(true);
@@ -142,7 +268,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
     if (!newEmail) throw new Error("Email not provided");
     const createdEmail = await user.createEmailAddress({ email: newEmail });
     await createdEmail.prepareVerification({ strategy: "email_code" });
-    await user.reload();
+    await user?.reload();
     return createdEmail;
   };
 
@@ -208,7 +334,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
       if (!email) throw new Error("Email not found");
 
       await email.attemptVerification({ code: verificationCode });
-      await user.reload();
+      await user?.reload();
       const verified = user.emailAddresses.find((e) => e.id === email.id);
       if (!verified || verified.verification?.status !== "verified") {
         throw new Error("Email not verified yet");
@@ -358,7 +484,17 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
                 </span>
               )}
               {showEditEmail && (
-                <div className="fixed inset-0 bg-[#17161680] flex justify-center items-center z-[9999]">
+                <div 
+                  className="fixed inset-0 bg-[#17161680] flex justify-center items-center z-[9999]"
+                  onClick={(e) => {
+                    if (e.target === e.currentTarget) {
+                      setShowEditEmail(false);
+                      setStep("input");
+                      setNewEmail("");
+                      setVerificationCode("");
+                    }
+                  }}
+                >
                   <div className="bg-white rounded-[24px] w-full max-w-[400px] px-[24px] py-[24px] text-center relative">
                     <button
                       className="absolute top-4 right-4 text-gray-500"
@@ -420,30 +556,57 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
               </span>
 
               {(user?.publicMetadata.plan == "premium" || user?.publicMetadata.plan == "pro" || subscriptionData) && (
-                <span className="text-[14px] font-semibold text-[#F27059]">
-                  {isLoaded ? planNameDisplay : "Loading..."}
-                </span>
+                <div className="flex flex-col">
+                  <span className="text-[14px] font-semibold text-[#F27059]">
+                    {isLoaded ? planNameDisplay : "Loading..."}
+                  </span>
+                  {!user?.publicMetadata?.planCancelled && subscriptionData?.currentPeriodEnd && (
+                    <span className="text-[12px] text-[#76808F] font-normal">
+                      Next payment: {new Date(subscriptionData.currentPeriodEnd * 1000).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
               )}
             </div>
             <div>
               {(user?.publicMetadata.plan == "premium" || user?.publicMetadata.plan == "pro" || subscriptionData) ? (
                 <div className="flex gap-[8px] screen744:!gap-[16px] items-center flex-row-reverse justify-start flex-wrap">
-                  <button
-                    onClick={handleManageSubscription}
-                    disabled={loadingPortal}
-                    className={` ${user.publicMetadata.planCancelled == true
-                      ? "text-gray"
-                      : "text-[#EE4266]"
-                      } cursor-pointer text-[#EE4266] text-[14px] font-normal w-[150px] text-center disabled:opacity-50`}
-                  >
-                    {loadingPortal ? "Loading..." : "Manage Subscription"}
-                  </button>
+                  {user.publicMetadata.planCancelled ? (
+                    <div className="flex flex-col items-end gap-1">
+                      <button
+                        onClick={handleResubscribe}
+                        disabled={isResubscribing}
+                        className="flex items-center justify-center bg-[#4A7DFF] text-white rounded-[24px] font-normal text-[14px] w-[140px] h-[40px] cursor-pointer disabled:opacity-70"
+                      >
+                        {isResubscribing ? "Processing..." : "Resubscribe"}
+                      </button>
+                      {subscriptionData?.currentPeriodEnd && (
+                        <span className="text-[12px] text-[#EF4444] font-medium">
+                          Ends on {new Date(subscriptionData.currentPeriodEnd * 1000).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleManageSubscription}
+                      disabled={loadingPortal}
+                      className={`flex items-center justify-center border-[#76808F] text-[#76808F] rounded-[24px] border-[1px] font-normal text-[14px] w-[113px] h-[40px] cursor-pointer`}
+                    >
+                      Change Plan
+                    </button>
+                  )}
                 </div>
               ) : (
                 <span className="text-green-700">Free</span>
               )}
             </div>
           </div>
+          {(user?.publicMetadata.plan == "premium" || user?.publicMetadata.plan == "pro" || subscriptionData) &&
+            !user.publicMetadata.planCancelled && (
+              <div className="flex justify-end mt-2">
+                {/* Cancel button moved to Change Plan Modal */}
+              </div>
+            )}
 
           <div className="h-[1px] mt-[24px] bg-[#D5D6D8]"></div>
           <div className="flex justify-between items-center mt-[24px] flex-wrap">
@@ -576,7 +739,10 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
 
       </div>
       {confirmEmailId && (
-        <div className="fixed inset-0  bg-[#17161680] flex justify-center items-center z-50">
+        <div 
+          className="fixed inset-0  bg-[#17161680] flex justify-center items-center z-50"
+          onClick={(e) => e.target === e.currentTarget && setConfirmEmailId(null)}
+        >
           <div className="bg-white flex  items-center flex-col rounded-[24px] w-full max-w-[429px] h-[214px] pt-[24px] pb-[16px] px-[24px] text-center ">
             <SvgTrash />
             <div className="text-[#EF7300] text-center text-[18px] font-medium pt-[16px]">
@@ -606,7 +772,10 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
         </div>
       )}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-[#17161680] flex justify-center items-center  z-[9999]">
+        <div 
+          className="fixed inset-0 bg-[#17161680] flex justify-center items-center  z-[9999]"
+          onClick={(e) => e.target === e.currentTarget && setShowDeleteConfirm(false)}
+        >
           <div className="bg-white flex items-center flex-col rounded-[24px] w-full max-w-[429px] h-[214px] pt-[24px] pb-[16px] px-[24px] text-center mx-[16px]">
             <SvgCloseCircle />
             <div className="text-[#EF7300] text-[18px] font-medium pt-[16px]">
@@ -655,7 +824,27 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
           </div>
         </div>
       )}
-      {/* Cancel Subscription Modal Removed */}
+      {/* Cancel Subscription Modal */}
+      <SubscriptionRetentionModal
+        isOpen={showRetentionModal}
+        onClose={() => setShowRetentionModal(false)}
+        onConfirmCancellation={async () => {
+          await confirmCancellation();
+          setShowRetentionModal(false);
+        }}
+        loading={isCancelling}
+      />
+      {/* Change Plan Modal */}
+      <ChangePlanModal
+        isOpen={showChangePlanModal}
+        onClose={() => setShowChangePlanModal(false)}
+        availablePlans={availablePlans}
+        currentPlanName={planNameDisplay}
+        currentPriceId={subscriptionData?.planId}
+        onChangePlan={handleChangePlan}
+        loading={loadingPlans}
+        onCancelSubscription={handleCancelSubscription}
+      />
       {/* Set Password Modal */}
       {showSetPasswordModal && (
         <SetPasswordModal
@@ -704,7 +893,10 @@ function SetPasswordModal({
   });
 
   return (
-    <div className="fixed inset-0 bg-[#17161680] flex justify-center items-center  z-[9999]">
+    <div 
+      className="fixed inset-0 bg-[#17161680] flex justify-center items-center  z-[9999]"
+      onClick={(e) => e.target === e.currentTarget && setShowSetPasswordModal(false)}
+    >
       <div className="bg-white rounded-[16px] w-full max-w-[429px] h-[468px] text-center relative flex flex-col">
         <div className="flex items-center p-[16px] h-[56px] rounded-se-[16px] rounded-tl-[16px] bg-[#F3F3F3] border-b-[2px] border-[#D5D6D8] justify-between text-[#212E42] text-[18px] font-semibold mb-4">
           <span>Set Your Password</span>

@@ -216,7 +216,7 @@ export default function LeadCaptureDashboardPage() {
       const response = await fetch("/api/admin/lead-capture/config", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: selectedConfigId, ...config }),
+        body: JSON.stringify({ ...config, id: selectedConfigId }),
       });
       const payload = await response.json().catch(() => ({}));
 

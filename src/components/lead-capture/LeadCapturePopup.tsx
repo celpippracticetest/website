@@ -91,6 +91,11 @@ export default function LeadCapturePopup() {
     if (!pathname) return true;
     if (pathname.startsWith("/cms")) return false;
     if (pathname.startsWith("/dashboard")) return false;
+    if (pathname.startsWith("/auth")) return false;
+    if (pathname.startsWith("/sign-in")) return false;
+    if (pathname.startsWith("/sign-up")) return false;
+    if (pathname.startsWith("/login")) return false;
+    if (pathname.startsWith("/register")) return false;
     return true;
   }, [pathname]);
 
@@ -100,26 +105,26 @@ export default function LeadCapturePopup() {
       const isPremium = plan === "premium" || plan === "pro";
       const wasPremiumByFlag = Boolean(
         (user?.publicMetadata as any)?.wasPremium ||
-          (user?.publicMetadata as any)?.everPremium ||
-          (user?.publicMetadata as any)?.purchaseDate
+        (user?.publicMetadata as any)?.everPremium ||
+        (user?.publicMetadata as any)?.purchaseDate
       );
       const isWasPremium = !isPremium && wasPremiumByFlag;
 
       const sorted = [...list].sort((a, b) => a.priority - b.priority);
       return sorted.find((item) => {
-          if (!isLoaded) return false;
-          if (!item.isEnabled) return false;
-          if (isCooldownActive(item.id)) return false;
-          if (!user && !item.audience.showToGuest) return false;
-          if (user && !item.audience.showToLoggedIn) return false;
-          if (isPremium && !item.audience.showToPremium) return false;
-          if (isWasPremium && !item.audience.showToWasPremium) return false;
-          if (item.targetPaths.length === 0) return true;
-          if (!pathname) return true;
-          return item.targetPaths.some((pathRule) =>
-            pathname.toLowerCase().includes(pathRule.toLowerCase())
-          );
-        }) || null;
+        if (!isLoaded) return false;
+        if (!item.isEnabled) return false;
+        if (isCooldownActive(item.id)) return false;
+        if (!user && !item.audience.showToGuest) return false;
+        if (user && !item.audience.showToLoggedIn) return false;
+        if (isPremium && !item.audience.showToPremium) return false;
+        if (isWasPremium && !item.audience.showToWasPremium) return false;
+        if (item.targetPaths.length === 0) return true;
+        if (!pathname) return true;
+        return item.targetPaths.some((pathRule) =>
+          pathname.toLowerCase().includes(pathRule.toLowerCase())
+        );
+      }) || null;
     },
     [isLoaded, pathname, user]
   );

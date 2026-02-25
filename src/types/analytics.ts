@@ -300,6 +300,8 @@ export interface UserContext {
   user_id?: string;
   userPlan?: string;
   user_plan?: string;
+  user_plan_type?: string;
+  user_total_spend?: number;
   isAuthenticated?: boolean;
   is_authenticated?: boolean;
 }
