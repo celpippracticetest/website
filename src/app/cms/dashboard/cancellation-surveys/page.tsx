@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { RotateCw } from "lucide-react";
 
 interface CancellationSurvey {
@@ -29,6 +29,36 @@ interface SurveysResponse {
   };
 }
 
+interface RetentionSummaryResponse {
+  days: number;
+  summary: {
+    started: number;
+    kept: number;
+    cancelled: number;
+    keepRate: number;
+    cancelRate: number;
+  };
+  reasonBreakdown: Array<{
+    reason: string;
+    count: number;
+  }>;
+  trend: Array<{
+    _id: {
+      date: string;
+      eventName: string;
+    };
+    count: number;
+  }>;
+}
+
+const KEEP_EVENT_NAMES = new Set([
+  "keep_subscription_clicked",
+  "kept_with_discount",
+  "kept_on_final_confirmation",
+  "pause_subscription_success",
+  "contact_support_selected",
+]);
+
 export default function CancellationSurveysPage() {
   const [surveys, setSurveys] = useState<CancellationSurvey[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +69,78 @@ export default function CancellationSurveysPage() {
     totalCount: 0,
     totalPages: 0,
   });
+  const [retentionSummary, setRetentionSummary] =
+    useState<RetentionSummaryResponse | null>(null);
+
+  const trendSeries = useMemo(() => {
+    if (!retentionSummary?.trend?.length) {
+      return [];
+    }
+
+    const bucket = new Map<
+      string,
+      { date: string; started: number; kept: number; cancelled: number }
+    >();
+
+    for (const item of retentionSummary.trend) {
+      const date = item._id.date;
+      const eventName = item._id.eventName;
+      const current = bucket.get(date) || {
+        date,
+        started: 0,
+        kept: 0,
+        cancelled: 0,
+      };
+
+      if (eventName === "flow_opened") {
+        current.started += item.count;
+      } else if (eventName === "subscription_cancelled_success") {
+        current.cancelled += item.count;
+      } else if (KEEP_EVENT_NAMES.has(eventName)) {
+        current.kept += item.count;
+      }
+
+      bucket.set(date, current);
+    }
+
+    return Array.from(bucket.values()).sort((a, b) =>
+      a.date.localeCompare(b.date)
+    );
+  }, [retentionSummary]);
+
+  const chartMeta = useMemo(() => {
+    if (!trendSeries.length) return null;
+    const maxValue = Math.max(
+      ...trendSeries.map((d) => Math.max(d.started, d.kept, d.cancelled)),
+      1
+    );
+    return { maxValue };
+  }, [trendSeries]);
+
+  const buildLinePoints = (
+    key: "started" | "kept" | "cancelled",
+    width: number,
+    height: number,
+    padding: number
+  ) => {
+    if (!trendSeries.length || !chartMeta) return "";
+
+    const innerWidth = width - padding * 2;
+    const innerHeight = height - padding * 2;
+    const xStep =
+      trendSeries.length > 1 ? innerWidth / (trendSeries.length - 1) : 0;
+
+    return trendSeries
+      .map((point, index) => {
+        const x = padding + index * xStep;
+        const y =
+          padding +
+          innerHeight -
+          (point[key] / chartMeta.maxValue) * innerHeight;
+        return `${x},${y}`;
+      })
+      .join(" ");
+  };
 
   const fetchSurveys = async () => {
     setLoading(true);
@@ -47,11 +149,21 @@ export default function CancellationSurveysPage() {
         page: page.toString(),
       });
 
-      const response = await fetch(`/api/admin/cancellation-surveys?${params}`);
-      if (response.ok) {
-        const data: SurveysResponse = await response.json();
+      const [surveysResponse, retentionResponse] = await Promise.all([
+        fetch(`/api/admin/cancellation-surveys?${params}`),
+        fetch("/api/admin/cancellation-retention?days=30"),
+      ]);
+
+      if (surveysResponse.ok) {
+        const data: SurveysResponse = await surveysResponse.json();
         setSurveys(data.surveys);
         setPagination(data.pagination);
+      }
+
+      if (retentionResponse.ok) {
+        const retentionData: RetentionSummaryResponse =
+          await retentionResponse.json();
+        setRetentionSummary(retentionData);
       }
     } catch (error) {
       console.error("Error fetching surveys:", error);
@@ -93,6 +205,136 @@ export default function CancellationSurveysPage() {
           <RotateCw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
         </button>
       </div>
+
+      {retentionSummary && (
+        <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+          <div className="mb-3">
+            <h2 className="text-lg font-semibold text-gray-900">
+              Cancellation Retention ({retentionSummary.days}d)
+            </h2>
+            <p className="text-sm text-gray-600">
+              Users who started cancellation but kept their subscription
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <div className="rounded-md border border-blue-100 bg-blue-50 px-3 py-2 min-w-[140px]">
+              <div className="text-xs text-blue-700">Started Flow</div>
+              <div className="text-xl font-semibold text-blue-900">
+                {retentionSummary.summary.started}
+              </div>
+            </div>
+            <div className="rounded-md border border-green-100 bg-green-50 px-3 py-2 min-w-[140px]">
+              <div className="text-xs text-green-700">Kept Subscription</div>
+              <div className="text-xl font-semibold text-green-900">
+                {retentionSummary.summary.kept}
+              </div>
+            </div>
+            <div className="rounded-md border border-red-100 bg-red-50 px-3 py-2 min-w-[140px]">
+              <div className="text-xs text-red-700">Cancelled</div>
+              <div className="text-xl font-semibold text-red-900">
+                {retentionSummary.summary.cancelled}
+              </div>
+            </div>
+            <div className="rounded-md border border-purple-100 bg-purple-50 px-3 py-2 min-w-[140px]">
+              <div className="text-xs text-purple-700">Keep Rate</div>
+              <div className="text-xl font-semibold text-purple-900">
+                {retentionSummary.summary.keepRate}%
+              </div>
+            </div>
+          </div>
+
+          {retentionSummary.reasonBreakdown.length > 0 && (
+            <div className="mt-4">
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">
+                Top Keep Reasons
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {retentionSummary.reasonBreakdown.map((item) => (
+                  <span
+                    key={item.reason}
+                    className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-700"
+                  >
+                    {item.reason}: {item.count}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {trendSeries.length > 0 && (
+            <div className="mt-4">
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">
+                Daily Trend
+              </h3>
+              <div className="w-full rounded-md border border-gray-200 p-3">
+                <svg
+                  viewBox="0 0 720 220"
+                  className="w-full h-[220px]"
+                  role="img"
+                  aria-label="Cancellation retention trend line chart"
+                >
+                  <line
+                    x1="40"
+                    y1="180"
+                    x2="700"
+                    y2="180"
+                    stroke="#E5E7EB"
+                    strokeWidth="1"
+                  />
+                  <line
+                    x1="40"
+                    y1="20"
+                    x2="40"
+                    y2="180"
+                    stroke="#E5E7EB"
+                    strokeWidth="1"
+                  />
+
+                  <polyline
+                    fill="none"
+                    stroke="#2563EB"
+                    strokeWidth="2.5"
+                    points={buildLinePoints("started", 720, 220, 40)}
+                  />
+                  <polyline
+                    fill="none"
+                    stroke="#16A34A"
+                    strokeWidth="2.5"
+                    points={buildLinePoints("kept", 720, 220, 40)}
+                  />
+                  <polyline
+                    fill="none"
+                    stroke="#DC2626"
+                    strokeWidth="2.5"
+                    points={buildLinePoints("cancelled", 720, 220, 40)}
+                  />
+                </svg>
+
+                <div className="flex items-center gap-4 text-xs text-gray-600 mt-2">
+                  <span className="inline-flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-blue-600" />
+                    Started
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-green-600" />
+                    Kept
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-red-600" />
+                    Cancelled
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] text-gray-500 mt-2">
+                  <span>{trendSeries[0]?.date}</span>
+                  <span>{trendSeries[trendSeries.length - 1]?.date}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
         {loading ? (

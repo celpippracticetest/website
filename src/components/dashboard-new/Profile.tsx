@@ -484,7 +484,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
                 </span>
               )}
               {showEditEmail && (
-                <div 
+                <div
                   className="fixed inset-0 bg-[#17161680] flex justify-center items-center z-[9999]"
                   onClick={(e) => {
                     if (e.target === e.currentTarget) {
@@ -737,9 +737,32 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
           </div>
         </div>
 
+        <div className="flex flex-col h-auto mt-[16px] rounded-[8px] bg-white p-[16px]">
+
+          <div className="mt-[12px] flex flex-wrap items-center gap-[8px] screen744:gap-[12px]!">
+            <Link
+              href="/privacy-policy"
+              className="inline-flex h-[28px] items-center text-[14px] font-medium text-[#316BFF] underline-offset-2 hover:underline"
+            >
+              Privacy Policy
+            </Link>
+            <Link
+              href="/terms-of-service"
+              className="inline-flex h-[28px] items-center text-[14px] font-medium text-[#316BFF] underline-offset-2 hover:underline"
+            >
+              Terms of Service
+            </Link>
+            <Link
+              href="/refund-policy"
+              className="inline-flex h-[28px] items-center text-[14px] font-medium text-[#316BFF] underline-offset-2 hover:underline"
+            >
+              Refund Policy
+            </Link>
+          </div>
+        </div>
       </div>
       {confirmEmailId && (
-        <div 
+        <div
           className="fixed inset-0  bg-[#17161680] flex justify-center items-center z-50"
           onClick={(e) => e.target === e.currentTarget && setConfirmEmailId(null)}
         >
@@ -772,7 +795,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
         </div>
       )}
       {showDeleteConfirm && (
-        <div 
+        <div
           className="fixed inset-0 bg-[#17161680] flex justify-center items-center  z-[9999]"
           onClick={(e) => e.target === e.currentTarget && setShowDeleteConfirm(false)}
         >
@@ -893,7 +916,7 @@ function SetPasswordModal({
   });
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-[#17161680] flex justify-center items-center  z-[9999]"
       onClick={(e) => e.target === e.currentTarget && setShowSetPasswordModal(false)}
     >

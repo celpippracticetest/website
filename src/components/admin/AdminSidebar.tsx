@@ -48,6 +48,7 @@ const mainItems: SidebarGroup = {
     { key: "onboarding-new", label: "Onboarding New", icon: Compass, href: "/cms/dashboard?tab=onboarding-new" },
     { key: "plans", label: "Plans", icon: ClipboardList, href: "/cms/dashboard/plans" },
     { key: "withdrawal-requests", label: "Withdrawals", icon: FileText, href: "/cms/dashboard/withdrawal-requests" },
+    { key: "refund-requests", label: "Refund Requests", icon: FileText, href: "/cms/dashboard/refund-requests" },
     { key: "users", label: "Users", icon: Users, href: "/cms/dashboard/users" },
     { key: "cancellation-surveys", label: "Cancellation Reasons", icon: FileText, href: "/cms/dashboard/cancellation-surveys" },
     { key: "lead-capture", label: "Lead Capture", icon: Mail, href: "/cms/dashboard/lead-capture" },

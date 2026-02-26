@@ -611,6 +611,35 @@ export const trackEngagement = {
       lead_capture_id: leadCaptureId,
     });
   },
+
+  refundRequestSubmitted: (
+    requestReason: string,
+    trackingCode?: string
+  ) => {
+    pushToDataLayer({
+      event: "refund_request_submitted",
+      refund_request_reason: requestReason,
+      refund_tracking_code: trackingCode,
+    });
+  },
+
+  refundRequestTrackingSearched: (trackingCode: string) => {
+    pushToDataLayer({
+      event: "refund_request_tracking_searched",
+      refund_tracking_code: trackingCode,
+    });
+  },
+
+  refundRequestStatusViewed: (
+    status: string,
+    rejectionReason?: string
+  ) => {
+    pushToDataLayer({
+      event: "refund_request_status_viewed",
+      refund_request_status: status,
+      refund_rejection_reason: rejectionReason,
+    });
+  },
 };
 
 /**

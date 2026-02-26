@@ -12,12 +12,30 @@ export default function ActiveUsersTracker() {
   const { userId } = useAuth();
   const sessionIdRef = useRef<string>(`session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hasLoggedFetchFailureRef = useRef(false);
   const botUserAgentRegex =
     /bot|crawler|spider|googlebot|bingbot|slurp|duckduckbot|baiduspider|yandex/i;
 
   const isBotClient =
     typeof navigator !== "undefined" &&
     botUserAgentRegex.test(navigator.userAgent || "");
+
+  const logFetchFailure = (message: string, error: unknown) => {
+    if (process.env.NODE_ENV !== "development") return;
+
+    const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
+    const isLikelyNetworkFailure = error instanceof TypeError;
+
+    if (isOffline || isLikelyNetworkFailure) {
+      if (!hasLoggedFetchFailureRef.current) {
+        console.warn(`${message} skipped due to a temporary network issue or blocked request.`);
+        hasLoggedFetchFailureRef.current = true;
+      }
+      return;
+    }
+
+    console.error(message, error);
+  };
 
   useEffect(() => {
     if (isBotClient) return;
@@ -65,13 +83,14 @@ export default function ActiveUsersTracker() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId }),
       });
+      if (response.ok) {
+        hasLoggedFetchFailureRef.current = false;
+      }
       if (!response.ok && process.env.NODE_ENV === "development") {
         console.warn("Heartbeat request was not successful");
       }
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Failed to send heartbeat:", error);
-      }
+      logFetchFailure("Failed to send heartbeat:", error);
     }
   };
 
@@ -81,14 +100,16 @@ export default function ActiveUsersTracker() {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId }),
+        keepalive: true,
       });
+      if (response.ok) {
+        hasLoggedFetchFailureRef.current = false;
+      }
       if (!response.ok && process.env.NODE_ENV === "development") {
         console.warn("Offline heartbeat request was not successful");
       }
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Failed to mark offline:", error);
-      }
+      logFetchFailure("Failed to mark offline:", error);
     }
   };
 

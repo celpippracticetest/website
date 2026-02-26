@@ -7,7 +7,21 @@ export async function generateMetadata(): Promise<Metadata> {
   const isPreview = appBaseUrl.includes("vercel.app");
   return {
     title: "Refund Policy | CELPIPPRACTICETEST.com",
-    description: "Review the Refund Policy for CELPIP preparation platform.",
+    description:
+      "Review CELPIP Practice Test refund eligibility, timelines, and refund request process.",
+    keywords: [
+      "CELPIP refund policy",
+      "CELPIP subscription refund",
+      "refund request terms",
+      "CELPIP Practice Test refund",
+    ],
+    openGraph: {
+      title: "Refund Policy | CELPIPPRACTICETEST.com",
+      description:
+        "Review CELPIP Practice Test refund eligibility, timelines, and refund request process.",
+      type: "article",
+      url: "https://celpippracticetest.com/refund-policy",
+    },
     alternates: {
       canonical: "https://celpippracticetest.com/refund-policy",
     },

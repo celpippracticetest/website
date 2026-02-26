@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { clerkClient } from "@clerk/express";
 import { auth } from "@clerk/nextjs/server";
 import Stripe from "stripe";
+import clientPromise from "@/lib/mongodb";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -67,6 +68,17 @@ export async function POST(req: NextRequest) {
       publicMetadata: {
         planCancelled: true,
       },
+    });
+
+    const mongoClient = await clientPromise;
+    const db = mongoClient.db();
+    await db.collection("cancellation_flow_events").insertOne({
+      userId,
+      eventName: "subscription_cancelled_success",
+      step: "confirm",
+      reason: null,
+      metadata: null,
+      createdAt: new Date(),
     });
 
     return NextResponse.json({ success: true });

@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import SvgCloseCircle from "@/components/icons/CloseCircle";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
 import SvgCopy from "@/components/icons/Copy";
+import { pushToDataLayer } from "@/lib/gtm";
 
 interface SubscriptionRetentionModalProps {
   isOpen: boolean;
@@ -33,6 +34,39 @@ const SubscriptionRetentionModal = ({
   const [copied, setCopied] = useState(false);
   const [isPausing, setIsPausing] = useState(false);
 
+  const trackCancellationEvent = (
+    eventName: string,
+    extra?: { reason?: Reason; step?: Step; metadata?: Record<string, unknown> }
+  ) => {
+    const payload = {
+      eventName,
+      reason: extra?.reason ?? reason,
+      step: extra?.step ?? step,
+      metadata: extra?.metadata,
+    };
+
+    pushToDataLayer({
+      event: "subscription_retention_event",
+      retention_event_name: payload.eventName,
+      cancellation_reason: payload.reason ?? undefined,
+      cancellation_step: payload.step ?? undefined,
+      metadata: payload.metadata,
+    });
+
+    fetch("/api/users/cancellation-flow-event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }).catch((error) => {
+      console.error("Failed to save cancellation flow event", error);
+    });
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    trackCancellationEvent("flow_opened", { step: "survey" });
+  }, [isOpen]);
+
   const handlePauseSubscription = async () => {
     try {
       setIsPausing(true);
@@ -47,11 +81,15 @@ const SubscriptionRetentionModal = ({
 
       // We might want to show a toast or message here
       // For now, let's just close the modal as "Success"
+      trackCancellationEvent("pause_subscription_success", {
+        metadata: { pauseMonths: 3 },
+      });
       onClose();
       // Optionally reload the page to reflect changes if needed
       window.location.reload();
     } catch (error) {
       console.error(error);
+      trackCancellationEvent("pause_subscription_failed");
       // Handle error (maybe set an error state to show in modal)
     } finally {
       setIsPausing(false);
@@ -82,10 +120,12 @@ const SubscriptionRetentionModal = ({
 
   const handleReasonSelect = (r: Reason) => {
     setReason(r);
+    trackCancellationEvent("reason_selected", { reason: r });
   };
 
   const handleSurveyNext = () => {
     if (!reason) return;
+    trackCancellationEvent("survey_next_clicked");
     setStep("offer");
   };
 
@@ -174,7 +214,12 @@ const SubscriptionRetentionModal = ({
 
       <div className="flex gap-3 mt-4">
         <button
-          onClick={onClose}
+          onClick={() => {
+            trackCancellationEvent("keep_subscription_clicked", {
+              step: "survey",
+            });
+            onClose();
+          }}
           className="flex-1 py-2.5 rounded-full bg-[#0DAA94] text-white font-medium text-[14px] hover:bg-[#0DAA94]/80 transition-colors shadow-lg shadow-teal-100"
         >
           Keep Subscription
@@ -194,9 +239,13 @@ const SubscriptionRetentionModal = ({
     let title = "Wait! Don't lose your progress";
     let content = <p className="text-[#76808F]">Are you sure you want to cancel? You'll lose access to all premium features.</p>;
     let primaryButtonText = "Keep Subscription";
-    let primaryAction = onClose;
+    let primaryAction = () => {
+      trackCancellationEvent("keep_subscription_clicked", { step: "offer" });
+      onClose();
+    };
     let secondaryButtonText = "Continue to Cancel";
     let secondaryAction = () => {
+        trackCancellationEvent("continue_to_cancel_clicked");
         submitSurvey();
         setStep("confirm");
     };
@@ -226,7 +275,10 @@ const SubscriptionRetentionModal = ({
         );
         primaryButtonText = "Use Discount & Stay";
         // For "Expensive", "Keep Subscription" implies they take the offer.
-        primaryAction = onClose;
+        primaryAction = () => {
+          trackCancellationEvent("kept_with_discount");
+          onClose();
+        };
     } else if (reason === "passed") {
       title = "Congratulations!";
       content = (
@@ -294,6 +346,7 @@ const SubscriptionRetentionModal = ({
         );
         primaryButtonText = "Contact Support";
         primaryAction = () => {
+             trackCancellationEvent("contact_support_selected");
              window.location.href = "mailto:support@celpippracticetest.com";
              onClose();
         };
@@ -351,13 +404,21 @@ const SubscriptionRetentionModal = ({
 
       <div className="flex gap-3 mt-6">
         <button
-          onClick={onClose}
+          onClick={() => {
+            trackCancellationEvent("kept_on_final_confirmation", {
+              step: "confirm",
+            });
+            onClose();
+          }}
           className="flex-1 py-2.5 rounded-full bg-[#0DAA94] text-white font-medium text-[14px] hover:bg-[#0DAA94]/80 transition-colors shadow-lg shadow-teal-100"
         >
           Keep It
         </button>
         <button
-          onClick={onConfirmCancellation}
+          onClick={() => {
+            trackCancellationEvent("confirm_cancel_clicked", { step: "confirm" });
+            onConfirmCancellation();
+          }}
           disabled={loading}
           className="flex-1 py-2.5 rounded-full text-[#EE4266] border border-[#EE4266] font-medium text-[14px] hover:bg-red-50 transition-colors disabled:opacity-70"
         >
@@ -369,12 +430,20 @@ const SubscriptionRetentionModal = ({
 
   return (
     <div 
-      className="fixed inset-0 bg-[#17161680] flex justify-center items-center z-[9999] p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      className="fixed inset-0 bg-[#17161680] flex justify-center items-center z-9999 p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          trackCancellationEvent("modal_dismissed", { step });
+          onClose();
+        }
+      }}
     >
       <div className="bg-white rounded-[24px] w-full max-w-[480px] p-6 relative animate-in fade-in zoom-in duration-200">
         <button
-            onClick={onClose}
+            onClick={() => {
+              trackCancellationEvent("modal_closed_with_x", { step });
+              onClose();
+            }}
             className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 transition-colors"
         >
             ✕

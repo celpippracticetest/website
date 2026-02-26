@@ -18,6 +18,7 @@ const UserSchema = z.object({
   publicMetadata: z.object({
     roles: z.array(z.string()).default(["user"]),
     plan: z.string().default("free"),
+    purchaseDate: z.string().optional(),
   }),
   planStartedAt: z.date().optional(),
 });

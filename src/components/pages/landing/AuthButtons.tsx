@@ -11,6 +11,7 @@ import { useHasEverPurchased } from "@/hooks/useHasEverPurchased";
 
 const AuthButtons = () => {
   const { isSignedIn, user, isLoaded } = useUser();
+  const [mounted, setMounted] = useState(false);
   const [isUserDropDownOpen, setUserDropDownOpen] = useState(false);
   const roles = (user?.publicMetadata as Record<string, unknown> | undefined)?.["roles"] as
     | string[]
@@ -18,6 +19,10 @@ const AuthButtons = () => {
   const { signOut } = useClerk();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { hasEverPurchased } = useHasEverPurchased();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -35,7 +40,7 @@ const AuthButtons = () => {
     };
   }, []);
 
-  if (!isLoaded) {
+  if (!mounted || !isLoaded) {
     return <Skeleton className="w-10 h-10 rounded-full" />;
   }
 
