@@ -239,6 +239,7 @@ const SubscriptionRetentionModal = ({
     let title = "Wait! Don't lose your progress";
     let content = <p className="text-[#76808F]">Are you sure you want to cancel? You'll lose access to all premium features.</p>;
     let primaryButtonText = "Keep Subscription";
+    let primaryDisabled = false;
     let primaryAction = () => {
       trackCancellationEvent("keep_subscription_clicked", { step: "offer" });
       onClose();
@@ -280,6 +281,12 @@ const SubscriptionRetentionModal = ({
           onClose();
         };
     } else if (reason === "passed") {
+      const allScoresValid = Object.values(scores).every((value) => {
+        if (value === "") return false;
+        const score = Number(value);
+        return Number.isFinite(score) && score >= 1 && score <= 12;
+      });
+
       title = "Congratulations!";
       content = (
         <div className="text-center">
@@ -300,7 +307,11 @@ const SubscriptionRetentionModal = ({
                   {skill}
                 </label>
                 <input
-                  type="text"
+                  type="number"
+                  min={1}
+                  max={12}
+                  step={1}
+                  inputMode="numeric"
                   placeholder="1-12"
                   className="border border-gray-200 rounded-lg p-2 text-[14px] focus:outline-none focus:border-[#4A7DFF]"
                   value={scores[skill.toLowerCase() as keyof typeof scores]}
@@ -327,10 +338,18 @@ const SubscriptionRetentionModal = ({
               onChange={(e) => setServiceFeedback(e.target.value)}
             />
           </div>
+
+          {!allScoresValid && (
+            <p className="text-xs text-[#EE4266] text-left mt-3">
+              Please enter all 4 scores (1-12) to continue.
+            </p>
+          )}
         </div>
       );
       primaryButtonText = "Submit & Continue";
+      primaryDisabled = !allScoresValid;
       primaryAction = () => {
+        if (!allScoresValid) return;
         submitSurvey();
         setStep("confirm");
       };
@@ -375,6 +394,7 @@ const SubscriptionRetentionModal = ({
             <div className="flex flex-col gap-3 mt-4">
                 <button
                     onClick={primaryAction}
+                    disabled={primaryDisabled}
                     className="w-full py-3 rounded-full bg-[#0DAA94] text-white font-medium text-[15px] hover:bg-[#0DAA94]/80 transition-colors shadow-lg shadow-teal-100"
                 >
                     {primaryButtonText}

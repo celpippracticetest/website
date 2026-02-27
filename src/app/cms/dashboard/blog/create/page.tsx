@@ -7,14 +7,13 @@ import { ChevronLeft } from "lucide-react";
 import { Box } from "@/components/ui/Box";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
-import BlogPostForm from "@/components/dashboard-app/cms/BlogPostForm";
-import { TBlogWriteInput } from "@/models/blog.model";
+import BlogPostForm, { BlogPostSubmitPayload } from "@/components/dashboard-app/cms/BlogPostForm";
 
 export default function CreateBlogPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  const onSubmit = async (values: TBlogWriteInput) => {
+  const onSubmit = async (values: BlogPostSubmitPayload) => {
     setIsLoading(true);
     try {
       const response = await fetch("/api/blog", {
@@ -25,14 +24,23 @@ export default function CreateBlogPage() {
         body: JSON.stringify(values),
       });
 
+      const responseData = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = responseData;
         throw new Error(errorData.message || "Failed to create blog post.");
       }
 
+      const linkedinMessage =
+        responseData?.linkedin?.attempted === true
+          ? responseData.linkedin.success
+            ? " LinkedIn post was published successfully."
+            : ` LinkedIn post failed: ${responseData.linkedin.message || "Unknown error."}`
+          : "";
+
       toast({
         title: "Blog post created",
-        description: "The blog post has been saved successfully.",
+        description: `The blog post has been saved successfully.${linkedinMessage}`,
       });
       router.push("/cms/dashboard/blog");
       router.refresh();

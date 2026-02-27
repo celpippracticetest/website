@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -65,14 +66,16 @@ const blogFormSchema = z.object({
   contentJson: z.any().nullable().optional(),
   faq: z.array(blogFaqItemSchema).optional().default([]),
   aiSnippet: blogAiSnippetSchema.optional(),
+  publishToLinkedIn: z.boolean().default(false),
 });
 
 type BlogFormValues = z.infer<typeof blogFormSchema>;
+export type BlogPostSubmitPayload = TBlogWriteInput & { publishToLinkedIn?: boolean };
 
 type BlogPostFormProps = {
   initialData?: TBlogSchemaDto | null;
   isLoading: boolean;
-  onSubmit: (data: TBlogWriteInput) => Promise<void>;
+  onSubmit: (data: BlogPostSubmitPayload) => Promise<void>;
 };
 
 function slugify(value: string): string {
@@ -147,6 +150,7 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
         question: initialData?.aiSnippet?.question ?? "",
         answer: initialData?.aiSnippet?.answer ?? "",
       },
+      publishToLinkedIn: false,
     }),
     [initialData]
   );
@@ -327,6 +331,7 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
             answer: values.aiSnippet.answer?.trim() ?? "",
           }
         : undefined,
+      publishToLinkedIn: values.publishToLinkedIn,
     };
 
     await onSubmit(payload);
@@ -416,6 +421,26 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                   <FormDescription>
                     Leave empty for drafts. For published posts, this supports backdating.
                   </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="publishToLinkedIn"
+              render={({ field }) => (
+                <FormItem className="rounded-md border border-slate-200 p-4">
+                  <Box className="flex items-start gap-3">
+                    <FormControl>
+                      <Checkbox checked={field.value} onCheckedChange={(checked) => field.onChange(Boolean(checked))} />
+                    </FormControl>
+                    <Box>
+                      <FormLabel>Publish to LinkedIn after save</FormLabel>
+                      <FormDescription>
+                        Posts this blog URL directly to LinkedIn when status is set to published.
+                      </FormDescription>
+                    </Box>
+                  </Box>
                   <FormMessage />
                 </FormItem>
               )}
