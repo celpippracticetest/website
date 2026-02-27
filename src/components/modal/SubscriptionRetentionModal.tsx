@@ -7,7 +7,7 @@ import { pushToDataLayer } from "@/lib/gtm";
 interface SubscriptionRetentionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirmCancellation: () => void;
+  onConfirmCancellation: (flowId: string | null) => void;
   loading: boolean;
 }
 
@@ -33,10 +33,16 @@ const SubscriptionRetentionModal = ({
   const [alternativeService, setAlternativeService] = useState("");
   const [copied, setCopied] = useState(false);
   const [isPausing, setIsPausing] = useState(false);
+  const [flowId, setFlowId] = useState<string | null>(null);
 
   const trackCancellationEvent = (
     eventName: string,
-    extra?: { reason?: Reason; step?: Step; metadata?: Record<string, unknown> }
+    extra?: {
+      reason?: Reason;
+      step?: Step;
+      metadata?: Record<string, unknown>;
+      flowId?: string | null;
+    }
   ) => {
     const payload = {
       eventName,
@@ -56,7 +62,10 @@ const SubscriptionRetentionModal = ({
     fetch("/api/users/cancellation-flow-event", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        ...payload,
+        flowId: extra?.flowId ?? flowId,
+      }),
     }).catch((error) => {
       console.error("Failed to save cancellation flow event", error);
     });
@@ -64,7 +73,9 @@ const SubscriptionRetentionModal = ({
 
   useEffect(() => {
     if (!isOpen) return;
-    trackCancellationEvent("flow_opened", { step: "survey" });
+    const newFlowId = crypto.randomUUID();
+    setFlowId(newFlowId);
+    trackCancellationEvent("flow_opened", { step: "survey", flowId: newFlowId });
   }, [isOpen]);
 
   const handlePauseSubscription = async () => {
@@ -106,6 +117,7 @@ const SubscriptionRetentionModal = ({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          flowId,
           reason,
           otherReason: reason === "other" ? otherReason : undefined,
           alternativeService: reason === "alternative" ? alternativeService : undefined,
@@ -437,7 +449,7 @@ const SubscriptionRetentionModal = ({
         <button
           onClick={() => {
             trackCancellationEvent("confirm_cancel_clicked", { step: "confirm" });
-            onConfirmCancellation();
+            onConfirmCancellation(flowId);
           }}
           disabled={loading}
           className="flex-1 py-2.5 rounded-full text-[#EE4266] border border-[#EE4266] font-medium text-[14px] hover:bg-red-50 transition-colors disabled:opacity-70"

@@ -98,6 +98,13 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
   const [loadingPlans, setLoadingPlans] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isResubscribing, setIsResubscribing] = useState(false);
+  const hasActiveSubscription =
+    Boolean(subscriptionData) &&
+    !subscriptionData?.isOneTimePayment &&
+    ["active", "trialing", "past_due", "unpaid"].includes(
+      subscriptionData?.status
+    ) &&
+    !subscriptionData?.cancelAtPeriodEnd;
 
   const fetchAvailablePlans = async () => {
     try {
@@ -153,11 +160,13 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
     setShowRetentionModal(true);
   };
 
-  const confirmCancellation = async () => {
+  const confirmCancellation = async (flowId?: string | null) => {
     try {
       setIsCancelling(true);
       const response = await fetch("/api/users/cancel-subscription", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ flowId: flowId ?? null }),
       });
 
       if (!response.ok) {
@@ -240,6 +249,20 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
       setIsResubscribing(false);
       setTimeout(() => setShowToast(false), 3000);
     }
+  };
+
+  const handleDeleteAccountClick = () => {
+    if (hasActiveSubscription) {
+      setToastType("error");
+      setToastMessage(
+        "Please cancel your active subscription before deleting your account."
+      );
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+      return;
+    }
+
+    setShowDeleteConfirm(true);
   };
 
   const handleConfirmDeleteEmail = (emailId: string) => {
@@ -729,7 +752,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
               </span>
 
             </div>
-            <button onClick={() => setShowDeleteConfirm(true)}>
+            <button onClick={handleDeleteAccountClick}>
               <span className="flex cursor-pointer items-center justify-center border-[#EE4266] text-[#EE4266] rounded-[24px] border-[1px] font-normal text-[14px] w-[149px] h-[40px]">
                 Delete Account
               </span>
@@ -851,8 +874,8 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
       <SubscriptionRetentionModal
         isOpen={showRetentionModal}
         onClose={() => setShowRetentionModal(false)}
-        onConfirmCancellation={async () => {
-          await confirmCancellation();
+        onConfirmCancellation={async (flowId) => {
+          await confirmCancellation(flowId);
           setShowRetentionModal(false);
         }}
         loading={isCancelling}

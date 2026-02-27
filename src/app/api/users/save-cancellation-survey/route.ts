@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
     const surveyData = {
       userId,
       ...data,
+      flowId: typeof data?.flowId === "string" ? data.flowId : null,
       createdAt: new Date(),
     };
 

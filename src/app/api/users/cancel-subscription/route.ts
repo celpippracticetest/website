@@ -14,6 +14,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const body = await req.json().catch(() => ({}));
+    const flowId = typeof body?.flowId === "string" ? body.flowId : null;
+
     const user = await clerkClient.users.getUser(userId);
 
     let customerId = user.privateMetadata?.stripeCustomerId as
@@ -74,6 +77,7 @@ export async function POST(req: NextRequest) {
     const db = mongoClient.db();
     await db.collection("cancellation_flow_events").insertOne({
       userId,
+      flowId,
       eventName: "subscription_cancelled_success",
       step: "confirm",
       reason: null,

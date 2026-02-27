@@ -178,8 +178,7 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-title" content="CELPIP Test" />
         <meta name="theme-color" content="#3B82F6" />
 
-        {/* <script src="http://localhost:3001/widget.js" data-business-id="celpippracticetest" data-launcher-label="Chat Support" data-position="right" data-accent-color="#2563eb" async></script> */}
-
+        <script src="http://localhost:3001/widget.js" data-business-id="celpippracticetest" data-launcher-label="Chat Support" data-position="right" data-accent-color="#2563eb" async></script>
 
         {/* JSON-LD early is fine */}
         <Script

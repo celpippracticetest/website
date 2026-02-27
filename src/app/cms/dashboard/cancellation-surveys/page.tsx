@@ -6,7 +6,9 @@ import { RotateCw } from "lucide-react";
 interface CancellationSurvey {
   _id: string;
   userId: string;
+  flowId?: string | null;
   reason: string;
+  outcome?: "kept" | "cancelled" | null;
   otherReason?: string;
   alternativeService?: string;
   scores?: {
@@ -57,6 +59,7 @@ const KEEP_EVENT_NAMES = new Set([
   "kept_on_final_confirmation",
   "pause_subscription_success",
   "contact_support_selected",
+  "kept_flow_outcome",
 ]);
 
 export default function CancellationSurveysPage() {
@@ -194,7 +197,7 @@ export default function CancellationSurveysPage() {
             Cancellation Reasons
           </h1>
           <p className="text-gray-600">
-            Feedback from users who cancelled their subscription
+            Feedback submitted during cancellation flow (some users may keep instead of cancelling)
           </p>
         </div>
         <button
@@ -213,7 +216,7 @@ export default function CancellationSurveysPage() {
               Cancellation Retention ({retentionSummary.days}d)
             </h2>
             <p className="text-sm text-gray-600">
-              Users who started cancellation but kept their subscription
+              Flow-level outcomes (kept and cancelled are deduplicated by flow)
             </p>
           </div>
 
@@ -355,6 +358,9 @@ export default function CancellationSurveysPage() {
                       Reason
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Outcome
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Details
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -366,7 +372,7 @@ export default function CancellationSurveysPage() {
                   {surveys.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={4}
+                        colSpan={5}
                         className="px-6 py-4 text-center text-gray-500"
                       >
                         No records found
@@ -382,6 +388,21 @@ export default function CancellationSurveysPage() {
                           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
                             {survey.reason}
                           </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {survey.outcome === "cancelled" ? (
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                              Cancelled
+                            </span>
+                          ) : survey.outcome === "kept" ? (
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                              Kept
+                            </span>
+                          ) : (
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-700">
+                              Pending
+                            </span>
+                          )}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">
                           <div className="flex flex-col gap-1">
