@@ -3,14 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { Box } from "@/components/ui/Box";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Button, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, Typography } from "@mui/material";
 import BlogPostsTable from "@/components/dashboard-app/cms/BlogPostsTable";
 import { TBlogSchemaDto } from "@/models/blog.model";
 
@@ -28,6 +21,12 @@ export default function CmsBlogPage() {
   const [data, setData] = useState<ApiResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
+
+  const handleStatusChange = (event: SelectChangeEvent<string>) => {
+    const value = event.target.value as "all" | "draft" | "published";
+    setPage(1);
+    setStatusFilter(value);
+  };
 
   useEffect(() => {
     const fetchBlogs = async () => {
@@ -102,29 +101,35 @@ export default function CmsBlogPage() {
       <Box className="mx-auto max-w-7xl space-y-4">
         <Box className="flex flex-col gap-4 rounded-lg bg-white p-5 shadow sm:flex-row sm:items-center sm:justify-between">
           <Box>
-            <h1 className="text-2xl font-bold text-slate-900">Blog Posts</h1>
-            <p className="text-sm text-slate-500">
+            <Typography variant="h4" component="h1" className="font-bold text-slate-900">
+              Blog Posts
+            </Typography>
+            <Typography variant="body2" className="text-slate-500">
               Manage and publish SEO-ready blog content for your marketing pages.
-            </p>
+            </Typography>
           </Box>
           <Box className="flex items-center gap-3">
-            <Select
-              value={statusFilter}
-              onValueChange={(value: "all" | "draft" | "published") => {
-                setPage(1);
-                setStatusFilter(value);
-              }}
+            <FormControl size="small" sx={{ minWidth: 180 }}>
+              <InputLabel id="blog-status-filter-label">Status</InputLabel>
+              <Select
+                labelId="blog-status-filter-label"
+                label="Status"
+                value={statusFilter}
+                onChange={handleStatusChange}
+              >
+                <MenuItem value="all">All statuses</MenuItem>
+                <MenuItem value="draft">Draft</MenuItem>
+                <MenuItem value="published">Published</MenuItem>
+              </Select>
+            </FormControl>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => router.push("/cms/dashboard/blog/create")}
+              sx={{ textTransform: "none", borderRadius: 2, px: 2.5, py: 1 }}
             >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="published">Published</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button onClick={() => router.push("/cms/dashboard/blog/create")}>Create Post</Button>
+              Create Post
+            </Button>
           </Box>
         </Box>
 

@@ -5,6 +5,12 @@ import { Box } from "@/components/ui/Box";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, DollarSign, Users, Activity, Calendar as CalendarIcon } from "lucide-react";
 import moment from "moment";
+import { Button, Typography } from "@mui/material";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { Popover, Paper } from "@mui/material";
+import dayjs, { Dayjs } from "dayjs";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -16,10 +22,6 @@ import {
   Legend,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 ChartJS.register(
   CategoryScale,
@@ -79,22 +81,20 @@ interface StripeSyncResponse {
   prices: number;
 }
 
-interface GaSourceSyncResponse {
-  success: boolean;
-  scanned: number;
-  updated: number;
-  matchedInGa: number;
-  missingInGa: number;
-}
 
 export default function StripeReportPage() {
   const queryClient = useQueryClient();
-  const [startDate, setStartDate] = useState<Date | undefined>(
-    moment().subtract(7, 'days').toDate()
-  );
-  const [endDate, setEndDate] = useState<Date | undefined>(new Date());
+  const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null]>([
+    dayjs().subtract(7, 'days'),
+    dayjs(),
+  ]);
   const [syncMessage, setSyncMessage] = useState<string>("");
-  const [gaSyncMessage, setGaSyncMessage] = useState<string>("");
+
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const open = Boolean(anchorEl);
+
+  const startDate = dateRange[0]?.toDate();
+  const endDate = dateRange[1]?.toDate();
 
   const { data, isLoading, error } = useQuery<StripeKpiData>({
     queryKey: ["stripe-reports", startDate, endDate],
@@ -154,33 +154,6 @@ export default function StripeReportPage() {
     },
   });
 
-  const gaSourceSyncMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch("/api/admin/analytics/ga-source-sync", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ limit: 2000 }),
-      });
-
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to sync GA attribution");
-      }
-
-      return data as GaSourceSyncResponse;
-    },
-    onSuccess: (result) => {
-      setGaSyncMessage(
-        `GA source sync done for last ${result.scanned} users. Matched in GA: ${result.matchedInGa}, missing: ${result.missingInGa}.`
-      );
-      queryClient.invalidateQueries({ queryKey: ["stripe-reports"] });
-    },
-    onError: (err) => {
-      setGaSyncMessage(`GA source sync failed: ${(err as Error).message}`);
-    },
-  });
 
   // Format currency
   const formatCurrency = (amount: number, currencyCode: string) => {
@@ -260,62 +233,151 @@ export default function StripeReportPage() {
     );
   }
 
-  return (
-    <Box className="w-full space-y-6">
-      <Box className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-gray-800">Stripe Reports</h1>
-        <Box className="flex items-center gap-2">
-          {/* Start Date Picker */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={cn(
-                  "w-[180px] justify-start text-left font-normal",
-                  !startDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {startDate ? moment(startDate).format("MMM DD, YYYY") : <span>Start Date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                mode="single"
-                selected={startDate}
-                onSelect={setStartDate}
-                initialFocus
-                hideWeekdays
-              />
-            </PopoverContent>
-          </Popover>
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
 
-          {/* End Date Picker */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={cn(
-                  "w-[180px] justify-start text-left font-normal",
-                  !endDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {endDate ? moment(endDate).format("MMM DD, YYYY") : <span>End Date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                mode="single"
-                selected={endDate}
-                onSelect={setEndDate}
-                initialFocus
-                hideWeekdays
-              />
-            </PopoverContent>
-          </Popover>
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handlePresetRange = (days: number) => {
+    setDateRange([dayjs().subtract(days, 'days'), dayjs()]);
+  };
+
+  const presetRanges = [
+    { label: "Last 7 days", days: 7 },
+    { label: "Last 30 days", days: 30 },
+    { label: "Last 90 days", days: 90 },
+    { label: "This month", getRange: () => [dayjs().startOf('month'), dayjs()] },
+    { label: "Last month", getRange: () => [dayjs().subtract(1, 'month').startOf('month'), dayjs().subtract(1, 'month').endOf('month')] },
+  ];
+
+  return (
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <Box className="w-full space-y-6">
+        <Box className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="text-2xl font-bold text-gray-800">Stripe Reports</h1>
+          <Box className="flex items-center gap-2">
+            <Button
+              variant="outlined"
+              startIcon={<CalendarIcon className="h-4 w-4" />}
+              onClick={handleClick}
+              sx={{
+                minWidth: 320,
+                justifyContent: "flex-start",
+                textTransform: "none",
+                px: 2,
+                py: 1.5,
+              }}
+            >
+              {dateRange[0] && dateRange[1]
+                ? `${dateRange[0].format("MMM DD, YYYY")} - ${dateRange[1].format("MMM DD, YYYY")}`
+                : "Select date range"}
+            </Button>
+            <Popover
+              open={open}
+              anchorEl={anchorEl}
+              onClose={handleClose}
+              anchorOrigin={{
+                vertical: "bottom",
+                horizontal: "right",
+              }}
+              transformOrigin={{
+                vertical: "top",
+                horizontal: "right",
+              }}
+              PaperProps={{
+                sx: { borderRadius: 2, mt: 1 }
+              }}
+            >
+              <Paper sx={{ p: 3, minWidth: 600 }}>
+                <Box className="mb-3">
+                  <Typography variant="subtitle2" className="mb-2 text-gray-700 font-semibold">
+                    Quick Presets
+                  </Typography>
+                  <Box className="flex flex-wrap gap-2">
+                    {presetRanges.map((preset) => (
+                      <Button
+                        key={preset.label}
+                        size="small"
+                        variant="outlined"
+                        onClick={() => {
+                          if (preset.getRange) {
+                            const range = preset.getRange();
+                            setDateRange([range[0], range[1]]);
+                          } else if (preset.days) {
+                            handlePresetRange(preset.days);
+                          }
+                          // Close the popover after selecting a preset
+                          handleClose();
+                        }}
+                        sx={{ textTransform: "none", fontSize: "0.75rem" }}
+                      >
+                        {preset.label}
+                      </Button>
+                    ))}
+                  </Box>
+                </Box>
+                <Box className="border-t pt-3">
+                  <Typography variant="subtitle2" className="mb-2 text-gray-700 font-semibold">
+                    Custom Range
+                  </Typography>
+                  <Box className="flex gap-3">
+                    <DatePicker
+                      label="Start Date"
+                      value={dateRange[0]}
+                      onChange={(newValue) => {
+                        setDateRange([newValue, dateRange[1]]);
+                      }}
+                      slotProps={{
+                        textField: { 
+                          size: "small", 
+                          sx: { flex: 1 },
+                          variant: "outlined"
+                        },
+                      }}
+                    />
+                    <DatePicker
+                      label="End Date"
+                      value={dateRange[1]}
+                      onChange={(newValue) => {
+                        setDateRange([dateRange[0], newValue]);
+                      }}
+                      minDate={dateRange[0] || undefined}
+                      slotProps={{
+                        textField: { 
+                          size: "small", 
+                          sx: { flex: 1 },
+                          variant: "outlined"
+                        },
+                      }}
+                    />
+                  </Box>
+                </Box>
+                <Box className="flex justify-end gap-2 mt-4 pt-3 border-t">
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={handleClose}
+                    sx={{ textTransform: "none" }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    onClick={handleClose}
+                    disabled={!dateRange[0] || !dateRange[1]}
+                    sx={{ textTransform: "none" }}
+                  >
+                    Apply
+                  </Button>
+                </Box>
+              </Paper>
+            </Popover>
+          </Box>
         </Box>
-      </Box>
 
       <Box className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
         <Box className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -324,7 +386,7 @@ export default function StripeReportPage() {
           </p>
           <Box className="flex flex-wrap items-center gap-2">
             <Button
-              variant="outline"
+              variant="outlined"
               onClick={() => syncMutation.mutate("range")}
               disabled={syncMutation.isPending || !startDate || !endDate}
             >
@@ -334,6 +396,7 @@ export default function StripeReportPage() {
               Fetch From / To
             </Button>
             <Button
+              variant="contained"
               onClick={() => syncMutation.mutate("till_now")}
               disabled={syncMutation.isPending}
             >
@@ -342,26 +405,11 @@ export default function StripeReportPage() {
               ) : null}
               Fetch Till Now
             </Button>
-            <Button
-              variant="secondary"
-              onClick={() => gaSourceSyncMutation.mutate()}
-              disabled={gaSourceSyncMutation.isPending}
-            >
-              {gaSourceSyncMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              Sync GA Source (Last 2000)
-            </Button>
           </Box>
         </Box>
         {syncMessage ? (
           <Box className="mt-3 rounded-md bg-gray-50 p-3 text-xs text-gray-700">
             {syncMessage}
-          </Box>
-        ) : null}
-        {gaSyncMessage ? (
-          <Box className="mt-3 rounded-md bg-gray-50 p-3 text-xs text-gray-700">
-            {gaSyncMessage}
           </Box>
         ) : null}
       </Box>
@@ -469,7 +517,8 @@ export default function StripeReportPage() {
           )}
         </Box>
       </Box>
-    </Box>
+      </Box>
+    </LocalizationProvider>
   );
 }
 
