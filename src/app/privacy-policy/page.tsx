@@ -1,3 +1,20 @@
+import { Metadata } from "next";
+import PrivacyPolicy from "@/components/pages/landing/PrivacyPolicy";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy | CELPIPPRACTICETEST.com",
+  description:
+    "Read the Privacy Policy for CELPIPPRACTICETEST.com to understand how we collect, use, and protect your personal information.",
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
+
+export default function PrivacyPolicyPage() {
+  return <PrivacyPolicy />;
+}
+
 import dynamic from "next/dynamic";
 import React from "react";
 import { Metadata } from "next";

@@ -1,3 +1,20 @@
+import { Metadata } from "next";
+import TermsOfService from "@/components/pages/landing/TermsOfService";
+
+export const metadata: Metadata = {
+  title: "Terms of Service | CELPIPPRACTICETEST.com",
+  description:
+    "Review the Terms of Service for CELPIPPRACTICETEST.com to understand the rules and conditions for using our CELPIP preparation platform.",
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
+
+export default function TermsOfServicePage() {
+  return <TermsOfService />;
+}
+
 import dynamic from "next/dynamic";
 import React from "react";
 import { Metadata } from "next";

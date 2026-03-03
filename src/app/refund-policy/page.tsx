@@ -1,3 +1,20 @@
+import { Metadata } from "next";
+import RefundPolicy from "@/components/pages/landing/RefundPolicy";
+
+export const metadata: Metadata = {
+  title: "Refund Policy | CELPIPPRACTICETEST.com",
+  description:
+    "Read the Refund Policy for CELPIPPRACTICETEST.com to understand eligibility, timelines, and conditions for refunds on CELPIP prep plans.",
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
+
+export default function RefundPolicyPage() {
+  return <RefundPolicy />;
+}
+
 import dynamic from "next/dynamic";
 import React from "react";
 import { Metadata } from "next";
