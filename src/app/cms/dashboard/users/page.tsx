@@ -10,6 +10,28 @@ import {
   Clock,
   RotateCw,
 } from "lucide-react";
+import { Box } from "@/components/ui/Box";
+import {
+  Typography,
+  Paper,
+  TextField,
+  InputAdornment,
+  IconButton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Chip,
+  Tooltip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  CircularProgress,
+  Pagination,
+} from "@mui/material";
 
 interface User {
   userId: string;
@@ -57,7 +79,7 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState("lastActivity");
-  const [sortOrder, setSortOrder] = useState("desc");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [subscriptionStatus, setSubscriptionStatus] = useState("all");
   const [pagination, setPagination] = useState({
     page: 1,
@@ -80,7 +102,6 @@ export default function UsersPage() {
       const response = await fetch(`/api/admin/users?${params}`);
       if (response.ok) {
         const data: UsersResponse = await response.json();
-
         setUsers(data.users);
         setPagination(data.pagination);
       }
@@ -93,6 +114,7 @@ export default function UsersPage() {
 
   useEffect(() => {
     fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, search, sortBy, sortOrder, subscriptionStatus]);
 
   const getRiskColor = (riskScore: number) => {
@@ -124,9 +146,7 @@ export default function UsersPage() {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
-        const safe = identifier.includes("@")
-          ? identifier.split("@")[0]
-          : identifier;
+        const safe = identifier.includes("@") ? identifier.split("@")[0] : identifier;
         a.href = url;
         a.download = `user-${safe}-activity-export.xlsx`;
         document.body.appendChild(a);
@@ -139,358 +159,378 @@ export default function UsersPage() {
     }
   };
 
-  return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          User Management
-        </h1>
-        <p className="text-gray-600">
-          Monitor user activity and prevent fraud/disputes
-        </p>
-      </div>
+  const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
+    setPage(value);
+  };
 
-      {/* Search and Filters */}
-      <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search by User ID, Email, IP, or User Agent..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <select
-              value={subscriptionStatus}
-              onChange={(e) => setSubscriptionStatus(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Users</option>
-              <option value="active">Active Plan</option>
-              <option value="unsubscribed">Unsubscribed</option>
-              <option value="never">Never Subscribed</option>
-            </select>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="createdAt">First Activity</option>
-              <option value="lastActivity">Last Activity</option>
-              <option value="totalActivities">Total Activities</option>
-              <option value="riskScore">Risk Score</option>
-              <option value="plan">Plan (Premium)</option>
-              <option value="totalSpend">Total Spend</option>
-            </select>
-            <select
-              value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="desc">Descending</option>
-              <option value="asc">Ascending</option>
-            </select>
-            <button
-              onClick={fetchUsers}
-              className="p-2 text-gray-600 hover:text-blue-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-              title="Refresh"
-            >
-              <RotateCw
-                className={`w-5 h-5 ${loading ? "animate-spin" : ""}`}
-              />
-            </button>
-          </div>
-        </div>
-      </div>
+  return (
+    <Box className="p-6">
+      {/* Header */}
+      <Box className="mb-6">
+        <Typography variant="h4" component="h1" className="font-bold text-gray-900 mb-1">
+          User Management
+        </Typography>
+        <Typography variant="body2" className="text-gray-600">
+          Monitor user activity and prevent fraud/disputes
+        </Typography>
+      </Box>
+
+      {/* Search & Filters */}
+      <Paper
+        elevation={0}
+        className="mb-6 border"
+        sx={{ borderRadius: 2, p: 2.5 }}
+      >
+        <Box className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <Box className="flex-1">
+            <TextField
+              fullWidth
+              placeholder="Search by User ID, Email, IP, or User Agent..."
+              value={search}
+              onChange={(e) => {
+                setPage(1);
+                setSearch(e.target.value);
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search className="w-4 h-4 text-gray-400" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Box>
+
+          <Box className="flex flex-wrap gap-2">
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Plan Status</InputLabel>
+              <Select
+                label="Plan Status"
+                value={subscriptionStatus}
+                onChange={(e) => {
+                  setPage(1);
+                  setSubscriptionStatus(e.target.value);
+                }}
+              >
+                <MenuItem value="all">All Users</MenuItem>
+                <MenuItem value="active">Active Plan</MenuItem>
+                <MenuItem value="unsubscribed">Unsubscribed</MenuItem>
+                <MenuItem value="never">Never Subscribed</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" sx={{ minWidth: 180 }}>
+              <InputLabel>Sort By</InputLabel>
+              <Select
+                label="Sort By"
+                value={sortBy}
+                onChange={(e) => {
+                  setPage(1);
+                  setSortBy(e.target.value);
+                }}
+              >
+                <MenuItem value="createdAt">First Activity</MenuItem>
+                <MenuItem value="lastActivity">Last Activity</MenuItem>
+                <MenuItem value="totalActivities">Total Activities</MenuItem>
+                <MenuItem value="riskScore">Risk Score</MenuItem>
+                <MenuItem value="plan">Plan (Premium)</MenuItem>
+                <MenuItem value="totalSpend">Total Spend</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel>Order</InputLabel>
+              <Select
+                label="Order"
+                value={sortOrder}
+                onChange={(e) => {
+                  setPage(1);
+                  setSortOrder(e.target.value as "asc" | "desc");
+                }}
+              >
+                <MenuItem value="desc">Descending</MenuItem>
+                <MenuItem value="asc">Ascending</MenuItem>
+              </Select>
+            </FormControl>
+
+            <Tooltip title="Refresh">
+              <span>
+                <IconButton
+                  onClick={fetchUsers}
+                  size="small"
+                  disabled={loading}
+                  className="border border-gray-300"
+                >
+                  <RotateCw
+                    className={`w-5 h-5 text-gray-600 ${loading ? "animate-spin" : ""}`}
+                  />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </Box>
+        </Box>
+      </Paper>
 
       {/* Users Table */}
-      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+      <Paper elevation={0} className="border overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Loading users...</p>
-          </div>
+          <Box className="p-8 text-center flex flex-col items-center justify-center">
+            <CircularProgress color="primary" size={32} />
+            <Typography variant="body2" className="mt-2 text-gray-600">
+              Loading users...
+            </Typography>
+          </Box>
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Risk Score
-                    </th>
-
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Plan
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Revenue
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Source
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Activities
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Practice
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Exams
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tokens
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      IPs/Devices
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Last Active
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+            <TableContainer sx={{ maxHeight: 640 }}>
+              <Table stickyHeader size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Email</TableCell>
+                    <TableCell>Risk Score</TableCell>
+                    <TableCell>Plan</TableCell>
+                    <TableCell>Revenue</TableCell>
+                    <TableCell>Source</TableCell>
+                    <TableCell>Activities</TableCell>
+                    <TableCell>Practice</TableCell>
+                    <TableCell>Exams</TableCell>
+                    <TableCell>Tokens</TableCell>
+                    <TableCell>IPs / Devices</TableCell>
+                    <TableCell>Last Active</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
                   {users.map((user) => (
-                    <tr key={user.userId} className="hover:bg-gray-50">
-
-
+                    <TableRow key={user.userId} hover>
                       {/* Email */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {user.email ?? "-"}
-                      </td>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {user.email ?? "-"}
+                        </Typography>
+                      </TableCell>
 
                       {/* Risk Score */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
+                      <TableCell>
+                        <Box
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRiskColor(
                             user.riskScore
                           )}`}
                         >
                           {getRiskIcon(user.riskScore)}
                           <span className="ml-1">{user.riskScore}%</span>
-                        </span>
-                      </td>
+                        </Box>
+                      </TableCell>
 
-
-
-                      {/* Plan Type */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex flex-col gap-1 items-start">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      {/* Plan */}
+                      <TableCell>
+                        <Box className="flex flex-col items-start gap-0.5">
+                          <Chip
+                            size="small"
+                            label={
                               user.plan === "premium" || user.plan === "pro"
-                                ? "bg-purple-100 text-purple-800"
-                                : "bg-gray-100 text-gray-800"
-                            }`}
-                          >
-                            {user.plan === "premium" || user.plan === "pro"
-                              ? `Premium ${
-                                  user.planType ? `(${user.planType})` : ""
-                                }`
-                              : "Free"}
-                          </span>
+                                ? `Premium${user.planType ? ` (${user.planType})` : ""}`
+                                : "Free"
+                            }
+                            color={
+                              user.plan === "premium" || user.plan === "pro"
+                                ? "secondary"
+                                : "default"
+                            }
+                            variant="outlined"
+                          />
                           {user.subscriptionStatus === "unsubscribed" && (
-                            <div className="flex flex-col text-xs text-red-600 font-medium mt-1">
-                              <span>Unsubscribed</span>
-                              <span>
-                                Duration: {user.subscriptionDurationDays} days
-                              </span>
-                            </div>
+                            <Typography
+                              variant="caption"
+                              className="text-red-600 font-medium"
+                            >
+                              Unsubscribed · {user.subscriptionDurationDays} days
+                            </Typography>
                           )}
                           {user.subscriptionStatus === "active" &&
                             (user.subscriptionDurationDays || 0) > 0 && (
-                              <span className="text-xs text-green-600 mt-1">
-                                Active: {user.subscriptionDurationDays} days
-                              </span>
+                              <Typography
+                                variant="caption"
+                                className="text-green-600 font-medium"
+                              >
+                                Active · {user.subscriptionDurationDays} days
+                              </Typography>
                             )}
-                        </div>
-                      </td>
+                        </Box>
+                      </TableCell>
 
                       {/* Revenue */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ${(user.totalSpend || 0).toFixed(2)}
-                      </td>
+                      <TableCell>
+                        <Typography variant="body2">
+                          ${(user.totalSpend || 0).toFixed(2)}
+                        </Typography>
+                      </TableCell>
 
                       {/* Source */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <div className="flex flex-col">
+                      <TableCell>
+                        <Box className="flex flex-col max-w-[180px]">
                           {user.utm_source ? (
                             <>
-                              <span className="font-medium text-gray-900">
+                              <Typography
+                                variant="body2"
+                                className="font-medium text-gray-900"
+                              >
                                 {user.utm_source}
-                              </span>
+                              </Typography>
                               {user.utm_medium && (
-                                <span className="text-xs text-gray-500">
+                                <Typography
+                                  variant="caption"
+                                  className="text-gray-500"
+                                >
                                   {user.utm_medium}
-                                </span>
+                                </Typography>
                               )}
                               {user.utm_campaign && (
-                                <span className="text-xs text-gray-400 truncate max-w-[150px]" title={user.utm_campaign}>
-                                  {user.utm_campaign}
-                                </span>
+                                <Tooltip title={user.utm_campaign}>
+                                  <Typography
+                                    variant="caption"
+                                    noWrap
+                                    className="text-gray-400"
+                                  >
+                                    {user.utm_campaign}
+                                  </Typography>
+                                </Tooltip>
                               )}
                             </>
                           ) : (
-                            <span className="text-gray-400 text-xs">-</span>
+                            <Typography variant="caption" className="text-gray-400">
+                              -
+                            </Typography>
                           )}
-                        </div>
-                      </td>
+                        </Box>
+                      </TableCell>
 
                       {/* Activities */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {user.totalActivities.toLocaleString()}
-                      </td>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {user.totalActivities.toLocaleString()}
+                        </Typography>
+                      </TableCell>
 
                       {/* Practice */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <div>
+                      <TableCell>
+                        <Typography variant="body2">
                           {user.practiceAttempts} / {user.practiceCompletions}
-                        </div>
-                        <div className="text-xs text-gray-500">
+                        </Typography>
+                        <Typography variant="caption" className="text-gray-500">
                           {user.practiceAttempts > 0
                             ? Math.round(
-                              (user.practiceCompletions /
-                                user.practiceAttempts) *
-                              100
-                            )
+                                (user.practiceCompletions /
+                                  user.practiceAttempts) *
+                                  100
+                              )
                             : 0}
                           % completion
-                        </div>
-                      </td>
+                        </Typography>
+                      </TableCell>
 
-                      {/* Mock Exams */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <div>
+                      {/* Exams */}
+                      <TableCell>
+                        <Typography variant="body2">
                           {user.mockAttempts} / {user.mockCompletions}
-                        </div>
-                        <div className="text-xs text-gray-500">
+                        </Typography>
+                        <Typography variant="caption" className="text-gray-500">
                           {user.mockAttempts > 0
                             ? Math.round(
-                              (user.mockCompletions / user.mockAttempts) * 100
-                            )
+                                (user.mockCompletions / user.mockAttempts) * 100
+                              )
                             : 0}
                           % completion
-                        </div>
-                      </td>
+                        </Typography>
+                      </TableCell>
 
                       {/* Tokens */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {user.totalTokens.toLocaleString()}
-                      </td>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {user.totalTokens.toLocaleString()}
+                        </Typography>
+                      </TableCell>
 
-                      {/* IPs/Devices */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <div>{user.uniqueIpAddresses} IPs</div>
-                        <div className="text-xs text-gray-500">
+                      {/* IPs / Devices */}
+                      <TableCell>
+                        <Typography variant="body2">
+                          {user.uniqueIpAddresses} IPs
+                        </Typography>
+                        <Typography variant="caption" className="text-gray-500">
                           {user.uniqueUserAgents} devices
-                        </div>
-                      </td>
+                        </Typography>
+                      </TableCell>
 
                       {/* Last Active */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(user.lastActivity)}
-                      </td>
+                      <TableCell>
+                        <Typography variant="body2" className="text-gray-600">
+                          {formatDate(user.lastActivity)}
+                        </Typography>
+                      </TableCell>
 
                       {/* Actions */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() =>
-                              window.open(
-                                `/cms/dashboard/users/${user.userId}`,
-                                "_blank"
-                              )
-                            }
-                            className="text-blue-600 cursor-pointer hover:text-blue-900"
-                            title="View Details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => exportUserData(user.userId)}
-                            className="text-green-600 cursor-pointer hover:text-green-900"
-                            title="Export Data"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                      <TableCell>
+                        <Box className="flex gap-1">
+                          <Tooltip title="View Details">
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                window.open(
+                                  `/cms/dashboard/users/${user.userId}`,
+                                  "_blank"
+                                )
+                              }
+                            >
+                              <Eye className="w-4 h-4 text-blue-600" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Export Data">
+                            <IconButton
+                              size="small"
+                              onClick={() => exportUserData(user.userId)}
+                            >
+                              <Download className="w-4 h-4 text-green-600" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </TableBody>
+              </Table>
+            </TableContainer>
 
             {/* Pagination */}
-            <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-              <div className="flex-1 cursor-pointer flex justify-between sm:hidden">
-                <button
-                  onClick={() => setPage(page - 1)}
-                  disabled={page === 1}
-                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={() => setPage(page + 1)}
-                  disabled={page >= pagination.totalPages}
-                  className="ml-3 cursor-pointer relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next
-                </button>
-              </div>
-              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm text-gray-700">
-                    Showing{" "}
-                    <span className="font-medium">
-                      {(page - 1) * pagination.limit + 1}
-                    </span>{" "}
-                    to{" "}
-                    <span className="font-medium">
-                      {Math.min(page * pagination.limit, pagination.totalCount)}
-                    </span>{" "}
-                    of{" "}
-                    <span className="font-medium">{pagination.totalCount}</span>{" "}
-                    results
-                  </p>
-                </div>
-                <div>
-                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                    <button
-                      onClick={() => setPage(page - 1)}
-                      disabled={page === 1}
-                      className="relative cursor-pointer inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Previous
-                    </button>
-                    <button
-                      onClick={() => setPage(page + 1)}
-                      disabled={page >= pagination.totalPages}
-                      className="relative cursor-pointer  inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Next
-                    </button>
-                  </nav>
-                </div>
-              </div>
-            </div>
+            <Box className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 border-t gap-3">
+              <Typography variant="caption" className="text-gray-700">
+                Showing{" "}
+                <span className="font-medium">
+                  {users.length === 0
+                    ? 0
+                    : (page - 1) * pagination.limit + 1}
+                </span>{" "}
+                to{" "}
+                <span className="font-medium">
+                  {Math.min(page * pagination.limit, pagination.totalCount)}
+                </span>{" "}
+                of{" "}
+                <span className="font-medium">{pagination.totalCount}</span>{" "}
+                results
+              </Typography>
+              <Pagination
+                count={pagination.totalPages || 1}
+                page={page}
+                onChange={handlePageChange}
+                size="small"
+                color="primary"
+                showFirstButton
+                showLastButton
+              />
+            </Box>
           </>
         )}
-      </div>
-    </div>
+      </Paper>
+    </Box>
   );
 }
+
