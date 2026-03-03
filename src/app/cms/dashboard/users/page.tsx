@@ -332,9 +332,11 @@ export default function UsersPage() {
                               <span className="font-medium text-gray-900">
                                 {user.utm_source}
                               </span>
-                              <span className="text-xs text-gray-500">
-                                {user.utm_medium}
-                              </span>
+                              {user.utm_medium && (
+                                <span className="text-xs text-gray-500">
+                                  {user.utm_medium}
+                                </span>
+                              )}
                               {user.utm_campaign && (
                                 <span className="text-xs text-gray-400 truncate max-w-[150px]" title={user.utm_campaign}>
                                   {user.utm_campaign}
@@ -342,7 +344,7 @@ export default function UsersPage() {
                               )}
                             </>
                           ) : (
-                            <span className="text-gray-400 text-xs">Direct / Unknown</span>
+                            <span className="text-gray-400 text-xs">-</span>
                           )}
                         </div>
                       </td>

@@ -5,6 +5,12 @@ type SendEmailArgs = {
   from?: string;
 };
 
+type SendTransactionalEmailArgs = {
+  to: string;
+  senderCode: string;
+  attachments?: Record<string, string>;
+};
+
 type SenderSubscriberInput = {
   email: string;
   firstName: string;
@@ -71,6 +77,50 @@ async function getJson(url: string, token: string): Promise<Response> {
       Accept: "application/json",
     },
   });
+}
+
+/**
+ * Send transactional email using Sender.net's message template API
+ * @param to - Recipient email address
+ * @param senderCode - Sender.net message template code (e.g., "dRLDzY")
+ * @param attachments - Optional attachments as key-value pairs (filename: URL)
+ */
+export async function sendTransactionalEmail({
+  to,
+  senderCode,
+  attachments,
+}: SendTransactionalEmailArgs): Promise<void> {
+  const token = resolveSenderToken();
+  if (!token) {
+    throw new Error("Missing required env: SENDER_API_KEY or SENDER_API_TOKEN");
+  }
+
+  if (!senderCode || senderCode.trim().length === 0) {
+    throw new Error("senderCode is required for transactional emails");
+  }
+
+  const baseUrl = (process.env.SENDER_API_BASE_URL || "https://api.sender.net/v2").replace(
+    /\/$/,
+    ""
+  );
+
+  const url = `${baseUrl}/message/${senderCode.trim()}/send`;
+  const body: Record<string, unknown> = {
+    recipient_email: to.trim(),
+  };
+
+  if (attachments && Object.keys(attachments).length > 0) {
+    body.attachments = attachments;
+  }
+
+  const response = await postJson(url, token, body);
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    throw new Error(
+      `Sender transactional API request failed: ${url} -> ${response.status} ${text}`.trim()
+    );
+  }
 }
 
 export async function sendEmailWithSender({

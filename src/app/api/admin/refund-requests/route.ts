@@ -72,11 +72,61 @@ export async function GET(request: NextRequest) {
       collection.countDocuments(statusFilter),
     ]);
 
+    // Fetch user activities for each request
+    const userActivitiesCollection = db.collection("useractivities");
+    const userIds = requests.map((req) => req.userId);
+
+    // Get activity stats and last token usage for all users
+    const userActivityData = await Promise.all(
+      userIds.map(async (userId) => {
+        const [activityCount, lastTokenUsage] = await Promise.all([
+          // Count total activities
+          userActivitiesCollection.countDocuments({ userId }),
+          // Get last learning activity with tokens
+          userActivitiesCollection
+            .findOne(
+              {
+                userId,
+                context: "learning",
+                $or: [
+                  { llmTokensPrompt: { $gt: 0 } },
+                  { llmTokensCompletion: { $gt: 0 } },
+                ],
+              },
+              { sort: { timestampUtc: -1 } }
+            ),
+        ]);
+
+        return {
+          userId,
+          activityCount,
+          lastTokenUsage: lastTokenUsage
+            ? {
+                timestamp: lastTokenUsage.timestampUtc,
+                totalTokens:
+                  (lastTokenUsage.llmTokensPrompt || 0) +
+                  (lastTokenUsage.llmTokensCompletion || 0),
+              }
+            : null,
+        };
+      })
+    );
+
+    // Create a map for easy lookup
+    const userActivityMap = new Map(
+      userActivityData.map((data) => [data.userId, data])
+    );
+
     return NextResponse.json({
-      requests: requests.map((item) => ({
-        ...item,
-        _id: String(item._id),
-      })),
+      requests: requests.map((item) => {
+        const activityData = userActivityMap.get(item.userId);
+        return {
+          ...item,
+          _id: String(item._id),
+          userActivityCount: activityData?.activityCount || 0,
+          lastTokenUsage: activityData?.lastTokenUsage || null,
+        };
+      }),
       pagination: {
         page,
         limit,

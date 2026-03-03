@@ -1,50 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { getDb } from "@/lib/mongodb";
-import { sendEmailWithSender } from "@/lib/email/sender-client";
+import { sendTransactionalEmail } from "@/lib/email/sender-client";
 import {
   buildReminderEmailConfigWithDefaults,
   REMINDER_EMAIL_CONFIG_COLLECTION,
   REMINDER_EMAIL_CONFIG_KEY,
   type ReminderEmailConfigInput,
-  type ReminderStageKey,
+  type ReminderEmailStage,
 } from "@/lib/reminder-email/config";
-import { renderReminderEmailHtml } from "@/lib/reminder-email/render";
 
-type ReminderFlow = "no_activity_signup" | "inactive_activity";
+type ReminderFlow = "signup_no_activity" | "inactive";
 type ABVariant = "A" | "B";
 
-type NoActivityStage = {
-  key: ReminderStageKey;
-  minHoursSinceSignup: number;
-};
-
-type InactiveStage = {
-  key: ReminderStageKey;
-  minHoursSinceActivity: number;
-};
-
-type SignupCandidate = {
+type Candidate = {
   userId: string;
   signupAt?: Date;
-  activityCount: number;
   lastActivityAt?: Date;
+  activityCount: number;
   isSubscribed?: boolean;
   reminderFlow?: ReminderFlow;
-  reminderStage?: string;
+  reminderStageId?: string;
   lastReminderSentAt?: Date;
   lastEngagedAt?: Date;
-  reminderWindowStartedAt?: Date;
-  remindersInWindow?: number;
-};
-
-type InactiveCandidate = {
-  userId: string;
-  lastActivityAt?: Date;
-  isSubscribed?: boolean;
-  reminderFlow?: ReminderFlow;
-  reminderStage?: string;
-  lastReminderSentAt?: Date;
   reminderWindowStartedAt?: Date;
   remindersInWindow?: number;
 };
@@ -52,12 +30,10 @@ type InactiveCandidate = {
 type ResolvedReminder = {
   userId: string;
   flow: ReminderFlow;
-  stage: string;
-  stageIndex: number;
+  stageId: string;
+  stageLabel: string;
+  senderCode: string;
   variant: ABVariant;
-  subject: string;
-  html: string;
-  stageKey: ReminderStageKey;
   reminderWindowStartedAt?: Date;
   remindersInWindow: number;
 };
@@ -67,7 +43,7 @@ const REMINDER_METRICS_COLLECTION = "useractivityreminderstats";
 const REMINDER_LOCK_COLLECTION = "useractivityreminderdispatchlocks";
 const SUBSCRIBER_REMINDER_COOLDOWN_HOURS = 168;
 const DEFAULT_REMINDER_COOLDOWN_HOURS = 24;
-const SIGNUP_LOOKBACK_DAYS = 7;
+const SIGNUP_LOOKBACK_DAYS = 30;
 
 function isAuthorizedCron(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -99,35 +75,18 @@ function getVariant(userId: string): ABVariant {
   return hash % 2 === 0 ? "A" : "B";
 }
 
-const NO_ACTIVITY_STAGES: NoActivityStage[] = [
-  {
-    key: "signup_welcome_20m_no_activity",
-    minHoursSinceSignup: 0.33,
-  },
-  {
-    key: "signup_day1_no_activity",
-    minHoursSinceSignup: 24,
-  },
-  {
-    key: "signup_day3_no_activity",
-    minHoursSinceSignup: 72,
-  },
-  {
-    key: "signup_day7_final_nudge_no_activity",
-    minHoursSinceSignup: 168,
-  },
-];
-
-const INACTIVE_STAGES: InactiveStage[] = [
-  {
-    key: "inactive_day1",
-    minHoursSinceActivity: 24,
-  },
-  {
-    key: "inactive_day7",
-    minHoursSinceActivity: 168,
-  },
-];
+function convertToHours(amount: number, unit: string): number {
+  switch (unit) {
+    case "minutes":
+      return amount / 60;
+    case "hours":
+      return amount;
+    case "days":
+      return amount * 24;
+    default:
+      return amount * 24;
+  }
+}
 
 async function getReminderEmailConfig(): Promise<ReminderEmailConfigInput> {
   const db = await getDb();
@@ -136,13 +95,13 @@ async function getReminderEmailConfig(): Promise<ReminderEmailConfigInput> {
   return buildReminderEmailConfigWithDefaults(doc?.config || null);
 }
 
-async function getNoStudySignupCandidates(limit: number): Promise<SignupCandidate[]> {
+async function getCandidates(limit: number): Promise<Candidate[]> {
   const db = await getDb();
   const usersCollection = db.collection("users");
   const minSignupAt = new Date(Date.now() - SIGNUP_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
 
   const rows = await usersCollection
-    .aggregate<SignupCandidate>([
+    .aggregate<Candidate>([
       {
         $project: {
           _id: 0,
@@ -195,7 +154,7 @@ async function getNoStudySignupCandidates(limit: number): Promise<SignupCandidat
         $addFields: {
           lastReminderSentAt: { $arrayElemAt: ["$reminderState.lastReminderSentAt", 0] },
           reminderFlow: { $arrayElemAt: ["$reminderState.reminderFlow", 0] },
-          reminderStage: { $arrayElemAt: ["$reminderState.reminderStage", 0] },
+          reminderStageId: { $arrayElemAt: ["$reminderState.reminderStageId", 0] },
           lastEngagedAt: { $arrayElemAt: ["$reminderState.lastEngagedAt", 0] },
           reminderWindowStartedAt: { $arrayElemAt: ["$reminderState.reminderWindowStartedAt", 0] },
           remindersInWindow: { $arrayElemAt: ["$reminderState.remindersInWindow", 0] },
@@ -210,7 +169,7 @@ async function getNoStudySignupCandidates(limit: number): Promise<SignupCandidat
           isSubscribed: 1,
           lastReminderSentAt: 1,
           reminderFlow: 1,
-          reminderStage: 1,
+          reminderStageId: 1,
           lastEngagedAt: 1,
           reminderWindowStartedAt: 1,
           remindersInWindow: 1,
@@ -224,169 +183,85 @@ async function getNoStudySignupCandidates(limit: number): Promise<SignupCandidat
   return rows;
 }
 
-async function getInactiveCandidates(limit: number): Promise<InactiveCandidate[]> {
-  const db = await getDb();
-  const userActivityCollection = db.collection("useractivities");
-  const minSignupAt = new Date(Date.now() - SIGNUP_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
-
-  const rows = await userActivityCollection
-    .aggregate<InactiveCandidate>([
-      {
-        $group: {
-          _id: "$userId",
-          lastActivityAt: { $max: "$timestampUtc" },
-        },
-      },
-      {
-        $lookup: {
-          from: REMINDER_STATE_COLLECTION,
-          localField: "_id",
-          foreignField: "userId",
-          as: "reminderState",
-        },
-      },
-      {
-        $lookup: {
-          from: "users",
-          localField: "_id",
-          foreignField: "clerkUserId",
-          as: "userProfile",
-        },
-      },
-      {
-        $addFields: {
-          createdAt: { $arrayElemAt: ["$userProfile.createdAt", 0] },
-          isSubscribed: {
-            $in: [{ $arrayElemAt: ["$userProfile.plan", 0] }, ["premium", "pro", "enterprise"]],
-          },
-        },
-      },
-      {
-        $match: {
-          createdAt: { $gte: minSignupAt },
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          userId: "$_id",
-          lastActivityAt: 1,
-          isSubscribed: 1,
-          lastReminderSentAt: { $arrayElemAt: ["$reminderState.lastReminderSentAt", 0] },
-          reminderFlow: { $arrayElemAt: ["$reminderState.reminderFlow", 0] },
-          reminderStage: { $arrayElemAt: ["$reminderState.reminderStage", 0] },
-          reminderWindowStartedAt: { $arrayElemAt: ["$reminderState.reminderWindowStartedAt", 0] },
-          remindersInWindow: { $arrayElemAt: ["$reminderState.remindersInWindow", 0] },
-        },
-      },
-      { $sort: { lastActivityAt: -1 } },
-      { $limit: limit },
-    ])
-    .toArray();
-
-  return rows;
-}
-
-function getNoActivityNextStage(
-  candidate: SignupCandidate,
+function findNextStageForCandidate(
+  candidate: Candidate,
+  stages: ReminderEmailStage[],
   now: Date
-): { stage: NoActivityStage; stageIndex: number } | null {
+): ReminderEmailStage | null {
   const signupAt = toDate(candidate.signupAt);
-  if (!signupAt) return null;
-
-  // Exit as soon as any user activity exists.
-  if ((candidate.activityCount ?? 0) > 0 || toDate(candidate.lastActivityAt)) return null;
-
-  const reminderFlow = candidate.reminderFlow;
-  const reminderStage = candidate.reminderStage;
+  const lastActivityAt = toDate(candidate.lastActivityAt);
   const lastReminderSentAt = toDate(candidate.lastReminderSentAt);
   const lastEngagedAt = toDate(candidate.lastEngagedAt);
   const reminderWindowStartedAt = toDate(candidate.reminderWindowStartedAt);
   const remindersInWindow = candidate.remindersInWindow ?? 0;
   const isSubscribed = Boolean(candidate.isSubscribed);
-  const reminderCooldownHours = isSubscribed
-    ? SUBSCRIBER_REMINDER_COOLDOWN_HOURS
-    : DEFAULT_REMINDER_COOLDOWN_HOURS;
+
+  // If user engaged, stop all reminders
   if (lastEngagedAt) return null;
-  const isWindowActive = reminderWindowStartedAt && !hasElapsedHours(reminderWindowStartedAt, now, 168);
-  if (isWindowActive && remindersInWindow >= 4) return null;
 
-  if (isSubscribed) {
-    if (!lastReminderSentAt) {
-      const welcomeStage = NO_ACTIVITY_STAGES[0];
-      if (!welcomeStage || !hasElapsedHours(signupAt, now, welcomeStage.minHoursSinceSignup)) return null;
-      return { stage: welcomeStage, stageIndex: 0 };
-    }
-
-    const weeklyStageIndex = NO_ACTIVITY_STAGES.length - 1;
-    const weeklyStage = NO_ACTIVITY_STAGES[weeklyStageIndex];
-    if (!weeklyStage) return null;
-    const dueBySignupGap = hasElapsedHours(signupAt, now, weeklyStage.minHoursSinceSignup);
-    const reminderCooldownPassed = hasElapsedHours(lastReminderSentAt, now, reminderCooldownHours);
-    if (!dueBySignupGap || !reminderCooldownPassed) return null;
-    return { stage: weeklyStage, stageIndex: weeklyStageIndex };
-  }
-
-  const currentStageIndex =
-    reminderFlow === "no_activity_signup" && reminderStage
-      ? NO_ACTIVITY_STAGES.findIndex((item) => item.key === reminderStage)
-      : -1;
-  const nextStageIndex = currentStageIndex + 1;
-  if (nextStageIndex < 0 || nextStageIndex >= NO_ACTIVITY_STAGES.length) return null;
-
-  const stage = NO_ACTIVITY_STAGES[nextStageIndex];
-  const dueBySignupGap = hasElapsedHours(signupAt, now, stage.minHoursSinceSignup);
-  const reminderCooldownPassed =
-    !lastReminderSentAt || hasElapsedHours(lastReminderSentAt, now, reminderCooldownHours);
-  if (!dueBySignupGap || !reminderCooldownPassed) return null;
-
-  return { stage, stageIndex: nextStageIndex };
-}
-
-function getInactiveNextStage(
-  candidate: InactiveCandidate,
-  now: Date
-): { stage: InactiveStage; stageIndex: number } | null {
-  const lastActivityAt = toDate(candidate.lastActivityAt);
-  if (!lastActivityAt) return null;
-
-  const reminderFlow = candidate.reminderFlow;
-  const reminderStage = candidate.reminderStage;
-  const lastReminderSentAt = toDate(candidate.lastReminderSentAt);
-  const reminderWindowStartedAt = toDate(candidate.reminderWindowStartedAt);
-  const remindersInWindow = candidate.remindersInWindow ?? 0;
-  const isSubscribed = Boolean(candidate.isSubscribed);
+  // Check window limits
   const reminderCooldownHours = isSubscribed
     ? SUBSCRIBER_REMINDER_COOLDOWN_HOURS
     : DEFAULT_REMINDER_COOLDOWN_HOURS;
-  const isWindowActive = reminderWindowStartedAt && !hasElapsedHours(reminderWindowStartedAt, now, 168);
+  const isWindowActive =
+    reminderWindowStartedAt && !hasElapsedHours(reminderWindowStartedAt, now, 168);
   if (isWindowActive && remindersInWindow >= 4) return null;
 
-  if (isSubscribed) {
-    const weeklyStageIndex = INACTIVE_STAGES.length - 1;
-    const weeklyStage = INACTIVE_STAGES[weeklyStageIndex];
-    if (!weeklyStage) return null;
-    const dueByInactivity = hasElapsedHours(lastActivityAt, now, weeklyStage.minHoursSinceActivity);
-    const reminderCooldownPassed =
-      !lastReminderSentAt || hasElapsedHours(lastReminderSentAt, now, reminderCooldownHours);
-    if (!dueByInactivity || !reminderCooldownPassed) return null;
-    return { stage: weeklyStage, stageIndex: weeklyStageIndex };
+  // For signup_no_activity triggers (no user activity yet)
+  if (!lastActivityAt || (candidate.activityCount ?? 0) === 0) {
+    if (!signupAt) return null;
+
+    const signupStages = stages
+      .filter((s) => s.enabled && s.triggerType === "signup_no_activity")
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+
+    if (signupStages.length === 0) return null;
+
+    // Find the next eligible stage
+    const currentStageIndex = candidate.reminderStageId
+      ? signupStages.findIndex((s) => s.id === candidate.reminderStageId)
+      : -1;
+
+    for (let i = currentStageIndex + 1; i < signupStages.length; i++) {
+      const stage = signupStages[i];
+      const requiredHours = convertToHours(stage.delayAmount, stage.delayUnit);
+      const isTimeReached = hasElapsedHours(signupAt, now, requiredHours);
+      const cooldownPassed =
+        !lastReminderSentAt || hasElapsedHours(lastReminderSentAt, now, reminderCooldownHours);
+
+      if (isTimeReached && cooldownPassed) {
+        return stage;
+      }
+    }
+    return null;
   }
 
-  const currentStageIndex =
-    reminderFlow === "inactive_activity" && reminderStage
-      ? INACTIVE_STAGES.findIndex((item) => item.key === reminderStage)
+  // For inactive triggers (user was active but is now inactive)
+  if (lastActivityAt) {
+    const inactiveStages = stages
+      .filter((s) => s.enabled && s.triggerType === "inactive")
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+
+    if (inactiveStages.length === 0) return null;
+
+    const currentStageIndex = candidate.reminderStageId
+      ? inactiveStages.findIndex((s) => s.id === candidate.reminderStageId)
       : -1;
-  const nextStageIndex = currentStageIndex + 1;
-  if (nextStageIndex < 0 || nextStageIndex >= INACTIVE_STAGES.length) return null;
 
-  const stage = INACTIVE_STAGES[nextStageIndex];
-  const dueByStudyGap = hasElapsedHours(lastActivityAt, now, stage.minHoursSinceActivity);
-  const reminderCooldownPassed =
-    !lastReminderSentAt || hasElapsedHours(lastReminderSentAt, now, reminderCooldownHours);
-  if (!dueByStudyGap || !reminderCooldownPassed) return null;
+    for (let i = currentStageIndex + 1; i < inactiveStages.length; i++) {
+      const stage = inactiveStages[i];
+      const requiredHours = convertToHours(stage.delayAmount, stage.delayUnit);
+      const isTimeReached = hasElapsedHours(lastActivityAt, now, requiredHours);
+      const cooldownPassed =
+        !lastReminderSentAt || hasElapsedHours(lastReminderSentAt, now, reminderCooldownHours);
 
-  return { stage, stageIndex: nextStageIndex };
+      if (isTimeReached && cooldownPassed) {
+        return stage;
+      }
+    }
+  }
+
+  return null;
 }
 
 export async function GET(request: NextRequest) {
@@ -396,11 +271,9 @@ export async function GET(request: NextRequest) {
     }
 
     const now = new Date();
-    const [signupCandidates, inactiveCandidates] = await Promise.all([
-      getNoStudySignupCandidates(500),
-      getInactiveCandidates(500),
-    ]);
+    const candidates = await getCandidates(1000);
     const reminderEmailConfig = await getReminderEmailConfig();
+    const stages = reminderEmailConfig.stages;
 
     const db = await getDb();
     const reminderStateCollection = db.collection(REMINDER_STATE_COLLECTION);
@@ -418,59 +291,39 @@ export async function GET(request: NextRequest) {
     let failed = 0;
     let attempted = 0;
     const stageCounters: Record<string, number> = {};
-    const segmentCounters: Record<string, number> = {
-      no_activity_signup: 0,
-      inactive_activity: 0,
+    const flowCounters: Record<string, number> = {
+      signup_no_activity: 0,
+      inactive: 0,
     };
 
     const reminders: ResolvedReminder[] = [];
 
-    for (const candidate of signupCandidates) {
-      const next = getNoActivityNextStage(candidate, now);
-      if (!next) continue;
+    // Build reminders queue
+    for (const candidate of candidates) {
+      const nextStage = findNextStageForCandidate(candidate, stages, now);
+      if (!nextStage) continue;
 
+      const flow: ReminderFlow = nextStage.triggerType;
       const variant = getVariant(candidate.userId);
-      const stage = next.stage;
-      const stageContent = reminderEmailConfig.stages[stage.key];
+
       reminders.push({
         userId: candidate.userId,
-        flow: "no_activity_signup",
-        stage: stage.key,
-        stageIndex: next.stageIndex,
+        flow,
+        stageId: nextStage.id,
+        stageLabel: nextStage.label,
+        senderCode: nextStage.senderCode,
         variant,
-        subject: variant === "A" ? stageContent.subjectA : stageContent.subjectB,
-        html: "",
-        stageKey: stage.key,
         reminderWindowStartedAt: candidate.reminderWindowStartedAt,
         remindersInWindow: candidate.remindersInWindow ?? 0,
       });
     }
 
-    for (const candidate of inactiveCandidates) {
-      const next = getInactiveNextStage(candidate, now);
-      if (!next) continue;
-
-      const variant = getVariant(candidate.userId);
-      const stage = next.stage;
-      const stageContent = reminderEmailConfig.stages[stage.key];
-      reminders.push({
-        userId: candidate.userId,
-        flow: "inactive_activity",
-        stage: stage.key,
-        stageIndex: next.stageIndex,
-        variant,
-        subject: variant === "A" ? stageContent.subjectA : stageContent.subjectB,
-        html: "",
-        stageKey: stage.key,
-        reminderWindowStartedAt: candidate.reminderWindowStartedAt,
-        remindersInWindow: candidate.remindersInWindow ?? 0,
-      });
-    }
-
+    // Send reminders
     for (const reminder of reminders) {
       attempted += 1;
+
       try {
-        const claimKey = `${reminder.flow}:${reminder.stage}:${now.toISOString().slice(0, 13)}`;
+        const claimKey = `${reminder.flow}:${reminder.stageId}:${now.toISOString().slice(0, 13)}`;
         try {
           await lockCollection.insertOne({
             _id: `${reminder.userId}:${claimKey}`,
@@ -493,23 +346,18 @@ export async function GET(request: NextRequest) {
           continue;
         }
 
-        const firstName = user.firstName || user.username || "there";
-        const stageContent = reminderEmailConfig.stages[reminder.stageKey];
-        if (!stageContent) {
+        if (!reminder.senderCode || reminder.senderCode.trim().length === 0) {
+          console.error(
+            `[reminder-email] Missing senderCode for stage: ${reminder.stageId}, user: ${reminder.userId}`
+          );
           skipped += 1;
           continue;
         }
 
-        reminder.html = renderReminderEmailHtml({
-          firstName,
-          style: reminderEmailConfig.style,
-          stage: stageContent,
-        });
-
-        await sendEmailWithSender({
+        // Send via Sender.net transactional email template
+        await sendTransactionalEmail({
           to: primaryEmail,
-          subject: reminder.subject,
-          html: reminder.html,
+          senderCode: reminder.senderCode,
         });
 
         const reminderWindowStartedAt = toDate(reminder.reminderWindowStartedAt);
@@ -525,8 +373,7 @@ export async function GET(request: NextRequest) {
               userId: reminder.userId,
               lastReminderSentAt: now,
               reminderFlow: reminder.flow,
-              reminderStage: reminder.stage,
-              reminderStageIndex: reminder.stageIndex,
+              reminderStageId: reminder.stageId,
               reminderVariant: reminder.variant,
               reminderWindowStartedAt: nextWindowStartedAt,
               remindersInWindow: nextRemindersInWindow,
@@ -542,36 +389,36 @@ export async function GET(request: NextRequest) {
         await metricsCollection.insertOne({
           userId: reminder.userId,
           flow: reminder.flow,
-          stage: reminder.stage,
+          stageId: reminder.stageId,
+          stageLabel: reminder.stageLabel,
           variant: reminder.variant,
-          subject: reminder.subject,
+          senderCode: reminder.senderCode,
           sentAt: now,
           createdAt: now,
         });
 
-        stageCounters[reminder.stage] = (stageCounters[reminder.stage] || 0) + 1;
-        segmentCounters[reminder.flow] = (segmentCounters[reminder.flow] || 0) + 1;
+        stageCounters[reminder.stageLabel] = (stageCounters[reminder.stageLabel] || 0) + 1;
+        flowCounters[reminder.flow] = (flowCounters[reminder.flow] || 0) + 1;
         sent += 1;
       } catch (error) {
         failed += 1;
-        console.error("Word study reminder failed for user:", reminder.userId, error);
+        console.error("Reminder email failed for user:", reminder.userId, error);
       }
     }
 
     return NextResponse.json({
       success: true,
-      totalSignupCandidates: signupCandidates.length,
-      totalInactiveCandidates: inactiveCandidates.length,
+      totalCandidates: candidates.length,
       remindersQueued: reminders.length,
       attempted,
       sent,
       skipped,
       failed,
-      segmentCounters,
+      flowCounters,
       stageCounters,
     });
   } catch (error) {
-    console.error("Activity reminder cron failed:", error);
+    console.error("Reminder email cron failed:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

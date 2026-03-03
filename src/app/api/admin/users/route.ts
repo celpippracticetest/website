@@ -182,10 +182,31 @@ export async function GET(request: NextRequest) {
                 purchaseAmount: { $ifNull: ["$publicMetadata.purchaseAmount", 0] },
                 purchaseCurrency: { $ifNull: ["$publicMetadata.purchaseCurrency", "CAD"] },
                 totalSpend: { $ifNull: ["$publicMetadata.totalSpend", 0] },
-                utm_source: { $ifNull: ["$publicMetadata.utm_source", null] },
-                utm_medium: { $ifNull: ["$publicMetadata.utm_medium", null] },
-                utm_campaign: { $ifNull: ["$publicMetadata.utm_campaign", null] },
-                gclid: { $ifNull: ["$publicMetadata.gclid", null] },
+                // Try publicMetadata first, fallback to attribution.firstTouch
+                utm_source: { 
+                  $ifNull: [
+                    "$publicMetadata.utm_source", 
+                    { $ifNull: ["$attribution.firstTouch.source", null] }
+                  ] 
+                },
+                utm_medium: { 
+                  $ifNull: [
+                    "$publicMetadata.utm_medium", 
+                    { $ifNull: ["$attribution.firstTouch.medium", null] }
+                  ] 
+                },
+                utm_campaign: { 
+                  $ifNull: [
+                    "$publicMetadata.utm_campaign", 
+                    { $ifNull: ["$attribution.firstTouch.campaign", null] }
+                  ] 
+                },
+                gclid: { 
+                  $ifNull: [
+                    "$publicMetadata.gclid", 
+                    { $ifNull: ["$attribution.firstTouch.gclid", null] }
+                  ] 
+                },
                 createdAt: 1,
                 // Mark these as from 'users' collection so we can prioritize profile data
                 isUserProfile: { $literal: true },
