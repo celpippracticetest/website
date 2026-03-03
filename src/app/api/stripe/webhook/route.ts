@@ -455,6 +455,7 @@ export async function POST(req: Request) {
         if (subscription.status !== "canceled") {
           await stripe.subscriptions.update(session.subscription as string, {
             metadata: {
+              ...subscription.metadata,
               user_id: metadata.user_id,
               checkout_id: session.id,
             },
@@ -550,6 +551,47 @@ export async function POST(req: Request) {
     }
 
     const checkoutRepo = new CheckoutRepository(mongoClient);
+    if (event.type === "invoice.payment_failed") {
+      const invoice = event.data.object as any;
+      const rawSubscription = invoice.subscription;
+      const subscriptionId =
+        typeof rawSubscription === "string"
+          ? rawSubscription
+          : rawSubscription?.id || null;
+
+      if (subscriptionId) {
+        try {
+          const db = await mongoClient.db();
+          await db.collection("stripe_subscriptions").updateOne(
+            { stripeId: subscriptionId },
+            {
+              $set: {
+                dunningStatus: "payment_failed",
+                lastPaymentFailedAt: new Date(),
+                updatedAt: new Date(),
+              },
+            }
+          );
+        } catch (err) {
+          console.warn("Failed to update dunning snapshot in stripe_subscriptions", err);
+        }
+
+        try {
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          await stripe.subscriptions.update(subscriptionId, {
+            metadata: {
+              ...subscription.metadata,
+              last_payment_failed_at_unix: `${Math.floor(Date.now() / 1000)}`,
+            },
+          });
+        } catch (err) {
+          console.warn("Failed to persist dunning metadata to Stripe subscription", err);
+        }
+      }
+
+      return NextResponse.json({ received: true });
+    }
+
     if (event.type === "invoice.payment_succeeded") {
       const invoice = event.data.object as any;
       const invoiceId = invoice?.id as string;

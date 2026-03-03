@@ -1,5 +1,5 @@
 import { MongoClient, Db, ObjectId } from "mongodb";
-import { TUserWord, TUserWordDto, UserWordSchema, UserWordSchemaDto } from "@/models/userWords.model";
+import { TUserWord, TUserWordDto, UserWordSchemaDto } from "@/models/userWords.model";
 
 export class UserWordsRepository {
     private readonly db: Db;
@@ -12,9 +12,21 @@ export class UserWordsRepository {
         return this.db.collection<TUserWord>("userwords");
     }
 
+    private normalizeWord(word: string) {
+        let normalized = word.toLowerCase().trim();
+        const quoteEdges = /^['"`\u2018\u2019\u201C\u201D]+|['"`\u2018\u2019\u201C\u201D]+$/g;
+        // Strip wrapping quotes repeatedly while preserving inner apostrophes.
+        while (quoteEdges.test(normalized)) {
+            normalized = normalized.replace(quoteEdges, "").trim();
+        }
+        return normalized;
+    }
+
     private convertFromEntity(entity: TUserWord): TUserWordDto {
         const dto: TUserWordDto = {
             ...entity,
+            reviewedTimes: entity.reviewedTimes ?? 0,
+            complexityLevel: entity.complexityLevel ?? "intermediate",
             id: entity._id.toHexString(),
         };
         return UserWordSchemaDto.parse(dto);
@@ -23,21 +35,27 @@ export class UserWordsRepository {
     async findWord(userId: string, word: string): Promise<TUserWordDto | null> {
         const entity = await this.getCollection().findOne({
             userId,
-            word: word.toLowerCase().trim()
+            word: this.normalizeWord(word)
         });
         return entity ? this.convertFromEntity(entity) : null;
     }
 
-    async saveWord(userId: string, word: string): Promise<TUserWordDto> {
+    async saveWord(
+        userId: string,
+        word: string,
+        complexityLevel: "beginner" | "intermediate" | "advanced" = "intermediate"
+    ): Promise<TUserWordDto> {
         const existing = await this.findWord(userId, word);
         if (existing) return existing;
 
-        const wordToSave = word.toLowerCase().trim();
+        const wordToSave = this.normalizeWord(word);
         const entity: TUserWord = {
             _id: new ObjectId(),
             userId,
             word: wordToSave,
             isLearned: false,
+            reviewedTimes: 0,
+            complexityLevel,
             createdAt: new Date(),
         };
 
@@ -46,7 +64,9 @@ export class UserWordsRepository {
     }
 
     async saveBulkWords(userId: string, words: string[]): Promise<void> {
-        const uniqueWords = Array.from(new Set(words.map(w => w.toLowerCase().trim())));
+        const uniqueWords = Array.from(
+            new Set(words.map((w) => this.normalizeWord(w)).filter((w) => w.length > 0))
+        );
 
         // Check which ones already exist
         const existingEntities = await this.getCollection().find({
@@ -64,6 +84,8 @@ export class UserWordsRepository {
             userId,
             word,
             isLearned: false,
+            reviewedTimes: 0,
+            complexityLevel: "intermediate",
             createdAt: new Date(),
         }));
 
@@ -90,7 +112,7 @@ export class UserWordsRepository {
     }
 
     async toggleLearned(userId: string, word: string, isLearned: boolean): Promise<TUserWordDto | null> {
-        const wordToMatch = word.toLowerCase().trim();
+        const wordToMatch = this.normalizeWord(word);
         const result = await this.getCollection().findOneAndUpdate(
             { userId, word: wordToMatch },
             { $set: { isLearned } },
@@ -99,10 +121,43 @@ export class UserWordsRepository {
         return result ? this.convertFromEntity(result) : null;
     }
 
+    async incrementReviewedTimes(userId: string, word: string): Promise<TUserWordDto | null> {
+        const wordToMatch = this.normalizeWord(word);
+        const result = await this.getCollection().findOneAndUpdate(
+            { userId, word: wordToMatch },
+            { $inc: { reviewedTimes: 1 } },
+            { returnDocument: "after" }
+        );
+        return result ? this.convertFromEntity(result) : null;
+    }
+
+    async getTopReviewedWords(limit: number = 10): Promise<string[]> {
+        const items = await this.getCollection().aggregate<{ _id: string }>([
+            {
+                $group: {
+                    _id: "$word",
+                    totalReviews: { $sum: { $ifNull: ["$reviewedTimes", 0] } }
+                }
+            },
+            { $sort: { totalReviews: -1, _id: 1 } },
+            { $limit: Math.max(limit * 5, limit) }
+        ]).toArray();
+
+        const uniqueNormalized = new Set<string>();
+        for (const item of items) {
+            const cleaned = this.normalizeWord(item._id);
+            if (!cleaned) continue;
+            uniqueNormalized.add(cleaned);
+            if (uniqueNormalized.size >= limit) break;
+        }
+
+        return Array.from(uniqueNormalized);
+    }
+
     async deleteWord(userId: string, word: string): Promise<void> {
         await this.getCollection().deleteOne({
             userId,
-            word: word.toLowerCase().trim()
+            word: this.normalizeWord(word)
         });
     }
 }

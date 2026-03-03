@@ -1,18 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import SvgSpeaker from "@/components/icons/Speaker";
 import SvgArrowLeft from "@/components/icons/ArrowLeft";
 import SvgArrowRight from "@/components/icons/ArrowRight";
-import SvgInfo from "@/components/icons/Info";
+import { CheckCircle2, RotateCcw } from "lucide-react";
 import { TUserWordDto } from "@/models/userWords.model";
-import SvgLearningArrowUp from "@/components/icons/LearningArrowUp";
 
 interface WordDetail {
     phonetics: string;
+    complexity_level?: string;
+    celpip_tip?: string;
+    bonus_exam_strategies?: string[];
     partsOfSpeech: {
         part: string;
         definitions: {
             definition: string;
             example?: string;
+            synonyms?: string[];
+            collocations?: string[];
         }[];
     }[];
 }
@@ -22,9 +26,12 @@ interface WordDetailsCardProps {
     onNext: () => void;
     onPrevious: () => void;
     onToggleMastered: (word: string, status: boolean) => void;
+    onLearnAgain: () => void;
+    onRecordRevealReview: (word: string) => Promise<void> | void;
+    onRecordAdvanceReview: (word: string) => Promise<void> | void;
     hasPrevious: boolean;
     hasNext: boolean;
-    onBack?: () => void;
+    onBackToList?: () => void;
     currentIndex?: number;
     totalWords?: number;
 }
@@ -34,228 +41,230 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
     onNext,
     onPrevious,
     onToggleMastered,
+    onLearnAgain,
+    onRecordRevealReview,
+    onRecordAdvanceReview,
     hasPrevious,
     hasNext,
-    onBack,
+    onBackToList,
     currentIndex,
     totalWords,
 }) => {
     const [details, setDetails] = useState<WordDetail | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
+    const [isRevealed, setIsRevealed] = useState(false);
+    const [revealRecorded, setRevealRecorded] = useState(false);
 
     useEffect(() => {
-        const fetchDetails = async () => {
-            setLoading(true);
-            try {
-                const response = await fetch(`/api/word-details?word=${word.word}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    setDetails(data);
-                }
-            } catch (error) {
-                console.error("Error fetching word details:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchDetails();
+        setDetails(null);
+        setLoading(false);
+        setIsRevealed(false);
+        setRevealRecorded(false);
     }, [word.word]);
+
+    const fetchDetails = async () => {
+        setLoading(true);
+        try {
+            const response = await fetch(`/api/word-details?word=${word.word}`);
+            if (response.ok) {
+                const data = await response.json();
+                setDetails(data);
+            } else {
+                setDetails(null);
+            }
+        } catch (error) {
+            console.error("Error fetching word details:", error);
+            setDetails(null);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleReveal = async () => {
+        if (!isRevealed) {
+            setIsRevealed(true);
+            if (!details) {
+                await fetchDetails();
+            }
+        }
+
+        if (!revealRecorded) {
+            setRevealRecorded(true);
+            await onRecordRevealReview(word.word);
+        }
+    };
+
+    const handleAdvance = async (advance: () => void) => {
+        await onRecordAdvanceReview(word.word);
+        advance();
+    };
 
     const handlePronunciation = () => {
         const utterance = new SpeechSynthesisUtterance(word.word);
         utterance.lang = "en-US";
         window.speechSynthesis.speak(utterance);
     };
-
     return (
-        <div className="w-full screen1280:max-w-[70%] screen1024:max-w-[100%] flex flex-col items-center justify-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-8 relative screen1280:max-h-[calc(100vh-430px)]">
-
-            {/* Mobile Header (Under 1244px) */}
-            <div className="w-full block mb-2 screen1280:max-h-[calc(100vh-430px)]">
-                {/* Top Bar with Back, Title, and Counter */}
-                <div className="flex items-center justify-between p-2 screen1280:hidden flex">
-                    {onBack && (
+        <div className="w-full max-w-4xl mx-auto flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    {onBackToList && (
                         <button
-                            onClick={onBack}
-                            className="-ml-2 hover:bg-gray-100 rounded-full transition-colors active:scale-95"
+                            onClick={onBackToList}
+                            className="px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 text-[#212E42] text-sm font-semibold cursor-pointer"
                         >
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M15 18L9 12L15 6" stroke="#212E42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
+                            Exit Study
                         </button>
                     )}
-                    <h2 className="text-[20px] font-semibold text-[#76808F] flex-1 text-center">Words</h2>
-                    {currentIndex !== undefined && totalWords !== undefined && (
-                        <span className="text-[18px] font-medium text-[#76808F]">
-                            {currentIndex + 1}/{totalWords}
-                        </span>
-                    )}
+                    <span className="text-sm text-[#76808F] font-semibold">
+                        {currentIndex !== undefined && totalWords !== undefined ? `${currentIndex + 1}/${totalWords}` : ""}
+                    </span>
                 </div>
-                {/* Mastered Button */}
-                <div className="flex justify-center screen1280:flex hidden">
-                    <button
-                        onClick={() => onToggleMastered(word.word, !!word.isLearned)}
-                        className="flex items-center gap-2 font-bold text-[16px] cursor-pointer transition-all active:scale-95 px-4 py-2 rounded-full hover:bg-blue-200"
-                        style={{ color: 'hsla(223, 100%, 60%, 1)' }}
-                    >
-                        <SvgLearningArrowUp />
-                        <span>Mastered</span>
-                    </button>
-                </div>
+                <span className="text-sm text-[#76808F] font-semibold">Reviewed: {word.reviewedTimes ?? 0}</span>
             </div>
 
-            <div className="relative flex items-center justify-center w-full px-4">
+            <div className="bg-white rounded-[32px] border border-slate-200 shadow-[0_10px_40px_rgba(2,6,23,0.08)]">
+                <div className="p-8 border-b border-slate-100 flex items-center justify-center gap-4">
+                    <h2 className="text-[32px] font-bold text-[#212E42] capitalize">{word.word}</h2>
+                    <button
+                        onClick={handlePronunciation}
+                        className="p-3 rounded-full border border-slate-200 hover:bg-slate-50 text-[#212E42] cursor-pointer"
+                    >
+                        <SvgSpeaker />
+                    </button>
+                </div>
 
-                {/* Previous Button (Hidden on Tablet/Mobile) */}
+                {!isRevealed ? (
+                    <div className="p-10 flex flex-col items-center gap-6">
+                        <p className="text-[#526071] text-lg">Say the meaning out loud before you reveal it.</p>
+                        <button
+                            onClick={handleReveal}
+                            className="px-6 py-3 rounded-full bg-[#0DAA94] text-white font-semibold hover:bg-[#0b947f] cursor-pointer"
+                        >
+                            Reveal Meaning
+                        </button>
+                    </div>
+                ) : (
+                    <div className="p-8">
+                        <div className="flex items-center gap-3 mb-4">
+                            <p className="text-sm text-gray-500 font-medium">{loading ? "Loading..." : details?.phonetics || ""}</p>
+                            {!loading && (
+                                <span className="px-3 py-1 rounded-full bg-violet-50 border border-violet-200 text-violet-700 text-xs font-semibold uppercase">
+                                    {details?.complexity_level || word.complexityLevel || "Intermediate"}
+                                </span>
+                            )}
+                        </div>
+                        {loading ? (
+                            <div className="py-10 text-center text-[#76808F]">Fetching word details...</div>
+                        ) : (
+                            <div className="space-y-8 max-h-[48vh] overflow-y-auto pr-2">
+                                {details?.partsOfSpeech?.map((pos, idx) => (
+                                    <div key={idx}>
+                                        <h3 className="text-[20px] italic font-bold text-[#212E42] mb-3">{pos.part}</h3>
+                                        <div className="space-y-4">
+                                            {pos.definitions.map((def, dIdx) => (
+                                                <div key={dIdx} className="text-[#4A5568]">
+                                                    <p className="font-medium">{dIdx + 1}. {def.definition}</p>
+                                                    {def.example && (
+                                                        <p className="text-[15px] text-[#64748b] italic mt-1">Example: {def.example}</p>
+                                                    )}
+                                                    {def.synonyms && def.synonyms.length > 0 && (
+                                                        <div className="mt-2">
+                                                            <span className="text-xs font-semibold text-[#526071]">Synonyms:</span>
+                                                            <div className="flex flex-wrap gap-2 mt-1">
+                                                                {def.synonyms.map((synonym, sIdx) => (
+                                                                    <span
+                                                                        key={`${synonym}-${sIdx}`}
+                                                                        className="px-2 py-1 rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-xs font-medium"
+                                                                    >
+                                                                        {synonym}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {def.collocations && def.collocations.length > 0 && (
+                                                        <div className="mt-2">
+                                                            <span className="text-xs font-semibold text-[#526071]">Collocations:</span>
+                                                            <div className="flex flex-wrap gap-2 mt-1">
+                                                                {def.collocations.map((collocation, cIdx) => (
+                                                                    <span
+                                                                        key={`${collocation}-${cIdx}`}
+                                                                        className="px-2 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium"
+                                                                    >
+                                                                        {collocation}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {details?.celpip_tip && (
+                                    <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200">
+                                        <h4 className="text-sm font-bold text-amber-800 mb-1">CELPIP Tip</h4>
+                                        <p className="text-sm text-amber-900">{details.celpip_tip}</p>
+                                    </div>
+                                )}
+
+                                {details?.bonus_exam_strategies && details.bonus_exam_strategies.length > 0 && (
+                                    <div className="p-4 rounded-2xl bg-purple-50 border border-purple-200">
+                                        <h4 className="text-sm font-bold text-purple-800 mb-2">Bonus Exam Strategies</h4>
+                                        <ul className="list-disc pl-5 space-y-1">
+                                            {details.bonus_exam_strategies.map((strategy, idx) => (
+                                                <li key={`${strategy}-${idx}`} className="text-sm text-purple-900">
+                                                    {strategy}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 justify-between">
                 <button
                     onClick={onPrevious}
                     disabled={!hasPrevious}
-                    style={{ color: 'hsla(9, 85%, 65%, 1)' }}
-                    className="absolute cursor-pointer left-0 lg:-left-28 hidden screen1280:flex items-center gap-2 group disabled:opacity-30 disabled:cursor-not-allowed transition-all px-6 py-3 rounded-full hover:bg-rose-50"
+                    className="px-4 py-2 rounded-full bg-rose-50 text-rose-500 font-semibold disabled:opacity-40 flex items-center gap-2 cursor-pointer"
                 >
-                    <div className="flex items-center gap-2 font-bold text-lg">
-                        <SvgArrowLeft />
-                        <span>Prev</span>
-                    </div>
+                    <SvgArrowLeft />
+                    Back
                 </button>
 
-                {/* Main Card with Directional Glows */}
-                <div className="relative w-full h-full flex flex-col justify-center screen1280:max-h-[calc(100vh-430px)]">
-                    {/* Shadow Glows */}
-                    <div className="absolute inset-x-8 inset-y-8 blur-[100px] opacity-70">
-                        {/* Top: Blue */}
-                        <div className="absolute top-[-50px] left-1/2 -translate-x-1/2 w-[80%] h-[120px] bg-[hsla(223,100%,60%,0.1)] rounded-full" />
-                        {/* Right: Teal */}
-                        <div className="absolute right-[-50px] top-1/2 -translate-y-1/2 w-[120px] h-[80%] bg-[hsla(172,86%,36%,0.3)] rounded-full" />
-                        {/* Left: Rose */}
-                        <div className="absolute left-[-50px] top-1/2 -translate-y-1/2 w-[120px] h-[80%] bg-[hsla(9,85%,65%,0.3)] rounded-full" />
-                        {/* Bottom: Rose */}
-                        <div className="absolute bottom-[-50px] left-1/2 -translate-x-1/2 w-[80%] h-[120px] bg-[hsla(9,85%,65%,0.1)] rounded-full" />
-                    </div>
+                <div className="flex flex-wrap items-center gap-3">
+                    <button
+                        onClick={() => onToggleMastered(word.word, !!word.isLearned)}
+                        className="px-4 py-2 rounded-full bg-blue-50 text-blue-600 font-semibold flex items-center gap-2 cursor-pointer"
+                    >
+                        <CheckCircle2 size={18} />
+                        Mastered
+                    </button>
 
-                    <div className="bg-white rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.06)] w-full border border-gray-100 flex flex-col relative screen1280:max-h-full h-[calc(100vh-315px)] min-h-0 overflow-hidden">
-                        {/* Card Header */}
-                        <div className="p-4 text-center bg-gray-50/30 relative">
+                    <button
+                        onClick={() => handleAdvance(onLearnAgain)}
+                        disabled={!hasNext}
+                        className="px-4 py-2 rounded-full bg-amber-50 text-amber-700 font-semibold disabled:opacity-40 cursor-pointer flex items-center gap-2"
+                    >
+                        <RotateCcw size={16} />
+                        Learn Again
+                    </button>
 
-                            <div className="flex items-center justify-center gap-5 mb-3">
-                                <h2 className="text-[28px] font-bold text-[#212E42] tracking-tight">{word.word}</h2>
-                                <button
-                                    onClick={handlePronunciation}
-                                    className="p-3 transition-all hover:scale-110 active:scale-95 bg-white shadow-sm hover:shadow-md rounded-full border border-gray-100 text-[#212E42]"
-                                >
-                                    <SvgSpeaker />
-                                </button>
-                            </div>
-                            <p className="text-[12px] text-gray-500 font-medium tracking-wide">
-                                {loading ? "..." : details?.phonetics || ""}
-                            </p>
-                        </div>
-
-                        <div className="h-px bg-slate-200 w-full" />
-
-                        {/* Card Content */}
-                        <div className="p-4 flex-1 overflow-y-auto min-h-0">
-                            {loading ? (
-                                <div className="py-24 space-y-4">
-                                    <div className="flex justify-center">
-                                        <div className="animate-spin rounded-full h-12 w-12 border-[3px] border-[#0DAA94] border-t-transparent" />
-                                    </div>
-                                    <p className="text-center text-gray-400 font-medium animate-pulse">Fetching word details...</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-10">
-                                    {details?.partsOfSpeech.map((pos, idx) => (
-                                        <div key={idx} className="group">
-                                            <h3 className="text-[20px] italic font-bold text-[#212E42] mb-5 border-l-4 border-[#0DAA94] pl-4">{pos.part}</h3>
-                                            <div className="space-y-6">
-                                                {pos.definitions.map((def, dIdx) => (
-                                                    <div key={dIdx} className="text-[#4A5568] leading-relaxed text-lg">
-                                                        <div className="flex gap-3">
-                                                            <span className="font-bold text-gray-300">{dIdx + 1}.</span>
-                                                            <div className="space-y-2">
-                                                                <p className="font-medium text-slate-700">{def.definition}</p>
-                                                                {def.example && (
-                                                                    <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100/50">
-                                                                        <p className="text-[16px] text-slate-600 italic">
-                                                                            <span className="font-bold text-blue-400 mr-2">Example:</span>
-                                                                            {def.example}
-                                                                        </p>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            {idx < details.partsOfSpeech.length - 1 && (
-                                                <div className="mt-10 h-px bg-slate-100 w-full" />
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Internal Navigation Footer (Visible on Tablet/Mobile) */}
-                        <div className="p-4 border-t border-slate-100 flex items-center justify-between screen1280:hidden">
-                            <button
-                                onClick={onPrevious}
-                                disabled={!hasPrevious}
-                                style={{ color: 'hsla(9, 85%, 65%, 1)' }}
-                                className="flex items-center gap-2 font-bold disabled:opacity-30 disabled:cursor-not-allowed px-4 py-2 rounded-full hover:bg-rose-50"
-                            >
-                                <SvgArrowLeft />
-                                <span>Prev</span>
-                            </button>
-
-                            <div className="flex justify-center screen1024:hidden flex">
-                                <button
-                                    onClick={() => onToggleMastered(word.word, !!word.isLearned)}
-                                    className="flex items-center gap-2 font-bold text-[16px] cursor-pointer transition-all active:scale-95 px-4 py-2 rounded-full hover:bg-blue-200"
-                                    style={{ color: 'hsla(223, 100%, 60%, 1)' }}
-                                >
-                                    <SvgLearningArrowUp />
-                                    <span>Mastered</span>
-                                </button>
-                            </div>
-
-
-                            <button
-                                onClick={onNext}
-                                disabled={!hasNext}
-                                style={{ color: 'hsla(172, 86%, 36%, 1)' }}
-                                className="flex items-center gap-2 font-bold disabled:opacity-30 disabled:cursor-not-allowed px-4 py-2 rounded-full hover:bg-teal-50"
-                            >
-                                <span>Next</span>
-                                <SvgArrowRight />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Next Button (Hidden on Tablet/Mobile) */}
-                <button
-                    onClick={onNext}
-                    disabled={!hasNext}
-                    style={{ color: 'hsla(172, 86%, 36%, 1)' }}
-                    className="absolute cursor-pointer right-0 lg:-right-28 hidden screen1280:flex items-center gap-2 group disabled:opacity-30 disabled:cursor-not-allowed transition-all px-6 py-3 rounded-full hover:bg-teal-50"
-                >
-                    <div className="flex items-center gap-2 font-bold text-lg">
-                        <span>Next</span>
+                    <button
+                        onClick={() => handleAdvance(onNext)}
+                        disabled={!hasNext}
+                        className="px-4 py-2 rounded-full bg-teal-50 text-teal-700 font-semibold disabled:opacity-40 flex items-center gap-2 cursor-pointer"
+                    >
+                        Next
                         <SvgArrowRight />
-                    </div>
-                </button>
-            </div>
-
-            {/* Word Info Label at Bottom (Hidden on Tablet/Mobile) */}
-            <div className="relative">
-                <div
-                    style={{ color: 'hsla(290, 72%, 52%, 1)' }}
-                    className="flex items-center gap-3 font-bold text-lg px-8 py-4 rounded-full transition-all"
-                >
-                    <SvgInfo />
-                    <span>Word Information</span>
+                    </button>
                 </div>
             </div>
         </div>

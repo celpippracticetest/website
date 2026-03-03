@@ -1,29 +1,31 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import WordPill from "@/components/dashboard-app/words/WordPill";
 import { TUserWordDto } from "@/models/userWords.model";
-import { motion, AnimatePresence } from "framer-motion";
-import SvgChevronDown from "@/components/icons/ChevronDown";
 import { WordDetailsCard } from "@/components/dashboard-app/words/WordDetailsCard";
 import RecommendedWordPill from "@/components/dashboard-app/words/RecommendedWordPill";
 import WordsLanding from "@/components/dashboard-app/words/WordsLanding";
-import { Button } from "@/components/v2/Button";
-import SvgArrowRight from "@/components/icons/ArrowRight";
+
+type StatusFilter = "all" | "mastered" | "learning";
+type ComplexityFilter = "all" | "beginner" | "intermediate" | "advanced";
+
+const PAGE_LIMIT = 20;
 
 const WordsPage = () => {
     const { isSignedIn } = useUser();
+
     const [words, setWords] = useState<TUserWordDto[]>([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
     const [loadMoreLoading, setLoadMoreLoading] = useState(false);
     const [skip, setSkip] = useState(0);
-    const [selectedWordIndex, setSelectedWordIndex] = useState<number | null>(0);
+    const [selectedWordIndex, setSelectedWordIndex] = useState(0);
     const [recommendations, setRecommendations] = useState<string[]>([]);
     const [recoLoading, setRecoLoading] = useState(false);
-    const [showMobileDetails, setShowMobileDetails] = useState(false);
-    const limit = 5;
+    const [studyMode, setStudyMode] = useState(false);
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+    const [complexityFilter, setComplexityFilter] = useState<ComplexityFilter>("all");
 
     useEffect(() => {
         fetchWords();
@@ -35,17 +37,23 @@ const WordsPage = () => {
         else setLoading(true);
 
         try {
-            const response = await fetch(`/api/user-words?limit=${limit}&skip=${currentSkip}`);
-            if (response.ok) {
-                const data = await response.json();
-                if (append) {
-                    setWords((prev) => [...prev, ...data.items]);
-                } else {
-                    setWords(data.items);
-                    if (data.items.length > 0) setSelectedWordIndex(0);
-                }
-                setTotal(data.total);
+            const response = await fetch(`/api/user-words?limit=${PAGE_LIMIT}&skip=${currentSkip}`);
+            if (!response.ok) return;
+
+            const data = await response.json();
+            const normalizedItems = (data.items || []).map((item: TUserWordDto) => ({
+                ...item,
+                reviewedTimes: item.reviewedTimes ?? 0,
+                complexityLevel: item.complexityLevel ?? "intermediate",
+            }));
+
+            if (append) {
+                setWords((prev) => [...prev, ...normalizedItems]);
+            } else {
+                setWords(normalizedItems);
+                setSelectedWordIndex(0);
             }
+            setTotal(data.total ?? 0);
         } catch (error) {
             console.error("Error fetching words:", error);
         } finally {
@@ -54,21 +62,13 @@ const WordsPage = () => {
         }
     };
 
-    const handleLoadMore = () => {
-        const nextSkip = skip + limit;
-        setSkip(nextSkip);
-        fetchWords(nextSkip, true);
-    };
-
     const fetchRecommendations = async () => {
         setRecoLoading(true);
         try {
             const response = await fetch("/api/word-recommendations");
-            if (response.ok) {
-                const data = await response.json();
-                console.log("Recommendations Data:", data);
-                setRecommendations(data.recommendations || []);
-            }
+            if (!response.ok) return;
+            const data = await response.json();
+            setRecommendations(data.recommendations || []);
         } catch (error) {
             console.error("Error fetching recommendations:", error);
         } finally {
@@ -76,24 +76,10 @@ const WordsPage = () => {
         }
     };
 
-    const refillRecommendations = async () => {
-        try {
-            const response = await fetch("/api/word-recommendations");
-            if (response.ok) {
-                const data = await response.json();
-                const newRecs = data.recommendations || [];
-                setRecommendations(prev => {
-                    const existing = new Set(prev);
-                    const uniqueNew = newRecs.filter((w: string) => !existing.has(w));
-                    if (uniqueNew.length > 0) {
-                        return [...prev, uniqueNew[0]];
-                    }
-                    return prev;
-                });
-            }
-        } catch (error) {
-            console.error("Error refilling recommendations:", error);
-        }
+    const handleLoadMore = () => {
+        const nextSkip = skip + PAGE_LIMIT;
+        setSkip(nextSkip);
+        fetchWords(nextSkip, true);
     };
 
     const handleAddRecommended = async (word: string) => {
@@ -103,16 +89,19 @@ const WordsPage = () => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ word }),
             });
-            if (response.ok) {
-                // Add to list and remove from recommendations
-                const newWord = await response.json();
-                setWords((prev) => [newWord, ...prev]);
-                setTotal((prev) => prev + 1);
-                setRecommendations((prev) => prev.filter((w) => w !== word));
+            if (!response.ok) return;
 
-                // Remove the used word and fetch a new one to replace it
-                refillRecommendations();
-            }
+            const newWord: TUserWordDto = await response.json();
+            const normalizedWord: TUserWordDto = {
+                ...newWord,
+                reviewedTimes: newWord.reviewedTimes ?? 0,
+                complexityLevel: newWord.complexityLevel ?? "intermediate",
+            };
+
+            setWords((prev) => [normalizedWord, ...prev]);
+            setTotal((prev) => prev + 1);
+            setRecommendations((prev) => prev.filter((w) => w !== word));
+            fetchRecommendations();
         } catch (error) {
             console.error("Error adding recommended word:", error);
         }
@@ -125,249 +114,239 @@ const WordsPage = () => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ word, isLearned: !currentStatus }),
             });
-            if (response.ok) {
-                setWords((prev) =>
-                    prev.map((w) => (w.word === word ? { ...w, isLearned: !currentStatus } : w))
-                );
-            }
+            if (!response.ok) return;
+
+            setWords((prev) =>
+                prev.map((item) => (item.word === word ? { ...item, isLearned: !currentStatus } : item))
+            );
         } catch (error) {
             console.error("Error toggling learned status:", error);
         }
     };
 
-    const handleViewFlashcards = () => {
-        if (words.length > 0) {
-            let randomIndex = Math.floor(Math.random() * words.length);
-            // Try to pick a different word if possible
-            if (words.length > 1 && randomIndex === selectedWordIndex) {
-                randomIndex = (randomIndex + 1) % words.length;
-            }
-            setSelectedWordIndex(randomIndex);
-            setShowMobileDetails(true);
+    const handleRecordReview = async (word: string) => {
+        try {
+            const response = await fetch("/api/user-words", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ word, action: "review" }),
+            });
+            if (!response.ok) return;
+
+            setWords((prev) =>
+                prev.map((item) =>
+                    item.word === word
+                        ? { ...item, reviewedTimes: (item.reviewedTimes ?? 0) + 1 }
+                        : item
+                )
+            );
+        } catch (error) {
+            console.error("Error recording review:", error);
         }
     };
 
-    const selectedWord = selectedWordIndex !== null && words.length > 0 ? words[selectedWordIndex] : null;
+    const filteredWords = useMemo(() => {
+        return words.filter((item) => {
+            const statusOk =
+                statusFilter === "all" ||
+                (statusFilter === "mastered" && !!item.isLearned) ||
+                (statusFilter === "learning" && !item.isLearned);
+
+            const complexity = item.complexityLevel ?? "intermediate";
+            const complexityOk = complexityFilter === "all" || complexity === complexityFilter;
+
+            return statusOk && complexityOk;
+        });
+    }, [words, statusFilter, complexityFilter]);
+
+    const selectedWord = words[selectedWordIndex] || null;
+
+    const startStudyMode = (index?: number) => {
+        if (words.length === 0) return;
+
+        if (typeof index === "number") {
+            setSelectedWordIndex(index);
+        } else {
+            const firstLearningIndex = words.findIndex((item) => !item.isLearned);
+            setSelectedWordIndex(firstLearningIndex >= 0 ? firstLearningIndex : 0);
+        }
+        setStudyMode(true);
+    };
+
+    const advanceToNext = () => {
+        setSelectedWordIndex((prev) => (prev < words.length - 1 ? prev + 1 : prev));
+    };
+
+    const goToPrevious = () => {
+        setSelectedWordIndex((prev) => (prev > 0 ? prev - 1 : prev));
+    };
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#0DAA94] border-t-transparent"></div>
+            </div>
+        );
+    }
+
+    if (words.length === 0) {
+        return <WordsLanding />;
+    }
+
+    if (studyMode && selectedWord) {
+        return (
+            <div className="w-full px-4 screen1280:px-0 pt-8 pb-28 screen1280:pb-8">
+                <WordDetailsCard
+                    word={selectedWord}
+                    onNext={advanceToNext}
+                    onPrevious={goToPrevious}
+                    onToggleMastered={handleToggleLearned}
+                    onLearnAgain={advanceToNext}
+                    onRecordRevealReview={handleRecordReview}
+                    onRecordAdvanceReview={handleRecordReview}
+                    hasPrevious={selectedWordIndex > 0}
+                    hasNext={selectedWordIndex < words.length - 1}
+                    onBackToList={() => setStudyMode(false)}
+                    currentIndex={selectedWordIndex}
+                    totalWords={words.length}
+                />
+            </div>
+        );
+    }
 
     return (
-        <div className="flex flex-col w-full max-h-screen">
-            <div className="max-w-7xl flex justify-center items-center flex-col w-full mx-auto">
-                <h1 className="sr-only">CELPIP Vocabulary Builder</h1>
-                {!isSignedIn && (
-                    <section className="w-full px-4 screen1280:px-0 pt-6 pb-2">
-                        <h2 className="text-[28px] screen744:text-[34px] font-bold text-[#37465C]">
-                            CELPIP Vocabulary Builder
-                        </h2>
-                        <p className="mt-3 text-[16px] leading-[26px] text-[#526071] max-w-[960px]">
-                            Build and review a personal CELPIP word bank with examples, flashcards,
-                            and recommended vocabulary. Track mastered words and focus on practical
-                            terms that improve clarity and range in Speaking and Writing responses.
-                        </p>
-                        <p className="mt-2 text-[15px] leading-[24px] text-[#526071] max-w-[960px]">
-                            A consistent routine works best: add new words, review meaning and usage,
-                            and reuse them in short writing and speaking practice each day.
-                        </p>
-                        <p className="mt-2 text-[15px] leading-[24px] text-[#526071] max-w-[960px]">
-                            Strong CELPIP vocabulary is not about memorizing rare words. It is about
-                            choosing accurate, natural language for common real-life topics such as
-                            work, community services, daily routines, and personal opinions. Build your
-                            word bank by theme so recall becomes faster in exam conditions.
-                        </p>
-                        <p className="mt-2 text-[15px] leading-[24px] text-[#526071] max-w-[960px]">
-                            For each new word, learn a clear definition, one synonym, one collocation,
-                            and one example sentence. Then use that same word in a short speaking
-                            answer and a short writing paragraph. This transfer step helps move
-                            vocabulary from passive recognition into active, exam-ready usage.
-                        </p>
-                        <p className="mt-2 text-[15px] leading-[24px] text-[#526071] max-w-[960px]">
-                            Review mastered and unmastered words separately. Unmastered words should be
-                            recycled more often until they feel automatic. Over time, this process
-                            improves lexical range, precision, and fluency, which directly supports
-                            stronger CELPIP Speaking and Writing performance.
-                        </p>
-                    </section>
-                )}
-
-                {loading ? (
-                    <div className="flex justify-center items-center h-64">
-                        <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#0DAA94] border-t-transparent"></div>
+        <div className="w-full max-w-7xl mx-auto px-4 screen1280:px-0 pt-6 pb-28 screen1280:pb-6 flex flex-col gap-6">
+            <section className="bg-white rounded-[24px] border border-slate-200 p-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h1 className="text-[24px] font-bold text-[#212E42]">My Words</h1>
+                        <p className="text-[#76808F] text-sm mt-1">Track progress by mastery and complexity level.</p>
                     </div>
-                ) : words.length === 0 ? (
-                    <WordsLanding />
-                ) : (
-                    <div className="flex screen1280:flex-row flex-col-reverse justify-between w-full px-4 screen1280:px-0 screen1280:max-h-[calc(100vh-430px)]">
+                    <button
+                        onClick={() => startStudyMode()}
+                        className="px-5 py-2.5 rounded-full bg-[#0DAA94] text-white font-semibold hover:bg-[#0b947f] cursor-pointer"
+                    >
+                        Start Study
+                    </button>
+                </div>
 
-                        {/* Word Details Card - Desktop Only */}
-                        <div className="hidden screen1280:flex screen1280:h-full w-full justify-center items-center overflow-hidden py-[44px]">
-                            {selectedWord && selectedWordIndex !== null && (
-                                <WordDetailsCard
-                                    word={selectedWord}
-                                    onNext={() => setSelectedWordIndex(prev => (prev !== null && prev < words.length - 1) ? prev + 1 : prev)}
-                                    onPrevious={() => setSelectedWordIndex(prev => (prev !== null && prev > 0) ? prev - 1 : prev)}
-                                    onToggleMastered={handleToggleLearned}
-                                    hasPrevious={selectedWordIndex !== null && selectedWordIndex > 0}
-                                    hasNext={selectedWordIndex !== null && selectedWordIndex < words.length - 1}
-                                    currentIndex={selectedWordIndex}
-                                    totalWords={total}
-                                />
-                            )}
-                        </div>
+                <div className="flex flex-wrap items-center gap-3 mt-5">
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                        className="px-4 py-2 rounded-full border border-slate-300 text-sm text-[#212E42] bg-white cursor-pointer"
+                    >
+                        <option value="all">All Status</option>
+                        <option value="mastered">Mastered</option>
+                        <option value="learning">Learning</option>
+                    </select>
 
-                        {/* Word List Section */}
-                        <div className="flex flex-col gap-8 w-full screen1280:w-auto">
-                            {/* Mobile: Card Container or Details View */}
-                            <div className="screen1280:hidden relative">
-                                <AnimatePresence mode="wait">
-                                    {!showMobileDetails ? (
-                                        <motion.div
-                                            key="list"
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: -20 }}
-                                            transition={{ duration: 0.2 }}
-                                            className="bg-white rounded-[32px] p-8 shadow-lg h-[calc(100vh-460px)] overflow-y-auto"
-                                        >
-                                            <h1 className="text-[12px] font-bold text-[#212E42] tracking-tight mb-6">Added Words</h1>
-                                            <div className="flex flex-col gap-4 w-full">
-                                                {words.map((item, index) => (
-                                                    <WordPill
-                                                        key={item.id}
-                                                        word={item.word}
-                                                        isLearned={item.isLearned}
-                                                        isSelected={selectedWordIndex === index}
-                                                        onToggleLearned={() => handleToggleLearned(item.word, !!item.isLearned)}
-                                                        onClick={() => {
-                                                            setSelectedWordIndex(index);
-                                                            setShowMobileDetails(true);
-                                                        }}
-                                                    />
-                                                ))}
-                                            </div>
+                    <select
+                        value={complexityFilter}
+                        onChange={(e) => setComplexityFilter(e.target.value as ComplexityFilter)}
+                        className="px-4 py-2 rounded-full border border-slate-300 text-sm text-[#212E42] bg-white cursor-pointer"
+                    >
+                        <option value="all">All Complexity</option>
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                    </select>
+                </div>
 
-                                            {words.length < total && (
-                                                <div className="mt-8 flex justify-center">
-                                                    <button
-                                                        onClick={handleLoadMore}
-                                                        disabled={loadMoreLoading}
-                                                        className="flex items-center gap-2 text-[#76808F] hover:text-[#0DAA94] transition-all font-medium text-md group disabled:opacity-50"
-                                                    >
-                                                        {loadMoreLoading ? "Loading..." : "Load more"}
-                                                        <div className="transition-transform group-hover:translate-y-1">
-                                                            <SvgChevronDown />
-                                                        </div>
-                                                    </button>
-                                                </div>
-                                            )}
+                <div className="mt-5 flex flex-col gap-3">
+                    {filteredWords.length === 0 ? (
+                        <p className="text-[#76808F]">No words match your current filters.</p>
+                    ) : (
+                        filteredWords.map((item) => {
+                            const originalIndex = words.findIndex((word) => word.id === item.id);
+                            const complexity = item.complexityLevel ?? "intermediate";
+                            return (
+                                <div
+                                    key={item.id}
+                                    className={`rounded-2xl border px-5 py-4 flex flex-wrap items-center justify-between gap-3 ${item.isLearned
+                                        ? "bg-emerald-50 border-emerald-200"
+                                        : "bg-slate-50 border-slate-200"
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-[20px] font-bold text-[#212E42] capitalize">{item.word}</span>
+                                        <span className="px-3 py-1 rounded-full bg-white border border-slate-200 text-xs font-semibold text-[#526071] uppercase">
+                                            {complexity}
+                                        </span>
+                                        <span className="px-3 py-1 rounded-full bg-white border border-slate-200 text-xs font-semibold text-[#526071]">
+                                            Reviews: {item.reviewedTimes ?? 0}
+                                        </span>
+                                    </div>
 
-                                        </motion.div>
-                                    ) : (
-                                        <motion.div
-                                            key="details"
-                                            initial={{ opacity: 0, x: 20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: 20 }}
-                                            transition={{ duration: 0.2 }}
-                                        >
-                                            {selectedWord && selectedWordIndex !== null && (
-                                                <WordDetailsCard
-                                                    key={selectedWord.word}
-                                                    word={selectedWord}
-                                                    onNext={() => setSelectedWordIndex(prev => (prev !== null && prev < words.length - 1) ? prev + 1 : prev)}
-                                                    onPrevious={() => setSelectedWordIndex(prev => (prev !== null && prev > 0) ? prev - 1 : prev)}
-                                                    onToggleMastered={handleToggleLearned}
-                                                    hasPrevious={selectedWordIndex !== null && selectedWordIndex > 0}
-                                                    hasNext={selectedWordIndex !== null && selectedWordIndex < words.length - 1}
-                                                    onBack={() => setShowMobileDetails(false)}
-                                                    currentIndex={selectedWordIndex}
-                                                    totalWords={total}
-                                                />
-                                            )}
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-
-                            {/* Desktop: Simple List */}
-                            <div className="hidden screen1280:flex flex-col gap-8 h-full overflow-y-auto pr-4 scrollbar-thin">
-                                <div className="flex justify-start w-full">
-                                    <h1 className="text-[16px] font-bold text-[#212E42] tracking-tight">Added Words</h1>
-                                </div>
-                                <div className="flex screen1280:flex-col flex-wrap screen1280:mb-0 mb-6 gap-6 w-full">
-                                    {words.map((item, index) => (
-                                        <WordPill
-                                            key={item.id}
-                                            word={item.word}
-                                            isLearned={item.isLearned}
-                                            isSelected={selectedWordIndex === index}
-                                            onToggleLearned={() => handleToggleLearned(item.word, !!item.isLearned)}
-                                            onClick={() => setSelectedWordIndex(index)}
-                                        />
-                                    ))}
-                                </div>
-
-                                {words.length < total && (
-                                    <div className="flex justify-center">
+                                    <div className="flex items-center gap-2">
                                         <button
-                                            onClick={handleLoadMore}
-                                            disabled={loadMoreLoading}
-                                            className="flex items-center gap-2 text-[#212E42]/60 hover:text-[#0DAA94] transition-all font-bold text-lg group disabled:opacity-50"
+                                            onClick={() => handleToggleLearned(item.word, !!item.isLearned)}
+                                            className="px-4 py-2 rounded-full bg-blue-50 text-blue-600 text-sm font-semibold cursor-pointer"
                                         >
-                                            {loadMoreLoading ? "Loading..." : "Load more"}
-                                            <div className="transition-transform group-hover:translate-y-1">
-                                                <SvgChevronDown />
-                                            </div>
+                                            {item.isLearned ? "Unmark Mastered" : "Mark Mastered"}
+                                        </button>
+                                        <button
+                                            onClick={() => startStudyMode(originalIndex)}
+                                            className="px-4 py-2 rounded-full bg-[#212E42] text-white text-sm font-semibold cursor-pointer"
+                                        >
+                                            Study
                                         </button>
                                     </div>
-                                )}
-                            </div>
-                        </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+
+                {words.length < total && (
+                    <div className="mt-6 flex justify-center">
+                        <button
+                            onClick={handleLoadMore}
+                            disabled={loadMoreLoading}
+                            className="px-5 py-2.5 rounded-full bg-slate-100 text-[#212E42] font-semibold disabled:opacity-50 cursor-pointer"
+                        >
+                            {loadMoreLoading ? "Loading..." : "Load More"}
+                        </button>
                     </div>
                 )}
+            </section>
 
-                {/* Recommended Words Section */}
-                {isSignedIn && words.length > 0 && !showMobileDetails && (
-                    <div className="w-full screen1280:mt-[100px]">
-                        <div className="screen1280:bg-[#EDF0F5] max-h-[180px] rounded-[32px] p-10 w-full screen1280:shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] screen1280:border screen1280:border-gray-200/50">
-                            <h2 className="text-[#76808F] text-[16px] font-medium mb-8">Recommended Words</h2>
-                            <div className="flex flex-nowrap gap-6 overflow-x-auto w-full items-center pb-2">
-                                {recoLoading && recommendations.length === 0 ? (
-                                    <div className="flex items-center gap-3">
-                                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#0DAA94] border-t-transparent"></div>
-                                        <span className="text-gray-400 font-medium">Coming up with ideas...</span>
-                                    </div>
-                                ) : recommendations.length > 0 ? (
-                                    <AnimatePresence mode="popLayout">
-                                        {recommendations.map((word) => (
-                                            <motion.div
-                                                key={word}
-                                                layout
-                                                initial={{ opacity: 0, scale: 0.8 }}
-                                                animate={{ opacity: 1, scale: 1 }}
-                                                exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
-                                                className="shrink-0"
-                                            >
-                                                <RecommendedWordPill
-                                                    word={word}
-                                                    onAdd={() => handleAddRecommended(word)}
-                                                />
-                                            </motion.div>
-                                        ))}
-                                    </AnimatePresence>
-                                ) : (
-                                    <p className="text-gray-400 italic">No recommendations available right now.</p>
-                                )}
-                            </div>
-                        </div>
+            <section className="bg-white rounded-[24px] border border-slate-200 p-6">
+                <h2 className="text-[20px] font-bold text-[#212E42]">Recommended Words</h2>
+                <p className="text-[#76808F] text-sm mt-1">
+                    Based on the most reviewed words by all users.
+                </p>
+
+                {!isSignedIn ? (
+                    <p className="text-[#76808F] mt-4">Sign in to see personalized recommendations.</p>
+                ) : recoLoading && recommendations.length === 0 ? (
+                    <p className="text-[#76808F] mt-4">Loading recommendations...</p>
+                ) : recommendations.length === 0 ? (
+                    <p className="text-[#76808F] mt-4">No recommendations available right now.</p>
+                ) : (
+                    <div className="mt-5 flex flex-wrap gap-3">
+                        {recommendations.map((word) => (
+                            <RecommendedWordPill key={word} word={word} onAdd={() => handleAddRecommended(word)} />
+                        ))}
                     </div>
                 )}
+            </section>
 
-                {/* View Flashcards Button */}
-                {selectedWord && !showMobileDetails && (
-                    <Button className="screen1280:hidden flex" onClick={handleViewFlashcards}>
-                        View Flashcards <SvgArrowRight />
-                    </Button>
-                )}
-            </div>
+            <section className="bg-[#F8FAFC] rounded-[24px] border border-slate-200 p-6">
+                <h2 className="text-[20px] font-bold text-[#212E42]">Study Section</h2>
+                <p className="text-[#76808F] text-sm mt-1">
+                    Flashcard mode hides other sections so you can focus on one word at a time.
+                </p>
+                <div className="mt-4 flex items-center gap-3">
+                    <button
+                        onClick={() => startStudyMode()}
+                        className="px-5 py-2.5 rounded-full bg-[#0DAA94] text-white font-semibold hover:bg-[#0b947f] cursor-pointer"
+                    >
+                        Resume Study
+                    </button>
+                    <span className="text-sm text-[#526071]">Total words: {words.length}</span>
+                </div>
+            </section>
         </div>
     );
 };

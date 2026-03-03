@@ -36,9 +36,9 @@ export async function GET(request: Request) {
       data: kpis,
     });
   } catch (error) {
-    console.error("Error fetching Stripe data from DB:", error);
+    console.error("Failed to load Stripe KPIs from DB:", error);
     return NextResponse.json(
-      { error: "Failed to fetch Stripe data" },
+      { error: "Failed to load Stripe KPIs" },
       { status: 500 }
     );
   }

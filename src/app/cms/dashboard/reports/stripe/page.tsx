@@ -2,29 +2,101 @@
 
 import React, { useState } from "react";
 import { Box } from "@/components/ui/Box";
-import { useQuery } from "@tanstack/react-query";
-import { Loader2, DollarSign, Users, CreditCard, Activity, Calendar as CalendarIcon } from "lucide-react";
-import type Stripe from "stripe";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2, DollarSign, Users, Activity, Calendar as CalendarIcon } from "lucide-react";
 import moment from "moment";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import { Line } from "react-chartjs-2";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-interface StripeData {
-  balance: Stripe.Balance;
-  charges: Stripe.Charge[];
-  subscriptions: Stripe.Subscription[];
-  customers: Stripe.Customer[];
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+interface StripeKpiData {
+  range: { startDate: string; endDate: string };
+  revenue: {
+    grossCents: number;
+    collectedCents: number;
+    discountCents: number;
+    stripeFeeCents: number;
+    netCents: number;
+    invoiceCount: number;
+  };
+  subscribers: {
+    currentActive: number;
+    startedInPeriod: number;
+    canceledInPeriod: number;
+    byPlan: Array<{
+      interval: string;
+      intervalCount: number;
+      count: number;
+    }>;
+  };
+  churn: {
+    churnedSubscribers: number;
+    startingSubscribers: number;
+    churnRatePercent: number;
+  };
+  daily: Array<{
+    date: string;
+    startedSubscriptions: number;
+    canceledSubscriptions: number;
+  }>;
+  sourceFunnel: Array<{
+    source: string;
+    newSubscriptions: number;
+    canceledSubscriptions: number;
+    estimatedRevenueCents: number;
+  }>;
+}
+
+interface StripeSyncResponse {
+  success: boolean;
+  mode: "till_now" | "range";
+  syncedAt: string;
+  subscriptions: number;
+  customers: number;
+  balanceTransactions: number;
+  prices: number;
+}
+
+interface GaSourceSyncResponse {
+  success: boolean;
+  scanned: number;
+  updated: number;
+  matchedInGa: number;
+  missingInGa: number;
 }
 
 export default function StripeReportPage() {
+  const queryClient = useQueryClient();
   const [startDate, setStartDate] = useState<Date | undefined>(
     moment().subtract(7, 'days').toDate()
   );
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
+  const [syncMessage, setSyncMessage] = useState<string>("");
+  const [gaSyncMessage, setGaSyncMessage] = useState<string>("");
 
-  const { data, isLoading, error } = useQuery<StripeData>({
+  const { data, isLoading, error } = useQuery<StripeKpiData>({
     queryKey: ["stripe-reports", startDate, endDate],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -34,15 +106,143 @@ export default function StripeReportPage() {
       if (endDate) {
         params.append("endDate", endDate.toISOString());
       }
-      
+
       const res = await fetch(`/api/cms/reports/stripe?${params.toString()}`);
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to fetch Stripe data");
       }
-      return res.json();
+      const payload = await res.json();
+      return payload.data as StripeKpiData;
     },
   });
+
+  const syncMutation = useMutation({
+    mutationFn: async (mode: "till_now" | "range") => {
+      const payload =
+        mode === "range"
+          ? {
+            mode: "range",
+            fromDate: startDate?.toISOString(),
+            toDate: endDate?.toISOString() || new Date().toISOString(),
+          }
+          : { mode: "till_now" };
+
+      const response = await fetch("/api/cms/reports/stripe/sync", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to sync Stripe data");
+      }
+
+      return data as StripeSyncResponse;
+    },
+    onSuccess: (result) => {
+      setSyncMessage(
+        `Sync completed (${result.mode}). Subs: ${result.subscriptions}, Customers: ${result.customers}, Balance Tx: ${result.balanceTransactions}, Prices: ${result.prices}`
+      );
+      queryClient.invalidateQueries({ queryKey: ["stripe-reports"] });
+    },
+    onError: (err) => {
+      setSyncMessage(`Sync failed: ${(err as Error).message}`);
+    },
+  });
+
+  const gaSourceSyncMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/admin/analytics/ga-source-sync", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ limit: 2000 }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to sync GA attribution");
+      }
+
+      return data as GaSourceSyncResponse;
+    },
+    onSuccess: (result) => {
+      setGaSyncMessage(
+        `GA source sync done for last ${result.scanned} users. Matched in GA: ${result.matchedInGa}, missing: ${result.missingInGa}.`
+      );
+      queryClient.invalidateQueries({ queryKey: ["stripe-reports"] });
+    },
+    onError: (err) => {
+      setGaSyncMessage(`GA source sync failed: ${(err as Error).message}`);
+    },
+  });
+
+  // Format currency
+  const formatCurrency = (amount: number, currencyCode: string) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currencyCode,
+    }).format(amount / 100);
+  };
+
+  const dailyTrendData = React.useMemo(() => {
+    const daily = data?.daily || [];
+    return {
+      labels: daily.map((item) => moment(item.date).format("MMM D")),
+      datasets: [
+        {
+          label: "Started subscriptions",
+          data: daily.map((item) => item.startedSubscriptions),
+          borderColor: "#16a34a",
+          backgroundColor: "rgba(22, 163, 74, 0.2)",
+          tension: 0.25,
+        },
+        {
+          label: "Canceled subscriptions",
+          data: daily.map((item) => item.canceledSubscriptions),
+          borderColor: "#dc2626",
+          backgroundColor: "rgba(220, 38, 38, 0.2)",
+          tension: 0.25,
+        },
+      ],
+    };
+  }, [data?.daily]);
+
+  const dailyTrendOptions = React.useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: "top" as const,
+        },
+        title: {
+          display: true,
+          text: "Items per day in selected period",
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            precision: 0 as const,
+          },
+        },
+      },
+    }),
+    []
+  );
+
+  const formatSource = (source: string) =>
+    source
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
 
   if (isLoading) {
     return (
@@ -59,21 +259,6 @@ export default function StripeReportPage() {
       </Box>
     );
   }
-
-  // Calculate available balance (sum of all currencies, simplified to first available for display or mapped)
-  // For simplicity, we'll take the first currency available or default to 0.
-  // In a real app, you'd handle multi-currency.
-  const availableAmount = data?.balance?.available?.[0]?.amount || 0;
-  const pendingAmount = data?.balance?.pending?.[0]?.amount || 0;
-  const currency = data?.balance?.available?.[0]?.currency?.toUpperCase() || 'USD';
-
-  // Format currency
-  const formatCurrency = (amount: number, currencyCode: string) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currencyCode,
-    }).format(amount / 100);
-  };
 
   return (
     <Box className="w-full space-y-6">
@@ -132,91 +317,156 @@ export default function StripeReportPage() {
         </Box>
       </Box>
 
+      <Box className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <Box className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-gray-600">
+            Fetch Stripe data into DB manually from this page.
+          </p>
+          <Box className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => syncMutation.mutate("range")}
+              disabled={syncMutation.isPending || !startDate || !endDate}
+            >
+              {syncMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Fetch From / To
+            </Button>
+            <Button
+              onClick={() => syncMutation.mutate("till_now")}
+              disabled={syncMutation.isPending}
+            >
+              {syncMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Fetch Till Now
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => gaSourceSyncMutation.mutate()}
+              disabled={gaSourceSyncMutation.isPending}
+            >
+              {gaSourceSyncMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Sync GA Source (Last 2000)
+            </Button>
+          </Box>
+        </Box>
+        {syncMessage ? (
+          <Box className="mt-3 rounded-md bg-gray-50 p-3 text-xs text-gray-700">
+            {syncMessage}
+          </Box>
+        ) : null}
+        {gaSyncMessage ? (
+          <Box className="mt-3 rounded-md bg-gray-50 p-3 text-xs text-gray-700">
+            {gaSyncMessage}
+          </Box>
+        ) : null}
+      </Box>
+
       {/* Summary Cards */}
-      <Box className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <Box className="flex flex-wrap gap-4">
         <SummaryCard
-          title="Available Balance"
-          value={formatCurrency(availableAmount, currency)}
+          title="Net Revenue"
+          value={formatCurrency(data?.revenue?.netCents || 0, "CAD")}
           icon={<DollarSign className="h-5 w-5 text-green-600" />}
           bgColor="bg-green-50"
+          subtext="After Stripe fees"
         />
         <SummaryCard
-          title="Pending Balance"
-          value={formatCurrency(pendingAmount, currency)}
-          icon={<Activity className="h-5 w-5 text-yellow-600" />}
-          bgColor="bg-yellow-50"
+          title="New Subscriptions"
+          value={data?.subscribers?.startedInPeriod?.toString() || "0"}
+          icon={<Users className="h-5 w-5 text-indigo-600" />}
+          bgColor="bg-indigo-50"
+          subtext="Started in selected range"
         />
         <SummaryCard
           title="Active Subscriptions"
-          value={data?.subscriptions?.length?.toString() || "0"}
+          value={data?.subscribers?.currentActive?.toString() || "0"}
           icon={<Users className="h-5 w-5 text-blue-600" />}
           bgColor="bg-blue-50"
-          subtext="(In selected range)"
+          subtext="Current active"
         />
         <SummaryCard
-          title="Recent Charges"
-          value={data?.charges?.length?.toString() || "0"}
-          icon={<CreditCard className="h-5 w-5 text-purple-600" />}
+          title="Churn Rate"
+          value={`${data?.churn?.churnRatePercent?.toFixed?.(2) || "0.00"}%`}
+          icon={<Activity className="h-5 w-5 text-purple-600" />}
           bgColor="bg-purple-50"
-          subtext="(In selected range)"
+          subtext={`${data?.churn?.churnedSubscribers || 0} cancelled / ${data?.churn?.startingSubscribers || 0} start`}
         />
       </Box>
 
-      {/* Recent Charges Table */}
-      <Box className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-        <Box className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-          <h2 className="text-lg font-semibold text-gray-800">Recent Transactions</h2>
+      <Box className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <Box className="h-80 w-full">
+          <Line data={dailyTrendData} options={dailyTrendOptions} />
         </Box>
-        <Box className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-600">
-            <thead className="border-b bg-gray-50 text-xs uppercase text-gray-500">
-              <tr>
-                <th className="px-6 py-3">Amount</th>
-                <th className="px-6 py-3">Status</th>
-                <th className="px-6 py-3">Customer</th>
-                <th className="px-6 py-3">Description</th>
-                <th className="px-6 py-3">Date</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {data?.charges?.map((charge) => (
-                <tr key={charge.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-medium text-gray-900">
-                    {formatCurrency(charge.amount, charge.currency)}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        charge.status === "succeeded"
-                          ? "bg-green-100 text-green-800"
-                          : charge.status === "pending"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {charge.status.charAt(0).toUpperCase() + charge.status.slice(1)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">
-                    {charge.billing_details?.email || "N/A"}
-                  </td>
-                   <td className="px-6 py-4 text-gray-500 max-w-xs truncate">
-                    {charge.description || "Stripe Charge"}
-                  </td>
-                  <td className="px-6 py-4 text-gray-500">
-                    {moment(charge.created * 1000).format("MMM DD, YYYY, h:mm A")}
-                  </td>
-                </tr>
-              ))}
-              {(!data?.charges || data.charges.length === 0) && (
-                 <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                        No recent transactions found in this period.
-                    </td>
-                 </tr>
-              )}
-            </tbody>
-          </table>
+      </Box>
+
+      <Box className="flex flex-wrap gap-4">
+        <Box className="min-w-[280px] flex-1 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-semibold text-gray-800">Subscribers by Plan</h2>
+          <Box className="mt-4 space-y-2 text-sm text-gray-600">
+            {data?.subscribers?.byPlan?.length ? (
+              data.subscribers.byPlan.map((plan, index) => (
+                <Box
+                  key={`${plan.interval}-${plan.intervalCount}-${index}`}
+                  className="flex items-center justify-between"
+                >
+                  <span>
+                    {plan.intervalCount > 1
+                      ? `${plan.intervalCount} ${plan.interval}`
+                      : plan.interval}
+                  </span>
+                  <span className="font-medium text-gray-900">{plan.count}</span>
+                </Box>
+              ))
+            ) : (
+              <p className="text-gray-500">No plan data in selected range.</p>
+            )}
+            <Box className="flex items-center justify-between border-t pt-2">
+              <span>Started in range</span>
+              <span className="font-semibold text-gray-900">
+                {data?.subscribers?.startedInPeriod || 0}
+              </span>
+            </Box>
+            <Box className="flex items-center justify-between">
+              <span>Cancelled in range</span>
+              <span className="font-semibold text-gray-900">
+                {data?.subscribers?.canceledInPeriod || 0}
+              </span>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+
+      <Box className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-semibold text-gray-800">Revenue Funnel by Source</h2>
+        <Box className="mt-4 space-y-2 text-sm text-gray-600">
+          <Box className="flex items-center justify-between border-b pb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <span>Source</span>
+            <span>New Subs</span>
+            <span>Cancelled</span>
+            <span>Est. Revenue</span>
+          </Box>
+          {data?.sourceFunnel?.length ? (
+            data.sourceFunnel.map((item) => (
+              <Box
+                key={item.source}
+                className="flex items-center justify-between border-b border-gray-100 pb-2"
+              >
+                <span className="font-medium text-gray-900">{formatSource(item.source)}</span>
+                <span>{item.newSubscriptions}</span>
+                <span>{item.canceledSubscriptions}</span>
+                <span className="font-medium text-gray-900">
+                  {formatCurrency(item.estimatedRevenueCents, "CAD")}
+                </span>
+              </Box>
+            ))
+          ) : (
+            <p className="text-gray-500">No source funnel data in selected range.</p>
+          )}
         </Box>
       </Box>
     </Box>
@@ -240,7 +490,7 @@ function SummaryCard({
     <Box className="flex flex-col gap-1 rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
       <Box className="flex items-center justify-between">
         <Box className={`rounded-lg p-2 ${bgColor}`}>{icon}</Box>
-       {/* Optional trend icon or similar could go here */}
+        {/* Optional trend icon or similar could go here */}
       </Box>
       <Box className="mt-3">
         <p className="text-sm font-medium text-gray-500">{title}</p>

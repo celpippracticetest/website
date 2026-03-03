@@ -4,6 +4,7 @@ import { OnboardingNewRepository } from "@/repositories/onboardingNew.repo";
 import { NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { clerkClient } from "@clerk/express";
+import { getDb } from "@/lib/mongodb";
 
 export const runtime = "nodejs";
 export const maxDuration = 30; // 30 seconds timeout
@@ -36,6 +37,54 @@ export async function POST(req: Request) {
       answers: data.answers,
       answeredAt: new Date(),
     });
+
+    // Hybrid lifecycle snapshot for fast segmentation/reporting
+    const testDateRaw = data?.answers?.testDate;
+    const targetScores = data?.answers?.targetScores || {};
+    const avgTargetScore =
+      (Number(targetScores.listening || 0) +
+        Number(targetScores.reading || 0) +
+        Number(targetScores.writing || 0) +
+        Number(targetScores.speaking || 0)) /
+      4;
+
+    const previousAttempts = Number(data?.answers?.previousAttempts || 0);
+    const targetExamDate = testDateRaw ? new Date(testDateRaw) : null;
+    const daysToExam =
+      targetExamDate && !Number.isNaN(targetExamDate.getTime())
+        ? Math.max(
+            0,
+            Math.ceil(
+              (targetExamDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+            )
+          )
+        : null;
+
+    const db = await getDb();
+    await db.collection("users").updateOne(
+      { clerkUserId: user.id },
+      {
+        $set: {
+          intent: {
+            targetExamDate:
+              targetExamDate && !Number.isNaN(targetExamDate.getTime())
+                ? targetExamDate
+                : null,
+            targetScore: Number.isFinite(avgTargetScore) ? avgTargetScore : null,
+            previousAttempts: Number.isFinite(previousAttempts)
+              ? previousAttempts
+              : 0,
+            daysToExam,
+            updatedAt: new Date(),
+          },
+          updatedAt: new Date(),
+        },
+        $setOnInsert: {
+          createdAt: new Date(),
+        },
+      },
+      { upsert: true }
+    );
   } else {
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   }

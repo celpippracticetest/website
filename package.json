@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "export:clerk:google-ads": "node ./scripts/export-clerk-users-google-ads.js",
+    "export:clerk:inactive-nonpremium": "node ./scripts/export-clerk-inactive-nonpremium.js",
     "postbuild": "next-sitemap",
     "svgr": "npx @svgr/cli --typescript --out-dir  src/components/icons/ -- icons/svg",
     "playwright:install": "playwright install chromium firefox webkit",

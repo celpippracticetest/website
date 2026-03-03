@@ -39,6 +39,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/celpip-for-social-worker",
     "/celpip-for-midwife",
     "/celpip-for-tech-worker",
+    "/score-calculator",
     "/words",
     "/learning",
   ].map((route) => ({

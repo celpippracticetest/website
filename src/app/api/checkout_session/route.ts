@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { stripe } from "@/lib/stripe";
 import { currentUser } from "@clerk/nextjs/server";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
+import { getDb } from "@/lib/mongodb";
 
 export async function POST(req: NextRequest) {
   try {
@@ -218,6 +219,61 @@ export async function POST(req: NextRequest) {
     const priceId = productDetails.default_price as string;
     const priceObject = await stripe.prices.retrieve(priceId);
     const mode = priceObject.recurring ? "subscription" : "payment";
+    const db = await getDb();
+    const userDoc = await db.collection("users").findOne({ clerkUserId: user.id });
+    const firstTouchTimestamp =
+      userDoc?.attribution?.firstTouch?.timestamp ||
+      userDoc?.publicMetadata?.acquisitionDate ||
+      null;
+    const firstTouchDate = firstTouchTimestamp ? new Date(firstTouchTimestamp) : null;
+    const timeToPurchaseMinutes =
+      firstTouchDate && !Number.isNaN(firstTouchDate.getTime())
+        ? Math.max(0, Math.round((Date.now() - firstTouchDate.getTime()) / 60000))
+        : null;
+    const referrer = headersList.get("referer");
+    let purchasePage: string | null = null;
+    if (referrer) {
+      try {
+        purchasePage = new URL(referrer).pathname;
+      } catch {
+        purchasePage = referrer;
+      }
+    }
+    const country =
+      headersList.get("x-vercel-ip-country") ||
+      headersList.get("cf-ipcountry") ||
+      userDoc?.attribution?.lastTouch?.country ||
+      null;
+    const attributionSnapshot = {
+      attribution_source:
+        userDoc?.attribution?.lastTouch?.source ||
+        userMetadata?.utm_source ||
+        (userMetadata?.gclid ? "google_ads" : "direct"),
+      attribution_medium:
+        userDoc?.attribution?.lastTouch?.medium || userMetadata?.utm_medium || null,
+      attribution_campaign:
+        userDoc?.attribution?.lastTouch?.campaign || userMetadata?.utm_campaign || null,
+      attribution_gclid:
+        userDoc?.attribution?.lastTouch?.gclid || userMetadata?.gclid || null,
+      entry_page:
+        userDoc?.attribution?.firstTouch?.entryPage ||
+        userMetadata?.entryPage ||
+        null,
+      purchase_page: purchasePage,
+      attribution_country: country,
+      attribution_currency: priceObject.currency?.toUpperCase() || null,
+      time_to_purchase_minutes: timeToPurchaseMinutes,
+      coupon_id: userMetadata?.couponId || null,
+      promotion_code_id: promotionCode || null,
+    };
+    const attributionMetadata = {
+      utm_source: userMetadata?.utm_source || null,
+      utm_medium: userMetadata?.utm_medium || null,
+      utm_campaign: userMetadata?.utm_campaign || null,
+      utm_content: userMetadata?.utm_content || null,
+      utm_term: userMetadata?.utm_term || null,
+      gclid: userMetadata?.gclid || null,
+    };
 
     logger.info("Creating checkout session", {
       component: "checkout_session_api",
@@ -250,6 +306,8 @@ export async function POST(req: NextRequest) {
         user_id: user.id,
         plan_name: productDetails.name,
         referral_code: userMetadata?.referralCode || null,
+        ...attributionMetadata,
+        ...attributionSnapshot,
         ...(referralDiscountApplied && {
           referral_discount_applied:
             userMetadata?.referralDiscount || "referral",
@@ -261,6 +319,8 @@ export async function POST(req: NextRequest) {
             user_id: user.id,
             plan_name: productDetails.name,
             referral_code: userMetadata?.referralCode || null,
+            ...attributionMetadata,
+            ...attributionSnapshot,
             ...(referralDiscountApplied && {
               referral_discount_applied:
                 userMetadata?.referralDiscount || "referral",
@@ -292,6 +352,8 @@ export async function POST(req: NextRequest) {
           user_id: user.id,
           checkout_id: session.id,
           referral_code: userMetadata?.referralCode || null,
+          ...attributionMetadata,
+          ...attributionSnapshot,
           ...(referralDiscountApplied && {
             referral_discount_applied:
               userMetadata?.referralDiscount || "referral",

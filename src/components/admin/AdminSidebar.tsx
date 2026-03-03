@@ -52,6 +52,7 @@ const mainItems: SidebarGroup = {
     { key: "users", label: "Users", icon: Users, href: "/cms/dashboard/users" },
     { key: "cancellation-surveys", label: "Cancellation Reasons", icon: FileText, href: "/cms/dashboard/cancellation-surveys" },
     { key: "lead-capture", label: "Lead Capture", icon: Mail, href: "/cms/dashboard/lead-capture" },
+    { key: "reminder-emails", label: "Reminder Emails", icon: Mail, href: "/cms/dashboard/reminder-emails" },
     { key: "league", label: "League", icon: Trophy, href: "/cms/dashboard/league" },
   ],
 };
@@ -135,6 +136,7 @@ export function AdminSidebar({
     if (key === "users" && pathname.startsWith("/cms/dashboard/users")) return true;
     if (key === "reports" && pathname.startsWith("/cms/dashboard/reports")) return true;
     if (key === "lead-capture" && pathname.startsWith("/cms/dashboard/lead-capture")) return true;
+    if (key === "reminder-emails" && pathname.startsWith("/cms/dashboard/reminder-emails")) return true;
     if (key === "league" && pathname.startsWith("/cms/dashboard/league")) return true;
     if (key === "tasks" && pathname.startsWith("/cms/dashboard/tasks")) return true;
     if (key === "blog" && pathname.startsWith("/cms/dashboard/blog")) return true;

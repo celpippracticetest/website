@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { getDb } from "@/lib/mongodb";
 
+const REMINDER_STATE_COLLECTION = "useractivityreminders";
+
 function extractEmailFromClerkUser(user: any): string | null {
   const byId = user?.emailAddresses?.find?.(
     (e: any) => e.id === user?.primaryEmailAddressId
@@ -12,6 +14,12 @@ function extractEmailFromClerkUser(user: any): string | null {
   const first = user?.emailAddresses?.[0]?.emailAddress;
 
   return byId || direct || first || null;
+}
+
+function detectDeviceType(userAgent: string): "mobile" | "desktop" {
+  return /mobile|android|iphone|ipad|ipod/i.test(userAgent)
+    ? "mobile"
+    : "desktop";
 }
 
 export async function POST(request: NextRequest) {
@@ -91,6 +99,100 @@ export async function POST(request: NextRequest) {
 
     console.log("Inserting activity log:", activityLog);
     await userActivityCollection.insertOne(activityLog);
+    const usersCollection = db.collection("users");
+
+    // Keep engagement snapshot updated for retention/churn prevention automation
+    const isPracticeEvent =
+      eventType === "practice_attempt_started" ||
+      eventType === "practice_attempt_completed" ||
+      eventType === "mock_attempt_started" ||
+      eventType === "mock_attempt_completed";
+    const isCompletedTestEvent =
+      eventType === "practice_attempt_completed" ||
+      eventType === "mock_attempt_completed";
+    const deviceType = detectDeviceType(clientUserAgent);
+
+    if (isPracticeEvent || isCompletedTestEvent) {
+      const userDoc = await usersCollection.findOne({ clerkUserId: user.id });
+      const existingHistory = Array.isArray(userDoc?.engagement?.scoreHistory)
+        ? (userDoc?.engagement?.scoreHistory as number[])
+        : [];
+      const nextHistory =
+        isCompletedTestEvent && typeof scoreOverall === "number"
+          ? [...existingHistory, scoreOverall].slice(-5)
+          : existingHistory;
+      const avgScoreCurrent =
+        nextHistory.length > 0
+          ? Number(
+              (
+                nextHistory.reduce((sum, score) => sum + Number(score || 0), 0) /
+                nextHistory.length
+              ).toFixed(2)
+            )
+          : null;
+      const avgScoreDelta7d =
+        nextHistory.length >= 2
+          ? Number((nextHistory[nextHistory.length - 1] - nextHistory[0]).toFixed(2))
+          : 0;
+
+      await usersCollection.updateOne(
+        { clerkUserId: user.id },
+        {
+          $set: {
+            "engagement.lastPracticeTestDate": new Date(),
+            "engagement.deviceLastUsed": deviceType,
+            "engagement.deviceUsage.mobile":
+              deviceType === "mobile"
+                ? ((userDoc?.engagement?.deviceUsage?.mobile as number) || 0) + 1
+                : (userDoc?.engagement?.deviceUsage?.mobile as number) || 0,
+            "engagement.deviceUsage.desktop":
+              deviceType === "desktop"
+                ? ((userDoc?.engagement?.deviceUsage?.desktop as number) || 0) + 1
+                : (userDoc?.engagement?.deviceUsage?.desktop as number) || 0,
+            "engagement.scoreHistory": nextHistory,
+            "engagement.avgScoreCurrent": avgScoreCurrent,
+            "engagement.avgScoreDelta7d": avgScoreDelta7d,
+            "engagement.updatedAt": new Date(),
+            updatedAt: new Date(),
+          },
+          ...(isCompletedTestEvent ? { $inc: { "engagement.totalTestsCompleted": 1 } } : {}),
+          $setOnInsert: { createdAt: new Date() },
+        },
+        { upsert: true }
+      );
+
+      await db.collection("user_learning_events").insertOne({
+        userId: user.id,
+        eventType,
+        context,
+        score: typeof scoreOverall === "number" ? scoreOverall : null,
+        deviceType,
+        occurredAt: new Date(),
+        metadata: metadata || {},
+      });
+    }
+    await db.collection(REMINDER_STATE_COLLECTION).updateOne(
+      { userId: user.id },
+      {
+        $set: {
+          userId: user.id,
+          lastEngagedAt: new Date(),
+          updatedAt: new Date(),
+        },
+        $unset: {
+          reminderFlow: "",
+          reminderStage: "",
+          reminderStageIndex: "",
+          reminderVariant: "",
+          reminderWindowStartedAt: "",
+          remindersInWindow: "",
+        },
+        $setOnInsert: {
+          createdAt: new Date(),
+        },
+      },
+      { upsert: true }
+    );
     console.log("Activity logged successfully");
 
     return NextResponse.json({
@@ -160,6 +262,60 @@ export async function PUT(request: NextRequest) {
     }));
 
     await userActivityCollection.insertMany(activityLogs);
+    const usersCollection = db.collection("users");
+    const completedCount = activityLogs.filter(
+      (log) =>
+        log.eventType === "practice_attempt_completed" ||
+        log.eventType === "mock_attempt_completed"
+    ).length;
+    const hasPracticeOrMock = activityLogs.some(
+      (log) =>
+        log.eventType === "practice_attempt_started" ||
+        log.eventType === "practice_attempt_completed" ||
+        log.eventType === "mock_attempt_started" ||
+        log.eventType === "mock_attempt_completed"
+    );
+    if (hasPracticeOrMock) {
+      await usersCollection.updateOne(
+        { clerkUserId: user.id },
+        {
+          $set: {
+            "engagement.lastPracticeTestDate": new Date(),
+            "engagement.deviceLastUsed": detectDeviceType(clientUserAgent),
+            "engagement.updatedAt": new Date(),
+            updatedAt: new Date(),
+          },
+          ...(completedCount > 0
+            ? { $inc: { "engagement.totalTestsCompleted": completedCount } }
+            : {}),
+          $setOnInsert: { createdAt: new Date() },
+        },
+        { upsert: true }
+      );
+    }
+    const now = new Date();
+    await db.collection(REMINDER_STATE_COLLECTION).updateOne(
+      { userId: user.id },
+      {
+        $set: {
+          userId: user.id,
+          lastEngagedAt: now,
+          updatedAt: now,
+        },
+        $unset: {
+          reminderFlow: "",
+          reminderStage: "",
+          reminderStageIndex: "",
+          reminderVariant: "",
+          reminderWindowStartedAt: "",
+          remindersInWindow: "",
+        },
+        $setOnInsert: {
+          createdAt: now,
+        },
+      },
+      { upsert: true }
+    );
 
     return NextResponse.json({
       success: true,
