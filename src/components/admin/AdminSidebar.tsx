@@ -44,8 +44,7 @@ interface SidebarGroup {
 const mainItems: SidebarGroup = {
   items: [
     { key: "overview", label: "Overview", icon: LayoutDashboard, href: "/cms/dashboard" },
-    { key: "onboarding", label: "Onboarding", icon: Compass, href: "/cms/dashboard?tab=onboarding" },
-    { key: "onboarding-new", label: "Onboarding New", icon: Compass, href: "/cms/dashboard?tab=onboarding-new" },
+    { key: "onboarding", label: "Onboarding", icon: Compass, href: "/cms/dashboard/onboarding" },
     { key: "plans", label: "Plans", icon: ClipboardList, href: "/cms/dashboard/plans" },
     { key: "withdrawal-requests", label: "Withdrawals", icon: FileText, href: "/cms/dashboard/withdrawal-requests" },
     { key: "refund-requests", label: "Refund Requests", icon: FileText, href: "/cms/dashboard/refund-requests" },
@@ -120,10 +119,7 @@ export function AdminSidebar({
       return pathname === "/cms" || (pathname === "/cms/dashboard" && !currentTab);
     }
     if (key === "onboarding") {
-      return pathname === "/cms/dashboard" && currentTab === "onboarding";
-    }
-    if (key === "onboarding-new") {
-      return pathname === "/cms/dashboard" && currentTab === "onboarding-new";
+      return pathname.startsWith("/cms/dashboard/onboarding");
     }
     if (key === "withdrawal-requests") {
       return pathname === "/cms/dashboard" && currentTab === "withdrawal-requests";

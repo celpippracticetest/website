@@ -38,43 +38,80 @@ export async function POST(req: Request) {
       answeredAt: new Date(),
     });
 
-    // Hybrid lifecycle snapshot for fast segmentation/reporting
-    const testDateRaw = data?.answers?.testDate;
-    const targetScores = data?.answers?.targetScores || {};
-    const avgTargetScore =
-      (Number(targetScores.listening || 0) +
-        Number(targetScores.reading || 0) +
-        Number(targetScores.writing || 0) +
-        Number(targetScores.speaking || 0)) /
-      4;
+    // Save to "onboarding" collection
+    const db = await getDb();
+    await db.collection("onboarding").updateOne(
+      { userId: user.id },
+      {
+        $set: {
+          userId: user.id,
+          ...data.answers,
+          answeredAt: new Date(),
+          updatedAt: new Date(),
+        },
+        $setOnInsert: {
+          createdAt: new Date(),
+        },
+      },
+      { upsert: true }
+    );
+
+    // Derive minimum required CLB score based on selected sub-goal/program
+    const subGoal: string | null = data?.answers?.subGoal || null;
+    const primaryGoal = data?.answers?.primaryGoal || null;
+
+    // Map of sub-goals/programs to their minimum required CLB level
+    const SUB_GOAL_MIN_CLB: Record<string, number> = {
+      "Federal Skilled Worker Program (FSWP)": 7,
+      "Canadian Experience Class (CEC) - TEER 0 or 1": 7,
+      "Canadian Experience Class (CEC) - TEER 2 or 3": 5,
+      "Federal Skilled Trades Program (FSTP)": 4, // Reading/Writing minimum
+      "Provincial Nominee Program (PNP)": 4,
+      "Citizenship Application (Ages 18-54)": 4,
+      "Real Estate License (BC - BCFSA)": 7,
+      "Pharmacist License (OCP / National)": 7,
+      "College of Physicians and Surgeons (CPSO)": 7,
+      "Nursing (Various Provincial Colleges)": 7,
+      "Immigration Consultant (CICC)": 9,
+      "Post-Graduation Work Permit (PGWP)": 7,
+      "Canadian Corporate Employers": 7,
+      "Superior English (Highest Points)": 8,
+      "Proficient English": 7,
+      "Competent English (Minimum for PR)": 6,
+      "Temporary Graduate Visa (Subclass 485)": 6,
+      "Vocational English (Subclass 482)": 5,
+    };
+
+    const minClbRequired: number | null =
+      (subGoal && SUB_GOAL_MIN_CLB[subGoal]) || null;
 
     const previousAttempts = Number(data?.answers?.previousAttempts || 0);
-    const targetExamDate = testDateRaw ? new Date(testDateRaw) : null;
-    const daysToExam =
-      targetExamDate && !Number.isNaN(targetExamDate.getTime())
-        ? Math.max(
-            0,
-            Math.ceil(
-              (targetExamDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-            )
-          )
-        : null;
 
-    const db = await getDb();
+    // Save comprehensive onboarding data to users collection for dashboard customization
     await db.collection("users").updateOne(
       { clerkUserId: user.id },
       {
         $set: {
           intent: {
-            targetExamDate:
-              targetExamDate && !Number.isNaN(targetExamDate.getTime())
-                ? targetExamDate
-                : null,
-            targetScore: Number.isFinite(avgTargetScore) ? avgTargetScore : null,
+            primaryGoal,
+            // Use derived minimum CLB requirement as targetScore
+            targetScore: Number.isFinite(minClbRequired) ? minClbRequired : null,
             previousAttempts: Number.isFinite(previousAttempts)
               ? previousAttempts
               : 0,
-            daysToExam,
+            updatedAt: new Date(),
+          },
+          // Save full onboarding data for dashboard customization
+          onboarding: {
+            primaryGoal: data.answers.primaryGoal || null,
+            customPrimaryGoal: data.answers.customPrimaryGoal || null,
+            subGoal: data.answers.subGoal || null,
+            customSubGoal: data.answers.customSubGoal || null,
+            testDate: data.answers.testDate || null,
+            focusSkill: data.answers.focusSkill || null,
+            customFocusSkill: data.answers.customFocusSkill || null,
+            targetScore: data.answers.targetScore || null,
+            completedAt: new Date(),
             updatedAt: new Date(),
           },
           updatedAt: new Date(),
@@ -119,7 +156,7 @@ export async function GET(request: Request) {
     
     // Calculate statistics from all data
     const stats = {
-      testDates: allResults.filter(item => item.answers?.testDate).length,
+      primaryGoals: allResults.filter(item => item.answers?.primaryGoal).length,
       focusSkills: allResults.filter(item => item.answers?.focusSkill).length,
       customFocusSkills: allResults.filter(item => item.answers?.customFocusSkill).length,
       averageTargetScore: allResults.length > 0 ? 

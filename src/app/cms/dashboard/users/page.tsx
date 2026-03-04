@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import {
   Search,
   Download,
@@ -9,6 +9,15 @@ import {
   Shield,
   Clock,
   RotateCw,
+  X,
+  Users,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+  BookOpen,
+  FileText,
+  Globe,
+  Activity,
 } from "lucide-react";
 import { Box } from "@/components/ui/Box";
 import {
@@ -31,6 +40,14 @@ import {
   TableRow,
   CircularProgress,
   Pagination,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
+  Collapse,
+  Divider,
 } from "@mui/material";
 
 interface User {
@@ -87,6 +104,17 @@ export default function UsersPage() {
     totalCount: 0,
     totalPages: 0,
   });
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [canceling, setCanceling] = useState(false);
+  const [syncDialogOpen, setSyncDialogOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<{
+    totalClerkUsers?: number;
+    totalMongoUsers?: number;
+    missingUsers?: number;
+  } | null>(null);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -139,6 +167,15 @@ export default function UsersPage() {
     });
   };
 
+  const formatPlanType = (planType?: string | null): string => {
+    if (!planType) return "";
+    // Capitalize first letter of each word
+    return planType
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  };
+
   const exportUserData = async (identifier: string) => {
     try {
       const response = await fetch(`/api/admin/users/${identifier}/export`);
@@ -159,9 +196,119 @@ export default function UsersPage() {
     }
   };
 
-  const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
+  const handlePageChange = (_: unknown, value: number) => {
     setPage(value);
   };
+
+  const handleCancelSubscriptionClick = (user: User) => {
+    setSelectedUser(user);
+    setCancelDialogOpen(true);
+  };
+
+  const handleCancelSubscriptionConfirm = async () => {
+    if (!selectedUser) return;
+
+    setCanceling(true);
+    try {
+      const response = await fetch(
+        `/api/admin/users/${selectedUser.userId}/cancel-subscription`,
+        {
+          method: "POST",
+        }
+      );
+
+      if (response.ok) {
+        // Refresh users list
+        await fetchUsers();
+        setCancelDialogOpen(false);
+        setSelectedUser(null);
+      } else {
+        const data = await response.json();
+        alert(`Failed to cancel subscription: ${data.error || "Unknown error"}`);
+      }
+    } catch (error) {
+      console.error("Error canceling subscription:", error);
+      alert("Failed to cancel subscription. Please try again.");
+    } finally {
+      setCanceling(false);
+    }
+  };
+
+  const handleCancelDialogClose = () => {
+    if (!canceling) {
+      setCancelDialogOpen(false);
+      setSelectedUser(null);
+    }
+  };
+
+  const toggleRow = (userId: string) => {
+    setExpandedRows((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(userId)) {
+        newSet.delete(userId);
+      } else {
+        newSet.add(userId);
+      }
+      return newSet;
+    });
+  };
+
+  const checkSyncStatus = async () => {
+    try {
+      const response = await fetch("/api/admin/users/sync-missing");
+      if (response.ok) {
+        const data = await response.json();
+        setSyncStatus(data);
+      }
+    } catch (error) {
+      console.error("Error checking sync status:", error);
+    }
+  };
+
+  const handleSyncAllClick = async () => {
+    setSyncing(true);
+    try {
+      const response = await fetch("/api/admin/users/sync-all", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          batchSize: 100,
+          maxBatches: 50,
+          forceUpdate: false,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Refresh users list
+        await fetchUsers();
+        // Update sync status
+        await checkSyncStatus();
+        // Show success message
+        alert(
+          `Sync completed!\n\n` +
+            `✅ Synced: ${data.synced} new users\n` +
+            `🔄 Updated: ${data.updated} users\n` +
+            `⏭️ Skipped: ${data.skipped} users\n` +
+            `📊 Total processed: ${data.totalProcessed} users`
+        );
+        setSyncDialogOpen(false);
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to sync users: ${errorData.error || "Unknown error"}`);
+      }
+    } catch (error) {
+      console.error("Error syncing users:", error);
+      alert("Failed to sync users. Please try again.");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  useEffect(() => {
+    // Check sync status on mount
+    checkSyncStatus();
+  }, []);
 
   return (
     <Box className="p-6">
@@ -267,6 +414,23 @@ export default function UsersPage() {
                 </IconButton>
               </span>
             </Tooltip>
+            <Tooltip title="Sync All Users from Clerk">
+              <span>
+                <IconButton
+                  onClick={() => {
+                    checkSyncStatus();
+                    setSyncDialogOpen(true);
+                  }}
+                  size="small"
+                  disabled={loading || syncing}
+                  className="border border-gray-300"
+                >
+                  <RefreshCw
+                    className={`w-5 h-5 text-blue-600 ${syncing ? "animate-spin" : ""}`}
+                  />
+                </IconButton>
+              </span>
+            </Tooltip>
           </Box>
         </Box>
       </Paper>
@@ -286,14 +450,13 @@ export default function UsersPage() {
               <Table stickyHeader size="small">
                 <TableHead>
                   <TableRow>
+                    <TableCell width={40}></TableCell>
                     <TableCell>Email</TableCell>
                     <TableCell>Risk Score</TableCell>
                     <TableCell>Plan</TableCell>
                     <TableCell>Revenue</TableCell>
                     <TableCell>Source</TableCell>
                     <TableCell>Activities</TableCell>
-                    <TableCell>Practice</TableCell>
-                    <TableCell>Exams</TableCell>
                     <TableCell>Tokens</TableCell>
                     <TableCell>IPs / Devices</TableCell>
                     <TableCell>Last Active</TableCell>
@@ -301,8 +464,32 @@ export default function UsersPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.userId} hover>
+                  {users.map((user) => {
+                    const isExpanded = expandedRows.has(user.userId);
+                    return (
+                      <Fragment key={user.userId}>
+                        <TableRow hover>
+                          {/* Expand/Collapse Button */}
+                          <TableCell sx={{ width: 40, padding: "8px !important" }}>
+                            <Tooltip title={isExpanded ? "Collapse details" : "Expand details"}>
+                              <IconButton
+                                size="small"
+                                onClick={() => toggleRow(user.userId)}
+                                sx={{
+                                  padding: "4px",
+                                  minWidth: "32px",
+                                  minHeight: "32px",
+                                }}
+                              >
+                                {isExpanded ? (
+                                  <ChevronUp className="w-5 h-5 text-gray-700" />
+                                ) : (
+                                  <ChevronDown className="w-5 h-5 text-gray-700" />
+                                )}
+                              </IconButton>
+                            </Tooltip>
+                          </TableCell>
+
                       {/* Email */}
                       <TableCell>
                         <Typography variant="body2">
@@ -329,7 +516,9 @@ export default function UsersPage() {
                             size="small"
                             label={
                               user.plan === "premium" || user.plan === "pro"
-                                ? `Premium${user.planType ? ` (${user.planType})` : ""}`
+                                ? user.planType
+                                  ? formatPlanType(user.planType)
+                                  : "Premium"
                                 : "Free"
                             }
                             color={
@@ -412,38 +601,6 @@ export default function UsersPage() {
                         </Typography>
                       </TableCell>
 
-                      {/* Practice */}
-                      <TableCell>
-                        <Typography variant="body2">
-                          {user.practiceAttempts} / {user.practiceCompletions}
-                        </Typography>
-                        <Typography variant="caption" className="text-gray-500">
-                          {user.practiceAttempts > 0
-                            ? Math.round(
-                                (user.practiceCompletions /
-                                  user.practiceAttempts) *
-                                  100
-                              )
-                            : 0}
-                          % completion
-                        </Typography>
-                      </TableCell>
-
-                      {/* Exams */}
-                      <TableCell>
-                        <Typography variant="body2">
-                          {user.mockAttempts} / {user.mockCompletions}
-                        </Typography>
-                        <Typography variant="caption" className="text-gray-500">
-                          {user.mockAttempts > 0
-                            ? Math.round(
-                                (user.mockCompletions / user.mockAttempts) * 100
-                              )
-                            : 0}
-                          % completion
-                        </Typography>
-                      </TableCell>
-
                       {/* Tokens */}
                       <TableCell>
                         <Typography variant="body2">
@@ -474,12 +631,11 @@ export default function UsersPage() {
                           <Tooltip title="View Details">
                             <IconButton
                               size="small"
-                              onClick={() =>
-                                window.open(
-                                  `/cms/dashboard/users/${user.userId}`,
-                                  "_blank"
-                                )
-                              }
+                              onClick={(e) => {
+                                e.preventDefault();
+                                const url = `/cms/dashboard/users/${encodeURIComponent(user.userId)}`;
+                                window.open(url, "_blank", "noopener,noreferrer");
+                              }}
                             >
                               <Eye className="w-4 h-4 text-blue-600" />
                             </IconButton>
@@ -492,10 +648,329 @@ export default function UsersPage() {
                               <Download className="w-4 h-4 text-green-600" />
                             </IconButton>
                           </Tooltip>
+                          {user.subscriptionStatus === "active" &&
+                            (user.plan === "premium" ||
+                              user.plan === "pro" ||
+                              user.plan === "enterprise") && (
+                              <Tooltip title="Cancel Subscription">
+                                <IconButton
+                                  size="small"
+                                  onClick={() =>
+                                    handleCancelSubscriptionClick(user)
+                                  }
+                                  disabled={canceling}
+                                >
+                                  <X className="w-4 h-4 text-red-600" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
                         </Box>
                       </TableCell>
                     </TableRow>
-                  ))}
+
+                    {/* Expanded Row Details */}
+                    <TableRow>
+                      <TableCell
+                        colSpan={11}
+                        className="p-0"
+                        sx={{ borderBottom: isExpanded ? 1 : 0 }}
+                      >
+                        <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                          <Box className="p-4 bg-gray-50">
+                            <Box className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {/* Practice Details */}
+                              <Paper
+                                elevation={0}
+                                className="p-4 border border-gray-200"
+                                sx={{ borderRadius: 2 }}
+                              >
+                                <Box className="flex items-center gap-2 mb-3">
+                                  <BookOpen className="w-5 h-5 text-blue-600" />
+                                  <Typography variant="subtitle2" className="font-semibold">
+                                    Practice
+                                  </Typography>
+                                </Box>
+                                <Box className="space-y-2">
+                                  <Box className="flex justify-between">
+                                    <Typography variant="body2" className="text-gray-600">
+                                      Attempts:
+                                    </Typography>
+                                    <Typography variant="body2" className="font-medium">
+                                      {user.practiceAttempts.toLocaleString()}
+                                    </Typography>
+                                  </Box>
+                                  <Box className="flex justify-between">
+                                    <Typography variant="body2" className="text-gray-600">
+                                      Completions:
+                                    </Typography>
+                                    <Typography variant="body2" className="font-medium">
+                                      {user.practiceCompletions.toLocaleString()}
+                                    </Typography>
+                                  </Box>
+                                  {user.practiceAttempts > 0 && (
+                                    <Box className="flex justify-between pt-2 border-t">
+                                      <Typography variant="body2" className="text-gray-600">
+                                        Completion Rate:
+                                      </Typography>
+                                      <Typography variant="body2" className="font-medium text-blue-600">
+                                        {Math.round(
+                                          (user.practiceCompletions / user.practiceAttempts) * 100
+                                        )}
+                                        %
+                                      </Typography>
+                                    </Box>
+                                  )}
+                                </Box>
+                              </Paper>
+
+                              {/* Exam Details */}
+                              <Paper
+                                elevation={0}
+                                className="p-4 border border-gray-200"
+                                sx={{ borderRadius: 2 }}
+                              >
+                                <Box className="flex items-center gap-2 mb-3">
+                                  <FileText className="w-5 h-5 text-purple-600" />
+                                  <Typography variant="subtitle2" className="font-semibold">
+                                    Exams
+                                  </Typography>
+                                </Box>
+                                <Box className="space-y-2">
+                                  <Box className="flex justify-between">
+                                    <Typography variant="body2" className="text-gray-600">
+                                      Attempts:
+                                    </Typography>
+                                    <Typography variant="body2" className="font-medium">
+                                      {user.mockAttempts.toLocaleString()}
+                                    </Typography>
+                                  </Box>
+                                  <Box className="flex justify-between">
+                                    <Typography variant="body2" className="text-gray-600">
+                                      Completions:
+                                    </Typography>
+                                    <Typography variant="body2" className="font-medium">
+                                      {user.mockCompletions.toLocaleString()}
+                                    </Typography>
+                                  </Box>
+                                  {user.mockAttempts > 0 && (
+                                    <Box className="flex justify-between pt-2 border-t">
+                                      <Typography variant="body2" className="text-gray-600">
+                                        Completion Rate:
+                                      </Typography>
+                                      <Typography variant="body2" className="font-medium text-purple-600">
+                                        {Math.round(
+                                          (user.mockCompletions / user.mockAttempts) * 100
+                                        )}
+                                        %
+                                      </Typography>
+                                    </Box>
+                                  )}
+                                </Box>
+                              </Paper>
+
+                              {/* Additional Details */}
+                              <Paper
+                                elevation={0}
+                                className="p-4 border border-gray-200"
+                                sx={{ borderRadius: 2 }}
+                              >
+                                <Box className="flex items-center gap-2 mb-3">
+                                  <Activity className="w-5 h-5 text-green-600" />
+                                  <Typography variant="subtitle2" className="font-semibold">
+                                    Activity Details
+                                  </Typography>
+                                </Box>
+                                <Box className="space-y-2">
+                                  <Box className="flex justify-between">
+                                    <Typography variant="body2" className="text-gray-600">
+                                      First Activity:
+                                    </Typography>
+                                    <Typography variant="body2" className="font-medium">
+                                      {formatDate(user.firstActivity)}
+                                    </Typography>
+                                  </Box>
+                                  <Box className="flex justify-between">
+                                    <Typography variant="body2" className="text-gray-600">
+                                      Total Activities:
+                                    </Typography>
+                                    <Typography variant="body2" className="font-medium">
+                                      {user.totalActivities.toLocaleString()}
+                                    </Typography>
+                                  </Box>
+                                  <Box className="flex justify-between">
+                                    <Typography variant="body2" className="text-gray-600">
+                                      Total Tokens:
+                                    </Typography>
+                                    <Typography variant="body2" className="font-medium">
+                                      {user.totalTokens.toLocaleString()}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                              </Paper>
+
+                              {/* Payment & Risk Details */}
+                              <Paper
+                                elevation={0}
+                                className="p-4 border border-gray-200"
+                                sx={{ borderRadius: 2 }}
+                              >
+                                <Box className="flex items-center gap-2 mb-3">
+                                  <Shield className="w-5 h-5 text-orange-600" />
+                                  <Typography variant="subtitle2" className="font-semibold">
+                                    Payment & Risk
+                                  </Typography>
+                                </Box>
+                                <Box className="space-y-2">
+                                  <Box className="flex justify-between">
+                                    <Typography variant="body2" className="text-gray-600">
+                                      Payment Events:
+                                    </Typography>
+                                    <Typography variant="body2" className="font-medium">
+                                      {user.paymentEvents}
+                                    </Typography>
+                                  </Box>
+                                  <Box className="flex justify-between">
+                                    <Typography variant="body2" className="text-gray-600">
+                                      Dispute Events:
+                                    </Typography>
+                                    <Typography variant="body2" className="font-medium text-red-600">
+                                      {user.disputeEvents}
+                                    </Typography>
+                                  </Box>
+                                  <Box className="flex justify-between pt-2 border-t">
+                                    <Typography variant="body2" className="text-gray-600">
+                                      Risk Score:
+                                    </Typography>
+                                    <Box
+                                      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getRiskColor(
+                                        user.riskScore
+                                      )}`}
+                                    >
+                                      {getRiskIcon(user.riskScore)}
+                                      <span className="ml-1">{user.riskScore}%</span>
+                                    </Box>
+                                  </Box>
+                                </Box>
+                              </Paper>
+
+                              {/* Network Details */}
+                              <Paper
+                                elevation={0}
+                                className="p-4 border border-gray-200"
+                                sx={{ borderRadius: 2 }}
+                              >
+                                <Box className="flex items-center gap-2 mb-3">
+                                  <Globe className="w-5 h-5 text-indigo-600" />
+                                  <Typography variant="subtitle2" className="font-semibold">
+                                    Network & Devices
+                                  </Typography>
+                                </Box>
+                                <Box className="space-y-2">
+                                  <Box className="flex justify-between">
+                                    <Typography variant="body2" className="text-gray-600">
+                                      Unique IPs:
+                                    </Typography>
+                                    <Typography variant="body2" className="font-medium">
+                                      {user.uniqueIpAddresses}
+                                    </Typography>
+                                  </Box>
+                                  <Box className="flex justify-between">
+                                    <Typography variant="body2" className="text-gray-600">
+                                      Unique Devices:
+                                    </Typography>
+                                    <Typography variant="body2" className="font-medium">
+                                      {user.uniqueUserAgents}
+                                    </Typography>
+                                  </Box>
+                                  {user.ipAddresses && user.ipAddresses.length > 0 && (
+                                    <Box className="pt-2 border-t">
+                                      <Typography variant="caption" className="text-gray-600 block mb-1">
+                                        Recent IPs:
+                                      </Typography>
+                                      <Typography variant="caption" className="text-gray-500">
+                                        {user.ipAddresses.slice(0, 3).join(", ")}
+                                        {user.ipAddresses.length > 3 && "..."}
+                                      </Typography>
+                                    </Box>
+                                  )}
+                                </Box>
+                              </Paper>
+
+                              {/* Subscription Details */}
+                              {(user.subscriptionStatus === "active" ||
+                                user.subscriptionStatus === "unsubscribed") && (
+                                <Paper
+                                  elevation={0}
+                                  className="p-4 border border-gray-200"
+                                  sx={{ borderRadius: 2 }}
+                                >
+                                  <Box className="flex items-center gap-2 mb-3">
+                                    <Clock className="w-5 h-5 text-teal-600" />
+                                    <Typography variant="subtitle2" className="font-semibold">
+                                      Subscription
+                                    </Typography>
+                                  </Box>
+                                  <Box className="space-y-2">
+                                    <Box className="flex justify-between">
+                                      <Typography variant="body2" className="text-gray-600">
+                                        Status:
+                                      </Typography>
+                                      <Chip
+                                        size="small"
+                                        label={
+                                          user.subscriptionStatus === "active"
+                                            ? "Active"
+                                            : "Unsubscribed"
+                                        }
+                                        color={
+                                          user.subscriptionStatus === "active"
+                                            ? "success"
+                                            : "default"
+                                        }
+                                        variant="outlined"
+                                      />
+                                    </Box>
+                                    {user.subscriptionStartDate && (
+                                      <Box className="flex justify-between">
+                                        <Typography variant="body2" className="text-gray-600">
+                                          Start Date:
+                                        </Typography>
+                                        <Typography variant="body2" className="font-medium">
+                                          {formatDate(user.subscriptionStartDate)}
+                                        </Typography>
+                                      </Box>
+                                    )}
+                                    {user.subscriptionEndDate && (
+                                      <Box className="flex justify-between">
+                                        <Typography variant="body2" className="text-gray-600">
+                                          End Date:
+                                        </Typography>
+                                        <Typography variant="body2" className="font-medium">
+                                          {formatDate(user.subscriptionEndDate)}
+                                        </Typography>
+                                      </Box>
+                                    )}
+                                    {user.subscriptionDurationDays && (
+                                      <Box className="flex justify-between pt-2 border-t">
+                                        <Typography variant="body2" className="text-gray-600">
+                                          Duration:
+                                        </Typography>
+                                        <Typography variant="body2" className="font-medium">
+                                          {user.subscriptionDurationDays} days
+                                        </Typography>
+                                      </Box>
+                                    )}
+                                  </Box>
+                                </Paper>
+                              )}
+                            </Box>
+                          </Box>
+                        </Collapse>
+                      </TableCell>
+                    </TableRow>
+                  </Fragment>
+                  );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -530,6 +1005,139 @@ export default function UsersPage() {
           </>
         )}
       </Paper>
+
+      {/* Cancel Subscription Confirmation Dialog */}
+      <Dialog
+        open={cancelDialogOpen}
+        onClose={handleCancelDialogClose}
+        aria-labelledby="cancel-subscription-dialog-title"
+        aria-describedby="cancel-subscription-dialog-description"
+      >
+        <DialogTitle id="cancel-subscription-dialog-title">
+          Cancel Subscription
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="cancel-subscription-dialog-description">
+            Are you sure you want to cancel the subscription for{" "}
+            <strong>{selectedUser?.email || selectedUser?.userId}</strong>?
+            <br />
+            <br />
+            This will:
+            <ul style={{ marginTop: "8px", paddingLeft: "20px" }}>
+              <li>Immediately cancel the subscription in Stripe</li>
+              <li>Update the user's plan to "free" in Clerk</li>
+              <li>Update the user's plan in the database</li>
+            </ul>
+            This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleCancelDialogClose}
+            disabled={canceling}
+            color="inherit"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleCancelSubscriptionConfirm}
+            disabled={canceling}
+            color="error"
+            variant="contained"
+          >
+            {canceling ? "Canceling..." : "Confirm Cancel"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Sync All Users Dialog */}
+      <Dialog
+        open={syncDialogOpen}
+        onClose={() => !syncing && setSyncDialogOpen(false)}
+        aria-labelledby="sync-users-dialog-title"
+        aria-describedby="sync-users-dialog-description"
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle id="sync-users-dialog-title">
+          <Box className="flex items-center gap-2">
+            <Users className="w-5 h-5" />
+            Sync All Users from Clerk
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="sync-users-dialog-description">
+            {syncStatus && (
+              <Box className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <Typography variant="body2" className="font-medium mb-2">
+                  Current Status:
+                </Typography>
+                <Box className="space-y-1">
+                  <Typography variant="body2">
+                    📊 Clerk Users:{" "}
+                    <strong>{syncStatus.totalClerkUsers || 0}</strong>
+                  </Typography>
+                  <Typography variant="body2">
+                    💾 MongoDB Users:{" "}
+                    <strong>{syncStatus.totalMongoUsers || 0}</strong>
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    className={
+                      syncStatus.missingUsers && syncStatus.missingUsers > 0
+                        ? "text-orange-600 font-medium"
+                        : "text-green-600 font-medium"
+                    }
+                  >
+                    {syncStatus.missingUsers && syncStatus.missingUsers > 0
+                      ? `⚠️ Missing: ${syncStatus.missingUsers} users`
+                      : "✅ All users synced"}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+            <Typography variant="body2" className="mb-2">
+              This will sync all users from Clerk to MongoDB. This is useful to
+              catch up on failed webhooks.
+            </Typography>
+            <Typography variant="body2" className="mb-2">
+              The sync will:
+            </Typography>
+            <ul style={{ marginTop: "8px", paddingLeft: "20px" }}>
+              <li>Process users in batches of 100</li>
+              <li>Only sync users missing from MongoDB</li>
+              <li>Preserve existing user data</li>
+              <li>Update the users list automatically</li>
+            </ul>
+            {syncing && (
+              <Box className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <Typography variant="body2" className="text-blue-700">
+                  <CircularProgress size={16} className="mr-2" />
+                  Syncing users... This may take a few minutes.
+                </Typography>
+              </Box>
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setSyncDialogOpen(false)}
+            disabled={syncing}
+            color="inherit"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSyncAllClick}
+            disabled={syncing}
+            color="primary"
+            variant="contained"
+            startIcon={syncing ? <CircularProgress size={16} /> : <RefreshCw />}
+          >
+            {syncing ? "Syncing..." : "Start Sync"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

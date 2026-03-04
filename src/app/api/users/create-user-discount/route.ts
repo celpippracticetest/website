@@ -19,13 +19,21 @@ export async function POST(req: Request) {
     const user = await client.users.getUser(userId);
     const userMetadata = user.publicMetadata as any;
 
-    // Check if user already has a referral discount or has used any discount
+    // First, check if user already has a valid coupon - return it if so
+    const couponId = userMetadata?.couponId;
+    const couponCode = userMetadata?.couponCode;
+    if (couponId && couponCode) {
+      return NextResponse.json({
+        couponId,
+        couponCode,
+      });
+    }
+
+    // Check if user has used a discount or has referral discounts (should not get new user discount)
     if (
       userMetadata?.referralPromotionId ||
       userMetadata?.referralCode ||
       userMetadata?.referralDiscountUsed ||
-      userMetadata?.couponId ||
-      userMetadata?.promotionCodeId ||
       userMetadata?.newDiscountUsed
     ) {
       return NextResponse.json(
@@ -34,15 +42,6 @@ export async function POST(req: Request) {
         },
         { status: 400 }
       );
-    }
-
-    const couponId = user?.publicMetadata.couponId;
-    const couponCode = user?.publicMetadata.couponCode;
-    if (couponId && couponCode) {
-      return NextResponse.json({
-        couponId,
-        couponCode,
-      });
     }
 
     const suffix = Math.random().toString(36).substring(2, 6).toUpperCase();

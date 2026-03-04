@@ -231,17 +231,18 @@ export async function GET(request: NextRequest) {
           utm_campaign: { $max: "$utm_campaign" },
           gclid: { $max: "$gclid" },
           createdAt: { $max: "$createdAt" },
-          // Activity Stats (Summing works because one doc has stats, the other has 0/null)
+          // Activity Stats - Use $max to get the actual value (one doc has stats, the other has 0/null)
+          // Using $sum could incorrectly add values if users collection has these fields
           lastActivity: { $max: "$lastActivity" },
           firstActivity: { $min: "$firstActivity" },
-          totalActivities: { $sum: "$totalActivities" },
-          totalTokens: { $sum: "$totalTokens" },
-          practiceAttempts: { $sum: "$practiceAttempts" },
-          practiceCompletions: { $sum: "$practiceCompletions" },
-          mockAttempts: { $sum: "$mockAttempts" },
-          mockCompletions: { $sum: "$mockCompletions" },
-          paymentEvents: { $sum: "$paymentEvents" },
-          disputeEvents: { $sum: "$disputeEvents" },
+          totalActivities: { $sum: { $ifNull: ["$totalActivities", 0] } },
+          totalTokens: { $sum: { $ifNull: ["$totalTokens", 0] } },
+          practiceAttempts: { $max: { $ifNull: ["$practiceAttempts", 0] } },
+          practiceCompletions: { $max: { $ifNull: ["$practiceCompletions", 0] } },
+          mockAttempts: { $max: { $ifNull: ["$mockAttempts", 0] } },
+          mockCompletions: { $max: { $ifNull: ["$mockCompletions", 0] } },
+          paymentEvents: { $sum: { $ifNull: ["$paymentEvents", 0] } },
+          disputeEvents: { $sum: { $ifNull: ["$disputeEvents", 0] } },
           // Arrays need to be merged
           ipAddresses: { $push: "$ipAddresses" },
           userAgents: { $push: "$userAgents" },

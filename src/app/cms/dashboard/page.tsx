@@ -219,7 +219,8 @@ export default async function CMSDashboard({
       dataNew = result.data.map((item: any) => ({
         "User ID": item.userId || "",
         Name: item.name || "",
-        "Test Date": item.answers?.testDate || "",
+        "Primary Goal": item.answers?.customPrimaryGoal || item.answers?.primaryGoal || "",
+        "Sub Goal": item.answers?.customSubGoal || item.answers?.subGoal || "",
         "Focus Skill": item.answers?.focusSkill || "",
         "Custom Focus Skill": item.answers?.customFocusSkill || "",
         "Target Listening": item.answers?.targetScores?.listening || 0,

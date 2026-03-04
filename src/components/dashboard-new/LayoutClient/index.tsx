@@ -24,10 +24,8 @@ import SvgAllSkills from "@/components/icons/AllSkills";
 import { usePathname, useRouter } from "next/navigation";
 import { useSelectedTask } from "@/store/useSelectedTask.store";
 import { useSelectedExam } from "@/store/useSelectedExam.store";
-import ExtraDiscountModal from "@/components/modal/ExtraDiscountModal";
 import { useExtraDiscountStore } from "@/store/useExtraDiscount.store";
 import { useAuthModalStore } from "@/store/useAuthModal.store";
-import { useCreateDiscountCoupon } from "@/hooks/useCreateDiscountCoupon";
 import SvgCopy from "@/components/icons/Copy";
 import React from "react";
 import { motion } from "framer-motion";
@@ -194,9 +192,6 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
   const setShowExtraDiscount = useExtraDiscountStore(
     (state) => state.setShowExtraDiscount
   );
-  const showExtraDiscount = useExtraDiscountStore(
-    (state) => state.showExtraDiscount
-  );
   const visibleHorizontalCoupon = useExtraDiscountStore(
     (state) => state.visibleHorizontalCoupon
   );
@@ -359,13 +354,6 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
     );
   };
 
-  const { mutate: createCoupon } = useCreateDiscountCoupon();
-
-  useEffect(() => {
-    if (freeUser && isNewUser) {
-      createCoupon(user.id);
-    }
-  }, [user]);
 
   const showPlansForUsers = () => {
     return (
@@ -613,7 +601,6 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
       {freeUser ? (
         <>
           {showUpgradeModal && <UpgradeModal setShowModal={setShowUpgradeModal} />}
-          {!surveyVisible && showExtraDiscount && <ExtraDiscountModal />}
         </>
       ) : noUser ? (
         showLoginModal && <LoginModal />

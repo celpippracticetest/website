@@ -40,7 +40,7 @@ export async function getOnboardingMetrics(
       .collection("onboardingNew_results")
       .countDocuments({
         answeredAt: { $gte: startDate, $lte: endDate },
-        "answers.testDate": { $exists: true },
+        "answers.primaryGoal": { $exists: true },
       });
 
     const completedUsers = completedOld + completedNew;

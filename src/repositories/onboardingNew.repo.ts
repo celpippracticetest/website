@@ -3,7 +3,11 @@ import { Db, MongoClient } from "mongodb";
 type TOnboardingNewResult = {
   userId: string;
   answers: {
-    testDate: string;
+    primaryGoal: string;
+    customPrimaryGoal?: string;
+    subGoal?: string;
+    customSubGoal?: string;
+    testDate?: string;
     focusSkill: string;
     customFocusSkill?: string;
     targetScores: {

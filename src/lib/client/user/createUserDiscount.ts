@@ -9,6 +9,11 @@ export const createUserDiscount = async (userId: string) => {
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
+    // If user already has a discount, return null instead of throwing
+    // This allows the hook to handle it gracefully
+    if (errorData.error?.includes("already has a discount")) {
+      return null;
+    }
     throw new Error(errorData.error || "Failed to create discount coupon");
   }
 

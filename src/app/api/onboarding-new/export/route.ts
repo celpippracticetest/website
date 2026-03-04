@@ -30,19 +30,22 @@ export async function GET() {
         name = "";
       }
 
-      const testDate = answers.testDate || "";
+      const primaryGoal = answers.customPrimaryGoal || answers.primaryGoal || "";
+      const subGoal = answers.customSubGoal || answers.subGoal || "";
       const focusSkill = answers.focusSkill || "";
       const customFocusSkill = answers.customFocusSkill || "";
       const targetScores = answers.targetScores || {};
 
       // Collect stats
-      if (testDate) stats[`Test Date: ${testDate}`] = (stats[`Test Date: ${testDate}`] || 0) + 1;
+      if (primaryGoal) stats[`Primary Goal: ${primaryGoal}`] = (stats[`Primary Goal: ${primaryGoal}`] || 0) + 1;
+      if (subGoal) stats[`Sub Goal: ${subGoal}`] = (stats[`Sub Goal: ${subGoal}`] || 0) + 1;
       if (focusSkill) stats[`Focus Skill: ${focusSkill}`] = (stats[`Focus Skill: ${focusSkill}`] || 0) + 1;
 
       workbookData.push({
         "User ID": userId,
         Name: name.trim(),
-        "Test Date": testDate,
+        "Primary Goal": primaryGoal,
+        "Sub Goal": subGoal,
         "Focus Skill": focusSkill,
         "Custom Focus Skill": customFocusSkill,
         "Target Listening": targetScores.listening || 0,
