@@ -45,6 +45,23 @@ export default async function Success({ searchParams }: any) {
   const currency = session?.currency;
   const customerEmail = session?.customer_details?.email;
   const lineItems = session?.line_items?.data;
+  const checkoutMetadata = session?.metadata || {};
+  const purchaseAttributionData = {
+    attribution_source:
+      checkoutMetadata.attribution_source || checkoutMetadata.utm_source || null,
+    attribution_medium:
+      checkoutMetadata.attribution_medium || checkoutMetadata.utm_medium || null,
+    attribution_campaign:
+      checkoutMetadata.attribution_campaign || checkoutMetadata.utm_campaign || null,
+    attribution_gclid: checkoutMetadata.attribution_gclid || checkoutMetadata.gclid || null,
+    utm_source: checkoutMetadata.utm_source || null,
+    utm_medium: checkoutMetadata.utm_medium || null,
+    utm_campaign: checkoutMetadata.utm_campaign || null,
+    utm_content: checkoutMetadata.utm_content || null,
+    utm_term: checkoutMetadata.utm_term || null,
+    entry_page: checkoutMetadata.entry_page || checkoutMetadata.entryPage || null,
+    purchase_page: checkoutMetadata.purchase_page || null,
+  };
 
   if (status === "open") redirect("/");
   const userRepo = new CheckoutRepository(mongoClient);
@@ -101,6 +118,7 @@ export default async function Success({ searchParams }: any) {
           currency={currency?.toUpperCase() || 'CAD'}
           items={lineItems || []}
           email={customerEmail?.trim().toLowerCase()}
+          attributionData={purchaseAttributionData}
         />
 
         <DashboardHome session={sessionData} email={customerEmail} />

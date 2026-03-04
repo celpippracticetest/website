@@ -613,7 +613,12 @@
                     {
                         "type": "BOOLEAN",
                         "key": "sendEcommerceData",
-                        "value": "false"
+                        "value": "true"
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "getEcommerceDataFrom",
+                        "value": "dataLayer"
                     },
                     {
                         "type": "LIST",

@@ -471,6 +471,11 @@ export const trackEcommerce = {
       item_list_id: itemListId,
       item_list_name: itemListName,
       items,
+      ecommerce: {
+        item_list_id: itemListId,
+        item_list_name: itemListName,
+        items,
+      },
     });
   },
 
@@ -480,6 +485,11 @@ export const trackEcommerce = {
       item_list_id: itemListId,
       item_list_name: itemListName,
       items,
+      ecommerce: {
+        item_list_id: itemListId,
+        item_list_name: itemListName,
+        items,
+      },
     });
   },
 
@@ -497,6 +507,12 @@ export const trackEcommerce = {
       value,
       items,
       coupon,
+      ecommerce: {
+        currency,
+        value,
+        items,
+        coupon,
+      },
       user_data: normalizeUserData(userData),
       conversion_name: "begin_checkout",
       conversion_label: conversionLabel || undefined,
@@ -510,7 +526,8 @@ export const trackEcommerce = {
     currency: string,
     value: number,
     coupon?: string,
-    userData?: UserData
+    userData?: UserData,
+    attributionData?: Record<string, unknown>
   ) => {
     const dedupeKey = `purchase_${transactionId}`;
     if (markDeduplicatedOnce(dedupeKey)) return;
@@ -523,10 +540,18 @@ export const trackEcommerce = {
       value,
       items,
       coupon,
+      ecommerce: {
+        transaction_id: transactionId,
+        currency,
+        value,
+        items,
+        coupon,
+      },
       user_data: normalizeUserData(userData),
       conversion_name: "purchase",
       conversion_label: conversionLabel || undefined,
       google_ads_send_to: getGoogleAdsSendTo(conversionLabel),
+      ...attributionData,
     });
   },
 
@@ -536,6 +561,11 @@ export const trackEcommerce = {
       transaction_id: transactionId,
       currency,
       value,
+      ecommerce: {
+        transaction_id: transactionId,
+        currency,
+        value,
+      },
     });
   },
 };

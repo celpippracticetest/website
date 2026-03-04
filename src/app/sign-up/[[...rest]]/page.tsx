@@ -131,7 +131,7 @@ export default function SignUpPage() {
 
       if (gclid || utm_source || utm_medium || utm_campaign) {
         console.log("🔄 Saving marketing attribution...");
-        await fetch("/api/users/update-attribution", {
+        const response = await fetch("/api/users/update-attribution", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -143,14 +143,16 @@ export default function SignUpPage() {
             utm_term,
           }),
         });
-        
-        // Clear from storage
-        localStorage.removeItem("pending_gclid");
-        localStorage.removeItem("pending_utm_source");
-        localStorage.removeItem("pending_utm_medium");
-        localStorage.removeItem("pending_utm_campaign");
-        localStorage.removeItem("pending_utm_content");
-        localStorage.removeItem("pending_utm_term");
+
+        if (response.ok) {
+          // Clear from storage only after a successful save.
+          localStorage.removeItem("pending_gclid");
+          localStorage.removeItem("pending_utm_source");
+          localStorage.removeItem("pending_utm_medium");
+          localStorage.removeItem("pending_utm_campaign");
+          localStorage.removeItem("pending_utm_content");
+          localStorage.removeItem("pending_utm_term");
+        }
       }
     } catch (error) {
       console.error("Failed to save attribution:", error);

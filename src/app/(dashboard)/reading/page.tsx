@@ -38,20 +38,14 @@ export async function generateMetadata({
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }): Promise<Metadata> {
-  const { taskId, selectedPracticeId } = await searchParams;
-  const isTaskVariant = Boolean(taskId || selectedPracticeId);
+  await searchParams;
 
   return {
     ...readingMetadataBase,
-    robots: isTaskVariant
-      ? {
-          index: false,
-          follow: false,
-        }
-      : {
-          index: true,
-          follow: true,
-        },
+    robots: {
+      index: true,
+      follow: true,
+    },
   };
 }
 

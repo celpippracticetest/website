@@ -26,6 +26,13 @@ interface BlogPageProps {
   params: Promise<{ slug: string }>;
 }
 
+const BLOG_META_DESCRIPTION_OVERRIDES: Record<string, string> = {
+  "celpip-writing-task-2-samples-level-9-why-copy-paste-templates-are-failing-in-2026":
+    "Explore level 9 CELPIP Writing Task 2 samples and see why copy-paste templates fail in 2026, with practical strategies for natural, high-scoring responses.",
+  "the-goldfish-memory-fix-how-to-master-note-taking-for-celpip-listening-parts-4-6":
+    "Master note-taking for CELPIP Listening Parts 4 to 6 using a simple memory system, shorthand techniques, and practice drills that boost accuracy under pressure.",
+};
+
 function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
@@ -60,7 +67,8 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
   const fallbackDescription =
     post.excerpt || stripHtml(post.contentHtml).slice(0, 155) || "CELPIP preparation article.";
   const title = post.seo?.metaTitle || `${post.title} | CELPIP Blog`;
-  const description = post.seo?.metaDescription || fallbackDescription;
+  const description =
+    BLOG_META_DESCRIPTION_OVERRIDES[slug] || post.seo?.metaDescription || fallbackDescription;
   const canonicalPath = `/blog/${post.slug}`;
   const path = post.seo?.canonicalUrl?.startsWith("http") ? null : (post.seo?.canonicalUrl || canonicalPath);
   const canonical = path === null ? (post.seo?.canonicalUrl ?? "") : `${baseUrl}${path.startsWith("/") ? "" : "/"}${path}`;

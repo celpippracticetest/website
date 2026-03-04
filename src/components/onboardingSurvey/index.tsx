@@ -20,6 +20,37 @@ import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { Plus, Minus } from "lucide-react";
 import Lottie from "lottie-react";
 import { useEffect, useState as useReactState } from "react";
+import { useRouter } from "next/navigation";
+import MicrolearningLaunch from "@/components/flow/MicrolearningLaunch";
+
+type FlowStep = {
+  id: string;
+  kind: "learning" | "practice" | "review";
+  title: string;
+  description: string;
+  durationMinutes: number;
+  actionHref?: string;
+  ctaLabel: string;
+};
+
+type FlowPayload = {
+  flow: {
+    urgency: "high" | "medium" | "low";
+    daysToExam: number | null;
+    focusSkill: "listening" | "reading" | "writing" | "speaking";
+    targetScore: number | null;
+    subGoal: string | null;
+    reasoning: string[];
+    steps: FlowStep[];
+  };
+  firstAction: string;
+  profile: {
+    subGoal: string | null;
+    targetScore: number | null;
+    focusSkill: string | null;
+    testDate: string | null;
+  };
+};
 
 const PRIMARY_GOAL_OPTIONS = [
   "Canadian Permanent Residency (Express Entry)",
@@ -212,6 +243,7 @@ export default function OnboardingSurvey({
 }: {
   onComplete: () => void;
 }) {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [primaryGoal, setPrimaryGoal] = useState("");
   const [customPrimaryGoal, setCustomPrimaryGoal] = useState("");
@@ -230,6 +262,7 @@ export default function OnboardingSurvey({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPersonalizing, setIsPersonalizing] = useState(false);
   const [construccionAnimation, setConstruccionAnimation] = useReactState<any>(null);
+  const [flowPayload, setFlowPayload] = useState<FlowPayload | null>(null);
 
   useEffect(() => {
     // Load Lottie animation data
@@ -293,6 +326,10 @@ export default function OnboardingSurvey({
   };
 
   const progressValue = (step / 4) * 100;
+  const handleFlowStart = (url: string) => {
+    onComplete();
+    router.push(url || "/practice-overview");
+  };
 
   return (
     <ThemeProvider theme={theme}>
@@ -1003,37 +1040,53 @@ export default function OnboardingSurvey({
                   variant="contained"
                   disabled={isSubmitting || isPersonalizing || !focusSkill || (focusSkill === "Other (please specify)" && !customFocusSkill.trim())}
                   onClick={async () => {
-                    setIsPersonalizing(true);
-                    
-                    // Show personalizing message for 6 seconds (between 5-7 seconds)
-                    await new Promise(resolve => setTimeout(resolve, 6000));
-                    
-                    setIsSubmitting(true);
-                    await fetch("/api/onboarding-new", {
-                      method: "POST",
-                      body: JSON.stringify({
-                        action: "submit",
-                        answers: {
-                          primaryGoal: primaryGoal === "Other (please specify)" ? customPrimaryGoal : primaryGoal,
-                          customPrimaryGoal: primaryGoal === "Other (please specify)" ? customPrimaryGoal : "",
-                          subGoal: hasSubOptions() && subGoal ? (subGoal === "Other (please specify)" ? customSubGoal : subGoal) : "",
-                          customSubGoal: hasSubOptions() && subGoal === "Other (please specify)" ? customSubGoal : "",
-                          testDate,
-                          focusSkill,
-                          customFocusSkill: focusSkill === "Other (please specify)" ? customFocusSkill : "",
-                          targetScores,
+                    try {
+                      setIsPersonalizing(true);
+
+                      // Keep the personalization feedback visible for a short moment.
+                      await new Promise((resolve) => setTimeout(resolve, 6000));
+
+                      setIsSubmitting(true);
+                      const submitResponse = await fetch("/api/onboarding-new", {
+                        method: "POST",
+                        body: JSON.stringify({
+                          action: "submit",
+                          answers: {
+                            primaryGoal: primaryGoal === "Other (please specify)" ? customPrimaryGoal : primaryGoal,
+                            customPrimaryGoal: primaryGoal === "Other (please specify)" ? customPrimaryGoal : "",
+                            subGoal: hasSubOptions() && subGoal ? (subGoal === "Other (please specify)" ? customSubGoal : subGoal) : "",
+                            customSubGoal: hasSubOptions() && subGoal === "Other (please specify)" ? customSubGoal : "",
+                            testDate,
+                            focusSkill,
+                            customFocusSkill: focusSkill === "Other (please specify)" ? customFocusSkill : "",
+                            targetScores,
+                          },
+                        }),
+                        headers: {
+                          "Content-Type": "application/json",
                         },
-                      }),
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                    });
-                    user?.reload();
-                    setTimeout(() => {
+                      });
+
+                      if (!submitResponse.ok) {
+                        throw new Error("Failed to submit onboarding");
+                      }
+
+                      const flowResponse = await fetch("/api/flow", { method: "GET" });
+                      if (!flowResponse.ok) {
+                        throw new Error("Failed to load microlearning flow");
+                      }
+
+                      const payload: FlowPayload = await flowResponse.json();
+                      setFlowPayload(payload);
+                      user?.reload();
+                    } catch (error) {
+                      console.error("Onboarding flow launch error:", error);
+                      onComplete();
+                      router.push("/practice-overview");
+                    } finally {
                       setIsSubmitting(false);
                       setIsPersonalizing(false);
-                      onComplete();
-                    }, 1000);
+                    }
                   }}
                   sx={{
                     backgroundColor: "#F27059",
@@ -1119,6 +1172,16 @@ export default function OnboardingSurvey({
                 </Typography>
               </motion.div>
             </Box>
+          )}
+
+          {flowPayload?.flow && (
+            <MicrolearningLaunch
+              flow={flowPayload.flow}
+              profile={flowPayload.profile}
+              firstAction={flowPayload.firstAction || "/practice-overview"}
+              onStartNow={handleFlowStart}
+              onSkip={() => handleFlowStart("/practice-overview")}
+            />
           )}
         </Paper>
       </Box>

@@ -14,6 +14,11 @@ interface PageProps {
   searchParams: Promise<{ q?: string }>;
 }
 
+const WIKI_META_DESCRIPTION_OVERRIDES: Record<string, string> = {
+  "celpip-speaking-tips-high-score":
+    "Get high-score CELPIP speaking tips with clear response frameworks, timing strategies, vocabulary ideas, and key mistakes to avoid for confident answers.",
+};
+
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
@@ -29,6 +34,7 @@ export async function generateMetadata({
 
   const baseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
   const description =
+    WIKI_META_DESCRIPTION_OVERRIDES[slug] ||
     currentArticle.description ||
     `Learn about ${currentArticle.title} in our comprehensive CELPIP guide.`;
 

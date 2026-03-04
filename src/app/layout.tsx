@@ -16,6 +16,7 @@ import type { Metadata, Viewport } from "next";
 import { Suspense, type ComponentType } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ActiveUsersTracker from "@/components/analytics/ActiveUsersTracker";
+import AttributionTracker from "@/components/analytics/AttributionTracker";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
 import FooterWrapper from "@/components/pages/landing/FooterWrapper";
 
@@ -230,6 +231,7 @@ export default async function RootLayout({
           <Analytics />
           <ActiveUsersTracker />
           <Suspense fallback={null}>
+            <AttributionTracker />
             <PageViewTracker />
           </Suspense>
           <LazyLeadCapturePopup />

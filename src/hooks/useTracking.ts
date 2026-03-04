@@ -253,9 +253,18 @@ export function useEcommerceTracking() {
         currency: string,
         value: number,
         coupon?: string,
-        userData?: UserData
+        userData?: UserData,
+        attributionData?: Record<string, unknown>
       ) => {
-        trackEcommerce.purchase(transactionId, items, currency, value, coupon, userData);
+        trackEcommerce.purchase(
+          transactionId,
+          items,
+          currency,
+          value,
+          coupon,
+          userData,
+          attributionData
+        );
       },
       []
     ),

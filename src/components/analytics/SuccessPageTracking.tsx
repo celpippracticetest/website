@@ -9,6 +9,7 @@ interface SuccessPageTrackingProps {
   currency: string;
   items: any[];
   email?: string;
+  attributionData?: Record<string, unknown>;
 }
 
 /**
@@ -21,6 +22,7 @@ export default function SuccessPageTracking({
   currency,
   items,
   email,
+  attributionData,
 }: SuccessPageTrackingProps) {
   const { purchase } = useEcommerceTracking();
   const hasTrackedRef = useRef(false);
@@ -56,7 +58,8 @@ export default function SuccessPageTracking({
       currency,
       value,
       undefined, // coupon
-      userData
+      userData,
+      attributionData
     );
     hasTrackedRef.current = true;
     sessionStorage.setItem(dedupeKey, "1");
@@ -67,10 +70,11 @@ export default function SuccessPageTracking({
         value,
         currency,
         items: formattedItems,
-        userData
+        userData,
+        attributionData,
       });
     }
-  }, [transactionId, value, currency, items, email, purchase]);
+  }, [transactionId, value, currency, items, email, purchase, attributionData]);
 
   return null;
 }
