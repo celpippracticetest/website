@@ -10,8 +10,57 @@ const isAdminRoute = createRouteMatcher(["/cms(.*)"]);
 const isProfileRoute = createRouteMatcher(["/profile(.*)"]);
 const isReferralRoute = createRouteMatcher(["/referral(.*)"]);
 const isPlansRoute = createRouteMatcher(["/plans(.*)"]);
+const isPreviewEnvironment = process.env.VERCEL_ENV === "preview";
+
+const requiresPreviewAuth = (req: NextRequest) => {
+  // Keep incoming third-party webhooks reachable in preview if needed.
+  if (req.nextUrl.pathname === "/api/users/webhook") {
+    return false;
+  }
+  return true;
+};
+
+const hasValidPreviewCredentials = (req: NextRequest) => {
+  const previewUsername = process.env.PREVIEW_QA_USERNAME;
+  const previewPassword = process.env.PREVIEW_QA_PASSWORD;
+
+  if (!previewUsername || !previewPassword) {
+    return false;
+  }
+
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader?.startsWith("Basic ")) {
+    return false;
+  }
+
+  try {
+    const credentials = atob(authHeader.slice(6));
+    const separatorIndex = credentials.indexOf(":");
+    if (separatorIndex === -1) {
+      return false;
+    }
+
+    const username = credentials.slice(0, separatorIndex);
+    const password = credentials.slice(separatorIndex + 1);
+
+    return username === previewUsername && password === previewPassword;
+  } catch {
+    return false;
+  }
+};
 
 export default clerkMiddleware(async (auth, req) => {
+  if (isPreviewEnvironment && requiresPreviewAuth(req)) {
+    if (!hasValidPreviewCredentials(req)) {
+      return new NextResponse("Authentication required", {
+        status: 401,
+        headers: {
+          "WWW-Authenticate": 'Basic realm="Preview QA", charset="UTF-8"',
+        },
+      });
+    }
+  }
+
   const authenticate = await auth();
 
   if (

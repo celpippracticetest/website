@@ -170,7 +170,7 @@
                 "accountId": "6292384809",
                 "containerId": "218518927",
                 "tagId": "54",
-                "name": "Lead Generation",
+                "name": "Popup Lead Form Submit (GA4)",
                 "type": "gaawe",
                 "parameter": [
                     {
@@ -1006,7 +1006,7 @@
                 "accountId": "6292384809",
                 "containerId": "218518927",
                 "triggerId": "51",
-                "name": "Event - Lead Capture Submitted",
+                "name": "Event - Popup Lead Form Submitted",
                 "type": "CUSTOM_EVENT",
                 "customEventFilter": [
                     {
