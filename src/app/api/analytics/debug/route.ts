@@ -26,9 +26,7 @@ export async function GET() {
 
     const checkoutsCount = await db.collection("checkouts").countDocuments();
 
-    const onboardingCount = await db
-      .collection("onboarding_results")
-      .countDocuments();
+    const onboardingCount = await db.collection("onboarding").countDocuments();
 
     const referralInvitationsCount = await db
       .collection("referralInvitations")
@@ -153,7 +151,7 @@ export async function GET() {
         useractivities: userActivitiesCount,
         users: usersCount,
         checkouts: checkoutsCount,
-        onboarding_results: onboardingCount,
+        onboarding: onboardingCount,
         referralInvitations: referralInvitationsCount,
         referralRewards: referralRewardsCount,
       },

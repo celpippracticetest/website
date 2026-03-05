@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     const client = await clientPromise;
     const db = client.db();
 
-    await db.collection("cancellation_surveys").updateOne(
+    await db.collection("account_deletion_surveys").updateOne(
       { userId },
       {
         $set: {
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("Error saving cancellation survey:", error);
+    console.error("Error saving account deletion survey:", error);
     return NextResponse.json(
       { error: error.message || "Failed to save survey" },
       { status: 500 }

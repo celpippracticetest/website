@@ -3,13 +3,144 @@ import mongoClient from "@/lib/mongodb";
 import { OnboardingRepository } from "@/repositories/onboarding.repo";
 import { NextResponse } from "next/server";
 import { clerkClient } from "@clerk/express";
+import { getDb } from "@/lib/mongodb";
 
 export const runtime = "nodejs";
 export const maxDuration = 60; // 60 seconds timeout for export
 
 // GET: Export onboarding data as Excel
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const view = searchParams.get("view");
+
+    if (view === "new") {
+      console.log('⏳ Exporting onboarding (new view) data from "onboarding"...');
+      const db = await getDb();
+      const onboardingCollection = db.collection("onboarding");
+      const onboardingFilter = {
+        $and: [
+          {
+            $or: [
+              { "answers.targetScores": { $exists: true } },
+              { targetScores: { $exists: true } },
+            ],
+          },
+          {
+            $or: [
+              {
+                "answers.primaryGoal": { $exists: true, $nin: [null, ""] },
+              },
+              {
+                primaryGoal: { $exists: true, $nin: [null, ""] },
+              },
+            ],
+          },
+          { "answers.stepOneReasons": { $exists: false } },
+          { "answers.stepTwoReasons": { $exists: false } },
+          { stepOneReasons: { $exists: false } },
+          { stepTwoReasons: { $exists: false } },
+        ],
+      };
+      const results = await onboardingCollection.find(onboardingFilter).toArray();
+
+      const workbookData: any[] = [];
+      const stats: Record<string, number> = {};
+      const pickFirstNonEmpty = (...values: any[]) =>
+        values.find((value) => {
+          if (value === null || value === undefined) return false;
+          if (typeof value === "string") return value.trim() !== "";
+          return true;
+        });
+
+      for (const result of results) {
+        const userId = result.userId;
+        const nestedAnswers = (result as any)?.answers || {};
+        const answers = {
+          primaryGoal:
+            pickFirstNonEmpty(
+              nestedAnswers.primaryGoal,
+              (result as any)?.primaryGoal
+            ) || "",
+          customPrimaryGoal:
+            pickFirstNonEmpty(
+              nestedAnswers.customPrimaryGoal,
+              (result as any)?.customPrimaryGoal
+            ) || "",
+          subGoal:
+            pickFirstNonEmpty(nestedAnswers.subGoal, (result as any)?.subGoal) ||
+            "",
+          customSubGoal:
+            pickFirstNonEmpty(
+              nestedAnswers.customSubGoal,
+              (result as any)?.customSubGoal
+            ) || "",
+          focusSkill:
+            pickFirstNonEmpty(
+              nestedAnswers.focusSkill,
+              (result as any)?.focusSkill
+            ) || "",
+          customFocusSkill:
+            pickFirstNonEmpty(
+              nestedAnswers.customFocusSkill,
+              (result as any)?.customFocusSkill
+            ) || "",
+          targetScores:
+            nestedAnswers.targetScores || (result as any)?.targetScores || {},
+        };
+        let name = "";
+
+        try {
+          const user = await clerkClient.users.getUser(userId);
+          name = (user.firstName || "") + " " + (user.lastName || "");
+        } catch (e) {
+          console.warn("⚠️ Clerk user not found for:", userId);
+          name = "";
+        }
+
+        const primaryGoal = answers.customPrimaryGoal || answers.primaryGoal || "";
+        const subGoal = answers.customSubGoal || answers.subGoal || "";
+        const focusSkill = answers.focusSkill || "";
+        const customFocusSkill = answers.customFocusSkill || "";
+        const targetScores = answers.targetScores || {};
+
+        if (primaryGoal) stats[`Primary Goal: ${primaryGoal}`] = (stats[`Primary Goal: ${primaryGoal}`] || 0) + 1;
+        if (subGoal) stats[`Sub Goal: ${subGoal}`] = (stats[`Sub Goal: ${subGoal}`] || 0) + 1;
+        if (focusSkill) stats[`Focus Skill: ${focusSkill}`] = (stats[`Focus Skill: ${focusSkill}`] || 0) + 1;
+
+        workbookData.push({
+          "User ID": userId,
+          Name: name.trim(),
+          "Primary Goal": primaryGoal,
+          "Sub Goal": subGoal,
+          "Focus Skill": focusSkill,
+          "Custom Focus Skill": customFocusSkill,
+          "Target Listening": targetScores.listening || 0,
+          "Target Reading": targetScores.reading || 0,
+          "Target Writing": targetScores.writing || 0,
+          "Target Speaking": targetScores.speaking || 0,
+          "Answered At": result.answeredAt?.toISOString() || "",
+        });
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(workbookData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Onboarding Data");
+      const fileBuffer = XLSX.write(workbook, {
+        type: "buffer",
+        bookType: "xlsx",
+      });
+
+      return new NextResponse(fileBuffer, {
+        headers: {
+          "Content-Type":
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "Content-Disposition": "attachment; filename=onboarding_export.xlsx",
+          "x-answer-stats": encodeURIComponent(JSON.stringify(stats)),
+        },
+      });
+    }
+
     console.log("⏳ Exporting onboarding results...");
     const onboardingRepo = new OnboardingRepository(mongoClient);
     const results = await onboardingRepo.getAllOnboardingResults();

@@ -1,8 +1,6 @@
 "use client";
 import { Button } from "@/components/v2/Button";
 import { SignedIn, useUser } from "@clerk/nextjs";
-
-import { useClerk } from "@clerk/nextjs";
 import Link from "next/link";
 
 import { useState, useEffect, useRef } from "react";
@@ -16,7 +14,6 @@ const AuthButtons = () => {
   const roles = (user?.publicMetadata as Record<string, unknown> | undefined)?.["roles"] as
     | string[]
     | undefined;
-  const { signOut } = useClerk();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { hasEverPurchased } = useHasEverPurchased();
 
@@ -115,16 +112,6 @@ const AuthButtons = () => {
                   className="cursor-pointer block px-4 py-2 text-[14px] text-gray-700 w-full text-left"
                 >
                   Support
-                </button>
-
-                <button
-                  onClick={() => {
-                    localStorage.removeItem("hasClosedExtraDiscountModal");
-                    signOut();
-                  }}
-                  className="cursor-pointer block px-4 py-2 text-[14px] text-gray-700 w-full text-left"
-                >
-                  Sign out
                 </button>
               </div>
             </div>

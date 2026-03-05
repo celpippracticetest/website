@@ -5,7 +5,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import type { JSONContent } from "@tiptap/core";
-import { Check, Loader2, PlusCircle, Sparkles, Trash2, Upload } from "lucide-react";
+import { Check, Copy, Loader2, PlusCircle, Sparkles, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Box } from "@/components/ui/Box";
 import {
@@ -114,6 +114,77 @@ function getInitialJson(value?: unknown): JSONContent | null {
 }
 
 const BLOG_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_BASE_URL || "https://celpippracticetest.com";
+const BLOG_JSON_SAMPLE = JSON.stringify(
+  {
+    title: "CELPIP Reading Tips to Increase Your Score Fast",
+    slug: "celpip-reading-tips-increase-score-fast",
+    status: "draft",
+    excerpt: "Learn practical reading strategies to improve speed, accuracy, and confidence in the CELPIP reading section.",
+    authorName: "CELPIP Practice Test Team",
+    categories: ["Reading", "Study Plan"],
+    tags: ["celpip reading", "time management", "score improvement"],
+    featuredImage: {
+      url: "https://celpippracticetest.com/images/blog/reading-tips-cover.jpg",
+      alt: "Student preparing for CELPIP reading section",
+    },
+    seo: {
+      metaTitle: "CELPIP Reading Tips: Improve Score with Smart Strategy",
+      metaDescription: "Use these proven CELPIP reading tips to improve speed, avoid common mistakes, and increase your score.",
+      canonicalUrl: "https://celpippracticetest.com/blog/celpip-reading-tips-increase-score-fast",
+      ogImageUrl: "https://celpippracticetest.com/images/blog/reading-tips-cover.jpg",
+      ogImageAlt: "CELPIP reading preparation desk setup",
+      keywords: ["CELPIP reading tips", "CELPIP score", "CELPIP preparation"],
+    },
+    publishedAt: "2026-03-04T09:00:00.000Z",
+    contentHtml:
+      "<h2>Why reading strategy matters</h2><p>Strong reading performance requires timing, pattern recognition, and targeted practice...</p>",
+    faq: [
+      {
+        question: "How can I improve CELPIP reading score quickly?",
+        answer: "Practice with timed sets daily, review wrong answers carefully, and use keyword scanning to locate key details faster.",
+      },
+    ],
+    aiSnippet: {
+      question: "How do I get a higher CELPIP reading score?",
+      answer:
+        "Focus on timed practice, question-type strategy, and error analysis. Improving speed without losing accuracy is the fastest path to better CELPIP reading results.",
+    },
+    publishToLinkedIn: false,
+  },
+  null,
+  2
+);
+
+type BlogJsonImportInput = Partial<
+  TBlogWriteInput & {
+    categoriesInput: string;
+    tagsInput: string;
+    keywordsInput: string;
+    metaTitle: string;
+    metaDescription: string;
+    canonicalUrl: string;
+    ogImageUrl: string;
+    ogImageAlt: string;
+    featuredImageUrl: string;
+    featuredImageAlt: string;
+    publishToLinkedIn: boolean;
+  }
+>;
+
+function normalizeStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => String(item ?? "").trim())
+      .filter(Boolean);
+  }
+  if (typeof value === "string") {
+    return value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
 
 export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogPostFormProps) {
   const [slugEdited, setSlugEdited] = useState(Boolean(initialData?.slug));
@@ -121,6 +192,8 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
   const [aiPrompt, setAiPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [jsonInput, setJsonInput] = useState("");
+  const [jsonImportError, setJsonImportError] = useState<string | null>(null);
   const [editorContentKey, setEditorContentKey] = useState(0);
 
   const defaultValues: BlogFormValues = useMemo(
@@ -249,6 +322,183 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleFillWithJson = () => {
+    try {
+      setJsonImportError(null);
+      const parsed = JSON.parse(jsonInput) as BlogJsonImportInput;
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        throw new Error("JSON root must be an object.");
+      }
+
+      if (typeof parsed.title === "string") {
+        form.setValue("title", parsed.title.trim(), { shouldDirty: true });
+      }
+
+      if (typeof parsed.slug === "string") {
+        form.setValue("slug", slugify(parsed.slug), { shouldDirty: true });
+        setSlugEdited(true);
+      }
+
+      if (parsed.status === "draft" || parsed.status === "published") {
+        form.setValue("status", parsed.status, { shouldDirty: true });
+      }
+
+      if (typeof parsed.excerpt === "string") {
+        form.setValue("excerpt", parsed.excerpt.trim().slice(0, 320), { shouldDirty: true });
+      }
+
+      if (typeof parsed.authorName === "string") {
+        form.setValue("authorName", parsed.authorName.trim(), { shouldDirty: true });
+      }
+
+      const categoriesInput =
+        typeof parsed.categoriesInput === "string"
+          ? parsed.categoriesInput
+          : normalizeStringArray(parsed.categories).join(", ");
+      if (categoriesInput) {
+        form.setValue("categoriesInput", categoriesInput, { shouldDirty: true });
+      }
+
+      const tagsInput =
+        typeof parsed.tagsInput === "string" ? parsed.tagsInput : normalizeStringArray(parsed.tags).join(", ");
+      if (tagsInput) {
+        form.setValue("tagsInput", tagsInput, { shouldDirty: true });
+      }
+
+      const featuredImageUrl =
+        typeof parsed.featuredImageUrl === "string"
+          ? parsed.featuredImageUrl
+          : typeof parsed.featuredImage?.url === "string"
+            ? parsed.featuredImage.url
+            : "";
+      if (featuredImageUrl) {
+        form.setValue("featuredImageUrl", featuredImageUrl.trim(), { shouldDirty: true, shouldValidate: true });
+      }
+
+      const featuredImageAlt =
+        typeof parsed.featuredImageAlt === "string"
+          ? parsed.featuredImageAlt
+          : typeof parsed.featuredImage?.alt === "string"
+            ? parsed.featuredImage.alt
+            : "";
+      if (featuredImageAlt) {
+        form.setValue("featuredImageAlt", featuredImageAlt.trim(), { shouldDirty: true });
+      }
+
+      if (typeof parsed.metaTitle === "string" || typeof parsed.seo?.metaTitle === "string") {
+        form.setValue("metaTitle", String(parsed.metaTitle ?? parsed.seo?.metaTitle ?? "").trim().slice(0, 70), {
+          shouldDirty: true,
+        });
+      }
+
+      if (typeof parsed.metaDescription === "string" || typeof parsed.seo?.metaDescription === "string") {
+        form.setValue(
+          "metaDescription",
+          String(parsed.metaDescription ?? parsed.seo?.metaDescription ?? "").trim().slice(0, 160),
+          {
+            shouldDirty: true,
+          }
+        );
+      }
+
+      if (typeof parsed.canonicalUrl === "string" || typeof parsed.seo?.canonicalUrl === "string") {
+        form.setValue("canonicalUrl", String(parsed.canonicalUrl ?? parsed.seo?.canonicalUrl ?? "").trim(), {
+          shouldDirty: true,
+        });
+      }
+
+      if (typeof parsed.ogImageUrl === "string" || typeof parsed.seo?.ogImageUrl === "string") {
+        form.setValue("ogImageUrl", String(parsed.ogImageUrl ?? parsed.seo?.ogImageUrl ?? "").trim(), {
+          shouldDirty: true,
+        });
+      }
+
+      if (typeof parsed.ogImageAlt === "string" || typeof parsed.seo?.ogImageAlt === "string") {
+        form.setValue("ogImageAlt", String(parsed.ogImageAlt ?? parsed.seo?.ogImageAlt ?? "").trim(), {
+          shouldDirty: true,
+        });
+      }
+
+      const keywordsInput =
+        typeof parsed.keywordsInput === "string"
+          ? parsed.keywordsInput
+          : normalizeStringArray(parsed.seo?.keywords).join(", ");
+      if (keywordsInput) {
+        form.setValue("keywordsInput", keywordsInput, { shouldDirty: true });
+      }
+
+      if (parsed.publishedAt) {
+        form.setValue("publishedAt", toDatetimeLocal(parsed.publishedAt), { shouldDirty: true });
+      }
+
+      let shouldRefreshEditor = false;
+      if (typeof parsed.contentHtml === "string") {
+        form.setValue("contentHtml", parsed.contentHtml, { shouldDirty: true });
+        shouldRefreshEditor = true;
+      }
+
+      if (parsed.contentJson === null || (parsed.contentJson && typeof parsed.contentJson === "object")) {
+        form.setValue("contentJson", parsed.contentJson, { shouldDirty: true });
+        shouldRefreshEditor = true;
+      }
+
+      if (shouldRefreshEditor) {
+        setEditorContentKey((k) => k + 1);
+      }
+
+      if (Array.isArray(parsed.faq)) {
+        form.setValue(
+          "faq",
+          parsed.faq.map((item) => ({
+            question: String(item?.question ?? "").trim(),
+            answer: String(item?.answer ?? "").trim(),
+          })),
+          { shouldDirty: true }
+        );
+      }
+
+      if (parsed.aiSnippet && typeof parsed.aiSnippet === "object") {
+        form.setValue("aiSnippet.question", String(parsed.aiSnippet.question ?? "").trim(), { shouldDirty: true });
+        form.setValue("aiSnippet.answer", String(parsed.aiSnippet.answer ?? "").trim().slice(0, 400), {
+          shouldDirty: true,
+        });
+      }
+
+      if (typeof parsed.publishToLinkedIn === "boolean") {
+        form.setValue("publishToLinkedIn", parsed.publishToLinkedIn, { shouldDirty: true });
+      }
+
+      toast({
+        title: "Form filled with JSON",
+        description: "All matching fields were imported. Review and save when ready.",
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Invalid JSON.";
+      setJsonImportError(message);
+      toast({
+        title: "JSON import failed",
+        description: message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCopySampleJson = async () => {
+    try {
+      await navigator.clipboard.writeText(BLOG_JSON_SAMPLE);
+      toast({
+        title: "Sample copied",
+        description: "Sample JSON copied to clipboard.",
+      });
+    } catch {
+      toast({
+        title: "Copy failed",
+        description: "Could not copy sample JSON. Copy it manually from the textarea.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -500,6 +750,43 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                 </>
               )}
             </Button>
+          </Box>
+        </Box>
+
+        <Box className="rounded-md border border-slate-200 bg-slate-50/50 p-4">
+          <h3 className="mb-2 flex items-center gap-2 text-base font-semibold text-slate-900">
+            <Sparkles className="h-4 w-4 text-blue-600" />
+            Fill entire form with JSON
+          </h3>
+          <p className="mb-3 text-sm text-slate-500">
+            Paste a JSON object and import it to auto-fill title, content, taxonomy, image, FAQ, AI snippet, and SEO fields.
+          </p>
+          <Box className="space-y-3">
+            <Textarea
+              placeholder='Paste blog JSON object here, e.g. {"title":"...","slug":"..."}'
+              className="min-h-[180px] bg-white font-mono text-xs"
+              value={jsonInput}
+              onChange={(event) => setJsonInput(event.target.value)}
+            />
+            {jsonImportError ? <p className="text-sm text-red-600">{jsonImportError}</p> : null}
+            <Box className="flex flex-wrap gap-2">
+              <Button type="button" variant="secondary" onClick={handleFillWithJson}>
+                Fill form from JSON
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setJsonInput(BLOG_JSON_SAMPLE)}>
+                Use sample JSON
+              </Button>
+            </Box>
+            <Box className="rounded-md border border-slate-200 bg-white p-3">
+              <Box className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-xs font-medium text-slate-700">Admin sample JSON</p>
+                <Button type="button" variant="ghost" size="sm" onClick={handleCopySampleJson}>
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy sample
+                </Button>
+              </Box>
+              <Textarea readOnly value={BLOG_JSON_SAMPLE} className="min-h-[220px] bg-slate-50 font-mono text-xs" />
+            </Box>
           </Box>
         </Box>
 

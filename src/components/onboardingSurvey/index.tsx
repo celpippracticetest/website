@@ -1047,7 +1047,7 @@ export default function OnboardingSurvey({
                       await new Promise((resolve) => setTimeout(resolve, 6000));
 
                       setIsSubmitting(true);
-                      const submitResponse = await fetch("/api/onboarding-new", {
+                      const submitResponse = await fetch("/api/onboarding", {
                         method: "POST",
                         body: JSON.stringify({
                           action: "submit",

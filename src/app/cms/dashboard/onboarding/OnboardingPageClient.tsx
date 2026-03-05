@@ -14,6 +14,41 @@ import {
 } from "chart.js";
 import Link from "next/link";
 
+const piePercentagePlugin = {
+  id: "piePercentagePlugin",
+  afterDatasetsDraw(chart: any) {
+    const dataset = chart?.data?.datasets?.[0];
+    if (!dataset) return;
+
+    const rawData = Array.isArray(dataset.data) ? dataset.data : [];
+    const values = rawData.map((value: any) => Number(value) || 0);
+    const total = values.reduce((sum: number, value: number) => sum + value, 0);
+    if (!total) return;
+
+    const meta = chart.getDatasetMeta(0);
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "600 11px Inter, sans-serif";
+
+    meta.data.forEach((arc: any, index: number) => {
+      const value = values[index] || 0;
+      if (!value) return;
+
+      const percentage = (value / total) * 100;
+      // Hide tiny labels to keep the chart readable.
+      if (percentage < 4) return;
+
+      const point = arc.tooltipPosition();
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(`${Math.round(percentage)}%`, point.x, point.y);
+    });
+
+    ctx.restore();
+  },
+};
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -21,7 +56,8 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  ArcElement
+  ArcElement,
+  piePercentagePlugin
 );
 
 interface OnboardingRecord {
@@ -58,6 +94,29 @@ const OnboardingPageClient: React.FC<OnboardingPageClientProps> = ({
   currentPage,
   statistics,
 }) => {
+  const formatAnsweredAt = React.useCallback((value?: string) => {
+    if (!value) return "-";
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "-";
+
+    // Use a fixed locale and timezone to avoid SSR/client hydration mismatches.
+    return new Intl.DateTimeFormat("en-CA", { timeZone: "UTC" }).format(date);
+  }, []);
+
+  const normalizeChartLabel = React.useCallback((value: string) => {
+    const normalized = (value || "").trim();
+    if (!normalized) return "";
+
+    const lower = normalized.toLowerCase();
+    if (lower.includes("canadian permanent residency")) return "PR";
+    if (lower.includes("other (please specify)") || lower === "other")
+      return "Other";
+    if (lower.includes("exam strategy")) return "Exam Strategy";
+
+    return normalized;
+  }, []);
+
   // Create answer distribution data
   const answerDistribution = React.useMemo(() => {
     const primaryGoals: { [key: string]: number } = {};
@@ -66,23 +125,25 @@ const OnboardingPageClient: React.FC<OnboardingPageClientProps> = ({
     data.forEach((record) => {
       // Count Primary Goal answers
       if (record["Primary Goal"]) {
-        const answer = record["Primary Goal"];
+        const answer = normalizeChartLabel(record["Primary Goal"]);
+        if (!answer) return;
         primaryGoals[answer] = (primaryGoals[answer] || 0) + 1;
       }
 
       // Count Focus Skill answers
       if (record["Focus Skill"]) {
-        const answer = record["Focus Skill"];
+        const answer = normalizeChartLabel(record["Focus Skill"]);
+        if (!answer) return;
         focusSkills[answer] = (focusSkills[answer] || 0) + 1;
       }
     });
 
     return { primaryGoals, focusSkills };
-  }, [data]);
+  }, [data, normalizeChartLabel]);
 
   const exportToExcel = async () => {
     try {
-      const response = await fetch("/api/onboarding-new/export");
+      const response = await fetch("/api/onboarding/export?view=new");
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -103,7 +164,15 @@ const OnboardingPageClient: React.FC<OnboardingPageClientProps> = ({
     responsive: true,
     plugins: {
       legend: {
-        position: "top" as const,
+        position: "bottom" as const,
+        labels: {
+          boxWidth: 10,
+          boxHeight: 10,
+          font: {
+            size: 11,
+          },
+          padding: 10,
+        },
       },
       title: {
         display: true,
@@ -197,7 +266,7 @@ const OnboardingPageClient: React.FC<OnboardingPageClientProps> = ({
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-semibold text-gray-700">
             Total Responses
@@ -214,14 +283,6 @@ const OnboardingPageClient: React.FC<OnboardingPageClientProps> = ({
           <h3 className="text-lg font-semibold text-gray-700">Focus Skills</h3>
           <p className="text-3xl font-bold text-purple-600">
             {statistics.focusSkills || 0}
-          </p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-700">
-            Avg Target Score
-          </h3>
-          <p className="text-3xl font-bold text-orange-600">
-            {statistics.averageTargetScore || 0}
           </p>
         </div>
       </div>
@@ -255,9 +316,6 @@ const OnboardingPageClient: React.FC<OnboardingPageClientProps> = ({
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
                   Focus Skill
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-64">
-                  Target Scores
-                </th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
                   Answered At
                 </th>
@@ -266,7 +324,7 @@ const OnboardingPageClient: React.FC<OnboardingPageClientProps> = ({
             <tbody className="bg-white divide-y divide-gray-200">
               {data.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-3 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-3 py-8 text-center text-gray-500">
                     No onboarding data available
                   </td>
                 </tr>
@@ -293,26 +351,8 @@ const OnboardingPageClient: React.FC<OnboardingPageClientProps> = ({
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-4 text-sm text-gray-900">
-                      <div className="flex flex-wrap gap-1">
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                          L: {record["Target Listening"]}
-                        </span>
-                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
-                          R: {record["Target Reading"]}
-                        </span>
-                        <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">
-                          W: {record["Target Writing"]}
-                        </span>
-                        <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
-                          S: {record["Target Speaking"]}
-                        </span>
-                      </div>
-                    </td>
                     <td className="px-3 py-4 text-sm text-gray-500 truncate max-w-48">
-                      {record["Answered At"]
-                        ? new Date(record["Answered At"]).toLocaleDateString()
-                        : "-"}
+                      {formatAnsweredAt(record["Answered At"])}
                     </td>
                   </tr>
                 ))

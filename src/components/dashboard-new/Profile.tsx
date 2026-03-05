@@ -19,6 +19,7 @@ import SvgCloseCircle from "@/components/icons/CloseCircle";
 import Link from "next/link";
 import SubscriptionRetentionModal from "@/components/modal/SubscriptionRetentionModal";
 import ChangePlanModal from "@/components/modal/ChangePlanModal";
+import AccountDeletionRetentionModal from "@/components/modal/AccountDeletionRetentionModal";
 export default function Profile({ prevCheckout, subscriptionData }: any) {
   const { user } = useUser();
   const [planNameDisplay, setPlanNameDisplay] = useState<string>("");
@@ -85,12 +86,13 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
   const getSessions = useGetUserSessions();
 
   const { mutate } = useDeleteUserSessions();
-  const { mutate: handleDeleteUserAccount } = useDeleteUserAccount();
+  const { mutate: handleDeleteUserAccount, isPending: isDeletingAccount } =
+    useDeleteUserAccount();
 
   const { mutate: handleDeleteUserEmail } = useDeleteUserEmail();
 
   const [confirmEmailId, setConfirmEmailId] = useState<string | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDeleteRetentionModal, setShowDeleteRetentionModal] = useState(false);
   const [loadingPortal, setLoadingPortal] = useState(false);
   const [showRetentionModal, setShowRetentionModal] = useState(false);
   const [showChangePlanModal, setShowChangePlanModal] = useState(false);
@@ -262,7 +264,40 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
       return;
     }
 
-    setShowDeleteConfirm(true);
+    setShowDeleteRetentionModal(true);
+  };
+
+  const handleSignOut = () => {
+    localStorage.removeItem("hasClosedExtraDiscountModal");
+    signOut();
+  };
+
+  const confirmDeleteAccount = (flowId?: string | null) => {
+    handleDeleteUserAccount(
+      { flowId: flowId ?? null },
+      {
+        onSuccess: () => {
+          setToastType("success");
+          setToastMessage("User deleted successfully");
+          setShowToast(true);
+          setShowDeleteRetentionModal(false);
+          setTimeout(() => {
+            setShowToast(false);
+            signOut();
+            localStorage.removeItem("hasClosedExtraDiscountModal");
+            localStorage.removeItem("pendingReferralCode");
+            document.cookie =
+              "pendingReferralCode=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+          }, 3000);
+        },
+        onError: () => {
+          setToastType("error");
+          setToastMessage("Failed to delete user account");
+          setShowToast(true);
+          setTimeout(() => setShowToast(false), 3000);
+        },
+      }
+    );
   };
 
   const handleConfirmDeleteEmail = (emailId: string) => {
@@ -752,11 +787,18 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
               </span>
 
             </div>
-            <button onClick={handleDeleteAccountClick}>
-              <span className="flex cursor-pointer items-center justify-center border-[#EE4266] text-[#EE4266] rounded-[24px] border-[1px] font-normal text-[14px] w-[149px] h-[40px]">
-                Delete Account
-              </span>
-            </button>
+            <div className="flex items-center gap-[8px]">
+              <button onClick={handleSignOut}>
+                <span className="flex cursor-pointer items-center justify-center border-[#76808F] text-[#76808F] rounded-[24px] border-[1px] font-normal text-[14px] w-[120px] h-[40px]">
+                  Sign Out
+                </span>
+              </button>
+              <button onClick={handleDeleteAccountClick}>
+                <span className="flex cursor-pointer items-center justify-center border-[#EE4266] text-[#EE4266] rounded-[24px] border-[1px] font-normal text-[14px] w-[149px] h-[40px]">
+                  Delete Account
+                </span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -817,59 +859,12 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
           </div>
         </div>
       )}
-      {showDeleteConfirm && (
-        <div
-          className="fixed inset-0 bg-[#17161680] flex justify-center items-center  z-[9999]"
-          onClick={(e) => e.target === e.currentTarget && setShowDeleteConfirm(false)}
-        >
-          <div className="bg-white flex items-center flex-col rounded-[24px] w-full max-w-[429px] h-[214px] pt-[24px] pb-[16px] px-[24px] text-center mx-[16px]">
-            <SvgCloseCircle />
-            <div className="text-[#EF7300] text-[18px] font-medium pt-[16px]">
-              Delete Account
-            </div>
-            <div className="text-[#979EA8] text-[14px] font-normal pt-[16px]">
-              Are you sure you want to delete your account?
-            </div>
-            <div className="h-[2px] bg-[#E6E6E6] pt-[16px]"></div>
-            <div className="flex w-full gap-[8px] justify-around mt-[16px]">
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="w-full cursor-pointer max-w-[186px] text-[#76808F] h-[40px] rounded-[24px] border border-[#76808F]"
-              >
-                No
-              </button>
-              <button
-                onClick={() =>
-                  handleDeleteUserAccount(undefined, {
-                    onSuccess: () => {
-                      setToastType("success");
-                      setToastMessage("User deleted successfully");
-                      setShowToast(true);
-                      setTimeout(() => {
-                        setShowToast(false);
-                        signOut();
-                        localStorage.removeItem("hasClosedExtraDiscountModal");
-                        localStorage.removeItem("pendingReferralCode");
-                        document.cookie =
-                          "pendingReferralCode=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-                      }, 3000);
-                    },
-                    onError: () => {
-                      setToastType("error");
-                      setToastMessage("Failed to delete user account");
-                      setShowToast(true);
-                      setTimeout(() => setShowToast(false), 3000);
-                    },
-                  })
-                }
-                className="w-full cursor-pointer max-w-[186px] rounded-[24px] h-[40px] bg-[#4A7DFF] text-white"
-              >
-                Yes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AccountDeletionRetentionModal
+        isOpen={showDeleteRetentionModal}
+        onClose={() => setShowDeleteRetentionModal(false)}
+        onConfirmDelete={confirmDeleteAccount}
+        loading={isDeletingAccount}
+      />
       {/* Cancel Subscription Modal */}
       <SubscriptionRetentionModal
         isOpen={showRetentionModal}

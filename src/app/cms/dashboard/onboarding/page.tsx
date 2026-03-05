@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { headers } from "next/headers";
 import OnboardingPageClient from "./OnboardingPageClient";
 
 export const metadata: Metadata = {
@@ -6,10 +7,16 @@ export const metadata: Metadata = {
 };
 
 async function fetchOnboardingNewData(page: number = 1, limit: number = 100) {
-  const baseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
+  const requestHeaders = await headers();
+  const host =
+    requestHeaders.get("x-forwarded-host") || requestHeaders.get("host");
+  const protocol = requestHeaders.get("x-forwarded-proto") || "http";
+  const baseUrl = host
+    ? `${protocol}://${host}`
+    : process.env.APP_BASE_URL || "http://localhost:3000";
 
   const res = await fetch(
-    `${baseUrl}/api/onboarding-new?page=${page}&limit=${limit}`,
+    `${baseUrl}/api/onboarding?page=${page}&limit=${limit}&view=new`,
     {
       cache: "no-cache",
       method: "GET",
@@ -30,10 +37,11 @@ async function fetchOnboardingNewData(page: number = 1, limit: number = 100) {
 export default async function OnboardingPage({
   searchParams,
 }: Readonly<{
-  searchParams: { page?: string; limit?: string };
+  searchParams?: Promise<{ page?: string; limit?: string }>;
 }>) {
-  const page = parseInt(searchParams?.page || "1");
-  const limit = parseInt(searchParams?.limit || "100");
+  const resolvedSearchParams = await searchParams;
+  const page = parseInt(resolvedSearchParams?.page || "1");
+  const limit = parseInt(resolvedSearchParams?.limit || "100");
 
   let data: any[] = [];
   let statistics: any = {};
@@ -46,19 +54,25 @@ export default async function OnboardingPage({
     totalPages = result.pagination?.totalPages || 0;
     statistics = result.statistics || {};
 
-    data = result.data.map((item: any) => ({
+    data = result.data.map((item: any) => {
+      const answers = {
+        ...(item || {}),
+        ...((item && item.answers) || {}),
+      };
+      return ({
       "User ID": item.userId || "",
       Name: item.name || "",
-      "Primary Goal": item.answers?.customPrimaryGoal || item.answers?.primaryGoal || "",
-      "Sub Goal": item.answers?.customSubGoal || item.answers?.subGoal || "",
-      "Focus Skill": item.answers?.focusSkill || "",
-      "Custom Focus Skill": item.answers?.customFocusSkill || "",
-      "Target Listening": item.answers?.targetScores?.listening || 0,
-      "Target Reading": item.answers?.targetScores?.reading || 0,
-      "Target Writing": item.answers?.targetScores?.writing || 0,
-      "Target Speaking": item.answers?.targetScores?.speaking || 0,
+      "Primary Goal": answers.customPrimaryGoal || answers.primaryGoal || "",
+      "Sub Goal": answers.customSubGoal || answers.subGoal || "",
+      "Focus Skill": answers.focusSkill || "",
+      "Custom Focus Skill": answers.customFocusSkill || "",
+      "Target Listening": answers.targetScores?.listening || 0,
+      "Target Reading": answers.targetScores?.reading || 0,
+      "Target Writing": answers.targetScores?.writing || 0,
+      "Target Speaking": answers.targetScores?.speaking || 0,
       "Answered At": item.answeredAt || "",
-    }));
+      });
+    });
   } catch (error) {
     console.error("Error fetching onboarding data:", error);
     data = [];

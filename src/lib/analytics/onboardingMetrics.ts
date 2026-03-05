@@ -27,23 +27,15 @@ export async function getOnboardingMetrics(
       });
     }
 
-    // Count completed onboarding records in the period
-    // Check both old and new onboarding collections
-    const completedOld = await db
-      .collection("onboarding_results")
-      .countDocuments({
-        answeredAt: { $gte: startDate, $lte: endDate },
-        "answers.stepOneReasons": { $exists: true },
-      });
-
-    const completedNew = await db
-      .collection("onboardingNew_results")
-      .countDocuments({
-        answeredAt: { $gte: startDate, $lte: endDate },
-        "answers.primaryGoal": { $exists: true },
-      });
-
-    const completedUsers = completedOld + completedNew;
+    // Count completed onboarding records in the period from a single collection.
+    const completedUsers = await db.collection("onboarding").countDocuments({
+      answeredAt: { $gte: startDate, $lte: endDate },
+      $or: [
+        { "answers.stepOneReasons": { $exists: true } },
+        { "answers.primaryGoal": { $exists: true } },
+        { primaryGoal: { $exists: true } },
+      ],
+    });
 
     const completionRate =
       totalUsers > 0 ? (completedUsers / totalUsers) * 100 : 0;

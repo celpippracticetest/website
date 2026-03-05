@@ -14,7 +14,7 @@ export class OnboardingRepository {
   }
 
   private getCollection() {
-    return this.db.collection<TOnboardingResult>("onboarding_results");
+    return this.db.collection<TOnboardingResult>("onboarding");
   }
 
   async createOrUpdateOnboardingResult(data: TOnboardingResult) {

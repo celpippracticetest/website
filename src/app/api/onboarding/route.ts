@@ -4,6 +4,7 @@ import { OnboardingRepository } from "@/repositories/onboarding.repo";
 import { NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { clerkClient } from "@clerk/express";
+import { getDb } from "@/lib/mongodb";
 
 export const runtime = "nodejs";
 export const maxDuration = 30; // 30 seconds timeout
@@ -17,25 +18,127 @@ export async function POST(req: Request) {
 
   const data = await req.json();
 
-  const existing =
+  const existingOnboarding =
     (user.privateMetadata?.onboarding as Record<string, any>) || {};
-  const meta: Record<string, any> = { ...existing };
+  const existingOnboardingNew =
+    (user.privateMetadata?.onboardingNew as Record<string, any>) || {};
+  const onboardingMeta: Record<string, any> = { ...existingOnboarding };
+  const onboardingNewMeta: Record<string, any> = { ...existingOnboardingNew };
+  const isNewOnboardingPayload = Boolean(
+    data?.answers &&
+      (Object.prototype.hasOwnProperty.call(data.answers, "primaryGoal") ||
+        Object.prototype.hasOwnProperty.call(data.answers, "focusSkill") ||
+        Object.prototype.hasOwnProperty.call(data.answers, "targetScores"))
+  );
 
   if (data.action === "askLater") {
-    meta.askedLaterAt = new Date().toISOString();
+    const askedLaterAt = new Date().toISOString();
+    if (isNewOnboardingPayload) {
+      onboardingNewMeta.askedLaterAt = askedLaterAt;
+    } else {
+      onboardingMeta.askedLaterAt = askedLaterAt;
+    }
   } else if (data.action === "submit") {
-    meta.completed = true;
-    meta.answers = {
+    const payloadWithAnsweredAt = {
       ...data.answers,
       answeredAt: new Date().toISOString(),
     };
+    if (isNewOnboardingPayload) {
+      onboardingNewMeta.completed = true;
+      onboardingNewMeta.answers = payloadWithAnsweredAt;
+    } else {
+      onboardingMeta.completed = true;
+      onboardingMeta.answers = payloadWithAnsweredAt;
+    }
 
-    const onboardingRepo = new OnboardingRepository(mongoClient);
-    await onboardingRepo.createOrUpdateOnboardingResult({
-      userId: user.id,
-      answers: data.answers,
-      answeredAt: new Date(),
-    });
+    if (isNewOnboardingPayload) {
+      const db = await getDb();
+      await db.collection("onboarding").updateOne(
+        { userId: user.id },
+        {
+          $set: {
+            userId: user.id,
+            answers: data.answers,
+            ...data.answers,
+            answeredAt: new Date(),
+            updatedAt: new Date(),
+          },
+          $setOnInsert: {
+            createdAt: new Date(),
+          },
+        },
+        { upsert: true }
+      );
+
+      // Keep intent/profile customization behavior for the new onboarding flow.
+      const subGoal: string | null = data?.answers?.subGoal || null;
+      const primaryGoal = data?.answers?.primaryGoal || null;
+      const SUB_GOAL_MIN_CLB: Record<string, number> = {
+        "Federal Skilled Worker Program (FSWP)": 7,
+        "Canadian Experience Class (CEC) - TEER 0 or 1": 7,
+        "Canadian Experience Class (CEC) - TEER 2 or 3": 5,
+        "Federal Skilled Trades Program (FSTP)": 4,
+        "Provincial Nominee Program (PNP)": 4,
+        "Citizenship Application (Ages 18-54)": 4,
+        "Real Estate License (BC - BCFSA)": 7,
+        "Pharmacist License (OCP / National)": 7,
+        "College of Physicians and Surgeons (CPSO)": 7,
+        "Nursing (Various Provincial Colleges)": 7,
+        "Immigration Consultant (CICC)": 9,
+        "Post-Graduation Work Permit (PGWP)": 7,
+        "Canadian Corporate Employers": 7,
+        "Superior English (Highest Points)": 8,
+        "Proficient English": 7,
+        "Competent English (Minimum for PR)": 6,
+        "Temporary Graduate Visa (Subclass 485)": 6,
+        "Vocational English (Subclass 482)": 5,
+      };
+      const minClbRequired: number | null =
+        (subGoal && SUB_GOAL_MIN_CLB[subGoal]) || null;
+      const previousAttempts = Number(data?.answers?.previousAttempts || 0);
+
+      await db.collection("users").updateOne(
+        { clerkUserId: user.id },
+        {
+          $set: {
+            intent: {
+              primaryGoal,
+              targetScore: Number.isFinite(minClbRequired)
+                ? minClbRequired
+                : null,
+              previousAttempts: Number.isFinite(previousAttempts)
+                ? previousAttempts
+                : 0,
+              updatedAt: new Date(),
+            },
+            onboarding: {
+              primaryGoal: data.answers.primaryGoal || null,
+              customPrimaryGoal: data.answers.customPrimaryGoal || null,
+              subGoal: data.answers.subGoal || null,
+              customSubGoal: data.answers.customSubGoal || null,
+              testDate: data.answers.testDate || null,
+              focusSkill: data.answers.focusSkill || null,
+              customFocusSkill: data.answers.customFocusSkill || null,
+              targetScore: data.answers.targetScore || null,
+              completedAt: new Date(),
+              updatedAt: new Date(),
+            },
+            updatedAt: new Date(),
+          },
+          $setOnInsert: {
+            createdAt: new Date(),
+          },
+        },
+        { upsert: true }
+      );
+    } else {
+      const onboardingRepo = new OnboardingRepository(mongoClient);
+      await onboardingRepo.createOrUpdateOnboardingResult({
+        userId: user.id,
+        answers: data.answers,
+        answeredAt: new Date(),
+      });
+    }
   } else {
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   }
@@ -43,7 +146,8 @@ export async function POST(req: Request) {
   await clerkClient.users.updateUser(user.id, {
     privateMetadata: {
       ...user.privateMetadata,
-      onboarding: meta,
+      onboarding: onboardingMeta,
+      onboardingNew: onboardingNewMeta,
     },
     publicMetadata: user.publicMetadata,
   });
@@ -55,9 +159,137 @@ export async function POST(req: Request) {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '100');
-    
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "100");
+    const view = searchParams.get("view");
+
+    // Compatibility mode for the newer onboarding dashboard while keeping
+    // the existing onboarding API shape unchanged by default.
+    if (view === "new") {
+      const skip = (page - 1) * limit;
+      console.log(
+        `⏳ Fetching onboarding (new view) from "onboarding"... Page: ${page}, Limit: ${limit}`
+      );
+      const db = await getDb();
+      const onboardingCollection = db.collection("onboarding");
+      const onboardingFilter = {
+        $and: [
+          {
+            $or: [
+              { "answers.targetScores": { $exists: true } },
+              { targetScores: { $exists: true } },
+            ],
+          },
+          {
+            $or: [
+              {
+                "answers.primaryGoal": { $exists: true, $nin: [null, ""] },
+              },
+              {
+                primaryGoal: { $exists: true, $nin: [null, ""] },
+              },
+            ],
+          },
+          { "answers.stepOneReasons": { $exists: false } },
+          { "answers.stepTwoReasons": { $exists: false } },
+          { stepOneReasons: { $exists: false } },
+          { stepTwoReasons: { $exists: false } },
+        ],
+      };
+
+      const results = await onboardingCollection
+        .find(onboardingFilter)
+        .sort({ answeredAt: -1, updatedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .toArray();
+      const totalCount = await onboardingCollection.countDocuments(onboardingFilter);
+      const allResults = await onboardingCollection.find(onboardingFilter).toArray();
+      const pickFirstNonEmpty = (...values: any[]) =>
+        values.find((value) => {
+          if (value === null || value === undefined) return false;
+          if (typeof value === "string") return value.trim() !== "";
+          return true;
+        });
+      const getAnswers = (item: any) => {
+        const nested = item?.answers || {};
+        const top = item || {};
+        return {
+          primaryGoal:
+            pickFirstNonEmpty(nested.primaryGoal, top.primaryGoal) || "",
+          customPrimaryGoal:
+            pickFirstNonEmpty(
+              nested.customPrimaryGoal,
+              top.customPrimaryGoal
+            ) || "",
+          subGoal: pickFirstNonEmpty(nested.subGoal, top.subGoal) || "",
+          customSubGoal:
+            pickFirstNonEmpty(nested.customSubGoal, top.customSubGoal) || "",
+          focusSkill: pickFirstNonEmpty(nested.focusSkill, top.focusSkill) || "",
+          customFocusSkill:
+            pickFirstNonEmpty(nested.customFocusSkill, top.customFocusSkill) ||
+            "",
+          targetScores: nested.targetScores || top.targetScores || {},
+        };
+      };
+
+      const stats = {
+        primaryGoals: allResults.filter((item) => getAnswers(item)?.primaryGoal)
+          .length,
+        focusSkills: allResults.filter((item) => getAnswers(item)?.focusSkill)
+          .length,
+        customFocusSkills: allResults.filter(
+          (item) => getAnswers(item)?.customFocusSkill
+        ).length,
+        averageTargetScore:
+          allResults.length > 0
+            ? Math.round(
+                (allResults.reduce((sum, item) => {
+                  const scores = getAnswers(item)?.targetScores || {};
+                  return (
+                    sum +
+                    (scores.listening || 0) +
+                    (scores.reading || 0) +
+                    (scores.writing || 0) +
+                    (scores.speaking || 0)
+                  );
+                }, 0) /
+                  (allResults.length * 4)) *
+                  10
+              ) / 10
+            : 0,
+      };
+
+      const processedResults = await Promise.all(
+        results.map(async (result) => {
+          let name = "";
+          try {
+            const user = await clerkClient.users.getUser(result.userId);
+            name = (user.firstName || "") + " " + (user.lastName || "");
+          } catch (e) {
+            console.warn("⚠️ Clerk user not found for:", result.userId);
+          }
+
+          return {
+            ...result,
+            answers: getAnswers(result),
+            name: name.trim(),
+          };
+        })
+      );
+
+      return NextResponse.json({
+        data: processedResults,
+        pagination: {
+          page,
+          limit,
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limit),
+        },
+        statistics: stats,
+      });
+    }
+
     console.log(`⏳ Fetching onboarding results... Page: ${page}, Limit: ${limit}`);
     const onboardingRepo = new OnboardingRepository(mongoClient);
     
