@@ -5,6 +5,7 @@ import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAnd
 import { currentUser } from "@clerk/nextjs/server";
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
 import { TExamPartSchemaDto } from "@/models/examParts.model";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -34,6 +35,21 @@ export async function POST(req: NextRequest) {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+    try {
+      const posthog = getPostHogClient();
+      posthog.capture({
+        distinctId: user.id,
+        event: "exam_answer_submitted",
+        properties: {
+          exam_id: examPart.examId.toString(),
+          part_id: examPart.partId,
+          exam_type: examPart.type,
+        },
+      });
+      await posthog.shutdown();
+    } catch (phErr) {
+      console.error("PostHog exam_answer_submitted tracking failed:", phErr);
+    }
     return NextResponse.json({ result: createdAnswer });
   } else {
     return NextResponse.json({ message: parseResult.error.errors }, { status: 400 });

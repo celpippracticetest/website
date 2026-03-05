@@ -15,7 +15,6 @@ export async function GET(request: Request) {
     const view = searchParams.get("view");
 
     if (view === "new") {
-      console.log('⏳ Exporting onboarding (new view) data from "onboarding"...');
       const db = await getDb();
       const onboardingCollection = db.collection("onboarding");
       const onboardingFilter = {
@@ -141,7 +140,6 @@ export async function GET(request: Request) {
       });
     }
 
-    console.log("⏳ Exporting onboarding results...");
     const onboardingRepo = new OnboardingRepository(mongoClient);
     const results = await onboardingRepo.getAllOnboardingResults();
 
@@ -183,17 +181,14 @@ export async function GET(request: Request) {
       });
     }
 
-    console.log("📊 Workbook rows:", workbookData.length);
     const worksheet = XLSX.utils.json_to_sheet(workbookData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Onboarding Data");
 
-    console.log("📝 Writing Excel file to buffer...");
     const fileBuffer = XLSX.write(workbook, {
       type: "buffer",
       bookType: "xlsx",
     });
-    console.log("✅ Buffer created successfully.");
 
     return new NextResponse(fileBuffer, {
       headers: {

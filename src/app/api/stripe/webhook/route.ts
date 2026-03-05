@@ -8,6 +8,7 @@ import { ReferralInvitationRepository } from "@/repositories/referral-invitation
 import { clerkClient } from "@clerk/express";
 import { ActivityLogger } from "@/lib/userActivity";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
+import { getPostHogClient } from "@/lib/posthog-server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -52,7 +53,6 @@ async function updateUserPublicMetadata(
         { $set: updateDoc },
         { upsert: true } // Upsert just in case, though user should exist
       );
-      console.log(`✅ Synced metadata update to MongoDB for user: ${userId}`);
     } catch (dbErr) {
       logger.error(" Failed to sync metadata to MongoDB", {
         component: "stripe_webhook",
@@ -96,9 +96,6 @@ async function handleReferralRewards(
         userMetadata?.referralDiscountUsed === true ||
         userMetadata?.referralCodeUsed === true
       ) {
-        console.log(
-          "⏭️  Skipping referral reward: invitee has already used referral or it's inactive."
-        );
         return;
       }
     } catch (error) {
@@ -121,14 +118,8 @@ async function handleReferralRewards(
               userMetadata?.referralDiscountUsed === true ||
               userMetadata?.referralCodeUsed === true
             ) {
-              console.log(
-                "⏭️  Skipping referral reward: invitee has already used referral or it's inactive."
-              );
               return;
             }
-            console.log(
-              `✅ Resolved Clerk user by email (${inviteeEmail}) → ${userIdToUse}`
-            );
           } else {
             console.warn(`❌ No Clerk user found by email ${inviteeEmail}`);
             return;
@@ -138,9 +129,6 @@ async function handleReferralRewards(
           return;
         }
       } else {
-        console.log(
-          "No user ID and no email found on session; cannot process referral"
-        );
         return;
       }
     }
@@ -148,13 +136,8 @@ async function handleReferralRewards(
     const referralCode = userMetadata?.referralCode || metadata?.referral_code;
 
     if (!referralCode) {
-      console.log(
-        "❌ No referral code found in user metadata or session metadata"
-      );
       return;
     }
-
-    console.log(`🔍 Processing referral: ${referralCode}`);
 
     // Find the referrer
     const referralRepo = new ReferralRepository(mongoClient);
@@ -163,18 +146,14 @@ async function handleReferralRewards(
     const referrer = await referralRepo.findOneByCode(referralCode);
 
     if (!referrer) {
-      console.log(`❌ Referral code ${referralCode} not found in database`);
       return;
     }
-
-    console.log(`✅ Found referrer: ${referrer.userId}`);
 
     // Calculate reward amount (20% of purchase)
     const amountTotal = session.amount_total || 0;
     const rewardAmount = (amountTotal / 100) * 0.2; // Convert from cents and apply 20%
 
     if (rewardAmount < 0.01) {
-      console.log("Reward amount too small to process");
       return;
     }
 
@@ -194,10 +173,6 @@ async function handleReferralRewards(
         purchaseDate: new Date(),
       });
 
-      console.log(
-        `✅ Referral reward created: $${rewardAmount} for user ${referrer.userId}`
-      );
-
       // Update referrer's metadata with reward information
       const referrerUser = await clerkClient.users.getUser(referrer.userId);
       const currentMetadata = referrerUser.publicMetadata || {};
@@ -215,9 +190,6 @@ async function handleReferralRewards(
         await invitationRepo.updateInvitationStatus(
           invitation._id!.toString(),
           "completed"
-        );
-        console.log(
-          `✅ Marked referral invitation as completed: ${invitation._id}`
         );
       }
 
@@ -243,10 +215,6 @@ async function handleReferralRewards(
           lastRewardDate: new Date().toISOString(),
         },
       });
-
-      console.log(
-        `✅ Updated referrer metadata - Total: ${totalInvitees} invitees, $${newTotalRewards} rewards, Successful Purchases: ${totalSuccessfulPurchases}, Level: ${rewardLevel}`
-      );
     } catch (dbError) {
       console.error(`❌ Failed to create referral reward:`, dbError);
       throw dbError; // Re-throw to be caught by outer try-catch
@@ -257,11 +225,6 @@ async function handleReferralRewards(
       const freshMeta = freshUser.publicMetadata as any;
       const promotionCodeId =
         freshMeta?.referralPromotionId || freshMeta?.promotionCodeId;
-
-      console.log(
-        "Referral handling: promotionCodeId resolved ->",
-        promotionCodeId
-      );
 
       try {
         // Determine if this was a referral discount or NEW discount
@@ -286,23 +249,16 @@ async function handleReferralRewards(
           updateData.referralDiscountActive = false;
           updateData.referralActive = false;
           updateData.referralCodeUsed = true;
-          console.log(
-            `✅ Set referralActive=false and marked referral used for invitee: ${userIdToUse}`
-          );
         } else if (isNewDiscount) {
           // This was a NEW discount
           updateData.newDiscountUsed = true;
           updateData.newDiscountUsedAt = new Date().toISOString();
-          console.log(`✅ Marked NEW discount used for user: ${userIdToUse}`);
         }
 
         await clerkClient.users.updateUserMetadata(userIdToUse as string, {
           publicMetadata: updateData,
         });
       } catch (error) {
-        console.log(
-          `⚠️ Could not update invitee ${userIdToUse} metadata; continuing`
-        );
       }
 
       if (promotionCodeId) {
@@ -310,7 +266,6 @@ async function handleReferralRewards(
           await stripe.promotionCodes.update(promotionCodeId, {
             active: false,
           });
-          console.log(` Deactivated promotion code: ${promotionCodeId}`);
         } catch (error) {
           console.error(
             "Error deactivating promotion code:",
@@ -318,10 +273,6 @@ async function handleReferralRewards(
             error
           );
         }
-      } else {
-        console.log(
-          "No promotionCodeId found on invitee metadata; skipping deactivation."
-        );
       }
     } catch (err) {
       console.error(
@@ -441,10 +392,6 @@ export async function POST(req: Request) {
             totalSpend: ((userMetadata.totalSpend as number) || 0) + ((session.amount_total || 0) / 100)
           });
         }
-
-        console.log(
-          `Cleared planCancelled for user ${metadata.user_id} on new purchase.`
-        );
       }
 
       if (session.subscription && metadata?.user_id) {
@@ -460,9 +407,6 @@ export async function POST(req: Request) {
               checkout_id: session.id,
             },
           });
-          console.log(
-            `Backfilled subscription metadata for ${session.subscription}`
-          );
         } else {
           console.warn(
             `Cannot update metadata: subscription ${subscription.id} is canceled.`
@@ -471,10 +415,7 @@ export async function POST(req: Request) {
       }
 
       try {
-        console.log("🔍 Starting referral rewards processing...");
-        console.log("🔍 Session metadata:", JSON.stringify(metadata, null, 2));
         await handleReferralRewards(session, metadata);
-        console.log("✅ Referral rewards processing completed successfully");
       } catch (error) {
         captureException(error, {
           component: "stripe_webhook",
@@ -498,6 +439,28 @@ export async function POST(req: Request) {
         } catch (logErr) {
           console.error("Payment activity logging failed:", logErr);
         }
+
+        try {
+          const posthog = getPostHogClient();
+          posthog.capture({
+            distinctId: metadata.user_id,
+            event: "subscription_purchased",
+            properties: {
+              session_id: session.id,
+              plan_name: metadata.plan_name || null,
+              amount: (session.amount_total || 0) / 100,
+              currency: (session.currency || "cad").toUpperCase(),
+              subscription_id: session.subscription || null,
+              referral_code: metadata.referral_code || null,
+              attribution_source: metadata.attribution_source || null,
+              attribution_medium: metadata.attribution_medium || null,
+              attribution_campaign: metadata.attribution_campaign || null,
+            },
+          });
+          await posthog.shutdown();
+        } catch (phErr) {
+          console.error("PostHog subscription_purchased tracking failed:", phErr);
+        }
       }
 
       return NextResponse.json({ received: true });
@@ -510,9 +473,6 @@ export async function POST(req: Request) {
         await updateUserPublicMetadata(metadata.user_id, {
           planCancelled: false,
         });
-        console.log(
-          `Cleared planCancelled for user ${metadata.user_id} on subscription creation.`
-        );
 
         // Log subscription created
         try {
@@ -539,13 +499,7 @@ export async function POST(req: Request) {
           await updateUserPublicMetadata(metadata.user_id, {
             planCancelled: true,
           });
-          console.log(
-            `Set planCancelled=true for user ${metadata.user_id} on subscription update.`
-          );
         }
-        console.log(
-          `Subscription ${subscription.id} scheduled to cancel at end of period; no immediate downgrade.`
-        );
         return NextResponse.json({ received: true });
       }
     }
@@ -584,6 +538,22 @@ export async function POST(req: Request) {
               last_payment_failed_at_unix: `${Math.floor(Date.now() / 1000)}`,
             },
           });
+          if (subscription.metadata?.user_id) {
+            try {
+              const posthog = getPostHogClient();
+              posthog.capture({
+                distinctId: subscription.metadata.user_id,
+                event: "payment_failed",
+                properties: {
+                  subscription_id: subscriptionId,
+                  invoice_id: (event.data.object as any)?.id || null,
+                },
+              });
+              await posthog.shutdown();
+            } catch (phErr) {
+              console.error("PostHog payment_failed tracking failed:", phErr);
+            }
+          }
         } catch (err) {
           console.warn("Failed to persist dunning metadata to Stripe subscription", err);
         }
@@ -641,10 +611,6 @@ export async function POST(req: Request) {
               const user = users.data[0];
               const lastCheckout = await checkoutRepo.findLastByUserId(user.id);
               if (lastCheckout) {
-                console.info(
-                  "lastCheckout no error and the document was updated!"
-                );
-
                 await checkoutRepo.updateCreatedAtBySessionId(
                   lastCheckout.checkoutId,
                   new Date(
@@ -683,8 +649,6 @@ export async function POST(req: Request) {
         return NextResponse.json({ received: true });
       }
 
-      console.info("we have no error and the document was updated!");
-
       await checkoutRepo.updateCreatedAtBySessionId(
         sessionId,
         new Date((invoice?.lines?.data[0]?.period?.start as number) * 1000)
@@ -710,17 +674,6 @@ export async function POST(req: Request) {
     if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object as Stripe.Subscription;
       let { user_id, checkout_id } = subscription.metadata;
-
-      console.log(
-        `🔔 Deleted webhook for subscription ${subscription.id}`,
-        "initial metadata →",
-        { user_id, checkout_id }
-      );
-
-      console.log(
-        "➡️ Fallback #1: latest_invoice =",
-        subscription.latest_invoice
-      );
       if (!user_id || !checkout_id) {
         if (subscription.latest_invoice) {
           try {
@@ -728,12 +681,6 @@ export async function POST(req: Request) {
               subscription.latest_invoice as string
             )) as Stripe.Invoice;
             const pi = (invoice as any).payment_intent as string | null;
-            console.log(
-              "   • Invoice retrieved",
-              invoice.id,
-              "payment_intent =",
-              pi
-            );
 
             if (pi) {
               const sessions = await stripe.checkout.sessions.list({
@@ -741,11 +688,9 @@ export async function POST(req: Request) {
                 limit: 1,
               });
               const sess: any = sessions.data[0];
-              console.log("   • Session from PI fallback →", sess);
 
               if (sess?.metadata?.user_id) user_id = sess.metadata.user_id;
               if (sess?.id) checkout_id = sess.id;
-              console.log("   • After #1 →", { user_id, checkout_id });
             }
           } catch (err) {
             console.warn("   ❗️ Fallback #1 error:", err);
@@ -753,7 +698,6 @@ export async function POST(req: Request) {
         }
       }
 
-      console.log("➡️ Fallback #2: list sessions by subscription ID");
       if (!user_id || !checkout_id) {
         try {
           const sessionsBySub = await stripe.checkout.sessions.list({
@@ -761,33 +705,27 @@ export async function POST(req: Request) {
             limit: 1,
           });
           const sess2: any = sessionsBySub.data[0];
-          console.log("   • Session from sub-list fallback →", sess2);
 
           if (sess2?.metadata?.user_id) user_id = sess2.metadata.user_id;
           if (sess2?.id) checkout_id = sess2.id;
-          console.log("   • After #2 →", { user_id, checkout_id });
         } catch (err) {
           console.warn("   ❗️ Fallback #2 error:", err);
         }
       }
 
-      console.log("➡️ Fallback #3: invoice customer_email");
       if (!user_id && subscription.latest_invoice) {
         try {
           const invoice = (await stripe.invoices.retrieve(
             subscription.latest_invoice as string
           )) as Stripe.Invoice;
           const email = invoice.customer_email;
-          console.log("   • Invoice.customer_email =", email);
 
           if (email) {
             const users = await clerkClient.users.getUserList({
               emailAddress: [email.trim().toLowerCase()],
             });
-            console.log("   • Clerk users found →", users.data);
             if (users.data.length) {
               user_id = users.data[0].id;
-              console.log("   • After #3 → user_id =", user_id);
             }
           }
         } catch (err) {
@@ -795,21 +733,17 @@ export async function POST(req: Request) {
         }
       }
 
-      console.log("➡️ Fallback #4: DB lookup for last checkout");
       if (user_id && !checkout_id) {
         try {
           const lastCheckout = await checkoutRepo.findLastByUserId(user_id);
-          console.log("   • Last checkout from DB →", lastCheckout);
           if (lastCheckout) {
             checkout_id = lastCheckout.checkoutId;
-            console.log("   • After #4 → checkout_id =", checkout_id);
           }
         } catch (err) {
           console.warn("   ❗️ Fallback #4 error:", err);
         }
       }
 
-      console.log("🔍 Final metadata →", { user_id, checkout_id });
       if (!user_id || !checkout_id || checkout_id === "{CHECKOUT_SESSION_ID}") {
         console.warn("❌ Still missing metadata for", subscription.id);
         return NextResponse.json({ received: true });
@@ -820,10 +754,6 @@ export async function POST(req: Request) {
         checkoutRepo.updateStatus(checkout_id, "cancelled"),
         updateUserPublicMetadata(user_id, { plan: "free" }),
       ]);
-
-      console.log(
-        `✅ Subscription ${subscription.id} cancelled and user ${user_id} downgraded (checkout_id=${checkout_id}).`
-      );
 
       // Log subscription cancelled
       try {
@@ -841,6 +771,21 @@ export async function POST(req: Request) {
           "Subscription cancellation activity logging failed:",
           logErr
         );
+      }
+
+      try {
+        const posthog = getPostHogClient();
+        posthog.capture({
+          distinctId: user_id,
+          event: "subscription_deleted",
+          properties: {
+            subscription_id: subscription.id,
+            checkout_id: checkout_id,
+          },
+        });
+        await posthog.shutdown();
+      } catch (phErr) {
+        console.error("PostHog subscription_deleted tracking failed:", phErr);
       }
 
       return NextResponse.json({ received: true });
@@ -987,9 +932,6 @@ export async function POST(req: Request) {
             const checkoutFromMeta = sub.metadata.checkout_id;
             if (checkoutFromMeta) {
               sessionId = checkoutFromMeta;
-              console.log(
-                `   • Fallback #4: sessionId from subscription metadata → ${sessionId}`
-              );
             }
           }
         } catch (err) {
@@ -1019,20 +961,15 @@ export async function POST(req: Request) {
               }
             }
             await stripe.subscriptions.cancel(subscriptionId);
-            console.log(
-              `🚫 Subscription ${subscriptionId} canceled due to refund.`
-            );
             const userId = subRecord?.metadata.user_id ?? null;
             const checkoutId = subRecord?.metadata.checkout_id ?? null;
             if (checkoutId) {
               await checkoutRepo.updateStatus(checkoutId, "refunded");
-              console.log(`📝 Checkout ${checkoutId} marked refunded.`);
             }
             if (userId) {
               await clerkClient.users.updateUserMetadata(userId, {
                 publicMetadata: { plan: "free" },
               });
-              console.log(`✅ User ${userId} downgraded due to refund.`);
             }
             return NextResponse.json({ received: true });
           }
@@ -1053,9 +990,6 @@ export async function POST(req: Request) {
                 await updateUserPublicMetadata(fallbackUserId, {
                   plan: "free",
                 });
-                console.log(
-                  `✅ Fallback #5: User ${fallbackUserId} downgraded based on invoice.customer_email.`
-                );
               }
             }
           } catch (err) {
@@ -1085,11 +1019,7 @@ export async function POST(req: Request) {
                   new Date((a as any).createdAt).getTime()
               )[0];
               const resolvedSessionId = lastCheckout2.checkoutId;
-              console.log(
-                `   • Fallback #6: DB lookup via email → sessionId ${resolvedSessionId}`
-              );
               await checkoutRepo.updateStatus(resolvedSessionId, "refunded");
-              console.log(`📝 Checkout ${resolvedSessionId} marked refunded.`);
               return NextResponse.json({ received: true });
             }
           }
@@ -1113,7 +1043,6 @@ export async function POST(req: Request) {
           userId = sub.metadata.user_id ?? null;
 
           await stripe.subscriptions.cancel(sub.id);
-          console.log(`🚫 Subscription ${sub.id} canceled due to refund.`);
         } catch (err: any) {
           if (err?.code === "resource_missing") {
             console.warn(`❌ Subscription not found: ${sess.subscription}`);
@@ -1130,9 +1059,6 @@ export async function POST(req: Request) {
 
       if (userId) {
         await updateUserPublicMetadata(userId, { plan: "free" });
-        console.log(
-          `✅ Refund ${refundId}: session ${sessionId} marked refunded, user ${userId} downgraded.`
-        );
       } else {
         console.warn(`⚠️ Cannot find user for refunded session ${sessionId}.`);
       }

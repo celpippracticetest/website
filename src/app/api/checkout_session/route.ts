@@ -6,6 +6,7 @@ import { stripe } from "@/lib/stripe";
 import { currentUser } from "@clerk/nextjs/server";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
 import { getDb } from "@/lib/mongodb";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 export async function POST(req: NextRequest) {
   try {
@@ -102,24 +103,13 @@ export async function POST(req: NextRequest) {
             },
           }
         );
-      } else {
-        console.log("❌ Referral discount has expired - proceeding without discount");
       }
     } else if (userMetadata?.referralDiscountUsed) {
-      console.log("❌ Referral discount already used by this user");
     } else if (userMetadata?.referralDiscountActive === false) {
-      console.log("❌ Referral discount is not active for this user");
     } else if (userMetadata?.referralActive === false) {
-      console.log("❌ Referral code is not active (already used)");
     } else if (!userMetadata?.referralCode) {
-      console.log(
-        "❌ User does not have a referral code - not eligible for referral discount"
-      );
     } else if (userMetadata?.referralCode && !referralPromotionId) {
       // User has referral code but no promotion ID - try to apply discount
-      console.log(
-        "🔄 User has referral code but no promotion ID - attempting to apply discount"
-      );
 
       try {
         const applyDiscountResponse = await fetch(
@@ -138,7 +128,6 @@ export async function POST(req: NextRequest) {
         );
 
         if (applyDiscountResponse.ok) {
-          console.log("✅ Successfully applied referral discount");
           // Refresh user metadata to get the new promotion ID
           const updatedUser = await clerkClient.users.getUser(user.id);
           const updatedMetadata = updatedUser.publicMetadata as any;
@@ -147,13 +136,6 @@ export async function POST(req: NextRequest) {
           if (newReferralPromotionId) {
             promotionCode = newReferralPromotionId;
             referralDiscountApplied = true;
-            console.log(
-              `✅ Now applying referral promotion_code id: ${newReferralPromotionId}`
-            );
-          } else {
-            console.log(
-              "❌ Still no referral promotion ID after applying discount"
-            );
           }
         } else {
           const errorData = await applyDiscountResponse.json();
@@ -162,8 +144,6 @@ export async function POST(req: NextRequest) {
       } catch (error) {
         console.error("❌ Error applying referral discount:", error);
       }
-    } else {
-      console.log("❌ No usable referral promotion code found in metadata");
     }
 
     // Only apply NEW discount if no referral discount is available and user hasn't purchased before
@@ -345,6 +325,36 @@ export async function POST(req: NextRequest) {
       sessionId: session.id,
       hasDiscount: !!promotionCode,
     });
+
+    const posthog = getPostHogClient();
+    posthog.capture({
+      distinctId: user.id,
+      event: "checkout_session_created",
+      properties: {
+        session_id: session.id,
+        plan_name: productDetails.name,
+        price_id: priceId,
+        mode,
+        has_discount: !!promotionCode,
+        referral_discount_applied: referralDiscountApplied,
+        currency: priceObject.currency?.toUpperCase() || "CAD",
+        amount: (priceObject.unit_amount || 0) / 100,
+        email,
+      },
+    });
+    if (referralDiscountApplied) {
+      posthog.capture({
+        distinctId: user.id,
+        event: "referral_discount_applied",
+        properties: {
+          session_id: session.id,
+          referral_code: userMetadata?.referralCode || null,
+          plan_name: productDetails.name,
+          email,
+        },
+      });
+    }
+    await posthog.shutdown();
 
     if (mode === "subscription" && session?.subscription) {
       await stripe.subscriptions.update(session.subscription, {

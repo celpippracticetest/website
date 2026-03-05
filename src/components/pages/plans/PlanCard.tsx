@@ -3,6 +3,7 @@ import React from "react";
 import SvgCheck from "../../icons/Check";
 import { useEcommerceTracking } from "@/hooks/useTracking";
 import { useUser } from "@clerk/nextjs";
+import posthog from "posthog-js";
 
 interface IPlanCard {
   title: string;
@@ -54,6 +55,17 @@ const PlanCard = ({
       address: {
         first_name: user?.firstName || "",
         last_name: user?.lastName || "",
+      },
+    });
+
+    posthog.capture("plan_selected", {
+      plan_title: planTitle,
+      plan_name: title,
+      plan_type: type,
+      plan_price: parseFloat(price),
+      plan_currency: "CAD",
+      $set: {
+        email: user?.primaryEmailAddress?.emailAddress?.trim().toLowerCase(),
       },
     });
   };

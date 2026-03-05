@@ -51,8 +51,6 @@ export async function POST(request: NextRequest) {
     let offset = 0;
     let batchNumber = 0;
 
-    console.log(`Starting full sync of ${totalUsers} users from Clerk...`);
-
     // Process users in batches
     while (batchNumber < maxBatches) {
       try {
@@ -137,10 +135,6 @@ export async function POST(request: NextRequest) {
         batchNumber++;
         offset += batchSize;
 
-        console.log(
-          `Batch ${batchNumber}: Synced ${batchSynced}, Updated ${batchUpdated}, Skipped ${batchSkipped}`
-        );
-
         // Check if we've processed all users
         if (offset >= totalUsers) {
           break;
@@ -168,8 +162,6 @@ export async function POST(request: NextRequest) {
       errors: allErrors.length > 0 ? allErrors.slice(0, 20) : undefined, // Limit errors in response
       errorCount: allErrors.length,
     };
-
-    console.log("Full sync completed:", summary);
 
     return NextResponse.json(summary);
   } catch (error: any) {

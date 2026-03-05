@@ -5,6 +5,12 @@ import client from "@/lib/mongodb";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
+function normalizeDate(value: unknown): Date | null {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 export async function POST(
   request: NextRequest,
   props: { params: Promise<{ userId: string }> }
@@ -98,21 +104,47 @@ export async function POST(
       });
     }
 
+    const db = client.db();
+    const usersCollection = db.collection("users");
+    const userActivityCollection = db.collection("useractivities");
+
+    const latestStartEvent = await userActivityCollection.findOne(
+      {
+        userId,
+        eventType: "subscription_created",
+      },
+      {
+        sort: { timestampUtc: -1 },
+        projection: { timestampUtc: 1 },
+      }
+    );
+
+    const now = new Date();
+    const subscriptionStartDate =
+      normalizeDate(latestStartEvent?.timestampUtc) ||
+      normalizeDate((user.publicMetadata as Record<string, unknown>)?.purchaseDate);
+    const subscriptionDurationDays = subscriptionStartDate
+      ? Math.max(
+          1,
+          Math.ceil(
+            (now.getTime() - subscriptionStartDate.getTime()) / (1000 * 60 * 60 * 24)
+          )
+        )
+      : 0;
+
     // Update Clerk metadata
     const currentMetadata = (user.publicMetadata || {}) as Record<string, any>;
     const updatedMetadata = {
       ...currentMetadata,
       plan: "free",
       planCancelled: true,
+      subscriptionCancelledAt: now.toISOString(),
+      subscriptionDurationDays,
     };
 
     await clerkClientInstance.users.updateUserMetadata(userId, {
       publicMetadata: updatedMetadata,
     });
-
-    // Update MongoDB users collection
-    const db = client.db();
-    const usersCollection = db.collection("users");
 
     await usersCollection.updateOne(
       { clerkUserId: userId },
@@ -121,14 +153,13 @@ export async function POST(
           plan: "free",
           planType: null,
           publicMetadata: updatedMetadata,
-          updatedAt: new Date(),
+          subscriptionStartDate: subscriptionStartDate ?? null,
+          subscriptionEndDate: now,
+          subscriptionDurationDays,
+          updatedAt: now,
         },
       },
       { upsert: false }
-    );
-
-    console.log(
-      `✅ Admin canceled subscription for user ${userId}. Canceled ${canceledSubs.length} subscription(s)`
     );
 
     return NextResponse.json({

@@ -106,7 +106,7 @@ export type StripeKpis = {
   }>;
 };
 
-const ACTIVE_LIKE_STATUSES = ["active", "trialing", "past_due", "unpaid"];
+const CURRENT_ACTIVE_SUBSCRIPTION_STATUSES = ["active"];
 
 function toDayKey(date: Date) {
   return date.toISOString().slice(0, 10);
@@ -318,21 +318,63 @@ export class StripeReportingRepository {
       ])
       .next();
 
+    const getCanceledSubscribersInPeriod = async () => {
+      const result = await this.subscriptionsCollection
+        .aggregate<{ count: number }>([
+          {
+            $match: {
+              canceledAt: { $gte: startDate, $lte: endDate },
+            },
+          },
+          {
+            $group: {
+              _id: {
+                $ifNull: ["$customerId", "$stripeId"],
+              },
+            },
+          },
+          { $count: "count" },
+        ])
+        .next();
+
+      return result?.count ?? 0;
+    };
+
+    const getStartingSubscribers = async () => {
+      const result = await this.subscriptionsCollection
+        .aggregate<{ count: number }>([
+          {
+            $match: {
+              createdAt: { $lt: startDate },
+              $or: [{ canceledAt: null }, { canceledAt: { $gte: startDate } }],
+            },
+          },
+          {
+            $group: {
+              _id: {
+                $ifNull: ["$customerId", "$stripeId"],
+              },
+            },
+          },
+          { $count: "count" },
+        ])
+        .next();
+
+      return result?.count ?? 0;
+    };
+
     const [currentActive, startedInPeriod, canceledInPeriod, startingSubscribers] =
       await Promise.all([
         this.subscriptionsCollection.countDocuments({
-          status: { $in: ACTIVE_LIKE_STATUSES },
+          status: { $in: CURRENT_ACTIVE_SUBSCRIPTION_STATUSES },
+          createdAt: { $lte: endDate },
+          $or: [{ canceledAt: null }, { canceledAt: { $gt: endDate } }],
         }),
         this.subscriptionsCollection.countDocuments({
           createdAt: { $gte: startDate, $lte: endDate },
         }),
-        this.subscriptionsCollection.countDocuments({
-          canceledAt: { $gte: startDate, $lte: endDate },
-        }),
-        this.subscriptionsCollection.countDocuments({
-          createdAt: { $lt: startDate },
-          $or: [{ canceledAt: null }, { canceledAt: { $gte: startDate } }],
-        }),
+        getCanceledSubscribersInPeriod(),
+        getStartingSubscribers(),
       ]);
 
     const byPlanRaw = await this.subscriptionsCollection
@@ -343,7 +385,9 @@ export class StripeReportingRepository {
       }>([
         {
           $match: {
-            status: { $in: ACTIVE_LIKE_STATUSES },
+            status: { $in: CURRENT_ACTIVE_SUBSCRIPTION_STATUSES },
+            createdAt: { $lte: endDate },
+            $or: [{ canceledAt: null }, { canceledAt: { $gt: endDate } }],
           },
         },
         {

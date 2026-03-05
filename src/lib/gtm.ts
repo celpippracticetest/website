@@ -104,9 +104,6 @@ export function pushToDataLayer(
   enrichContext: boolean = true
 ): void {
   if (!isBrowser) {
-    if (DEBUG) {
-      console.log("[GTM] Server-side render detected, skipping event:", event);
-    }
     return;
   }
 
@@ -120,11 +117,6 @@ export function pushToDataLayer(
 
     // Push to dataLayer
     dataLayer.push(enrichedEvent);
-
-    // Debug logging
-    if (DEBUG) {
-      console.log("[GTM] Event pushed:", enrichedEvent);
-    }
   } catch (error) {
     console.error("[GTM] Error pushing event to dataLayer:", error);
   }

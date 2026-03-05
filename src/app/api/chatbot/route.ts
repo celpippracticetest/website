@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import client from "@/lib/mongodb";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 const SYSTEM_PROMPT = `ROLE & AUDIENCE
 You are CELPIP Tutor, an expert CELPIP coach and English tutor inside CelpipPracticeTest.com.
@@ -198,6 +199,19 @@ export async function POST(request: NextRequest) {
 
       // Check if user has exceeded their limit
       if (currentCount >= 1) {
+        if (isAuthenticated && user) {
+          try {
+            const posthog = getPostHogClient();
+            posthog.capture({
+              distinctId: user.id,
+              event: "chatbot_limit_reached",
+              properties: { user_plan: userPlan },
+            });
+            await posthog.shutdown();
+          } catch (phErr) {
+            console.error("PostHog chatbot_limit_reached tracking failed:", phErr);
+          }
+        }
         return NextResponse.json(
           {
             error:
@@ -298,6 +312,24 @@ IMPORTANT: Use the current scores to provide personalized advice. Focus on the w
 
     if (!aiResponse) {
       throw new Error("Unexpected response format from OpenRouter");
+    }
+
+    if (user) {
+      try {
+        const posthog = getPostHogClient();
+        posthog.capture({
+          distinctId: user.id,
+          event: "chatbot_message_sent",
+          properties: {
+            user_plan: userPlan,
+            prompt_tokens: data.usage?.prompt_tokens || 0,
+            completion_tokens: data.usage?.completion_tokens || 0,
+          },
+        });
+        await posthog.shutdown();
+      } catch (phErr) {
+        console.error("PostHog chatbot_message_sent tracking failed:", phErr);
+      }
     }
 
     return NextResponse.json({

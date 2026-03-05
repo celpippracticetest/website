@@ -3,8 +3,20 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { usePathname } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
+import {
+  Backdrop,
+  Box,
+  Button,
+  Fade,
+  IconButton,
+  Modal,
+  TextField,
+  Typography,
+} from "@mui/material";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { useLeadCaptureTriggers } from "@/hooks/useLeadCaptureTriggers";
 import { trackEngagement } from "@/lib/gtm";
+import posthog from "posthog-js";
 
 type LeadCaptureConfig = {
   id: string;
@@ -170,8 +182,14 @@ export default function LeadCapturePopup() {
       if (isCooldownActive(activeConfig.id)) return;
       setTriggerSource(source);
       setIsVisible(true);
+      posthog.capture("lead_capture_shown", {
+        trigger_source: source,
+        campaign_id: activeConfig.id,
+        campaign_name: activeConfig.name,
+        page_path: pathname,
+      });
     },
-    [activeConfig, configLoaded, isLoaded, isPathEligible]
+    [activeConfig, configLoaded, isLoaded, isPathEligible, pathname]
   );
 
   useLeadCaptureTriggers({
@@ -186,10 +204,16 @@ export default function LeadCapturePopup() {
 
   const closePopup = useCallback(() => {
     if (!activeConfig) return;
+    posthog.capture("lead_capture_dismissed", {
+      campaign_id: activeConfig.id,
+      campaign_name: activeConfig.name,
+      trigger_source: triggerSource,
+      page_path: pathname,
+    });
     setFrequencyCap(activeConfig.id, activeConfig.frequencyCapDays);
     setIsVisible(false);
     setActiveConfig(selectCandidate(configs));
-  }, [activeConfig, configs, selectCandidate]);
+  }, [activeConfig, configs, pathname, selectCandidate, triggerSource]);
 
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -220,6 +244,14 @@ export default function LeadCapturePopup() {
           triggerSource,
           activeConfig.id
         );
+        posthog.capture("lead_capture_submitted", {
+          campaign_id: activeConfig.id,
+          campaign_name: activeConfig.name,
+          trigger_source: triggerSource,
+          page_path: window.location.pathname,
+          $set: { email: email.trim() },
+        });
+        posthog.identify(undefined, { email: email.trim() });
         setFrequencyCap(activeConfig.id, activeConfig.frequencyCapDays);
         setTimeout(() => {
           setIsVisible(false);
@@ -245,57 +277,179 @@ export default function LeadCapturePopup() {
   if (!isVisible || !activeConfig) return null;
 
   return (
-    <div className="fixed inset-0 z-9998 flex items-center justify-center bg-black/50 p-4">
-      <div className="relative w-full max-w-[560px] rounded-[20px] bg-white p-6 shadow-2xl">
-        <button
-          type="button"
-          onClick={closePopup}
-          className="absolute right-2 top-2 inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#D1DEFF] bg-white text-[22px] leading-none text-[#37465C] shadow-sm hover:bg-[#F7FAFF]"
-          aria-label="Close popup"
+    <Modal
+      open={isVisible}
+      onClose={closePopup}
+      closeAfterTransition
+      BackdropComponent={Backdrop}
+      BackdropProps={{
+        timeout: 250,
+        sx: {
+          backgroundColor: "rgba(12, 19, 34, 0.62)",
+          backdropFilter: "blur(4px)",
+        },
+      }}
+      aria-labelledby="lead-capture-title"
+      aria-describedby="lead-capture-description"
+    >
+      <Fade in={isVisible} timeout={250}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "calc(100% - 32px)",
+            maxWidth: 560,
+            borderRadius: "22px",
+            bgcolor: "#FFFFFF",
+            boxShadow: "0 26px 60px rgba(17, 41, 85, 0.28)",
+            border: "1px solid #DDE8FF",
+            overflow: "hidden",
+            outline: "none",
+          }}
         >
-          <span aria-hidden>&times;</span>
-        </button>
-
-        <div className="flex flex-col gap-4">
-          <h2 className="pr-8 text-[26px] font-semibold leading-[1.2] text-[#212E42]">
-            {activeConfig.headline}
-          </h2>
-          <p className="text-[16px] leading-normal text-[#37465C]">
-            {activeConfig.subHeadline}
-          </p>
-
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            <input
-              type="text"
-              value={firstName}
-              onChange={(event) => setFirstName(event.target.value)}
-              placeholder="First Name"
-              className="h-[48px] rounded-[12px] border border-[#D1DEFF] px-4 text-[15px] text-[#212E42] outline-none focus:border-blue-500"
-              required
-            />
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="Email Address"
-              className="h-[48px] rounded-[12px] border border-[#D1DEFF] px-4 text-[15px] text-[#212E42] outline-none focus:border-blue-500"
-              required
-            />
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="mt-1 h-[48px] rounded-[12px] bg-blue-600 px-5 text-[15px] font-semibold text-white disabled:opacity-70"
+          <Box
+            sx={{
+              px: { xs: 2.5, sm: 4 },
+              pt: { xs: 2.5, sm: 3 },
+              pb: { xs: 2, sm: 2.5 },
+              background:
+                "linear-gradient(180deg, rgba(66, 133, 244, 0.12) 0%, rgba(66, 133, 244, 0.03) 100%)",
+              borderBottom: "1px solid #E8EEFF",
+              position: "relative",
+            }}
+          >
+            <IconButton
+              aria-label="Close popup"
+              onClick={closePopup}
+              sx={{
+                position: "absolute",
+                top: 14,
+                right: 14,
+                color: "#425466",
+                backgroundColor: "#FFFFFF",
+                border: "1px solid #D5E3FF",
+                boxShadow: "0 6px 14px rgba(31, 80, 164, 0.12)",
+                "&:hover": {
+                  backgroundColor: "#F4F8FF",
+                },
+              }}
             >
-              {isSubmitting ? "Sending..." : activeConfig.ctaText}
-            </button>
-          </form>
+              <CloseRoundedIcon fontSize="small" />
+            </IconButton>
 
-          {submitMessage ? (
-            <p className="text-[14px] text-[#37465C]">{submitMessage}</p>
-          ) : null}
-        </div>
-      </div>
-    </div>
+            <Typography
+              id="lead-capture-title"
+              sx={{
+                pr: 6,
+                color: "#10243E",
+                fontWeight: 700,
+                fontSize: { xs: 24, sm: 28 },
+                lineHeight: 1.2,
+                letterSpacing: "-0.02em",
+              }}
+            >
+              {activeConfig.headline}
+            </Typography>
+            <Typography
+              id="lead-capture-description"
+              sx={{
+                mt: 1.5,
+                color: "#46566D",
+                fontSize: { xs: 15, sm: 16 },
+                lineHeight: 1.55,
+              }}
+            >
+              {activeConfig.subHeadline}
+            </Typography>
+          </Box>
+
+          <Box sx={{ px: { xs: 2.5, sm: 4 }, py: { xs: 2.5, sm: 3 } }}>
+            <Box
+              component="form"
+              onSubmit={handleSubmit}
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 1.5,
+              }}
+            >
+              <TextField
+                value={firstName}
+                onChange={(event) => setFirstName(event.target.value)}
+                placeholder="First Name"
+                required
+                fullWidth
+                autoComplete="given-name"
+                variant="outlined"
+                InputProps={{
+                  sx: {
+                    borderRadius: "12px",
+                    backgroundColor: "#FAFCFF",
+                  },
+                }}
+              />
+
+              <TextField
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="Email Address"
+                required
+                fullWidth
+                autoComplete="email"
+                variant="outlined"
+                InputProps={{
+                  sx: {
+                    borderRadius: "12px",
+                    backgroundColor: "#FAFCFF",
+                  },
+                }}
+              />
+
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                fullWidth
+                sx={{
+                  mt: 0.5,
+                  height: 50,
+                  borderRadius: "12px",
+                  textTransform: "none",
+                  color: "#FFFFFF",
+                  fontWeight: 700,
+                  fontSize: 15,
+                  background: "linear-gradient(90deg, #2563EB 0%, #3B82F6 100%)",
+                  boxShadow: "0 10px 22px rgba(37, 99, 235, 0.32)",
+                  "&:hover": {
+                    background: "linear-gradient(90deg, #1D4ED8 0%, #2563EB 100%)",
+                  },
+                  "&.Mui-disabled": {
+                    color: "#FFFFFF",
+                    opacity: 0.72,
+                  },
+                }}
+              >
+                {isSubmitting ? "Sending..." : activeConfig.ctaText}
+              </Button>
+            </Box>
+
+            {submitMessage ? (
+              <Typography
+                sx={{
+                  mt: 1.5,
+                  color: submitMessage.startsWith("Thanks") ? "#067647" : "#B42318",
+                  fontSize: 14,
+                  fontWeight: 500,
+                }}
+              >
+                {submitMessage}
+              </Typography>
+            ) : null}
+          </Box>
+        </Box>
+      </Fade>
+    </Modal>
   );
 }

@@ -1,12 +1,152 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
-import client from "@/lib/mongodb";
+import { getDb } from "@/lib/mongodb";
 import { stripe } from "@/lib/stripe";
-import Stripe from "stripe";
+import { StripeReportingRepository } from "@/repositories/stripe-reporting.repo";
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
 import { JWT } from "google-auth-library";
 
 const formatDateForGa4 = (date: Date) => date.toISOString().slice(0, 10);
+const GOOGLE_OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token";
+const GOOGLE_ADS_API_BASE_URL = "https://googleads.googleapis.com/v18";
+
+let googleAdsAccessToken = "";
+let googleAdsAccessTokenExpiresAt = 0;
+
+type GoogleAdsApiConfig = {
+  customerId: string;
+  developerToken: string;
+  clientId: string;
+  clientSecret: string;
+  refreshToken: string;
+  loginCustomerId?: string;
+};
+
+const getGoogleAdsApiConfig = (): GoogleAdsApiConfig | null => {
+  const customerId = process.env.GOOGLE_ADS_CUSTOMER_ID?.trim();
+  const developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN?.trim();
+  const clientId = process.env.GOOGLE_ADS_CLIENT_ID?.trim();
+  const clientSecret = process.env.GOOGLE_ADS_CLIENT_SECRET?.trim();
+  const refreshToken =
+    process.env.GOOGLE_ADS_REFRESH_TOKEN?.trim() ||
+    process.env.GOOGLE_REFRESH_TOKEN?.trim();
+  const loginCustomerId = process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID?.trim();
+
+  if (!customerId || !developerToken || !clientId || !clientSecret || !refreshToken) {
+    return null;
+  }
+
+  return {
+    customerId: customerId.replace(/-/g, ""),
+    developerToken,
+    clientId,
+    clientSecret,
+    refreshToken,
+    loginCustomerId: loginCustomerId ? loginCustomerId.replace(/-/g, "") : undefined,
+  };
+};
+
+const isGoogleAdsTokenExpired = () =>
+  !googleAdsAccessToken || Date.now() >= googleAdsAccessTokenExpiresAt - 60_000;
+
+const refreshGoogleAdsAccessToken = async (config: GoogleAdsApiConfig) => {
+  const tokenResponse = await fetch(GOOGLE_OAUTH_TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: config.clientId,
+      client_secret: config.clientSecret,
+      refresh_token: config.refreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
+
+  const tokenPayload = await tokenResponse.json().catch(() => ({}));
+  if (!tokenResponse.ok || !tokenPayload?.access_token) {
+    throw new Error(
+      `Google Ads token refresh failed: ${tokenPayload?.error || tokenResponse.status}`
+    );
+  }
+
+  googleAdsAccessToken = String(tokenPayload.access_token);
+  googleAdsAccessTokenExpiresAt =
+    Date.now() + Number(tokenPayload.expires_in || 3600) * 1000;
+  return googleAdsAccessToken;
+};
+
+const getGoogleAdsAccessToken = async (config: GoogleAdsApiConfig) => {
+  if (isGoogleAdsTokenExpired()) {
+    await refreshGoogleAdsAccessToken(config);
+  }
+  return googleAdsAccessToken;
+};
+
+const getGoogleAdsCostFromApi = async (
+  from: Date,
+  to: Date
+): Promise<number | null> => {
+  const config = getGoogleAdsApiConfig();
+  if (!config) return null;
+
+  try {
+    const accessToken = await getGoogleAdsAccessToken(config);
+    const dateFrom = formatDateForGa4(from);
+    const dateTo = formatDateForGa4(to);
+
+    const query = `
+      SELECT metrics.cost_micros
+      FROM customer
+      WHERE segments.date BETWEEN '${dateFrom}' AND '${dateTo}'
+    `;
+
+    const response = await fetch(
+      `${GOOGLE_ADS_API_BASE_URL}/customers/${config.customerId}/googleAds:searchStream`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          "developer-token": config.developerToken,
+          ...(config.loginCustomerId
+            ? { "login-customer-id": config.loginCustomerId }
+            : {}),
+        },
+        body: JSON.stringify({ query }),
+      }
+    );
+
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(
+        `Google Ads API request failed: ${
+          (payload as any)?.error?.message || response.status
+        }`
+      );
+    }
+
+    const streamRows = Array.isArray(payload) ? payload : [];
+    const totalCostMicros = streamRows.reduce((sum, chunk: any) => {
+      const results = Array.isArray(chunk?.results) ? chunk.results : [];
+      return (
+        sum +
+        results.reduce((chunkSum: number, row: any) => {
+          const raw =
+            row?.metrics?.costMicros ??
+            row?.metrics?.cost_micros ??
+            row?.metrics?.costMicrosValue ??
+            "0";
+          const value = Number(raw);
+          return Number.isFinite(value) ? chunkSum + value : chunkSum;
+        }, 0)
+      );
+    }, 0);
+
+    return totalCostMicros / 1_000_000;
+  } catch (error) {
+    console.error("Google Ads API cost fetch failed:", error);
+    return null;
+  }
+};
 
 const getGa4Client = () => {
   const ga4PropertyId = process.env.GA4_PROPERTY_ID;
@@ -48,6 +188,11 @@ const getGa4Client = () => {
 };
 
 const getGoogleAdsCost = async (from: Date, to: Date) => {
+  const adsApiCost = await getGoogleAdsCostFromApi(from, to);
+  if (adsApiCost !== null) {
+    return adsApiCost;
+  }
+
   const ga4 = getGa4Client();
   if (!ga4) return 0;
 
@@ -99,6 +244,188 @@ const getGoogleAdsCost = async (from: Date, to: Date) => {
   }
 };
 
+const getGoogleAdsCostByDay = async (
+  from: Date,
+  to: Date
+): Promise<Map<string, number>> => {
+  const config = getGoogleAdsApiConfig();
+  if (config) {
+    try {
+      const accessToken = await getGoogleAdsAccessToken(config);
+      const dateFrom = formatDateForGa4(from);
+      const dateTo = formatDateForGa4(to);
+      const query = `
+        SELECT segments.date, metrics.cost_micros
+        FROM customer
+        WHERE segments.date BETWEEN '${dateFrom}' AND '${dateTo}'
+      `;
+
+      const response = await fetch(
+        `${GOOGLE_ADS_API_BASE_URL}/customers/${config.customerId}/googleAds:searchStream`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            "developer-token": config.developerToken,
+            ...(config.loginCustomerId
+              ? { "login-customer-id": config.loginCustomerId }
+              : {}),
+          },
+          body: JSON.stringify({ query }),
+        }
+      );
+
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(
+          `Google Ads daily API request failed: ${
+            (payload as any)?.error?.message || response.status
+          }`
+        );
+      }
+
+      const map = new Map<string, number>();
+      const streamRows = Array.isArray(payload) ? payload : [];
+      for (const chunk of streamRows) {
+        const results = Array.isArray((chunk as any)?.results)
+          ? (chunk as any).results
+          : [];
+        for (const row of results) {
+          const date = String(row?.segments?.date || "");
+          if (!date) continue;
+          const raw =
+            row?.metrics?.costMicros ??
+            row?.metrics?.cost_micros ??
+            row?.metrics?.costMicrosValue ??
+            "0";
+          const cost = Number(raw) / 1_000_000;
+          if (Number.isFinite(cost)) {
+            map.set(date, (map.get(date) ?? 0) + cost);
+          }
+        }
+      }
+      return map;
+    } catch (error) {
+      console.error("Google Ads daily cost fetch failed:", error);
+    }
+  }
+
+  const ga4 = getGa4Client();
+  if (!ga4) return new Map<string, number>();
+
+  const dateRange = {
+    startDate: formatDateForGa4(from),
+    endDate: formatDateForGa4(to),
+  };
+  const metricCandidates = [
+    "googleAdsCost",
+    "advertiserAdCost",
+    "totalAdvertisingCost",
+  ] as const;
+
+  for (const metricName of metricCandidates) {
+    try {
+      const [response] = await ga4.client.runReport({
+        property: ga4.propertyId,
+        dateRanges: [dateRange],
+        dimensions: [{ name: "date" }],
+        metrics: [{ name: metricName }],
+      });
+
+      const map = new Map<string, number>();
+      for (const row of response.rows ?? []) {
+        const key = row.dimensionValues?.[0]?.value;
+        const value = Number.parseFloat(row.metricValues?.[0]?.value ?? "0");
+        if (!key) continue;
+        const normalized = `${key.slice(0, 4)}-${key.slice(4, 6)}-${key.slice(6, 8)}`;
+        map.set(normalized, Number.isFinite(value) ? value : 0);
+      }
+      return map;
+    } catch (metricError) {
+      console.warn(
+        `GA4 metric unavailable for daily Google Ads cost: ${metricName}`,
+        metricError
+      );
+    }
+  }
+
+  return new Map<string, number>();
+};
+
+type ClvStats = {
+  customerLifetimeValue: number;
+  averageSubscriptionDurationDays: number;
+};
+
+type DailyTrendPoint = {
+  date: string;
+  newUsers: number;
+  newSubscriptions: number;
+  activeSubscribers: number;
+  cancelledSubscribers: number;
+  revenue: number;
+  googleAdsCost: number;
+};
+
+const toDayKey = (date: Date) => date.toISOString().slice(0, 10);
+
+const enumerateDayKeys = (start: Date, end: Date) => {
+  const keys: string[] = [];
+  const cursor = new Date(
+    Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate())
+  );
+  const endDay = new Date(
+    Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate())
+  );
+  while (cursor <= endDay) {
+    keys.push(toDayKey(cursor));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return keys;
+};
+
+function normalizeDate(value: unknown): Date | null {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function resolveSubscriptionDurationDays(user: any, now: Date): number {
+  const persisted = Number(user?.subscriptionDurationDays || 0);
+  if (persisted > 0) return persisted;
+
+  const startDate =
+    normalizeDate(user?.subscriptionStartDate) ||
+    normalizeDate(user?.publicMetadata?.purchaseDate);
+  if (!startDate) return 0;
+
+  const endDate = resolveSubscriptionEndDate(user, now, startDate);
+  if (!endDate) return 0;
+
+  return Math.max(
+    1,
+    Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+  );
+}
+
+function resolveSubscriptionEndDate(user: any, now: Date, startDate: Date): Date | null {
+  const explicitEndDate = normalizeDate(user?.subscriptionEndDate);
+  if (explicitEndDate) return explicitEndDate;
+
+  const plan = String(user?.plan || "free").toLowerCase();
+  const isActivePlan =
+    plan === "premium" || plan === "pro" || plan === "enterprise";
+  if (isActivePlan) return now;
+
+  const persistedDuration = Number(user?.subscriptionDurationDays || 0);
+  if (persistedDuration > 0) {
+    return new Date(startDate.getTime() + persistedDuration * 24 * 60 * 60 * 1000);
+  }
+
+  return null;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const user = await currentUser();
@@ -125,81 +452,121 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Invalid date format" }, { status: 400 });
     }
 
-    // Calculate previous period
+    // Calculate previous period with no overlap.
     const duration = end.getTime() - start.getTime();
-    const previousEnd = new Date(start.getTime()); // Previous end is current start
+    const previousEnd = new Date(start.getTime() - 1);
     const previousStart = new Date(previousEnd.getTime() - duration);
 
-    const db = client.db();
+    const db = await getDb();
     const usersCollection = db.collection("users");
+    const stripeReportingRepo = new StripeReportingRepository(db);
+    await stripeReportingRepo.ensureIndexes();
 
-    // Helper to get counts
+    // Count unique users created in range, robust to mixed createdAt types.
     const getUserCount = async (from: Date, to: Date) => {
-      // MongoDB stores dates as Date objects usually, but sometimes strings. 
-      // The user route uses createdAt from "users" collection. 
-      // Let's assume Date objects or ISO strings that compare correctly.
-      // In the user route, it seemed to just project createdAt.
-      // We will try both Date object and string comparison if needed, but start with Date.
-      // Actually, looking at user route, it didn't show the schema, but usually it's Date.
-      return await usersCollection.countDocuments({
-        createdAt: {
-          $gte: from,
-          $lte: to,
-        },
-      });
-    };
-
-    // Stripe helpers
-    const countSubscriptions = async (params: Stripe.SubscriptionListParams) => {
-      let count = 0;
-      let startingAfter: string | undefined;
-
-      while (true) {
-        const page = await stripe.subscriptions.list({
-          ...params,
-          limit: 100,
-          ...(startingAfter ? { starting_after: startingAfter } : {}),
-        });
-
-        count += page.data.length;
-        if (!page.has_more || page.data.length === 0) {
-          break;
-        }
-
-        startingAfter = page.data[page.data.length - 1].id;
-      }
-
-      return count;
-    };
-
-    const countStripeEvents = async (
-      types: Stripe.EventListParams["types"],
-      fromTs: number,
-      toTs: number
-    ) => {
-      let count = 0;
-      let startingAfter: string | undefined;
-
-      while (true) {
-        const page = await stripe.events.list({
-          types,
-          created: {
-            gte: fromTs,
-            lte: toTs,
+      const result = await usersCollection
+        .aggregate<{ count: number }>([
+          {
+            $project: {
+              clerkUserId: 1,
+              createdAtDate: {
+                $convert: {
+                  input: "$createdAt",
+                  to: "date",
+                  onError: null,
+                  onNull: null,
+                },
+              },
+            },
           },
-          limit: 100,
-          ...(startingAfter ? { starting_after: startingAfter } : {}),
-        });
+          {
+            $match: {
+              createdAtDate: {
+                $gte: from,
+                $lte: to,
+              },
+            },
+          },
+          {
+            $group: {
+              _id: {
+                $ifNull: ["$clerkUserId", "$_id"],
+              },
+            },
+          },
+          { $count: "count" },
+        ])
+        .next();
 
-        count += page.data.length;
-        if (!page.has_more || page.data.length === 0) {
-          break;
-        }
+      return result?.count ?? 0;
+    };
 
-        startingAfter = page.data[page.data.length - 1].id;
+    const getClvStats = async (from: Date, to: Date): Promise<ClvStats> => {
+      const users = await usersCollection
+        .find(
+          {
+            totalSpend: { $gt: 0 },
+            $or: [
+              { subscriptionStartDate: { $exists: true, $ne: null } },
+              { "publicMetadata.purchaseDate": { $exists: true, $ne: null } },
+              { plan: { $in: ["premium", "pro", "enterprise"] } },
+            ],
+          },
+          {
+            projection: {
+              totalSpend: 1,
+              plan: 1,
+              publicMetadata: 1,
+              subscriptionStartDate: 1,
+              subscriptionEndDate: 1,
+              subscriptionDurationDays: 1,
+            },
+          }
+        )
+        .toArray();
+
+      if (!users.length) {
+        return {
+          customerLifetimeValue: 0,
+          averageSubscriptionDurationDays: 0,
+        };
       }
 
-      return count;
+      const now = new Date();
+      const usersSubscribedInPeriod = users.filter((user) => {
+        const startDate =
+          normalizeDate(user?.subscriptionStartDate) ||
+          normalizeDate(user?.publicMetadata?.purchaseDate);
+        if (!startDate) return false;
+        const endDate = resolveSubscriptionEndDate(user, now, startDate);
+        if (!endDate) return false;
+        return startDate.getTime() <= to.getTime() && endDate.getTime() >= from.getTime();
+      });
+
+      if (!usersSubscribedInPeriod.length) {
+        return {
+          customerLifetimeValue: 0,
+          averageSubscriptionDurationDays: 0,
+        };
+      }
+
+      const totalSpend = usersSubscribedInPeriod.reduce(
+        (sum, user) => sum + Number(user?.totalSpend || 0),
+        0
+      );
+      const totalDurationDays = usersSubscribedInPeriod.reduce(
+        (sum, user) => sum + resolveSubscriptionDurationDays(user, now),
+        0
+      );
+
+      return {
+        customerLifetimeValue: Number(
+          (totalSpend / usersSubscribedInPeriod.length).toFixed(2)
+        ),
+        averageSubscriptionDurationDays: Number(
+          (totalDurationDays / usersSubscribedInPeriod.length).toFixed(2)
+        ),
+      };
     };
 
     const sumPaidCharges = async (fromTs: number, toTs: number) => {
@@ -232,74 +599,180 @@ export async function GET(request: NextRequest) {
       return total / 100;
     };
 
-    const safeStripeMetric = async (
-      metricName: string,
-      getValue: () => Promise<number>
-    ) => {
-      try {
-        return await getValue();
-      } catch (error) {
-        console.error(`Stripe quick report metric failed: ${metricName}`, error);
-        return 0;
+    const sumPaidChargesByDay = async (fromTs: number, toTs: number) => {
+      const daily = new Map<string, number>();
+      let startingAfter: string | undefined;
+
+      while (true) {
+        const page = await stripe.charges.list({
+          created: {
+            gte: fromTs,
+            lte: toTs,
+          },
+          limit: 100,
+          ...(startingAfter ? { starting_after: startingAfter } : {}),
+        });
+
+        for (const charge of page.data) {
+          if (charge.paid && !charge.refunded) {
+            const dayKey = toDayKey(new Date(charge.created * 1000));
+            const amount = (charge.amount - (charge.amount_refunded || 0)) / 100;
+            daily.set(dayKey, (daily.get(dayKey) ?? 0) + amount);
+          }
+        }
+
+        if (!page.has_more || page.data.length === 0) {
+          break;
+        }
+
+        startingAfter = page.data[page.data.length - 1].id;
       }
+
+      return daily;
+    };
+
+    const getUserDailyCounts = async (from: Date, to: Date) => {
+      const rows = await usersCollection
+        .aggregate<{ date: string; count: number }>([
+          {
+            $project: {
+              clerkUserId: 1,
+              createdAtDate: {
+                $convert: {
+                  input: "$createdAt",
+                  to: "date",
+                  onError: null,
+                  onNull: null,
+                },
+              },
+            },
+          },
+          {
+            $match: {
+              createdAtDate: { $gte: from, $lte: to },
+            },
+          },
+          {
+            $group: {
+              _id: {
+                date: {
+                  $dateToString: {
+                    format: "%Y-%m-%d",
+                    date: "$createdAtDate",
+                    timezone: "UTC",
+                  },
+                },
+                user: { $ifNull: ["$clerkUserId", "$_id"] },
+              },
+            },
+          },
+          {
+            $group: {
+              _id: "$_id.date",
+              count: { $sum: 1 },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              date: "$_id",
+              count: 1,
+            },
+          },
+        ])
+        .toArray();
+
+      return new Map(rows.map((row) => [row.date, row.count]));
     };
 
     const getStripeData = async (from: Date, to: Date) => {
-      const fromTs = Math.floor(from.getTime() / 1000);
-      const toTs = Math.floor(to.getTime() / 1000);
-
-      const [newSubscriptions, activeSubscribers, cancelledSubscribers, revenue] =
-        await Promise.all([
-          // Count all subscriptions created during the selected period.
-          safeStripeMetric("newSubscriptions", () =>
-            countSubscriptions({
-              status: "all",
-              created: {
-                gte: fromTs,
-                lte: toTs,
-              },
-            })
-          ),
-          // Active total is a current snapshot (active + trialing), not a historical point-in-time value.
-          safeStripeMetric("activeSubscribers", async () => {
-            const [activeCount, trialingCount] = await Promise.all([
-              countSubscriptions({ status: "active" }),
-              countSubscriptions({ status: "trialing" }),
-            ]);
-            return activeCount + trialingCount;
-          }),
-          // Cancellations are tracked via subscription deletion events in the selected period.
-          safeStripeMetric("cancelledSubscribers", () =>
-            countStripeEvents(["customer.subscription.deleted"], fromTs, toTs)
-          ),
-          safeStripeMetric("revenue", () => sumPaidCharges(fromTs, toTs)),
-        ]);
+      const kpis = await stripeReportingRepo.getKpis(from, to);
 
       return {
-        newSubscriptions,
-        activeSubscribers,
-        cancelledSubscribers,
-        revenue,
+        newSubscriptions: kpis.subscribers.startedInPeriod,
+        activeSubscribers: kpis.subscribers.currentActive,
+        cancelledSubscribers: kpis.subscribers.canceledInPeriod,
+        daily: kpis.daily,
       };
     };
 
     // Parallel fetch
     const [
-      currentUsers, 
       previousUsers, 
       currentStripe, 
-      previousStripe
+      previousStripe,
+      currentClv,
+      previousClv,
     ] = await Promise.all([
-      getUserCount(start, end),
       getUserCount(previousStart, previousEnd),
       getStripeData(start, end),
       getStripeData(previousStart, previousEnd),
+      getClvStats(start, end),
+      getClvStats(previousStart, previousEnd),
     ]);
 
-    const [googleAdsCost, previousGoogleAdsCost] = await Promise.all([
-      getGoogleAdsCost(start, end),
-      getGoogleAdsCost(previousStart, previousEnd),
+    const [userDailyMap, revenueDailyMap, previousRevenue, googleAdsDailyMap, previousGoogleAdsDailyMap] = await Promise.all([
+      getUserDailyCounts(start, end),
+      sumPaidChargesByDay(
+        Math.floor(start.getTime() / 1000),
+        Math.floor(end.getTime() / 1000)
+      ),
+      sumPaidCharges(
+        Math.floor(previousStart.getTime() / 1000),
+        Math.floor(previousEnd.getTime() / 1000)
+      ),
+      getGoogleAdsCostByDay(start, end),
+      getGoogleAdsCostByDay(previousStart, previousEnd),
     ]);
+
+    const currentUsers = Array.from(userDailyMap.values()).reduce(
+      (sum, value) => sum + value,
+      0
+    );
+    const currentRevenue = Array.from(revenueDailyMap.values()).reduce(
+      (sum, value) => sum + value,
+      0
+    );
+    const googleAdsCost = Array.from(googleAdsDailyMap.values()).reduce(
+      (sum, value) => sum + value,
+      0
+    );
+    const previousGoogleAdsCost = Array.from(
+      previousGoogleAdsDailyMap.values()
+    ).reduce((sum, value) => sum + value, 0);
+
+    const dayKeys = enumerateDayKeys(start, end);
+    const stripeDailyStartedMap = new Map(
+      (currentStripe.daily ?? []).map((row: { date: string; startedSubscriptions: number }) => [
+        row.date,
+        row.startedSubscriptions,
+      ])
+    );
+    const stripeDailyCanceledMap = new Map(
+      (currentStripe.daily ?? []).map((row: { date: string; canceledSubscriptions: number }) => [
+        row.date,
+        row.canceledSubscriptions,
+      ])
+    );
+
+    const activeByDay = new Map<string, number>();
+    let futureNet = 0;
+    for (let i = dayKeys.length - 1; i >= 0; i -= 1) {
+      const key = dayKeys[i];
+      activeByDay.set(key, Math.max(0, currentStripe.activeSubscribers - futureNet));
+      futureNet +=
+        (stripeDailyStartedMap.get(key) ?? 0) - (stripeDailyCanceledMap.get(key) ?? 0);
+    }
+
+    const dailyTrends: DailyTrendPoint[] = dayKeys.map((key) => ({
+      date: key,
+      newUsers: userDailyMap.get(key) ?? 0,
+      newSubscriptions: stripeDailyStartedMap.get(key) ?? 0,
+      activeSubscribers: activeByDay.get(key) ?? 0,
+      cancelledSubscribers: stripeDailyCanceledMap.get(key) ?? 0,
+      revenue: revenueDailyMap.get(key) ?? 0,
+      googleAdsCost: googleAdsDailyMap.get(key) ?? 0,
+    }));
 
     return NextResponse.json({
       period: {
@@ -332,15 +805,32 @@ export async function GET(request: NextRequest) {
             change: calculateChange(currentStripe.cancelledSubscribers, previousStripe.cancelledSubscribers),
         },
         revenue: {
-          current: currentStripe.revenue,
-          previous: previousStripe.revenue,
-          change: calculateChange(currentStripe.revenue, previousStripe.revenue),
+          current: currentRevenue,
+          previous: previousRevenue,
+          change: calculateChange(currentRevenue, previousRevenue),
         },
         googleAdsCost: {
           current: googleAdsCost,
           previous: previousGoogleAdsCost,
           change: calculateChange(googleAdsCost, previousGoogleAdsCost),
-        }
+        },
+        customerLifetimeValue: {
+          current: currentClv.customerLifetimeValue,
+          previous: previousClv.customerLifetimeValue,
+          change: calculateChange(
+            currentClv.customerLifetimeValue,
+            previousClv.customerLifetimeValue
+          ),
+        },
+        averageSubscriptionDurationDays: {
+          current: currentClv.averageSubscriptionDurationDays,
+          previous: previousClv.averageSubscriptionDurationDays,
+          change: calculateChange(
+            currentClv.averageSubscriptionDurationDays,
+            previousClv.averageSubscriptionDurationDays
+          ),
+        },
+        dailyTrends,
       }
     });
 

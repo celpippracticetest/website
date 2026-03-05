@@ -4,6 +4,7 @@ import { SignUp, useUser } from "@clerk/nextjs";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { trackAuth } from "@/lib/gtm";
+import posthog from "posthog-js";
 
 export default function SignUpPage() {
   const { user, isSignedIn } = useUser();
@@ -41,14 +42,12 @@ export default function SignUpPage() {
     if (utmTerm) localStorage.setItem("pending_utm_term", utmTerm);
 
     if (ref) {
-      console.log("Referral code found:", ref);
       setReferralCode(ref);
       // Store referral code in localStorage for after signup processing
       localStorage.setItem("pendingReferralCode", ref);
     }
 
     if (inviter) {
-      console.log("Inviter name found:", inviter);
       setInviterName(decodeURIComponent(inviter));
       localStorage.setItem("pendingInviterName", decodeURIComponent(inviter));
     }
@@ -68,16 +67,21 @@ export default function SignUpPage() {
       },
     });
 
+    const userEmail = user.primaryEmailAddress?.emailAddress?.trim().toLowerCase();
+    posthog.identify(user.id, {
+      email: userEmail,
+      name: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+    });
+    posthog.capture("sign_up_completed", {
+      method: "email",
+      email: userEmail,
+    });
+
     localStorage.setItem(dedupeKey, "1");
   }, [isSignedIn, user]);
 
   const applyReferralDiscount = async (referralCode: string) => {
     try {
-      console.log(
-        "🔄 Starting referral discount process for code:",
-        referralCode
-      );
-
       // First establish referral relationship
       const processResponse = await fetch("/api/referrals/process-signup", {
         method: "POST",
@@ -88,10 +92,7 @@ export default function SignUpPage() {
       });
 
       if (processResponse.ok) {
-        console.log("✅ Referral relationship established successfully");
-
         // Then apply discount
-        console.log("🔄 Applying referral discount...");
         const discountResponse = await fetch("/api/referrals/apply-discount", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -103,7 +104,6 @@ export default function SignUpPage() {
         });
 
         if (discountResponse.ok) {
-          console.log("✅ Referral discount applied successfully");
         } else {
           const errorData = await discountResponse.json();
           console.error("❌ Failed to apply referral discount:", errorData);
@@ -130,7 +130,6 @@ export default function SignUpPage() {
       const utm_term = localStorage.getItem("pending_utm_term");
 
       if (gclid || utm_source || utm_medium || utm_campaign) {
-        console.log("🔄 Saving marketing attribution...");
         const response = await fetch("/api/users/update-attribution", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -160,34 +159,18 @@ export default function SignUpPage() {
   };
 
   useEffect(() => {
-    console.log(
-      "🔍 useEffect triggered - isSignedIn:",
-      isSignedIn,
-      "user:",
-      !!user
-    );
-
     if (isSignedIn && user) {
       // Process Attribution
       saveAttribution();
 
       const pendingReferralCode = localStorage.getItem("pendingReferralCode");
-      console.log(
-        "🔍 Pending referral code from localStorage:",
-        pendingReferralCode
-      );
 
       if (pendingReferralCode) {
-        console.log("✅ Referral code found:", pendingReferralCode);
         applyReferralDiscount(pendingReferralCode);
         localStorage.removeItem("pendingReferralCode");
         localStorage.removeItem("pendingInviterName");
-      } else {
-        console.log("❌ No pending referral code found in localStorage");
       }
       router.push("/practice-overview");
-    } else {
-      console.log("❌ User not signed in or user not available");
     }
   }, [isSignedIn, user, router]);
 

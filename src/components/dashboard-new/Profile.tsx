@@ -375,7 +375,6 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
       setShowToast(true);
       setStep("verify");
     } catch (error: any) {
-      console.log(error);
       setToastType("error");
       setToastMessage("Failed to send verification code");
       setShowToast(true);

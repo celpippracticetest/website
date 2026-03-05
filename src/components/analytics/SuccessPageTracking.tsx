@@ -63,15 +63,6 @@ export default function SuccessPageTracking({
     );
     hasTrackedRef.current = true;
     sessionStorage.setItem(dedupeKey, "1");
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[E-commerce] Purchase tracked:', {
-        transactionId,
-        value,
-        currency,
-        items: formattedItems,
-        userData,
-        attributionData,
       });
     }
   }, [transactionId, value, currency, items, email, purchase, attributionData]);

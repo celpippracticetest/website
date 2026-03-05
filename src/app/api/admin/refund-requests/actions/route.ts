@@ -91,7 +91,6 @@ export async function POST(request: NextRequest) {
         });
       } catch (error) {
         // Ignore if user doesn't exist in Clerk
-        console.log(`Could not update Clerk metadata for user ${userId}`);
       }
     }
 
@@ -200,7 +199,6 @@ export async function POST(request: NextRequest) {
         });
       } catch (error) {
         // Ignore if user doesn't exist in Clerk
-        console.log(`Could not update Clerk metadata for user ${userId} after cancellation`);
       }
 
       // Update refund request status to "done"

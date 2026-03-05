@@ -167,9 +167,6 @@ export async function GET(request: Request) {
     // the existing onboarding API shape unchanged by default.
     if (view === "new") {
       const skip = (page - 1) * limit;
-      console.log(
-        `⏳ Fetching onboarding (new view) from "onboarding"... Page: ${page}, Limit: ${limit}`
-      );
       const db = await getDb();
       const onboardingCollection = db.collection("onboarding");
       const onboardingFilter = {
@@ -296,8 +293,6 @@ export async function GET(request: Request) {
     // Get paginated data
     const results = await onboardingRepo.getOnboardingResultsPaginated(page, limit);
     const totalCount = await onboardingRepo.getOnboardingResultsCount();
-    
-    console.log(`📊 Found ${results.length} results for page ${page}, total count: ${totalCount}`);
     
     // Get all data for statistics (not paginated)
     const allResults = await onboardingRepo.getAllOnboardingResults();

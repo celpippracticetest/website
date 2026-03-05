@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import client from "@/lib/mongodb";
 
+function toDate(value: unknown): Date | null {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function diffDays(start: Date, end: Date) {
+  return Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+}
+
 export async function GET(request: NextRequest) {
   try {
     const currentUserData = await currentUser();
@@ -207,6 +217,11 @@ export async function GET(request: NextRequest) {
                     { $ifNull: ["$attribution.firstTouch.gclid", null] }
                   ] 
                 },
+                planCancelled: { $ifNull: ["$publicMetadata.planCancelled", false] },
+                publicMetadataPurchaseDate: "$publicMetadata.purchaseDate",
+                subscriptionStartDate: 1,
+                subscriptionEndDate: 1,
+                subscriptionDurationDays: 1,
                 createdAt: 1,
                 // Mark these as from 'users' collection so we can prioritize profile data
                 isUserProfile: { $literal: true },
@@ -230,6 +245,11 @@ export async function GET(request: NextRequest) {
           utm_medium: { $max: "$utm_medium" },
           utm_campaign: { $max: "$utm_campaign" },
           gclid: { $max: "$gclid" },
+          planCancelled: { $max: "$planCancelled" },
+          publicMetadataPurchaseDate: { $max: "$publicMetadataPurchaseDate" },
+          subscriptionStartDate: { $max: "$subscriptionStartDate" },
+          subscriptionEndDate: { $max: "$subscriptionEndDate" },
+          subscriptionDurationDays: { $max: "$subscriptionDurationDays" },
           createdAt: { $max: "$createdAt" },
           // Activity Stats - Use $max to get the actual value (one doc has stats, the other has 0/null)
           // Using $sum could incorrectly add values if users collection has these fields
@@ -314,58 +334,61 @@ export async function GET(request: NextRequest) {
       
       let subscriptionStatus = "never";
       let subscriptionDurationDays = 0;
-      let subscriptionStartDate = null;
-      let subscriptionEndDate = null;
+      let subscriptionStartDate: Date | null = null;
+      let subscriptionEndDate: Date | null = null;
 
       const isPremium =
         user.plan === "premium" || user.plan === "pro" || user.plan === "enterprise";
+      const planCancelled = Boolean(user.planCancelled);
+
+      const persistedStartDate = toDate(user.subscriptionStartDate);
+      const persistedEndDate = toDate(user.subscriptionEndDate);
+      const persistedDurationDays = Number(user.subscriptionDurationDays || 0);
+      const purchaseDate = toDate(user.publicMetadataPurchaseDate);
+
+      const latestStartEvent = [...subHistory]
+        .reverse()
+        .find((e: any) => e.type === "subscription_created");
+
+      const latestStartDate =
+        toDate(latestStartEvent?.date) || persistedStartDate || purchaseDate;
+
+      const firstCancellationAfterLatestStart = latestStartDate
+        ? subHistory.find(
+            (e: any) =>
+              e.type === "subscription_cancelled" &&
+              new Date(e.date).getTime() > latestStartDate.getTime()
+          )
+        : null;
 
       if (isPremium) {
         subscriptionStatus = "active";
-        // Find the latest start date
-        const lastStart = [...subHistory]
-          .reverse()
-          .find((e: any) => e.type === "subscription_created");
-        if (lastStart) {
-          subscriptionStartDate = lastStart.date;
-          subscriptionDurationDays = Math.max(1, Math.ceil(
-            (Date.now() - new Date(lastStart.date).getTime()) /
-              (1000 * 60 * 60 * 24)
-          ));
+        if (latestStartDate) {
+          subscriptionStartDate = latestStartDate;
+          if (planCancelled && persistedDurationDays > 0) {
+            // Frozen on the day cancellation was requested.
+            subscriptionDurationDays = persistedDurationDays;
+            subscriptionEndDate = persistedEndDate;
+          } else {
+            subscriptionDurationDays = diffDays(latestStartDate, new Date());
+          }
         }
       } else {
-        // Not active - check history
-        const lastStart = [...subHistory]
-          .reverse()
-          .find((e: any) => e.type === "subscription_created");
-          
-        if (lastStart) {
+        if (latestStartDate) {
           subscriptionStatus = "unsubscribed";
-          subscriptionStartDate = lastStart.date;
-          
-          // Find cancellation after start
-          const cancellation = subHistory.find(
-            (e: any) =>
-              e.type === "subscription_cancelled" &&
-              new Date(e.date).getTime() > new Date(lastStart.date).getTime()
-          );
+          subscriptionStartDate = latestStartDate;
 
-          if (cancellation) {
-            subscriptionEndDate = cancellation.date;
-            subscriptionDurationDays = Math.max(1, Math.ceil(
-              (new Date(cancellation.date).getTime() -
-                new Date(lastStart.date).getTime()) /
-                (1000 * 60 * 60 * 24)
-            ));
+          if (persistedDurationDays > 0 && persistedEndDate) {
+            subscriptionDurationDays = persistedDurationDays;
+            subscriptionEndDate = persistedEndDate;
+          } else if (firstCancellationAfterLatestStart) {
+            const cancellationDate = toDate(firstCancellationAfterLatestStart.date);
+            if (cancellationDate) {
+              subscriptionEndDate = cancellationDate;
+              subscriptionDurationDays = diffDays(latestStartDate, cancellationDate);
+            }
           } else {
-             // Started but no cancellation event found, yet status is not premium.
-             // Could be expired or manually revoked.
-             // We'll calculate duration until now as a fallback or 0.
-             // Let's use duration until last activity or now.
-             subscriptionDurationDays = Math.max(1, Math.ceil(
-              (Date.now() - new Date(lastStart.date).getTime()) /
-                (1000 * 60 * 60 * 24)
-            ));
+            subscriptionDurationDays = diffDays(latestStartDate, new Date());
           }
         }
       }
@@ -399,8 +422,10 @@ export async function GET(request: NextRequest) {
       gclid: user.gclid || null,
       subscriptionStatus,
       subscriptionDurationDays,
-      subscriptionStartDate,
-      subscriptionEndDate,
+      subscriptionStartDate: subscriptionStartDate
+        ? subscriptionStartDate.toISOString()
+        : null,
+      subscriptionEndDate: subscriptionEndDate ? subscriptionEndDate.toISOString() : null,
     }});
 
     return NextResponse.json({

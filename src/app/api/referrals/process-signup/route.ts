@@ -4,6 +4,7 @@ import mongoClient from "@/lib/mongodb";
 import { ReferralRepository } from "@/repositories/referral.repo";
 import { ReferralInvitationRepository } from "@/repositories/referral-invitation.repo";
 import { clerkClient } from "@clerk/express";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 export async function POST(req: Request) {
   try {
@@ -92,9 +93,6 @@ export async function POST(req: Request) {
 
     let invitation;
     if (existingInvitation) {
-      console.log(
-        `✅ Referral invitation already exists: ${existingInvitation._id}`
-      );
       invitation = existingInvitation;
     } else {
       invitation = await invitationRepo.createInvitation({
@@ -104,7 +102,6 @@ export async function POST(req: Request) {
         status: "pending",
         invitedAt: new Date(),
       });
-      console.log(`✅ Created referral invitation: ${invitation._id}`);
     }
 
     // Update referrer's metadata
@@ -132,9 +129,20 @@ export async function POST(req: Request) {
       },
     });
 
-    console.log(
-      `✅ Updated referrer metadata - Total invitations: ${newTotalInvitees}, Reward level: ${rewardLevel}`
-    );
+    try {
+      const posthog = getPostHogClient();
+      posthog.capture({
+        distinctId: userId,
+        event: "referral_signup_completed",
+        properties: {
+          referral_code: referralCode,
+          referrer_id: referrer.userId,
+        },
+      });
+      await posthog.shutdown();
+    } catch (phErr) {
+      console.error("PostHog referral_signup_completed tracking failed:", phErr);
+    }
 
     return NextResponse.json({
       success: true,

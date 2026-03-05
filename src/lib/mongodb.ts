@@ -42,7 +42,6 @@ if (!uri) {
       // @ts-ignore - accessing internal topology state
       globalWithMongo._mongoClient.topology?.s?.state === "closed"
     ) {
-      console.log("MongoDB client topology was closed, reconnecting...");
       globalWithMongo._mongoClient = new MongoClient(uri, options);
       globalWithMongo._mongoClientPromise = globalWithMongo._mongoClient.connect();
     }

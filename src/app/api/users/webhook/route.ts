@@ -89,7 +89,6 @@ export async function POST(req: NextRequest) {
           },
           { upsert: true }
         );
-        console.log(`✅ Synced user ${userId} to MongoDB users collection`);
       } catch (dbErr) {
         console.error("Failed to sync user to MongoDB:", dbErr);
       }
@@ -161,7 +160,6 @@ export async function POST(req: NextRequest) {
           },
           { upsert: true }
         );
-        console.log(`✅ Updated user ${userId} in MongoDB users collection`);
       } catch (dbErr) {
         console.error("Failed to update user in MongoDB:", dbErr);
       }
@@ -184,28 +182,12 @@ export async function POST(req: NextRequest) {
           }
         );
 
-        if (result.matchedCount > 0) {
-          console.log(
-            `✅ Marked user ${userId} as deleted in MongoDB (data preserved)`
-          );
-        } else {
-          console.log(
-            `⚠️ User ${userId} not found in MongoDB (may have never been synced)`
-          );
-        }
-
         // Note: We preserve all user data (users collection, useractivities, etc.)
         // for analytics, compliance, and historical purposes.
         // The user is marked as deleted but data remains in the database.
       } catch (dbErr) {
         console.error("Failed to mark user as deleted in MongoDB:", dbErr);
       }
-    }
-    // Log unhandled event types for debugging
-    else {
-      console.log(
-        `ℹ️ Received unhandled Clerk webhook event: ${eventType}${userId ? ` for user ${userId}` : ""}`
-      );
     }
 
     await new Promise((resolve) => setTimeout(resolve, 100));
