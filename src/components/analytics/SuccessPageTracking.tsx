@@ -63,8 +63,6 @@ export default function SuccessPageTracking({
     );
     hasTrackedRef.current = true;
     sessionStorage.setItem(dedupeKey, "1");
-      });
-    }
   }, [transactionId, value, currency, items, email, purchase, attributionData]);
 
   return null;
