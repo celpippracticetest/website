@@ -5,14 +5,15 @@ import { WritingAnswerRequestSchema } from "@/models/answer";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
 import { TTaskSchemaDto } from "@/models/tasks.model";
-import { currentUser } from "@clerk/nextjs/server";
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
 import { getPostHogClient } from "@/lib/posthog-server";
+import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 
 export const POST = async function (req: NextRequest) {
   const body = await req.json();
   const answersParser = WritingAnswerRequestSchema.safeParse(body);
-  const user = await currentUser();
+  const authContext = await getAuthenticatedRequestContext(req);
+  const user = authContext?.user;
   if (!user) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
@@ -558,7 +559,8 @@ export const GET = async function (req: NextRequest) {
       { status: 400 }
     );
   }
-  const user = await currentUser();
+  const authContext = await getAuthenticatedRequestContext(req);
+  const user = authContext?.user;
   if (!user) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }

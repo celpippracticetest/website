@@ -2,20 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import mongoClient from "@/lib/mongodb";
 import { ListeningAndReadingAnswerSchemaRequest } from "@/models/answer";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
-import { currentUser } from "@clerk/nextjs/server";
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
 import { TExamPartSchemaDto } from "@/models/examParts.model";
 import { getPostHogClient } from "@/lib/posthog-server";
+import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const parseResult = ListeningAndReadingAnswerSchemaRequest.safeParse(body);
 
   if (parseResult.success) {
-    const user = await currentUser();
-    if (!user) {
+    const authContext = await getAuthenticatedRequestContext(req);
+    if (!authContext?.user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
+    const user = authContext.user;
     if (!parseResult.data.examId || !parseResult.data.partId) {
       return NextResponse.json({ message: "exam id or part id is missing" }, { status: 400 });
     }

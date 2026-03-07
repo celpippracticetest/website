@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
 import { useEcommerceTracking } from "@/hooks/useTracking";
 
 interface IPlanCard {
@@ -61,6 +62,7 @@ const PlanCard = ({
       }
       method="POST"
     >
+      <CheckoutAttributionFields />
       <article
         aria-label={`Plan card for ${title} plan`}
         className="relative  mx-[16px]  z-[1] before:absolute before:rounded-[24px]  hover:before:shadow-[6px_4px_16px_0px_#FC7A5066,_-6px_-4px_16px_0px_#4A7DFF66] before:transition-shadow before:duration-300 before:ease before:content-[''] before:inset-0 before:transform before:translate-z-[-1px] hover:cursor-pointer screen744:!w-[176px] screen744:!h-[211px] screen1280:!w-[202px] screen1280:!h-[215px] rounded-[24px] px-[12px] py-[16px] screen1280:!p-[16px] bg-white"

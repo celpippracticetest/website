@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "google-ads:refresh-token": "node ./scripts/google-ads-refresh-token.js",
     "migrate:onboarding:new-to-onboarding": "node ./scripts/migrate-onboarding-new-to-onboarding.js",
     "export:clerk:google-ads": "node ./scripts/export-clerk-users-google-ads.js",
     "export:clerk:inactive-nonpremium": "node ./scripts/export-clerk-inactive-nonpremium.js",

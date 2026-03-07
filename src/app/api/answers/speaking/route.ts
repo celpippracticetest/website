@@ -7,7 +7,7 @@ import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpe
 import { TPracticeDto } from "@/models/practice.model";
 import { TaskRepository } from "@/repositories/tasks.repo";
 import { TTaskSchemaDto } from "@/models/tasks.model";
-import { currentUser } from "@clerk/nextjs/server";
+import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
@@ -163,7 +163,8 @@ const uniqLower = (arr: string[]) => {
 // =============== Route: POST ===============
 export const POST = async function (req: Request) {
   try {
-    const user = await currentUser();
+    const authContext = await getAuthenticatedRequestContext(req);
+    const user = authContext?.user;
     if (!user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
@@ -607,7 +608,8 @@ export const GET = async function (req: NextRequest) {
       { status: 400 }
     );
   }
-  const user = await currentUser();
+  const authContext = await getAuthenticatedRequestContext(req);
+  const user = authContext?.user;
   if (!user) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }

@@ -5,14 +5,15 @@ import { ListeningAndReadingAnswerSchemaRequest } from "@/models/answer";
 
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
 import { TPracticeDto } from "@/models/practice.model";
-import { currentUser } from "@clerk/nextjs/server";
+import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const parseResult = ListeningAndReadingAnswerSchemaRequest.safeParse(body);
 
   if (parseResult.success) {
-    const user = await currentUser();
+    const authContext = await getAuthenticatedRequestContext(req);
+    const user = authContext?.user;
     if (!user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
@@ -64,14 +65,19 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const practiceId = searchParams.get("practiceId");
-  const userId = searchParams.get("userId");
   const type = searchParams.get("type");
 
-  if (!practiceId || !userId || !type) {
+  if (!practiceId || !type) {
     return NextResponse.json(
       { message: "Missing required query parameters" },
       { status: 400 }
     );
+  }
+
+  const authContext = await getAuthenticatedRequestContext(req);
+  const userId = authContext?.userId;
+  if (!userId) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
   const answerRepo = new ListeningAndReadingAnswerRepository(mongoClient);

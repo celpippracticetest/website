@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
 import client from "@/lib/mongodb";
+import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await currentUser();
-    if (!user) {
+    const authContext = await getAuthenticatedRequestContext(request);
+    if (!authContext?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const user = authContext.user;
 
     const db = client.db();
 

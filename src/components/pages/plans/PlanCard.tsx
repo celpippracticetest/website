@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import SvgCheck from "../../icons/Check";
+import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
 import { useEcommerceTracking } from "@/hooks/useTracking";
 import { useUser } from "@clerk/nextjs";
 import posthog from "posthog-js";
@@ -90,6 +91,7 @@ const PlanCard = ({
       }
       method="POST"
     >
+      <CheckoutAttributionFields />
       <article
         aria-label={`Plan card for ${title} plan`}
         className="relative  z-[1]  before:absolute before:rounded-[24px] hover:before:shadow-[6px_4px_16px_0px_#FC7A5066,_-6px_-4px_16px_0px_#4A7DFF66] before:transition-shadow before:duration-300 before:ease before:content-[''] before:inset-0 before:transform before:translate-z-[-1px] hover:cursor-pointer  h-[418px] top-[20px]  rounded-[24px] p-[8px] screen1280:!p-[16px] bg-white"

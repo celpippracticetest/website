@@ -36,7 +36,14 @@ const SvgMockExamsColorful = dynamic(
   { ssr: false }
 );
 
-const Hero = () => {
+type HeroProps = {
+  heroImage: {
+    imageUrl: string;
+    altText: string;
+  };
+};
+
+const Hero = ({ heroImage }: HeroProps) => {
   const { ref } = useInView();
   const { setVisible, isVisible, isInFooter } = useButtonVisibleStore(
     (state) => state
@@ -175,18 +182,15 @@ const Hero = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1, duration: 0.1 }}
                   >
-                    <Image
-                      src="/images/hero.png"
-                      alt="Hero image of CELPIP preparation platform showing student success"
-                      className="hidden screen1280:!flex w-[327px] h-[491px] relative top-[-120px]"
-                      width={327}
-                      height={491}
-                      priority={true}
-                      sizes="(max-width: 1280px) 0px, 327px"
-                      quality={85}
-                      loading="eager"
-                      fetchPriority="high"
-                    />
+                    <div className="relative hidden h-[491px] w-[327px] screen1280:!flex">
+                      <img
+                        src={heroImage.imageUrl}
+                        alt={heroImage.altText}
+                        className="relative top-[-120px] h-full w-full object-contain"
+                        loading="eager"
+                        fetchPriority="high"
+                      />
+                    </div>
                   </motion.div>
                 </div>
               </div>

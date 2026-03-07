@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
 import SvgCheck from "../../icons/Check";
 import { SignInButton, SignUpButton, useUser } from "@clerk/nextjs";
 import LoginModal from "@/components/modal/LoginModal";
@@ -88,6 +89,7 @@ const PlanCard = ({
       }
       method="POST"
     >
+      <CheckoutAttributionFields />
       <article aria-label={`Plan card for ${title} plan`} className="">
         {noUser && showLoginModal && (
           <LoginModal setShowLoginModal={setShowLoginModal} />

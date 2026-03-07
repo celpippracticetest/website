@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Compass,
   FileText,
+  ImageIcon,
   Users,
   Settings,
   Menu,
@@ -85,6 +86,7 @@ const reportItems: SidebarGroup = {
 const contentItems: SidebarGroup = {
   label: "Content",
   items: [
+    { key: "homepage-hero", label: "Homepage Hero", icon: ImageIcon, href: "/cms/dashboard/homepage-hero" },
     { key: "tasks", label: "Tasks", icon: CheckSquare, href: "/cms/dashboard/tasks" },
     { key: "blog", label: "Blog", icon: PenTool, href: "/cms/dashboard/blog" },
     { key: "wiki", label: "Wiki", icon: Book, href: "/cms/dashboard/wiki" },
@@ -134,6 +136,7 @@ export function AdminSidebar({
     if (key === "lead-capture" && pathname.startsWith("/cms/dashboard/lead-capture")) return true;
     if (key === "reminder-emails" && pathname.startsWith("/cms/dashboard/reminder-emails")) return true;
     if (key === "league" && pathname.startsWith("/cms/dashboard/league")) return true;
+    if (key === "homepage-hero" && pathname.startsWith("/cms/dashboard/homepage-hero")) return true;
     if (key === "tasks" && pathname.startsWith("/cms/dashboard/tasks")) return true;
     if (key === "blog" && pathname.startsWith("/cms/dashboard/blog")) return true;
     if (key === "wiki" && pathname.startsWith("/cms/dashboard/wiki")) return true;

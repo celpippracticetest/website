@@ -330,6 +330,7 @@ export async function POST(req: Request) {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
       const metadata = session.metadata;
+      let subscriptionMetadata = metadata;
 
       logger.info("Processing checkout.session.completed event", {
         component: "stripe_webhook",
@@ -398,14 +399,15 @@ export async function POST(req: Request) {
         const subscription = await stripe.subscriptions.retrieve(
           session.subscription as string
         );
+        subscriptionMetadata = {
+          ...subscription.metadata,
+          user_id: metadata.user_id,
+          checkout_id: session.id,
+        };
 
         if (subscription.status !== "canceled") {
           await stripe.subscriptions.update(session.subscription as string, {
-            metadata: {
-              ...subscription.metadata,
-              user_id: metadata.user_id,
-              checkout_id: session.id,
-            },
+            metadata: subscriptionMetadata,
           });
         } else {
           console.warn(
@@ -447,10 +449,79 @@ export async function POST(req: Request) {
             event: "subscription_purchased",
             properties: {
               session_id: session.id,
-              plan_name: metadata.plan_name || null,
+              plan_name: subscriptionMetadata?.plan_name || metadata.plan_name || null,
               amount: (session.amount_total || 0) / 100,
               currency: (session.currency || "cad").toUpperCase(),
               subscription_id: session.subscription || null,
+              referral_code:
+                subscriptionMetadata?.referral_code || metadata.referral_code || null,
+              attribution_source:
+                subscriptionMetadata?.attribution_source ||
+                metadata.attribution_source ||
+                null,
+              attribution_medium:
+                subscriptionMetadata?.attribution_medium ||
+                metadata.attribution_medium ||
+                null,
+              attribution_campaign:
+                subscriptionMetadata?.attribution_campaign ||
+                metadata.attribution_campaign ||
+                null,
+              utm_source:
+                subscriptionMetadata?.utm_source || metadata.utm_source || null,
+              utm_medium:
+                subscriptionMetadata?.utm_medium || metadata.utm_medium || null,
+              utm_campaign:
+                subscriptionMetadata?.utm_campaign || metadata.utm_campaign || null,
+              utm_content:
+                subscriptionMetadata?.utm_content || metadata.utm_content || null,
+              utm_term:
+                subscriptionMetadata?.utm_term || metadata.utm_term || null,
+              gclid: subscriptionMetadata?.gclid || metadata.gclid || null,
+            },
+          });
+          await posthog.shutdown();
+        } catch (phErr) {
+          console.error("PostHog subscription_purchased tracking failed:", phErr);
+        }
+      }
+
+      return NextResponse.json({ received: true });
+    }
+
+    if (event.type === "checkout.session.expired") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const metadata = session.metadata;
+
+      logger.info("Processing checkout.session.expired event", {
+        component: "stripe_webhook",
+        action: "checkout_expired",
+        metadata: {
+          sessionId: session.id,
+          userId: metadata?.user_id || null,
+        },
+      });
+
+      try {
+        const checkoutRepo = new CheckoutRepository(mongoClient);
+        await checkoutRepo.updateStatus(session.id, "expired");
+      } catch (repoErr) {
+        console.error("Failed to update expired checkout status:", repoErr);
+      }
+
+      if (metadata?.user_id) {
+        try {
+          const posthog = getPostHogClient();
+          posthog.capture({
+            distinctId: metadata.user_id,
+            event: "checkout_session_expired",
+            properties: {
+              session_id: session.id,
+              plan_name: metadata.plan_name || null,
+              subscription_id: session.subscription || null,
+              currency: (session.currency || "cad").toUpperCase(),
+              amount: (session.amount_total || 0) / 100,
+              expires_at: session.expires_at || null,
               referral_code: metadata.referral_code || null,
               attribution_source: metadata.attribution_source || null,
               attribution_medium: metadata.attribution_medium || null,
@@ -459,7 +530,10 @@ export async function POST(req: Request) {
           });
           await posthog.shutdown();
         } catch (phErr) {
-          console.error("PostHog subscription_purchased tracking failed:", phErr);
+          console.error(
+            "PostHog checkout_session_expired tracking failed:",
+            phErr
+          );
         }
       }
 

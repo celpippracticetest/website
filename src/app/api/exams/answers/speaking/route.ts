@@ -3,10 +3,10 @@ import mongoClient from "@/lib/mongodb";
 import { createClient } from "@deepgram/sdk";
 import { uploadAudioBuffer } from "@/lib/s3-client";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
-import { currentUser } from "@clerk/nextjs/server";
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
 import { USER_PROMPTS } from "./userPrompts";
 import { SYSTEM_PROPMTS } from "./systemPrompts";
+import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 
 /**
  * Wraps a promise with a timeout.
@@ -64,7 +64,8 @@ const uniqLower = (arr: string[]) => {
 
 export const POST = async function (req: Request) {
   try {
-    const user = await currentUser();
+    const authContext = await getAuthenticatedRequestContext(req);
+    const user = authContext?.user;
     if (!user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
@@ -508,7 +509,8 @@ export const GET = async function (req: NextRequest) {
       { status: 400 }
     );
   }
-  const user = await currentUser();
+  const authContext = await getAuthenticatedRequestContext(req);
+  const user = authContext?.user;
   if (!user) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }

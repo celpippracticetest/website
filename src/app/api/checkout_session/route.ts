@@ -11,6 +11,7 @@ import { getPostHogClient } from "@/lib/posthog-server";
 export async function POST(req: NextRequest) {
   try {
     const product: string | null = req.nextUrl.searchParams.get("product");
+    const formData = await req.formData();
     const headersList = await headers();
     const origin = headersList.get("origin");
     const user = await currentUser();
@@ -224,17 +225,55 @@ export async function POST(req: NextRequest) {
       headersList.get("cf-ipcountry") ||
       userDoc?.attribution?.lastTouch?.country ||
       null;
-    const attributionSnapshot = {
-      attribution_source:
+    const readRequestAttribution = (field: string) => {
+      const formValue = formData.get(field);
+      if (typeof formValue === "string" && formValue.trim()) {
+        return formValue.trim();
+      }
+
+      const queryValue = req.nextUrl.searchParams.get(field);
+      if (queryValue?.trim()) {
+        return queryValue.trim();
+      }
+
+      return null;
+    };
+    const attributionMetadata = {
+      utm_source:
+        readRequestAttribution("utm_source") ||
         userDoc?.attribution?.lastTouch?.source ||
         userMetadata?.utm_source ||
-        (userMetadata?.gclid ? "google_ads" : "direct"),
+        null,
+      utm_medium:
+        readRequestAttribution("utm_medium") ||
+        userDoc?.attribution?.lastTouch?.medium ||
+        userMetadata?.utm_medium ||
+        null,
+      utm_campaign:
+        readRequestAttribution("utm_campaign") ||
+        userDoc?.attribution?.lastTouch?.campaign ||
+        userMetadata?.utm_campaign ||
+        null,
+      utm_content:
+        readRequestAttribution("utm_content") || userMetadata?.utm_content || null,
+      utm_term:
+        readRequestAttribution("utm_term") || userMetadata?.utm_term || null,
+      gclid:
+        readRequestAttribution("gclid") ||
+        userDoc?.attribution?.lastTouch?.gclid ||
+        userMetadata?.gclid ||
+        null,
+    };
+    const attributionSnapshot = {
+      attribution_source:
+        attributionMetadata.utm_source ||
+        (attributionMetadata.gclid ? "google_ads" : "direct"),
       attribution_medium:
-        userDoc?.attribution?.lastTouch?.medium || userMetadata?.utm_medium || null,
+        attributionMetadata.utm_medium,
       attribution_campaign:
-        userDoc?.attribution?.lastTouch?.campaign || userMetadata?.utm_campaign || null,
+        attributionMetadata.utm_campaign,
       attribution_gclid:
-        userDoc?.attribution?.lastTouch?.gclid || userMetadata?.gclid || null,
+        attributionMetadata.gclid,
       entry_page:
         userDoc?.attribution?.firstTouch?.entryPage ||
         userMetadata?.entryPage ||
@@ -245,14 +284,6 @@ export async function POST(req: NextRequest) {
       time_to_purchase_minutes: timeToPurchaseMinutes,
       coupon_id: userMetadata?.couponId || null,
       promotion_code_id: promotionCode || null,
-    };
-    const attributionMetadata = {
-      utm_source: userMetadata?.utm_source || null,
-      utm_medium: userMetadata?.utm_medium || null,
-      utm_campaign: userMetadata?.utm_campaign || null,
-      utm_content: userMetadata?.utm_content || null,
-      utm_term: userMetadata?.utm_term || null,
-      gclid: userMetadata?.gclid || null,
     };
 
     logger.info("Creating checkout session", {

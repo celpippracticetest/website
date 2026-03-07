@@ -19,6 +19,7 @@ import ActiveUsersTracker from "@/components/analytics/ActiveUsersTracker";
 import AttributionTracker from "@/components/analytics/AttributionTracker";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
 import FooterWrapper from "@/components/pages/landing/FooterWrapper";
+import { getHomepageHeroDisplay } from "@/lib/homepage-hero";
 
 const NextTopLoaderComponent =
   NextTopLoader as unknown as ComponentType<Record<string, never>>;
@@ -45,6 +46,7 @@ export function generateViewport(): Viewport {
 export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
   const isPreview = appBaseUrl.includes("vercel.app");
+  const homepageHero = await getHomepageHeroDisplay();
 
   return {
     metadataBase: new URL(appBaseUrl),
@@ -99,10 +101,10 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
       images: [
         {
-          url: "/images/hero.png",
+          url: homepageHero.imageUrl,
           width: 1200,
           height: 630,
-          alt: "CELPIP Practice Test Hero Image",
+          alt: homepageHero.altText,
         },
       ],
     },
@@ -110,7 +112,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: "summary_large_image",
       title: "CELPIP Practice Test Online | Instant Scoring, Expert Tips",
       description: "Celpip Practice Test platform designed to boost your score with real exam questions, instant results, and expert tips for Listening, Reading, Writing & Speaking.",
-      images: ["/images/hero.png"],
+      images: [homepageHero.imageUrl],
     },
     alternates: {
       canonical: appBaseUrl,
@@ -125,6 +127,7 @@ export default async function RootLayout({
   const baseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
   const enableGtm =
     process.env.NODE_ENV === "production" && !baseUrl.includes("vercel.app");
+  const homepageHero = await getHomepageHeroDisplay();
   let userId: string | null = null;
   try {
     const authResult = await auth();
@@ -142,8 +145,7 @@ export default async function RootLayout({
         <link
           rel="preload"
           as="image"
-          href="/images/hero.png"
-          type="image/png"
+          href={homepageHero.imageUrl}
           fetchPriority="high"
         />
         <link

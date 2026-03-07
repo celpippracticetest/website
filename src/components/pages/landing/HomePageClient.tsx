@@ -16,6 +16,13 @@ const FloatingChatIcon = dynamic(() => import("../../AskBeavo/FloatingChatIcon")
   ssr: false,
 });
 
+type HomePageClientProps = {
+  heroImage: {
+    imageUrl: string;
+    altText: string;
+  };
+};
+
 function ErrorFallback() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#f4f7ff] text-center">
@@ -35,13 +42,13 @@ function ErrorFallback() {
   );
 }
 
-export default function HomePageClient() {
+export default function HomePageClient({ heroImage }: HomePageClientProps) {
   const shouldReload = useChunkErrorHandler();
   if (shouldReload) return null;
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div className="bg-[#F4F7FF]">
-        <Hero />
+        <Hero heroImage={heroImage} />
         <UserResponseReview />
         <div className="flex flex-col mt-[40px] screen744:!mt-[80px] screen1280:!mt-[104px] max-w-[1440px] mx-auto justify-center w-full">
           <div className="flex justify-center px-[16px]">

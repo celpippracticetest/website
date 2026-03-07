@@ -22,11 +22,51 @@ type GoogleAdsApiConfig = {
   loginCustomerId?: string;
 };
 
+type GoogleAdsRowMetric = {
+  costMicros?: string | number;
+  cost_micros?: string | number;
+  costMicrosValue?: string | number;
+  clicks?: string | number;
+  impressions?: string | number;
+  conversions?: string | number;
+};
+
+type GoogleAdsApiRow = {
+  campaign?: {
+    id?: string | number;
+    name?: string;
+    status?: string;
+    advertisingChannelType?: string;
+    advertising_channel_type?: string;
+  };
+  metrics?: GoogleAdsRowMetric;
+  segments?: {
+    date?: string;
+  };
+};
+
+type GoogleAdsCampaignPerformance = {
+  campaignId: string;
+  campaignName: string;
+  status: string;
+  channelType: string;
+  cost: number;
+  clicks: number;
+  impressions: number;
+  conversions: number;
+  ctr: number;
+  averageCpc: number;
+};
+
 const getGoogleAdsApiConfig = (): GoogleAdsApiConfig | null => {
   const customerId = process.env.GOOGLE_ADS_CUSTOMER_ID?.trim();
   const developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN?.trim();
-  const clientId = process.env.GOOGLE_ADS_CLIENT_ID?.trim();
-  const clientSecret = process.env.GOOGLE_ADS_CLIENT_SECRET?.trim();
+  const clientId =
+    process.env.GOOGLE_ADS_CLIENT_ID?.trim() ||
+    process.env.GOOGLE_CLIENT_ID?.trim();
+  const clientSecret =
+    process.env.GOOGLE_ADS_CLIENT_SECRET?.trim() ||
+    process.env.GOOGLE_CLIENT_SECRET?.trim();
   const refreshToken =
     process.env.GOOGLE_ADS_REFRESH_TOKEN?.trim() ||
     process.env.GOOGLE_REFRESH_TOKEN?.trim();
@@ -81,6 +121,56 @@ const getGoogleAdsAccessToken = async (config: GoogleAdsApiConfig) => {
   return googleAdsAccessToken;
 };
 
+const parseGoogleAdsNumber = (value: string | number | undefined) => {
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const getGoogleAdsMetricMicros = (metrics?: GoogleAdsRowMetric) =>
+  parseGoogleAdsNumber(
+    metrics?.costMicros ?? metrics?.cost_micros ?? metrics?.costMicrosValue
+  );
+
+const runGoogleAdsSearchStream = async (
+  config: GoogleAdsApiConfig,
+  query: string
+): Promise<GoogleAdsApiRow[]> => {
+  const accessToken = await getGoogleAdsAccessToken(config);
+  const response = await fetch(
+    `${GOOGLE_ADS_API_BASE_URL}/customers/${config.customerId}/googleAds:searchStream`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+        "developer-token": config.developerToken,
+        ...(config.loginCustomerId
+          ? { "login-customer-id": config.loginCustomerId }
+          : {}),
+      },
+      body: JSON.stringify({ query }),
+    }
+  );
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(
+      `Google Ads API request failed: ${
+        (payload as { error?: { message?: string } } | null)?.error?.message ||
+        response.status
+      }`
+    );
+  }
+
+  const streamRows = Array.isArray(payload)
+    ? (payload as Array<{ results?: GoogleAdsApiRow[] }>)
+    : [];
+
+  return streamRows.flatMap((chunk) =>
+    Array.isArray(chunk?.results) ? chunk.results : []
+  );
+};
+
 const getGoogleAdsCostFromApi = async (
   from: Date,
   to: Date
@@ -89,57 +179,18 @@ const getGoogleAdsCostFromApi = async (
   if (!config) return null;
 
   try {
-    const accessToken = await getGoogleAdsAccessToken(config);
     const dateFrom = formatDateForGa4(from);
     const dateTo = formatDateForGa4(to);
-
     const query = `
       SELECT metrics.cost_micros
       FROM customer
       WHERE segments.date BETWEEN '${dateFrom}' AND '${dateTo}'
     `;
-
-    const response = await fetch(
-      `${GOOGLE_ADS_API_BASE_URL}/customers/${config.customerId}/googleAds:searchStream`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-          "developer-token": config.developerToken,
-          ...(config.loginCustomerId
-            ? { "login-customer-id": config.loginCustomerId }
-            : {}),
-        },
-        body: JSON.stringify({ query }),
-      }
+    const results = await runGoogleAdsSearchStream(config, query);
+    const totalCostMicros = results.reduce(
+      (sum, row) => sum + getGoogleAdsMetricMicros(row.metrics),
+      0
     );
-
-    const payload = await response.json().catch(() => null);
-    if (!response.ok) {
-      throw new Error(
-        `Google Ads API request failed: ${
-          (payload as any)?.error?.message || response.status
-        }`
-      );
-    }
-
-    const streamRows = Array.isArray(payload) ? payload : [];
-    const totalCostMicros = streamRows.reduce((sum, chunk: any) => {
-      const results = Array.isArray(chunk?.results) ? chunk.results : [];
-      return (
-        sum +
-        results.reduce((chunkSum: number, row: any) => {
-          const raw =
-            row?.metrics?.costMicros ??
-            row?.metrics?.cost_micros ??
-            row?.metrics?.costMicrosValue ??
-            "0";
-          const value = Number(raw);
-          return Number.isFinite(value) ? chunkSum + value : chunkSum;
-        }, 0)
-      );
-    }, 0);
 
     return totalCostMicros / 1_000_000;
   } catch (error) {
@@ -251,7 +302,6 @@ const getGoogleAdsCostByDay = async (
   const config = getGoogleAdsApiConfig();
   if (config) {
     try {
-      const accessToken = await getGoogleAdsAccessToken(config);
       const dateFrom = formatDateForGa4(from);
       const dateTo = formatDateForGa4(to);
       const query = `
@@ -259,50 +309,14 @@ const getGoogleAdsCostByDay = async (
         FROM customer
         WHERE segments.date BETWEEN '${dateFrom}' AND '${dateTo}'
       `;
-
-      const response = await fetch(
-        `${GOOGLE_ADS_API_BASE_URL}/customers/${config.customerId}/googleAds:searchStream`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-            "developer-token": config.developerToken,
-            ...(config.loginCustomerId
-              ? { "login-customer-id": config.loginCustomerId }
-              : {}),
-          },
-          body: JSON.stringify({ query }),
-        }
-      );
-
-      const payload = await response.json().catch(() => null);
-      if (!response.ok) {
-        throw new Error(
-          `Google Ads daily API request failed: ${
-            (payload as any)?.error?.message || response.status
-          }`
-        );
-      }
-
+      const results = await runGoogleAdsSearchStream(config, query);
       const map = new Map<string, number>();
-      const streamRows = Array.isArray(payload) ? payload : [];
-      for (const chunk of streamRows) {
-        const results = Array.isArray((chunk as any)?.results)
-          ? (chunk as any).results
-          : [];
-        for (const row of results) {
-          const date = String(row?.segments?.date || "");
-          if (!date) continue;
-          const raw =
-            row?.metrics?.costMicros ??
-            row?.metrics?.cost_micros ??
-            row?.metrics?.costMicrosValue ??
-            "0";
-          const cost = Number(raw) / 1_000_000;
-          if (Number.isFinite(cost)) {
-            map.set(date, (map.get(date) ?? 0) + cost);
-          }
+      for (const row of results) {
+        const date = String(row?.segments?.date || "");
+        if (!date) continue;
+        const cost = getGoogleAdsMetricMicros(row.metrics) / 1_000_000;
+        if (Number.isFinite(cost)) {
+          map.set(date, (map.get(date) ?? 0) + cost);
         }
       }
       return map;
@@ -353,6 +367,74 @@ const getGoogleAdsCostByDay = async (
   return new Map<string, number>();
 };
 
+const getGoogleAdsCampaignPerformance = async (
+  from: Date,
+  to: Date
+): Promise<GoogleAdsCampaignPerformance[]> => {
+  const config = getGoogleAdsApiConfig();
+  if (!config) return [];
+
+  try {
+    const dateFrom = formatDateForGa4(from);
+    const dateTo = formatDateForGa4(to);
+    const query = `
+      SELECT
+        campaign.id,
+        campaign.name,
+        campaign.status,
+        campaign.advertising_channel_type,
+        metrics.impressions,
+        metrics.clicks,
+        metrics.cost_micros,
+        metrics.conversions
+      FROM campaign
+      WHERE segments.date BETWEEN '${dateFrom}' AND '${dateTo}'
+      ORDER BY metrics.cost_micros DESC
+    `;
+    const rows = await runGoogleAdsSearchStream(config, query);
+
+    return rows
+      .map((row) => {
+        const campaignId = String(row.campaign?.id ?? "").trim();
+        const campaignName = String(row.campaign?.name ?? "").trim();
+        const impressions = parseGoogleAdsNumber(row.metrics?.impressions);
+        const clicks = parseGoogleAdsNumber(row.metrics?.clicks);
+        const conversions = parseGoogleAdsNumber(row.metrics?.conversions);
+        const cost = getGoogleAdsMetricMicros(row.metrics) / 1_000_000;
+
+        if (!campaignId || !campaignName) return null;
+
+        return {
+          campaignId,
+          campaignName,
+          status: String(row.campaign?.status ?? "UNSPECIFIED"),
+          channelType: String(
+            row.campaign?.advertisingChannelType ??
+              row.campaign?.advertising_channel_type ??
+              "UNSPECIFIED"
+          ),
+          cost: Number(cost.toFixed(2)),
+          clicks,
+          impressions,
+          conversions: Number(conversions.toFixed(2)),
+          ctr:
+            impressions > 0
+              ? Number(((clicks / impressions) * 100).toFixed(2))
+              : 0,
+          averageCpc:
+            clicks > 0 ? Number((cost / clicks).toFixed(2)) : 0,
+        } satisfies GoogleAdsCampaignPerformance;
+      })
+      .filter(
+        (campaign): campaign is GoogleAdsCampaignPerformance =>
+          campaign !== null && campaign.cost > 0
+      );
+  } catch (error) {
+    console.error("Google Ads campaign performance fetch failed:", error);
+    return [];
+  }
+};
+
 type ClvStats = {
   customerLifetimeValue: number;
   averageSubscriptionDurationDays: number;
@@ -366,6 +448,51 @@ type DailyTrendPoint = {
   cancelledSubscribers: number;
   revenue: number;
   googleAdsCost: number;
+};
+
+type ReportPayload = {
+  newUsers: {
+    current: number;
+    previous: number;
+    change: number;
+  };
+  newSubscriptions: {
+    current: number;
+    previous: number;
+    change: number;
+  };
+  activeSubscribers: {
+    current: number;
+    previous: number;
+    change: number;
+  };
+  cancelledSubscribers: {
+    current: number;
+    previous: number;
+    change: number;
+  };
+  revenue: {
+    current: number;
+    previous: number;
+    change: number;
+  };
+  googleAdsCost: {
+    current: number;
+    previous: number;
+    change: number;
+  };
+  customerLifetimeValue: {
+    current: number;
+    previous: number;
+    change: number;
+  };
+  averageSubscriptionDurationDays: {
+    current: number;
+    previous: number;
+    change: number;
+  };
+  dailyTrends: DailyTrendPoint[];
+  googleAdsCampaigns: GoogleAdsCampaignPerformance[];
 };
 
 const toDayKey = (date: Date) => date.toISOString().slice(0, 10);
@@ -711,7 +838,14 @@ export async function GET(request: NextRequest) {
       getClvStats(previousStart, previousEnd),
     ]);
 
-    const [userDailyMap, revenueDailyMap, previousRevenue, googleAdsDailyMap, previousGoogleAdsDailyMap] = await Promise.all([
+    const [
+      userDailyMap,
+      revenueDailyMap,
+      previousRevenue,
+      googleAdsDailyMap,
+      previousGoogleAdsDailyMap,
+      googleAdsCampaigns,
+    ] = await Promise.all([
       getUserDailyCounts(start, end),
       sumPaidChargesByDay(
         Math.floor(start.getTime() / 1000),
@@ -723,6 +857,7 @@ export async function GET(request: NextRequest) {
       ),
       getGoogleAdsCostByDay(start, end),
       getGoogleAdsCostByDay(previousStart, previousEnd),
+      getGoogleAdsCampaignPerformance(start, end),
     ]);
 
     const currentUsers = Array.from(userDailyMap.values()).reduce(
@@ -774,6 +909,57 @@ export async function GET(request: NextRequest) {
       googleAdsCost: googleAdsDailyMap.get(key) ?? 0,
     }));
 
+    const reportData: ReportPayload = {
+      newUsers: {
+        current: currentUsers,
+        previous: previousUsers,
+        change: calculateChange(currentUsers, previousUsers),
+      },
+      newSubscriptions: {
+        current: currentStripe.newSubscriptions,
+        previous: previousStripe.newSubscriptions,
+        change: calculateChange(currentStripe.newSubscriptions, previousStripe.newSubscriptions),
+      },
+      activeSubscribers: {
+        current: currentStripe.activeSubscribers,
+        previous: previousStripe.activeSubscribers,
+        change: calculateChange(currentStripe.activeSubscribers, previousStripe.activeSubscribers),
+      },
+      cancelledSubscribers: {
+        current: currentStripe.cancelledSubscribers,
+        previous: previousStripe.cancelledSubscribers,
+        change: calculateChange(currentStripe.cancelledSubscribers, previousStripe.cancelledSubscribers),
+      },
+      revenue: {
+        current: currentRevenue,
+        previous: previousRevenue,
+        change: calculateChange(currentRevenue, previousRevenue),
+      },
+      googleAdsCost: {
+        current: googleAdsCost,
+        previous: previousGoogleAdsCost,
+        change: calculateChange(googleAdsCost, previousGoogleAdsCost),
+      },
+      customerLifetimeValue: {
+        current: currentClv.customerLifetimeValue,
+        previous: previousClv.customerLifetimeValue,
+        change: calculateChange(
+          currentClv.customerLifetimeValue,
+          previousClv.customerLifetimeValue
+        ),
+      },
+      averageSubscriptionDurationDays: {
+        current: currentClv.averageSubscriptionDurationDays,
+        previous: previousClv.averageSubscriptionDurationDays,
+        change: calculateChange(
+          currentClv.averageSubscriptionDurationDays,
+          previousClv.averageSubscriptionDurationDays
+        ),
+      },
+      dailyTrends,
+      googleAdsCampaigns,
+    };
+
     return NextResponse.json({
       period: {
         start: start.toISOString(),
@@ -783,55 +969,7 @@ export async function GET(request: NextRequest) {
         start: previousStart.toISOString(),
         end: previousEnd.toISOString(),
       },
-      data: {
-        newUsers: {
-          current: currentUsers,
-          previous: previousUsers,
-          change: calculateChange(currentUsers, previousUsers),
-        },
-        newSubscriptions: {
-          current: currentStripe.newSubscriptions,
-          previous: previousStripe.newSubscriptions,
-          change: calculateChange(currentStripe.newSubscriptions, previousStripe.newSubscriptions),
-        },
-        activeSubscribers: {
-          current: currentStripe.activeSubscribers,
-          previous: previousStripe.activeSubscribers,
-          change: calculateChange(currentStripe.activeSubscribers, previousStripe.activeSubscribers),
-        },
-        cancelledSubscribers: {
-            current: currentStripe.cancelledSubscribers,
-            previous: previousStripe.cancelledSubscribers,
-            change: calculateChange(currentStripe.cancelledSubscribers, previousStripe.cancelledSubscribers),
-        },
-        revenue: {
-          current: currentRevenue,
-          previous: previousRevenue,
-          change: calculateChange(currentRevenue, previousRevenue),
-        },
-        googleAdsCost: {
-          current: googleAdsCost,
-          previous: previousGoogleAdsCost,
-          change: calculateChange(googleAdsCost, previousGoogleAdsCost),
-        },
-        customerLifetimeValue: {
-          current: currentClv.customerLifetimeValue,
-          previous: previousClv.customerLifetimeValue,
-          change: calculateChange(
-            currentClv.customerLifetimeValue,
-            previousClv.customerLifetimeValue
-          ),
-        },
-        averageSubscriptionDurationDays: {
-          current: currentClv.averageSubscriptionDurationDays,
-          previous: previousClv.averageSubscriptionDurationDays,
-          change: calculateChange(
-            currentClv.averageSubscriptionDurationDays,
-            previousClv.averageSubscriptionDurationDays
-          ),
-        },
-        dailyTrends,
-      }
+      data: reportData
     });
 
   } catch (error) {

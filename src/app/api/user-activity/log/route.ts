@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
 import { getDb } from "@/lib/mongodb";
+import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 
 const REMINDER_STATE_COLLECTION = "useractivityreminders";
 
@@ -25,7 +25,8 @@ function detectDeviceType(userAgent: string): "mobile" | "desktop" {
 export async function POST(request: NextRequest) {
   try {
     console.log("User activity log API called");
-    const user = await currentUser();
+    const authContext = await getAuthenticatedRequestContext(request);
+    const user = authContext?.user;
     if (!user) {
       console.log("No user found in request");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -211,7 +212,8 @@ export async function POST(request: NextRequest) {
 // Bulk log endpoint for multiple activities
 export async function PUT(request: NextRequest) {
   try {
-    const user = await currentUser();
+    const authContext = await getAuthenticatedRequestContext(request);
+    const user = authContext?.user;
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

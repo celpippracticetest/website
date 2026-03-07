@@ -61,6 +61,7 @@ interface ReportData {
   customerLifetimeValue: MetricData;
   averageSubscriptionDurationDays: MetricData;
   dailyTrends?: DailyTrendPoint[];
+  googleAdsCampaigns?: GoogleAdsCampaign[];
 }
 
 interface MetricData {
@@ -77,6 +78,19 @@ interface DailyTrendPoint {
   cancelledSubscribers: number;
   revenue: number;
   googleAdsCost: number;
+}
+
+interface GoogleAdsCampaign {
+  campaignId: string;
+  campaignName: string;
+  status: string;
+  channelType: string;
+  cost: number;
+  clicks: number;
+  impressions: number;
+  conversions: number;
+  ctr: number;
+  averageCpc: number;
 }
 
 interface ReportDateRange {
@@ -215,6 +229,11 @@ export default function QuickReportPage() {
       },
     }),
     []
+  );
+
+  const campaignRows = React.useMemo(
+    () => data?.googleAdsCampaigns ?? [],
+    [data?.googleAdsCampaigns]
   );
 
   return (
@@ -462,6 +481,130 @@ export default function QuickReportPage() {
             <Box sx={{ height: 360, width: "100%" }}>
               <Line data={metricTrendData} options={metricTrendOptions} />
             </Box>
+          </Paper>
+        )}
+
+        {data && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              border: "1px solid",
+              borderColor: "divider",
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", md: "row" },
+                justifyContent: "space-between",
+                alignItems: { xs: "flex-start", md: "center" },
+                gap: 1,
+                mb: 2.5,
+              }}
+            >
+              <Box>
+                <Typography variant="h6" fontWeight={600}>
+                  Google Ads Campaigns
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Campaign-level spend and delivery for the selected period.
+                </Typography>
+              </Box>
+              <Chip
+                size="small"
+                label={`${campaignRows.length} campaign${campaignRows.length === 1 ? "" : "s"}`}
+                variant="outlined"
+              />
+            </Box>
+
+            {campaignRows.length ? (
+              <Stack spacing={0.5}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 2,
+                    pb: 1.25,
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary" sx={{ flex: 1.8 }}>
+                    Campaign
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ width: 92, textAlign: "right" }}>
+                    Cost
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ width: 80, textAlign: "right" }}>
+                    Clicks
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ width: 100, textAlign: "right" }}>
+                    Impr.
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ width: 84, textAlign: "right" }}>
+                    Conv.
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ width: 70, textAlign: "right" }}>
+                    CTR
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ width: 90, textAlign: "right" }}>
+                    Avg CPC
+                  </Typography>
+                </Box>
+
+                {campaignRows.map((campaign) => (
+                  <Box
+                    key={campaign.campaignId}
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: 2,
+                      py: 1.25,
+                      borderBottom: "1px solid",
+                      borderColor: "divider",
+                      "&:last-of-type": {
+                        borderBottom: "none",
+                      },
+                    }}
+                  >
+                    <Box sx={{ flex: 1.8, minWidth: 0 }}>
+                      <Typography variant="body2" fontWeight={600} noWrap>
+                        {campaign.campaignName}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" noWrap>
+                        {campaign.channelType} • {campaign.status} • ID {campaign.campaignId}
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" sx={{ width: 92, textAlign: "right", fontWeight: 600 }}>
+                      ${campaign.cost.toLocaleString()}
+                    </Typography>
+                    <Typography variant="body2" sx={{ width: 80, textAlign: "right" }}>
+                      {campaign.clicks.toLocaleString()}
+                    </Typography>
+                    <Typography variant="body2" sx={{ width: 100, textAlign: "right" }}>
+                      {campaign.impressions.toLocaleString()}
+                    </Typography>
+                    <Typography variant="body2" sx={{ width: 84, textAlign: "right" }}>
+                      {campaign.conversions.toLocaleString()}
+                    </Typography>
+                    <Typography variant="body2" sx={{ width: 70, textAlign: "right" }}>
+                      {campaign.ctr.toFixed(2)}%
+                    </Typography>
+                    <Typography variant="body2" sx={{ width: 90, textAlign: "right" }}>
+                      ${campaign.averageCpc.toLocaleString()}
+                    </Typography>
+                  </Box>
+                ))}
+              </Stack>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                No Google Ads campaign data was returned for this period. Check the Ads env vars and account access if you expected data here.
+              </Typography>
+            )}
           </Paper>
         )}
 

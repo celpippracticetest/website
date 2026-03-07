@@ -1,5 +1,6 @@
 "use client";
 import { SignInButton, SignUpButton, useUser } from "@clerk/nextjs";
+import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
 import "./globals.css";
 import useStore from "@/store";
 import {
@@ -222,6 +223,7 @@ const PlansForUsers = (
                 }
                 method="POST"
               >
+                <CheckoutAttributionFields />
                 <button
                   type="submit"
                   role="link"
@@ -296,6 +298,7 @@ const PlansForUsers = (
                 }
                 method="POST"
               >
+                <CheckoutAttributionFields />
                 <button
                   type="submit"
                   role="link"
@@ -370,6 +373,7 @@ const PlansForUsers = (
                 }
                 method="POST"
               >
+                <CheckoutAttributionFields />
                 <button
                   type="submit"
                   role="link"
@@ -439,6 +443,7 @@ const PlansForUsers = (
                 }
                 method="POST"
               >
+                <CheckoutAttributionFields />
                 <button
                   type="submit"
                   role="link"
