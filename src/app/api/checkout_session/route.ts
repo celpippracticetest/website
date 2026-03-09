@@ -275,9 +275,17 @@ export async function POST(req: NextRequest) {
       attribution_gclid:
         attributionMetadata.gclid,
       entry_page:
+        readRequestAttribution("entry_page") ||
         userDoc?.attribution?.firstTouch?.entryPage ||
         userMetadata?.entryPage ||
         null,
+      referrer:
+        readRequestAttribution("referrer") ||
+        userDoc?.attribution?.firstTouch?.referrer ||
+        userMetadata?.referrer ||
+        null,
+      attribution_session_id:
+        readRequestAttribution("attribution_session_id") || null,
       purchase_page: purchasePage,
       attribution_country: country,
       attribution_currency: priceObject.currency?.toUpperCase() || null,

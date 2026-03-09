@@ -7,6 +7,10 @@ import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAnd
 import { TPracticeDto } from "@/models/practice.model";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 
+function flattenPracticeQuestions(practice: TPracticeDto) {
+  return practice.passages.flatMap((passage) => passage.questions ?? []);
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const parseResult = ListeningAndReadingAnswerSchemaRequest.safeParse(body);
@@ -42,17 +46,26 @@ export async function POST(req: NextRequest) {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    
+
     // Calculate overall score for league points system
-    const totalQuestions = practice.questions?.length || 1;
-    const correctAnswers = Object.values(parseResult.data.answers || {}).filter(
-      (answer: any) => answer && answer.isCorrect
-    ).length;
+    const questions = flattenPracticeQuestions(practice);
+    const totalQuestions = questions.length || 1;
+    const correctAnswers = questions.reduce((count, question, index) => {
+      const submittedAnswer =
+        parseResult.data.answers[question.id] ??
+        parseResult.data.answers[index.toString()];
+
+      if (submittedAnswer && submittedAnswer === question.answer) {
+        return count + 1;
+      }
+
+      return count;
+    }, 0);
     const overall = Math.round((correctAnswers / totalQuestions) * 100);
-    
-    return NextResponse.json({ 
+
+    return NextResponse.json({
       result: createdAnswer,
-      overall: overall
+      overall: overall,
     });
   } else {
     return NextResponse.json(

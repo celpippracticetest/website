@@ -10,6 +10,9 @@ const STORAGE_KEY_BY_FIELD = {
   utm_campaign: "pending_utm_campaign",
   utm_content: "pending_utm_content",
   utm_term: "pending_utm_term",
+  entry_page: "pending_entry_page",
+  referrer: "pending_referrer",
+  attribution_session_id: "pending_attribution_session_id",
 } as const;
 
 const CHECKOUT_ATTRIBUTION_FIELDS = Object.keys(

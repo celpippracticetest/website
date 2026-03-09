@@ -793,7 +793,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
                 </span>
               </button>
               <button onClick={handleDeleteAccountClick}>
-                <span className="flex cursor-pointer items-center justify-center border-[#EE4266] text-[#EE4266] rounded-[24px] border-[1px] font-normal text-[14px] w-[149px] h-[40px]">
+                <span className="flex cursor-pointer items-center justify-center border-[#EE4266] text-[#EE4266] rounded-[24px] border-[1px] font-normal text-[14px] w-[120px] h-[40px]">
                   Delete Account
                 </span>
               </button>

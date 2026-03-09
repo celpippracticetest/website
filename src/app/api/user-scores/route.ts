@@ -1,6 +1,69 @@
 import { NextRequest, NextResponse } from "next/server";
 import client from "@/lib/mongodb";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
+import { PracticeRepository } from "@/repositories/practice.repo";
+import { ExamPartsRepository } from "@/repositories/examParts.repo";
+
+type ObjectiveAnswerRecord = Record<string, string>;
+type ObjectiveQuestion = {
+  id?: string;
+  answer?: string;
+};
+
+function flattenQuestions(source: unknown): ObjectiveQuestion[] {
+  if (!source || typeof source !== "object") {
+    return [];
+  }
+
+  const passages = (source as { passages?: Array<{ questions?: ObjectiveQuestion[] }> })
+    .passages;
+
+  if (!Array.isArray(passages)) {
+    return [];
+  }
+
+  return passages.flatMap((passage) => passage.questions ?? []);
+}
+
+function getStoredOverall(answer: Record<string, any>): number | null {
+  if (typeof answer.result?.overall === "number") {
+    return answer.result.overall;
+  }
+
+  if (typeof answer.overalScore === "number") {
+    return answer.overalScore;
+  }
+
+  return null;
+}
+
+function calculateObjectiveOverall(
+  answer: Record<string, any>,
+  questions: ObjectiveQuestion[]
+): number | null {
+  const storedOverall = getStoredOverall(answer);
+  if (storedOverall !== null) {
+    return storedOverall;
+  }
+
+  const submittedAnswers = answer.answers as ObjectiveAnswerRecord | undefined;
+  if (!submittedAnswers || questions.length === 0) {
+    return null;
+  }
+
+  let correctAnswers = 0;
+  for (let index = 0; index < questions.length; index += 1) {
+    const question = questions[index];
+    const submitted =
+      submittedAnswers[question.id ?? ""] ?? submittedAnswers[index.toString()];
+
+    if (submitted && question.answer && submitted === question.answer) {
+      correctAnswers += 1;
+    }
+  }
+
+  return Math.round((correctAnswers / questions.length) * 100);
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,6 +74,10 @@ export async function GET(request: NextRequest) {
     const user = authContext.user;
 
     const db = client.db();
+    const practiceRepo = new PracticeRepository(client);
+    const examPartsRepo = new ExamPartsRepository(client);
+    const practiceCache = new Map<string, Promise<any>>();
+    const examPartCache = new Map<string, Promise<any>>();
 
     // Get answers from the answers collection
     const answersCollection = db.collection("answers");
@@ -41,6 +108,36 @@ export async function GET(request: NextRequest) {
       speaking: null as number | null,
       listening: null as number | null,
       reading: null as number | null,
+    };
+
+    const getObjectiveQuestions = async (
+      answer: Record<string, any>
+    ): Promise<ObjectiveQuestion[]> => {
+      if (answer.practiceId) {
+        const practiceId = answer.practiceId.toString();
+        if (!practiceCache.has(practiceId)) {
+          practiceCache.set(practiceId, practiceRepo.findPractice(practiceId));
+        }
+
+        return flattenQuestions(await practiceCache.get(practiceId));
+      }
+
+      if (answer.examId && answer.partId !== undefined && answer.partId !== null) {
+        const examKey = `${answer.examId}:${answer.partId}`;
+        if (!examPartCache.has(examKey)) {
+          examPartCache.set(
+            examKey,
+            examPartsRepo.findExamPartByExamIdAndPartId(
+              answer.examId.toString(),
+              Number(answer.partId)
+            )
+          );
+        }
+
+        return flattenQuestions(await examPartCache.get(examKey));
+      }
+
+      return [];
     };
 
     // Writing scores (from result.overall)
@@ -76,8 +173,13 @@ export async function GET(request: NextRequest) {
 
     // For listening and reading, calculate scores from correct answers
     if (listeningAnswers.length > 0) {
-      const listeningScores = listeningAnswers
-        .map((answer) => answer.result?.overall)
+      const listeningScores = (
+        await Promise.all(
+          listeningAnswers.map(async (answer) =>
+            calculateObjectiveOverall(answer, await getObjectiveQuestions(answer))
+          )
+        )
+      )
         .filter((score) => typeof score === "number");
 
       if (listeningScores.length > 0) {
@@ -90,8 +192,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (readingAnswers.length > 0) {
-      const readingScores = readingAnswers
-        .map((answer) => answer.result?.overall)
+      const readingScores = (
+        await Promise.all(
+          readingAnswers.map(async (answer) =>
+            calculateObjectiveOverall(answer, await getObjectiveQuestions(answer))
+          )
+        )
+      )
         .filter((score) => typeof score === "number");
 
       if (readingScores.length > 0) {
