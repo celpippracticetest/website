@@ -184,6 +184,48 @@ export default async function RootLayout({
 
         <script src="http://localhost:3001/widget.js" data-business-id="celpippracticetest" data-launcher-label="Chat Support" data-position="right" data-accent-color="#2563eb" async></script>
 
+        {/* GTM consent defaults — must run before GTM initialises */}
+        {enableGtm && (
+          <Script
+            id="gtm-consent-defaults"
+            strategy="beforeInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
+                window.dataLayer = window.dataLayer || [];
+                window.dataLayer.push({
+                  event: "default_consent",
+                  analytics_storage: "denied",
+                  ad_storage: "denied",
+                  ad_user_data: "denied",
+                  ad_personalization: "denied"
+                });
+              `,
+            }}
+          />
+        )}
+
+        {/* GTM snippet — async, non-blocking, placed in <head> as required by Google */}
+        {enableGtm && (
+          <Script
+            id="gtm-head"
+            strategy="beforeInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
+                (function(w,d,s,l,i){
+                  w[l]=w[l]||[];
+                  w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});
+                  var f=d.getElementsByTagName(s)[0],
+                      j=d.createElement(s),
+                      dl=l!='dataLayer'?'&l='+l:'';
+                  j.async=true;
+                  j.src='/gtm/js?id='+i+dl;
+                  f.parentNode.insertBefore(j,f);
+                })(window,document,'script','dataLayer','${GTM_ID}');
+              `,
+            }}
+          />
+        )}
+
         {/* JSON-LD early is fine */}
         <Script
           id="structured-data"
@@ -210,7 +252,7 @@ export default async function RootLayout({
           {enableGtm && (
             <noscript>
               <iframe
-                src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+                src={`/gtm/ns.html?id=${GTM_ID}`}
                 height="0"
                 width="0"
                 style={{ display: "none", visibility: "hidden" }}
@@ -251,17 +293,6 @@ export default async function RootLayout({
                   })(window, document, "clarity", "script", "${CLARITY_ID}");
                 `,
               }}
-            />
-          )}
-
-          {enableGtm && (
-            <Script src="/scripts/gtm-consent-defaults.js" strategy="afterInteractive" />
-          )}
-
-          {enableGtm && (
-            <Script
-              src={`/scripts/gtm-loader.js?id=${encodeURIComponent(GTM_ID)}`}
-              strategy="afterInteractive"
             />
           )}
 

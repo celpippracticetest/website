@@ -1,6 +1,6 @@
 {
   "exportFormatVersion": 2,
-  "exportTime": "2026-03-10 00:00:00",
+  "exportTime": "2026-03-10T00:00:00.000Z",
   "containerVersion": {
     "path": "accounts/6292384809/containers/218518927/versions/0",
     "accountId": "6292384809",
@@ -12,7 +12,9 @@
       "containerId": "218518927",
       "name": "celpippracticetest.com",
       "publicId": "GTM-M24FJ7JC",
-      "usageContext": ["WEB"],
+      "usageContext": [
+        "WEB"
+      ],
       "fingerprint": "1771973387066",
       "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6292384809/containers/218518927/workspaces?apiLink=container",
       "features": {
@@ -31,7 +33,9 @@
         "supportZones": true,
         "supportTransformations": false
       },
-      "tagIds": ["GTM-M24FJ7JC"]
+      "tagIds": [
+        "GTM-M24FJ7JC"
+      ]
     },
     "tag": [
       {
@@ -68,8 +72,10 @@
             ]
           }
         ],
-        "fingerprint": "1772300000030",
-        "firingTriggerId": ["2147479573"],
+        "fingerprint": "1772400000000",
+        "firingTriggerId": [
+          "2147479573"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
         "monitoringMetadata": {
           "type": "MAP"
@@ -92,7 +98,9 @@
           }
         ],
         "fingerprint": "1771880273931",
-        "firingTriggerId": ["2147479573"],
+        "firingTriggerId": [
+          "2147479573"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
         "monitoringMetadata": {
           "type": "MAP"
@@ -120,7 +128,9 @@
           }
         ],
         "fingerprint": "1771880273933",
-        "firingTriggerId": ["2147479553"],
+        "firingTriggerId": [
+          "2147479553"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
         "consentSettings": {
           "consentStatus": "NOT_NEEDED"
@@ -145,7 +155,9 @@
           }
         ],
         "fingerprint": "1771880273932",
-        "firingTriggerId": ["2147479573"],
+        "firingTriggerId": [
+          "2147479573"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
         "monitoringMetadata": {
           "type": "MAP"
@@ -168,7 +180,9 @@
           }
         ],
         "fingerprint": "1771880273933",
-        "firingTriggerId": ["2147479553"],
+        "firingTriggerId": [
+          "2147479553"
+        ],
         "consentSettings": {
           "consentStatus": "NOT_NEEDED"
         }
@@ -248,7 +262,9 @@
           }
         ],
         "fingerprint": "1771880273897",
-        "firingTriggerId": ["51"],
+        "firingTriggerId": [
+          "51"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
         "monitoringMetadata": {
           "type": "MAP"
@@ -286,7 +302,9 @@
           }
         ],
         "fingerprint": "1771880273930",
-        "firingTriggerId": ["52"],
+        "firingTriggerId": [
+          "52"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
         "monitoringMetadata": {
           "type": "MAP"
@@ -370,7 +388,9 @@
           }
         ],
         "fingerprint": "1771880273928",
-        "firingTriggerId": ["53"],
+        "firingTriggerId": [
+          "53"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
         "monitoringMetadata": {
           "type": "MAP"
@@ -423,7 +443,9 @@
           }
         ],
         "fingerprint": "1771880239904",
-        "firingTriggerId": ["2147479553"],
+        "firingTriggerId": [
+          "2147479553"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
         "monitoringMetadata": {
           "type": "MAP"
@@ -450,16 +472,6 @@
             "value": "1"
           },
           {
-            "type": "BOOLEAN",
-            "key": "enableEnhancedConversion",
-            "value": "true"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "userDataVariable",
-            "value": "{{UPD - Enhanced Conversions}}"
-          },
-          {
             "type": "TEMPLATE",
             "key": "conversionId",
             "value": "17024504219"
@@ -481,7 +493,9 @@
           }
         ],
         "fingerprint": "1772200000050",
-        "firingTriggerId": ["77"],
+        "firingTriggerId": [
+          "77"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
         "monitoringMetadata": {
           "type": "MAP"
@@ -509,7 +523,9 @@
           }
         ],
         "fingerprint": "1772200000040",
-        "firingTriggerId": ["76"],
+        "firingTriggerId": [
+          "76"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
         "monitoringMetadata": {
           "type": "MAP"
@@ -557,16 +573,6 @@
           },
           {
             "type": "BOOLEAN",
-            "key": "enableEnhancedConversion",
-            "value": "true"
-          },
-          {
-            "type": "TEMPLATE",
-            "key": "userDataVariable",
-            "value": "{{UPD - Enhanced Conversions}}"
-          },
-          {
-            "type": "BOOLEAN",
             "key": "enableShippingData",
             "value": "false"
           },
@@ -592,7 +598,9 @@
           }
         ],
         "fingerprint": "1772200000030",
-        "firingTriggerId": ["76"],
+        "firingTriggerId": [
+          "76"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
         "monitoringMetadata": {
           "type": "MAP"
@@ -687,7 +695,9 @@
           }
         ],
         "fingerprint": "1772200000060",
-        "firingTriggerId": ["66"],
+        "firingTriggerId": [
+          "66"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
         "monitoringMetadata": {
           "type": "MAP"
@@ -703,7 +713,11 @@
         "name": "Sign Up (GA4)",
         "type": "gaawe",
         "parameter": [
-          { "type": "BOOLEAN", "key": "sendEcommerceData", "value": "false" },
+          {
+            "type": "BOOLEAN",
+            "key": "sendEcommerceData",
+            "value": "false"
+          },
           {
             "type": "LIST",
             "key": "eventSettingsTable",
@@ -711,7 +725,11 @@
               {
                 "type": "MAP",
                 "map": [
-                  { "type": "TEMPLATE", "key": "parameter", "value": "method" },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "method"
+                  },
                   {
                     "type": "TEMPLATE",
                     "key": "parameterValue",
@@ -736,18 +754,28 @@
               }
             ]
           },
-          { "type": "TEMPLATE", "key": "eventName", "value": "sign_up" },
+          {
+            "type": "TEMPLATE",
+            "key": "eventName",
+            "value": "sign_up"
+          },
           {
             "type": "TEMPLATE",
             "key": "measurementIdOverride",
             "value": "G-S24BC0HY77"
           }
         ],
-        "fingerprint": "1772300000020",
-        "firingTriggerId": ["63"],
+        "fingerprint": "1772400000001",
+        "firingTriggerId": [
+          "63"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
-        "monitoringMetadata": { "type": "MAP" },
-        "consentSettings": { "consentStatus": "NOT_NEEDED" }
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_NEEDED"
+        }
       },
       {
         "accountId": "6292384809",
@@ -756,24 +784,38 @@
         "name": "Begin Checkout (GA4)",
         "type": "gaawe",
         "parameter": [
-          { "type": "BOOLEAN", "key": "sendEcommerceData", "value": "true" },
+          {
+            "type": "BOOLEAN",
+            "key": "sendEcommerceData",
+            "value": "true"
+          },
           {
             "type": "TEMPLATE",
             "key": "getEcommerceDataFrom",
             "value": "dataLayer"
           },
-          { "type": "TEMPLATE", "key": "eventName", "value": "begin_checkout" },
+          {
+            "type": "TEMPLATE",
+            "key": "eventName",
+            "value": "begin_checkout"
+          },
           {
             "type": "TEMPLATE",
             "key": "measurementIdOverride",
             "value": "G-S24BC0HY77"
           }
         ],
-        "fingerprint": "1772300000021",
-        "firingTriggerId": ["79"],
+        "fingerprint": "1772400000002",
+        "firingTriggerId": [
+          "79"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
-        "monitoringMetadata": { "type": "MAP" },
-        "consentSettings": { "consentStatus": "NOT_NEEDED" }
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_NEEDED"
+        }
       },
       {
         "accountId": "6292384809",
@@ -782,7 +824,11 @@
         "name": "Login (GA4)",
         "type": "gaawe",
         "parameter": [
-          { "type": "BOOLEAN", "key": "sendEcommerceData", "value": "false" },
+          {
+            "type": "BOOLEAN",
+            "key": "sendEcommerceData",
+            "value": "false"
+          },
           {
             "type": "LIST",
             "key": "eventSettingsTable",
@@ -790,7 +836,11 @@
               {
                 "type": "MAP",
                 "map": [
-                  { "type": "TEMPLATE", "key": "parameter", "value": "method" },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "method"
+                  },
                   {
                     "type": "TEMPLATE",
                     "key": "parameterValue",
@@ -815,18 +865,28 @@
               }
             ]
           },
-          { "type": "TEMPLATE", "key": "eventName", "value": "login" },
+          {
+            "type": "TEMPLATE",
+            "key": "eventName",
+            "value": "login"
+          },
           {
             "type": "TEMPLATE",
             "key": "measurementIdOverride",
             "value": "G-S24BC0HY77"
           }
         ],
-        "fingerprint": "1772300000022",
-        "firingTriggerId": ["80"],
+        "fingerprint": "1772400000003",
+        "firingTriggerId": [
+          "80"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
-        "monitoringMetadata": { "type": "MAP" },
-        "consentSettings": { "consentStatus": "NOT_NEEDED" }
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_NEEDED"
+        }
       },
       {
         "accountId": "6292384809",
@@ -835,7 +895,11 @@
         "name": "Subscription Cancelled (GA4)",
         "type": "gaawe",
         "parameter": [
-          { "type": "BOOLEAN", "key": "sendEcommerceData", "value": "false" },
+          {
+            "type": "BOOLEAN",
+            "key": "sendEcommerceData",
+            "value": "false"
+          },
           {
             "type": "LIST",
             "key": "eventSettingsTable",
@@ -883,11 +947,17 @@
             "value": "G-S24BC0HY77"
           }
         ],
-        "fingerprint": "1772300000023",
-        "firingTriggerId": ["81"],
+        "fingerprint": "1772400000004",
+        "firingTriggerId": [
+          "81"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
-        "monitoringMetadata": { "type": "MAP" },
-        "consentSettings": { "consentStatus": "NOT_NEEDED" }
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_NEEDED"
+        }
       },
       {
         "accountId": "6292384809",
@@ -896,7 +966,11 @@
         "name": "Practice Started (GA4)",
         "type": "gaawe",
         "parameter": [
-          { "type": "BOOLEAN", "key": "sendEcommerceData", "value": "false" },
+          {
+            "type": "BOOLEAN",
+            "key": "sendEcommerceData",
+            "value": "false"
+          },
           {
             "type": "LIST",
             "key": "eventSettingsTable",
@@ -944,11 +1018,17 @@
             "value": "G-S24BC0HY77"
           }
         ],
-        "fingerprint": "1772300000024",
-        "firingTriggerId": ["82"],
+        "fingerprint": "1772400000005",
+        "firingTriggerId": [
+          "82"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
-        "monitoringMetadata": { "type": "MAP" },
-        "consentSettings": { "consentStatus": "NOT_NEEDED" }
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_NEEDED"
+        }
       },
       {
         "accountId": "6292384809",
@@ -957,7 +1037,11 @@
         "name": "Practice Completed (GA4)",
         "type": "gaawe",
         "parameter": [
-          { "type": "BOOLEAN", "key": "sendEcommerceData", "value": "false" },
+          {
+            "type": "BOOLEAN",
+            "key": "sendEcommerceData",
+            "value": "false"
+          },
           {
             "type": "LIST",
             "key": "eventSettingsTable",
@@ -995,7 +1079,11 @@
               {
                 "type": "MAP",
                 "map": [
-                  { "type": "TEMPLATE", "key": "parameter", "value": "score" },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "score"
+                  },
                   {
                     "type": "TEMPLATE",
                     "key": "parameterValue",
@@ -1016,11 +1104,17 @@
             "value": "G-S24BC0HY77"
           }
         ],
-        "fingerprint": "1772300000025",
-        "firingTriggerId": ["83"],
+        "fingerprint": "1772400000006",
+        "firingTriggerId": [
+          "83"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
-        "monitoringMetadata": { "type": "MAP" },
-        "consentSettings": { "consentStatus": "NOT_NEEDED" }
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_NEEDED"
+        }
       },
       {
         "accountId": "6292384809",
@@ -1029,7 +1123,11 @@
         "name": "Subscription Renewal (GA4)",
         "type": "gaawe",
         "parameter": [
-          { "type": "BOOLEAN", "key": "sendEcommerceData", "value": "true" },
+          {
+            "type": "BOOLEAN",
+            "key": "sendEcommerceData",
+            "value": "true"
+          },
           {
             "type": "LIST",
             "key": "eventSettingsTable",
@@ -1037,7 +1135,11 @@
               {
                 "type": "MAP",
                 "map": [
-                  { "type": "TEMPLATE", "key": "parameter", "value": "value" },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "value"
+                  },
                   {
                     "type": "TEMPLATE",
                     "key": "parameterValue",
@@ -1073,11 +1175,17 @@
             "value": "G-S24BC0HY77"
           }
         ],
-        "fingerprint": "1772300000043",
-        "firingTriggerId": ["84"],
+        "fingerprint": "1772400000007",
+        "firingTriggerId": [
+          "84"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
-        "monitoringMetadata": { "type": "MAP" },
-        "consentSettings": { "consentStatus": "NOT_NEEDED" }
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_NEEDED"
+        }
       },
       {
         "accountId": "6292384809",
@@ -1097,16 +1205,10 @@
             "value": "{{value}}"
           },
           {
-            "type": "BOOLEAN",
-            "key": "enableEnhancedConversion",
-            "value": "true"
-          },
-          {
             "type": "TEMPLATE",
-            "key": "userDataVariable",
-            "value": "{{UPD - Enhanced Conversions}}"
+            "key": "conversionId",
+            "value": "17024504219"
           },
-          { "type": "TEMPLATE", "key": "conversionId", "value": "17024504219" },
           {
             "type": "TEMPLATE",
             "key": "currencyCode",
@@ -1117,13 +1219,23 @@
             "key": "conversionLabel",
             "value": "REPLACE_WITH_BEGIN_CHECKOUT_LABEL"
           },
-          { "type": "BOOLEAN", "key": "rdp", "value": "false" }
+          {
+            "type": "BOOLEAN",
+            "key": "rdp",
+            "value": "false"
+          }
         ],
-        "fingerprint": "1772300000045",
-        "firingTriggerId": ["85"],
+        "fingerprint": "1772400000008",
+        "firingTriggerId": [
+          "85"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
-        "monitoringMetadata": { "type": "MAP" },
-        "consentSettings": { "consentStatus": "NOT_NEEDED" }
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_NEEDED"
+        }
       },
       {
         "accountId": "6292384809",
@@ -1137,13 +1249,23 @@
             "key": "html",
             "value": "<script>\nif (typeof fbq === 'function') {\n  var userData = {};\n  if ('{{DLV - ads_user_data_email}}') {\n    userData.em = '{{DLV - ads_user_data_email}}';\n  }\n  fbq('track', 'InitiateCheckout', {\n    value: {{value}},\n    currency: '{{currency}}',\n    num_items: 1\n  }, { eventID: 'begin_checkout_{{DLV - user_id}}' });\n}\n</script>\n"
           },
-          { "type": "BOOLEAN", "key": "supportDocumentWrite", "value": "false" }
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
         ],
-        "fingerprint": "1772300000046",
-        "firingTriggerId": ["85"],
+        "fingerprint": "1772400000009",
+        "firingTriggerId": [
+          "85"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
-        "monitoringMetadata": { "type": "MAP" },
-        "consentSettings": { "consentStatus": "NOT_NEEDED" }
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_NEEDED"
+        }
       },
       {
         "accountId": "6292384809",
@@ -1157,13 +1279,23 @@
             "key": "html",
             "value": "<script>\n(function(w,d,t,r,u){\nvar f,n,i;\nw[u]=w[u]||[];\nf=function(){\nvar o={ti:\"187239463\"};\no.q=w[u];\nw[u]=new UET(o);\nw[u].push(\"pageLoad\");\n};\nn=d.createElement(t);\nn.src=r;\nn.async=1;\nn.onload=n.onreadystatechange=function(){\nvar s=this.readyState;\ns&&s!==\"loaded\"&&s!==\"complete\"||(f(),n.onload=n.onreadystatechange=null);\n};\ni=d.getElementsByTagName(t)[0];\ni.parentNode.insertBefore(n,i);\n})(window,document,\"script\",\"//bat.bing.com/bat.js\",\"uetq\");\n</script>"
           },
-          { "type": "BOOLEAN", "key": "supportDocumentWrite", "value": "false" }
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
         ],
-        "fingerprint": "1772300000047",
-        "firingTriggerId": ["28"],
+        "fingerprint": "1772400000010",
+        "firingTriggerId": [
+          "28"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
-        "monitoringMetadata": { "type": "MAP" },
-        "consentSettings": { "consentStatus": "NOT_NEEDED" }
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_NEEDED"
+        }
       },
       {
         "accountId": "6292384809",
@@ -1177,13 +1309,23 @@
             "key": "html",
             "value": "<script>\nif (window.uetq) {\n  window.uetq = window.uetq || [];\n  window.uetq.push('event', 'purchase', {\n    revenue_value: {{value}},\n    currency: '{{currency}}'\n  });\n}\n</script>"
           },
-          { "type": "BOOLEAN", "key": "supportDocumentWrite", "value": "false" }
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
         ],
-        "fingerprint": "1772300000048",
-        "firingTriggerId": ["76"],
+        "fingerprint": "1772400000011",
+        "firingTriggerId": [
+          "76"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
-        "monitoringMetadata": { "type": "MAP" },
-        "consentSettings": { "consentStatus": "NOT_NEEDED" }
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_NEEDED"
+        }
       },
       {
         "accountId": "6292384809",
@@ -1245,7 +1387,9 @@
           }
         ],
         "fingerprint": "1772050001001",
-        "firingTriggerId": ["67"],
+        "firingTriggerId": [
+          "67"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
         "monitoringMetadata": {
           "type": "MAP"
@@ -1299,7 +1443,9 @@
           }
         ],
         "fingerprint": "1772050001002",
-        "firingTriggerId": ["68"],
+        "firingTriggerId": [
+          "68"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
         "monitoringMetadata": {
           "type": "MAP"
@@ -1383,7 +1529,166 @@
           }
         ],
         "fingerprint": "1772050001003",
-        "firingTriggerId": ["69"],
+        "firingTriggerId": [
+          "69"
+        ],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_NEEDED"
+        }
+      },
+      {
+        "accountId": "6292384809",
+        "containerId": "218518927",
+        "tagId": "84",
+        "name": "Blog Article Viewed (GA4)",
+        "type": "gaawe",
+        "parameter": [
+          {
+            "type": "BOOLEAN",
+            "key": "sendEcommerceData",
+            "value": "false"
+          },
+          {
+            "type": "LIST",
+            "key": "eventSettingsTable",
+            "list": [
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "article_title"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{DLV - article_title}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "article_slug"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{DLV - article_slug}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "article_categories"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{DLV - article_categories}}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "eventName",
+            "value": "blog_article_viewed"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "measurementIdOverride",
+            "value": "G-S24BC0HY77"
+          }
+        ],
+        "fingerprint": "1772500000006",
+        "firingTriggerId": [
+          "86"
+        ],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": {
+          "type": "MAP"
+        },
+        "consentSettings": {
+          "consentStatus": "NOT_NEEDED"
+        }
+      },
+      {
+        "accountId": "6292384809",
+        "containerId": "218518927",
+        "tagId": "85",
+        "name": "Blog List Viewed (GA4)",
+        "type": "gaawe",
+        "parameter": [
+          {
+            "type": "BOOLEAN",
+            "key": "sendEcommerceData",
+            "value": "false"
+          },
+          {
+            "type": "LIST",
+            "key": "eventSettingsTable",
+            "list": [
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "page_path"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{Page Path}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "page_title"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{Page Title}}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "eventName",
+            "value": "blog_list_viewed"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "measurementIdOverride",
+            "value": "G-S24BC0HY77"
+          }
+        ],
+        "fingerprint": "1772500000007",
+        "firingTriggerId": [
+          "87"
+        ],
         "tagFiringOption": "ONCE_PER_EVENT",
         "monitoringMetadata": {
           "type": "MAP"
@@ -1712,12 +2017,20 @@
           {
             "type": "EQUALS",
             "parameter": [
-              { "type": "TEMPLATE", "key": "arg0", "value": "{{_event}}" },
-              { "type": "TEMPLATE", "key": "arg1", "value": "begin_checkout" }
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "begin_checkout"
+              }
             ]
           }
         ],
-        "fingerprint": "1772300000010"
+        "fingerprint": "1772400000012"
       },
       {
         "accountId": "6292384809",
@@ -1729,12 +2042,20 @@
           {
             "type": "EQUALS",
             "parameter": [
-              { "type": "TEMPLATE", "key": "arg0", "value": "{{_event}}" },
-              { "type": "TEMPLATE", "key": "arg1", "value": "login_completed" }
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "login_completed"
+              }
             ]
           }
         ],
-        "fingerprint": "1772300000011"
+        "fingerprint": "1772400000013"
       },
       {
         "accountId": "6292384809",
@@ -1746,7 +2067,11 @@
           {
             "type": "EQUALS",
             "parameter": [
-              { "type": "TEMPLATE", "key": "arg0", "value": "{{_event}}" },
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
               {
                 "type": "TEMPLATE",
                 "key": "arg1",
@@ -1755,7 +2080,7 @@
             ]
           }
         ],
-        "fingerprint": "1772300000012"
+        "fingerprint": "1772400000014"
       },
       {
         "accountId": "6292384809",
@@ -1767,12 +2092,20 @@
           {
             "type": "EQUALS",
             "parameter": [
-              { "type": "TEMPLATE", "key": "arg0", "value": "{{_event}}" },
-              { "type": "TEMPLATE", "key": "arg1", "value": "practice_started" }
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "practice_started"
+              }
             ]
           }
         ],
-        "fingerprint": "1772300000013"
+        "fingerprint": "1772400000015"
       },
       {
         "accountId": "6292384809",
@@ -1784,7 +2117,11 @@
           {
             "type": "EQUALS",
             "parameter": [
-              { "type": "TEMPLATE", "key": "arg0", "value": "{{_event}}" },
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
               {
                 "type": "TEMPLATE",
                 "key": "arg1",
@@ -1793,7 +2130,7 @@
             ]
           }
         ],
-        "fingerprint": "1772300000014"
+        "fingerprint": "1772400000016"
       },
       {
         "accountId": "6292384809",
@@ -1805,8 +2142,16 @@
           {
             "type": "EQUALS",
             "parameter": [
-              { "type": "TEMPLATE", "key": "arg0", "value": "{{_event}}" },
-              { "type": "TEMPLATE", "key": "arg1", "value": "purchase" }
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "purchase"
+              }
             ]
           }
         ],
@@ -1827,7 +2172,7 @@
             ]
           }
         ],
-        "fingerprint": "1772300000042"
+        "fingerprint": "1772400000017"
       },
       {
         "accountId": "6292384809",
@@ -1839,7 +2184,11 @@
           {
             "type": "EQUALS",
             "parameter": [
-              { "type": "TEMPLATE", "key": "arg0", "value": "{{_event}}" },
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
               {
                 "type": "TEMPLATE",
                 "key": "arg1",
@@ -1857,11 +2206,15 @@
                 "key": "arg0",
                 "value": "{{DLV - conversion_event}}"
               },
-              { "type": "TEMPLATE", "key": "arg1", "value": "begin_checkout" }
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "begin_checkout"
+              }
             ]
           }
         ],
-        "fingerprint": "1772300000044"
+        "fingerprint": "1772400000018"
       },
       {
         "accountId": "6292384809",
@@ -1961,6 +2314,56 @@
           }
         ],
         "fingerprint": "1772200000021"
+      },
+      {
+        "accountId": "6292384809",
+        "containerId": "218518927",
+        "triggerId": "86",
+        "name": "Event - Blog Article Viewed",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "blog_article_viewed"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1772500000004"
+      },
+      {
+        "accountId": "6292384809",
+        "containerId": "218518927",
+        "triggerId": "87",
+        "name": "Event - Blog List Viewed",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "blog_list_viewed"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1772500000005"
       }
     ],
     "variable": [
@@ -2589,11 +2992,23 @@
         "name": "DLV - ecommerce.value",
         "type": "v",
         "parameter": [
-          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
-          { "type": "BOOLEAN", "key": "setDefaultValue", "value": "false" },
-          { "type": "TEMPLATE", "key": "name", "value": "ecommerce.value" }
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "ecommerce.value"
+          }
         ],
-        "fingerprint": "1772300000040",
+        "fingerprint": "1772400000019",
         "formatValue": {}
       },
       {
@@ -2603,11 +3018,23 @@
         "name": "DLV - ecommerce.currency",
         "type": "v",
         "parameter": [
-          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
-          { "type": "BOOLEAN", "key": "setDefaultValue", "value": "false" },
-          { "type": "TEMPLATE", "key": "name", "value": "ecommerce.currency" }
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "ecommerce.currency"
+          }
         ],
-        "fingerprint": "1772300000041",
+        "fingerprint": "1772400000020",
         "formatValue": {}
       },
       {
@@ -2617,11 +3044,23 @@
         "name": "DLV - method",
         "type": "v",
         "parameter": [
-          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
-          { "type": "BOOLEAN", "key": "setDefaultValue", "value": "false" },
-          { "type": "TEMPLATE", "key": "name", "value": "method" }
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "method"
+          }
         ],
-        "fingerprint": "1772300000001",
+        "fingerprint": "1772400000021",
         "formatValue": {}
       },
       {
@@ -2631,11 +3070,23 @@
         "name": "DLV - skill_type",
         "type": "v",
         "parameter": [
-          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
-          { "type": "BOOLEAN", "key": "setDefaultValue", "value": "false" },
-          { "type": "TEMPLATE", "key": "name", "value": "skill_type" }
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "skill_type"
+          }
         ],
-        "fingerprint": "1772300000002",
+        "fingerprint": "1772400000022",
         "formatValue": {}
       },
       {
@@ -2645,11 +3096,23 @@
         "name": "DLV - practice_id",
         "type": "v",
         "parameter": [
-          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
-          { "type": "BOOLEAN", "key": "setDefaultValue", "value": "false" },
-          { "type": "TEMPLATE", "key": "name", "value": "practice_id" }
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "practice_id"
+          }
         ],
-        "fingerprint": "1772300000003",
+        "fingerprint": "1772400000023",
         "formatValue": {}
       },
       {
@@ -2659,11 +3122,23 @@
         "name": "DLV - score",
         "type": "v",
         "parameter": [
-          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
-          { "type": "BOOLEAN", "key": "setDefaultValue", "value": "false" },
-          { "type": "TEMPLATE", "key": "name", "value": "score" }
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "score"
+          }
         ],
-        "fingerprint": "1772300000004",
+        "fingerprint": "1772400000024",
         "formatValue": {}
       },
       {
@@ -2673,11 +3148,23 @@
         "name": "DLV - cancellation_reason",
         "type": "v",
         "parameter": [
-          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
-          { "type": "BOOLEAN", "key": "setDefaultValue", "value": "false" },
-          { "type": "TEMPLATE", "key": "name", "value": "cancellation_reason" }
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "cancellation_reason"
+          }
         ],
-        "fingerprint": "1772300000005",
+        "fingerprint": "1772400000025",
         "formatValue": {}
       },
       {
@@ -2687,11 +3174,23 @@
         "name": "DLV - plan_type",
         "type": "v",
         "parameter": [
-          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
-          { "type": "BOOLEAN", "key": "setDefaultValue", "value": "false" },
-          { "type": "TEMPLATE", "key": "name", "value": "plan_type" }
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "plan_type"
+          }
         ],
-        "fingerprint": "1772300000006",
+        "fingerprint": "1772400000026",
         "formatValue": {}
       },
       {
@@ -2749,6 +3248,84 @@
           }
         ],
         "fingerprint": "1772200000011",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6292384809",
+        "containerId": "218518927",
+        "variableId": "87",
+        "name": "DLV - article_title",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "article_title"
+          }
+        ],
+        "fingerprint": "1772500000001",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6292384809",
+        "containerId": "218518927",
+        "variableId": "88",
+        "name": "DLV - article_slug",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "article_slug"
+          }
+        ],
+        "fingerprint": "1772500000002",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6292384809",
+        "containerId": "218518927",
+        "variableId": "89",
+        "name": "DLV - article_categories",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "article_categories"
+          }
+        ],
+        "fingerprint": "1772500000003",
         "formatValue": {}
       }
     ],
@@ -2886,7 +3463,7 @@
         "name": "Environment Name"
       }
     ],
-    "fingerprint": "1772200000099",
+    "fingerprint": "118504314439770",
     "tagManagerUrl": "https://tagmanager.google.com/#/versions/accounts/6292384809/containers/218518927/versions/0?apiLink=version",
     "customTemplate": [
       {
