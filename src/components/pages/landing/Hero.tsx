@@ -33,7 +33,7 @@ const SvgWriting = dynamic(() => import("../../icons/Writing"), { ssr: false });
 const SvgReading = dynamic(() => import("../../icons/Reading"), { ssr: false });
 const SvgMockExamsColorful = dynamic(
   () => import("../../icons/MockExamsColorful"),
-  { ssr: false }
+  { ssr: false },
 );
 
 type HeroProps = {
@@ -46,7 +46,7 @@ type HeroProps = {
 const Hero = ({ heroImage }: HeroProps) => {
   const { ref } = useInView();
   const { setVisible, isVisible, isInFooter } = useButtonVisibleStore(
-    (state) => state
+    (state) => state,
   );
   const { trackCTA } = useEventTracker();
 
@@ -70,7 +70,7 @@ const Hero = ({ heroImage }: HeroProps) => {
     return () => window.removeEventListener("scroll", onScroll);
   }, [isInFooter]);
 
-  useEffect(() => { }, [isInFooter]);
+  useEffect(() => {}, [isInFooter]);
 
   useEffect(() => {
     if (window.location.hash === "#plans") {
@@ -91,20 +91,19 @@ const Hero = ({ heroImage }: HeroProps) => {
     flex bg-[linear-gradient(180deg,_rgba(255,_255,_255,_0.4)_0%,_rgba(255,_255,_255,_0.8)_100%)] 
     backdrop-blur-[1px] 
     shadow-[0_0_100px_0px_rgba(255,255,255,0.8)] 
-    ${isVisible
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-[12px] pointer-events-none"
-          } 
+    ${
+      isVisible
+        ? "opacity-100 translate-y-0"
+        : "opacity-0 translate-y-[12px] pointer-events-none"
+    } 
     flex justify-center fixed z-[10] h-[128px] items-center 
     left-1/2 -translate-x-1/2 transition-all duration-500 
-    ease-in-out transform bottom-0`}
-      >
+    ease-in-out transform bottom-0`}>
         <div onClick={() => handleCTAClick("hero_floating_bottom")}>
           <Button
             size="lg"
             href="/practice-overview"
-            aria-label="Start your free CELPIP practice"
-          >
+            aria-label="Start your free CELPIP practice">
             <SvgPlus />
             <span className="hidden sm:!flex">Start Your Free Practice</span>
             <span className="flex sm:!hidden">Free Practice</span>
@@ -119,8 +118,7 @@ const Hero = ({ heroImage }: HeroProps) => {
           backgroundSize: "300% 300%",
           animation: "gradient 14s ease-in-out infinite",
         }}
-        className="relative pt-[80px] flex flex-col min-h-screen screen1024:min-h-[100dvh] justify-between transition-all duration-300 w-full background-animate shadow-[inset_0px_-80px_96px_-4px_#F4F7FF]"
-      >
+        className="relative pt-[80px] flex flex-col min-h-screen screen1024:min-h-[100dvh] justify-between transition-all duration-300 w-full background-animate shadow-[inset_0px_-80px_96px_-4px_#F4F7FF]">
         <TopHeader />
         <div className="flex max-w-[1440px] w-full justify-center mx-auto ">
           <div className="flex flex-col screen744:!flex-row w-full screen744:!justify-between justify-center px-[16px] screen744:!px-[40px] flex-wrap screen744:!flex-nowrap">
@@ -129,13 +127,18 @@ const Hero = ({ heroImage }: HeroProps) => {
                 <SvgMedalLg className="hidden screen1280:!flex" />
                 <SvgMedalMd className="flex screen1280:!hidden" />
                 <span className="text-text2 font-normal screen1280:!text-[20px] text-[14px]">
-                  <span className="text-primary2 font-extrabold">#1 Top rated</span> CELPIP Resource 2025{" "}
+                  <span className="text-primary2 font-extrabold">
+                    #1 Top rated
+                  </span>{" "}
+                  CELPIP Resource 2025{" "}
                 </span>
               </div>
               <div className="mt-[21px] flex flex-row justify-between w-full screen1280:!mt-[38px] w-full h-[95px] screen744:!h-[135px] screen1280:!h-[245px] screen744:!justify-between justify-center">
                 <h1 className="font-bold text-[32px] screen1280:!text-[65px] leading-[40px] screen1280:!leading-[70px] text-text1 screen744:!text-left text-center">
-                  Reach Your Target<br />
-                  <span className="text-primary2">CELPIP</span> Score.{" "}<br className="screen744:!block hidden" />
+                  Reach Your Target
+                  <br />
+                  <span className="text-primary2">CELPIP</span> Score.{" "}
+                  <br className="screen744:!block hidden" />
                   <span className="text-secondary2 italic">Faster.</span>
                 </h1>
                 <div className="flex">
@@ -146,7 +149,11 @@ const Hero = ({ heroImage }: HeroProps) => {
                         title2: "mock exams",
                         icon: <SvgMockExamLight />,
                       },
-                      { title1: "", title2: "Guide & Tips", icon: <SvgGuide /> },
+                      {
+                        title1: "",
+                        title2: "Guide & Tips",
+                        icon: <SvgGuide />,
+                      },
                       {
                         title1: "3,000+",
                         title2: "sample tests",
@@ -163,8 +170,7 @@ const Hero = ({ heroImage }: HeroProps) => {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1, duration: 0.1 }}
-                        className="flex gap-[8px] h-[44px] items-center"
-                      >
+                        className="flex gap-[8px] h-[44px] items-center">
                         <span>{item.icon}</span>
                         {item.title1 && (
                           <span className="text-text1 font-bold text-[20px] leading-[28px]">
@@ -180,8 +186,7 @@ const Hero = ({ heroImage }: HeroProps) => {
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1, duration: 0.1 }}
-                  >
+                    transition={{ delay: 0.1, duration: 0.1 }}>
                     <div className="relative hidden h-[491px] w-[327px] screen1280:!flex">
                       <img
                         src={heroImage.imageUrl}
@@ -194,14 +199,15 @@ const Hero = ({ heroImage }: HeroProps) => {
                   </motion.div>
                 </div>
               </div>
-              <div className="font-inter font-semibold text-xs leading-5 tracking-normal text-center screen744:!hidden flex justify-center">60 mock exams · 3,000+ questions · Instant AI scoring</div>
+              <div className="font-inter font-semibold text-xs leading-5 tracking-normal text-center screen744:!hidden flex justify-center">
+                60 mock exams · 3,000+ questions · Instant AI scoring
+              </div>
               <div className="flex screen744:!justify-start justify-center">
                 <div onClick={() => handleCTAClick("hero_main")}>
                   <Button
                     href="/practice-overview"
                     size="lg"
-                    className="mt-[24px]"
-                  >
+                    className="mt-[24px]">
                     <SvgPlus />
                     <span>Start Your Free Practice</span>
                   </Button>
@@ -228,13 +234,48 @@ const Hero = ({ heroImage }: HeroProps) => {
         <div className="flex flex-col w-full overflow-hidden">
           <div className="flex flex-row flex-wrap screen744:flex-nowrap px-[16px] screen744:!px-[42px] pt-[22px] pb-[60px] screen744:!pb-[40px] screen1280:!mt-[52px] gap-[12px] screen744:!gap-[16px] screen1280:gap-[24px] w-full max-w-[1440px] mx-auto screen1024:justify-center">
             {[
-              { title: "Listening", icon: <SvgListening className="text-[#1D4ED8]" />, bgColor: "bg-primary5", link: "/listening" },
-              { title: "Speaking", icon: <SvgSpeaking className="text-[#BE123C]" />, bgColor: "bg-secondary5", link: "/speaking" },
-              { title: "Writing", icon: <SvgWriting className="text-[#0D9488]" />, bgColor: "bg-success5", link: "/writing" },
-              { title: "Reading", icon: <SvgReading className="text-[#B91C1C]" />, bgColor: "bg-error5", link: "/reading" },
-              { title: "Mock Exams", icon: <SvgMockExamsColorful />, bgColor: "bg-purple5", link: "/exam-overview" },
-              { title: "Learning", icon: <SvgLearning className="text-[#854D0E]" />, bgColor: "bg-[#FEF9C3]", link: "/learning" },
-              { title: "Words", icon: <SvgWord className="text-[#0D8A72] w-[24px]" />, bgColor: "bg-[#CCFBF1]", link: "/words" },
+              {
+                title: "Listening",
+                icon: <SvgListening className="text-[#1D4ED8]" />,
+                bgColor: "bg-primary5",
+                link: "/listening",
+              },
+              {
+                title: "Speaking",
+                icon: <SvgSpeaking className="text-[#BE123C]" />,
+                bgColor: "bg-secondary5",
+                link: "/speaking",
+              },
+              {
+                title: "Writing",
+                icon: <SvgWriting className="text-[#0D9488]" />,
+                bgColor: "bg-success5",
+                link: "/writing",
+              },
+              {
+                title: "Reading",
+                icon: <SvgReading className="text-[#B91C1C]" />,
+                bgColor: "bg-error5",
+                link: "/reading",
+              },
+              {
+                title: "Mock Exams",
+                icon: <SvgMockExamsColorful />,
+                bgColor: "bg-purple5",
+                link: "/exam-overview",
+              },
+              {
+                title: "Learning",
+                icon: <SvgLearning className="text-[#854D0E]" />,
+                bgColor: "bg-[#FEF9C3]",
+                link: "/learning",
+              },
+              {
+                title: "Words",
+                icon: <SvgWord className="text-[#0D8A72] w-[24px]" />,
+                bgColor: "bg-[#CCFBF1]",
+                link: "/words",
+              },
             ].map((exam, index, array) => {
               const isLast = index === array.length - 1;
               return (
@@ -245,7 +286,10 @@ const Hero = ({ heroImage }: HeroProps) => {
                   bgColor={exam.bgColor}
                   isLast={isLast}
                   link={exam.link}
-                  className={cn("screen744:!w-auto", { "!w-[calc(50%-6px)]": !isLast, 'w-full': isLast })}
+                  className={cn("screen744:!w-auto", {
+                    "!w-[calc(50%-6px)]": !isLast,
+                    "w-full": isLast,
+                  })}
                 />
               );
             })}

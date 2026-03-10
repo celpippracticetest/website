@@ -12,9 +12,12 @@ const Comments = dynamic(() => import("./Comments"), { ssr: false });
 const UserResponseReview = dynamic(() => import("./UserResponseReview"), {
   ssr: false,
 });
-const FloatingChatIcon = dynamic(() => import("../../AskBeavo/FloatingChatIcon"), {
-  ssr: false,
-});
+const FloatingChatIcon = dynamic(
+  () => import("../../AskBeavo/FloatingChatIcon"),
+  {
+    ssr: false,
+  },
+);
 
 type HomePageClientProps = {
   heroImage: {
@@ -34,8 +37,7 @@ function ErrorFallback() {
       </p>
       <button
         onClick={() => window.location.reload()}
-        className="px-4 py-2 bg-blue-500 text-white rounded"
-      >
+        className="px-4 py-2 bg-blue-500 text-white rounded">
         Retry
       </button>
     </div>

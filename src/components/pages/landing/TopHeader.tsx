@@ -22,7 +22,13 @@ const SvgHamburger = dynamic(() => import("../../icons/Hamburger"), {
 });
 const TopHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const hrefs = ["/exam-overview", "/practice-overview", "/learning", "/words", "/earn100"];
+  const hrefs = [
+    "/exam-overview",
+    "/practice-overview",
+    "/learning",
+    "/words",
+    "/earn100",
+  ];
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const sidebarMenuRef = useRef<HTMLDivElement>(null);
 
@@ -61,7 +67,9 @@ const TopHeader = () => {
   }, []);
 
   const icons = [
-    <div key="mock-exam-icon" className="relative  flex items-center justify-center">
+    <div
+      key="mock-exam-icon"
+      className="relative  flex items-center justify-center">
       <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
         <SvgMockTest className="  text-[#76808F]  duration-200 " />
       </div>
@@ -69,7 +77,9 @@ const TopHeader = () => {
         <SvgMockTestTopNavigationHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
       </div>
     </div>,
-    <div key="practice-icon" className="relative w-[24px] h-[24px] flex items-center justify-center">
+    <div
+      key="practice-icon"
+      className="relative w-[24px] h-[24px] flex items-center justify-center">
       <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
         <SvgPractice
           fill="transparent"
@@ -81,7 +91,9 @@ const TopHeader = () => {
         <SvgPracticeBlueHover className="text-[#316BFF]   duration-200 group-hover:opacity-100" />
       </div>
     </div>,
-    <div key="learn-icon" className="relative  flex items-center justify-center">
+    <div
+      key="learn-icon"
+      className="relative  flex items-center justify-center">
       <div className="flex group-hover:hidden w-[24px] h-[24px]  items-center justify-center">
         <SvgLearning
           stroke="#76808F"
@@ -91,14 +103,12 @@ const TopHeader = () => {
       </div>
 
       <div className="hidden group-hover:flex w-[24px] h-[24px]  items-center justify-center">
-        <SvgWord
-          stroke="#76808F"
-          fill="#76808F"
-          className="text-[#316BFF]"
-        />
+        <SvgWord stroke="#76808F" fill="#76808F" className="text-[#316BFF]" />
       </div>
     </div>,
-    <div key="mock-exam-icon" className="relative  flex items-center justify-center">
+    <div
+      key="mock-exam-icon"
+      className="relative  flex items-center justify-center">
       <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
         <SvgMockTest className="  text-[#76808F]  duration-200 " />
       </div>
@@ -113,7 +123,7 @@ const TopHeader = () => {
       <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
         <SvgReferral className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
       </div>
-    </div>
+    </div>,
   ];
 
   return (
@@ -128,8 +138,7 @@ const TopHeader = () => {
           <span
             className="screen1280:!hidden flex"
             onClick={() => setIsMenuOpen && setIsMenuOpen(!isMenuOpen)}
-            aria-label="Open menu"
-          >
+            aria-label="Open menu">
             <SvgHamburger />
           </span>
           <Link className="shrink-0 flex flex-row items-center" href={"/"}>
@@ -165,15 +174,14 @@ const TopHeader = () => {
               <React.Fragment key={label}>
                 <Link
                   className="group gap-[10px] h-[36px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
-                  href={hrefs[index]}
-                >
+                  href={hrefs[index]}>
                   <span className=" text-[16px] font-normal">{label}</span>
                 </Link>
                 {index != 3 && (
                   <div className="bg-outline w-[1px] h-[35px] rounded-[15px]"></div>
                 )}
               </React.Fragment>
-            )
+            ),
           )}
         </nav>
         <TopHeaderRightSide />
@@ -187,12 +195,10 @@ const TopHeader = () => {
         initial={{ x: "100%" }}
         animate={{ x: isMenuOpen ? "0%" : "100%" }}
         transition={{ duration: 0.5, ease: "easeInOut" }}
-        className={` z-[9999999] fixed right-0 top-0 flex flex-col text-[#3D3B3B] bg-[#f9f9f9] p-[24px] w-full max-w-[720px] h-[100vh]`}
-      >
+        className={` z-[9999999] fixed right-0 top-0 flex flex-col text-[#3D3B3B] bg-[#f9f9f9] p-[24px] w-full max-w-[720px] h-[100vh]`}>
         <div className="flex justify-between">
           <span
-            className={` "text-[#232222] text-[20px]  screen1280:flex !font-lobster`}
-          >
+            className={` "text-[#232222] text-[20px]  screen1280:flex !font-lobster`}>
             <Link className="shrink-0" href={"/"}>
               <Image
                 alt="logo"
@@ -204,8 +210,7 @@ const TopHeader = () => {
           </span>
           <span
             className={`cursor-pointer  text-[#232222]`}
-            onClick={() => setIsMenuOpen(false)}
-          >
+            onClick={() => setIsMenuOpen(false)}>
             <SvgClose />
           </span>
         </div>
@@ -216,14 +221,13 @@ const TopHeader = () => {
                 <Link
                   key={label}
                   className="h-[36px] group gap-[10px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
-                  href={hrefs[index]}
-                >
+                  href={hrefs[index]}>
                   {icons[index]}
 
                   <span className=" text-[16px] font-normal">{label}</span>
                 </Link>
               </React.Fragment>
-            )
+            ),
           )}
         </div>
       </motion.div>
