@@ -79,9 +79,9 @@ export function useEventTracker() {
       }, []),
 
       loginCompleted: useCallback(
-        (method?: string, userData?: UserData) => {
+        (method?: string) => {
           if (userId) {
-            trackAuth.loginCompleted(userId, method, userData);
+            trackAuth.loginCompleted(userId, method);
           }
         },
         [userId]
@@ -254,7 +254,8 @@ export function useEcommerceTracking() {
         value: number,
         coupon?: string,
         userData?: UserData,
-        attributionData?: Record<string, unknown>
+        attributionData?: Record<string, unknown>,
+        purchaseType: "first_purchase" | "subscription_renewal" = "first_purchase"
       ) => {
         trackEcommerce.purchase(
           transactionId,
@@ -263,7 +264,8 @@ export function useEcommerceTracking() {
           value,
           coupon,
           userData,
-          attributionData
+          attributionData,
+          purchaseType
         );
       },
       []

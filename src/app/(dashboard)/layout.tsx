@@ -3,7 +3,6 @@ import IntercomLoader from "@/components/IntercomLoader";
 import Footer from "@/components/pages/landing/Footer";
 import { daysSince } from "@/lib/utils";
 import { currentUser } from "@clerk/nextjs/server";
-import { ClerkProvider } from "@clerk/nextjs";
 import { Metadata } from "next";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -51,13 +50,11 @@ export default async function RootLayout({
   return (
     <>
       <IntercomLoader />
-      <ClerkProvider>
-        <LayoutClient
-          showSurvey={showSurvey}
-          showCompletedModal={showCompletedModal}
-          children={children}
-        />
-      </ClerkProvider>
+      <LayoutClient
+        showSurvey={showSurvey}
+        showCompletedModal={showCompletedModal}
+        children={children}
+      />
       {!user && <Footer isSignedIn={false} />}
     </>
   );

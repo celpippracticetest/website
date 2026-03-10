@@ -144,7 +144,7 @@ const SubscriptionRetentionModal = ({
       step?: Step;
       metadata?: Record<string, unknown>;
       flowId?: string | null;
-    }
+    },
   ) => {
     const payload = {
       eventName,
@@ -183,7 +183,10 @@ const SubscriptionRetentionModal = ({
 
     const newFlowId = crypto.randomUUID();
     setFlowId(newFlowId);
-    trackCancellationEvent("flow_opened", { step: "survey", flowId: newFlowId });
+    trackCancellationEvent("flow_opened", {
+      step: "survey",
+      flowId: newFlowId,
+    });
   }, [isOpen, reset]);
 
   const handlePauseSubscription = async () => {
@@ -215,7 +218,6 @@ const SubscriptionRetentionModal = ({
     }
   };
 
-
   if (!isOpen) return null;
 
   const submitSurvey = async () => {
@@ -229,9 +231,12 @@ const SubscriptionRetentionModal = ({
         body: JSON.stringify({
           flowId,
           reason: values.reason ?? null,
-          otherReason: values.reason === "other" ? values.otherReason : undefined,
+          otherReason:
+            values.reason === "other" ? values.otherReason : undefined,
           alternativeService:
-            values.reason === "alternative" ? values.alternativeService : undefined,
+            values.reason === "alternative"
+              ? values.alternativeService
+              : undefined,
           scores: values.reason === "passed" ? values.scores : undefined,
           serviceFeedback:
             values.reason === "passed" ? values.serviceFeedback : undefined,
@@ -258,7 +263,8 @@ const SubscriptionRetentionModal = ({
   const renderSurvey = () => (
     <Box className="flex flex-col gap-4">
       <Box className="text-center">
-        <Typography sx={{ color: "#212E42", fontSize: 20, fontWeight: 600, mb: 1 }}>
+        <Typography
+          sx={{ color: "#212E42", fontSize: 20, fontWeight: 600, mb: 1 }}>
           We're sorry to see you go
         </Typography>
         <Typography sx={{ color: "#76808F", fontSize: 14 }}>
@@ -268,42 +274,41 @@ const SubscriptionRetentionModal = ({
 
       <Box className="flex flex-col gap-3 mt-2">
         <RadioGroup value={reason ?? ""} name="cancellation-reason">
-        {[
-          { id: "passed", label: "I passed my test!" },
-          { id: "expensive", label: "It's too expensive" },
-          { id: "not_using", label: "I don't use it enough" },
-          { id: "technical", label: "Technical issues" },
-          { id: "alternative", label: "Found a better alternative" },
-          { id: "other", label: "Other" },
-        ].map((option) => (
-          <Box
-            key={option.id}
-            sx={{
-              border: "1px solid",
-              borderColor: reason === option.id ? "#4A7DFF" : "#e5e7eb",
-              bgcolor: reason === option.id ? "#F2F6FF" : "#fff",
-              borderRadius: "10px",
-              px: 1,
-              py: 0.5,
-            }}
-          >
-            <FormControlLabel
-              value={option.id}
-              control={<Radio size="small" sx={{ color: "#4A7DFF" }} />}
-              label={option.label}
-              onChange={() => handleReasonSelect(option.id as Reason)}
+          {[
+            { id: "passed", label: "I passed my test!" },
+            { id: "expensive", label: "It's too expensive" },
+            { id: "not_using", label: "I don't use it enough" },
+            { id: "technical", label: "Technical issues" },
+            { id: "alternative", label: "Found a better alternative" },
+            { id: "other", label: "Other" },
+          ].map((option) => (
+            <Box
+              key={option.id}
               sx={{
-                m: 0,
-                width: "100%",
-                "& .MuiFormControlLabel-label": {
-                  color: "#212E42",
-                  fontSize: 14,
-                  fontWeight: 500,
-                },
-              }}
-            />
-          </Box>
-        ))}
+                border: "1px solid",
+                borderColor: reason === option.id ? "#4A7DFF" : "#e5e7eb",
+                bgcolor: reason === option.id ? "#F2F6FF" : "#fff",
+                borderRadius: "10px",
+                px: 1,
+                py: 0.5,
+              }}>
+              <FormControlLabel
+                value={option.id}
+                control={<Radio size="small" sx={{ color: "#4A7DFF" }} />}
+                label={option.label}
+                onChange={() => handleReasonSelect(option.id as Reason)}
+                sx={{
+                  m: 0,
+                  width: "100%",
+                  "& .MuiFormControlLabel-label": {
+                    color: "#212E42",
+                    fontSize: 14,
+                    fontWeight: 500,
+                  },
+                }}
+              />
+            </Box>
+          ))}
         </RadioGroup>
 
         {reason === "alternative" && (
@@ -342,8 +347,7 @@ const SubscriptionRetentionModal = ({
             fontWeight: 500,
             fontSize: 14,
             "&:hover": { backgroundColor: "#0B8D7B" },
-          }}
-        >
+          }}>
           Keep Subscription
         </Button>
         <Button
@@ -358,8 +362,7 @@ const SubscriptionRetentionModal = ({
             textTransform: "none",
             fontWeight: 500,
             fontSize: 14,
-          }}
-        >
+          }}>
           Next
         </Button>
       </Box>
@@ -368,7 +371,12 @@ const SubscriptionRetentionModal = ({
 
   const renderOffer = () => {
     let title = "Wait! Don't lose your progress";
-    let content = <p className="text-[#76808F]">Are you sure you want to cancel? You'll lose access to all premium features.</p>;
+    let content = (
+      <p className="text-[#76808F]">
+        Are you sure you want to cancel? You'll lose access to all premium
+        features.
+      </p>
+    );
     let primaryButtonText = "Keep Subscription";
     let primaryDisabled = false;
     let primaryAction = () => {
@@ -377,47 +385,51 @@ const SubscriptionRetentionModal = ({
     };
     let secondaryButtonText = "Continue to Cancel";
     let secondaryAction = () => {
-        trackCancellationEvent("continue_to_cancel_clicked");
-        setStep("confirm");
+      trackCancellationEvent("continue_to_cancel_clicked");
+      setStep("confirm");
     };
 
     if (reason === "expensive") {
-        title = "Special Offer: 20% Off";
-        content = (
-            <div className="flex flex-col items-center gap-4">
-                <p className="text-[#76808F] text-center">
-                    We'd love for you to stay! Here is a 20% discount for your next month.
-                </p>
-                <div className="bg-[#FFEBD6] px-6 py-3 rounded-xl border border-[#FFD8B4] flex items-center gap-4 w-full justify-between">
-                    <span className="text-[#F27059] font-bold text-lg tracking-wider">STAY20</span>
-                    <Button
-                        variant="text"
-                        onClick={() => {
-                            navigator.clipboard.writeText("STAY20");
-                            setCopied(true);
-                            setTimeout(() => setCopied(false), 2000);
-                        }}
-                        sx={{
-                          textTransform: "none",
-                          minWidth: "auto",
-                          color: "#37465C",
-                          fontSize: 14,
-                          fontWeight: 500,
-                        }}
-                        startIcon={<SvgCopy />}
-                    >
-                        {copied ? "Copied!" : "Copy Code"}
-                    </Button>
-                </div>
-                <p className="text-xs text-gray-500">Apply this code in your account settings.</p>
-            </div>
-        );
-        primaryButtonText = "Use Discount & Stay";
-        // For "Expensive", "Keep Subscription" implies they take the offer.
-        primaryAction = () => {
-          trackCancellationEvent("kept_with_discount");
-          onClose();
-        };
+      title = "Special Offer: 20% Off";
+      content = (
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-[#76808F] text-center">
+            We'd love for you to stay! Here is a 20% discount for your next
+            month.
+          </p>
+          <div className="bg-[#FFEBD6] px-6 py-3 rounded-xl border border-[#FFD8B4] flex items-center gap-4 w-full justify-between">
+            <span className="text-[#F27059] font-bold text-lg tracking-wider">
+              STAY20
+            </span>
+            <Button
+              variant="text"
+              onClick={() => {
+                navigator.clipboard.writeText("STAY20");
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+              sx={{
+                textTransform: "none",
+                minWidth: "auto",
+                color: "#37465C",
+                fontSize: 14,
+                fontWeight: 500,
+              }}
+              startIcon={<SvgCopy />}>
+              {copied ? "Copied!" : "Copy Code"}
+            </Button>
+          </div>
+          <p className="text-xs text-gray-500">
+            Apply this code in your account settings.
+          </p>
+        </div>
+      );
+      primaryButtonText = "Use Discount & Stay";
+      // For "Expensive", "Keep Subscription" implies they take the offer.
+      primaryAction = () => {
+        trackCancellationEvent("kept_with_discount");
+        onClose();
+      };
     } else if (reason === "passed") {
       title = "Congratulations!";
       content = (
@@ -433,23 +445,27 @@ const SubscriptionRetentionModal = ({
           </p>
 
           <div className="flex flex-wrap gap-3 mb-4">
-            {(["listening", "reading", "writing", "speaking"] as const).map((skill) => (
-              <div key={skill} className="flex flex-col text-left w-[calc(50%-6px)] min-w-[140px]">
-                <label className="text-[12px] text-[#76808F] mb-1">
-                  {skill.charAt(0).toUpperCase() + skill.slice(1)}
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  max={12}
-                  step={1}
-                  inputMode="numeric"
-                  placeholder="1-12"
-                  className="border border-gray-200 rounded-lg p-2 text-[14px] focus:outline-none focus:border-[#4A7DFF]"
-                  {...register(`scores.${skill}`)}
-                />
-              </div>
-            ))}
+            {(["listening", "reading", "writing", "speaking"] as const).map(
+              (skill) => (
+                <div
+                  key={skill}
+                  className="flex flex-col text-left w-[calc(50%-6px)] min-w-[140px]">
+                  <label className="text-[12px] text-[#76808F] mb-1">
+                    {skill.charAt(0).toUpperCase() + skill.slice(1)}
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={12}
+                    step={1}
+                    inputMode="numeric"
+                    placeholder="1-12"
+                    className="border border-gray-200 rounded-lg p-2 text-[14px] focus:outline-none focus:border-[#4A7DFF]"
+                    {...register(`scores.${skill}`)}
+                  />
+                </div>
+              ),
+            )}
           </div>
 
           <div className="text-left">
@@ -480,77 +496,79 @@ const SubscriptionRetentionModal = ({
       };
       secondaryButtonText = "Skip";
     } else if (reason === "technical") {
-        title = "Let us fix it for you";
-        content = (
-            <div className="text-center">
-                <p className="text-[#76808F] mb-4">
-                    We're sorry you're facing issues. Our support team can help resolve them quickly.
-                </p>
-            </div>
-        );
-        primaryButtonText = "Contact Support";
-        primaryAction = () => {
-             trackCancellationEvent("contact_support_selected");
-             window.location.href = "mailto:support@celpippracticetest.com";
-             onClose();
-        };
+      title = "Let us fix it for you";
+      content = (
+        <div className="text-center">
+          <p className="text-[#76808F] mb-4">
+            We're sorry you're facing issues. Our support team can help resolve
+            them quickly.
+          </p>
+        </div>
+      );
+      primaryButtonText = "Contact Support";
+      primaryAction = () => {
+        trackCancellationEvent("contact_support_selected");
+        window.location.href = "mailto:support@celpippracticetest.com";
+        onClose();
+      };
     } else if (reason === "not_using") {
-        title = "Pause instead of Cancel?";
-        content = (
-            <div className="text-center">
-                <p className="text-[#76808F]">
-                    You can pause your subscription for up to 3 months and keep your progress and data safe.
-                </p>
-            </div>
-        );
-        primaryButtonText = isPausing ? "Pausing..." : "Pause Subscription";
-        primaryAction = handlePauseSubscription;
-        // If they don't want to pause, they continue to cancel
-        secondaryButtonText = "No thanks, Cancel";
+      title = "Pause instead of Cancel?";
+      content = (
+        <div className="text-center">
+          <p className="text-[#76808F]">
+            You can pause your subscription for up to 3 months and keep your
+            progress and data safe.
+          </p>
+        </div>
+      );
+      primaryButtonText = isPausing ? "Pausing..." : "Pause Subscription";
+      primaryAction = handlePauseSubscription;
+      // If they don't want to pause, they continue to cancel
+      secondaryButtonText = "No thanks, Cancel";
     }
 
     return (
-        <div className="flex flex-col gap-4">
-            <div className="text-center">
-                <h2 className="text-[#212E42] text-[20px] font-semibold mb-2">{title}</h2>
-                {content}
-            </div>
-
-            <div className="flex flex-col gap-3 mt-4">
-                <Button
-                    onClick={primaryAction}
-                    disabled={primaryDisabled}
-                    variant="contained"
-                    fullWidth
-                    sx={{
-                      borderRadius: "9999px",
-                      backgroundColor: "#0DAA94",
-                      textTransform: "none",
-                      fontWeight: 500,
-                      fontSize: 15,
-                      py: 1.2,
-                      "&:hover": { backgroundColor: "#0B8D7B" },
-                    }}
-                >
-                    {primaryButtonText}
-                </Button>
-                <Button
-                    onClick={secondaryAction}
-                    variant="text"
-                    fullWidth
-                    sx={{
-                      color: "#76808F",
-                      textTransform: "none",
-                      fontWeight: 500,
-                      fontSize: 14,
-                      textDecoration: "underline",
-                      textUnderlineOffset: "4px",
-                    }}
-                >
-                    {secondaryButtonText}
-                </Button>
-            </div>
+      <div className="flex flex-col gap-4">
+        <div className="text-center">
+          <h2 className="text-[#212E42] text-[20px] font-semibold mb-2">
+            {title}
+          </h2>
+          {content}
         </div>
+
+        <div className="flex flex-col gap-3 mt-4">
+          <Button
+            onClick={primaryAction}
+            disabled={primaryDisabled}
+            variant="contained"
+            fullWidth
+            sx={{
+              borderRadius: "9999px",
+              backgroundColor: "#0DAA94",
+              textTransform: "none",
+              fontWeight: 500,
+              fontSize: 15,
+              py: 1.2,
+              "&:hover": { backgroundColor: "#0B8D7B" },
+            }}>
+            {primaryButtonText}
+          </Button>
+          <Button
+            onClick={secondaryAction}
+            variant="text"
+            fullWidth
+            sx={{
+              color: "#76808F",
+              textTransform: "none",
+              fontWeight: 500,
+              fontSize: 14,
+              textDecoration: "underline",
+              textUnderlineOffset: "4px",
+            }}>
+            {secondaryButtonText}
+          </Button>
+        </div>
+      </div>
     );
   };
 
@@ -558,11 +576,14 @@ const SubscriptionRetentionModal = ({
     <div className="flex flex-col gap-4">
       <div className="text-center">
         <div className="flex justify-center mb-4 text-[#EE4266]">
-            <SvgCloseCircle /> 
+          <SvgCloseCircle />
         </div>
-        <h2 className="text-[#212E42] text-[20px] font-semibold mb-2">Final Confirmation</h2>
+        <h2 className="text-[#212E42] text-[20px] font-semibold mb-2">
+          Final Confirmation
+        </h2>
         <p className="text-[#76808F] text-[14px]">
-            You are about to cancel your subscription. You will lose access to premium features at the end of your billing cycle.
+          You are about to cancel your subscription. You will lose access to
+          premium features at the end of your billing cycle.
         </p>
       </div>
 
@@ -630,14 +651,15 @@ const SubscriptionRetentionModal = ({
             fontWeight: 500,
             fontSize: 14,
             "&:hover": { backgroundColor: "#0B8D7B" },
-          }}
-        >
+          }}>
           Keep It
         </Button>
         <Button
           onClick={() => {
             if (!finalFeedbackValid) return;
-            trackCancellationEvent("confirm_cancel_clicked", { step: "confirm" });
+            trackCancellationEvent("confirm_cancel_clicked", {
+              step: "confirm",
+            });
             submitSurvey();
             onConfirmCancellation(flowId);
           }}
@@ -652,8 +674,7 @@ const SubscriptionRetentionModal = ({
             textTransform: "none",
             fontWeight: 500,
             fontSize: 14,
-          }}
-        >
+          }}>
           {loading ? "Processing..." : "Confirm Cancel"}
         </Button>
       </div>
@@ -661,26 +682,24 @@ const SubscriptionRetentionModal = ({
   );
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-[#17161680] flex justify-center items-center z-9999 p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           trackCancellationEvent("modal_dismissed", { step });
           onClose();
         }
-      }}
-    >
-      <div className="bg-white rounded-[24px] w-full max-w-[480px] p-6 relative animate-in fade-in zoom-in duration-200">
+      }}>
+      <div className="bg-white rounded-[24px] w-full max-w-[480px] p-6 relative animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
         <button
-            onClick={() => {
-              trackCancellationEvent("modal_closed_with_x", { step });
-              onClose();
-            }}
-            className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 transition-colors"
-        >
-            ✕
+          onClick={() => {
+            trackCancellationEvent("modal_closed_with_x", { step });
+            onClose();
+          }}
+          className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 transition-colors">
+          ✕
         </button>
-        
+
         {step === "survey" && renderSurvey()}
         {step === "offer" && renderOffer()}
         {step === "confirm" && renderConfirm()}

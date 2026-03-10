@@ -50,41 +50,20 @@ export async function POST(req: NextRequest) {
     const resolvedCountry = attributionData.country || null;
     const resolvedCurrency = attributionData.currency || null;
 
-    // Update Clerk metadata
+    // Write only flat UTM fields to Clerk (no firstTouch/lastTouch objects to keep JWT small)
     const clerk = await clerkClient();
     const clerkUser = await clerk.users.getUser(userId);
     const existingPublicMetadata = (clerkUser.publicMetadata || {}) as Record<string, any>;
     await clerk.users.updateUserMetadata(userId, {
       publicMetadata: {
         ...existingPublicMetadata,
-        ...attributionData,
-        acquisitionDate: existingPublicMetadata.acquisitionDate || nowIso,
-        firstTouch: existingPublicMetadata.firstTouch || {
-          source,
-          medium,
-          campaign,
-          content,
-          term,
-          gclid: attributionData.gclid || null,
-          entryPage: resolvedEntryPage,
-          referrer: referrer || null,
-          country: resolvedCountry,
-          currency: resolvedCurrency,
-          timestamp: nowIso,
-        },
-        lastTouch: {
-          source,
-          medium,
-          campaign,
-          content,
-          term,
-          gclid: attributionData.gclid || null,
-          entryPage: resolvedEntryPage,
-          referrer: referrer || null,
-          country: resolvedCountry,
-          currency: resolvedCurrency,
-          timestamp: nowIso,
-        },
+        ...(attributionData.utm_source && { utm_source: attributionData.utm_source }),
+        ...(attributionData.utm_medium && { utm_medium: attributionData.utm_medium }),
+        ...(attributionData.utm_campaign && { utm_campaign: attributionData.utm_campaign }),
+        ...(attributionData.utm_content && { utm_content: attributionData.utm_content }),
+        ...(attributionData.utm_term && { utm_term: attributionData.utm_term }),
+        ...(attributionData.gclid && { gclid: attributionData.gclid }),
+        ...(attributionData.country && { country: attributionData.country }),
       },
     });
 

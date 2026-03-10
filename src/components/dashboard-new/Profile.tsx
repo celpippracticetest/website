@@ -21,7 +21,7 @@ import SubscriptionRetentionModal from "@/components/modal/SubscriptionRetention
 import ChangePlanModal from "@/components/modal/ChangePlanModal";
 import AccountDeletionRetentionModal from "@/components/modal/AccountDeletionRetentionModal";
 export default function Profile({ prevCheckout, subscriptionData }: any) {
-  const { user } = useUser();
+  const { user, isLoaded: isUserLoaded } = useUser();
   const [planNameDisplay, setPlanNameDisplay] = useState<string>("");
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
@@ -78,10 +78,10 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
   const [newEmailId, setNewEmailId] = useState<string | null>(null);
   const [verificationCode, setVerificationCode] = useState("");
   useEffect(() => {
-    if (user === null) {
+    if (isUserLoaded && user === null) {
       router.push("/practice-overview");
     }
-  }, [user]);
+  }, [isUserLoaded, user]);
 
   const getSessions = useGetUserSessions();
 

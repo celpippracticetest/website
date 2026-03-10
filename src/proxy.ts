@@ -99,12 +99,7 @@ export default clerkMiddleware(async (auth, req) => {
       const dashboard = new URL("/practice-overview", req.url);
       return NextResponse.redirect(dashboard);
     }
-    const plan = authenticate.sessionClaims?.metadata.plan;
-    // Allow access if plan is missing (claims may not be refreshed immediately after signup)
-    if (plan && plan !== "free" && plan !== "premium") {
-      const homeUrl = new URL("/", req.url);
-      return NextResponse.redirect(homeUrl);
-    }
+    // All authenticated users can access their profile regardless of plan
   }
   if (isPlansRoute(req)) {
     if (!authenticate.userId) {
@@ -173,7 +168,7 @@ export default clerkMiddleware(async (auth, req) => {
           {
             method: "POST",
             headers,
-          }
+          },
         );
 
         if (response.ok) {
@@ -252,7 +247,7 @@ export default clerkMiddleware(async (auth, req) => {
                 userEmail: (authenticate.sessionClaims as any)
                   ?.email_addresses?.[0]?.email_address,
               }),
-            }
+            },
           );
 
           if (discountResponse.ok) {
@@ -301,7 +296,7 @@ export default clerkMiddleware(async (auth, req) => {
               method: "POST",
               headers,
               body: JSON.stringify({ referralCode }),
-            }
+            },
           );
 
           if (!response.ok) {

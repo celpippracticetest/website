@@ -10,6 +10,7 @@ interface SuccessPageTrackingProps {
   items: any[];
   email?: string;
   attributionData?: Record<string, unknown>;
+  purchaseType?: "first_purchase" | "subscription_renewal";
 }
 
 /**
@@ -23,6 +24,7 @@ export default function SuccessPageTracking({
   items,
   email,
   attributionData,
+  purchaseType = "first_purchase",
 }: SuccessPageTrackingProps) {
   const { purchase } = useEcommerceTracking();
   const hasTrackedRef = useRef(false);
@@ -59,7 +61,8 @@ export default function SuccessPageTracking({
       value,
       undefined, // coupon
       userData,
-      attributionData
+      attributionData,
+      purchaseType
     );
     hasTrackedRef.current = true;
     sessionStorage.setItem(dedupeKey, "1");

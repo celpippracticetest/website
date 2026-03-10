@@ -110,6 +110,7 @@
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.9.0",
     "@next/bundle-analyzer": "^15.3.4",
+    "@next/swc-darwin-arm64": "^16.1.6",
     "@tailwindcss/postcss": "^4.1.4",
     "@tailwindcss/typography": "^0.5.16",
     "@types/diff": "^8.0.0",
@@ -136,5 +137,8 @@
     "opera 51",
     "safari 12"
   ],
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
+  "optionalDependencies": {
+    "@next/swc-darwin-arm64": "^16.1.6"
+  }
 }

@@ -32,14 +32,29 @@ async function getDb() {
   return repo;
 }
 
+function buildReferralLink(
+  baseUrl: string,
+  code: string,
+  user: { firstName?: string | null; lastName?: string | null; emailAddresses?: { emailAddress: string }[]; id: string }
+): string {
+  const inviterNameOrEmail =
+    (user.firstName && user.lastName
+      ? `${user.firstName} ${user.lastName}`
+      : user.firstName
+      ? user.firstName
+      : user.emailAddresses?.[0]?.emailAddress) || user.id;
+  return `${baseUrl}/referral/?ref=${code}&inviter=${encodeURIComponent(inviterNameOrEmail)}`;
+}
+
 export async function ensureUserReferral(userId: string, baseUrl: string) {
   const cc = await clerkClient();
   const user = await cc.users.getUser(userId);
   const pm = (user.publicMetadata || {}) as Record<string, any>;
 
-  // If user has referral code in metadata, return it
-  if (pm.referralCode && pm.referralLink) {
-    return { code: String(pm.referralCode), link: String(pm.referralLink) };
+  // If user already has a referral code, reconstruct the link on-the-fly
+  if (pm.referralCode) {
+    const link = buildReferralLink(baseUrl, String(pm.referralCode), user);
+    return { code: String(pm.referralCode), link };
   }
 
   // Check if referral code exists in database
@@ -47,23 +62,13 @@ export async function ensureUserReferral(userId: string, baseUrl: string) {
   const existing = await repo.findOneByUserId(userId);
 
   if (existing) {
-    // Update Clerk metadata with existing code
-    const inviterNameOrEmail =
-      (user.firstName && user.lastName
-        ? `${user.firstName} ${user.lastName}`
-        : user.firstName
-        ? user.firstName
-        : user.emailAddresses?.[0]?.emailAddress) || userId;
+    const link = buildReferralLink(baseUrl, existing.code, user);
 
-    const link = `${baseUrl}/referral/?ref=${
-      existing.code
-    }&inviter=${encodeURIComponent(inviterNameOrEmail)}`;
-
+    // Sync referralCode back to Clerk metadata (without referralLink to keep JWT small)
     await cc.users.updateUser(userId, {
       publicMetadata: {
         ...pm,
         referralCode: existing.code,
-        referralLink: link,
         referralActive: true,
       },
     });
@@ -71,7 +76,6 @@ export async function ensureUserReferral(userId: string, baseUrl: string) {
     return { code: existing.code, link };
   }
 
-  // If no referral code exists, redirect to create one
   throw new Error(
     "No referral code found. Please contact support to create one."
   );

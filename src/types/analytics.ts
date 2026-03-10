@@ -174,44 +174,55 @@ export interface EcommerceItem {
   quantity?: number;
   item_brand?: string;
   item_category?: string;
+  item_category2?: string;
 }
 
 export interface ViewItemListEvent extends GTMEvent {
   event: "view_item_list";
-  item_list_id?: string;
-  item_list_name?: string;
-  items: EcommerceItem[];
+  ecommerce: {
+    item_list_id?: string;
+    item_list_name?: string;
+    items: EcommerceItem[];
+  };
 }
 
 export interface SelectItemEvent extends GTMEvent {
   event: "select_item";
-  item_list_id?: string;
-  item_list_name?: string;
-  items: EcommerceItem[];
+  ecommerce: {
+    item_list_id?: string;
+    item_list_name?: string;
+    items: EcommerceItem[];
+  };
 }
 
 export interface BeginCheckoutEvent extends GTMEvent {
   event: "begin_checkout";
-  currency: string;
-  value: number;
-  items: EcommerceItem[];
-  coupon?: string;
+  ecommerce: {
+    currency: string;
+    value: number;
+    items: EcommerceItem[];
+    coupon?: string;
+  };
 }
 
 export interface PurchaseEvent extends GTMEvent {
   event: "purchase";
-  transaction_id: string;
-  currency: string;
-  value: number;
-  items: EcommerceItem[];
-  coupon?: string;
+  ecommerce: {
+    transaction_id: string;
+    currency: string;
+    value: number;
+    items: EcommerceItem[];
+    coupon?: string;
+  };
 }
 
 export interface RefundEvent extends GTMEvent {
   event: "refund";
-  transaction_id: string;
-  currency: string;
-  value: number;
+  ecommerce: {
+    transaction_id: string;
+    currency: string;
+    value: number;
+  };
 }
 
 // Engagement Events

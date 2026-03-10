@@ -77,6 +77,37 @@ function normalizeUserData(userData?: UserData): UserData | undefined {
   return normalized;
 }
 
+/**
+ * Push a dedicated event for ads platforms (Google Ads Enhanced Conversions, Meta Pixel).
+ * This event intentionally contains user_data (PII) and must NOT be sent to GA4.
+ * In GTM, configure only Google Ads / Meta tags to listen to "ads_enhanced_conversion".
+ */
+function pushAdsEnhancedConversion(params: {
+  conversionEvent: string;
+  conversionLabel?: string;
+  value?: number;
+  currency?: string;
+  transactionId?: string;
+  userData: UserData;
+  purchaseType?: "first_purchase" | "subscription_renewal";
+}): void {
+  const { conversionEvent, conversionLabel, value, currency, transactionId, userData, purchaseType } = params;
+  pushToDataLayer(
+    {
+      event: "ads_enhanced_conversion",
+      conversion_event: conversionEvent,
+      conversion_label: conversionLabel || undefined,
+      google_ads_send_to: getGoogleAdsSendTo(conversionLabel || ""),
+      value,
+      currency,
+      transaction_id: transactionId,
+      purchase_type: purchaseType,
+      user_data: normalizeUserData(userData),
+    },
+    false
+  );
+}
+
 function markDeduplicatedOnce(key: string): boolean {
   if (!key) return false;
   if (conversionDedupSet.has(key)) return true;
@@ -239,13 +270,22 @@ export const trackAuth = {
       event: "sign_up_completed",
       user_id: userId,
       method,
-      user_data: normalizeUserData(userData),
       conversion_name: "sign_up_completed",
       conversion_label: conversionLabel || undefined,
       google_ads_send_to: getGoogleAdsSendTo(conversionLabel),
       value: 1,
       currency: "CAD",
     });
+
+    if (userData) {
+      pushAdsEnhancedConversion({
+        conversionEvent: "sign_up_completed",
+        conversionLabel,
+        value: 1,
+        currency: "CAD",
+        userData,
+      });
+    }
   },
 
   loginInitiated: (method?: string) => {
@@ -255,12 +295,11 @@ export const trackAuth = {
     });
   },
 
-  loginCompleted: (userId: string, method?: string, userData?: UserData) => {
+  loginCompleted: (userId: string, method?: string) => {
     pushToDataLayer({
       event: "login_completed",
       user_id: userId,
       method,
-      user_data: userData,
     });
   },
 
@@ -454,15 +493,22 @@ export const trackPractice = {
 };
 
 /**
+ * Clear the ecommerce object before pushing a new ecommerce event.
+ * Required by GA4 best practice to prevent data from previous events bleeding in.
+ */
+function clearEcommerce(): void {
+  if (!isBrowser) return;
+  getDataLayer().push({ ecommerce: null });
+}
+
+/**
  * Track e-commerce events (GA4 standard)
  */
 export const trackEcommerce = {
   viewItemList: (items: any[], itemListId?: string, itemListName?: string) => {
+    clearEcommerce();
     pushToDataLayer({
       event: "view_item_list",
-      item_list_id: itemListId,
-      item_list_name: itemListName,
-      items,
       ecommerce: {
         item_list_id: itemListId,
         item_list_name: itemListName,
@@ -472,11 +518,9 @@ export const trackEcommerce = {
   },
 
   selectItem: (items: any[], itemListId?: string, itemListName?: string) => {
+    clearEcommerce();
     pushToDataLayer({
       event: "select_item",
-      item_list_id: itemListId,
-      item_list_name: itemListName,
-      items,
       ecommerce: {
         item_list_id: itemListId,
         item_list_name: itemListName,
@@ -493,23 +537,29 @@ export const trackEcommerce = {
     userData?: UserData
   ) => {
     const conversionLabel = GOOGLE_ADS_BEGIN_CHECKOUT_LABEL;
+    clearEcommerce();
     pushToDataLayer({
       event: "begin_checkout",
-      currency,
-      value,
-      items,
-      coupon,
       ecommerce: {
         currency,
         value,
         items,
-        coupon,
+        ...(coupon && { coupon }),
       },
-      user_data: normalizeUserData(userData),
       conversion_name: "begin_checkout",
       conversion_label: conversionLabel || undefined,
       google_ads_send_to: getGoogleAdsSendTo(conversionLabel),
     });
+
+    if (userData) {
+      pushAdsEnhancedConversion({
+        conversionEvent: "begin_checkout",
+        conversionLabel,
+        value,
+        currency,
+        userData,
+      });
+    }
   },
 
   purchase: (
@@ -519,45 +569,65 @@ export const trackEcommerce = {
     value: number,
     coupon?: string,
     userData?: UserData,
-    attributionData?: Record<string, unknown>
+    attributionData?: Record<string, unknown>,
+    purchaseType: "first_purchase" | "subscription_renewal" = "first_purchase"
   ) => {
     const dedupeKey = `purchase_${transactionId}`;
     if (markDeduplicatedOnce(dedupeKey)) return;
 
     const conversionLabel = GOOGLE_ADS_PURCHASE_LABEL;
+    clearEcommerce();
     pushToDataLayer({
       event: "purchase",
-      transaction_id: transactionId,
-      currency,
-      value,
-      items,
-      coupon,
+      purchase_type: purchaseType,
       ecommerce: {
         transaction_id: transactionId,
         currency,
         value,
         items,
-        coupon,
+        ...(coupon && { coupon }),
       },
-      user_data: normalizeUserData(userData),
       conversion_name: "purchase",
       conversion_label: conversionLabel || undefined,
       google_ads_send_to: getGoogleAdsSendTo(conversionLabel),
       ...attributionData,
     });
+
+    if (userData) {
+      pushAdsEnhancedConversion({
+        conversionEvent: "purchase",
+        conversionLabel,
+        value,
+        currency,
+        transactionId,
+        userData,
+        purchaseType,
+      });
+    }
   },
 
   refund: (transactionId: string, currency: string, value: number) => {
+    clearEcommerce();
     pushToDataLayer({
       event: "refund",
-      transaction_id: transactionId,
-      currency,
-      value,
       ecommerce: {
         transaction_id: transactionId,
         currency,
         value,
       },
+    });
+  },
+
+  subscriptionCancelled: (
+    reason?: "user_cancelled" | "payment_failed" | "admin_cancelled" | "refunded",
+    planType?: string,
+    subscriptionId?: string
+  ) => {
+    pushToDataLayer({
+      event: "subscription_cancelled",
+      cancellation_reason: reason,
+      plan_type: planType,
+      subscription_id: subscriptionId,
     });
   },
 };

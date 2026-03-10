@@ -77,7 +77,6 @@ export async function POST() {
         publicMetadata: {
           ...pm,
           referralCode: existingCode.code,
-          referralLink: link,
           referralActive: true,
         },
       });
@@ -127,7 +126,6 @@ export async function POST() {
       publicMetadata: {
         ...pm,
         referralCode: code,
-        referralLink: link,
         referralActive: true,
       },
     });
