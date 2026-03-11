@@ -70,8 +70,6 @@ const Hero = ({ heroImage }: HeroProps) => {
     return () => window.removeEventListener("scroll", onScroll);
   }, [isInFooter]);
 
-  useEffect(() => {}, [isInFooter]);
-
   useEffect(() => {
     if (window.location.hash === "#plans") {
       const el = document.getElementById("plans");
@@ -188,12 +186,13 @@ const Hero = ({ heroImage }: HeroProps) => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1, duration: 0.1 }}>
                     <div className="relative hidden h-[491px] w-[327px] screen1280:!flex">
-                      <img
+                      <Image
                         src={heroImage.imageUrl}
                         alt={heroImage.altText}
+                        width={327}
+                        height={491}
                         className="relative top-[-120px] h-full w-full object-contain"
-                        loading="eager"
-                        fetchPriority="high"
+                        priority
                       />
                     </div>
                   </motion.div>

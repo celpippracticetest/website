@@ -1,25 +1,31 @@
-import PromotionManager from "@/components/league/PromotionManager";
-import PremiumPlanModal from "@/components/premium-plan/PremiumPlanModal";
 import "./globals.css";
-import "../../sentry.client.config"; // Initialize Sentry on client
 import NextTopLoader from "nextjs-toploader";
 import { Analytics } from "@vercel/analytics/react";
 import { ClerkProvider } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
+import dynamic from "next/dynamic";
 import ReactQueryProvider from "@/components/ReactQueryProvider";
 import { LazyIntercom, LazyLeadCapturePopup } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
-import CriticalCSS from "@/components/CriticalCSS";
-import type { Metadata, Viewport } from "next";
-import { Suspense, type ComponentType } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ActiveUsersTracker from "@/components/analytics/ActiveUsersTracker";
 import AttributionTracker from "@/components/analytics/AttributionTracker";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
 import FooterWrapper from "@/components/pages/landing/FooterWrapper";
 import { getHomepageHeroDisplay } from "@/lib/homepage-hero";
+import type { Metadata, Viewport } from "next";
+import { Suspense, type ComponentType } from "react";
+
+const PremiumPlanModal = dynamic(
+  () => import("@/components/premium-plan/PremiumPlanModal"),
+  { ssr: false }
+);
+const PromotionManager = dynamic(
+  () => import("@/components/league/PromotionManager"),
+  { ssr: false }
+);
 
 const NextTopLoaderComponent =
   NextTopLoader as unknown as ComponentType<Record<string, never>>;
@@ -182,8 +188,6 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-title" content="CELPIP Test" />
         <meta name="theme-color" content="#3B82F6" />
 
-        <script src="http://localhost:3001/widget.js" data-business-id="celpippracticetest" data-launcher-label="Chat Support" data-position="right" data-accent-color="#2563eb" async></script>
-
         {/* GTM consent defaults — must run before GTM initialises */}
         {enableGtm && (
           <Script
@@ -204,11 +208,11 @@ export default async function RootLayout({
           />
         )}
 
-        {/* GTM snippet — async, non-blocking, placed in <head> as required by Google */}
+        {/* GTM snippet — deferred to after hydration for better INP/LCP */}
         {enableGtm && (
           <Script
             id="gtm-head"
-            strategy="beforeInteractive"
+            strategy="afterInteractive"
             dangerouslySetInnerHTML={{
               __html: `
                 (function(w,d,s,l,i){
@@ -226,11 +230,9 @@ export default async function RootLayout({
           />
         )}
 
-        {/* JSON-LD early is fine */}
-        <Script
-          id="structured-data"
+        {/* JSON-LD — inline in initial HTML for SEO bots, no JS execution needed */}
+        <script
           type="application/ld+json"
-          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
@@ -271,7 +273,6 @@ export default async function RootLayout({
           <PromotionManager />
           <LazyIntercom />
           <PerformanceMonitor />
-          <CriticalCSS />
           <Analytics />
           <ActiveUsersTracker />
           <Suspense fallback={null}>

@@ -3327,6 +3327,22 @@
         ],
         "fingerprint": "1772500000003",
         "formatValue": {}
+      },
+      {
+        "accountId": "6292384809",
+        "containerId": "218518927",
+        "variableId": "90",
+        "name": "Page Title",
+        "type": "jsm",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "javascript",
+            "value": "function() { return document.title; }"
+          }
+        ],
+        "fingerprint": "1772500000090",
+        "formatValue": {}
       }
     ],
     "builtInVariable": [

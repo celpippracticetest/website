@@ -384,6 +384,7 @@ export async function POST(req: Request) {
         } else {
           await updateUserPublicMetadata(metadata.user_id, {
             planCancelled: false,
+            planExpiresAt: null,
             hasEverPurchased: true,
             purchaseDate: new Date().toISOString(),
             plan: (metadata.plan_name || "premium").toLowerCase().includes("pro") ? "pro" : "premium",
@@ -413,6 +414,13 @@ export async function POST(req: Request) {
           console.warn(
             `Cannot update metadata: subscription ${subscription.id} is canceled.`
           );
+        }
+
+        if (subscription.current_period_end) {
+          await updateUserPublicMetadata(metadata.user_id, {
+            planRenewsAt: new Date(subscription.current_period_end * 1000).toISOString(),
+            planExpiresAt: null,
+          });
         }
       }
 
@@ -572,6 +580,10 @@ export async function POST(req: Request) {
         if (metadata?.user_id) {
           await updateUserPublicMetadata(metadata.user_id, {
             planCancelled: true,
+            planExpiresAt: subscription.current_period_end
+              ? new Date(subscription.current_period_end * 1000).toISOString()
+              : null,
+            planRenewsAt: null,
           });
         }
         return NextResponse.json({ received: true });
