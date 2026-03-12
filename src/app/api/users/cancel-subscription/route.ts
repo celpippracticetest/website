@@ -3,8 +3,6 @@ import { clerkClient } from "@clerk/express";
 import { auth } from "@clerk/nextjs/server";
 import Stripe from "stripe";
 import clientPromise from "@/lib/mongodb";
-import { getPostHogClient } from "@/lib/posthog-server";
-
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 function normalizeDate(value: unknown): Date | null {
@@ -132,21 +130,6 @@ export async function POST(req: NextRequest) {
       metadata: null,
       createdAt: now,
     });
-
-    try {
-      const posthog = getPostHogClient();
-      posthog.capture({
-        distinctId: userId,
-        event: "subscription_cancelled",
-        properties: {
-          flow_id: flowId,
-          subscription_duration_days: subscriptionDurationDays,
-        },
-      });
-      await posthog.shutdown();
-    } catch (phErr) {
-      console.error("PostHog subscription_cancelled tracking failed:", phErr);
-    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

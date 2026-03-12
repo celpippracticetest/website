@@ -6,8 +6,6 @@ import { stripe } from "@/lib/stripe";
 import { currentUser } from "@clerk/nextjs/server";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
 import { getDb } from "@/lib/mongodb";
-import { getPostHogClient } from "@/lib/posthog-server";
-
 export async function POST(req: NextRequest) {
   try {
     const product: string | null = req.nextUrl.searchParams.get("product");
@@ -364,36 +362,6 @@ export async function POST(req: NextRequest) {
       sessionId: session.id,
       hasDiscount: !!promotionCode,
     });
-
-    const posthog = getPostHogClient();
-    posthog.capture({
-      distinctId: user.id,
-      event: "checkout_session_created",
-      properties: {
-        session_id: session.id,
-        plan_name: productDetails.name,
-        price_id: priceId,
-        mode,
-        has_discount: !!promotionCode,
-        referral_discount_applied: referralDiscountApplied,
-        currency: priceObject.currency?.toUpperCase() || "CAD",
-        amount: (priceObject.unit_amount || 0) / 100,
-        email,
-      },
-    });
-    if (referralDiscountApplied) {
-      posthog.capture({
-        distinctId: user.id,
-        event: "referral_discount_applied",
-        properties: {
-          session_id: session.id,
-          referral_code: userMetadata?.referralCode || null,
-          plan_name: productDetails.name,
-          email,
-        },
-      });
-    }
-    await posthog.shutdown();
 
     if (mode === "subscription" && session?.subscription) {
       await stripe.subscriptions.update(session.subscription, {

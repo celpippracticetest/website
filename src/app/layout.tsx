@@ -7,7 +7,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import dynamic from "next/dynamic";
 import ReactQueryProvider from "@/components/ReactQueryProvider";
-import { LazyIntercom, LazyLeadCapturePopup } from "@/components/LazyComponents";
+import { LazyLeadCapturePopup } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ActiveUsersTracker from "@/components/analytics/ActiveUsersTracker";
@@ -271,7 +271,6 @@ export default async function RootLayout({
           </ReactQueryProvider>
           <PremiumPlanModal />
           <PromotionManager />
-          <LazyIntercom />
           <PerformanceMonitor />
           <Analytics />
           <ActiveUsersTracker />

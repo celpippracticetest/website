@@ -1,5 +1,4 @@
 import LayoutClient from "@/components/dashboard-new/LayoutClient";
-import IntercomLoader from "@/components/IntercomLoader";
 import Footer from "@/components/pages/landing/Footer";
 import { daysSince } from "@/lib/utils";
 import { currentUser } from "@clerk/nextjs/server";
@@ -49,7 +48,6 @@ export default async function RootLayout({
       (onboardingNew.askedLaterAt && daysSince(onboardingNew.askedLaterAt) < 7));
   return (
     <>
-      <IntercomLoader />
       <LayoutClient
         showSurvey={showSurvey}
         showCompletedModal={showCompletedModal}

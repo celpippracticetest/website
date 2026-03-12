@@ -3,12 +3,6 @@
 import dynamic from "next/dynamic";
 import { Suspense } from "react";
 
-// Lazy load Intercom
-export const LazyIntercom = dynamic(() => import("./IntercomLoader"), {
-  loading: () => null,
-  ssr: false,
-});
-
 // Lazy load lead capture popup client-side only
 export const LazyLeadCapturePopup = dynamic(
   () => import("./lead-capture/LeadCapturePopup"),

@@ -4,8 +4,6 @@ import mongoClient from "@/lib/mongodb";
 import { ReferralRepository } from "@/repositories/referral.repo";
 import { ReferralInvitationRepository } from "@/repositories/referral-invitation.repo";
 import { clerkClient } from "@clerk/express";
-import { getPostHogClient } from "@/lib/posthog-server";
-
 export async function POST(req: Request) {
   try {
     const { userId } = await auth();
@@ -128,21 +126,6 @@ export async function POST(req: Request) {
         lastInviteeEmail: userEmail,
       },
     });
-
-    try {
-      const posthog = getPostHogClient();
-      posthog.capture({
-        distinctId: userId,
-        event: "referral_signup_completed",
-        properties: {
-          referral_code: referralCode,
-          referrer_id: referrer.userId,
-        },
-      });
-      await posthog.shutdown();
-    } catch (phErr) {
-      console.error("PostHog referral_signup_completed tracking failed:", phErr);
-    }
 
     return NextResponse.json({
       success: true,

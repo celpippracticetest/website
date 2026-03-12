@@ -58,12 +58,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   const blogSlugs = await getPublishedBlogSlugs();
-  const blogRoutes = blogSlugs.map((post) => ({
-    url: `${BASE_URL}/blog/${post.slug}`,
-    lastModified: post.updatedAt || new Date(),
-    changeFrequency: "weekly" as const,
-    priority: 0.75,
-  }));
+  const blogRoutes = blogSlugs
+    .filter((post) => {
+      if (!post.canonicalUrl) return true;
+      const selfUrl = `${BASE_URL}/blog/${post.slug}`;
+      const normalise = (u: string) => u.replace(/\/$/, "").toLowerCase();
+      return normalise(post.canonicalUrl) === normalise(selfUrl);
+    })
+    .map((post) => ({
+      url: `${BASE_URL}/blog/${post.slug}`,
+      lastModified: post.updatedAt || new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.75,
+    }));
 
   return [...routes, ...wikiRoutes, ...blogRoutes];
 }

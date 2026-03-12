@@ -4,7 +4,6 @@ import { SignUp, useUser } from "@clerk/nextjs";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { trackAuth } from "@/lib/gtm";
-import posthog from "posthog-js";
 
 export default function SignUpPage() {
   const { user, isSignedIn } = useUser();
@@ -65,16 +64,6 @@ export default function SignUpPage() {
         first_name: user.firstName || "",
         last_name: user.lastName || "",
       },
-    });
-
-    const userEmail = user.primaryEmailAddress?.emailAddress?.trim().toLowerCase();
-    posthog.identify(user.id, {
-      email: userEmail,
-      name: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
-    });
-    posthog.capture("sign_up_completed", {
-      method: "email",
-      email: userEmail,
     });
 
     localStorage.setItem(dedupeKey, "1");

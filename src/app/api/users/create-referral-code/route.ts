@@ -4,8 +4,6 @@ import { headers } from "next/headers";
 import mongoClient from "@/lib/mongodb";
 import { ReferralRepository } from "@/repositories/referral.repo";
 import { randomInt } from "crypto";
-import { getPostHogClient } from "@/lib/posthog-server";
-
 function generateReferralCode(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let part = "";
@@ -129,18 +127,6 @@ export async function POST() {
         referralActive: true,
       },
     });
-
-    try {
-      const posthog = getPostHogClient();
-      posthog.capture({
-        distinctId: userId,
-        event: "referral_code_created",
-        properties: { referral_code: code },
-      });
-      await posthog.shutdown();
-    } catch (phErr) {
-      console.error("PostHog referral_code_created tracking failed:", phErr);
-    }
 
     return NextResponse.json({
       success: true,

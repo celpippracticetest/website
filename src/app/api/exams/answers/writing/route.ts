@@ -6,7 +6,6 @@ import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpe
 import { TaskRepository } from "@/repositories/tasks.repo";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
-import { getPostHogClient } from "@/lib/posthog-server";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 
 export const POST = async function (req: NextRequest) {
@@ -428,23 +427,6 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-      if (user) {
-        try {
-          const posthog = getPostHogClient();
-          posthog.capture({
-            distinctId: user.id,
-            event: "writing_answer_submitted",
-            properties: {
-              exam_id: answerBody.examId,
-              part_id: answerBody.partId,
-              overall_score: parsedResult.overall,
-            },
-          });
-          await posthog.shutdown();
-        } catch (phErr) {
-          console.error("PostHog writing_answer_submitted tracking failed:", phErr);
-        }
-      }
       return NextResponse.json({
         ...answer,
         usage: {
@@ -511,27 +493,6 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    if (user) {
-      try {
-        const overallScore =
-          msg && msg.content.length > 1 && (msg.content[1] as any).input?.overall
-            ? (msg.content[1] as any).input.overall
-            : 0;
-        const posthog = getPostHogClient();
-        posthog.capture({
-          distinctId: user.id,
-          event: "writing_answer_submitted",
-          properties: {
-            exam_id: answerBody.examId,
-            part_id: answerBody.partId,
-            overall_score: overallScore,
-          },
-        });
-        await posthog.shutdown();
-      } catch (phErr) {
-        console.error("PostHog writing_answer_submitted tracking failed:", phErr);
-      }
-    }
     return NextResponse.json({
       ...answer,
       usage: {

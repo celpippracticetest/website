@@ -1,5 +1,4 @@
 import LayoutLearningClient from "@/components/dashboard-new/LayoutLearningClient";
-import IntercomLoader from "@/components/IntercomLoader";
 import { daysSince } from "@/lib/utils";
 import { currentUser } from "@clerk/nextjs/server";
 import { Metadata } from "next";
@@ -8,9 +7,26 @@ export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
   const isPreview = appBaseUrl.includes("vercel.app");
   return {
-    title: "Dashboard",
+    title: "CELPIP AI Learning Assistant | Ask & Get Exam Strategies",
+    description:
+      "Get personalized CELPIP study help from an AI learning assistant. Ask about Speaking, Writing, Listening, and Reading strategies to get targeted feedback and hit CLB 9+.",
     alternates: {
       canonical: `${appBaseUrl}/learning`,
+    },
+    openGraph: {
+      title: "CELPIP AI Learning Assistant | Ask & Get Exam Strategies",
+      description:
+        "Get personalized CELPIP study help from an AI learning assistant. Ask about Speaking, Writing, Listening, and Reading strategies to get targeted feedback and hit CLB 9+.",
+      url: `${appBaseUrl}/learning`,
+      siteName: "CELPIP Practice Test",
+      locale: "en_US",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "CELPIP AI Learning Assistant | Ask & Get Exam Strategies",
+      description:
+        "Get personalized CELPIP study help from an AI learning assistant. Ask about Speaking, Writing, Listening, and Reading strategies to get targeted feedback and hit CLB 9+.",
     },
     robots: {
       index: !isPreview,
@@ -51,7 +67,6 @@ export default async function RootLayout({
       (onboardingNew.askedLaterAt && daysSince(onboardingNew.askedLaterAt) < 7));
   return (
     <>
-      <IntercomLoader />
       <LayoutLearningClient
         showSurvey={showSurvey}
         showCompletedModal={showCompletedModal}

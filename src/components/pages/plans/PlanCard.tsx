@@ -4,7 +4,6 @@ import SvgCheck from "../../icons/Check";
 import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
 import { useEcommerceTracking } from "@/hooks/useTracking";
 import { useUser } from "@clerk/nextjs";
-import posthog from "posthog-js";
 
 interface IPlanCard {
   title: string;
@@ -59,16 +58,6 @@ const PlanCard = ({
       },
     });
 
-    posthog.capture("plan_selected", {
-      plan_title: planTitle,
-      plan_name: title,
-      plan_type: type,
-      plan_price: parseFloat(price),
-      plan_currency: "CAD",
-      $set: {
-        email: user?.primaryEmailAddress?.emailAddress?.trim().toLowerCase(),
-      },
-    });
   };
 
   return (

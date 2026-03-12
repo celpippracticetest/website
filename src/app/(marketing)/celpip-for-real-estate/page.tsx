@@ -53,6 +53,18 @@ export default function CelpipForRealEstatePage() {
       "@type": "Organization",
       "name": "CELPIPPracticeTest.com",
       "sameAs": "https://celpippracticetest.com"
+    },
+    "offers": {
+      "@type": "Offer",
+      "category": "Paid",
+      "price": "49",
+      "priceCurrency": "CAD",
+      "url": "https://celpippracticetest.com/pricing"
+    },
+    "hasCourseInstance": {
+      "@type": "CourseInstance",
+      "courseMode": "online",
+      "courseWorkload": "PT10H"
     }
   };
 

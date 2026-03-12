@@ -98,25 +98,35 @@ export default async function PricingPage() {
   const itemListSchema = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    itemListElement: serializedPlans.map((plan, index) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      item: {
-        "@type": "Course",
-        name: plan.planTitle || plan.title,
-        description: plan.features?.join(". ") || "CELPIP Practice Plan",
-        provider: {
-          "@type": "Organization",
-          name: "CELPIP Practice Test",
-          sameAs: "https://celpippracticetest.com",
+    itemListElement: serializedPlans.map((plan, index) => {
+      const numericPrice = plan.price?.replace?.(/[^0-9.]/g, "") || "0";
+      const isFree = numericPrice === "0";
+      return {
+        "@type": "ListItem",
+        position: index + 1,
+        item: {
+          "@type": "Course",
+          name: plan.planTitle || plan.title,
+          description: plan.features?.join(". ") || "CELPIP Practice Plan",
+          provider: {
+            "@type": "Organization",
+            name: "CELPIP Practice Test",
+            sameAs: "https://celpippracticetest.com",
+          },
+          offers: {
+            "@type": "Offer",
+            category: isFree ? "Free" : "Paid",
+            price: numericPrice,
+            priceCurrency: "CAD",
+          },
+          hasCourseInstance: {
+            "@type": "CourseInstance",
+            courseMode: "online",
+            courseWorkload: "PT10H",
+          },
         },
-        offers: {
-          "@type": "Offer",
-          price: plan.price?.replace?.(/[^0-9.]/g, "") || "0",
-          priceCurrency: "CAD",
-        },
-      },
-    })),
+      };
+    }),
   };
 
   return (

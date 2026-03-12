@@ -16,8 +16,6 @@ import {
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { useLeadCaptureTriggers } from "@/hooks/useLeadCaptureTriggers";
 import { trackEngagement } from "@/lib/gtm";
-import posthog from "posthog-js";
-
 type LeadCaptureConfig = {
   id: string;
   name: string;
@@ -182,12 +180,6 @@ export default function LeadCapturePopup() {
       if (isCooldownActive(activeConfig.id)) return;
       setTriggerSource(source);
       setIsVisible(true);
-      posthog.capture("lead_capture_shown", {
-        trigger_source: source,
-        campaign_id: activeConfig.id,
-        campaign_name: activeConfig.name,
-        page_path: pathname,
-      });
     },
     [activeConfig, configLoaded, isLoaded, isPathEligible, pathname]
   );
@@ -204,12 +196,6 @@ export default function LeadCapturePopup() {
 
   const closePopup = useCallback(() => {
     if (!activeConfig) return;
-    posthog.capture("lead_capture_dismissed", {
-      campaign_id: activeConfig.id,
-      campaign_name: activeConfig.name,
-      trigger_source: triggerSource,
-      page_path: pathname,
-    });
     setFrequencyCap(activeConfig.id, activeConfig.frequencyCapDays);
     setIsVisible(false);
     setActiveConfig(selectCandidate(configs));
@@ -244,14 +230,6 @@ export default function LeadCapturePopup() {
           triggerSource,
           activeConfig.id
         );
-        posthog.capture("lead_capture_submitted", {
-          campaign_id: activeConfig.id,
-          campaign_name: activeConfig.name,
-          trigger_source: triggerSource,
-          page_path: window.location.pathname,
-          $set: { email: email.trim() },
-        });
-        posthog.identify(undefined, { email: email.trim() });
         setFrequencyCap(activeConfig.id, activeConfig.frequencyCapDays);
         setTimeout(() => {
           setIsVisible(false);

@@ -97,22 +97,13 @@ const AuthButtons = () => {
                 >
                   Profile
                 </Link>
-                <button
-                  onClick={() => {
-                    if (typeof window !== "undefined") {
-                      const w = window as unknown as {
-                        Intercom?: (cmd: string) => void;
-                      };
-                      if (w.Intercom) {
-                        w.Intercom("show");
-                      }
-                    }
-                  }}
+                <Link
+                  href="/contact-us"
                   id="support-button"
-                  className="cursor-pointer block px-4 py-2 text-[14px] text-gray-700 w-full text-left"
+                  className="block px-4 py-2 text-[14px] text-gray-700"
                 >
                   Support
-                </button>
+                </Link>
               </div>
             </div>
           )}

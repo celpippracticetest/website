@@ -8,7 +8,6 @@ import { ReferralInvitationRepository } from "@/repositories/referral-invitation
 import { clerkClient } from "@clerk/express";
 import { ActivityLogger } from "@/lib/userActivity";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
-import { getPostHogClient } from "@/lib/posthog-server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -450,48 +449,6 @@ export async function POST(req: Request) {
           console.error("Payment activity logging failed:", logErr);
         }
 
-        try {
-          const posthog = getPostHogClient();
-          posthog.capture({
-            distinctId: metadata.user_id,
-            event: "subscription_purchased",
-            properties: {
-              session_id: session.id,
-              plan_name: subscriptionMetadata?.plan_name || metadata.plan_name || null,
-              amount: (session.amount_total || 0) / 100,
-              currency: (session.currency || "cad").toUpperCase(),
-              subscription_id: session.subscription || null,
-              referral_code:
-                subscriptionMetadata?.referral_code || metadata.referral_code || null,
-              attribution_source:
-                subscriptionMetadata?.attribution_source ||
-                metadata.attribution_source ||
-                null,
-              attribution_medium:
-                subscriptionMetadata?.attribution_medium ||
-                metadata.attribution_medium ||
-                null,
-              attribution_campaign:
-                subscriptionMetadata?.attribution_campaign ||
-                metadata.attribution_campaign ||
-                null,
-              utm_source:
-                subscriptionMetadata?.utm_source || metadata.utm_source || null,
-              utm_medium:
-                subscriptionMetadata?.utm_medium || metadata.utm_medium || null,
-              utm_campaign:
-                subscriptionMetadata?.utm_campaign || metadata.utm_campaign || null,
-              utm_content:
-                subscriptionMetadata?.utm_content || metadata.utm_content || null,
-              utm_term:
-                subscriptionMetadata?.utm_term || metadata.utm_term || null,
-              gclid: subscriptionMetadata?.gclid || metadata.gclid || null,
-            },
-          });
-          await posthog.shutdown();
-        } catch (phErr) {
-          console.error("PostHog subscription_purchased tracking failed:", phErr);
-        }
       }
 
       return NextResponse.json({ received: true });
@@ -515,34 +472,6 @@ export async function POST(req: Request) {
         await checkoutRepo.updateStatus(session.id, "expired");
       } catch (repoErr) {
         console.error("Failed to update expired checkout status:", repoErr);
-      }
-
-      if (metadata?.user_id) {
-        try {
-          const posthog = getPostHogClient();
-          posthog.capture({
-            distinctId: metadata.user_id,
-            event: "checkout_session_expired",
-            properties: {
-              session_id: session.id,
-              plan_name: metadata.plan_name || null,
-              subscription_id: session.subscription || null,
-              currency: (session.currency || "cad").toUpperCase(),
-              amount: (session.amount_total || 0) / 100,
-              expires_at: session.expires_at || null,
-              referral_code: metadata.referral_code || null,
-              attribution_source: metadata.attribution_source || null,
-              attribution_medium: metadata.attribution_medium || null,
-              attribution_campaign: metadata.attribution_campaign || null,
-            },
-          });
-          await posthog.shutdown();
-        } catch (phErr) {
-          console.error(
-            "PostHog checkout_session_expired tracking failed:",
-            phErr
-          );
-        }
       }
 
       return NextResponse.json({ received: true });
@@ -624,22 +553,7 @@ export async function POST(req: Request) {
               last_payment_failed_at_unix: `${Math.floor(Date.now() / 1000)}`,
             },
           });
-          if (subscription.metadata?.user_id) {
-            try {
-              const posthog = getPostHogClient();
-              posthog.capture({
-                distinctId: subscription.metadata.user_id,
-                event: "payment_failed",
-                properties: {
-                  subscription_id: subscriptionId,
-                  invoice_id: (event.data.object as any)?.id || null,
-                },
-              });
-              await posthog.shutdown();
-            } catch (phErr) {
-              console.error("PostHog payment_failed tracking failed:", phErr);
-            }
-          }
+          
         } catch (err) {
           console.warn("Failed to persist dunning metadata to Stripe subscription", err);
         }
@@ -857,21 +771,6 @@ export async function POST(req: Request) {
           "Subscription cancellation activity logging failed:",
           logErr
         );
-      }
-
-      try {
-        const posthog = getPostHogClient();
-        posthog.capture({
-          distinctId: user_id,
-          event: "subscription_deleted",
-          properties: {
-            subscription_id: subscription.id,
-            checkout_id: checkout_id,
-          },
-        });
-        await posthog.shutdown();
-      } catch (phErr) {
-        console.error("PostHog subscription_deleted tracking failed:", phErr);
       }
 
       return NextResponse.json({ received: true });

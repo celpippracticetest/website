@@ -1,0 +1,70 @@
+# LLMs.txt for CELPIPPRACTICETEST.com
+# Structured metadata and key resources for AI agents and crawlers
+
+# Site Identity
+site: https://celpippracticetest.com
+brand: CELPIPPRACTICETEST.com
+description: Trusted CELPIP prep resource providing expert-written tips, practice, and mock exams for Canadian English test success.
+language: en-CA
+audience: CELPIP test takers, newcomers to Canada, ESL learners, test prep students
+
+# Editorial & Trust Signals
+author: Certified CELPIP instructors and language professionals
+terms_of_service: https://celpippracticetest.com/terms-of-service
+privacy_policy: https://celpippracticetest.com/privacy-policy
+llm_contact: ai@celpippracticetest.com
+
+# Core Site Resources
+exam_overview: https://celpippracticetest.com/exam-overview
+practice_overview: https://celpippracticetest.com/practice-overview
+wiki_index: https://celpippracticetest.com/wiki
+pricing: https://celpippracticetest.com/pricing
+score_calculator: https://celpippracticetest.com/score-calculator
+vocabulary_builder: https://celpippracticetest.com/words
+learning_resources: https://celpippracticetest.com/learning
+sitemap: https://celpippracticetest.com/sitemap.xml
+
+# Legal & Policies
+refund_policy: https://celpippracticetest.com/refund-policy
+
+# Skill-Specific Practice Pages
+listening_practice: https://celpippracticetest.com/listening
+reading_practice: https://celpippracticetest.com/reading
+writing_practice: https://celpippracticetest.com/writing
+speaking_practice: https://celpippracticetest.com/speaking
+
+# Blog & Strategy Pages
+blog_index: https://celpippracticetest.com/blog
+listening_tips: https://celpippracticetest.com/listening
+reading_tips: https://celpippracticetest.com/reading
+writing_tips: https://celpippracticetest.com/writing
+speaking_tips: https://celpippracticetest.com/speaking
+
+# Profession-Specific Pages
+nurses: https://celpippracticetest.com/celpip-for-nurses
+immigration_consultants: https://celpippracticetest.com/celpip-for-immigration-consultant
+real_estate: https://celpippracticetest.com/celpip-for-real-estate
+professional_licensure: https://celpippracticetest.com/celpip-for-professional-licensure
+physicians_surgeons: https://celpippracticetest.com/celpip-for-physicians-surgeons
+early_childhood_educators: https://celpippracticetest.com/celpip-for-early-childhood-educator
+mortgage_brokers: https://celpippracticetest.com/celpip-for-mortgage-broker
+pharmacists: https://celpippracticetest.com/celpip-for-pharmacist
+medical_lab_technologists: https://celpippracticetest.com/celpip-for-medical-laboratory-technologist
+teacher_certification: https://celpippracticetest.com/celpip-for-teacher-certification
+health_care_aides: https://celpippracticetest.com/celpip-for-health-care-aide
+physiotherapists: https://celpippracticetest.com/celpip-for-physiotherapist
+commercial_truck_drivers: https://celpippracticetest.com/celpip-for-commercial-truck-driver
+caregivers: https://celpippracticetest.com/celpip-for-caregiver-home-support
+skilled_trades: https://celpippracticetest.com/celpip-for-skilled-trades
+dentists_dental_hygienists: https://celpippracticetest.com/celpip-for-dentist-dental-hygienist
+startup_visa_entrepreneurs: https://celpippracticetest.com/celpip-for-startup-visa-entrepreneur
+social_workers: https://celpippracticetest.com/celpip-for-social-worker
+midwives: https://celpippracticetest.com/celpip-for-midwife
+tech_workers: https://celpippracticetest.com/celpip-for-tech-worker
+
+# Semantic Cues
+focus: Test preparation, Canadian English, exam strategies, language improvement, wiki study guides, profession-specific CELPIP preparation
+tone: Clear, friendly, educational, Canadian English style
+llm_optimized: true
+content_update: Weekly
+

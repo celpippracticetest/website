@@ -231,14 +231,15 @@ export class BlogRepository {
     return entities.map((entity) => this.convertFromEntity(entity));
   }
 
-  async getPublishedSlugs(): Promise<Array<{ slug: string; updatedAt: Date }>> {
+  async getPublishedSlugs(): Promise<Array<{ slug: string; updatedAt: Date; canonicalUrl?: string }>> {
     const rows = await this.getBlogCollection()
-      .find(this.buildPublishedFilter(), { projection: { slug: 1, updatedAt: 1 } })
+      .find(this.buildPublishedFilter(), { projection: { slug: 1, updatedAt: 1, "seo.canonicalUrl": 1 } })
       .toArray();
 
     return rows.map((row) => ({
       slug: row.slug,
       updatedAt: row.updatedAt,
+      canonicalUrl: row.seo?.canonicalUrl,
     }));
   }
 
