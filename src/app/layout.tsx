@@ -5,9 +5,8 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
-import dynamic from "next/dynamic";
 import ReactQueryProvider from "@/components/ReactQueryProvider";
-import { LazyLeadCapturePopup } from "@/components/LazyComponents";
+import { LazyLeadCapturePopup, LazyPremiumPlanModal, LazyPromotionManager } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ActiveUsersTracker from "@/components/analytics/ActiveUsersTracker";
@@ -17,15 +16,6 @@ import FooterWrapper from "@/components/pages/landing/FooterWrapper";
 import { getHomepageHeroDisplay } from "@/lib/homepage-hero";
 import type { Metadata, Viewport } from "next";
 import { Suspense, type ComponentType } from "react";
-
-const PremiumPlanModal = dynamic(
-  () => import("@/components/premium-plan/PremiumPlanModal"),
-  { ssr: false }
-);
-const PromotionManager = dynamic(
-  () => import("@/components/league/PromotionManager"),
-  { ssr: false }
-);
 
 const NextTopLoaderComponent =
   NextTopLoader as unknown as ComponentType<Record<string, never>>;
@@ -269,8 +259,8 @@ export default async function RootLayout({
               <FooterWrapper isSignedIn={isSignedIn} />
             </ErrorBoundary>
           </ReactQueryProvider>
-          <PremiumPlanModal />
-          <PromotionManager />
+          <LazyPremiumPlanModal />
+          <LazyPromotionManager />
           <PerformanceMonitor />
           <Analytics />
           <ActiveUsersTracker />
