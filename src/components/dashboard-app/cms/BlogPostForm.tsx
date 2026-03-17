@@ -218,12 +218,30 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
     }
   };
 
+  const handleRemoveFeaturedImage = () => {
+    const currentFeaturedImageUrl = featuredImageUrl?.trim();
+    const currentFeaturedImageAlt = form.getValues("featuredImageAlt")?.trim();
+    const currentOgImageUrl = form.getValues("ogImageUrl")?.trim();
+    const currentOgImageAlt = form.getValues("ogImageAlt")?.trim();
+
+    form.setValue("featuredImageUrl", "", { shouldDirty: true, shouldValidate: true });
+    form.setValue("featuredImageAlt", "", { shouldDirty: true, shouldValidate: true });
+
+    if (currentOgImageUrl && currentFeaturedImageUrl && currentOgImageUrl === currentFeaturedImageUrl) {
+      form.setValue("ogImageUrl", "", { shouldDirty: true, shouldValidate: true });
+    }
+
+    if (currentOgImageAlt && currentFeaturedImageAlt && currentOgImageAlt === currentFeaturedImageAlt) {
+      form.setValue("ogImageAlt", "", { shouldDirty: true, shouldValidate: true });
+    }
+  };
+
   const submitForm = async (values: BlogFormValues) => {
     const categories = splitCsv(values.categoriesInput);
     const tags = splitCsv(values.tagsInput);
     const keywords = splitCsv(values.keywordsInput);
 
-    const payload: TBlogWriteInput = {
+    const payload: BlogPostSubmitPayload = {
       title: values.title.trim(),
       slug: slugify(values.slug),
       status: values.status,
@@ -469,9 +487,18 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                       }}
                     />
                     {featuredImageUrl ? (
-                      <Box className="flex items-center gap-2 text-sm text-green-600">
+                      <Box className="flex flex-wrap items-center gap-2 text-sm text-green-600">
                         <Check className="h-4 w-4" />
                         <span>Image uploaded</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-red-600 hover:bg-red-50 hover:text-red-700"
+                          onClick={handleRemoveFeaturedImage}
+                        >
+                          Remove image
+                        </Button>
                       </Box>
                     ) : null}
                     {imageUploadError ? (
