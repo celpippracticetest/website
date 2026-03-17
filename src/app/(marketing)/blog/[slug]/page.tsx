@@ -72,7 +72,7 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
   const canonicalPath = `/blog/${post.slug}`;
   const path = post.seo?.canonicalUrl?.startsWith("http") ? null : (post.seo?.canonicalUrl || canonicalPath);
   const canonical = path === null ? (post.seo?.canonicalUrl ?? "") : `${baseUrl}${path.startsWith("/") ? "" : "/"}${path}`;
-  const ogImage = post.seo?.ogImageUrl || post.featuredImage?.url || "/images/hero.png";
+  const ogImage = post.seo?.ogImageUrl || post.featuredImage?.url;
   const ogImageAlt = post.seo?.ogImageAlt || post.featuredImage?.alt || post.title;
 
   return {
@@ -87,23 +87,25 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
       description,
       type: "article",
       url: canonical,
-      images: [
-        {
-          url: ogImage,
-          width: 1200,
-          height: 630,
-          alt: ogImageAlt,
-        },
-      ],
+      images: ogImage
+        ? [
+            {
+              url: ogImage,
+              width: 1200,
+              height: 630,
+              alt: ogImageAlt,
+            },
+          ]
+        : undefined,
       authors: [post.authorName],
       publishedTime: post.publishedAt ? new Date(post.publishedAt).toISOString() : undefined,
       tags: post.tags,
     },
     twitter: {
-      card: "summary_large_image",
+      card: ogImage ? "summary_large_image" : "summary",
       title,
       description,
-      images: [ogImage],
+      images: ogImage ? [ogImage] : undefined,
     },
     robots: {
       index: true,
@@ -122,7 +124,7 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
 
   const relatedPosts = await getRelatedPublishedPosts(post.id, post.categories, post.tags, 3);
   const canonicalUrl = post.seo?.canonicalUrl || `https://celpippracticetest.com/blog/${post.slug}`;
-  const ogImage = post.seo?.ogImageUrl || post.featuredImage?.url || "/images/hero.png";
+  const ogImage = post.seo?.ogImageUrl || post.featuredImage?.url;
   const ogImageAlt = post.seo?.ogImageAlt || post.featuredImage?.alt || post.title;
 
   const blogPostingSchema = {
@@ -130,7 +132,7 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
     "@type": "BlogPosting",
     headline: post.title,
     description: post.seo?.metaDescription || post.excerpt,
-    image: ogImage,
+    ...(ogImage ? { image: ogImage } : {}),
     author: {
       "@type": "Person",
       name: post.authorName,
@@ -308,19 +310,15 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
               <Link key={related.id} href={`/blog/${related.slug}`} className="group block">
                 <Card className="overflow-hidden border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md">
                   <Box className="flex flex-col sm:flex-row sm:items-stretch">
-                    <Box className="relative w-full shrink-0 aspect-video sm:h-[180px] sm:w-80 sm:shrink-0 sm:aspect-auto">
-                      {related.featuredImage?.url ? (
+                    {related.featuredImage?.url ? (
+                      <Box className="relative w-full shrink-0 aspect-video sm:h-[180px] sm:w-80 sm:shrink-0 sm:aspect-auto">
                         <img
                           src={related.featuredImage.url}
                           alt={related.featuredImage.alt || related.title}
                           className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
-                      ) : (
-                        <Box className="absolute inset-0 flex items-center justify-center bg-slate-50">
-                          <span className="text-2xl font-bold text-slate-200">Blog</span>
-                        </Box>
-                      )}
-                    </Box>
+                      </Box>
+                    ) : null}
                     <CardContent className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden p-5 sm:h-[180px]">
                       {related.categories.length > 0 && (
                         <Badge className="mb-2 w-fit bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs">

@@ -13,7 +13,10 @@
     "export:clerk:google-ads": "node ./scripts/export-clerk-users-google-ads.js",
     "export:clerk:inactive-nonpremium": "node ./scripts/export-clerk-inactive-nonpremium.js",
     "postbuild": "next-sitemap",
-    "svgr": "npx @svgr/cli --typescript --out-dir  src/components/icons/ -- icons/svg"
+    "svgr": "npx @svgr/cli --typescript --out-dir  src/components/icons/ -- icons/svg",
+    "test:e2e": "npx playwright test",
+    "test:e2e:headed": "npx playwright test --headed",
+    "test:e2e:ui": "npx playwright test --ui"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
@@ -110,7 +113,6 @@
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.9.0",
     "@next/bundle-analyzer": "^15.3.4",
-    "@next/swc-darwin-arm64": "^16.1.6",
     "@tailwindcss/postcss": "^4.1.4",
     "@tailwindcss/typography": "^0.5.16",
     "@types/diff": "^8.0.0",
@@ -128,7 +130,8 @@
     "postcss": "^8.5.3",
     "tailwindcss": "^4",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.31.0"
+    "typescript-eslint": "^8.31.0",
+    "@playwright/test": "^1.50.1"
   },
   "browserslist": [
     "chrome 64",

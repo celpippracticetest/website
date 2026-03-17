@@ -142,30 +142,28 @@ export default async function BlogListingPage() {
                 <Link href={`/blog/${featuredPost.slug}`} className="group block">
                   <Card className="overflow-hidden border-0 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group-hover:border-blue-500/30">
                     <Box className="flex flex-col md:flex-row">
-                      {/* Image / Visual Placeholder */}
-                      <Box className="relative h-64 w-full md:h-auto md:w-2/5 overflow-hidden">
-                        {featuredPost.featuredImage?.url ? (
+                      {featuredPost.featuredImage?.url ? (
+                        <Box className="relative h-64 w-full overflow-hidden md:h-auto md:w-2/5">
                           <img
                             src={featuredPost.featuredImage.url}
                             alt={featuredPost.featuredImage.alt || featuredPost.title}
                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                           />
-                        ) : (
-                          <Box className="h-full w-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                            <span className="text-6xl font-bold text-white opacity-20">CELPIP</span>
+                          <Box className="absolute top-4 left-4 flex flex-wrap gap-2">
+                            {featuredPost.categories.slice(0, 2).map((cat) => (
+                              <Badge
+                                key={cat}
+                                className="border-0 bg-white/90 text-slate-900 shadow-sm backdrop-blur-sm hover:bg-white"
+                              >
+                                {cat}
+                              </Badge>
+                            ))}
                           </Box>
-                        )}
-                        <Box className="absolute top-4 left-4 flex flex-wrap gap-2">
-                          {featuredPost.categories.slice(0, 2).map((cat) => (
-                            <Badge key={cat} className="bg-white/90 text-slate-900 hover:bg-white backdrop-blur-sm border-0 shadow-sm">
-                              {cat}
-                            </Badge>
-                          ))}
                         </Box>
-                      </Box>
+                      ) : null}
 
                       {/* Content */}
-                      <Box className="flex flex-col justify-center p-6 md:p-10 md:w-3/5 bg-white">
+                      <Box className="flex flex-col justify-center bg-white p-6 md:p-10 md:flex-1">
                         <Box className="mb-4 flex items-center gap-4 text-sm text-slate-500">
                           <Box className="flex items-center gap-1">
                             <Calendar className="h-4 w-4" />
@@ -211,28 +209,24 @@ export default async function BlogListingPage() {
                       href={`/blog/${post.slug}`}
                       className="group flex w-full flex-col md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]"
                     >
-                      <Card className="flex h-full flex-col overflow-hidden border-0 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border-t-4 border-t-transparent hover:border-t-blue-500">
+                      <Card className="flex h-full flex-col overflow-hidden border-0 border-t-4 border-t-transparent shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-t-blue-500 hover:shadow-lg">
                         {/* Card Image */}
-                        <Box className="relative h-48 w-full overflow-hidden bg-slate-100">
-                          {post.featuredImage?.url ? (
+                        {post.featuredImage?.url ? (
+                          <Box className="relative h-48 w-full overflow-hidden bg-slate-100">
                             <img
                               src={post.featuredImage.url}
                               alt={post.featuredImage.alt || post.title}
                               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                             />
-                          ) : (
-                            <Box className="h-full w-full flex items-center justify-center bg-slate-50">
-                              <span className="text-4xl font-bold text-slate-200">Blog</span>
-                            </Box>
-                          )}
-                          {post.categories.length > 0 && (
-                            <Box className="absolute top-3 left-3">
-                              <Badge className="bg-white/90 text-blue-700 hover:bg-white backdrop-blur-sm border-0 shadow-sm text-xs">
-                                {post.categories[0]}
-                              </Badge>
-                            </Box>
-                          )}
-                        </Box>
+                            {post.categories.length > 0 && (
+                              <Box className="absolute top-3 left-3">
+                                <Badge className="border-0 bg-white/90 text-xs text-blue-700 shadow-sm backdrop-blur-sm hover:bg-white">
+                                  {post.categories[0]}
+                                </Badge>
+                              </Box>
+                            )}
+                          </Box>
+                        ) : null}
 
                         <CardContent className="flex flex-1 flex-col p-6 bg-white">
                           <Box className="mb-3 flex items-center justify-between text-xs text-slate-500">
