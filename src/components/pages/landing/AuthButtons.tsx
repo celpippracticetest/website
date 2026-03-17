@@ -1,6 +1,6 @@
 "use client";
 import { Button } from "@/components/v2/Button";
-import { SignedIn, useUser } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
 
 import { useState, useEffect, useRef } from "react";
@@ -43,7 +43,7 @@ const AuthButtons = () => {
 
   return (
     <>
-      <SignedIn>
+      {isSignedIn && (
         <div className="relative mr-[24px] flex items-center" ref={dropdownRef}>
           <button
             onClick={() => setUserDropDownOpen(!isUserDropDownOpen)}
@@ -108,7 +108,7 @@ const AuthButtons = () => {
             </div>
           )}
         </div>
-      </SignedIn>
+      )}
       {!isSignedIn && (
         <>
           <Button size="sm" className="max-[744px]:flex min-[744px]:hidden" href="/sign-up">

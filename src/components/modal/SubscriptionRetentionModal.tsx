@@ -69,6 +69,12 @@ const defaultFormValues: CancellationFormValues = {
 };
 
 const StyledRating = styled(Rating)(({ theme }) => ({
+  display: "flex",
+  justifyContent: "center",
+  gap: 8,
+  "& .MuiRating-icon": {
+    fontSize: 32,
+  },
   "& .MuiRating-iconEmpty .MuiSvgIcon-root": {
     color: theme.palette.action.disabled,
   },
