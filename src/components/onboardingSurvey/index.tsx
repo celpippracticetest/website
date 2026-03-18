@@ -1,20 +1,107 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useUser } from "@clerk/nextjs";
+import {
+  Box,
+  Button,
+  Checkbox,
+  TextField,
+  Typography,
+  Paper,
+  LinearProgress,
+  IconButton,
+  FormControlLabel,
+  Stack,
+} from "@mui/material";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+import { Plus, Minus } from "lucide-react";
+import Lottie from "lottie-react";
+import { useEffect, useState as useReactState } from "react";
+import { useRouter } from "next/navigation";
+import MicrolearningLaunch from "@/components/flow/MicrolearningLaunch";
+
+type FlowStep = {
+  id: string;
+  kind: "learning" | "practice" | "review";
+  title: string;
+  description: string;
+  durationMinutes: number;
+  actionHref?: string;
+  ctaLabel: string;
+};
+
+type FlowPayload = {
+  flow: {
+    urgency: "high" | "medium" | "low";
+    daysToExam: number | null;
+    focusSkill: "listening" | "reading" | "writing" | "speaking";
+    targetScore: number | null;
+    subGoal: string | null;
+    reasoning: string[];
+    steps: FlowStep[];
+  };
+  firstAction: string;
+  profile: {
+    subGoal: string | null;
+    targetScore: number | null;
+    focusSkill: string | null;
+    testDate: string | null;
+  };
+};
+
+const PRIMARY_GOAL_OPTIONS = [
+  "Canadian Permanent Residency (Express Entry)",
+  "Canadian Citizenship",
+  "Professional Licensing & Designations",
+  "Employment & Education",
+  "Australian Migration (DHA)",
+  "Other (please specify)",
+];
+
+const PRIMARY_GOAL_SUB_OPTIONS: Record<string, string[]> = {
+  "Canadian Permanent Residency (Express Entry)": [
+    "Federal Skilled Worker Program (FSWP)",
+    "Canadian Experience Class (CEC) - TEER 0 or 1",
+    "Canadian Experience Class (CEC) - TEER 2 or 3",
+    "Federal Skilled Trades Program (FSTP)",
+    "Provincial Nominee Program (PNP)",
+    "Other (please specify)",
+  ],
+  "Canadian Citizenship": [
+    "Citizenship Application (Ages 18-54)",
+    "Other (please specify)",
+  ],
+  "Professional Licensing & Designations": [
+    "Real Estate License (BC - BCFSA)",
+    "Pharmacist License (OCP / National)",
+    "College of Physicians and Surgeons (CPSO)",
+    "Nursing (Various Provincial Colleges)",
+    "Immigration Consultant (CICC)",
+    "Other (please specify)",
+  ],
+  "Employment & Education": [
+    "Post-Graduation Work Permit (PGWP)",
+    "Canadian Corporate Employers",
+    "Other (please specify)",
+  ],
+  "Australian Migration (DHA)": [
+    "Superior English (Highest Points)",
+    "Proficient English",
+    "Competent English (Minimum for PR)",
+    "Temporary Graduate Visa (Subclass 485)",
+    "Vocational English (Subclass 482)",
+    "Other (please specify)",
+  ],
+};
 
 const TEST_DATE_OPTIONS = [
-  "Within 2 weeks",
-  "Within 1 month",
-  "1–3 months",
-  "3–6 months",
-  "6+ months",
-  "I don't have a date yet",
+  "In less than 2 weeks",
+  "In 1 month",
+  "In 2+ months",
+  "I haven't booked it yet",
 ];
 
 const FOCUS_SKILL_OPTIONS = [
@@ -26,12 +113,142 @@ const FOCUS_SKILL_OPTIONS = [
   "Other (please specify)",
 ];
 
+// CLB score requirements based on sub-goal selection
+const SUB_GOAL_CLB_REQUIREMENTS: Record<string, { clb: string; description: string; additionalInfo?: string }> = {
+  "Federal Skilled Worker Program (FSWP)": {
+    clb: "CLB 7 (minimum)",
+    description: "You need a minimum of CLB 7 in all four skills (Listening, Reading, Writing, Speaking) to be eligible for Express Entry.",
+    additionalInfo: "For competitive CRS scores, aim for CLB 9 or higher in all skills.",
+  },
+  "Canadian Experience Class (CEC) - TEER 0 or 1": {
+    clb: "CLB 7 (minimum)",
+    description: "For NOC TEER 0 or 1 positions, you need a minimum of CLB 7 in all four skills.",
+    additionalInfo: "Higher scores (CLB 9+) significantly boost your CRS points.",
+  },
+  "Canadian Experience Class (CEC) - TEER 2 or 3": {
+    clb: "CLB 5 (minimum)",
+    description: "For NOC TEER 2 or 3 positions, you need a minimum of CLB 5 in all four skills.",
+    additionalInfo: "Consider aiming for CLB 7+ to maximize your CRS score.",
+  },
+  "Federal Skilled Trades Program (FSTP)": {
+    clb: "CLB 5 (Listening & Speaking), CLB 4 (Reading & Writing)",
+    description: "For the Federal Skilled Trades Program, you need CLB 5 in Listening and Speaking, and CLB 4 in Reading and Writing.",
+    additionalInfo: "Higher scores improve your Express Entry profile competitiveness.",
+  },
+  "Provincial Nominee Program (PNP)": {
+    clb: "CLB 4-7 (varies by province)",
+    description: "PNP requirements vary by province, typically ranging from CLB 4 to CLB 7.",
+    additionalInfo: "Check your specific province's requirements for exact CLB levels needed.",
+  },
+  "Citizenship Application (Ages 18-54)": {
+    clb: "CLB 4 (minimum)",
+    description: "For Canadian citizenship, you need a minimum of CLB 4 in Listening and Speaking.",
+    additionalInfo: "CELPIP General LS (Listening & Speaking only) is sufficient for citizenship applications.",
+  },
+  "Real Estate License (BC - BCFSA)": {
+    clb: "CLB 7 (minimum)",
+    description: "BCFSA requires a minimum of CLB 7 in all four skills for real estate licensing.",
+    additionalInfo: "Ensure all skills meet the minimum requirement for successful licensing.",
+  },
+  "Pharmacist License (OCP / National)": {
+    clb: "CLB 7-9 (varies by province)",
+    description: "Pharmacy licensing requirements vary by province, typically CLB 7-9 in all four skills.",
+    additionalInfo: "Check with your provincial pharmacy regulatory body for specific requirements.",
+  },
+  "College of Physicians and Surgeons (CPSO)": {
+    clb: "CLB 7-9 (varies)",
+    description: "Medical licensing requirements vary, typically CLB 7-9 in all four skills.",
+    additionalInfo: "Contact CPSO or your provincial medical regulatory body for exact requirements.",
+  },
+  "Nursing (Various Provincial Colleges)": {
+    clb: "CLB 7-9 (varies by province)",
+    description: "Nursing licensing requirements vary by province, typically CLB 7-9 in all four skills.",
+    additionalInfo: "Verify specific CLB requirements with your provincial nursing regulatory body.",
+  },
+  "Immigration Consultant (CICC)": {
+    clb: "CLB 9 (minimum)",
+    description: "To become a Regulated Canadian Immigration Consultant (RCIC), you need CLB 9 in all four skills.",
+    additionalInfo: "This is one of the highest CLB requirements, so thorough preparation is essential.",
+  },
+  "Post-Graduation Work Permit (PGWP)": {
+    clb: "CLB 7+ (recommended)",
+    description: "While not always required, CLB 7+ demonstrates strong English proficiency for Canadian employers.",
+    additionalInfo: "Higher CLB scores improve your job prospects and career opportunities.",
+  },
+  "Canadian Corporate Employers": {
+    clb: "CLB 7-9 (varies by employer)",
+    description: "Corporate employers typically look for CLB 7-9, depending on the role and industry.",
+    additionalInfo: "Higher CLB scores open more career opportunities and advancement possibilities.",
+  },
+  "Superior English (Highest Points)": {
+    clb: "CLB 8+ (all skills)",
+    description: "For Australian migration, Superior English requires CLB 8 or higher in all four skills.",
+    additionalInfo: "This gives you the maximum points (20 points) for English language proficiency.",
+  },
+  "Proficient English": {
+    clb: "CLB 7 (all skills)",
+    description: "Proficient English for Australian migration requires CLB 7 in all four skills.",
+    additionalInfo: "This gives you 10 points towards your migration points total.",
+  },
+  "Competent English (Minimum for PR)": {
+    clb: "CLB 6 (all skills)",
+    description: "Competent English is the minimum requirement for Australian PR, requiring CLB 6 in all four skills.",
+    additionalInfo: "This gives you 0 points but meets the minimum requirement for permanent residency.",
+  },
+  "Temporary Graduate Visa (Subclass 485)": {
+    clb: "CLB 6 (minimum)",
+    description: "For the Temporary Graduate Visa, you need a minimum of CLB 6 in all four skills.",
+    additionalInfo: "Higher scores may be required depending on your field of study.",
+  },
+  "Vocational English (Subclass 482)": {
+    clb: "CLB 5 (minimum)",
+    description: "For the Temporary Skill Shortage Visa (Subclass 482), you need a minimum of CLB 5 in all four skills.",
+    additionalInfo: "Some occupations may require higher CLB levels.",
+  },
+};
+
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: "#F27059",
+    },
+    secondary: {
+      main: "#212E42",
+    },
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: "24px",
+          textTransform: "none",
+          fontWeight: 400,
+          height: "40px",
+          fontSize: "14px",
+        },
+      },
+    },
+    MuiCheckbox: {
+      styleOverrides: {
+        root: {
+          padding: "8px",
+        },
+      },
+    },
+  },
+});
+
 export default function OnboardingSurvey({
   onComplete,
 }: {
   onComplete: () => void;
 }) {
+  const router = useRouter();
   const [step, setStep] = useState(1);
+  const [primaryGoal, setPrimaryGoal] = useState("");
+  const [customPrimaryGoal, setCustomPrimaryGoal] = useState("");
+  const [subGoal, setSubGoal] = useState("");
+  const [customSubGoal, setCustomSubGoal] = useState("");
   const [testDate, setTestDate] = useState("");
   const [focusSkill, setFocusSkill] = useState("");
   const [customFocusSkill, setCustomFocusSkill] = useState("");
@@ -43,6 +260,30 @@ export default function OnboardingSurvey({
   });
   const { user } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPersonalizing, setIsPersonalizing] = useState(false);
+  const [construccionAnimation, setConstruccionAnimation] = useReactState<any>(null);
+  const [flowPayload, setFlowPayload] = useState<FlowPayload | null>(null);
+
+  useEffect(() => {
+    // Load Lottie animation data
+    fetch("/images/construccion.json")
+      .then((res) => res.json())
+      .then((data) => setConstruccionAnimation(data))
+      .catch((err) => console.error("Failed to load Lottie animation:", err));
+  }, []);
+
+  // Get sub-options for the selected primary goal
+  const getSubOptions = () => {
+    if (primaryGoal === "Other (please specify)") {
+      return [];
+    }
+    return PRIMARY_GOAL_SUB_OPTIONS[primaryGoal] || [];
+  };
+
+  // Check if current primary goal has sub-options
+  const hasSubOptions = () => {
+    return getSubOptions().length > 0;
+  };
 
   const handleScoreChange = (skill: string, value: number) => {
     const newValue = Math.max(5, Math.min(12, value));
@@ -53,393 +294,897 @@ export default function OnboardingSurvey({
   };
 
   const handleNext = () => {
-    if (step === 1 && testDate) {
-      setStep(2);
-    } else if (step === 2 && focusSkill) {
+    if (step === 1 && primaryGoal) {
+      // If primary goal has sub-options, go to step 2 (sub-options)
+      // Otherwise, skip to step 3 (test date)
+      if (hasSubOptions()) {
+        setStep(2);
+      } else {
+        setStep(3);
+      }
+    } else if (step === 2 && subGoal) {
+      // After sub-goal, go to test date
       setStep(3);
+    } else if (step === 3 && testDate) {
+      // After test date, go to focus skill
+      setStep(4);
     }
   };
 
   const handleBack = () => {
     if (step > 1) {
-      setStep(step - 1);
+      if (step === 4 && !hasSubOptions()) {
+        // If on step 4 (focus skill) and no sub-options, go back to step 1
+        setStep(1);
+      } else if (step === 3 && !hasSubOptions()) {
+        // If on step 3 (test date) and no sub-options, go back to step 1
+        setStep(1);
+      } else {
+        setStep(step - 1);
+      }
     }
   };
 
+  const progressValue = (step / 4) * 100;
+  const handleFlowStart = (url: string) => {
+    onComplete();
+    router.push(url || "/practice-overview");
+  };
+
   return (
-    <div className="flex px-[16px] screen744:!px-[24px] screen1280:!px-[80px] flex-wrap screen1280:!flex-nowrap pb-[111px] screen1280:!pb-0 w-full overflow-auto gap-[24px] screen1280:!gap-[92px] justify-center">
-      <div className="flex  screen744:!shrink-0 mt-[40px] screen1280:!mt-0 items-center screen744:!gap-[40px] gap-[20px] screen1280:!gap-[16px] flex-col screen744:!flex-row screen1280:!flex-col">
-        {step === 1 ? (
-          <>
+    <ThemeProvider theme={theme}>
+      <Box
+        sx={{
+          display: "flex",
+          px: { xs: 2, sm: 3, md: 10 },
+          flexWrap: { xs: "wrap", md: "nowrap" },
+          pb: { xs: "111px", md: 0 },
+          width: "100%",
+          overflow: "auto",
+          gap: { xs: 3, md: 11.5 },
+          justifyContent: "center",
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            flexShrink: { sm: 0 },
+            mt: { xs: 5, md: 0 },
+            alignItems: "center",
+            gap: { xs: 2.5, sm: 5, md: 2 },
+            flexDirection: { xs: "column", sm: "row", md: "column" },
+          }}
+        >
+          {step === 1 ? (
             <Image
               alt="plan sale modal"
               width={288}
               height={432}
-              className={`screen744:!shrink-0  screen1280:!mt-[-10px] w-[54px] h-[81px] screen744:!w-[121px] screen744:!h-[181px] screen1280:!w-[288px] screen1280:!h-[432px]`}
+              style={{
+                flexShrink: 0,
+                width: "54px",
+                height: "81px",
+                marginTop: "-10px",
+              }}
+              className="screen744:!shrink-0 screen1280:!mt-[-10px] screen744:!w-[121px] screen744:!h-[181px] screen1280:!w-[288px] screen1280:!h-[432px]"
               src="/images/question-after-sign-up-logo-step-one.png"
             />
-          </>
-        ) : (
-          <>
+          ) : (
             <Image
               alt="plan sale modal"
               width={324}
               height={290}
-              className={`shrink-0 screen1280!mt-[126px] screen744:!w-[202px] w-[89px] h-[80px] screen744:!h-[180px] screen1280:!w-[324px] screen1280:!h-[290px]`}
+              style={{
+                flexShrink: 0,
+                width: "89px",
+                height: "80px",
+                marginTop: "126px",
+              }}
+              className="shrink-0 screen1280!mt-[126px] screen744:!w-[202px] screen744:!h-[180px] screen1280:!w-[324px] screen1280:!h-[290px]"
               src="/images/question-after-sign-up-logo-step-two.png"
             />
-          </>
-        )}
+          )}
 
-        <div className="max-w-[394px] flex items-center text-[18px] screen744:!text-[24px] font-medium w-full ">
-          <span>
-            {" "}
-            Answer Two Quick Questions & Get{" "}
-            <span className="text-[#EE4266] font-semibold text-[20px] screen744:!text-[26px]">
-              10%
-            </span>
-            Extra Discount!
-          </span>
-        </div>
-      </div>
-
-      <div className="w-full max-w-[900px] max-h-fit shrink-1  border border-[#D5D6D8] rounded-[12px] p-[16px] screen744:!p-[40px] ">
-        <div className="h-[4px] flex w-full mt-[40px] rounded-[10px] bg-[#E6E6E6]">
-          <div
-            className={cn(
-              "rounded-[10px] w-full transition-colors duration-500",
-              step >= 1 ? "bg-[#F27059]" : "bg-[#E6E6E6]"
-            )}
-          ></div>
-          <div
-            className={cn(
-              "rounded-[10px] w-full transition-colors duration-500",
-              step >= 2 ? "bg-[#F27059]" : "bg-[#E6E6E6]"
-            )}
-          ></div>
-          <div
-            className={cn(
-              "rounded-[10px] w-full transition-colors duration-500",
-              step >= 3 ? "bg-[#F27059]" : "bg-[#E6E6E6]"
-            )}
-          ></div>
-        </div>
-
-        <p className="font-normal mt-[24px]  screen744:!mt-[32px] text-[16px] text-[#37465C] mb-[16px]">
-          Help us improve your experience.
-        </p>
-        <p className="text-[16px] font-normal text-[#316BFF] mb-[24px] screen744:!mb-[32px]">
-          {step === 1 ? "Question 1 of 3" : step === 2 ? "Question 2 of 3" : "Question 3 of 3"}
-        </p>
-
-        {step === 1 && (
-          <motion.div
-            key="step1"
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.4, ease: "easeInOut" }}
+          <Typography
+            variant="body1"
+            sx={{
+              maxWidth: "394px",
+              fontSize: { xs: "18px", sm: "24px" },
+              fontWeight: 500,
+              width: "100%",
+            }}
           >
-            <h2 className="text-[20px] text-[#212E42] font-semibold mb-[28px]">
-              When is your CELPIP test?
-            </h2>
+            Help us personalize your experience and deliver the best preparation plan for you.
+          </Typography>
+        </Box>
 
-            <div className="flex flex-col mb-[24px] screen744:!mb-[32px] gap-[16px] data-[state=checked]:!bg-[#F27059]">
-              {TEST_DATE_OPTIONS.map((option) => (
-                  <label
-                  key={option}
-                    className={cn(
-                      "flex items-center h-[48px] screen744:!h-[52px] px-[16px] screen744:!px-[32px] rounded-[40px] transition-all cursor-pointer text-[12px] screen744:!text-[16px] font-normal w-fit",
-                    testDate === option
-                        ? " bg-[#F27059] text-white "
-                        : "bg-white text-[#212E42]"
-                    )}
+        <Paper
+          elevation={0}
+          sx={{
+            width: "100%",
+            maxWidth: "900px",
+            maxHeight: "fit-content",
+            flexShrink: 1,
+            border: "1px solid #D5D6D8",
+            borderRadius: "12px",
+            p: { xs: 2, sm: 5 },
+            display: "flex",
+            flexDirection: "column",
+            overflow: "visible",
+          }}
+        >
+          <Box sx={{ mt: 5, mb: 3 }}>
+            <LinearProgress
+              variant="determinate"
+              value={progressValue}
+              sx={{
+                height: "4px",
+                borderRadius: "10px",
+                backgroundColor: "#E6E6E6",
+                "& .MuiLinearProgress-bar": {
+                  backgroundColor: "#F27059",
+                  borderRadius: "10px",
+                },
+              }}
+            />
+          </Box>
+
+          <Typography
+            variant="body2"
+            sx={{
+              mt: { xs: 3, sm: 4 },
+              mb: { xs: 3, sm: 4 },
+              fontSize: "16px",
+              color: "#37465C",
+            }}
+          >
+            Help us improve your experience.
+          </Typography>
+
+          {step === 1 && (
+            <motion.div
+              key="step1"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.4, ease: "easeInOut" }}
+            >
+              <Typography
+                variant="h6"
+                sx={{
+                  fontSize: "20px",
+                  color: "#212E42",
+                  fontWeight: 600,
+                  mb: 3.5,
+                }}
+              >
+                What is your primary goal for taking the CELPIP?
+              </Typography>
+
+              <Stack spacing={2} sx={{ mb: { xs: 3, sm: 4 } }}>
+                {PRIMARY_GOAL_OPTIONS.map((option) => (
+                  <Box
+                    key={option}
+                    onClick={() => {
+                      setPrimaryGoal(option);
+                      setSubGoal("");
+                      setCustomPrimaryGoal("");
+                      setCustomSubGoal("");
+                    }}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      height: { xs: "48px", sm: "52px" },
+                      px: { xs: 2, sm: 4 },
+                      borderRadius: "40px",
+                      transition: "all 0.3s",
+                      cursor: "pointer",
+                      fontSize: { xs: "12px", sm: "16px" },
+                      width: "fit-content",
+                      backgroundColor: primaryGoal === option ? "#F27059" : "white",
+                      color: primaryGoal === option ? "white" : "#212E42",
+                      border: "1px solid transparent",
+                      "&:hover": {
+                        backgroundColor: primaryGoal === option ? "#F27059" : "#F9FAFB",
+                      },
+                    }}
                   >
                     <Checkbox
-                    checked={testDate === option}
-                    onCheckedChange={() => setTestDate(option)}
-                      className={cn(
-                        "mr-3  w-[24px] h-[24px] border-2 rounded-[6px] flex items-center justify-center transition-all",
-                      testDate === option
-                          ? "border-[#F27059] bg-white data-[state=checked]:!bg-white  data-[state=checked]:!text-[#F27059]"
-                          : "border-gray-300"
-                      )}
-                    />
-                  {option}
-                        </label>
-              ))}
-            </div>
-
-            <div className="flex  justify-between items-center gap-[24px]">
-              <div></div>
-              <div className="flex gap-[24px]">
-                <button
-                  className="cursor-pointer text-[14px] text-[#212E42] font-normal"
-                  onClick={async () => {
-                    await fetch("/api/onboarding-new", {
-                      method: "POST",
-                      body: JSON.stringify({
-                        action: "askLater",
-                      }),
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                    });
-
-                    user?.reload();
-                    setTimeout(() => {
-                      onComplete();
-                    }, 1000);
-                  }}
-                >
-                  Ask later
-                </button>
-                <Button
-                  disabled={!testDate}
-                  className={cn(
-                    "rounded-[24px] font-normal h-[40px] text-[14px]",
-                    !testDate
-                      ? "bg-gray-300 text-white cursor-not-allowed"
-                      : "cursor-pointer"
-                  )}
-                  onClick={handleNext}
-                >
-                  Next Question
-                </Button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {step === 2 && (
-          <motion.div
-            key="step2"
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.4, ease: "easeInOut" }}
-          >
-            <h2 className="text-[20px] text-[#212E42] font-semibold mb-[28px]">
-              Which skill are you focused on improving first?
-            </h2>
-
-            <div className="flex flex-col mb-[24px] screen744:!mb-[32px] gap-[16px] data-[state=checked]:!bg-[#F27059]">
-              {FOCUS_SKILL_OPTIONS.map((option, index) => (
-                <div
-                  className={`flex ${
-                    index === 5
-                      ? "flex-col gap-[24px] screen744:!flex-row screen744:!gap-1"
-                      : "flex-row"
-                  }`}
-                  key={option}
-                >
-                  <label
-                    className={cn(
-                      "flex items-center h-[48px] screen744:!h-[52px] px-[16px] screen744:!px-[32px] rounded-[40px] transition-all cursor-pointer text-[12px] screen744:!text-[16px] font-normal w-fit",
-                      focusSkill === option
-                        ? " bg-[#F27059] text-white "
-                        : "bg-white text-[#212E42]"
-                    )}
-                  >
-                    <Checkbox
-                      checked={focusSkill === option}
-                      onCheckedChange={() => setFocusSkill(option)}
-                      className={cn(
-                        "mr-3  w-[24px] h-[24px] border-2 rounded-[6px] flex items-center justify-center transition-all",
-                        focusSkill === option
-                          ? "border-[#F27059] bg-white data-[state=checked]:!bg-white  data-[state=checked]:!text-[#F27059]"
-                          : "border-gray-300"
-                      )}
-                    />
-                    {option}
-                  </label>
-                  {option === "Other (please specify)" &&
-                    focusSkill === option && (
-                      <div className="relative w-[300px]  screen744:!ml-8">
-                        <input
-                          type="text"
-                          id="customFocusSkill"
-                          className="peer w-full border border-gray-300 rounded px-[16px] h-[56px] pb-1 text-sm text-gray-900 placeholder-transparent focus:border-blue-500 focus:outline-none"
-                          placeholder="Write your answer"
-                          value={customFocusSkill}
-                          onChange={(e) => setCustomFocusSkill(e.target.value)}
-                        />
-                        <label
-                          htmlFor="customFocusSkill"
-                          className={cn(
-                            "absolute left-2 text-xs bg-[#F4F7FF] px-1 text-gray-500 transition-all",
-                            !customFocusSkill
-                              ? "peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400"
-                              : "-top-2 text-xs text-blue-500"
-                          )}
-                        >
-                          Write your answer
-                        </label>
-                      </div>
-                    )}
-                </div>
-              ))}
-            </div>
-
-            <div className="flex justify-between items-center gap-[24px]">
-              <button
-                className="cursor-pointer hover:!bg-blue-500 hover:!text-white px-[24px] rounded-[24px] border-[#76808F] bg-white max-w-[82px] h-[40px] text-[14px] text-[#76808F] font-normal"
-                onClick={handleBack}
-              >
-                Back
-              </button>
-
-              <div className="flex gap-[24px]">
-                <button
-                  className="cursor-pointer text-[14px] text-[#212E42] font-normal"
-                  onClick={async () => {
-                    await fetch("/api/onboarding-new", {
-                      method: "POST",
-                      body: JSON.stringify({
-                        action: "askLater",
-                      }),
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                    });
-
-                    user?.reload();
-                    setTimeout(() => {
-                      onComplete();
-                    }, 1000);
-                  }}
-                >
-                  Ask later
-                </button>
-                <Button
-                  disabled={!focusSkill || (focusSkill === "Other (please specify)" && !customFocusSkill.trim())}
-                          className={cn(
-                    "rounded-[24px] font-normal h-[40px] text-[14px]",
-                    !focusSkill || (focusSkill === "Other (please specify)" && !customFocusSkill.trim())
-                      ? "bg-gray-300 text-white cursor-not-allowed"
-                      : "cursor-pointer"
-                  )}
-                  onClick={handleNext}
-                >
-                  Next Question
-                </Button>
-              </div>
-                      </div>
-          </motion.div>
-        )}
-
-        {step === 3 && (
-          <motion.div
-            key="step3"
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.4, ease: "easeInOut" }}
-          >
-            <h2 className="text-[20px] text-[#212E42] font-semibold mb-[28px]">
-              What is your target score?
-            </h2>
-
-            <div className="grid  gap-6 mb-[32px]">
-              {Object.entries(targetScores).map(([skill, score]) => (
-                <div key={skill} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-white">
-                  <span className="font-medium capitalize text-gray-700">
-                    {skill}:
-                  </span>
-                  <div className="flex items-center space-x-3">
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange(skill, score - 1)}
-                      disabled={score <= 5}
-                      className="w-8 h-8 cursor-pointer rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      −
-                    </button>
-                    <span className="w-8 text-center font-semibold text-lg">
-                      {score}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleScoreChange(skill, score + 1)}
-                      disabled={score >= 12}
-                      className="w-8 h-8  cursor-pointer rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex justify-between items-center gap-[24px]">
-              <button
-                className="cursor-pointer hover:!bg-blue-500 hover:!text-white px-[24px] rounded-[24px] border-[#76808F] bg-white max-w-[82px] h-[40px] text-[14px] text-[#76808F] font-normal"
-                onClick={handleBack}
-              >
-                Back
-              </button>
-
-              <div className="flex gap-[24px]">
-                <button
-                  className="cursor-pointer text-[14px] text-[#212E42] font-normal"
-                  onClick={async () => {
-                    await fetch("/api/onboarding-new", {
-                      method: "POST",
-                      body: JSON.stringify({
-                        action: "askLater",
-                      }),
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                    });
-
-                    user?.reload();
-                    setTimeout(() => {
-                      onComplete();
-                    }, 1000);
-                  }}
-                >
-                  Ask later
-                </button>
-                <Button
-                  disabled={isSubmitting}
-                  className={cn(
-                    "rounded-[24px] font-normal h-[40px] text-[14px]",
-                      isSubmitting
-                      ? "bg-gray-300 text-white cursor-not-allowed"
-                      : "cursor-pointer"
-                  )}
-                  onClick={async () => {
-                    setIsSubmitting(true);
-                    await fetch("/api/onboarding-new", {
-                      method: "POST",
-                      body: JSON.stringify({
-                        action: "submit",
-                        answers: {
-                          testDate,
-                          focusSkill,
-                          customFocusSkill: focusSkill === "Other (please specify)" ? customFocusSkill : "",
-                          targetScores,
+                      checked={primaryGoal === option}
+                      onChange={() => {
+                        setPrimaryGoal(option);
+                        setSubGoal("");
+                        setCustomPrimaryGoal("");
+                        setCustomSubGoal("");
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      sx={{
+                        color: primaryGoal === option ? "white" : "#9CA3AF",
+                        "&.Mui-checked": {
+                          color: primaryGoal === option ? "white" : "#F27059",
                         },
-                      }),
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                    });
-                    user?.reload();
-                    setTimeout(() => {
-                      setIsSubmitting(false);
-                      onComplete();
-                    }, 1000);
+                        pointerEvents: "none",
+                      }}
+                    />
+                    <Typography
+                      component="span"
+                      sx={{
+                        fontSize: "inherit",
+                        fontWeight: 400,
+                        userSelect: "none",
+                      }}
+                    >
+                      {option}
+                    </Typography>
+                  </Box>
+                ))}
+              </Stack>
+
+              {primaryGoal === "Other (please specify)" && (
+                <TextField
+                  fullWidth
+                  id="customPrimaryGoal"
+                  placeholder="Write your answer"
+                  value={customPrimaryGoal}
+                  onChange={(e) => setCustomPrimaryGoal(e.target.value)}
+                  sx={{ mb: 3 }}
+                  variant="outlined"
+                />
+              )}
+
+              <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 3 }}>
+                <Button
+                  variant="contained"
+                  disabled={!primaryGoal || (primaryGoal === "Other (please specify)" && !customPrimaryGoal.trim())}
+                  onClick={handleNext}
+                  sx={{
+                    backgroundColor: "#F27059",
+                    "&:hover": {
+                      backgroundColor: "#E55A42",
+                    },
+                    "&.Mui-disabled": {
+                      backgroundColor: "#D1D5DB",
+                      color: "white",
+                    },
                   }}
                 >
-                  {isSubmitting ? "Submitting..." : "Submit"}
+                  Next Question
                 </Button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </div>
-    </div>
+              </Box>
+            </motion.div>
+          )}
+
+          {step === 2 && hasSubOptions() && (
+            <motion.div
+              key="step2"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.4, ease: "easeInOut" }}
+            >
+              <Typography
+                variant="h6"
+                sx={{
+                  fontSize: "20px",
+                  color: "#212E42",
+                  fontWeight: 600,
+                  mb: 3.5,
+                }}
+              >
+                Which program or pathway are you applying for?
+              </Typography>
+
+              <Stack spacing={2} sx={{ mb: { xs: 3, sm: 4 } }}>
+                {getSubOptions().map((option) => (
+                  <Box
+                    key={option}
+                    sx={{
+                      display: "flex",
+                      flexDirection: {
+                        xs: option === "Other (please specify)" ? "column" : "row",
+                        sm: "row",
+                      },
+                      gap: option === "Other (please specify)" ? { xs: 3, sm: 1 } : 0,
+                      width: "100%",
+                    }}
+                  >
+                    <Box
+                      onClick={() => {
+                        setSubGoal(option);
+                        if (option !== "Other (please specify)") {
+                          setCustomSubGoal("");
+                        }
+                      }}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        minHeight: { xs: "48px", sm: "52px" },
+                        px: { xs: 2, sm: 4 },
+                        borderRadius: "40px",
+                        transition: "all 0.3s",
+                        cursor: "pointer",
+                        fontSize: { xs: "12px", sm: "16px" },
+                        width: "100%",
+                        maxWidth: "100%",
+                        backgroundColor: subGoal === option ? "#F27059" : "white",
+                        color: subGoal === option ? "white" : "#212E42",
+                        border: "1px solid transparent",
+                        "&:hover": {
+                          backgroundColor: subGoal === option ? "#F27059" : "#F9FAFB",
+                        },
+                      }}
+                    >
+                      <Checkbox
+                        checked={subGoal === option}
+                        onChange={() => {
+                          setSubGoal(option);
+                          if (option !== "Other (please specify)") {
+                            setCustomSubGoal("");
+                          }
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        sx={{
+                          color: subGoal === option ? "white" : "#9CA3AF",
+                          "&.Mui-checked": {
+                            color: subGoal === option ? "white" : "#F27059",
+                          },
+                          pointerEvents: "none",
+                        }}
+                      />
+                      <Typography
+                        component="span"
+                        sx={{
+                          fontSize: "inherit",
+                          fontWeight: 400,
+                          userSelect: "none",
+                        }}
+                      >
+                        {option}
+                      </Typography>
+                    </Box>
+                    {option === "Other (please specify)" && subGoal === option && (
+                      <TextField
+                        id="customSubGoal"
+                        placeholder="Write your answer"
+                        value={customSubGoal}
+                        onChange={(e) => setCustomSubGoal(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        sx={{ width: { xs: "100%", sm: "300px" }, ml: { sm: 2 } }}
+                        variant="outlined"
+                      />
+                    )}
+                  </Box>
+                ))}
+              </Stack>
+
+              <Box 
+                sx={{ 
+                  display: "flex", 
+                  justifyContent: "space-between", 
+                  alignItems: "center", 
+                  gap: 3,
+                  mb: 3,
+                  flexWrap: { xs: "wrap", sm: "nowrap" },
+                }}
+              >
+                <Button
+                  variant="outlined"
+                  onClick={handleBack}
+                  sx={{
+                    borderColor: "#76808F",
+                    color: "#76808F",
+                    maxWidth: "82px",
+                    flexShrink: 0,
+                    "&:hover": {
+                      backgroundColor: "#3B82F6",
+                      borderColor: "#3B82F6",
+                      color: "white",
+                    },
+                  }}
+                >
+                  Back
+                </Button>
+
+                <Button
+                  variant="contained"
+                  disabled={!subGoal || (subGoal === "Other (please specify)" && !customSubGoal.trim())}
+                  onClick={handleNext}
+                  sx={{
+                    backgroundColor: "#F27059",
+                    flexShrink: 0,
+                    "&:hover": {
+                      backgroundColor: "#E55A42",
+                    },
+                    "&.Mui-disabled": {
+                      backgroundColor: "#D1D5DB",
+                      color: "white",
+                    },
+                  }}
+                >
+                  Next Question
+                </Button>
+              </Box>
+
+              {/* Show CLB requirements and setup information when sub-goal is selected */}
+              {subGoal && subGoal !== "Other (please specify)" && SUB_GOAL_CLB_REQUIREMENTS[subGoal] && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      mb: 3,
+                      backgroundColor: "#F0F9FF",
+                      border: "1px solid #BAE6FD",
+                      borderRadius: "12px",
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
+                      <Box
+                        sx={{
+                          minWidth: "40px",
+                          height: "40px",
+                          borderRadius: "50%",
+                          backgroundColor: "#F27059",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            color: "white",
+                            fontWeight: 700,
+                            fontSize: "18px",
+                          }}
+                        >
+                          ✓
+                        </Typography>
+                      </Box>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontSize: "18px",
+                            fontWeight: 600,
+                            color: "#212E42",
+                            mb: 1.5,
+                          }}
+                        >
+                          Your Required CLB Score: {SUB_GOAL_CLB_REQUIREMENTS[subGoal].clb}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontSize: "14px",
+                            color: "#37465C",
+                            mb: 1.5,
+                            lineHeight: 1.6,
+                          }}
+                        >
+                          {SUB_GOAL_CLB_REQUIREMENTS[subGoal].description}
+                        </Typography>
+                        {SUB_GOAL_CLB_REQUIREMENTS[subGoal].additionalInfo && (
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontSize: "14px",
+                              color: "#37465C",
+                              mb: 2,
+                              lineHeight: 1.6,
+                              fontStyle: "italic",
+                            }}
+                          >
+                            {SUB_GOAL_CLB_REQUIREMENTS[subGoal].additionalInfo}
+                          </Typography>
+                        )}
+                        <Box
+                          sx={{
+                            mt: 2,
+                            pt: 2,
+                            borderTop: "1px solid #BAE6FD",
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontSize: "14px",
+                              color: "#212E42",
+                              fontWeight: 500,
+                              mb: 1,
+                            }}
+                          >
+                            🎯 Personalized Setup:
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontSize: "14px",
+                              color: "#37465C",
+                              lineHeight: 1.6,
+                            }}
+                          >
+                            We've configured your practice environment based on your goal. Your study plan, practice tests, and learning materials are now tailored to help you achieve the CLB score you need for {subGoal}.
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Paper>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+
+          {step === 3 && (
+            <motion.div
+              key="step3"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.4, ease: "easeInOut" }}
+            >
+              <Typography
+                variant="h6"
+                sx={{
+                  fontSize: "20px",
+                  color: "#212E42",
+                  fontWeight: 600,
+                  mb: 3.5,
+                }}
+              >
+                When is your official test date?
+              </Typography>
+
+              <Stack spacing={2} sx={{ mb: { xs: 3, sm: 4 } }}>
+                {TEST_DATE_OPTIONS.map((option) => (
+                  <Box
+                    key={option}
+                    onClick={() => setTestDate(option)}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      height: { xs: "48px", sm: "52px" },
+                      px: { xs: 2, sm: 4 },
+                      borderRadius: "40px",
+                      transition: "all 0.3s",
+                      cursor: "pointer",
+                      fontSize: { xs: "12px", sm: "16px" },
+                      width: "fit-content",
+                      backgroundColor: testDate === option ? "#F27059" : "white",
+                      color: testDate === option ? "white" : "#212E42",
+                      border: "1px solid transparent",
+                      "&:hover": {
+                        backgroundColor: testDate === option ? "#F27059" : "#F9FAFB",
+                      },
+                    }}
+                  >
+                    <Checkbox
+                      checked={testDate === option}
+                      onChange={() => setTestDate(option)}
+                      onClick={(e) => e.stopPropagation()}
+                      sx={{
+                        color: testDate === option ? "white" : "#9CA3AF",
+                        "&.Mui-checked": {
+                          color: testDate === option ? "white" : "#F27059",
+                        },
+                        pointerEvents: "none",
+                      }}
+                    />
+                    <Typography
+                      component="span"
+                      sx={{
+                        fontSize: "inherit",
+                        fontWeight: 400,
+                        userSelect: "none",
+                      }}
+                    >
+                      {option}
+                    </Typography>
+                  </Box>
+                ))}
+              </Stack>
+
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 3 }}>
+                <Button
+                  variant="outlined"
+                  onClick={handleBack}
+                  sx={{
+                    borderColor: "#76808F",
+                    color: "#76808F",
+                    maxWidth: "82px",
+                    "&:hover": {
+                      backgroundColor: "#3B82F6",
+                      borderColor: "#3B82F6",
+                      color: "white",
+                    },
+                  }}
+                >
+                  Back
+                </Button>
+
+                <Button
+                  variant="contained"
+                  disabled={!testDate}
+                  onClick={handleNext}
+                  sx={{
+                    backgroundColor: "#F27059",
+                    "&:hover": {
+                      backgroundColor: "#E55A42",
+                    },
+                    "&.Mui-disabled": {
+                      backgroundColor: "#D1D5DB",
+                      color: "white",
+                    },
+                  }}
+                >
+                  Next Question
+                </Button>
+              </Box>
+            </motion.div>
+          )}
+
+          {step === 4 && (
+            <motion.div
+              key="step4"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.4, ease: "easeInOut" }}
+            >
+              <Typography
+                variant="h6"
+                sx={{
+                  fontSize: "20px",
+                  color: "#212E42",
+                  fontWeight: 600,
+                  mb: 3.5,
+                }}
+              >
+                Which skill are you focused on improving first?
+              </Typography>
+
+              <Stack spacing={2} sx={{ mb: { xs: 3, sm: 4 } }}>
+                {FOCUS_SKILL_OPTIONS.map((option, index) => (
+                  <Box
+                    key={option}
+                    sx={{
+                      display: "flex",
+                      flexDirection: {
+                        xs: index === 5 ? "column" : "row",
+                        sm: "row",
+                      },
+                      gap: index === 5 ? { xs: 3, sm: 1 } : 0,
+                    }}
+                  >
+                    <Box
+                      onClick={() => setFocusSkill(option)}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        height: { xs: "48px", sm: "52px" },
+                        px: { xs: 2, sm: 4 },
+                        borderRadius: "40px",
+                        transition: "all 0.3s",
+                        cursor: "pointer",
+                        fontSize: { xs: "12px", sm: "16px" },
+                        width: "fit-content",
+                        backgroundColor: focusSkill === option ? "#F27059" : "white",
+                        color: focusSkill === option ? "white" : "#212E42",
+                        border: "1px solid transparent",
+                        "&:hover": {
+                          backgroundColor: focusSkill === option ? "#F27059" : "#F9FAFB",
+                        },
+                      }}
+                    >
+                      <Checkbox
+                        checked={focusSkill === option}
+                        onChange={() => setFocusSkill(option)}
+                        onClick={(e) => e.stopPropagation()}
+                        sx={{
+                          color: focusSkill === option ? "white" : "#9CA3AF",
+                          "&.Mui-checked": {
+                            color: focusSkill === option ? "white" : "#F27059",
+                          },
+                          pointerEvents: "none",
+                        }}
+                      />
+                      <Typography
+                        component="span"
+                        sx={{
+                          fontSize: "inherit",
+                          fontWeight: 400,
+                          userSelect: "none",
+                        }}
+                      >
+                        {option}
+                      </Typography>
+                    </Box>
+                    {option === "Other (please specify)" && focusSkill === option && (
+                      <TextField
+                        id="customFocusSkill"
+                        placeholder="Write your answer"
+                        value={customFocusSkill}
+                        onChange={(e) => setCustomFocusSkill(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        sx={{ width: { xs: "100%", sm: "300px" }, ml: { sm: 2 } }}
+                        variant="outlined"
+                      />
+                    )}
+                  </Box>
+                ))}
+              </Stack>
+
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 3 }}>
+                <Button
+                  variant="outlined"
+                  onClick={handleBack}
+                  sx={{
+                    borderColor: "#76808F",
+                    color: "#76808F",
+                    maxWidth: "82px",
+                    "&:hover": {
+                      backgroundColor: "#3B82F6",
+                      borderColor: "#3B82F6",
+                      color: "white",
+                    },
+                  }}
+                >
+                  Back
+                </Button>
+
+                <Button
+                  variant="contained"
+                  disabled={isSubmitting || isPersonalizing || !focusSkill || (focusSkill === "Other (please specify)" && !customFocusSkill.trim())}
+                  onClick={async () => {
+                    try {
+                      setIsPersonalizing(true);
+
+                      // Keep the personalization feedback visible for a short moment.
+                      await new Promise((resolve) => setTimeout(resolve, 6000));
+
+                      setIsSubmitting(true);
+                      const submitResponse = await fetch("/api/onboarding", {
+                        method: "POST",
+                        body: JSON.stringify({
+                          action: "submit",
+                          answers: {
+                            primaryGoal: primaryGoal === "Other (please specify)" ? customPrimaryGoal : primaryGoal,
+                            customPrimaryGoal: primaryGoal === "Other (please specify)" ? customPrimaryGoal : "",
+                            subGoal: hasSubOptions() && subGoal ? (subGoal === "Other (please specify)" ? customSubGoal : subGoal) : "",
+                            customSubGoal: hasSubOptions() && subGoal === "Other (please specify)" ? customSubGoal : "",
+                            testDate,
+                            focusSkill,
+                            customFocusSkill: focusSkill === "Other (please specify)" ? customFocusSkill : "",
+                            targetScores,
+                          },
+                        }),
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                      });
+
+                      if (!submitResponse.ok) {
+                        throw new Error("Failed to submit onboarding");
+                      }
+
+                      const flowResponse = await fetch("/api/flow", { method: "GET" });
+                      if (!flowResponse.ok) {
+                        throw new Error("Failed to load microlearning flow");
+                      }
+
+                      const payload: FlowPayload = await flowResponse.json();
+                      setFlowPayload(payload);
+                      user?.reload();
+                    } catch (error) {
+                      console.error("Onboarding flow launch error:", error);
+                      onComplete();
+                      router.push("/practice-overview");
+                    } finally {
+                      setIsSubmitting(false);
+                      setIsPersonalizing(false);
+                    }
+                  }}
+                  sx={{
+                    backgroundColor: "#F27059",
+                    "&:hover": {
+                      backgroundColor: "#E55A42",
+                    },
+                    "&.Mui-disabled": {
+                      backgroundColor: "#D1D5DB",
+                      color: "white",
+                    },
+                  }}
+                >
+                  {isPersonalizing ? "Personalizing for you..." : isSubmitting ? "Almost done..." : "Personalize My Dashboard"}
+                </Button>
+              </Box>
+            </motion.div>
+          )}
+
+          {/* Personalizing Overlay */}
+          {isPersonalizing && (
+            <Box
+              sx={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "rgba(255, 255, 255, 0.95)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 9999,
+              }}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "24px",
+                }}
+              >
+                {construccionAnimation && (
+                  <Box
+                    sx={{
+                      width: { xs: "200px", sm: "300px" },
+                      height: { xs: "200px", sm: "300px" },
+                    }}
+                  >
+                    <Lottie
+                      animationData={construccionAnimation}
+                      loop={true}
+                      autoplay={true}
+                      style={{ width: "100%", height: "100%" }}
+                    />
+                  </Box>
+                )}
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontSize: { xs: "20px", sm: "24px" },
+                    fontWeight: 600,
+                    color: "#212E42",
+                    textAlign: "center",
+                  }}
+                >
+                  Personalizing for you...
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "14px",
+                    color: "#76808F",
+                    textAlign: "center",
+                    maxWidth: "400px",
+                  }}
+                >
+                  We're setting up your personalized dashboard based on your goals
+                </Typography>
+              </motion.div>
+            </Box>
+          )}
+
+          {flowPayload?.flow && (
+            <MicrolearningLaunch
+              flow={flowPayload.flow}
+              profile={flowPayload.profile}
+              firstAction={flowPayload.firstAction || "/practice-overview"}
+              onStartNow={handleFlowStart}
+              onSkip={() => handleFlowStart("/practice-overview")}
+            />
+          )}
+        </Paper>
+      </Box>
+    </ThemeProvider>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 import React from "react";
+import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
+import { useEcommerceTracking } from "@/hooks/useTracking";
 
 interface IPlanCard {
   title: string;
@@ -21,6 +23,25 @@ const PlanCard = ({
   iconWrapperColor,
   id,
 }: IPlanCard) => {
+  const { beginCheckout, selectItem } = useEcommerceTracking();
+
+  const handleCheckoutTracking = () => {
+    const amount = Number.parseFloat(price);
+    if (!Number.isFinite(amount) || amount <= 0 || type === "Free") return;
+
+    const item = {
+      item_id: type,
+      item_name: title,
+      price: amount,
+      quantity: 1,
+      item_brand: "CELPIP Practice Test",
+      item_category: "Subscription",
+    };
+
+    selectItem([item], "dashboard_pricing", "Dashboard Pricing Plans");
+    beginCheckout([item], "CAD", amount);
+  };
+
   return (
     <form
       className="relative mt-[12px] screen1280:!mt-[32px] w-full screen744:!w-[176px] screen744:!h-[214px] screen1280:!w-[202px] screen1280:!h-[215px]"
@@ -41,6 +62,7 @@ const PlanCard = ({
       }
       method="POST"
     >
+      <CheckoutAttributionFields />
       <article
         aria-label={`Plan card for ${title} plan`}
         className="relative  mx-[16px]  z-[1] before:absolute before:rounded-[24px]  hover:before:shadow-[6px_4px_16px_0px_#FC7A5066,_-6px_-4px_16px_0px_#4A7DFF66] before:transition-shadow before:duration-300 before:ease before:content-[''] before:inset-0 before:transform before:translate-z-[-1px] hover:cursor-pointer screen744:!w-[176px] screen744:!h-[211px] screen1280:!w-[202px] screen1280:!h-[215px] rounded-[24px] px-[12px] py-[16px] screen1280:!p-[16px] bg-white"
@@ -100,6 +122,7 @@ const PlanCard = ({
 
         <button
           type="submit"
+          onClick={handleCheckoutTracking}
           aria-label={`Select ${title} plan`}
           className="relative z-[2] mt-[24px] hover:cursor-pointer hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]  shadow-startButton  flex gap-[8px] px-[24px] w-full bg-primary2 mw-full h-[40px] rounded-[24px] items-center justify-center"
         >

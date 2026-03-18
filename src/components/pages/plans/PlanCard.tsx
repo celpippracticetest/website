@@ -1,7 +1,9 @@
 "use client";
 import React from "react";
 import SvgCheck from "../../icons/Check";
+import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
 import { useEcommerceTracking } from "@/hooks/useTracking";
+import { useUser } from "@clerk/nextjs";
 
 interface IPlanCard {
   title: string;
@@ -32,11 +34,9 @@ const PlanCard = ({
   planTitle,
 }: IPlanCard) => {
   const { selectItem, beginCheckout } = useEcommerceTracking();
-  const formRef = React.useRef<HTMLFormElement>(null);
+  const { user } = useUser();
 
-  const handlePlanClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    
+  const handlePlanClick = () => {
     // Track plan selection
     const item = {
       item_id: planTitle,
@@ -50,19 +50,18 @@ const PlanCard = ({
     selectItem([item], 'plans_page', 'Pricing Plans');
 
     // Track beginning of checkout
-    beginCheckout([item], 'CAD', parseFloat(price));
+    beginCheckout([item], "CAD", parseFloat(price), undefined, {
+      email: user?.primaryEmailAddress?.emailAddress?.trim().toLowerCase(),
+      address: {
+        first_name: user?.firstName || "",
+        last_name: user?.lastName || "",
+      },
+    });
 
-    // Submit form after a short delay to ensure tracking events are sent
-    setTimeout(() => {
-      if (formRef.current) {
-        formRef.current.submit();
-      }
-    }, 300);
   };
 
   return (
     <form
-      ref={formRef}
       className="relative w-full screen1280:!max-w-[420px]"
       action={
         type == "Easy Start"
@@ -81,6 +80,7 @@ const PlanCard = ({
       }
       method="POST"
     >
+      <CheckoutAttributionFields />
       <article
         aria-label={`Plan card for ${title} plan`}
         className="relative  z-[1]  before:absolute before:rounded-[24px] hover:before:shadow-[6px_4px_16px_0px_#FC7A5066,_-6px_-4px_16px_0px_#4A7DFF66] before:transition-shadow before:duration-300 before:ease before:content-[''] before:inset-0 before:transform before:translate-z-[-1px] hover:cursor-pointer  h-[418px] top-[20px]  rounded-[24px] p-[8px] screen1280:!p-[16px] bg-white"

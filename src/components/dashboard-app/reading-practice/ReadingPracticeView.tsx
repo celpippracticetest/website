@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import NextImage from "next/image";
 import {
   ArrowLeft,
 } from "lucide-react";
@@ -515,11 +516,14 @@ const ReadingPracticeView = ({
                           <p className="text-[14px] text-gray-400 mb-2">
                             Read the following Message, Photo or Diagram
                           </p>
-                          <img
+                          <NextImage
                             src={practice.passages[0].pictureUrl}
                             alt={practice.passages[0].title}
-                            className={`w-full h-auto mb-4 rounded-lg shadow-md ${!shouldShowPractice ? "blur-sm" : ""
-                              }`}
+                            width={800}
+                            height={500}
+                            className={`w-full h-auto mb-4 rounded-lg shadow-md ${!shouldShowPractice ? "blur-sm" : ""}`}
+                            loading="lazy"
+                            unoptimized
                           />
                         </>
                       )}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { clerkClient } from "@clerk/express";
 import { auth } from "@clerk/nextjs/server";
+import clientPromise from "@/lib/mongodb";
 
 export async function DELETE(req: NextRequest) {
   const { userId } = await auth();
@@ -10,6 +11,27 @@ export async function DELETE(req: NextRequest) {
   }
 
   try {
+    let body: Record<string, unknown> | null = null;
+    try {
+      body = await req.json();
+    } catch {
+      body = null;
+    }
+
+    const flowId =
+      typeof body?.flowId === "string" ? (body.flowId as string) : null;
+    const client = await clientPromise;
+    const db = client.db();
+    await db.collection("account_deletion_flow_events").insertOne({
+      userId,
+      flowId,
+      eventName: "account_deleted_success",
+      step: "confirm",
+      reason: typeof body?.reason === "string" ? body.reason : null,
+      metadata: null,
+      createdAt: new Date(),
+    });
+
     await clerkClient.users.deleteUser(userId);
     return NextResponse.json({ success: true });
   } catch (error) {

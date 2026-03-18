@@ -10,9 +10,11 @@ import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import Image from "@tiptap/extension-image";
 import Underline from "@tiptap/extension-underline";
+import { TableKit } from "@tiptap/extension-table/kit";
 
 type TiptapBlogEditorProps = {
-  initialContent?: JSONContent | null;
+  /** Initial content as ProseMirror JSON or HTML string (e.g. from AI generation). */
+  initialContent?: JSONContent | string | null;
   placeholder?: string;
   onChange: (payload: { json: JSONContent | null; html: string }) => void;
 };
@@ -37,11 +39,12 @@ export default function TiptapBlogEditor({
         defaultProtocol: "https",
       }),
       Image,
+      TableKit,
       Placeholder.configure({
         placeholder,
       }),
     ],
-    content: initialContent ?? "<p></p>",
+    content: (typeof initialContent === "string" && initialContent.trim()) ? initialContent : (initialContent ?? "<p></p>"),
     editorProps: {
       attributes: {
         class:
@@ -155,6 +158,17 @@ export default function TiptapBlogEditor({
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={insertImage}>
           Image
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+          }
+          title="Insert table"
+        >
+          Table
         </Button>
         <Button
           type="button"

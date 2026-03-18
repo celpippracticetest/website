@@ -44,7 +44,7 @@ export async function getRelatedPublishedPosts(
   }
 }
 
-export async function getPublishedBlogSlugs(): Promise<Array<{ slug: string; updatedAt: Date }>> {
+export async function getPublishedBlogSlugs(): Promise<Array<{ slug: string; updatedAt: Date; canonicalUrl?: string }>> {
   try {
     const repo = new BlogRepository(mongoClient);
     return await repo.getPublishedSlugs();

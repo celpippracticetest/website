@@ -31,6 +31,8 @@ const PromotionManager = () => {
     }, []);
 
     useEffect(() => {
+        const abortController = new AbortController();
+
         const checkPromotion = async () => {
             if (!isLoaded || !isSignedIn || !user?.id || !isPageReady) {
                 return;
@@ -40,7 +42,7 @@ const PromotionManager = () => {
 
             try {
                 isFetching.current = true;
-                const response = await fetch("/api/league");
+                const response = await fetch("/api/league", { signal: abortController.signal });
 
                 if (response.ok) {
                     const data = await response.json();
@@ -66,10 +68,22 @@ const PromotionManager = () => {
                         setShowModal(true);
                     }
                 }
-            } catch (error) {
+            } catch (error: any) {
+                // Ignore AbortError (component unmounted) or simple fetch failures (network blip)
+                if (error.name === 'AbortError' || error.message === 'Failed to fetch') {
+                    return;
+                }
                 console.error("PromotionManager: Error checking league promotion:", error);
             } finally {
-                isFetching.current = false;
+                // Only reset if we are still mounted/not aborted to avoid race conditions with next effect
+                if (!abortController.signal.aborted) {
+                    isFetching.current = false;
+                } else {
+                    // Even if aborted, we should reset it because the next effect (using same ref) needs to be able to fetch.
+                    // Actually, if aborted, it means this specific fetch cycle is dead.
+                    // The ref persists across renders.
+                    isFetching.current = false;
+                }
             }
         };
 
@@ -84,7 +98,12 @@ const PromotionManager = () => {
             }
         }, 60000); // Poll every 60 seconds instead of 10s
 
-        return () => clearInterval(interval);
+        return () => {
+            abortController.abort();
+            clearInterval(interval);
+            // Reset fetching state on unmount/cleanup to allow future fetches if component remounts immediately
+            isFetching.current = false;
+        };
     }, [isLoaded, isSignedIn, user?.id, isPageReady]);
 
     const handleClose = async () => {

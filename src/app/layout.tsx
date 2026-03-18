@@ -1,7 +1,4 @@
-import PromotionManager from "@/components/league/PromotionManager";
-import PremiumPlanModal from "@/components/premium-plan/PremiumPlanModal";
 import "./globals.css";
-import "../../sentry.client.config"; // Initialize Sentry on client
 import NextTopLoader from "nextjs-toploader";
 import { Analytics } from "@vercel/analytics/react";
 import { ClerkProvider } from "@clerk/nextjs";
@@ -9,14 +6,19 @@ import { auth } from "@clerk/nextjs/server";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import ReactQueryProvider from "@/components/ReactQueryProvider";
-import { LazyIntercom } from "@/components/LazyComponents";
+import { LazyLeadCapturePopup, LazyPremiumPlanModal, LazyPromotionManager } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
-import CriticalCSS from "@/components/CriticalCSS";
-import type { Metadata, Viewport } from "next";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ActiveUsersTracker from "@/components/analytics/ActiveUsersTracker";
+import AttributionTracker from "@/components/analytics/AttributionTracker";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
 import FooterWrapper from "@/components/pages/landing/FooterWrapper";
+import { getHomepageHeroDisplay } from "@/lib/homepage-hero";
+import type { Metadata, Viewport } from "next";
+import { Suspense, type ComponentType } from "react";
+
+const NextTopLoaderComponent =
+  NextTopLoader as unknown as ComponentType<Record<string, never>>;
 
 const jakarta = Plus_Jakarta_Sans({
   display: "swap",
@@ -29,23 +31,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || "GTM-M24FJ7JC";
-
-function normalizeAppBaseUrl(raw: string): string {
-  const value = (raw ?? "").trim();
-  if (!value) return "https://celpippracticetest.com";
-  if (value.startsWith("http://") || value.startsWith("https://")) return value;
-
-  // `new URL()` requires a protocol. For local development, default to `http://`.
-  if (value.startsWith("localhost:") || value.startsWith("127.0.0.1:")) {
-    return `http://${value}`;
-  }
-
-  if (value.startsWith("localhost") || value === "127.0.0.1") {
-    return `http://${value}`;
-  }
-
-  return `https://${value}`;
-}
+const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID || "vqdy02aq70";
 
 export function generateViewport(): Viewport {
   return {
@@ -54,23 +40,19 @@ export function generateViewport(): Viewport {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  const appBaseUrl = normalizeAppBaseUrl(process.env.APP_BASE_URL || "https://celpippracticetest.com");
+  const appBaseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
   const isPreview = appBaseUrl.includes("vercel.app");
-  let metadataBase: URL;
-  try {
-    metadataBase = new URL(appBaseUrl);
-  } catch {
-    metadataBase = new URL("https://celpippracticetest.com");
-  }
+  const homepageHero = await getHomepageHeroDisplay();
 
   return {
-    metadataBase,
+    metadataBase: new URL(appBaseUrl),
     title: "CELPIP Practice Test Online | Instant Scoring, Expert Tips",
     description:
-      "Celpip Practice Test platform designed to boost your score with real exam questions, instant results, and expert tips for Listening, Reading, Writing & Speaking.",
+      "Celpip Practice Test platform designed to boost your score with real exam questions, instant results, and expert tips for Listening, Reading, Writing & Speaking. Start your free celpip online practice test platform",
     keywords: [
       "CELPIP",
       "CELPIP practice test",
+      "celpip online practice test",
       "CELPIP mock exam",
       "CELPIP mock test",
       "CELPIP general practice test",
@@ -82,6 +64,10 @@ export async function generateMetadata(): Promise<Metadata> {
       "CELPIP reading",
       "CELPIP writing",
       "CELPIP speaking",
+      "CELPIP score",
+      "CELPIP score chart",
+      "CELPIP score calculation",
+      "CLB conversion",
       "AI scoring",
       "English test Canada",
     ],
@@ -111,10 +97,10 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
       images: [
         {
-          url: "/images/hero.png",
+          url: homepageHero.imageUrl,
           width: 1200,
           height: 630,
-          alt: "CELPIP Practice Test Hero Image",
+          alt: homepageHero.altText,
         },
       ],
     },
@@ -122,10 +108,10 @@ export async function generateMetadata(): Promise<Metadata> {
       card: "summary_large_image",
       title: "CELPIP Practice Test Online | Instant Scoring, Expert Tips",
       description: "Celpip Practice Test platform designed to boost your score with real exam questions, instant results, and expert tips for Listening, Reading, Writing & Speaking.",
-      images: ["/images/hero.png"],
+      images: [homepageHero.imageUrl],
     },
     alternates: {
-      canonical: "/",
+      canonical: appBaseUrl,
     },
     robots: { index: !isPreview, follow: !isPreview },
   };
@@ -136,134 +122,129 @@ export default async function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const baseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
   const enableGtm =
-    process.env.NODE_ENV === "production"
-  const { userId } = await auth();
+    process.env.NODE_ENV === "production" && !baseUrl.includes("vercel.app");
+  const homepageHero = await getHomepageHeroDisplay();
+  let userId: string | null = null;
+  try {
+    const authResult = await auth();
+    userId = authResult.userId;
+  } catch (error) {
+    // auth() may run on requests that bypass clerkMiddleware (e.g. static asset misses).
+    userId = null;
+  }
   const isSignedIn = Boolean(userId);
 
   return (
-    <ClerkProvider>
-      <html suppressHydrationWarning className={jakarta.variable} lang="en">
-        <head>
-          {/* Critical preloads */}
-          <link
-            rel="preload"
-            as="image"
-            href="/images/hero.png"
-            type="image/png"
-            fetchPriority="high"
-          />
-          <link
-            rel="preload"
-            as="image"
-            href="/images/logo.png"
-            type="image/png"
-            fetchPriority="high"
-          />
+    <html suppressHydrationWarning className={jakarta.variable} lang="en">
+      <head>
+        {/* Critical preloads */}
+        <link
+          rel="preload"
+          as="image"
+          href={homepageHero.imageUrl}
+          fetchPriority="high"
+        />
+        <link
+          rel="preload"
+          as="image"
+          href="/images/logo.png"
+          type="image/png"
+          fetchPriority="high"
+        />
 
-          {/* DNS prefetch / preconnect */}
-          <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-          <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
-          <link
-            rel="preconnect"
-            href="https://fonts.googleapis.com"
-            crossOrigin="anonymous"
-          />
-          <link
-            rel="preconnect"
-            href="https://fonts.gstatic.com"
-            crossOrigin="anonymous"
-          />
+        {/* DNS prefetch / preconnect */}
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.googleapis.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
 
-          {/* Icons & PWA */}
-          <link rel="icon" href="/favicon/favicon.ico" sizes="any" />
-          <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
-          <link rel="apple-touch-icon" href="/favicon/apple-touch-icon.png" />
-          <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
-          <link rel="mask-icon" href="/favicon/apple-touch-icon.png" color="#3B82F6"></link>
+        {/* Icons & PWA */}
+        <link rel="icon" href="/favicon/favicon.ico" sizes="any" />
+        <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
+        <link rel="apple-touch-icon" href="/favicon/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
+        <link rel="mask-icon" href="/favicon/apple-touch-icon.png" color="#3B82F6"></link>
 
-          <meta name="apple-mobile-web-app-capable" content="yes" />
-          <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-          <meta name="apple-mobile-web-app-title" content="CELPIP Test" />
-          <meta name="theme-color" content="#3B82F6" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="CELPIP Test" />
+        <meta name="theme-color" content="#3B82F6" />
 
-          {/* JSON-LD early is fine */}
+        {/* GTM consent defaults — must run before GTM initialises */}
+        {enableGtm && (
           <Script
-            id="structured-data"
-            type="application/ld+json"
+            id="gtm-consent-defaults"
             strategy="beforeInteractive"
             dangerouslySetInnerHTML={{
-              __html: JSON.stringify({
-                "@context": "https://schema.org",
-                "@graph": [
-                  {
-                    "@type": "Product",
-                    name: "Free Plan",
-                    image:
-                      "https://celpippracticetest.com/images/free_plan.png",
-                    description:
-                      "Access limited CELPIP practice with AI feedback for free.",
-                    brand: { "@type": "Brand", name: "CELPIPPRACTICETEST.com" },
-                    offers: {
-                      "@type": "Offer",
-                      price: "0",
-                      priceCurrency: "CAD",
-                      availability: "https://schema.org/InStock",
-                    },
-                  },
-                  {
-                    "@type": "Product",
-                    name: "Premium Monthly",
-                    image:
-                      "https://celpippracticetest.com/images/premium_monthly.png",
-                    description:
-                      "Full access to all CELPIP mock exams and AI feedback, billed monthly.",
-                    brand: { "@type": "Brand", name: "CELPIPPRACTICETEST.com" },
-                    offers: {
-                      "@type": "Offer",
-                      price: "24.99",
-                      priceCurrency: "CAD",
-                      availability: "https://schema.org/InStock",
-                    },
-                  },
-                  {
-                    "@type": "Product",
-                    name: "Premium 3-Month",
-                    image:
-                      "https://celpippracticetest.com/images/premium_3month.png",
-                    description:
-                      "3-month access to full CELPIP preparation tools and mock exams.",
-                    brand: { "@type": "Brand", name: "CELPIPPRACTICETEST.com" },
-                    offers: {
-                      "@type": "Offer",
-                      price: "59.99",
-                      priceCurrency: "CAD",
-                      availability: "https://schema.org/InStock",
-                    },
-                  },
-                  {
-                    "@type": "Organization",
-                    name: "Celpip Practice Test",
-                    url: baseUrl,
-                    logo: `${baseUrl}/logo.png`,
-                    description:
-                      "CELPIP preparation platform with AI-powered scoring and mock exams.",
-                    aggregateRating: {
-                      "@type": "AggregateRating",
-                      ratingValue: "4.8",
-                      reviewCount: "3132",
-                    },
-                  },
-                ],
-              }),
+              __html: `
+                window.dataLayer = window.dataLayer || [];
+                window.dataLayer.push({
+                  event: "default_consent",
+                  analytics_storage: "denied",
+                  ad_storage: "denied",
+                  ad_user_data: "denied",
+                  ad_personalization: "denied"
+                });
+              `,
             }}
           />
-        </head>
+        )}
 
-        <body className="bg-[#F4F7FF]">
+        {/* GTM snippet — deferred to after hydration for better INP/LCP */}
+        {enableGtm && (
+          <Script
+            id="gtm-head"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
+                (function(w,d,s,l,i){
+                  w[l]=w[l]||[];
+                  w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});
+                  var f=d.getElementsByTagName(s)[0],
+                      j=d.createElement(s),
+                      dl=l!='dataLayer'?'&l='+l:'';
+                  j.async=true;
+                  j.src='/gtm/js?id='+i+dl;
+                  f.parentNode.insertBefore(j,f);
+                })(window,document,'script','dataLayer','${GTM_ID}');
+              `,
+            }}
+          />
+        )}
+
+        {/* JSON-LD — inline in initial HTML for SEO bots, no JS execution needed */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [{
+                "@type": "Organization",
+                name: "Celpip Practice Test",
+                url: baseUrl,
+                logo: `${baseUrl}/logo.png`,
+                description:
+                  "CELPIP preparation platform with AI-powered scoring and mock exams.",
+              }],
+            }),
+          }}
+        />
+      </head>
+
+      <body className="bg-[#F4F7FF]">
+        <ClerkProvider>
           {enableGtm && (
             <noscript>
               <iframe
-                src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+                src={`/gtm/ns.html?id=${GTM_ID}`}
                 height="0"
                 width="0"
                 style={{ display: "none", visibility: "hidden" }}
@@ -271,103 +252,43 @@ export default async function RootLayout({
             </noscript>
           )}
 
-          <NextTopLoader />
+          <NextTopLoaderComponent />
           <ReactQueryProvider>
             <ErrorBoundary>
               {children}
               <FooterWrapper isSignedIn={isSignedIn} />
             </ErrorBoundary>
           </ReactQueryProvider>
-          <PremiumPlanModal />
-          <PromotionManager />
-          <LazyIntercom />
+          <LazyPremiumPlanModal />
+          <LazyPromotionManager />
           <PerformanceMonitor />
-          <CriticalCSS />
           <Analytics />
           <ActiveUsersTracker />
-          <PageViewTracker />
+          <Suspense fallback={null}>
+            <AttributionTracker />
+            <PageViewTracker />
+          </Suspense>
+          <LazyLeadCapturePopup />
 
-
-          {enableGtm && (
+          {process.env.NODE_ENV === "production" && (
             <Script
-              id="gtm-consent-defaults"
+              id="ms-clarity"
               strategy="afterInteractive"
               dangerouslySetInnerHTML={{
                 __html: `
-                  (function(w){
-                    w.dataLayer = w.dataLayer || [];
-                    w.dataLayer.push({
-                      event: 'default_consent',
-                      analytics_storage: 'denied',
-                      ad_storage: 'denied',
-                      ad_user_data: 'denied',
-                      ad_personalization: 'denied'
-                    });
-                  })(window);
+                  (function(c,l,a,r,i,t,y){
+                      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+                  })(window, document, "clarity", "script", "${CLARITY_ID}");
                 `,
               }}
             />
           )}
 
-          {enableGtm && (
-            <Script
-              id="gtm-loader"
-              strategy="afterInteractive"
-              dangerouslySetInnerHTML={{
-                __html: `
-                  (function(i){
-                    if (window.__gtmInjected) return;
-                    window.__gtmInjected = false;
-
-                    function injectGTM(){
-                      if (window.__gtmInjected) return;
-                      window.__gtmInjected = true;
-
-                      window.dataLayer = window.dataLayer || [];
-                      window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
-
-                      var s = document.createElement('script');
-                      s.async = true;
-                      s.src = 'https://www.googletagmanager.com/gtm.js?id=' + i;
-                      document.head.appendChild(s);
-                    }
-
-                    // Load GTM immediately so ad/analytics tag scanners can detect it
-                    // without requiring a prior user interaction.
-                    injectGTM();
-
-                    ['click','scroll','mousemove','touchstart','keydown'].forEach(function(evt){
-                      window.addEventListener(evt, injectGTM, { once: true, passive: true });
-                    });
-                  })('${GTM_ID}');
-                `,
-              }}
-            />
-          )}
-
-          <Script
-            id="third-party-loader"
-            strategy="lazyOnload"
-            dangerouslySetInnerHTML={{
-              __html: `
-                let __thirdPartyLoaded = false;
-                function loadThirdParty() {
-                  if (__thirdPartyLoaded) return;
-                  __thirdPartyLoaded = true;
-                  const sc = document.createElement('script');
-                  sc.src = 'https://assets.sandbox.cello.so/app/latest/cello.js';
-                  sc.type = 'module';
-                  sc.async = true;
-                  document.head.appendChild(sc);
-                }
-                ['click','scroll','mousemove','touchstart','keydown'].forEach(e=>{
-                  document.addEventListener(e, loadThirdParty, { once: true, passive: true });
-                });
-              `,
-            }}
-          />
-        </body>
-      </html>
-    </ClerkProvider>
+          <Script src="/scripts/third-party-loader.js" strategy="lazyOnload" />
+        </ClerkProvider>
+      </body>
+    </html>
   );
 }

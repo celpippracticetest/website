@@ -3,6 +3,7 @@
 import { SignUp, useUser } from "@clerk/nextjs";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { trackAuth } from "@/lib/gtm";
 
 export default function SignUpPage() {
   const { user, isSignedIn } = useUser();
@@ -24,27 +25,52 @@ export default function SignUpPage() {
     const inviter =
       getCookie("pendingInviterName") || searchParams.get("inviter");
 
+    // Capture Marketing Attribution (GCLID, UTMs)
+    const gclid = searchParams.get("gclid");
+    const utmSource = searchParams.get("utm_source");
+    const utmMedium = searchParams.get("utm_medium");
+    const utmCampaign = searchParams.get("utm_campaign");
+    const utmContent = searchParams.get("utm_content");
+    const utmTerm = searchParams.get("utm_term");
+
+    if (gclid) localStorage.setItem("pending_gclid", gclid);
+    if (utmSource) localStorage.setItem("pending_utm_source", utmSource);
+    if (utmMedium) localStorage.setItem("pending_utm_medium", utmMedium);
+    if (utmCampaign) localStorage.setItem("pending_utm_campaign", utmCampaign);
+    if (utmContent) localStorage.setItem("pending_utm_content", utmContent);
+    if (utmTerm) localStorage.setItem("pending_utm_term", utmTerm);
+
     if (ref) {
-      console.log("Referral code found:", ref);
       setReferralCode(ref);
       // Store referral code in localStorage for after signup processing
       localStorage.setItem("pendingReferralCode", ref);
     }
 
     if (inviter) {
-      console.log("Inviter name found:", inviter);
       setInviterName(decodeURIComponent(inviter));
       localStorage.setItem("pendingInviterName", decodeURIComponent(inviter));
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    if (!isSignedIn || !user?.id) return;
+
+    const dedupeKey = `signup_conversion_tracked_${user.id}`;
+    if (localStorage.getItem(dedupeKey) === "1") return;
+
+    trackAuth.signUpCompleted(user.id, "email", {
+      email: user.primaryEmailAddress?.emailAddress?.trim().toLowerCase(),
+      address: {
+        first_name: user.firstName || "",
+        last_name: user.lastName || "",
+      },
+    });
+
+    localStorage.setItem(dedupeKey, "1");
+  }, [isSignedIn, user]);
+
   const applyReferralDiscount = async (referralCode: string) => {
     try {
-      console.log(
-        "🔄 Starting referral discount process for code:",
-        referralCode
-      );
-
       // First establish referral relationship
       const processResponse = await fetch("/api/referrals/process-signup", {
         method: "POST",
@@ -55,10 +81,7 @@ export default function SignUpPage() {
       });
 
       if (processResponse.ok) {
-        console.log("✅ Referral relationship established successfully");
-
         // Then apply discount
-        console.log("🔄 Applying referral discount...");
         const discountResponse = await fetch("/api/referrals/apply-discount", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -70,7 +93,6 @@ export default function SignUpPage() {
         });
 
         if (discountResponse.ok) {
-          console.log("✅ Referral discount applied successfully");
         } else {
           const errorData = await discountResponse.json();
           console.error("❌ Failed to apply referral discount:", errorData);
@@ -87,32 +109,57 @@ export default function SignUpPage() {
     }
   };
 
-  useEffect(() => {
-    console.log(
-      "🔍 useEffect triggered - isSignedIn:",
-      isSignedIn,
-      "user:",
-      !!user
-    );
+  const saveAttribution = async () => {
+    try {
+      const gclid = localStorage.getItem("pending_gclid");
+      const utm_source = localStorage.getItem("pending_utm_source");
+      const utm_medium = localStorage.getItem("pending_utm_medium");
+      const utm_campaign = localStorage.getItem("pending_utm_campaign");
+      const utm_content = localStorage.getItem("pending_utm_content");
+      const utm_term = localStorage.getItem("pending_utm_term");
 
+      if (gclid || utm_source || utm_medium || utm_campaign) {
+        const response = await fetch("/api/users/update-attribution", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gclid,
+            utm_source,
+            utm_medium,
+            utm_campaign,
+            utm_content,
+            utm_term,
+          }),
+        });
+
+        if (response.ok) {
+          // Clear from storage only after a successful save.
+          localStorage.removeItem("pending_gclid");
+          localStorage.removeItem("pending_utm_source");
+          localStorage.removeItem("pending_utm_medium");
+          localStorage.removeItem("pending_utm_campaign");
+          localStorage.removeItem("pending_utm_content");
+          localStorage.removeItem("pending_utm_term");
+        }
+      }
+    } catch (error) {
+      console.error("Failed to save attribution:", error);
+    }
+  };
+
+  useEffect(() => {
     if (isSignedIn && user) {
+      // Process Attribution
+      saveAttribution();
+
       const pendingReferralCode = localStorage.getItem("pendingReferralCode");
-      console.log(
-        "🔍 Pending referral code from localStorage:",
-        pendingReferralCode
-      );
 
       if (pendingReferralCode) {
-        console.log("✅ Referral code found:", pendingReferralCode);
         applyReferralDiscount(pendingReferralCode);
         localStorage.removeItem("pendingReferralCode");
         localStorage.removeItem("pendingInviterName");
-      } else {
-        console.log("❌ No pending referral code found in localStorage");
       }
       router.push("/practice-overview");
-    } else {
-      console.log("❌ User not signed in or user not available");
     }
   }, [isSignedIn, user, router]);
 

@@ -1,7 +1,9 @@
-export const deleteUserAccount = async () => {
+export const deleteUserAccount = async (payload?: { flowId?: string | null }) => {
   try {
     const res = await fetch("/api/users/delete-user-account", {
       method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ flowId: payload?.flowId ?? null }),
     });
 
     if (!res.ok) {
@@ -9,5 +11,7 @@ export const deleteUserAccount = async () => {
     }
 
     return await res.json();
-  } catch (err) {}
+  } catch (err) {
+    throw err;
+  }
 };

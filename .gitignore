@@ -19,7 +19,12 @@
 /public/fallback-*.js
 # testing
 /coverage
+/playwright-report
+/test-results
+/.playwright
 
+/scripts
+/docs
 # next.js
 /.next/
 /out/
@@ -53,3 +58,4 @@ next-env.d.ts
 /.clerk/
 
 .env*.local
+.env.local

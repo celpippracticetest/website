@@ -5,10 +5,11 @@ import { headers } from "next/headers";
 import { stripe } from "@/lib/stripe";
 import { currentUser } from "@clerk/nextjs/server";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
-
+import { getDb } from "@/lib/mongodb";
 export async function POST(req: NextRequest) {
   try {
     const product: string | null = req.nextUrl.searchParams.get("product");
+    const formData = await req.formData();
     const headersList = await headers();
     const origin = headersList.get("origin");
     const user = await currentUser();
@@ -101,24 +102,13 @@ export async function POST(req: NextRequest) {
             },
           }
         );
-      } else {
-        console.log("❌ Referral discount has expired - proceeding without discount");
       }
     } else if (userMetadata?.referralDiscountUsed) {
-      console.log("❌ Referral discount already used by this user");
     } else if (userMetadata?.referralDiscountActive === false) {
-      console.log("❌ Referral discount is not active for this user");
     } else if (userMetadata?.referralActive === false) {
-      console.log("❌ Referral code is not active (already used)");
     } else if (!userMetadata?.referralCode) {
-      console.log(
-        "❌ User does not have a referral code - not eligible for referral discount"
-      );
     } else if (userMetadata?.referralCode && !referralPromotionId) {
       // User has referral code but no promotion ID - try to apply discount
-      console.log(
-        "🔄 User has referral code but no promotion ID - attempting to apply discount"
-      );
 
       try {
         const applyDiscountResponse = await fetch(
@@ -137,7 +127,6 @@ export async function POST(req: NextRequest) {
         );
 
         if (applyDiscountResponse.ok) {
-          console.log("✅ Successfully applied referral discount");
           // Refresh user metadata to get the new promotion ID
           const updatedUser = await clerkClient.users.getUser(user.id);
           const updatedMetadata = updatedUser.publicMetadata as any;
@@ -146,13 +135,6 @@ export async function POST(req: NextRequest) {
           if (newReferralPromotionId) {
             promotionCode = newReferralPromotionId;
             referralDiscountApplied = true;
-            console.log(
-              `✅ Now applying referral promotion_code id: ${newReferralPromotionId}`
-            );
-          } else {
-            console.log(
-              "❌ Still no referral promotion ID after applying discount"
-            );
           }
         } else {
           const errorData = await applyDiscountResponse.json();
@@ -161,8 +143,6 @@ export async function POST(req: NextRequest) {
       } catch (error) {
         console.error("❌ Error applying referral discount:", error);
       }
-    } else {
-      console.log("❌ No usable referral promotion code found in metadata");
     }
 
     // Only apply NEW discount if no referral discount is available and user hasn't purchased before
@@ -218,6 +198,99 @@ export async function POST(req: NextRequest) {
     const priceId = productDetails.default_price as string;
     const priceObject = await stripe.prices.retrieve(priceId);
     const mode = priceObject.recurring ? "subscription" : "payment";
+    const db = await getDb();
+    const userDoc = await db.collection("users").findOne({ clerkUserId: user.id });
+    const firstTouchTimestamp =
+      userDoc?.attribution?.firstTouch?.timestamp ||
+      userDoc?.publicMetadata?.acquisitionDate ||
+      null;
+    const firstTouchDate = firstTouchTimestamp ? new Date(firstTouchTimestamp) : null;
+    const timeToPurchaseMinutes =
+      firstTouchDate && !Number.isNaN(firstTouchDate.getTime())
+        ? Math.max(0, Math.round((Date.now() - firstTouchDate.getTime()) / 60000))
+        : null;
+    const referrer = headersList.get("referer");
+    let purchasePage: string | null = null;
+    if (referrer) {
+      try {
+        purchasePage = new URL(referrer).pathname;
+      } catch {
+        purchasePage = referrer;
+      }
+    }
+    const country =
+      headersList.get("x-vercel-ip-country") ||
+      headersList.get("cf-ipcountry") ||
+      userDoc?.attribution?.lastTouch?.country ||
+      null;
+    const readRequestAttribution = (field: string) => {
+      const formValue = formData.get(field);
+      if (typeof formValue === "string" && formValue.trim()) {
+        return formValue.trim();
+      }
+
+      const queryValue = req.nextUrl.searchParams.get(field);
+      if (queryValue?.trim()) {
+        return queryValue.trim();
+      }
+
+      return null;
+    };
+    const attributionMetadata = {
+      utm_source:
+        readRequestAttribution("utm_source") ||
+        userDoc?.attribution?.lastTouch?.source ||
+        userMetadata?.utm_source ||
+        null,
+      utm_medium:
+        readRequestAttribution("utm_medium") ||
+        userDoc?.attribution?.lastTouch?.medium ||
+        userMetadata?.utm_medium ||
+        null,
+      utm_campaign:
+        readRequestAttribution("utm_campaign") ||
+        userDoc?.attribution?.lastTouch?.campaign ||
+        userMetadata?.utm_campaign ||
+        null,
+      utm_content:
+        readRequestAttribution("utm_content") || userMetadata?.utm_content || null,
+      utm_term:
+        readRequestAttribution("utm_term") || userMetadata?.utm_term || null,
+      gclid:
+        readRequestAttribution("gclid") ||
+        userDoc?.attribution?.lastTouch?.gclid ||
+        userMetadata?.gclid ||
+        null,
+    };
+    const attributionSnapshot = {
+      attribution_source:
+        attributionMetadata.utm_source ||
+        (attributionMetadata.gclid ? "google_ads" : "direct"),
+      attribution_medium:
+        attributionMetadata.utm_medium,
+      attribution_campaign:
+        attributionMetadata.utm_campaign,
+      attribution_gclid:
+        attributionMetadata.gclid,
+      entry_page:
+        readRequestAttribution("entry_page") ||
+        userDoc?.attribution?.firstTouch?.entryPage ||
+        userMetadata?.entryPage ||
+        null,
+      referrer:
+        readRequestAttribution("referrer") ||
+        userDoc?.attribution?.firstTouch?.referrer ||
+        userMetadata?.referrer ||
+        null,
+      attribution_session_id:
+        readRequestAttribution("attribution_session_id") || null,
+      purchase_page: purchasePage,
+      attribution_country: country,
+      attribution_currency: priceObject.currency?.toUpperCase() || null,
+      time_to_purchase_minutes: timeToPurchaseMinutes,
+      coupon_id: userMetadata?.couponId || null,
+      promotion_code_id: promotionCode || null,
+    };
 
     logger.info("Creating checkout session", {
       component: "checkout_session_api",
@@ -248,7 +321,10 @@ export async function POST(req: NextRequest) {
       ...(promotionCode && { discounts: [{ promotion_code: promotionCode }] }),
       metadata: {
         user_id: user.id,
+        plan_name: productDetails.name,
         referral_code: userMetadata?.referralCode || null,
+        ...attributionMetadata,
+        ...attributionSnapshot,
         ...(referralDiscountApplied && {
           referral_discount_applied:
             userMetadata?.referralDiscount || "referral",
@@ -258,7 +334,10 @@ export async function POST(req: NextRequest) {
         subscription_data: {
           metadata: {
             user_id: user.id,
+            plan_name: productDetails.name,
             referral_code: userMetadata?.referralCode || null,
+            ...attributionMetadata,
+            ...attributionSnapshot,
             ...(referralDiscountApplied && {
               referral_discount_applied:
                 userMetadata?.referralDiscount || "referral",
@@ -290,6 +369,8 @@ export async function POST(req: NextRequest) {
           user_id: user.id,
           checkout_id: session.id,
           referral_code: userMetadata?.referralCode || null,
+          ...attributionMetadata,
+          ...attributionSnapshot,
           ...(referralDiscountApplied && {
             referral_discount_applied:
               userMetadata?.referralDiscount || "referral",

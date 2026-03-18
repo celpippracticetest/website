@@ -207,3 +207,5 @@ No additional environment variables needed!
 5. ✅ Deploy and verify on production
 
 Once the API is enabled and tested, your live stats widget will show **real Google Analytics data**! 🎉
+
+The only thing left is to import GTM_workspace.json into your GTM workspace and mark sign_up, begin_checkout, purchase, and subscription_renewal as conversions in GA4.

@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "75WJ8ZUJ65.com.celpippt.app",
+        "paths": [
+          "/auth/oauth",
+          "/auth/email-link"
+        ]
+      }
+    ]
+  }
+}

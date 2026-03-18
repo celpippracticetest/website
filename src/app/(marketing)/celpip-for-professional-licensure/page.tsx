@@ -34,6 +34,8 @@ import {
   Star
 } from 'lucide-react';
 
+const BASE_URL = process.env.APP_BASE_URL || 'https://celpippracticetest.com';
+
 export const metadata: Metadata = {
   title: 'CELPIP for Professional Licensure: Get Your License Faster',
   description: "Don't let a test stall your career. Expert CELPIP prep for Real Estate, Healthcare, & Immigration professionals. Achieve Level 7+ with AI-driven feedback.",
@@ -45,10 +47,14 @@ export const metadata: Metadata = {
     'RCIC language proficiency',
     'CELPIP General for professionals'
   ],
+  alternates: {
+    canonical: `${BASE_URL}/celpip-for-professional-licensure`,
+  },
   openGraph: {
     title: 'CELPIP for Professional Licensure: Get Your License Faster',
     description: "Don't let a test stall your career. Expert CELPIP prep for Real Estate, Healthcare, & Immigration professionals. Achieve Level 7+ with AI-driven feedback.",
     type: 'article',
+    url: `${BASE_URL}/celpip-for-professional-licensure`,
   },
 };
 

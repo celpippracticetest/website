@@ -12,8 +12,9 @@ import { ObjectId } from "mongodb";
 import { redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
 import { skillPagesContent } from "@/data/skill-pages-content";
+import type { Metadata } from "next";
 
-export const metadata = {
+const speakingMetadataBase: Metadata = {
   title:
     "Free CELPIP Speaking Practice Tests & Mock Exams | CELPIPPRACTICETEST",
   description:
@@ -31,6 +32,22 @@ export const metadata = {
     canonical: "https://celpippracticetest.com/speaking",
   },
 };
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | undefined }>;
+}): Promise<Metadata> {
+  await searchParams;
+
+  return {
+    ...speakingMetadataBase,
+    robots: {
+      index: true,
+      follow: true,
+    },
+  };
+}
 interface PracticeTask {
   taskNumber: string;
   name: string;
@@ -146,14 +163,47 @@ const SpeakingPage = async ({
   }
 
   return (
-    <main className=" bg-[#F2F6FF] min-h-screen flex w-full justify-center ">
-      <SpeakingPractice
-        showHeader={true}
-        allPractices={practices.items}
-        selectedPractice={selectedPractice}
-        task={task}
-        completedPracticeId={completedPracticeId}
-      />
+    <main className="bg-[#F2F6FF] min-h-screen flex w-full justify-center">
+      <div className="w-full max-w-[1280px]">
+        <h1 className="sr-only">CELPIP Speaking Practice</h1>
+        <SpeakingPractice
+          showHeader={true}
+          allPractices={practices.items}
+          selectedPractice={selectedPractice}
+          task={task}
+          completedPracticeId={completedPracticeId}
+        />
+        {!user && (
+          <section className="px-4 pb-10">
+          <h2 className="text-[22px] font-semibold text-[#37465C]">
+            CELPIP Speaking practice strategy
+          </h2>
+          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
+            Improve Speaking scores by using clear structure, natural pacing, and relevant
+            supporting details for each task prompt.
+          </p>
+          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
+            Practice with a timer, then review pronunciation clarity, grammar control, and idea
+            development to make targeted improvements before the next response.
+          </p>
+          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
+            Start each answer with a simple framework: opening point, supporting detail, and brief
+            conclusion. This structure helps you avoid long pauses and keeps your response focused
+            even when the prompt topic feels unfamiliar.
+          </p>
+          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
+            Record practice responses and listen critically. Note where your ideas lose clarity,
+            where grammar breaks under pressure, and where pronunciation affects understanding.
+            Fix one pattern at a time, then re-record the same prompt to confirm improvement.
+          </p>
+          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
+            The goal is not perfect accent. The goal is clear communication with stable pacing and
+            relevant content. Consistent practice with timed tasks builds the confidence needed to
+            deliver complete, coherent answers on exam day.
+          </p>
+          </section>
+        )}
+      </div>
     </main>
   );
 };

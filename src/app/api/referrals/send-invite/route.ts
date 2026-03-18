@@ -3,16 +3,15 @@
   - Auth required (Clerk)
   - Validates input with Zod
   - Builds invite link from referralCode if inviteLink not provided
-  - Nodemailer transporter with environment checks
+  - Sender.net API integration with token validation
   - Optional Upstash Redis rate limiting (if envs provided)
   - Returns structured JSON errors
 
   Required envs for email:
-    SMTP_HOST
-    SMTP_PORT
-    SMTP_USER
-    SMTP_PASS
+    SENDER_API_TOKEN
     FROM_EMAIL (e.g. "Celpip Practice <no-reply@domain>")
+  Fallback env used by FROM_EMAIL default:
+    SMTP_USER
   Optional envs:
     APP_BASE_URL (e.g. https://celpippracticetest.com)
     UPSTASH_REDIS_REST_URL
@@ -21,12 +20,11 @@
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import nodemailer from "nodemailer";
-import type { Transporter } from "nodemailer";
 import { currentUser } from "@clerk/nextjs/server";
 import { clerkClient } from "@clerk/express";
+import { sendEmailWithSender } from "@/lib/email/sender-client";
 
-export const runtime = "nodejs"; // nodemailer requires node runtime
+export const runtime = "nodejs"; // Sender API requests run server-side only
 export const dynamic = "force-dynamic"; // ensure server execution
 
 // ---------- Schemas ----------
@@ -56,29 +54,6 @@ function assertEnv(name: string, allowEmpty = false) {
 
   if (!v && !allowEmpty) throw new Error(`Missing required env: ${name}`);
   return v ?? "";
-}
-
-async function getTransporter(): Promise<Transporter> {
-  const host = assertEnv("SMTP_HOST");
-  const port = Number(assertEnv("SMTP_PORT"));
-  const user = assertEnv("SMTP_USER");
-  const pass = assertEnv("SMTP_PASS");
-
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: { user, pass },
-  });
-
-  // Verify only once at cold start; ignore failures in prod but log
-  try {
-    await transporter.verify();
-  } catch (e) {
-    console.warn("[send-invite] SMTP verify failed (continuing):", e);
-  }
-
-  return transporter;
 }
 
 function buildInviteLink({
@@ -181,10 +156,10 @@ export async function POST(req: Request) {
     // 6) Prepare email
     const from =
       process.env.FROM_EMAIL || `Celpip Practice <${process.env.SMTP_USER}>`;
-    const transporter = await getTransporter();
+    assertEnv("SENDER_API_TOKEN");
 
     // 7) Send
-    await transporter.sendMail({
+    await sendEmailWithSender({
       from,
       to: email,
       subject: "You're invited to CELPIP Practice Test",

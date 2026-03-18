@@ -6,8 +6,10 @@ import { completeSpeakingGuide } from './general/complete-speaking-guide';
 import { hardestQuestions } from './general/hardest-questions';
 import { generalVsLS } from './general/general-vs-ls';
 import { celpipOverview } from './general/celpip-overview';
+import { celpipScoreGuide } from './general/celpip-score-guide';
 
 export const generalArticles: WikiArticle[] = [
+  celpipScoreGuide,
   celpipOverview,
   sevenDaySprint,
   essentialStrategies,
@@ -17,4 +19,4 @@ export const generalArticles: WikiArticle[] = [
 ];
 
 // Export individual articles for direct access
-export { sevenDaySprint, essentialStrategies, completeSpeakingGuide, hardestQuestions, generalVsLS, celpipOverview };
+export { sevenDaySprint, essentialStrategies, completeSpeakingGuide, hardestQuestions, generalVsLS, celpipOverview, celpipScoreGuide };

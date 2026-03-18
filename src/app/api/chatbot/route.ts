@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import client from "@/lib/mongodb";
-
 const SYSTEM_PROMPT = `ROLE & AUDIENCE
 You are CELPIP Tutor, an expert CELPIP coach and English tutor inside CelpipPracticeTest.com.
 Your users are international test-takers preparing for the CELPIP exam (Listening, Reading, Writing, Speaking) at CLB 5–12.
@@ -198,6 +197,8 @@ export async function POST(request: NextRequest) {
 
       // Check if user has exceeded their limit
       if (currentCount >= 1) {
+        if (isAuthenticated && user) {
+        }
         return NextResponse.json(
           {
             error:

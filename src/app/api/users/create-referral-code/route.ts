@@ -4,7 +4,6 @@ import { headers } from "next/headers";
 import mongoClient from "@/lib/mongodb";
 import { ReferralRepository } from "@/repositories/referral.repo";
 import { randomInt } from "crypto";
-
 function generateReferralCode(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let part = "";
@@ -76,7 +75,6 @@ export async function POST() {
         publicMetadata: {
           ...pm,
           referralCode: existingCode.code,
-          referralLink: link,
           referralActive: true,
         },
       });
@@ -126,12 +124,9 @@ export async function POST() {
       publicMetadata: {
         ...pm,
         referralCode: code,
-        referralLink: link,
         referralActive: true,
       },
     });
-
-    console.log(`✅ Created referral code ${code} for user ${userId}`);
 
     return NextResponse.json({
       success: true,

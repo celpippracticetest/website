@@ -90,6 +90,7 @@ const SpeakingExamView = ({
 
   const [errorAccessingMicrophone, setErrorAccessingMicrophone] =
     useState(false);
+  const [needsUserInteraction, setNeedsUserInteraction] = useState(false);
   const setPremiumPlanModalState = useStore(
     (state) => state.setPremiumPlanModalState
   );
@@ -238,10 +239,51 @@ const SpeakingExamView = ({
       !isRecording &&
       !hasStartedRecordingRef.current
     ) {
-      hasStartedRecordingRef.current = true;
-      setProgressBar(1);
-      setIsRecording(true);
-      startRecording();
+      // Check if microphone permission is already granted before auto-starting
+      // On mobile, we should require user interaction to request permissions
+      const checkPermissionAndStart = async () => {
+        try {
+          if (navigator.permissions && navigator.permissions.query) {
+            const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+            if (permissionStatus.state === 'granted') {
+              // Permission already granted, safe to auto-start
+              hasStartedRecordingRef.current = true;
+              setProgressBar(1);
+              setIsRecording(true);
+              startRecording();
+            } else {
+              // Permission not granted, require user interaction
+              setNeedsUserInteraction(true);
+            }
+          } else {
+            // Permissions API not supported, check if we're on mobile
+            // On mobile, require user interaction to avoid unexpected permission prompts
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            if (isMobile) {
+              setNeedsUserInteraction(true);
+            } else {
+              // On desktop, try to auto-start (will prompt if needed)
+              hasStartedRecordingRef.current = true;
+              setProgressBar(1);
+              setIsRecording(true);
+              startRecording();
+            }
+          }
+        } catch (error) {
+          // If permission check fails, require user interaction on mobile
+          const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+          if (isMobile) {
+            setNeedsUserInteraction(true);
+          } else {
+            hasStartedRecordingRef.current = true;
+            setProgressBar(1);
+            setIsRecording(true);
+            startRecording();
+          }
+        }
+      };
+      
+      checkPermissionAndStart();
     }
   }, [time, page, isSubmit, isRecording]);
 
@@ -267,6 +309,7 @@ const SpeakingExamView = ({
     setProgressBar(0);
     setAudioURL(null);
     setPage(partId === 13 ? "description" : "question");
+    setNeedsUserInteraction(false);
     if (isRecording) {
       cancelRecording();
     }
@@ -616,6 +659,25 @@ const SpeakingExamView = ({
                                   <li>Refresh the page.</li>
                                 </ol>
                               </div>
+                            </div>
+                          ) : needsUserInteraction && time === 0 ? (
+                            <div className="flex flex-col items-center relative justify-center w-full">
+                              <div className="text-[16px] text-[#212E42] font-semibold text-center w-full mb-4">
+                                Preparation time is over
+                              </div>
+                              <button
+                                className="flex items-center justify-center gap-2 px-6 py-3 bg-[#316BFF] text-white rounded-[24px] font-medium text-[14px] hover:bg-[#2556E6] transition-colors"
+                                onClick={() => {
+                                  setNeedsUserInteraction(false);
+                                  hasStartedRecordingRef.current = true;
+                                  setProgressBar(1);
+                                  setIsRecording(true);
+                                  startRecording();
+                                }}
+                              >
+                                <SvgRecording />
+                                Start Recording
+                              </button>
                             </div>
                           ) : isRecording ? (
                             <div className="flex flex-col items-center relative justify-center w-full gap-4">

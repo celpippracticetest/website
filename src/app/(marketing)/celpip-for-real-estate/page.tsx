@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { JsonLd } from '@/components/seo/JsonLd';
 
+const BASE_URL = process.env.APP_BASE_URL || 'https://celpippracticetest.com';
+
 export const metadata: Metadata = {
   title: 'CELPIP for Canadian Real Estate | Achieve Level 7 & Get Licensed',
   description: "Meet English proficiency requirements for real estate licensing across Canada. Get Level 7+ on the CELPIP General test with prep that works for every province and territory.",
@@ -30,10 +32,14 @@ export const metadata: Metadata = {
     'Real Estate English test Canada',
     'CELPIP Level 7 Real Estate'
   ],
+  alternates: {
+    canonical: `${BASE_URL}/celpip-for-real-estate`,
+  },
   openGraph: {
     title: 'CELPIP for Canadian Real Estate | Achieve Level 7 & Get Licensed',
     description: "Meet English proficiency requirements for real estate licensing across Canada. Get Level 7+ on the CELPIP General test with prep that works for every province and territory.",
     type: 'article',
+    url: `${BASE_URL}/celpip-for-real-estate`,
   },
 };
 
@@ -47,6 +53,18 @@ export default function CelpipForRealEstatePage() {
       "@type": "Organization",
       "name": "CELPIPPracticeTest.com",
       "sameAs": "https://celpippracticetest.com"
+    },
+    "offers": {
+      "@type": "Offer",
+      "category": "Paid",
+      "price": "49",
+      "priceCurrency": "CAD",
+      "url": "https://celpippracticetest.com/pricing"
+    },
+    "hasCourseInstance": {
+      "@type": "CourseInstance",
+      "courseMode": "online",
+      "courseWorkload": "PT10H"
     }
   };
 

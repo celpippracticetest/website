@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 
 const R2_ENDPOINT =
   process.env.BLOG_IMAGE_R2_ENDPOINT ||
-  "https://acac98ae11ea860f690cce3ad5dcb630.r2.cloudflarestorage.com";
+  "https://feec6a3222e867b5ad1b1be80cec59a9.r2.cloudflarestorage.com";
 const R2_BUCKET = process.env.BLOG_IMAGE_R2_BUCKET || "celpip-blog-images";
 const BLOG_IMAGE_PUBLIC_BASE_URL =
   process.env.BLOG_IMAGE_PUBLIC_BASE_URL ||

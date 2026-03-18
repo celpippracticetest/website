@@ -24,10 +24,8 @@ import SvgAllSkills from "@/components/icons/AllSkills";
 import { usePathname, useRouter } from "next/navigation";
 import { useSelectedTask } from "@/store/useSelectedTask.store";
 import { useSelectedExam } from "@/store/useSelectedExam.store";
-import ExtraDiscountModal from "@/components/modal/ExtraDiscountModal";
 import { useExtraDiscountStore } from "@/store/useExtraDiscount.store";
 import { useAuthModalStore } from "@/store/useAuthModal.store";
-import { useCreateDiscountCoupon } from "@/hooks/useCreateDiscountCoupon";
 import SvgCopy from "@/components/icons/Copy";
 import React from "react";
 import { motion } from "framer-motion";
@@ -194,9 +192,6 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
   const setShowExtraDiscount = useExtraDiscountStore(
     (state) => state.setShowExtraDiscount
   );
-  const showExtraDiscount = useExtraDiscountStore(
-    (state) => state.showExtraDiscount
-  );
   const visibleHorizontalCoupon = useExtraDiscountStore(
     (state) => state.visibleHorizontalCoupon
   );
@@ -205,8 +200,10 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
   );
   const { user, isLoaded, isSignedIn }: any = useUser();
   const { hasEverPurchased } = useHasEverPurchased();
+  const [hasHydrated, setHasHydrated] = useState(false);
+  const displayUser = hasHydrated ? user : null;
 
-  const noUser = isLoaded ? !isSignedIn : false;
+  const noUser = hasHydrated && isLoaded ? !isSignedIn : false;
 
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { showLoginModal, setShowLoginModal, loginMessage } = useAuthModalStore();
@@ -222,14 +219,18 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
   const [isUserDropDownOpen, setUserDropDownOpen] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const isNewUser =
-    user?.createdAt &&
-    new Date().getTime() - new Date(user.createdAt).getTime() <
+    displayUser?.createdAt &&
+    new Date().getTime() - new Date(displayUser.createdAt).getTime() <
     24 * 60 * 60 * 1000;
-  const freeUser = user?.publicMetadata.plan == "free";
-  const proUser = user?.publicMetadata.plan == "premium";
+  const freeUser = displayUser?.publicMetadata.plan == "free";
+  const proUser = displayUser?.publicMetadata.plan == "premium";
 
   const { selectedTask, setSelectedTask } = useSelectedTask();
   const { selectedExam, setSelectedExam } = useSelectedExam();
+
+  useEffect(() => {
+    setHasHydrated(true);
+  }, []);
 
   useEffect(() => {
     const handleSize = () => {
@@ -320,7 +321,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
 
   const LoginModal = () => {
     return (
-      <div className="z-[999] px-[16px] fixed top-0 left-0 right-0 mx-auto w-full h-full bg-[#17161680] flex justify-center items-center">
+      <div className="z-[999] pb-[100px] px-[16px] fixed top-0 left-0 right-0 mx-auto w-full h-full bg-[#17161680] flex justify-center items-center">
         <div
           ref={loginRef}
           className="flex-col mx-[16px] relative w-[440px] pt-[24px] px-[16px] pb-[18px]  h-[270px] rounded-[24px] bg-white"
@@ -359,13 +360,6 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
     );
   };
 
-  const { mutate: createCoupon } = useCreateDiscountCoupon();
-
-  useEffect(() => {
-    if (freeUser && isNewUser) {
-      createCoupon(user.id);
-    }
-  }, [user]);
 
   const showPlansForUsers = () => {
     return (
@@ -410,7 +404,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
           </>
         )}
 
-        {user && (
+        {displayUser && (
           <>
             <div
               className={`relative p-[8px] flex flex-col z-[999] justify-none screen744:!justify-start screen1280:!justify-none items-start left-0 right-0 mx-auto  mt-[40px] rounded-[8px] max-w-[202px] screen744:!max-w-[132px] screen1280:!max-w-[202px] h-[114px] screen744:!h-[202px]  screen1280:!h-[114px] bg-[#B86DF9]`}
@@ -613,7 +607,6 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
       {freeUser ? (
         <>
           {showUpgradeModal && <UpgradeModal setShowModal={setShowUpgradeModal} />}
-          {!surveyVisible && showExtraDiscount && <ExtraDiscountModal />}
         </>
       ) : noUser ? (
         showLoginModal && <LoginModal />
@@ -702,7 +695,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
             submenuActive={submenuActive}
             setSubmenuActive={setSubmenuActive}
           />
-          {user && (
+          {displayUser && (
             <NavItem
               link="/profile"
               icon={<SvgProfile />}
@@ -719,7 +712,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
             />
           )}
 
-          {user && (
+          {displayUser && (
             <NavItem
               link="/earn100"
               icon={<SvgReferral />}
@@ -747,7 +740,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
           </div>
         </div>
       </motion.div>
-      {user && visibleHorizontalCoupon && (
+      {displayUser && visibleHorizontalCoupon && (
         <div className="flex items-center flex-wrap justify-between screen744:!justify-center px-[8px] screen1280:!px-[16px] py-[14px] gap-[5px] screen1280:!gap-[32px] bg-[#37465C]  h-auto min-h-[64px] ">
           <div className="flex flex-col screen744:!flex-row gap-[2px] items-center justify-center text-white h-auto text-[12px]   screen744:!text-[20px] font-bold">
             Extra 10% Discount
@@ -783,7 +776,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
             <span className="text-[14px]  text-white font-semibold ">
               Expires in
             </span>
-            <CountdownTimer userCreatedAt={user?.createdAt} />
+            <CountdownTimer userCreatedAt={displayUser?.createdAt} />
           </div>
         </div>
       )}

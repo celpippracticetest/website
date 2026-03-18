@@ -35,10 +35,13 @@ const PracticeOverview = ({
   const [selectedTask, setSelectedTask] = useState<TTaskSchemaDto | null>(null);
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
   const setTaskInStore = useStore((state) => state.setTasks);
-  setTaskInStore(tasks);
   const isMobile = useIsMobile();
   const { started } = usePracticeTracking();
   const { faqClick } = useEngagementTracking(); // Using faqClick for accordion toggle as it's similar engagement
+
+  useEffect(() => {
+    setTaskInStore(tasks);
+  }, [setTaskInStore, tasks]);
 
   useEffect(() => {
     if (!selectedTask) {

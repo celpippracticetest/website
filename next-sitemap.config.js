@@ -6,11 +6,6 @@ module.exports = {
   changefreq: "daily",
   priority: 0.7,
   exclude: ["/auth/*", "/cms/*", "/referral", "/referral/*"],
-  robotsTxtOptions: {
-    additionalSitemaps: [
-      "https://blog.celpippracticetest.com/sitemap_index.xml",
-    ],
-  },
   additionalPaths: async () => {
     return [
       {

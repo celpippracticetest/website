@@ -79,9 +79,9 @@ export function useEventTracker() {
       }, []),
 
       loginCompleted: useCallback(
-        (method?: string, userData?: UserData) => {
+        (method?: string) => {
           if (userId) {
-            trackAuth.loginCompleted(userId, method, userData);
+            trackAuth.loginCompleted(userId, method);
           }
         },
         [userId]
@@ -253,9 +253,20 @@ export function useEcommerceTracking() {
         currency: string,
         value: number,
         coupon?: string,
-        userData?: UserData
+        userData?: UserData,
+        attributionData?: Record<string, unknown>,
+        purchaseType: "first_purchase" | "subscription_renewal" = "first_purchase"
       ) => {
-        trackEcommerce.purchase(transactionId, items, currency, value, coupon, userData);
+        trackEcommerce.purchase(
+          transactionId,
+          items,
+          currency,
+          value,
+          coupon,
+          userData,
+          attributionData,
+          purchaseType
+        );
       },
       []
     ),
@@ -321,6 +332,17 @@ export function useEngagementTracking() {
     audioPlayed: useCallback((audioType: string, audioSource?: string) => {
       trackEngagement.audioPlayed(audioType, audioSource);
     }, []),
+
+    leadCaptureSubmitted: useCallback(
+      (location: string, triggerSource: string, leadCaptureId: string) => {
+        trackEngagement.leadCaptureSubmitted(
+          location,
+          triggerSource,
+          leadCaptureId
+        );
+      },
+      []
+    ),
   };
 }
 

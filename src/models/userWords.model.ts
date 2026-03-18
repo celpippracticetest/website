@@ -6,6 +6,8 @@ export const UserWordSchema = z.object({
     userId: z.string(),
     word: z.string(),
     isLearned: z.boolean().optional().default(false),
+    reviewedTimes: z.number().int().nonnegative().optional().default(0),
+    complexityLevel: z.enum(["beginner", "intermediate", "advanced"]).optional().default("intermediate"),
     createdAt: z.date(),
 });
 
@@ -16,6 +18,8 @@ export const UserWordSchemaDto = z.object({
     userId: z.string(),
     word: z.string(),
     isLearned: z.boolean().optional(),
+    reviewedTimes: z.number().int().nonnegative().optional().default(0),
+    complexityLevel: z.enum(["beginner", "intermediate", "advanced"]).optional().default("intermediate"),
     createdAt: z.date(),
 });
 

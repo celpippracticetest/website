@@ -5,14 +5,19 @@ import { ListeningAndReadingAnswerSchemaRequest } from "@/models/answer";
 
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
 import { TPracticeDto } from "@/models/practice.model";
-import { currentUser } from "@clerk/nextjs/server";
+import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
+
+function flattenPracticeQuestions(practice: TPracticeDto) {
+  return practice.passages.flatMap((passage) => passage.questions ?? []);
+}
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const parseResult = ListeningAndReadingAnswerSchemaRequest.safeParse(body);
 
   if (parseResult.success) {
-    const user = await currentUser();
+    const authContext = await getAuthenticatedRequestContext(req);
+    const user = authContext?.user;
     if (!user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
@@ -41,17 +46,26 @@ export async function POST(req: NextRequest) {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    
+
     // Calculate overall score for league points system
-    const totalQuestions = practice.questions?.length || 1;
-    const correctAnswers = Object.values(parseResult.data.answers || {}).filter(
-      (answer: any) => answer && answer.isCorrect
-    ).length;
+    const questions = flattenPracticeQuestions(practice);
+    const totalQuestions = questions.length || 1;
+    const correctAnswers = questions.reduce((count, question, index) => {
+      const submittedAnswer =
+        parseResult.data.answers[question.id] ??
+        parseResult.data.answers[index.toString()];
+
+      if (submittedAnswer && submittedAnswer === question.answer) {
+        return count + 1;
+      }
+
+      return count;
+    }, 0);
     const overall = Math.round((correctAnswers / totalQuestions) * 100);
-    
-    return NextResponse.json({ 
+
+    return NextResponse.json({
       result: createdAnswer,
-      overall: overall
+      overall: overall,
     });
   } else {
     return NextResponse.json(
@@ -64,14 +78,19 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const practiceId = searchParams.get("practiceId");
-  const userId = searchParams.get("userId");
   const type = searchParams.get("type");
 
-  if (!practiceId || !userId || !type) {
+  if (!practiceId || !type) {
     return NextResponse.json(
       { message: "Missing required query parameters" },
       { status: 400 }
     );
+  }
+
+  const authContext = await getAuthenticatedRequestContext(req);
+  const userId = authContext?.userId;
+  if (!userId) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
   const answerRepo = new ListeningAndReadingAnswerRepository(mongoClient);

@@ -73,10 +73,14 @@ The Services are digital, non-tangible services delivered electronically and acc
     },
     {
       title: "Refund Request Process",
-      description: `All refund requests must be submitted exclusively through our refund request platform: https://refund.celpippractice.ca
-This platform is the only accepted method for submitting and tracking refund requests.
+      description: `All refund requests must be submitted exclusively through your account refund page: https://celpippracticetest.com/refund-request
+This page is the only accepted method for submitting and tracking refund requests.
 Requests submitted through customer chat, email, or any other communication channel are not considered refund requests, do not initiate review, and will not be processed.
-After submission, you will receive a tracking code by email. This tracking code allows you to view the current status and message history related to your request.`,
+After submission, a tracking code is generated and shown in your account. You can use this tracking code on the same page to check your request status.`,
+      link: {
+        href: "/refund-request",
+        text: "Go to Refund Request Page",
+      },
     },
     {
       title: "Review Process",
@@ -84,8 +88,8 @@ After submission, you will receive a tracking code by email. This tracking code 
       lists: [
         "Account activity and usage may be evaluated",
         "Eligibility criteria will be verified",
-        "Additional information may be requested through the refund platform",
-        "You may track the status of your request at any time using your tracking code on the refund platform.",
+        "Additional information may be requested through your account refund page",
+        "You may track the status of your request at any time using your tracking code on your account refund page.",
       ],
     },
     {
@@ -109,7 +113,7 @@ Initiating a chargeback, payment dispute, or bank claim does not override this p
           Refund Policy
         </h1>
         <span className="mt-[16px] font-normal text-[16px] text-text3">
-          Last Updated: Feb 06, 2026
+          Last Updated: Feb 26, 2026
         </span>
         {data?.map((element, index) => (
           <div key={index} className="mt-[40px]">
@@ -118,6 +122,14 @@ Initiating a chargeback, payment dispute, or bank claim does not override this p
               <p className="font-normal text-[18px] mt-[17px] whitespace-pre-wrap">
                 {element?.description}
               </p>
+              {(element as any)?.link && (
+                <a
+                  href={(element as any).link.href}
+                  className="mt-[12px] inline-flex text-[16px] font-semibold text-[#316BFF] underline underline-offset-2"
+                >
+                  {(element as any).link.text}
+                </a>
+              )}
               {element?.lists && (
                 <ul className="pl-20 mt-4">
                   {element?.lists?.map((list, index) => (

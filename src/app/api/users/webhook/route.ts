@@ -7,10 +7,20 @@ import { getDb } from "@/lib/mongodb";
 
 const GA_MEASUREMENT_ID = process.env.GA_MEASUREMENT_ID!;
 const GA_API_SECRET = process.env.GA_API_SECRET!;
-const CLERK_SECRET = process.env.CLERK_WEBHOOK_SECRET!;
+const CLERK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
+
 // Clerk webhook handler
 export async function POST(req: NextRequest) {
   try {
+    // Check if webhook secret is configured
+    if (!CLERK_SECRET) {
+      console.error("CLERK_WEBHOOK_SECRET not found in environment");
+      return NextResponse.json(
+        { error: "Webhook secret not configured" },
+        { status: 500 }
+      );
+    }
+
     const wh = new Webhook(CLERK_SECRET);
     const payload = await req.text();
     const headers = Object.fromEntries(req.headers.entries());
@@ -44,12 +54,11 @@ export async function POST(req: NextRequest) {
       console.error("Customer.io identify error:", cioError);
     }
 
-    // Check for Clerk user.created or user.updated event
-    if (
-      (body.type === "user.created" || body.type === "user.updated") &&
-      body.data?.id
-    ) {
-      const userId = body.data.id;
+    const eventType = body.type;
+    const userId = body.data?.id;
+
+    // Handle user.created event
+    if (eventType === "user.created" && userId) {
       const email = body.data.email_addresses?.[0]?.email_address;
       const firstName = body.data.first_name;
       const lastName = body.data.last_name;
@@ -80,46 +89,104 @@ export async function POST(req: NextRequest) {
           },
           { upsert: true }
         );
-        console.log(`Synced user ${userId} to MongoDB users collection`);
       } catch (dbErr) {
         console.error("Failed to sync user to MongoDB:", dbErr);
       }
 
-      if (body.type === "user.created") {
-        try {
-          // Log user signup
-          await ActivityLogger.userSignup(userId);
-        } catch (logErr) {
-          console.error("Activity logging failed:", logErr);
+      try {
+        // Log user signup
+        await ActivityLogger.userSignup(userId);
+      } catch (logErr) {
+        console.error("Activity logging failed:", logErr);
+      }
+
+      try {
+        // Ensure the newly created user immediately gets their own referral code
+        const baseUrl = req.nextUrl.origin;
+        await ensureUserReferral(userId, baseUrl);
+      } catch (ensureErr) {
+        console.error("ensureUserReferral failed:", ensureErr);
+      }
+
+      // --- Referral signup tracking (only if the user came via a referral) ---
+      try {
+        const meta =
+          (body?.data?.unsafe_metadata as any) ||
+          (body?.data?.public_metadata as any) ||
+          {};
+        const referralCode =
+          meta.ref || meta.referral || meta.code || meta.referralCode;
+
+        if (referralCode) {
+          await fetch(`${req.nextUrl.origin}/api/referrals/track-signup`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ referralCode, inviteeId: userId }),
+          });
         }
+      } catch (refErr) {
+        console.error("Referral signup tracking failed:", refErr);
+      }
+    }
+    // Handle user.updated event
+    else if (eventType === "user.updated" && userId) {
+      const email = body.data.email_addresses?.[0]?.email_address;
+      const firstName = body.data.first_name;
+      const lastName = body.data.last_name;
+      const imageUrl = body.data.image_url;
+      const publicMetadata = body.data.public_metadata || {};
 
-        try {
-          // Ensure the newly created user immediately gets their own referral code
-          const baseUrl = req.nextUrl.origin;
-          await ensureUserReferral(userId, baseUrl);
-        } catch (ensureErr) {
-          console.error("ensureUserReferral failed:", ensureErr);
-        }
+      try {
+        const db = await getDb();
+        const usersCollection = db.collection("users");
 
-        // --- Referral signup tracking (only if the user came via a referral) ---
-        try {
-          const meta =
-            (body?.data?.unsafe_metadata as any) ||
-            (body?.data?.public_metadata as any) ||
-            {};
-          const referralCode =
-            meta.ref || meta.referral || meta.code || meta.referralCode;
+        await usersCollection.updateOne(
+          { clerkUserId: userId },
+          {
+            $set: {
+              clerkUserId: userId,
+              email,
+              firstName,
+              lastName,
+              imageUrl,
+              publicMetadata,
+              plan: publicMetadata.plan || "free",
+              planType: publicMetadata.planType || null,
+              updatedAt: new Date(),
+            },
+            $setOnInsert: {
+              createdAt: new Date(),
+            },
+          },
+          { upsert: true }
+        );
+      } catch (dbErr) {
+        console.error("Failed to update user in MongoDB:", dbErr);
+      }
+    }
+    // Handle user.deleted event
+    else if (eventType === "user.deleted" && userId) {
+      try {
+        const db = await getDb();
+        const usersCollection = db.collection("users");
 
-          if (referralCode) {
-            await fetch(`${req.nextUrl.origin}/api/referrals/track-signup`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ referralCode, inviteeId: userId }),
-            });
+        // Mark user as deleted instead of actually deleting (preserve data for analytics/compliance)
+        const result = await usersCollection.updateOne(
+          { clerkUserId: userId },
+          {
+            $set: {
+              deletedAt: new Date(),
+              deleted: true,
+              updatedAt: new Date(),
+            },
           }
-        } catch (refErr) {
-          console.error("Referral signup tracking failed:", refErr);
-        }
+        );
+
+        // Note: We preserve all user data (users collection, useractivities, etc.)
+        // for analytics, compliance, and historical purposes.
+        // The user is marked as deleted but data remains in the database.
+      } catch (dbErr) {
+        console.error("Failed to mark user as deleted in MongoDB:", dbErr);
       }
     }
 

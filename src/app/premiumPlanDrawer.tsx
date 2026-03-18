@@ -1,5 +1,6 @@
 "use client";
 import { SignInButton, SignUpButton, useUser } from "@clerk/nextjs";
+import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
 import "./globals.css";
 import useStore from "@/store";
 import {
@@ -14,6 +15,7 @@ import {
 import Image from "next/image";
 import { Drawer } from "vaul";
 import { useEffect, useState } from "react";
+import { useEcommerceTracking } from "@/hooks/useTracking";
 
 const PlanForGuesVisitor = () => {
   return (
@@ -60,7 +62,12 @@ const PlanForGuesVisitor = () => {
 const PlansForUsers = (
   time: number,
   showCopied: boolean,
-  setShowCopied: React.Dispatch<React.SetStateAction<boolean>>
+  setShowCopied: React.Dispatch<React.SetStateAction<boolean>>,
+  onCheckoutIntent: (
+    itemId: string,
+    itemName: string,
+    price: number
+  ) => void
 ) => {
   return (
     <div className="w-full lg:px-0  py-4 overflow-y-auto pb-5">
@@ -216,7 +223,19 @@ const PlansForUsers = (
                 }
                 method="POST"
               >
-                <button type="submit" role="link" className="h-full w-full">
+                <CheckoutAttributionFields />
+                <button
+                  type="submit"
+                  role="link"
+                  className="h-full w-full"
+                  onClick={() =>
+                    onCheckoutIntent(
+                      "yearly_access",
+                      "12 Months",
+                      149.99
+                    )
+                  }
+                >
                   <div style={{ opacity: "1", transform: "none" }}>
                     <div
                       className="rounded-2xl flex shadow-sm h-full
@@ -279,7 +298,19 @@ const PlansForUsers = (
                 }
                 method="POST"
               >
-                <button type="submit" role="link" className="h-full w-full">
+                <CheckoutAttributionFields />
+                <button
+                  type="submit"
+                  role="link"
+                  className="h-full w-full"
+                  onClick={() =>
+                    onCheckoutIntent(
+                      "quarter_access",
+                      "3 Months",
+                      99
+                    )
+                  }
+                >
                   <div style={{ opacity: "1", transform: "none" }}>
                     <div
                       className="rounded-2xl flex shadow-sm h-full
@@ -342,7 +373,19 @@ const PlansForUsers = (
                 }
                 method="POST"
               >
-                <button type="submit" role="link" className="h-full w-full">
+                <CheckoutAttributionFields />
+                <button
+                  type="submit"
+                  role="link"
+                  className="h-full w-full"
+                  onClick={() =>
+                    onCheckoutIntent(
+                      "monthly_access",
+                      "1 Month",
+                      34.99
+                    )
+                  }
+                >
                   <div style={{ opacity: "1", transform: "none" }}>
                     <div
                       className="rounded-2xl flex shadow-sm h-full
@@ -400,7 +443,19 @@ const PlansForUsers = (
                 }
                 method="POST"
               >
-                <button type="submit" role="link" className="h-full w-full">
+                <CheckoutAttributionFields />
+                <button
+                  type="submit"
+                  role="link"
+                  className="h-full w-full"
+                  onClick={() =>
+                    onCheckoutIntent(
+                      "weekly_access",
+                      "Weekly",
+                      19.99
+                    )
+                  }
+                >
                   <div style={{ opacity: "1", transform: "none" }}>
                     <div
                       className="rounded-2xl flex shadow-sm h-full
@@ -503,6 +558,7 @@ export default function PremiumPlanDrawer() {
   const [time, setTime] = useState(0);
   const [showCopied, setShowCopied] = useState(false);
   const { user } = useUser();
+  const { beginCheckout, selectItem } = useEcommerceTracking();
   useEffect(() => {
     let leftSeconds = 0;
     if (user?.createdAt) {
@@ -541,6 +597,36 @@ export default function PremiumPlanDrawer() {
     (state) => state.setPremiumPlanModalState
   );
 
+  const handleCheckoutIntent = (
+    itemId: string,
+    itemName: string,
+    price: number
+  ) => {
+    const item = {
+      item_id: itemId,
+      item_name: itemName,
+      price,
+      quantity: 1,
+      item_brand: "CELPIP Practice Test",
+      item_category: "Subscription",
+    };
+
+    selectItem([item], "premium_drawer", "Premium Drawer");
+    beginCheckout(
+      [item],
+      "CAD",
+      price,
+      undefined,
+      {
+        email: user?.primaryEmailAddress?.emailAddress?.trim().toLowerCase(),
+        address: {
+          first_name: user?.firstName || "",
+          last_name: user?.lastName || "",
+        },
+      }
+    );
+  };
+
   // Calculate the difference in seconds between user.createdAt and now
 
   return (
@@ -560,7 +646,7 @@ export default function PremiumPlanDrawer() {
 
             {!user
               ? PlanForGuesVisitor()
-              : PlansForUsers(time, showCopied, setShowCopied)}
+              : PlansForUsers(time, showCopied, setShowCopied, handleCheckoutIntent)}
           </Drawer.Content>
         </Drawer.Portal>
       </Drawer.Root>

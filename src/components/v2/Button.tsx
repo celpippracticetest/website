@@ -35,17 +35,19 @@ const v2ButtonVariants = cva(
 );
 
 type AnchorProps = React.AnchorHTMLAttributes<HTMLAnchorElement>;
+type LinkProps = React.ComponentPropsWithoutRef<typeof Link>;
 type ButtonBaseProps = VariantProps<typeof v2ButtonVariants> & {
   asChild?: boolean;
   className?: string;
   children?: React.ReactNode;
 };
 type ButtonLinkProps = ButtonBaseProps &
-  AnchorProps & {
+  Omit<LinkProps, "href" | "className" | "children" | "onClick"> &
+  Omit<AnchorProps, "href" | "className" | "children"> & {
     href: string;
   };
 type ButtonButtonProps = ButtonBaseProps &
-  React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "className" | "children"> & {
     href?: undefined;
   };
 export type ButtonProps = ButtonLinkProps | ButtonButtonProps;
@@ -74,7 +76,7 @@ const Button = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPro
     }
 
     return (
-      <button className={classes} ref={ref as React.Ref<HTMLButtonElement>} {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}>
+      <button className={classes} ref={ref as React.Ref<HTMLButtonElement>} {...props}>
         {children}
       </button>
     );

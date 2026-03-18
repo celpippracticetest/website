@@ -126,7 +126,6 @@ export class LeagueRepository {
         });
 
       if (group) {
-        console.log("Found existing group for user:", groupId);
         return group as TLeagueGroup;
       }
     }
@@ -140,36 +139,27 @@ export class LeagueRepository {
     leagueType: TLeagueType
   ): Promise<boolean> {
     try {
-      console.log("addUserToGroup called:", { userId, groupId, leagueType });
-
       const group = await this.db
         .collection(this.leagueGroupsCollection)
         .findOne({ _id: new ObjectId(groupId) });
       if (!group) {
-        console.log("Group not found:", groupId);
         return false;
       }
 
-      console.log("Group found:", groupId, "with users:", group.users.length);
-
       // Check if user is already in the group
       if (group.users.some((u: any) => u.userId === userId)) {
-        console.log("User already in group");
         return false; // User already in group
       }
 
       // Check if group is full
       if (group.users.length >= group.maxUsers) {
-        console.log("Group is full");
         return false;
       }
 
       // Get user's current points
       const userPoints = await this.getUserOverallPoints(userId);
-      console.log("User points for group assignment:", userPoints);
 
       // Add user to group
-      console.log("Adding user to group...");
       const result = await this.db
         .collection(this.leagueGroupsCollection)
         .updateOne(
@@ -183,11 +173,9 @@ export class LeagueRepository {
                 status: "safe" as const,
                 joinedAt: new Date(),
               },
-            } as any,
-          }
-        );
-
-      console.log("Add user to group result:", { modifiedCount: result.modifiedCount });
+          } as any,
+        }
+      );
 
       if (result.modifiedCount > 0) {
         // Ensure user has a linked user_league_points record with league and group
@@ -246,24 +234,19 @@ export class LeagueRepository {
     groupId: string,
     points: number
   ): Promise<boolean> {
-    console.log("updateUserPointsInGroup called:", { userId, groupId, points });
-
     // First check if user is already in the group
     const group = await this.db
       .collection(this.leagueGroupsCollection)
       .findOne({ _id: new ObjectId(groupId) });
 
     if (!group) {
-      console.log("Group not found:", groupId);
       return false;
     }
 
     const userInGroup = group.users.some((u: any) => u.userId === userId);
-    console.log("User in group:", userInGroup);
 
     if (userInGroup) {
       // Update existing user's points
-      console.log("Updating existing user's points...");
       const result = await this.db
         .collection(this.leagueGroupsCollection)
         .updateOne(
@@ -278,7 +261,6 @@ export class LeagueRepository {
             },
           }
         );
-      console.log("Update result:", { modifiedCount: result.modifiedCount });
 
       if (result.modifiedCount > 0) {
         // Ensure user's user_league_points is linked to this group/league
@@ -314,7 +296,6 @@ export class LeagueRepository {
       return result.modifiedCount > 0;
     } else {
       // Add user to group if not already there
-      console.log("Adding user to group...");
       const result = await this.db
         .collection(this.leagueGroupsCollection)
         .updateOne(
@@ -330,7 +311,6 @@ export class LeagueRepository {
             },
           } as any
         );
-      console.log("Add user result:", { modifiedCount: result.modifiedCount });
       if (result.modifiedCount > 0) {
         // Create or link user_league_points for this user/group
         await this.db
@@ -371,18 +351,12 @@ export class LeagueRepository {
       .collection(this.leagueGroupsCollection)
       .findOne({ _id: new ObjectId(groupId) });
     if (!group) {
-      console.log("Group not found:", groupId);
       return null;
     }
-
-    console.log("Group found:", groupId, "with users:", group.users.length);
 
     // Get current season to fetch real user points
     const currentSeason = await this.getCurrentSeason();
     if (!currentSeason) return group as TLeagueGroup;
-
-    console.log("Getting group leaderboard for group:", groupId);
-    console.log("Current season:", currentSeason.seasonId);
 
     // OPTIMIZATION: Batch fetch user points instead of N+1 queries
     const userIds = group.users.map((u: any) => u.userId);
@@ -400,8 +374,6 @@ export class LeagueRepository {
       userPointsMap.set(p.userId, p);
     });
 
-    console.log(`Fetched points for ${allUserPoints.length} users in batch`);
-
     // Update user points from UserLeaguePoints collection and fetch user names
     const updatedUsers = [];
 
@@ -416,24 +388,18 @@ export class LeagueRepository {
       localUsers.forEach((u: any) => {
         userDetailsMap.set(u.clerkUserId, u);
       });
-      console.log(`Fetched details for ${localUsers.length} users from local DB`);
     } catch (error) {
       console.error("Error fetching local user details:", error);
     }
 
     for (const user of group.users) {
-      // console.log("Checking user:", user.userId);
       const userPoints = userPointsMap.get(user.userId);
-
-      // console.log("User points found:", userPoints ? "yes" : "no");
 
       if (userPoints) {
         // Update user points in group
         user.points = userPoints.totalPoints;
         user.lastActivityAt = userPoints.lastActivityAt;
-        // console.log("Updated user points:", user.userId, "totalPoints:", userPoints.totalPoints);
       } else {
-        // console.log("No user points found for:", user.userId);
         // Keep user in group even if no points found
         user.points = user.points || 0;
       }
@@ -458,10 +424,18 @@ export class LeagueRepository {
             : clerkUser.firstName || clerkUser.emailAddresses[0]?.emailAddress?.split('@')[0] || 'User';
           user.email = clerkUser.emailAddresses[0]?.emailAddress;
           user.avatar = clerkUser.imageUrl;
-        } catch (error) {
-          console.log("Error fetching user name for:", user.userId, error);
+        } catch (error: any) {
+          // Check for 404 status or specific error codes indicating resource not found
+          const isNotFound = 
+            error.status === 404 || 
+            (error.errors && Array.isArray(error.errors) && error.errors.some((e: any) => e.code === 'resource_not_found'));
+
+          if (!isNotFound) {
+            console.error(`Error fetching user name for ${user.userId}:`, error.message || error);
+          }
           user.name = user.userId.slice(-8); // Fallback to last 8 chars of userId
           user.email = null;
+          user.avatar = null;
         }
       }
 
@@ -475,8 +449,6 @@ export class LeagueRepository {
     updatedUsers.forEach((user: any, index: number) => {
       user.position = index + 1;
     });
-
-    console.log("Final updated users:", updatedUsers);
 
     // Update positions in database
     await this.db
@@ -543,8 +515,6 @@ export class LeagueRepository {
     points: number
   ): Promise<boolean> {
     try {
-      console.log("addPointsToUser called with:", { userId, seasonId, pointsType, points });
-
       // Check if user has a league record for this season
       const existingRecord = await this.db
         .collection(this.userLeaguePointsCollection)
@@ -553,15 +523,8 @@ export class LeagueRepository {
           seasonId,
         });
 
-      console.log("Existing record found:", !!existingRecord);
-
-      if (!existingRecord) {
-        console.log("No existing user points record yet; will handle league assignment after points update.");
-      }
-
       // Ensure base document exists before increment
       if (!existingRecord) {
-        console.log("Creating base user_league_points document before increment...");
         await this.createUserLeaguePoints({
           userId,
           leagueId: new ObjectId(), // placeholder, will be updated on assignment
@@ -582,7 +545,6 @@ export class LeagueRepository {
       }
 
       // Now add points
-      console.log("Updating points in database...");
       const result = await this.db
         .collection(this.userLeaguePointsCollection)
         .updateOne(
@@ -601,11 +563,8 @@ export class LeagueRepository {
         );
 
       const upsertedId = (result as any).upsertedId;
-      console.log("Database update result:", { modifiedCount: result.modifiedCount, upsertedId });
 
       if (result.modifiedCount > 0 || upsertedId) {
-        console.log("Points updated successfully, checking if user needs league assignment...");
-
         // Check if user is already in a group
         const userRecord = await this.db
           .collection(this.userLeaguePointsCollection)
@@ -621,17 +580,13 @@ export class LeagueRepository {
         }
 
         if (userRecord && (userRecord as any).groupId && groupIsValid) {
-          console.log("User already in group, updating group leaderboard...");
-          const updateResult = await this.updateUserPointsInGroup(
+          await this.updateUserPointsInGroup(
             userId,
             (userRecord as any).groupId.toString(),
             (userRecord as any).totalPoints
           );
-          console.log("Group leaderboard update result:", updateResult);
         } else {
-          console.log("User not in any group, using auto-assign logic...");
-          const assigned = await this.autoAssignUserToLeague(userId);
-          console.log("Auto-assign after points result:", assigned);
+          await this.autoAssignUserToLeague(userId);
 
           if (assigned) {
             // Refresh record and update leaderboard
@@ -647,8 +602,6 @@ export class LeagueRepository {
             }
           }
         }
-      } else {
-        console.log("No documents were modified (possible upsert without modification)");
       }
 
       const successUpdate = result.acknowledged === true;
@@ -673,7 +626,6 @@ export class LeagueRepository {
 
       if (currentSeasonPoints) {
         const overallPoints = currentSeasonPoints.overallPoints || 0;
-        console.log("getUserOverallPoints from current season:", overallPoints);
         return overallPoints;
       }
     }
@@ -692,7 +644,6 @@ export class LeagueRepository {
       ])
       .toArray();
 
-    console.log("getUserOverallPoints result:", result);
     return result.length > 0 ? result[0].totalOverallPoints : 0;
   }
 
@@ -773,7 +724,6 @@ export class LeagueRepository {
           seasonId: currentSeason.seasonId
         });
 
-      console.log(`User ${userId} removed from all leagues`);
       return true;
     } catch (error) {
       console.error("Error removing user from league:", error);
@@ -790,7 +740,6 @@ export class LeagueRepository {
         .findOne({ userId });
 
       if (!userPoints) {
-        console.log("No user points found for requirement check");
         return false;
       }
 
@@ -804,7 +753,6 @@ export class LeagueRepository {
       const userTrophies = Math.floor(userPoints.overallPoints / 50); // Assuming 50 points = 1 trophy
 
       if (userTrophies < requiredTrophies) {
-        console.log(`User has ${userTrophies} trophies, needs ${requiredTrophies}`);
         return false;
       }
 
@@ -814,7 +762,6 @@ export class LeagueRepository {
 
       for (const task of requiredTasks) {
         if (!completedTasks.includes(task.id)) {
-          console.log(`User has not completed required task: ${task.id}`);
           return false;
         }
       }
@@ -867,12 +814,6 @@ export class LeagueRepository {
       const requiredTasks = leagueTasks[leagueType as keyof typeof leagueTasks] || [];
       const completedTasks = userPoints.tasksCompleted || [];
 
-      console.log(`Checking tasks for user ${userId} in ${leagueType} league:`, {
-        requiredTasks,
-        completedTasks,
-        hasAllTasks: requiredTasks.every(task => completedTasks.includes(task))
-      });
-
       // Check if all required tasks are completed
       const hasAllTasks = requiredTasks.every(task => completedTasks.includes(task));
 
@@ -897,18 +838,14 @@ export class LeagueRepository {
   // Reset all users to Bronze League (for new season)
   async resetAllUsersToBronzeLeague(): Promise<boolean> {
     try {
-      console.log("Resetting all users to Bronze League...");
-
       const currentSeason = await this.getCurrentSeason();
       if (!currentSeason) {
-        console.log("No current season found");
         return false;
       }
 
       // Get Bronze League
       const bronzeLeague = await this.getLeagueByType("bronze");
       if (!bronzeLeague) {
-        console.log("Bronze League not found");
         return false;
       }
 
@@ -933,8 +870,6 @@ export class LeagueRepository {
         }).toArray();
         allUsersToMove.push(...goldUsers);
       }
-
-      console.log(`Found ${allUsersToMove.length} users to move to Bronze League`);
 
       // Move all users to Bronze League
       for (const user of allUsersToMove) {
@@ -965,7 +900,6 @@ export class LeagueRepository {
         }
       }
 
-      console.log("Successfully moved all users to Bronze League");
       return true;
     } catch (error) {
       console.error("Error resetting users to Bronze League:", error);
@@ -1026,7 +960,6 @@ export class LeagueRepository {
         targetLeagueType as any
       );
       if (bestGroupId) {
-        console.log("Found best group for user:", bestGroupId);
         added = await this.addUserToGroup(
           userId,
           bestGroupId,
@@ -1034,12 +967,7 @@ export class LeagueRepository {
         );
         if (added) {
           groupId = bestGroupId;
-          console.log("User successfully added to group:", groupId);
-        } else {
-          console.log("Failed to add user to group:", bestGroupId);
         }
-      } else {
-        console.log("No available group found, will create new group");
       }
 
       if (!added) {

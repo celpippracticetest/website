@@ -146,38 +146,85 @@ const nextConfig: NextConfig = {
   // Performance optimizations
   compress: true,
   poweredByHeader: false,
+  // Required to support PostHog trailing slash API requests
+  skipTrailingSlashRedirect: true,
+
+  async rewrites() {
+    return [
+      // PostHog first-party proxy
+      {
+        source: "/ingest/static/:path*",
+        destination: "https://us-assets.i.posthog.com/static/:path*",
+      },
+      {
+        source: "/ingest/:path*",
+        destination: "https://us.i.posthog.com/:path*",
+      },
+      // Google Tag Gateway — routes GTM & GA4 through first-party domain
+      // to improve ad-blocker bypass and eliminate third-party cookie issues
+      {
+        source: "/gtm/js",
+        destination: "https://www.googletagmanager.com/gtm.js",
+      },
+      {
+        source: "/gtm/ns.html",
+        destination: "https://www.googletagmanager.com/ns.html",
+      },
+      {
+        source: "/gtag/js",
+        destination: "https://www.googletagmanager.com/gtag/js",
+      },
+      {
+        source: "/g/collect",
+        destination: "https://www.google-analytics.com/g/collect",
+      },
+      {
+        source: "/g/collect/:path*",
+        destination: "https://www.google-analytics.com/g/collect/:path*",
+      },
+    ];
+  },
 
   // Security Headers
   headers: async () => {
+    const globalHeaders = [
+      {
+        key: "X-DNS-Prefetch-Control",
+        value: "on",
+      },
+      {
+        key: "Strict-Transport-Security",
+        value: "max-age=63072000; includeSubDomains; preload",
+      },
+      {
+        key: "X-Frame-Options",
+        value: "SAMEORIGIN",
+      },
+      {
+        key: "X-Content-Type-Options",
+        value: "nosniff",
+      },
+      {
+        key: "Referrer-Policy",
+        value: "strict-origin-when-cross-origin",
+      },
+      {
+        key: "Content-Security-Policy",
+        value: "frame-ancestors 'self';",
+      },
+    ];
+
+    if (process.env.VERCEL_ENV === "preview") {
+      globalHeaders.push({
+        key: "X-Robots-Tag",
+        value: "noindex, nofollow, noarchive, nosnippet, noimageindex",
+      });
+    }
+
     return [
       {
         source: "/:path*",
-        headers: [
-          {
-            key: "X-DNS-Prefetch-Control",
-            value: "on",
-          },
-          {
-            key: "Strict-Transport-Security",
-            value: "max-age=63072000; includeSubDomains; preload",
-          },
-          {
-            key: "X-Frame-Options",
-            value: "SAMEORIGIN",
-          },
-          {
-            key: "X-Content-Type-Options",
-            value: "nosniff",
-          },
-          {
-            key: "Referrer-Policy",
-            value: "strict-origin-when-cross-origin",
-          },
-          {
-            key: "Content-Security-Policy",
-            value: "frame-ancestors 'self';",
-          },
-        ],
+        headers: globalHeaders,
       },
     ];
   },
@@ -218,6 +265,11 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 31536000,
     remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "celtest-audio.s3.eu-north-1.amazonaws.com",
+        port: "",
+      },
       {
         protocol: "https",
         hostname: "img.clerk.com",

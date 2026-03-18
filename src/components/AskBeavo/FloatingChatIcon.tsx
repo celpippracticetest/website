@@ -14,13 +14,11 @@ interface FloatingChatIconProps {
 const FloatingChatIcon: React.FC<FloatingChatIconProps> = ({ autoOpen = false, className, onClick }) => {
     const { chatbotMessageSent } = useEngagementTracking();
 
-    // Auto-open Intercom on mount if autoOpen is true
     useEffect(() => {
-        if (autoOpen && typeof window !== "undefined" && (window as any).Intercom) {
+        if (autoOpen) {
             const timer = setTimeout(() => {
-                (window as any).Intercom("show");
                 chatbotMessageSent("auto_open");
-            }, 500); // Small delay for better UX
+            }, 500);
             return () => clearTimeout(timer);
         }
     }, [autoOpen, chatbotMessageSent]);
@@ -34,9 +32,6 @@ const FloatingChatIcon: React.FC<FloatingChatIconProps> = ({ autoOpen = false, c
         if (onClick) {
             onClick(e);
             return;
-        }
-        if (typeof window !== "undefined" && (window as any).Intercom) {
-            (window as any).Intercom("show");
         }
     };
 

@@ -6,19 +6,15 @@ const isBrowser = typeof window !== "undefined";
 
 // Debug mode - logs events to console in development
 const DEBUG = process.env.NODE_ENV === "development";
-
-// Store user context globally for the module
-let currentUserContext: UserContext = {};
-
-/**
- * Set the user context for GTM events
- */
-export function setUserContext(context: UserContext): void {
-  currentUserContext = context;
-  if (DEBUG) {
-    console.log("[GTM] User context updated:", context);
-  }
-}
+const GOOGLE_ADS_CONVERSION_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_ID || "";
+const GOOGLE_ADS_PURCHASE_LABEL =
+  process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL || "";
+const GOOGLE_ADS_SIGNUP_LABEL =
+  process.env.NEXT_PUBLIC_GOOGLE_ADS_SIGNUP_LABEL || "";
+const GOOGLE_ADS_BEGIN_CHECKOUT_LABEL =
+  process.env.NEXT_PUBLIC_GOOGLE_ADS_BEGIN_CHECKOUT_LABEL || "";
+const conversionDedupSet = new Set<string>();
 
 /**
  * Initialize or get the dataLayer array
@@ -34,10 +30,99 @@ function getDataLayer(): any[] {
 }
 
 /**
- * Get current user context
+ * Get current user context from Clerk
  */
 function getUserContext(): UserContext {
-  return currentUserContext;
+  if (!isBrowser) return {};
+
+  try {
+    // Get user data from Clerk's global object if available
+    const clerk = (window as any).Clerk;
+    const user = clerk?.user;
+    
+    if (user) {
+      return {
+        user_id: user.id,
+        user_plan: (user.publicMetadata as any)?.plan || "free",
+        user_plan_type: (user.publicMetadata as any)?.planType,
+        user_total_spend: (user.publicMetadata as any)?.totalSpend || 0,
+        is_authenticated: true,
+      };
+    }
+
+    return {
+      is_authenticated: false,
+    };
+  } catch (error) {
+    return {};
+  }
+}
+
+function getGoogleAdsSendTo(label?: string): string | undefined {
+  if (!GOOGLE_ADS_CONVERSION_ID || !label) return undefined;
+  return `${GOOGLE_ADS_CONVERSION_ID}/${label}`;
+}
+
+function normalizeUserData(userData?: UserData): UserData | undefined {
+  if (!userData || typeof userData !== "object") return undefined;
+
+  const normalized = { ...userData };
+  if (typeof normalized.email === "string") {
+    normalized.email = normalized.email.trim().toLowerCase();
+  }
+  if (typeof normalized.phone_number === "string") {
+    normalized.phone_number = normalized.phone_number.replace(/\s+/g, "");
+  }
+
+  return normalized;
+}
+
+/**
+ * Push a dedicated event for ads platforms (Google Ads Enhanced Conversions, Meta Pixel).
+ * This event intentionally contains user_data (PII) and must NOT be sent to GA4.
+ * In GTM, configure only Google Ads / Meta tags to listen to "ads_enhanced_conversion".
+ */
+function pushAdsEnhancedConversion(params: {
+  conversionEvent: string;
+  conversionLabel?: string;
+  value?: number;
+  currency?: string;
+  transactionId?: string;
+  userData: UserData;
+  purchaseType?: "first_purchase" | "subscription_renewal";
+}): void {
+  const { conversionEvent, conversionLabel, value, currency, transactionId, userData, purchaseType } = params;
+  pushToDataLayer(
+    {
+      event: "ads_enhanced_conversion",
+      conversion_event: conversionEvent,
+      conversion_label: conversionLabel || undefined,
+      google_ads_send_to: getGoogleAdsSendTo(conversionLabel || ""),
+      value,
+      currency,
+      transaction_id: transactionId,
+      purchase_type: purchaseType,
+      user_data: normalizeUserData(userData),
+    },
+    false
+  );
+}
+
+function markDeduplicatedOnce(key: string): boolean {
+  if (!key) return false;
+  if (conversionDedupSet.has(key)) return true;
+
+  if (isBrowser) {
+    const storageKey = `gtm_once_${key}`;
+    if (localStorage.getItem(storageKey) === "1") {
+      conversionDedupSet.add(key);
+      return true;
+    }
+    localStorage.setItem(storageKey, "1");
+  }
+
+  conversionDedupSet.add(key);
+  return false;
 }
 
 /**
@@ -50,9 +135,6 @@ export function pushToDataLayer(
   enrichContext: boolean = true
 ): void {
   if (!isBrowser) {
-    if (DEBUG) {
-      console.log("[GTM] Server-side render detected, skipping event:", event);
-    }
     return;
   }
 
@@ -66,11 +148,6 @@ export function pushToDataLayer(
 
     // Push to dataLayer
     dataLayer.push(enrichedEvent);
-
-    // Debug logging
-    if (DEBUG) {
-      console.log("[GTM] Event pushed:", enrichedEvent);
-    }
   } catch (error) {
     console.error("[GTM] Error pushing event to dataLayer:", error);
   }
@@ -185,12 +262,30 @@ export const trackAuth = {
   },
 
   signUpCompleted: (userId: string, method?: string, userData?: UserData) => {
+    const dedupeKey = `sign_up_completed_${userId}`;
+    if (markDeduplicatedOnce(dedupeKey)) return;
+
+    const conversionLabel = GOOGLE_ADS_SIGNUP_LABEL;
     pushToDataLayer({
       event: "sign_up_completed",
       user_id: userId,
       method,
-      user_data: userData,
+      conversion_name: "sign_up_completed",
+      conversion_label: conversionLabel || undefined,
+      google_ads_send_to: getGoogleAdsSendTo(conversionLabel),
+      value: 1,
+      currency: "CAD",
     });
+
+    if (userData) {
+      pushAdsEnhancedConversion({
+        conversionEvent: "sign_up_completed",
+        conversionLabel,
+        value: 1,
+        currency: "CAD",
+        userData,
+      });
+    }
   },
 
   loginInitiated: (method?: string) => {
@@ -200,12 +295,11 @@ export const trackAuth = {
     });
   },
 
-  loginCompleted: (userId: string, method?: string, userData?: UserData) => {
+  loginCompleted: (userId: string, method?: string) => {
     pushToDataLayer({
       event: "login_completed",
       user_id: userId,
       method,
-      user_data: userData,
     });
   },
 
@@ -399,24 +493,39 @@ export const trackPractice = {
 };
 
 /**
+ * Clear the ecommerce object before pushing a new ecommerce event.
+ * Required by GA4 best practice to prevent data from previous events bleeding in.
+ */
+function clearEcommerce(): void {
+  if (!isBrowser) return;
+  getDataLayer().push({ ecommerce: null });
+}
+
+/**
  * Track e-commerce events (GA4 standard)
  */
 export const trackEcommerce = {
   viewItemList: (items: any[], itemListId?: string, itemListName?: string) => {
+    clearEcommerce();
     pushToDataLayer({
       event: "view_item_list",
-      item_list_id: itemListId,
-      item_list_name: itemListName,
-      items,
+      ecommerce: {
+        item_list_id: itemListId,
+        item_list_name: itemListName,
+        items,
+      },
     });
   },
 
   selectItem: (items: any[], itemListId?: string, itemListName?: string) => {
+    clearEcommerce();
     pushToDataLayer({
       event: "select_item",
-      item_list_id: itemListId,
-      item_list_name: itemListName,
-      items,
+      ecommerce: {
+        item_list_id: itemListId,
+        item_list_name: itemListName,
+        items,
+      },
     });
   },
 
@@ -427,14 +536,30 @@ export const trackEcommerce = {
     coupon?: string,
     userData?: UserData
   ) => {
+    const conversionLabel = GOOGLE_ADS_BEGIN_CHECKOUT_LABEL;
+    clearEcommerce();
     pushToDataLayer({
       event: "begin_checkout",
-      currency,
-      value,
-      items,
-      coupon,
-      user_data: userData,
+      ecommerce: {
+        currency,
+        value,
+        items,
+        ...(coupon && { coupon }),
+      },
+      conversion_name: "begin_checkout",
+      conversion_label: conversionLabel || undefined,
+      google_ads_send_to: getGoogleAdsSendTo(conversionLabel),
     });
+
+    if (userData) {
+      pushAdsEnhancedConversion({
+        conversionEvent: "begin_checkout",
+        conversionLabel,
+        value,
+        currency,
+        userData,
+      });
+    }
   },
 
   purchase: (
@@ -443,25 +568,66 @@ export const trackEcommerce = {
     currency: string,
     value: number,
     coupon?: string,
-    userData?: UserData
+    userData?: UserData,
+    attributionData?: Record<string, unknown>,
+    purchaseType: "first_purchase" | "subscription_renewal" = "first_purchase"
   ) => {
+    const dedupeKey = `purchase_${transactionId}`;
+    if (markDeduplicatedOnce(dedupeKey)) return;
+
+    const conversionLabel = GOOGLE_ADS_PURCHASE_LABEL;
+    clearEcommerce();
     pushToDataLayer({
       event: "purchase",
-      transaction_id: transactionId,
-      currency,
-      value,
-      items,
-      coupon,
-      user_data: userData,
+      purchase_type: purchaseType,
+      ecommerce: {
+        transaction_id: transactionId,
+        currency,
+        value,
+        items,
+        ...(coupon && { coupon }),
+      },
+      conversion_name: "purchase",
+      conversion_label: conversionLabel || undefined,
+      google_ads_send_to: getGoogleAdsSendTo(conversionLabel),
+      ...attributionData,
     });
+
+    if (userData) {
+      pushAdsEnhancedConversion({
+        conversionEvent: "purchase",
+        conversionLabel,
+        value,
+        currency,
+        transactionId,
+        userData,
+        purchaseType,
+      });
+    }
   },
 
   refund: (transactionId: string, currency: string, value: number) => {
+    clearEcommerce();
     pushToDataLayer({
       event: "refund",
-      transaction_id: transactionId,
-      currency,
-      value,
+      ecommerce: {
+        transaction_id: transactionId,
+        currency,
+        value,
+      },
+    });
+  },
+
+  subscriptionCancelled: (
+    reason?: "user_cancelled" | "payment_failed" | "admin_cancelled" | "refunded",
+    planType?: string,
+    subscriptionId?: string
+  ) => {
+    pushToDataLayer({
+      event: "subscription_cancelled",
+      cancellation_reason: reason,
+      plan_type: planType,
+      subscription_id: subscriptionId,
     });
   },
 };
@@ -522,6 +688,48 @@ export const trackEngagement = {
       event: "audio_played",
       audio_type: audioType,
       audio_source: audioSource,
+    });
+  },
+
+  leadCaptureSubmitted: (
+    location: string,
+    triggerSource: string,
+    leadCaptureId: string
+  ) => {
+    pushToDataLayer({
+      event: "lead_capture_submitted",
+      location,
+      trigger_source: triggerSource,
+      lead_capture_id: leadCaptureId,
+    });
+  },
+
+  refundRequestSubmitted: (
+    requestReason: string,
+    trackingCode?: string
+  ) => {
+    pushToDataLayer({
+      event: "refund_request_submitted",
+      refund_request_reason: requestReason,
+      refund_tracking_code: trackingCode,
+    });
+  },
+
+  refundRequestTrackingSearched: (trackingCode: string) => {
+    pushToDataLayer({
+      event: "refund_request_tracking_searched",
+      refund_tracking_code: trackingCode,
+    });
+  },
+
+  refundRequestStatusViewed: (
+    status: string,
+    rejectionReason?: string
+  ) => {
+    pushToDataLayer({
+      event: "refund_request_status_viewed",
+      refund_request_status: status,
+      refund_rejection_reason: rejectionReason,
     });
   },
 };

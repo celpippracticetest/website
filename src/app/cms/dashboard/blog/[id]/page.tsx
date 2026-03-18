@@ -7,8 +7,8 @@ import { ChevronLeft, Loader2 } from "lucide-react";
 import { Box } from "@/components/ui/Box";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
-import BlogPostForm from "@/components/dashboard-app/cms/BlogPostForm";
-import { TBlogSchemaDto, TBlogWriteInput } from "@/models/blog.model";
+import BlogPostForm, { BlogPostSubmitPayload } from "@/components/dashboard-app/cms/BlogPostForm";
+import { TBlogSchemaDto } from "@/models/blog.model";
 
 export default function EditBlogPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -41,7 +41,7 @@ export default function EditBlogPage({ params }: { params: Promise<{ id: string 
     fetchBlog();
   }, [id]);
 
-  const onSubmit = async (values: TBlogWriteInput) => {
+  const onSubmit = async (values: BlogPostSubmitPayload) => {
     setIsSaving(true);
     try {
       const response = await fetch(`/api/blog/${id}`, {

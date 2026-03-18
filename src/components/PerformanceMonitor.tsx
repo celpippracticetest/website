@@ -5,17 +5,33 @@ import { useEffect } from "react";
 export default function PerformanceMonitor() {
   useEffect(() => {
     if (process.env.NODE_ENV !== "production") return;
+    const botUserAgentRegex =
+      /bot|crawler|spider|googlebot|bingbot|slurp|duckduckbot|baiduspider|yandex/i;
+    const isBotClient =
+      typeof navigator !== "undefined" &&
+      botUserAgentRegex.test(navigator.userAgent || "");
+    if (isBotClient) return;
 
     (async () => {
       try {
-        const { getCLS, getFID, getFCP, getLCP, getTTFB } = await import(
-          "web-vitals"
-        );
-        getCLS(console.log);
-        getFID(console.log);
-        getFCP(console.log);
-        getLCP(console.log);
-        getTTFB(console.log);
+        const vitals = await import("web-vitals");
+        const report = (metric: unknown) => console.log(metric);
+
+        // web-vitals v4 uses onINP (FID removed). Keep a fallback for older versions.
+        if (typeof vitals.onCLS === "function") vitals.onCLS(report);
+        if (typeof vitals.onFCP === "function") vitals.onFCP(report);
+        if (typeof vitals.onLCP === "function") vitals.onLCP(report);
+        if (typeof vitals.onTTFB === "function") vitals.onTTFB(report);
+
+        const maybeVitals = vitals as unknown as {
+          onINP?: (cb: (metric: unknown) => void) => void;
+          getFID?: (cb: (metric: unknown) => void) => void;
+        };
+        if (typeof maybeVitals.onINP === "function") {
+          maybeVitals.onINP(report);
+        } else if (typeof maybeVitals.getFID === "function") {
+          maybeVitals.getFID(report);
+        }
       } catch (e) {
         console.error("web-vitals load failed:", e);
       }

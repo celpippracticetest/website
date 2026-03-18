@@ -3,7 +3,11 @@ import { Db, MongoClient } from "mongodb";
 type TOnboardingNewResult = {
   userId: string;
   answers: {
-    testDate: string;
+    primaryGoal: string;
+    customPrimaryGoal?: string;
+    subGoal?: string;
+    customSubGoal?: string;
+    testDate?: string;
     focusSkill: string;
     customFocusSkill?: string;
     targetScores: {
@@ -24,7 +28,7 @@ export class OnboardingNewRepository {
   }
 
   private getCollection() {
-    return this.db.collection<TOnboardingNewResult>("onboarding_new_results");
+    return this.db.collection<TOnboardingNewResult>("onboarding");
   }
 
   async createOrUpdateOnboardingNewResult(data: TOnboardingNewResult) {

@@ -4,7 +4,6 @@ import mongoClient from "@/lib/mongodb";
 import { ReferralRepository } from "@/repositories/referral.repo";
 import { ReferralInvitationRepository } from "@/repositories/referral-invitation.repo";
 import { clerkClient } from "@clerk/express";
-
 export async function POST(req: Request) {
   try {
     const { userId } = await auth();
@@ -92,9 +91,6 @@ export async function POST(req: Request) {
 
     let invitation;
     if (existingInvitation) {
-      console.log(
-        `✅ Referral invitation already exists: ${existingInvitation._id}`
-      );
       invitation = existingInvitation;
     } else {
       invitation = await invitationRepo.createInvitation({
@@ -104,7 +100,6 @@ export async function POST(req: Request) {
         status: "pending",
         invitedAt: new Date(),
       });
-      console.log(`✅ Created referral invitation: ${invitation._id}`);
     }
 
     // Update referrer's metadata
@@ -131,10 +126,6 @@ export async function POST(req: Request) {
         lastInviteeEmail: userEmail,
       },
     });
-
-    console.log(
-      `✅ Updated referrer metadata - Total invitations: ${newTotalInvitees}, Reward level: ${rewardLevel}`
-    );
 
     return NextResponse.json({
       success: true,

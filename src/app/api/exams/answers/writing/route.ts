@@ -5,13 +5,14 @@ import { WritingAnswerRequestSchema } from "@/models/answer";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
 import { TTaskSchemaDto } from "@/models/tasks.model";
-import { currentUser } from "@clerk/nextjs/server";
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
+import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 
 export const POST = async function (req: NextRequest) {
   const body = await req.json();
   const answersParser = WritingAnswerRequestSchema.safeParse(body);
-  const user = await currentUser();
+  const authContext = await getAuthenticatedRequestContext(req);
+  const user = authContext?.user;
   if (!user) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
@@ -210,7 +211,6 @@ export const POST = async function (req: NextRequest) {
 
     // Determine which model to use
     const modelToUse = process.env.OPENROUTER_MODEL;
-    console.log("Using model:", modelToUse);
 
     // Enhance system prompt for models that don't support tool calling well
     const isQwen = modelToUse?.includes('qwen');
@@ -404,7 +404,6 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
         );
       }
 
-      console.log("Successfully extracted complete data from content");
       const msg: any = {
         content: [
           { type: "text", text: messageContent },
@@ -521,7 +520,8 @@ export const GET = async function (req: NextRequest) {
       { status: 400 }
     );
   }
-  const user = await currentUser();
+  const authContext = await getAuthenticatedRequestContext(req);
+  const user = authContext?.user;
   if (!user) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }

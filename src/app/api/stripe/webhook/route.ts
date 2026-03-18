@@ -43,13 +43,15 @@ async function updateUserPublicMetadata(
 
       if (newFields.plan) updateDoc.plan = newFields.plan;
       if (newFields.planType) updateDoc.planType = newFields.planType;
+      if (newFields.purchaseAmount) updateDoc.purchaseAmount = newFields.purchaseAmount;
+      if (newFields.purchaseCurrency) updateDoc.purchaseCurrency = newFields.purchaseCurrency;
+      if (newFields.totalSpend) updateDoc.totalSpend = newFields.totalSpend;
 
       await usersCollection.updateOne(
         { clerkUserId: userId },
         { $set: updateDoc },
         { upsert: true } // Upsert just in case, though user should exist
       );
-      console.log(`✅ Synced metadata update to MongoDB for user: ${userId}`);
     } catch (dbErr) {
       logger.error(" Failed to sync metadata to MongoDB", {
         component: "stripe_webhook",
@@ -93,9 +95,6 @@ async function handleReferralRewards(
         userMetadata?.referralDiscountUsed === true ||
         userMetadata?.referralCodeUsed === true
       ) {
-        console.log(
-          "⏭️  Skipping referral reward: invitee has already used referral or it's inactive."
-        );
         return;
       }
     } catch (error) {
@@ -118,14 +117,8 @@ async function handleReferralRewards(
               userMetadata?.referralDiscountUsed === true ||
               userMetadata?.referralCodeUsed === true
             ) {
-              console.log(
-                "⏭️  Skipping referral reward: invitee has already used referral or it's inactive."
-              );
               return;
             }
-            console.log(
-              `✅ Resolved Clerk user by email (${inviteeEmail}) → ${userIdToUse}`
-            );
           } else {
             console.warn(`❌ No Clerk user found by email ${inviteeEmail}`);
             return;
@@ -135,9 +128,6 @@ async function handleReferralRewards(
           return;
         }
       } else {
-        console.log(
-          "No user ID and no email found on session; cannot process referral"
-        );
         return;
       }
     }
@@ -145,13 +135,8 @@ async function handleReferralRewards(
     const referralCode = userMetadata?.referralCode || metadata?.referral_code;
 
     if (!referralCode) {
-      console.log(
-        "❌ No referral code found in user metadata or session metadata"
-      );
       return;
     }
-
-    console.log(`🔍 Processing referral: ${referralCode}`);
 
     // Find the referrer
     const referralRepo = new ReferralRepository(mongoClient);
@@ -160,18 +145,14 @@ async function handleReferralRewards(
     const referrer = await referralRepo.findOneByCode(referralCode);
 
     if (!referrer) {
-      console.log(`❌ Referral code ${referralCode} not found in database`);
       return;
     }
-
-    console.log(`✅ Found referrer: ${referrer.userId}`);
 
     // Calculate reward amount (20% of purchase)
     const amountTotal = session.amount_total || 0;
     const rewardAmount = (amountTotal / 100) * 0.2; // Convert from cents and apply 20%
 
     if (rewardAmount < 0.01) {
-      console.log("Reward amount too small to process");
       return;
     }
 
@@ -191,10 +172,6 @@ async function handleReferralRewards(
         purchaseDate: new Date(),
       });
 
-      console.log(
-        `✅ Referral reward created: $${rewardAmount} for user ${referrer.userId}`
-      );
-
       // Update referrer's metadata with reward information
       const referrerUser = await clerkClient.users.getUser(referrer.userId);
       const currentMetadata = referrerUser.publicMetadata || {};
@@ -212,9 +189,6 @@ async function handleReferralRewards(
         await invitationRepo.updateInvitationStatus(
           invitation._id!.toString(),
           "completed"
-        );
-        console.log(
-          `✅ Marked referral invitation as completed: ${invitation._id}`
         );
       }
 
@@ -240,10 +214,6 @@ async function handleReferralRewards(
           lastRewardDate: new Date().toISOString(),
         },
       });
-
-      console.log(
-        `✅ Updated referrer metadata - Total: ${totalInvitees} invitees, $${newTotalRewards} rewards, Successful Purchases: ${totalSuccessfulPurchases}, Level: ${rewardLevel}`
-      );
     } catch (dbError) {
       console.error(`❌ Failed to create referral reward:`, dbError);
       throw dbError; // Re-throw to be caught by outer try-catch
@@ -254,11 +224,6 @@ async function handleReferralRewards(
       const freshMeta = freshUser.publicMetadata as any;
       const promotionCodeId =
         freshMeta?.referralPromotionId || freshMeta?.promotionCodeId;
-
-      console.log(
-        "Referral handling: promotionCodeId resolved ->",
-        promotionCodeId
-      );
 
       try {
         // Determine if this was a referral discount or NEW discount
@@ -283,23 +248,16 @@ async function handleReferralRewards(
           updateData.referralDiscountActive = false;
           updateData.referralActive = false;
           updateData.referralCodeUsed = true;
-          console.log(
-            `✅ Set referralActive=false and marked referral used for invitee: ${userIdToUse}`
-          );
         } else if (isNewDiscount) {
           // This was a NEW discount
           updateData.newDiscountUsed = true;
           updateData.newDiscountUsedAt = new Date().toISOString();
-          console.log(`✅ Marked NEW discount used for user: ${userIdToUse}`);
         }
 
         await clerkClient.users.updateUserMetadata(userIdToUse as string, {
           publicMetadata: updateData,
         });
       } catch (error) {
-        console.log(
-          `⚠️ Could not update invitee ${userIdToUse} metadata; continuing`
-        );
       }
 
       if (promotionCodeId) {
@@ -307,7 +265,6 @@ async function handleReferralRewards(
           await stripe.promotionCodes.update(promotionCodeId, {
             active: false,
           });
-          console.log(` Deactivated promotion code: ${promotionCodeId}`);
         } catch (error) {
           console.error(
             "Error deactivating promotion code:",
@@ -315,10 +272,6 @@ async function handleReferralRewards(
             error
           );
         }
-      } else {
-        console.log(
-          "No promotionCodeId found on invitee metadata; skipping deactivation."
-        );
       }
     } catch (err) {
       console.error(
@@ -376,6 +329,7 @@ export async function POST(req: Request) {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
       const metadata = session.metadata;
+      let subscriptionMetadata = metadata;
 
       logger.info("Processing checkout.session.completed event", {
         component: "stripe_webhook",
@@ -412,7 +366,11 @@ export async function POST(req: Request) {
             // Mark that user has made a purchase (no more discounts)
             hasEverPurchased: true,
             purchaseDate: new Date().toISOString(),
-            plan: (metadata.plan_name || "premium").toLowerCase().includes("pro") ? "pro" : "premium"
+            plan: (metadata.plan_name || "premium").toLowerCase().includes("pro") ? "pro" : "premium",
+            planType: metadata.plan_name,
+            purchaseAmount: (session.amount_total || 0) / 100,
+            purchaseCurrency: (session.currency || "cad").toUpperCase(),
+            totalSpend: ((userMetadata.totalSpend as number) || 0) + ((session.amount_total || 0) / 100)
           });
           logger.info(
             "Cleared all discount fields for user after purchase",
@@ -425,44 +383,48 @@ export async function POST(req: Request) {
         } else {
           await updateUserPublicMetadata(metadata.user_id, {
             planCancelled: false,
+            planExpiresAt: null,
             hasEverPurchased: true,
             purchaseDate: new Date().toISOString(),
-            plan: (metadata.plan_name || "premium").toLowerCase().includes("pro") ? "pro" : "premium"
+            plan: (metadata.plan_name || "premium").toLowerCase().includes("pro") ? "pro" : "premium",
+            planType: metadata.plan_name,
+            purchaseAmount: (session.amount_total || 0) / 100,
+            purchaseCurrency: (session.currency || "cad").toUpperCase(),
+            totalSpend: ((userMetadata.totalSpend as number) || 0) + ((session.amount_total || 0) / 100)
           });
         }
-
-        console.log(
-          `Cleared planCancelled for user ${metadata.user_id} on new purchase.`
-        );
       }
 
       if (session.subscription && metadata?.user_id) {
         const subscription = await stripe.subscriptions.retrieve(
           session.subscription as string
         );
+        subscriptionMetadata = {
+          ...subscription.metadata,
+          user_id: metadata.user_id,
+          checkout_id: session.id,
+        };
 
         if (subscription.status !== "canceled") {
           await stripe.subscriptions.update(session.subscription as string, {
-            metadata: {
-              user_id: metadata.user_id,
-              checkout_id: session.id,
-            },
+            metadata: subscriptionMetadata,
           });
-          console.log(
-            `Backfilled subscription metadata for ${session.subscription}`
-          );
         } else {
           console.warn(
             `Cannot update metadata: subscription ${subscription.id} is canceled.`
           );
         }
+
+        if (subscription.current_period_end) {
+          await updateUserPublicMetadata(metadata.user_id, {
+            planRenewsAt: new Date(subscription.current_period_end * 1000).toISOString(),
+            planExpiresAt: null,
+          });
+        }
       }
 
       try {
-        console.log("🔍 Starting referral rewards processing...");
-        console.log("🔍 Session metadata:", JSON.stringify(metadata, null, 2));
         await handleReferralRewards(session, metadata);
-        console.log("✅ Referral rewards processing completed successfully");
       } catch (error) {
         captureException(error, {
           component: "stripe_webhook",
@@ -486,6 +448,30 @@ export async function POST(req: Request) {
         } catch (logErr) {
           console.error("Payment activity logging failed:", logErr);
         }
+
+      }
+
+      return NextResponse.json({ received: true });
+    }
+
+    if (event.type === "checkout.session.expired") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const metadata = session.metadata;
+
+      logger.info("Processing checkout.session.expired event", {
+        component: "stripe_webhook",
+        action: "checkout_expired",
+        metadata: {
+          sessionId: session.id,
+          userId: metadata?.user_id || null,
+        },
+      });
+
+      try {
+        const checkoutRepo = new CheckoutRepository(mongoClient);
+        await checkoutRepo.updateStatus(session.id, "expired");
+      } catch (repoErr) {
+        console.error("Failed to update expired checkout status:", repoErr);
       }
 
       return NextResponse.json({ received: true });
@@ -498,9 +484,6 @@ export async function POST(req: Request) {
         await updateUserPublicMetadata(metadata.user_id, {
           planCancelled: false,
         });
-        console.log(
-          `Cleared planCancelled for user ${metadata.user_id} on subscription creation.`
-        );
 
         // Log subscription created
         try {
@@ -526,19 +509,59 @@ export async function POST(req: Request) {
         if (metadata?.user_id) {
           await updateUserPublicMetadata(metadata.user_id, {
             planCancelled: true,
+            planExpiresAt: subscription.current_period_end
+              ? new Date(subscription.current_period_end * 1000).toISOString()
+              : null,
+            planRenewsAt: null,
           });
-          console.log(
-            `Set planCancelled=true for user ${metadata.user_id} on subscription update.`
-          );
         }
-        console.log(
-          `Subscription ${subscription.id} scheduled to cancel at end of period; no immediate downgrade.`
-        );
         return NextResponse.json({ received: true });
       }
     }
 
     const checkoutRepo = new CheckoutRepository(mongoClient);
+    if (event.type === "invoice.payment_failed") {
+      const invoice = event.data.object as any;
+      const rawSubscription = invoice.subscription;
+      const subscriptionId =
+        typeof rawSubscription === "string"
+          ? rawSubscription
+          : rawSubscription?.id || null;
+
+      if (subscriptionId) {
+        try {
+          const db = await mongoClient.db();
+          await db.collection("stripe_subscriptions").updateOne(
+            { stripeId: subscriptionId },
+            {
+              $set: {
+                dunningStatus: "payment_failed",
+                lastPaymentFailedAt: new Date(),
+                updatedAt: new Date(),
+              },
+            }
+          );
+        } catch (err) {
+          console.warn("Failed to update dunning snapshot in stripe_subscriptions", err);
+        }
+
+        try {
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          await stripe.subscriptions.update(subscriptionId, {
+            metadata: {
+              ...subscription.metadata,
+              last_payment_failed_at_unix: `${Math.floor(Date.now() / 1000)}`,
+            },
+          });
+          
+        } catch (err) {
+          console.warn("Failed to persist dunning metadata to Stripe subscription", err);
+        }
+      }
+
+      return NextResponse.json({ received: true });
+    }
+
     if (event.type === "invoice.payment_succeeded") {
       const invoice = event.data.object as any;
       const invoiceId = invoice?.id as string;
@@ -588,10 +611,6 @@ export async function POST(req: Request) {
               const user = users.data[0];
               const lastCheckout = await checkoutRepo.findLastByUserId(user.id);
               if (lastCheckout) {
-                console.info(
-                  "lastCheckout no error and the document was updated!"
-                );
-
                 await checkoutRepo.updateCreatedAtBySessionId(
                   lastCheckout.checkoutId,
                   new Date(
@@ -630,8 +649,6 @@ export async function POST(req: Request) {
         return NextResponse.json({ received: true });
       }
 
-      console.info("we have no error and the document was updated!");
-
       await checkoutRepo.updateCreatedAtBySessionId(
         sessionId,
         new Date((invoice?.lines?.data[0]?.period?.start as number) * 1000)
@@ -657,17 +674,6 @@ export async function POST(req: Request) {
     if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object as Stripe.Subscription;
       let { user_id, checkout_id } = subscription.metadata;
-
-      console.log(
-        `🔔 Deleted webhook for subscription ${subscription.id}`,
-        "initial metadata →",
-        { user_id, checkout_id }
-      );
-
-      console.log(
-        "➡️ Fallback #1: latest_invoice =",
-        subscription.latest_invoice
-      );
       if (!user_id || !checkout_id) {
         if (subscription.latest_invoice) {
           try {
@@ -675,12 +681,6 @@ export async function POST(req: Request) {
               subscription.latest_invoice as string
             )) as Stripe.Invoice;
             const pi = (invoice as any).payment_intent as string | null;
-            console.log(
-              "   • Invoice retrieved",
-              invoice.id,
-              "payment_intent =",
-              pi
-            );
 
             if (pi) {
               const sessions = await stripe.checkout.sessions.list({
@@ -688,11 +688,9 @@ export async function POST(req: Request) {
                 limit: 1,
               });
               const sess: any = sessions.data[0];
-              console.log("   • Session from PI fallback →", sess);
 
               if (sess?.metadata?.user_id) user_id = sess.metadata.user_id;
               if (sess?.id) checkout_id = sess.id;
-              console.log("   • After #1 →", { user_id, checkout_id });
             }
           } catch (err) {
             console.warn("   ❗️ Fallback #1 error:", err);
@@ -700,7 +698,6 @@ export async function POST(req: Request) {
         }
       }
 
-      console.log("➡️ Fallback #2: list sessions by subscription ID");
       if (!user_id || !checkout_id) {
         try {
           const sessionsBySub = await stripe.checkout.sessions.list({
@@ -708,33 +705,27 @@ export async function POST(req: Request) {
             limit: 1,
           });
           const sess2: any = sessionsBySub.data[0];
-          console.log("   • Session from sub-list fallback →", sess2);
 
           if (sess2?.metadata?.user_id) user_id = sess2.metadata.user_id;
           if (sess2?.id) checkout_id = sess2.id;
-          console.log("   • After #2 →", { user_id, checkout_id });
         } catch (err) {
           console.warn("   ❗️ Fallback #2 error:", err);
         }
       }
 
-      console.log("➡️ Fallback #3: invoice customer_email");
       if (!user_id && subscription.latest_invoice) {
         try {
           const invoice = (await stripe.invoices.retrieve(
             subscription.latest_invoice as string
           )) as Stripe.Invoice;
           const email = invoice.customer_email;
-          console.log("   • Invoice.customer_email =", email);
 
           if (email) {
             const users = await clerkClient.users.getUserList({
               emailAddress: [email.trim().toLowerCase()],
             });
-            console.log("   • Clerk users found →", users.data);
             if (users.data.length) {
               user_id = users.data[0].id;
-              console.log("   • After #3 → user_id =", user_id);
             }
           }
         } catch (err) {
@@ -742,21 +733,17 @@ export async function POST(req: Request) {
         }
       }
 
-      console.log("➡️ Fallback #4: DB lookup for last checkout");
       if (user_id && !checkout_id) {
         try {
           const lastCheckout = await checkoutRepo.findLastByUserId(user_id);
-          console.log("   • Last checkout from DB →", lastCheckout);
           if (lastCheckout) {
             checkout_id = lastCheckout.checkoutId;
-            console.log("   • After #4 → checkout_id =", checkout_id);
           }
         } catch (err) {
           console.warn("   ❗️ Fallback #4 error:", err);
         }
       }
 
-      console.log("🔍 Final metadata →", { user_id, checkout_id });
       if (!user_id || !checkout_id || checkout_id === "{CHECKOUT_SESSION_ID}") {
         console.warn("❌ Still missing metadata for", subscription.id);
         return NextResponse.json({ received: true });
@@ -767,10 +754,6 @@ export async function POST(req: Request) {
         checkoutRepo.updateStatus(checkout_id, "cancelled"),
         updateUserPublicMetadata(user_id, { plan: "free" }),
       ]);
-
-      console.log(
-        `✅ Subscription ${subscription.id} cancelled and user ${user_id} downgraded (checkout_id=${checkout_id}).`
-      );
 
       // Log subscription cancelled
       try {
@@ -934,9 +917,6 @@ export async function POST(req: Request) {
             const checkoutFromMeta = sub.metadata.checkout_id;
             if (checkoutFromMeta) {
               sessionId = checkoutFromMeta;
-              console.log(
-                `   • Fallback #4: sessionId from subscription metadata → ${sessionId}`
-              );
             }
           }
         } catch (err) {
@@ -966,20 +946,15 @@ export async function POST(req: Request) {
               }
             }
             await stripe.subscriptions.cancel(subscriptionId);
-            console.log(
-              `🚫 Subscription ${subscriptionId} canceled due to refund.`
-            );
             const userId = subRecord?.metadata.user_id ?? null;
             const checkoutId = subRecord?.metadata.checkout_id ?? null;
             if (checkoutId) {
               await checkoutRepo.updateStatus(checkoutId, "refunded");
-              console.log(`📝 Checkout ${checkoutId} marked refunded.`);
             }
             if (userId) {
               await clerkClient.users.updateUserMetadata(userId, {
                 publicMetadata: { plan: "free" },
               });
-              console.log(`✅ User ${userId} downgraded due to refund.`);
             }
             return NextResponse.json({ received: true });
           }
@@ -1000,9 +975,6 @@ export async function POST(req: Request) {
                 await updateUserPublicMetadata(fallbackUserId, {
                   plan: "free",
                 });
-                console.log(
-                  `✅ Fallback #5: User ${fallbackUserId} downgraded based on invoice.customer_email.`
-                );
               }
             }
           } catch (err) {
@@ -1032,11 +1004,7 @@ export async function POST(req: Request) {
                   new Date((a as any).createdAt).getTime()
               )[0];
               const resolvedSessionId = lastCheckout2.checkoutId;
-              console.log(
-                `   • Fallback #6: DB lookup via email → sessionId ${resolvedSessionId}`
-              );
               await checkoutRepo.updateStatus(resolvedSessionId, "refunded");
-              console.log(`📝 Checkout ${resolvedSessionId} marked refunded.`);
               return NextResponse.json({ received: true });
             }
           }
@@ -1060,7 +1028,6 @@ export async function POST(req: Request) {
           userId = sub.metadata.user_id ?? null;
 
           await stripe.subscriptions.cancel(sub.id);
-          console.log(`🚫 Subscription ${sub.id} canceled due to refund.`);
         } catch (err: any) {
           if (err?.code === "resource_missing") {
             console.warn(`❌ Subscription not found: ${sess.subscription}`);
@@ -1077,9 +1044,6 @@ export async function POST(req: Request) {
 
       if (userId) {
         await updateUserPublicMetadata(userId, { plan: "free" });
-        console.log(
-          `✅ Refund ${refundId}: session ${sessionId} marked refunded, user ${userId} downgraded.`
-        );
       } else {
         console.warn(`⚠️ Cannot find user for refunded session ${sessionId}.`);
       }

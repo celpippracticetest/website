@@ -1,0 +1,81 @@
+"use client";
+
+import React from "react";
+import Link from "next/link";
+import TopHeader from "./TopHeader";
+import { Box } from "@/components/ui/Box";
+
+const ContactUs = () => {
+  return (
+    <>
+      <TopHeader />
+
+      <Box className="flex flex-col max-w-[1156px] mx-auto justify-center mt-[120px] px-[16px] mb-[116px]">
+        <h1 className="text-primary1 font-bold text-[28px]">Contact Us</h1>
+        <p className="mt-[16px] font-normal text-[18px] text-text3">
+          Have a question about your CELPIP practice plan, billing, or account?
+          Our support team is here to help.
+        </p>
+
+        <Box className="flex flex-col mt-[40px]">
+          <h2 className="font-semibold text-[20px]">Customer Support</h2>
+          <p className="font-normal text-[18px] mt-[17px]">
+            Email:
+            {" "}
+            <Link
+              href="mailto:support@celpippracticetest.com"
+              className="text-primary1 underline underline-offset-2"
+            >
+              support@celpippracticetest.com
+            </Link>
+          </p>
+          <p className="font-normal text-[18px] mt-[12px]">
+            Typical response time: within 24 hours on business days.
+          </p>
+        </Box>
+
+        <Box className="flex flex-col mt-[40px]">
+          <h2 className="font-semibold text-[20px]">What to Include</h2>
+          <ul className="pl-[20px] mt-[17px]">
+            <li className="list-disc text-[18px]">
+              Your account email address
+            </li>
+            <li className="list-disc text-[18px]">
+              A short description of your question or issue
+            </li>
+            <li className="list-disc text-[18px]">
+              Screenshots (if applicable) to speed up support
+            </li>
+          </ul>
+        </Box>
+
+        <Box className="flex flex-col mt-[40px]">
+          <h2 className="font-semibold text-[20px]">Helpful Links</h2>
+          <Box className="flex flex-col mt-[17px] gap-[10px]">
+            <Link href="/pricing" className="text-[18px] text-primary1 underline underline-offset-2">
+              Pricing
+            </Link>
+            <Link href="/refund-policy" className="text-[18px] text-primary1 underline underline-offset-2">
+              Refund Policy
+            </Link>
+            <Link href="/terms-of-service" className="text-[18px] text-primary1 underline underline-offset-2">
+              Terms of Service
+            </Link>
+            <Link href="/privacy-policy" className="text-[18px] text-primary1 underline underline-offset-2">
+              Privacy Policy
+            </Link>
+          </Box>
+        </Box>
+
+        <Box className="h-px bg-outline mt-[61px]" />
+        <p className="font-normal text-[16px] text-text3 mt-[20px]">
+          © 2026 CELPIPPRACTICETEST.com. All rights reserved.
+          CELPIPPRACTICETEST.com is not affiliated with, endorsed by, or
+          sponsored by any official testing organization.
+        </p>
+      </Box>
+    </>
+  );
+};
+
+export default ContactUs;

@@ -63,29 +63,32 @@ const Comments = () => {
 
   const allPersons = [...personsTop, ...personsBottom];
   const [animate, setAnimate] = useState(false);
-  const { ref: sectionRef, inView } = useInView({ threshold: 0, rootMargin: "0px 0px 120px 0px" });
+  const { ref: sectionRef, inView } = useInView({
+    threshold: 0,
+    rootMargin: "0px 0px 120px 0px",
+  });
 
   const reviewsSchema = {
     "@context": "https://schema.org",
     "@type": "Product",
-    "name": "CELPIP Practice Test Platform",
-    "aggregateRating": {
+    name: "CELPIP Practice Test Platform",
+    aggregateRating: {
       "@type": "AggregateRating",
-      "ratingValue": "5",
-      "reviewCount": allPersons.length.toString()
+      ratingValue: "5",
+      reviewCount: allPersons.length.toString(),
     },
-    "review": allPersons.map(person => ({
+    review: allPersons.map((person) => ({
       "@type": "Review",
-      "author": {
+      author: {
         "@type": "Person",
-        "name": person.name
+        name: person.name,
       },
-      "reviewRating": {
+      reviewRating: {
         "@type": "Rating",
-        "ratingValue": "5"
+        ratingValue: "5",
       },
-      "reviewBody": person.comment
-    }))
+      reviewBody: person.comment,
+    })),
   };
 
   useEffect(() => {
@@ -99,13 +102,11 @@ const Comments = () => {
     <section
       ref={sectionRef}
       aria-labelledby="comments-heading"
-      className="flex mt-[40px] screen744:!mt-[80px] screen1280:!mt-[104px] overflow-x-hidden overflow-y-hidden flex-col max-w-[1440px] mx-auto"
-    >
+      className="flex mt-[40px] screen744:!mt-[80px] screen1280:!mt-[104px] overflow-x-hidden overflow-y-hidden flex-col max-w-[1440px] mx-auto">
       <JsonLd data={reviewsSchema} />
       <h2
         id="comments-heading"
-        className="text-center text-[24px] screen744:!text-[28px] screen1280:!text-[32px] px-[16px] text-text1 mx-auto font-medium"
-      >
+        className="text-center text-[24px] screen744:!text-[28px] screen1280:!text-[32px] px-[16px] text-text1 mx-auto font-medium">
         Join 20,000+ Graduates Who Trust Us
       </h2>
 
@@ -116,11 +117,11 @@ const Comments = () => {
             key={index}
             role="article"
             style={{ transitionDelay: `${index * 40}ms` }}
-            className={`flex flex-col flex-shrink-0 min-w-[280px] max-w-[316px] h-[230px] bg-white shadow-[2px_2px_8px_0px_#212E4214] hover:!shadow-[0px_10px_35px_0px_#212E421A] p-[16px] rounded-[24px] ${animate
-              ? "translate-x-0 opacity-100"
-              : "-translate-x-full opacity-0"
-              } transition-all duration-300 ease-out transform`}
-          >
+            className={`flex flex-col flex-shrink-0 min-w-[280px] max-w-[316px] h-[230px] bg-white shadow-[2px_2px_8px_0px_#212E4214] hover:!shadow-[0px_10px_35px_0px_#212E421A] p-[16px] rounded-[24px] ${
+              animate
+                ? "translate-x-0 opacity-100"
+                : "-translate-x-full opacity-0"
+            } transition-all duration-300 ease-out transform`}>
             <div className="flex gap-[10px] h-[56px]">
               <div>
                 <Image
@@ -153,11 +154,9 @@ const Comments = () => {
             key={index}
             role="article"
             style={{ transitionDelay: `${index * 40}ms` }}
-            className={`flex flex-col shadow-[2px_2px_8px_0px_#212E4214] hover:!shadow-[0px_10px_35px_0px_#212E421A] p-[16px] rounded-[24px] w-full max-w-[340px] h-[200px] screen1280:!max-w-[437px] screen1280:!h-[235px] bg-white ${animate
-              ? "translate-y-0 opacity-100"
-              : "translate-y-10 opacity-0"
-              } transition-all duration-300 ease-out transform`}
-          >
+            className={`flex flex-col shadow-[2px_2px_8px_0px_#212E4214] hover:!shadow-[0px_10px_35px_0px_#212E421A] p-[16px] rounded-[24px] w-full max-w-[340px] h-[200px] screen1280:!max-w-[437px] screen1280:!h-[235px] bg-white ${
+              animate ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
+            } transition-all duration-300 ease-out transform`}>
             <div className="flex gap-[10px] h-[56px]">
               <div>
                 <Image

@@ -1,8 +1,6 @@
 "use client";
 import { Button } from "@/components/v2/Button";
-import { SignedIn, useUser } from "@clerk/nextjs";
-
-import { useClerk } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
 
 import { useState, useEffect, useRef } from "react";
@@ -11,13 +9,17 @@ import { useHasEverPurchased } from "@/hooks/useHasEverPurchased";
 
 const AuthButtons = () => {
   const { isSignedIn, user, isLoaded } = useUser();
+  const [mounted, setMounted] = useState(false);
   const [isUserDropDownOpen, setUserDropDownOpen] = useState(false);
   const roles = (user?.publicMetadata as Record<string, unknown> | undefined)?.["roles"] as
     | string[]
     | undefined;
-  const { signOut } = useClerk();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { hasEverPurchased } = useHasEverPurchased();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -35,13 +37,13 @@ const AuthButtons = () => {
     };
   }, []);
 
-  if (!isLoaded) {
+  if (!mounted || !isLoaded) {
     return <Skeleton className="w-10 h-10 rounded-full" />;
   }
 
   return (
     <>
-      <SignedIn>
+      {isSignedIn && (
         <div className="relative mr-[24px] flex items-center" ref={dropdownRef}>
           <button
             onClick={() => setUserDropDownOpen(!isUserDropDownOpen)}
@@ -95,37 +97,18 @@ const AuthButtons = () => {
                 >
                   Profile
                 </Link>
-                <button
-                  onClick={() => {
-                    if (typeof window !== "undefined") {
-                      const w = window as unknown as {
-                        Intercom?: (cmd: string) => void;
-                      };
-                      if (w.Intercom) {
-                        w.Intercom("show");
-                      }
-                    }
-                  }}
+                <Link
+                  href="/contact-us"
                   id="support-button"
-                  className="cursor-pointer block px-4 py-2 text-[14px] text-gray-700 w-full text-left"
+                  className="block px-4 py-2 text-[14px] text-gray-700"
                 >
                   Support
-                </button>
-
-                <button
-                  onClick={() => {
-                    localStorage.removeItem("hasClosedExtraDiscountModal");
-                    signOut();
-                  }}
-                  className="cursor-pointer block px-4 py-2 text-[14px] text-gray-700 w-full text-left"
-                >
-                  Sign out
-                </button>
+                </Link>
               </div>
             </div>
           )}
         </div>
-      </SignedIn>
+      )}
       {!isSignedIn && (
         <>
           <Button size="sm" className="max-[744px]:flex min-[744px]:hidden" href="/sign-up">

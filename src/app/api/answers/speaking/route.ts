@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoClient from "@/lib/mongodb";
-import {
-  S3Client,
-  type CompleteMultipartUploadOutput,
-} from "@aws-sdk/client-s3";
-import { Upload } from "@aws-sdk/lib-storage";
 import { createClient } from "@deepgram/sdk";
+import { uploadAudioBuffer } from "@/lib/s3-client";
 import { PracticeRepository } from "@/repositories/practice.repo";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { TPracticeDto } from "@/models/practice.model";
 import { TaskRepository } from "@/repositories/tasks.repo";
 import { TTaskSchemaDto } from "@/models/tasks.model";
-import { currentUser } from "@clerk/nextjs/server";
+import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
@@ -124,43 +120,6 @@ function toStoredEvaluation(e: EvaluationInput | null): StoredEvaluation {
   };
 }
 
-// =============== S3 upload ===============
-async function uploadAudioBuffer(
-  buffer: Buffer,
-  fileName: string
-): Promise<string | null> {
-  const client = new S3Client({
-    region: "eu-north-1",
-    credentials: {
-      accessKeyId: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID ?? "",
-      secretAccessKey: process.env.NEXT_PUBLIC_AWS_SECRETE_ACCESS_KEY ?? "",
-    },
-  });
-
-  const upload = new Upload({
-    client,
-    params: {
-      Bucket: "celtest-audio",
-      Key: `RecordedSpeaking/${Date.now()}_${fileName}`,
-      Body: buffer,
-    },
-  });
-
-  try {
-    const result = (await upload.done()) as CompleteMultipartUploadOutput;
-    return result.Location ?? null;
-  } catch (error) {
-    console.error(
-      "Upload failed" +
-        process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID +
-        " " +
-        process.env.NEXT_PUBLIC_AWS_SECRETE_ACCESS_KEY,
-      error
-    );
-    return null;
-  }
-}
-
 // =============== Deepgram ===============
 async function transcribeUrl(fileUrl: string): Promise<DeepgramResponse> {
   const deepgramApiKey = process.env.DEEPGRAM_API_KEY ?? "";
@@ -204,7 +163,8 @@ const uniqLower = (arr: string[]) => {
 // =============== Route: POST ===============
 export const POST = async function (req: Request) {
   try {
-    const user = await currentUser();
+    const authContext = await getAuthenticatedRequestContext(req);
+    const user = authContext?.user;
     if (!user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
@@ -648,7 +608,8 @@ export const GET = async function (req: NextRequest) {
       { status: 400 }
     );
   }
-  const user = await currentUser();
+  const authContext = await getAuthenticatedRequestContext(req);
+  const user = authContext?.user;
   if (!user) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }

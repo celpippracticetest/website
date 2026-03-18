@@ -2,6 +2,56 @@ import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import mongoClient from "@/lib/mongodb";
 import { UserWordsRepository } from "@/repositories/userWords.repo";
+import { getDb } from "@/lib/mongodb";
+
+const COMPLEXITY_PROMPT = `Classify the English vocabulary word into one CELPIP learner level:
+- beginner
+- intermediate
+- advanced
+
+Return only a JSON object in this exact shape:
+{"complexityLevel":"beginner|intermediate|advanced"}`;
+
+type ComplexityLevel = "beginner" | "intermediate" | "advanced";
+
+async function classifyWordComplexity(word: string): Promise<ComplexityLevel> {
+    if (!process.env.OPENROUTER_API_KEY) return "intermediate";
+
+    try {
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                "HTTP-Referer": "https://celpippracticetest.com",
+                "X-Title": "CELPIP Practice Test",
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                model: "meta-llama/llama-3.1-8b-instruct:free",
+                messages: [
+                    { role: "system", content: COMPLEXITY_PROMPT },
+                    { role: "user", content: `Word: "${word}"` },
+                ],
+                response_format: { type: "json_object" },
+            }),
+        });
+
+        if (!response.ok) return "intermediate";
+
+        const data = await response.json();
+        const content = data?.choices?.[0]?.message?.content;
+        if (!content) return "intermediate";
+
+        const parsed = JSON.parse(content);
+        const level = parsed?.complexityLevel;
+        if (level === "beginner" || level === "intermediate" || level === "advanced") {
+            return level;
+        }
+        return "intermediate";
+    } catch {
+        return "intermediate";
+    }
+}
 
 export async function GET(req: NextRequest) {
     const user = await currentUser();
@@ -41,7 +91,33 @@ export async function POST(req: NextRequest) {
         }
 
         const repo = new UserWordsRepository(mongoClient);
-        const saved = await repo.saveWord(user.id, word);
+        const complexityLevel = await classifyWordComplexity(word);
+        const saved = await repo.saveWord(user.id, word, complexityLevel);
+        const now = new Date();
+        const db = await getDb();
+        await db.collection("userwordstudyactivities").updateOne(
+            { userId: user.id },
+            {
+                $set: {
+                    userId: user.id,
+                    lastWordAddedAt: now,
+                    lastEngagedAt: now,
+                    updatedAt: now,
+                },
+                $unset: {
+                    reminderFlow: "",
+                    reminderStage: "",
+                    reminderStageIndex: "",
+                    reminderVariant: "",
+                    reminderWindowStartedAt: "",
+                    remindersInWindow: "",
+                },
+                $setOnInsert: {
+                    createdAt: now,
+                },
+            },
+            { upsert: true }
+        );
         return NextResponse.json(saved);
     } catch (error) {
         console.error("Error saving user word:", error);
@@ -77,12 +153,42 @@ export async function PATCH(req: NextRequest) {
     }
 
     try {
-        const { word, isLearned } = await req.json();
+        const { word, isLearned, action } = await req.json();
         if (!word) {
             return NextResponse.json({ message: "Word is required" }, { status: 400 });
         }
 
         const repo = new UserWordsRepository(mongoClient);
+        if (action === "review") {
+            const reviewed = await repo.incrementReviewedTimes(user.id, word);
+            const db = await getDb();
+            const now = new Date();
+            await db.collection("userwordstudyactivities").updateOne(
+                { userId: user.id },
+                {
+                    $set: {
+                        userId: user.id,
+                        lastStudiedAt: now,
+                        lastEngagedAt: now,
+                        updatedAt: now,
+                    },
+                    $unset: {
+                        reminderFlow: "",
+                        reminderStage: "",
+                        reminderStageIndex: "",
+                        reminderVariant: "",
+                        reminderWindowStartedAt: "",
+                        remindersInWindow: "",
+                    },
+                    $setOnInsert: {
+                        createdAt: now,
+                    },
+                },
+                { upsert: true }
+            );
+            return NextResponse.json(reviewed);
+        }
+
         const updated = await repo.toggleLearned(user.id, word, isLearned);
         return NextResponse.json(updated);
     } catch (error) {
