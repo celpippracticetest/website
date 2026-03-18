@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useAuth, useUser } from "@clerk/nextjs";
-import { trackPageView, setUserContext } from "@/lib/gtm";
+import { trackPageView } from "@/lib/gtm";
 
 /**
  * PageViewTracker Component
@@ -17,13 +17,6 @@ export default function PageViewTracker() {
   const { user } = useUser();
 
   useEffect(() => {
-    // Update global user context for other events
-    setUserContext({
-      userId: user?.id,
-      userPlan: (user?.publicMetadata?.plan as string) || "free",
-      isAuthenticated: isSignedIn || false,
-    });
-
     // Track page view on mount and route changes
     const url = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : '');
 
