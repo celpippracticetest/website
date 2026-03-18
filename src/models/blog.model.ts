@@ -43,7 +43,8 @@ const BlogWriteSchema = z.object({
   authorName: z.string().trim().min(2).max(80).default("CELPIP Practice Test Team"),
   categories: z.array(z.string().trim().min(1)).default([]),
   tags: z.array(z.string().trim().min(1)).default([]),
-  featuredImage: BlogFeaturedImageSchema.optional(),
+  // Allow explicitly clearing an uploaded featured image (e.g. editor hits "Remove image").
+  featuredImage: BlogFeaturedImageSchema.nullable().optional(),
   faq: z.array(BlogFaqItemSchema).optional().default([]),
   aiSnippet: BlogAiSnippetSchema.optional(),
   seo: BlogSeoSchema.default({

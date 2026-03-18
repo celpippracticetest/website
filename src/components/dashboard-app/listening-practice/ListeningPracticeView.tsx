@@ -58,6 +58,9 @@ const ListeningPracticeView = ({
   const task5or6 = ["67ebeffe187829d27daac3c8", "67ebf003187829d27daac3c9"];
   const taskNum = parseInt(task.taskNumber.replace(/\D/g, "") || "0", 10);
   const useDropdownForQuestions = taskNum > 3;
+  const initialTime = task5or6.includes(practice.taskId)
+    ? 240 + (task5or6[1] === practice.taskId ? 30 : 0)
+    : 30;
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [pointsAwarded, setPointsAwarded] = useState(false);
@@ -86,9 +89,7 @@ const ListeningPracticeView = ({
     Record<string, string>
   >({});
   const [time, setTime] = useState(
-    task5or6.includes(practice.taskId)
-      ? 240 + (task5or6[1] === practice.taskId ? 30 : 0)
-      : 30
+    initialTime
   );
 
   // Safe helpers to avoid optional-undefined issues
@@ -238,6 +239,16 @@ const ListeningPracticeView = ({
     (p) => p.id == selectedPracticeId
   );
 
+  const resetToStart = () => {
+    setSelectedAnswers({});
+    setPage("problem");
+    setPassageIndex(0);
+    setQuestionIndex(0);
+    setQuestionIndexInPractice(0);
+    setTime(initialTime);
+    setIsOpen(false);
+  };
+
   if (!isLoaded || (user && user.publicMetadata?.plan === undefined)) {
     return (
       <div className="text-center py-10 text-gray-500 w-full">Loading...</div>
@@ -305,8 +316,7 @@ const ListeningPracticeView = ({
               />
             </div>
 
-            {page !== "instructions" &&
-              !(page == "answer" && practiceIndex >= allPractices.length - 1) ? (
+            {page !== "instructions" ? (
               <div className="flex items-center gap-2 justify-end pb-[10px] ">
                 {page === "question" && (
                   <div className="flex justify-center items-center lg:flex-row flex-col">
@@ -321,6 +331,7 @@ const ListeningPracticeView = ({
                   </div>
                 )}
                 <button
+                  hidden={page === "problem" && passageIndex === 0}
                   onClick={() => {
                     if (page == "problem" && passageIndex == 0) {
                       setPage("instructions");
@@ -395,9 +406,6 @@ const ListeningPracticeView = ({
                     } else if (page == "question") {
                       setPage("answer");
                     } else if (page === "answer") {
-                      const practiceIndex = allPractices.findIndex(
-                        (p) => p.id == selectedPracticeId
-                      );
                       if (practiceIndex < allPractices.length - 1) {
                         const taskUrl = selectedTaskId
                           ? "&taskId=" + selectedTaskId
@@ -411,21 +419,19 @@ const ListeningPracticeView = ({
                           taskUrl
                         );
                       } else {
-                        setPage("finish");
+                        resetToStart();
                       }
                     }
-                    setTime(
-                      task5or6.includes(practice.taskId)
-                        ? 240 + (task5or6[1] === practice.taskId ? 30 : 0)
-                        : 30
-                    );
+                    setTime(initialTime);
                   }}
                   className={`cursor-pointer text-[14px] font-normal  inline-flex items-center justify-center rounded-[24px] ${page !== "answer"
                     ? "bg-white"
                     : "bg-green-100 text-gray-900 "
                     } bg-white w-[96px] h-[40px]`}
                 >
-                  {page !== "answer" ? "Next" : "Next"}
+                  {page === "answer" && practiceIndex >= allPractices.length - 1
+                    ? "Start again"
+                    : "Next"}
                   <ArrowRight size={18} strokeWidth={1.7}></ArrowRight>
                 </button>
               </div>

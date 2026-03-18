@@ -192,6 +192,8 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
   const [aiPrompt, setAiPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [seoAdvicePrompt, setSeoAdvicePrompt] = useState("");
+  const [isApplyingSeoFixes, setIsApplyingSeoFixes] = useState(false);
   const [jsonInput, setJsonInput] = useState("");
   const [jsonImportError, setJsonImportError] = useState<string | null>(null);
   const [editorContentKey, setEditorContentKey] = useState(0);
@@ -322,6 +324,78 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleApplySeoFixesWithAi = async () => {
+    const prompt = seoAdvicePrompt.trim();
+    if (!prompt) {
+      toast({
+        title: "SEO advice required",
+        description: "Describe what you want to improve (keywords, title/H1, headings, meta, etc.).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsApplyingSeoFixes(true);
+    try {
+      const response = await fetch("/api/blog/apply-seo-advice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          advice: prompt,
+          current: {
+            title: form.getValues("title"),
+            excerpt: form.getValues("excerpt"),
+            metaTitle: form.getValues("metaTitle"),
+            metaDescription: form.getValues("metaDescription"),
+            keywordsInput: form.getValues("keywordsInput"),
+            contentHtml: form.getValues("contentHtml"),
+          },
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to apply SEO fixes.");
+      }
+
+      if (data.title != null && typeof data.title === "string") {
+        form.setValue("title", String(data.title).trim(), { shouldDirty: true });
+      }
+      if (data.excerpt != null && typeof data.excerpt === "string") {
+        form.setValue("excerpt", String(data.excerpt).trim().slice(0, 320), { shouldDirty: true });
+      }
+      if (data.metaTitle != null && typeof data.metaTitle === "string") {
+        form.setValue("metaTitle", String(data.metaTitle).trim().slice(0, 70), { shouldDirty: true });
+      }
+      if (data.metaDescription != null && typeof data.metaDescription === "string") {
+        form.setValue("metaDescription", String(data.metaDescription).trim().slice(0, 160), { shouldDirty: true });
+      }
+      if (data.keywordsInput != null && typeof data.keywordsInput === "string") {
+        form.setValue("keywordsInput", String(data.keywordsInput).trim(), { shouldDirty: true });
+      }
+
+      if (data.contentHtml != null && typeof data.contentHtml === "string" && data.contentHtml.trim()) {
+        form.setValue("contentHtml", String(data.contentHtml).trim(), { shouldDirty: true });
+        // Ensure the editor re-initializes from HTML.
+        form.setValue("contentJson", null, { shouldDirty: true });
+        setEditorContentKey((k) => k + 1);
+      }
+
+      toast({
+        title: "AI SEO fixes applied",
+        description: "Review the updated title/content/meta/keywords, then save the post.",
+      });
+    } catch (err) {
+      toast({
+        title: "SEO fixes failed",
+        description: err instanceof Error ? err.message : "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsApplyingSeoFixes(false);
     }
   };
 
@@ -582,7 +656,7 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
             url: values.featuredImageUrl.trim(),
             alt: values.featuredImageAlt?.trim() ?? "",
           }
-        : undefined,
+        : null,
       seo: {
         metaTitle: values.metaTitle?.trim() || undefined,
         metaDescription: values.metaDescription?.trim() || undefined,
@@ -1163,6 +1237,42 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                 )}
               />
             </Box>
+          </Box>
+        </Box>
+
+        <Box className="rounded-md border border-amber-200 bg-amber-50/50 p-4">
+          <h3 className="text-base font-semibold text-slate-900">
+            AI SEO Fixes (Patch Title/Meta/Keywords/Content)
+          </h3>
+          <p className="mt-1 text-sm text-slate-600">
+            Enter SEO advice and required changes. AI can update your `Title` (this renders as the page H1), meta title/description, keywords, and weave keywords into the article content.
+          </p>
+          <Box className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+            <Textarea
+              placeholder="Example: Add primary keyword 'CELPIP reading tips' throughout, adjust headings to include 'time management', and rewrite the meta title to be more specific for score improvement."
+              className="min-h-[90px] flex-1 bg-white"
+              value={seoAdvicePrompt}
+              onChange={(e) => setSeoAdvicePrompt(e.target.value)}
+              disabled={isApplyingSeoFixes}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={isApplyingSeoFixes}
+              onClick={handleApplySeoFixesWithAi}
+            >
+              {isApplyingSeoFixes ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Applying...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4 text-amber-500" />
+                  Apply SEO fixes with AI
+                </>
+              )}
+            </Button>
           </Box>
         </Box>
 

@@ -11,7 +11,29 @@ import BlogListGtm from "@/components/analytics/BlogListGtm";
 
 export const dynamic = "force-dynamic";
 
-const BASE_URL = process.env.APP_BASE_URL || "https://celpippracticetest.com";
+const DEFAULT_APP_BASE_URL = "https://celpippracticetest.com";
+
+function normalizeAppBaseUrl(raw: string | undefined): string {
+  const input = (raw ?? "").trim().replace(/^['"]|['"]$/g, "");
+  if (!input) return DEFAULT_APP_BASE_URL;
+
+  try {
+    return new URL(input).toString();
+  } catch {
+    // continue
+  }
+
+  if (/^https?:\/\//i.test(input)) return DEFAULT_APP_BASE_URL;
+
+  const hostPart = input.split("/")[0];
+  if (/^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(hostPart)) {
+    return `http://${input}`;
+  }
+
+  return `https://${input}`;
+}
+
+const BASE_URL = normalizeAppBaseUrl(process.env.APP_BASE_URL);
 
 export async function generateMetadata(): Promise<Metadata> {
   return {

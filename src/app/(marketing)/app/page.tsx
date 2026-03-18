@@ -3,8 +3,32 @@ import { Download, Zap } from "lucide-react";
 import { Box } from "@/components/ui/Box";
 import { JsonLd } from "@/components/seo/JsonLd";
 
+const DEFAULT_APP_BASE_URL = "https://celpippracticetest.com";
+
+function normalizeAppBaseUrl(raw: string | undefined): string {
+  const input = (raw ?? "").trim().replace(/^['"]|['"]$/g, "");
+  if (!input) return DEFAULT_APP_BASE_URL;
+
+  // If it's already a valid absolute URL, keep it.
+  try {
+    return new URL(input).toString();
+  } catch {
+    // continue
+  }
+
+  // If it has an http(s) scheme but is still invalid, fall back.
+  if (/^https?:\/\//i.test(input)) return DEFAULT_APP_BASE_URL;
+
+  const hostPart = input.split("/")[0];
+  if (/^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(hostPart)) {
+    return `http://${input}`;
+  }
+
+  return `https://${input}`;
+}
+
 export async function generateMetadata(): Promise<Metadata> {
-  const baseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
+  const baseUrl = normalizeAppBaseUrl(process.env.APP_BASE_URL);
   const url = `${baseUrl}/app`;
   const title = "Download the CELPIP App for iOS & Android | CELPIP Practice Test";
   const description =

@@ -32,6 +32,31 @@ const jakarta = Plus_Jakarta_Sans({
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || "GTM-M24FJ7JC";
 const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID || "vqdy02aq70";
+const DEFAULT_APP_BASE_URL = "https://celpippracticetest.com";
+
+function normalizeAppBaseUrl(raw: string | undefined): string {
+  const input = (raw ?? "").trim();
+  if (!input) return DEFAULT_APP_BASE_URL;
+
+  // If it's already a valid absolute URL, keep it.
+  try {
+    return new URL(input).toString();
+  } catch {
+    // continue
+  }
+
+  // If it has an http(s) scheme but is still invalid, fall back.
+  if (/^https?:\/\//i.test(input)) return DEFAULT_APP_BASE_URL;
+
+  // If no scheme is provided (e.g. "localhost:3000" or "example.com/path"),
+  // infer the scheme and prefix.
+  const hostPart = input.split("/")[0];
+  if (/^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(hostPart)) {
+    return `http://${input}`;
+  }
+
+  return `https://${input}`;
+}
 
 export function generateViewport(): Viewport {
   return {
@@ -40,7 +65,7 @@ export function generateViewport(): Viewport {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  const appBaseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
+  const appBaseUrl = normalizeAppBaseUrl(process.env.APP_BASE_URL);
   const isPreview = appBaseUrl.includes("vercel.app");
   const homepageHero = await getHomepageHeroDisplay();
 
@@ -120,7 +145,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const baseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
+  const baseUrl = normalizeAppBaseUrl(process.env.APP_BASE_URL);
   const enableGtm =
     process.env.NODE_ENV === "production" && !baseUrl.includes("vercel.app");
   const homepageHero = await getHomepageHeroDisplay();
