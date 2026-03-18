@@ -19,6 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/privacy-policy",
     "/refund-policy",
     "/pricing",
+    "/app",
     "/celpip-for-nurses",
     "/celpip-for-immigration-consultant",
     "/celpip-for-real-estate",

@@ -30,6 +30,23 @@ const jakarta = Plus_Jakarta_Sans({
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || "GTM-M24FJ7JC";
 
+function normalizeAppBaseUrl(raw: string): string {
+  const value = (raw ?? "").trim();
+  if (!value) return "https://celpippracticetest.com";
+  if (value.startsWith("http://") || value.startsWith("https://")) return value;
+
+  // `new URL()` requires a protocol. For local development, default to `http://`.
+  if (value.startsWith("localhost:") || value.startsWith("127.0.0.1:")) {
+    return `http://${value}`;
+  }
+
+  if (value.startsWith("localhost") || value === "127.0.0.1") {
+    return `http://${value}`;
+  }
+
+  return `https://${value}`;
+}
+
 export function generateViewport(): Viewport {
   return {
     themeColor: "#3B82F6",
@@ -37,11 +54,17 @@ export function generateViewport(): Viewport {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  const appBaseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
+  const appBaseUrl = normalizeAppBaseUrl(process.env.APP_BASE_URL || "https://celpippracticetest.com");
   const isPreview = appBaseUrl.includes("vercel.app");
+  let metadataBase: URL;
+  try {
+    metadataBase = new URL(appBaseUrl);
+  } catch {
+    metadataBase = new URL("https://celpippracticetest.com");
+  }
 
   return {
-    metadataBase: new URL(appBaseUrl),
+    metadataBase,
     title: "CELPIP Practice Test Online | Instant Scoring, Expert Tips",
     description:
       "Celpip Practice Test platform designed to boost your score with real exam questions, instant results, and expert tips for Listening, Reading, Writing & Speaking.",
