@@ -13,14 +13,7 @@ import {
   Rating,
   TextField,
   Typography,
-  styled,
 } from "@mui/material";
-import { IconContainerProps } from "@mui/material/Rating";
-import SentimentVeryDissatisfiedIcon from "@mui/icons-material/SentimentVeryDissatisfied";
-import SentimentDissatisfiedIcon from "@mui/icons-material/SentimentDissatisfied";
-import SentimentSatisfiedIcon from "@mui/icons-material/SentimentSatisfied";
-import SentimentSatisfiedAltIcon from "@mui/icons-material/SentimentSatisfiedAltOutlined";
-import SentimentVerySatisfiedIcon from "@mui/icons-material/SentimentVerySatisfied";
 
 interface SubscriptionRetentionModalProps {
   isOpen: boolean;
@@ -68,48 +61,13 @@ const defaultFormValues: CancellationFormValues = {
   cancellationReview: "",
 };
 
-const StyledRating = styled(Rating)(({ theme }) => ({
-  display: "flex",
-  justifyContent: "center",
-  gap: 8,
-  "& .MuiRating-icon": {
-    fontSize: 32,
-  },
-  "& .MuiRating-iconEmpty .MuiSvgIcon-root": {
-    color: theme.palette.action.disabled,
-  },
-}));
-
-const customRatingIcons: Record<
-  number,
-  { icon: React.ReactElement; label: string }
-> = {
-  1: {
-    icon: <SentimentVeryDissatisfiedIcon color="error" />,
-    label: "Very Dissatisfied",
-  },
-  2: {
-    icon: <SentimentDissatisfiedIcon color="error" />,
-    label: "Dissatisfied",
-  },
-  3: {
-    icon: <SentimentSatisfiedIcon color="warning" />,
-    label: "Neutral",
-  },
-  4: {
-    icon: <SentimentSatisfiedAltIcon color="success" />,
-    label: "Satisfied",
-  },
-  5: {
-    icon: <SentimentVerySatisfiedIcon color="success" />,
-    label: "Very Satisfied",
-  },
+const ratingLabels: Record<number, string> = {
+  1: "Very Dissatisfied",
+  2: "Dissatisfied",
+  3: "Neutral",
+  4: "Satisfied",
+  5: "Very Satisfied",
 };
-
-function RatingIconContainer(props: IconContainerProps) {
-  const { value, ...other } = props;
-  return <span {...other}>{customRatingIcons[value]?.icon}</span>;
-}
 
 const SubscriptionRetentionModal = ({
   isOpen,
@@ -598,7 +556,7 @@ const SubscriptionRetentionModal = ({
           Before you cancel, please rate your experience.{" "}
           <span className="text-[#EE4266]">*</span>
         </p>
-        <StyledRating
+        <Rating
           name="cancellation-experience-rating"
           value={finalRating}
           max={5}
@@ -608,15 +566,20 @@ const SubscriptionRetentionModal = ({
               shouldTouch: true,
             });
           }}
-          IconContainerComponent={RatingIconContainer}
           getLabelText={(value: number) =>
-            customRatingIcons[value]?.label ?? "No Rating"
+            ratingLabels[value] ?? "No Rating"
           }
-          highlightSelectedOnly
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            "& .MuiRating-icon": {
+              fontSize: 32,
+            },
+          }}
         />
         {finalRating !== null && (
           <Typography sx={{ color: "#76808F", fontSize: 12 }}>
-            {customRatingIcons[finalRating]?.label}
+            {ratingLabels[finalRating] ?? "No Rating"}
           </Typography>
         )}
 

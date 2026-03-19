@@ -164,25 +164,24 @@ export default async function BlogListingPage() {
                 <Link href={`/blog/${featuredPost.slug}`} className="group block">
                   <Card className="overflow-hidden border-0 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group-hover:border-blue-500/30">
                     <Box className="flex flex-col md:flex-row">
-                      {featuredPost.featuredImage?.url ? (
-                        <Box className="relative h-64 w-full overflow-hidden md:h-auto md:w-2/5">
-                          <img
-                            src={featuredPost.featuredImage.url}
-                            alt={featuredPost.featuredImage.alt || featuredPost.title}
-                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          />
-                          <Box className="absolute top-4 left-4 flex flex-wrap gap-2">
-                            {featuredPost.categories.slice(0, 2).map((cat) => (
-                              <Badge
-                                key={cat}
-                                className="border-0 bg-white/90 text-slate-900 shadow-sm backdrop-blur-sm hover:bg-white"
-                              >
-                                {cat}
-                              </Badge>
-                            ))}
+                      <Box className="relative h-64 w-full overflow-hidden bg-slate-100 md:h-auto md:w-2/5">
+                        <Box className="flex min-h-64 w-full items-center justify-center p-6 md:min-h-[20rem]">
+                          <Box className="w-full rounded-xl bg-white/80 p-4 shadow-sm backdrop-blur">
+                            <p className="line-clamp-2 text-sm font-semibold text-slate-900">{featuredPost.title}</p>
                           </Box>
                         </Box>
-                      ) : null}
+
+                        <Box className="absolute top-4 left-4 flex flex-wrap gap-2">
+                          {featuredPost.categories.slice(0, 2).map((cat) => (
+                            <Badge
+                              key={cat}
+                              className="border-0 bg-white/90 text-slate-900 shadow-sm backdrop-blur-sm hover:bg-white"
+                            >
+                              {cat}
+                            </Badge>
+                          ))}
+                        </Box>
+                      </Box>
 
                       {/* Content */}
                       <Box className="flex flex-col justify-center bg-white p-6 md:p-10 md:flex-1">
@@ -233,22 +232,21 @@ export default async function BlogListingPage() {
                     >
                       <Card className="flex h-full flex-col overflow-hidden border-0 border-t-4 border-t-transparent shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-t-blue-500 hover:shadow-lg">
                         {/* Card Image */}
-                        {post.featuredImage?.url ? (
-                          <Box className="relative h-48 w-full overflow-hidden bg-slate-100">
-                            <img
-                              src={post.featuredImage.url}
-                              alt={post.featuredImage.alt || post.title}
-                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            />
-                            {post.categories.length > 0 && (
-                              <Box className="absolute top-3 left-3">
-                                <Badge className="border-0 bg-white/90 text-xs text-blue-700 shadow-sm backdrop-blur-sm hover:bg-white">
-                                  {post.categories[0]}
-                                </Badge>
-                              </Box>
-                            )}
+                        <Box className="relative h-48 w-full overflow-hidden bg-slate-100">
+                          <Box className="flex h-full w-full items-center justify-center p-4">
+                            <Box className="w-full rounded-xl bg-white/80 p-3 text-center shadow-sm backdrop-blur">
+                              <p className="line-clamp-2 text-xs font-semibold text-slate-900">{post.title}</p>
+                            </Box>
                           </Box>
-                        ) : null}
+
+                          {post.categories.length > 0 && (
+                            <Box className="absolute top-3 left-3">
+                              <Badge className="border-0 bg-white/90 text-xs text-blue-700 shadow-sm backdrop-blur-sm hover:bg-white">
+                                {post.categories[0]}
+                              </Badge>
+                            </Box>
+                          )}
+                        </Box>
 
                         <CardContent className="flex flex-1 flex-col p-6 bg-white">
                           <Box className="mb-3 flex items-center justify-between text-xs text-slate-500">

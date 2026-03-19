@@ -35,7 +35,7 @@ const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID || "vqdy02aq70";
 const DEFAULT_APP_BASE_URL = "https://celpippracticetest.com";
 
 function normalizeAppBaseUrl(raw: string | undefined): string {
-  const input = (raw ?? "").trim();
+  const input = (raw ?? "").trim().replace(/^['"]|['"]$/g, "");
   if (!input) return DEFAULT_APP_BASE_URL;
 
   // If it's already a valid absolute URL, keep it.
@@ -69,8 +69,17 @@ export async function generateMetadata(): Promise<Metadata> {
   const isPreview = appBaseUrl.includes("vercel.app");
   const homepageHero = await getHomepageHeroDisplay();
 
+  // `APP_BASE_URL` is environment-driven and can occasionally be malformed.
+  // If `new URL(...)` throws, Next will crash during rendering.
+  let metadataBaseUrl: URL;
+  try {
+    metadataBaseUrl = new URL(appBaseUrl);
+  } catch {
+    metadataBaseUrl = new URL(DEFAULT_APP_BASE_URL);
+  }
+
   return {
-    metadataBase: new URL(appBaseUrl),
+    metadataBase: metadataBaseUrl,
     title: "CELPIP Practice Test Online | Instant Scoring, Expert Tips",
     description:
       "Celpip Practice Test platform designed to boost your score with real exam questions, instant results, and expert tips for Listening, Reading, Writing & Speaking. Start your free celpip online practice test platform",

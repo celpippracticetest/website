@@ -264,15 +264,12 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
           ) : null}
         </Box>
 
-        {post.featuredImage?.url ? (
-          <Box className="mt-6 overflow-hidden rounded-xl border border-slate-200">
-            <img
-              src={post.featuredImage.url}
-              alt={post.featuredImage.alt || ogImageAlt}
-              className="h-auto w-full object-cover"
-            />
+        <Box className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+          <Box className="flex min-h-[14rem] w-full flex-col justify-center p-6">
+            <p className="text-xs font-medium uppercase tracking-wide text-blue-600">CELPIP Blog</p>
+            <h2 className="mt-3 text-2xl font-bold leading-tight text-slate-900">{post.title}</h2>
           </Box>
-        ) : null}
+        </Box>
 
         <article
           className="article-content prose prose-blue mt-8 max-w-none overflow-x-auto"
@@ -310,15 +307,11 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
               <Link key={related.id} href={`/blog/${related.slug}`} className="group block">
                 <Card className="overflow-hidden border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md">
                   <Box className="flex flex-col sm:flex-row sm:items-stretch">
-                    {related.featuredImage?.url ? (
-                      <Box className="relative w-full shrink-0 aspect-video sm:h-[180px] sm:w-80 sm:shrink-0 sm:aspect-auto">
-                        <img
-                          src={related.featuredImage.url}
-                          alt={related.featuredImage.alt || related.title}
-                          className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
+                    <Box className="relative w-full shrink-0 overflow-hidden bg-slate-100 sm:h-[180px] sm:w-80 sm:shrink-0 sm:aspect-auto">
+                      <Box className="flex h-full w-full flex-col justify-center p-5">
+                        <p className="mt-3 line-clamp-2 text-lg font-semibold text-slate-900">{related.title}</p>
                       </Box>
-                    ) : null}
+                    </Box>
                     <CardContent className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden p-5 sm:h-[180px]">
                       {related.categories.length > 0 && (
                         <Badge className="mb-2 w-fit bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs">
