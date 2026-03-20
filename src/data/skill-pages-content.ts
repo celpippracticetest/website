@@ -158,9 +158,9 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
         ],
     },
     reading: {
-        title: "Reading Practice",
+        title: "CELPIP Reading Practice Test",
         description:
-            "The CELPIP reading practice test measures your capacity to understand written English in routine contexts such as emails, diagrams, and information texts. We provide you with a <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP practice test</a> for reading and example questions to help you enhance comprehension, respond under time pressure, and build the confidence you need on test day.",
+            "This <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP practice exam</a> for reading helps you build the exact skills tested on exam day: understanding correspondence, using diagrams, locating key details in information texts, and comparing viewpoints. Use these CELPIP reading practice tests to improve timing, accuracy, vocabulary recognition, and confidence before the real exam.",
         tasks: [
             {
                 id: "1",
@@ -183,28 +183,26 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
                 description: "Viewpoints",
             },
         ],
-        tipsTitle: "Tips to Improve Your CELPIP Reading Score",
+        tipsTitle: "How to Improve Your CELPIP Reading Score",
         tips: [
-            "Practice reading different types of texts",
-            "Get to know all parts through practice from emails, fact articles, charts, and opinion pieces",
-            "Answer every question",
-            "Practice under timed conditions",
-            "Perform complete tests to build stamina and pace",
-            "Review your mistakes",
-            "Study wrong answers to determine the reasoning behind correct ones",
-            "Skim for major ideas and scan for major details",
-            "Vocabulary building to deal with unknown words",
-            "Do not take too much time on a single question",
+            "Skim each passage first to understand the topic, tone, and paragraph structure before answering questions.",
+            "Scan for names, dates, numbers, and synonyms because CELPIP often paraphrases the wording from the passage.",
+            "Practice all four reading task types so you can switch quickly between correspondence, diagrams, information, and viewpoints.",
+            "Answer every question, even when unsure, because unanswered items cannot earn marks.",
+            "Use timed practice to build pacing and reduce the risk of spending too long on one difficult question.",
+            "Review incorrect answers carefully to learn why the best option is correct and why the distractors are wrong.",
+            "Build vocabulary in context so unfamiliar words do not slow you down during the exam.",
+            "Track recurring mistakes by task type to focus your next study session on the weakest reading skill.",
         ],
         format: {
-            title: "CELPIP Reading Test Format (Quick Overview)",
+            title: "CELPIP Reading Test Format",
             description:
-                "This format ensures that you are being tested on all ranges of reading skills, from understanding everyday messages to handling more complex ideas and opinions. Number of questions: 38 scored questions, with a short unscored practice task. The test consists of 4 large categories:",
+                "The CELPIP Reading test includes 38 scored questions plus a short unscored practice task. The section is designed to measure how well you understand common written English in practical and academic-style situations under time pressure.",
             points: [
-                "Reading Correspondence - 11 questions: Reading routine emails or letters.",
-                "Reading to Use a Diagram - 8 questions: Reading timetables, charts, or diagrams.",
-                "Reading for Information - 9 questions: Extracting main points from information texts.",
-                "Reading for Viewpoints - 10 questions: Reading about various views and getting to know arguments or opinions.",
+                "Reading Correspondence: read routine emails or letters and identify purpose, details, and implied meaning.",
+                "Reading to Apply a Diagram: connect written information to charts, schedules, maps, or diagrams.",
+                "Reading for Information: locate main ideas, supporting details, and logical relationships in short articles.",
+                "Reading for Viewpoints: compare opinions, attitudes, and arguments across a longer passage.",
             ],
         },
         faqs: [
@@ -212,34 +210,34 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
                 question:
                     "Where can I obtain CELPIP reading practice tests with answers?",
                 answer:
-                    "You can find comprehensive practice tests with answers right here on our platform.",
+                    "You can practice CELPIP reading on our platform with realistic task formats, answer checking, and task-by-task preparation.",
             },
             {
                 question:
                     "Do your reading practice tests include all 4 parts of the test?",
                 answer:
-                    "Yes. Each practice includes Part 1-4 (Correspondence, Apply a Diagram, Reading for Information, Reading for Viewpoints).",
+                    "Yes. Our CELPIP reading practice test covers all four parts: Reading Correspondence, Reading to Apply a Diagram, Reading for Information, and Reading for Viewpoints.",
             },
             {
                 question: "Are CELPIP reading practice tests timed?",
                 answer:
-                    "Yes, our practice tests can be taken in timed mode to simulate the actual exam environment.",
+                    "Yes, timed practice is available so you can train under conditions that feel closer to the real CELPIP reading exam.",
             },
             {
                 question: "Can practice tests predict my CELPIP reading score?",
                 answer:
-                    "Our practice tests are designed to be highly indicative of your potential score on the actual exam.",
+                    "Practice tests can help estimate your current level, highlight weak task types, and show whether your timing and accuracy are improving.",
             },
             {
                 question: "What is the best website for CELPIP reading practice?",
                 answer:
-                    "We strive to provide the most accurate and helpful practice materials available online.",
+                    "A strong CELPIP reading website should offer realistic question types, timed practice, detailed review opportunities, and coverage of all reading tasks. That is the goal of our platform.",
             },
             {
                 question:
                     "How is it possible to improve the Reading score in the CELPIP test?",
                 answer:
-                    "Consistent practice, expanding your vocabulary, and learning time management strategies are key.",
+                    "Improve your score by practicing consistently, reviewing mistakes by task type, expanding vocabulary in context, and using timing strategies that prevent you from getting stuck on one question.",
             },
         ],
     },

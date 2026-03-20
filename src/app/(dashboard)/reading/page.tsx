@@ -13,24 +13,85 @@ import { ObjectId } from "mongodb";
 import { redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
 import { skillPagesContent } from "@/data/skill-pages-content";
+import { JsonLd } from "@/components/seo/JsonLd";
 import type { Metadata } from "next";
 
+const READING_PAGE_URL = "https://celpippracticetest.com/reading";
+const READING_PAGE_TITLE =
+  "CELPIP Practice Exam: Free CELPIP Reading Practice Test";
+const READING_PAGE_DESCRIPTION =
+  "Practice the CELPIP Reading test with timed tasks, answer explanations, and realistic question types. Train correspondence, diagram, information, and viewpoints skills with a free CELPIP practice exam.";
+
 const readingMetadataBase: Metadata = {
-  title: "Free CELPIP Reading Practice Tests & Mock Exams | CELPIPPRACTICETEST",
-  description:
-    "Boost CELPIP Reading scores with realistic passages, quick explanations, and speed drills. Strengthen scanning, inference, and time management | CELPIPPRACTICETEST.com",
+  title: READING_PAGE_TITLE,
+  description: READING_PAGE_DESCRIPTION,
   keywords: [
-    "celpip reading practise",
+    "celpip practice exam",
+    "free celpip practice exam",
+    "celpip reading practice test",
     "celpip reading test",
+    "celpip reading exam",
+    "celpip reading questions",
+    "celpip reading mock test",
+    "celpip reading sample test",
     "celpip reading sample",
     "celpip reading test sample",
     "celpip general reading",
     "celpip general reading test",
-    "celpip reading practice test",
   ],
   alternates: {
-    canonical: "https://celpippracticetest.com/reading",
+    canonical: READING_PAGE_URL,
   },
+  openGraph: {
+    title: READING_PAGE_TITLE,
+    description: READING_PAGE_DESCRIPTION,
+    url: READING_PAGE_URL,
+    siteName: "CELPIPPRACTICETEST",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: READING_PAGE_TITLE,
+    description: READING_PAGE_DESCRIPTION,
+  },
+};
+
+const readingStructuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      name: READING_PAGE_TITLE,
+      description: READING_PAGE_DESCRIPTION,
+      url: READING_PAGE_URL,
+      inLanguage: "en",
+    },
+    {
+      "@type": "Product",
+      name: "CELPIP Reading Practice Tests",
+      description: READING_PAGE_DESCRIPTION,
+      brand: {
+        "@type": "Brand",
+        name: "CELPIPPRACTICETEST",
+      },
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: "5",
+        reviewCount: "8",
+      },
+    },
+    {
+      "@type": "FAQPage",
+      mainEntity: skillPagesContent.reading.faqs.map((faq) => ({
+        "@type": "Question",
+        name: faq.question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: faq.answer,
+        },
+      })),
+    },
+  ],
 };
 
 export async function generateMetadata({
@@ -101,7 +162,16 @@ const ReadingPage = async ({
         taskNumber: taskItem.taskNumber,
       }));
 
-    return <SkillLandingPage content={skillPagesContent.reading} skillType="reading" availableTasks={availableTasks} />;
+    return (
+      <>
+        <JsonLd data={readingStructuredData} />
+        <SkillLandingPage
+          content={skillPagesContent.reading}
+          skillType="reading"
+          availableTasks={availableTasks}
+        />
+      </>
+    );
   }
 
   if (!selectedPracticeId && !taskId) {
@@ -110,7 +180,7 @@ const ReadingPage = async ({
         <div className="flex mt-[32px]  screen744:!mt-[0] items-center justify-center gap-[8px] max-w-[1200px] w-full !h-[60px] shrink-0 rounded-[12px] bg-[#FFEBD6]">
           <SvgReadingPart className="text-[#F27059]" />
           <h1 className="text-[#37465C] font-semibold text-[20px]">
-            Reading Practice
+            CELPIP Reading Practice Test
           </h1>
         </div>
         <ShowTasks tasks={readingTasks} />
@@ -173,7 +243,8 @@ const ReadingPage = async ({
   return (
     <main className="bg-[#F2F6FF] min-h-screen flex w-full justify-center">
       <div className="w-full max-w-[1280px]">
-        <h1 className="sr-only">CELPIP Reading Practice</h1>
+        <JsonLd data={readingStructuredData} />
+        <h1 className="sr-only">CELPIP Practice Exam for Reading</h1>
         <ReadingPractice
           showHeader={true}
           allPractices={practices.items}

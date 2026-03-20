@@ -43,6 +43,10 @@ import DesktopNavigation from "@/components/dashboard-new/DesktopNavigation";
 import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
 import AskBeavoModal from "@/components/AskBeavo/AskBeavoModal";
 import { GlobalInteractiveProvider } from "@/components/dashboard-app/practice/GlobalInteractiveProvider";
+import {
+  MOCK_EXAM_VIEW_MODE_EVENT,
+  MOCK_EXAM_VIEW_MODE_STORAGE_KEY,
+} from "@/components/dashboard-app/exam-parts/components/useExamViewMode";
 import { cn } from "@/lib/utils";
 
 const NavItem = ({
@@ -215,6 +219,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
   const [submenuActive, setSubmenuActive] = useState("");
   const [copied, setCopied] = useState(false);
   const pathname = usePathname();
+  const [isOfficialExamView, setIsOfficialExamView] = useState(false);
 
   const [isUserDropDownOpen, setUserDropDownOpen] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
@@ -602,6 +607,32 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
     }
   }, [pathname]);
 
+  useEffect(() => {
+    const syncExamViewMode = () => {
+      if (typeof window === "undefined") {
+        return;
+      }
+
+      const storedMode = window.localStorage.getItem(
+        MOCK_EXAM_VIEW_MODE_STORAGE_KEY
+      );
+      setIsOfficialExamView(storedMode === "official");
+    };
+
+    syncExamViewMode();
+
+    window.addEventListener(MOCK_EXAM_VIEW_MODE_EVENT, syncExamViewMode);
+    window.addEventListener("storage", syncExamViewMode);
+
+    return () => {
+      window.removeEventListener(MOCK_EXAM_VIEW_MODE_EVENT, syncExamViewMode);
+      window.removeEventListener("storage", syncExamViewMode);
+    };
+  }, []);
+
+  const hideMainHeaderForOfficialExam =
+    pathname.includes("exams") && isOfficialExamView;
+
   return (
     <>
       {freeUser ? (
@@ -783,55 +814,66 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
 
       <div className="flex w-full justify-center max-w-[1440px] mx-auto z-[99999999]">
         <div
-          className={cn("flex flex-col w-full h-full screen744:!w-[calc(100%-84px)] bg-[#F4F7FF] items-end screen744:pt-[96px] pt-0 screen1280:!pt-0", { "screen1280:m-0 mb-[120px] screen744:pt-[96px] pt-0": !pathname.includes('words'), "pt-[96px]": pathname.includes('words') })}
+          className={cn(
+            "flex flex-col w-full h-full screen744:!w-[calc(100%-84px)] bg-[#F4F7FF] items-end screen1280:!pt-0",
+            {
+              "screen1280:m-0 mb-[120px] screen744:pt-[96px] pt-0":
+                !pathname.includes("words") && !hideMainHeaderForOfficialExam,
+              "pt-[96px]":
+                pathname.includes("words") && !hideMainHeaderForOfficialExam,
+              "screen744:pt-0 pt-0": hideMainHeaderForOfficialExam,
+            }
+          )}
         >
-          <div className="px-[16px] screen744:!px-0 w-full mb-[16px]">
-            <div
-              className={clsx(
-                "transition-all flex justify-between w-full duration-1000 ease-in-out",
-                // Mobile (< 1280)
-                "fixed top-0 left-0 right-0 z-[50] h-[72px] px-[16px] screen744:!px-[24px] rounded-b-[32px] border-b border-[#D1DEFF] backdrop-blur-[8px]",
-                "bg-[linear-gradient(90deg,_rgba(255,_255,_255,_0.65)_0%,_rgba(255,_255,_255,_0.2)_100%)]",
-                // Desktop (>= 1280)
-                "screen1280:!relative screen1280:!z-[50] screen1280:!mt-[24px] screen1280:!rounded-[32px] screen1280:!h-[80px] screen1280:!max-w-[1280px] screen1280:!mx-auto screen1280:!pl-[24px] screen1280:!border screen1280:!px-[16px]",
-                "items-center"
-              )}
-            >
-              <div className="flex gap-[12px] screen744:!gap-[24px] screen1280:!gap-[64px] items-center w-full">
-                <Image
-                  onClick={() => router.push("/")}
-                  alt="full logo"
-                  width={133}
-                  height={40}
-                  className={clsx(
-                    "opacity-100 delay-300 hover:!cursor-pointer screen1280:block hidden"
-                  )}
-                  src="/images/logo.png"
-                />
+          {!hideMainHeaderForOfficialExam && (
+            <div className="px-[16px] screen744:!px-0 w-full mb-[16px]">
+              <div
+                className={clsx(
+                  "transition-all flex justify-between w-full duration-1000 ease-in-out",
+                  // Mobile (< 1280)
+                  "fixed top-0 left-0 right-0 z-[50] h-[72px] px-[16px] screen744:!px-[24px] rounded-b-[32px] border-b border-[#D1DEFF] backdrop-blur-[8px]",
+                  "bg-[linear-gradient(90deg,_rgba(255,_255,_255,_0.65)_0%,_rgba(255,_255,_255,_0.2)_100%)]",
+                  // Desktop (>= 1280)
+                  "screen1280:!relative screen1280:!z-[50] screen1280:!mt-[24px] screen1280:!rounded-[32px] screen1280:!h-[80px] screen1280:!max-w-[1280px] screen1280:!mx-auto screen1280:!pl-[24px] screen1280:!border screen1280:!px-[16px]",
+                  "items-center"
+                )}
+              >
+                <div className="flex gap-[12px] screen744:!gap-[24px] screen1280:!gap-[64px] items-center w-full">
+                  <Image
+                    onClick={() => router.push("/")}
+                    alt="full logo"
+                    width={133}
+                    height={40}
+                    className={clsx(
+                      "opacity-100 delay-300 hover:!cursor-pointer screen1280:block hidden"
+                    )}
+                    src="/images/logo.png"
+                  />
 
-                <Image
-                  onClick={() => router.push("/")}
-                  alt="full logo"
-                  width={35}
-                  height={35}
-                  className={clsx(
-                    "opacity-100 delay-300 hover:!cursor-pointer screen1280:hidden block"
-                  )}
-                  src="/images/header-logo-left.png"
-                />
+                  <Image
+                    onClick={() => router.push("/")}
+                    alt="full logo"
+                    width={35}
+                    height={35}
+                    className={clsx(
+                      "opacity-100 delay-300 hover:!cursor-pointer screen1280:hidden block"
+                    )}
+                    src="/images/header-logo-left.png"
+                  />
 
-                <DesktopNavigation />
+                  <DesktopNavigation />
 
-              </div>
+                </div>
 
-              <div className="flex items-center justify-between h-[48px]">
-                <div className="hidden screen744:!flex flex-col"></div>
+                <div className="flex items-center justify-between h-[48px]">
+                  <div className="hidden screen744:!flex flex-col"></div>
 
-                {/* right side */}
-                <TopHeaderRightSide />
+                  {/* right side */}
+                  <TopHeaderRightSide />
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {surveyVisible && (
             <div className="fixed inset-0 z-[99] flex screen1280:!pt-[101px] justify-center bg-[#F4F7FF]">
@@ -848,7 +890,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
         </div>
 
         {/* bottom menu for mobile */}
-        <BottomNavigation />
+        {!hideMainHeaderForOfficialExam && <BottomNavigation />}
       </div >
       <AskBeavoModal />
       <GlobalInteractiveProvider />

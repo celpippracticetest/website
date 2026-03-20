@@ -97,10 +97,16 @@ export class WritingAndSpeakingAnswerRepository {
     const sanitizedFilter = Object.fromEntries(
       Object.entries(filter).filter(([, value]) => value !== undefined)
     );
+    const matchFilter = {
+      ...sanitizedFilter,
+      ...(!("type" in sanitizedFilter)
+        ? { type: { $in: ["WRITING", "SPEAKING"] } }
+        : {}),
+    };
     const aggregateFilter = [
       {
         $match: {
-          ...sanitizedFilter,
+          ...matchFilter,
         },
       },
       {

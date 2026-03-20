@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import SvgHeadphonePlay from "@/components/icons/HeadphonePlay";
 import type { SVGProps } from "react";
+import { safePlayMedia } from "@/lib/media";
 
 // Simple pause icon wrapper to match the headphone style if needed, 
 // or we can just use a standard pause icon. 
@@ -122,10 +123,18 @@ export default function AudioPlayerV2({ audioUrl, textToSpeak, className = "" }:
             if (!audio) return;
             if (isPlaying) {
                 audio.pause();
-            } else {
-                audio.play();
+                setIsPlaying(false);
+                return;
             }
-            setIsPlaying(!isPlaying);
+
+            void safePlayMedia(audio, {
+                onPlayStart: () => {
+                    setIsPlaying(true);
+                },
+                onError: (error) => {
+                    console.error("Error playing audio:", error);
+                },
+            });
         }
     };
 

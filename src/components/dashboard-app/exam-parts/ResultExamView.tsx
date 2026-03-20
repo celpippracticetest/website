@@ -18,6 +18,10 @@ import { useSearchParams } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { TQuestion } from "@/models/question.model";
+import {
+  MOCK_EXAM_VIEW_MODE_EVENT,
+  MOCK_EXAM_VIEW_MODE_STORAGE_KEY,
+} from "./components/useExamViewMode";
 
 function scaleToBand(weightedPercent: number): number {
   if (isNaN(weightedPercent)) return 0;
@@ -72,6 +76,17 @@ const ResultExamView = ({
   }, [allSpeakingAndWritingAnswers, selectedAttemptId]);
 
   const { user, isLoaded } = useUser();
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(MOCK_EXAM_VIEW_MODE_STORAGE_KEY, "classic");
+    window.dispatchEvent(
+      new CustomEvent(MOCK_EXAM_VIEW_MODE_EVENT, { detail: "classic" })
+    );
+  }, []);
 
   // Log score report viewed
   useEffect(() => {
