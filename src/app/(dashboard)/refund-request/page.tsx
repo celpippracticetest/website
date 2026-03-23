@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import RefundRequestPortal from "@/components/dashboard-new/RefundRequestPortal";
 import mongoClient from "@/lib/mongodb";
 import { Box } from "@/components/ui/Box";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
 export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
@@ -45,7 +46,7 @@ export default async function RefundRequestPage() {
     redirect("/");
   }
 
-  if (plan !== "premium") {
+  if (!hasPaidPracticeAccess(plan, sessionClaims?.metadata?.purchaseDate)) {
     redirect("/plans");
   }
 

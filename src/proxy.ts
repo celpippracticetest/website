@@ -5,6 +5,7 @@ import {
   createRouteMatcher,
 } from "@clerk/nextjs/server";
 import { logger, trackUserAction, captureException } from "@/lib/sentry-logger";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
 const isAdminRoute = createRouteMatcher(["/cms(.*)"]);
 const isProfileRoute = createRouteMatcher(["/profile(.*)"]);
@@ -107,7 +108,7 @@ export default clerkMiddleware(async (auth, req) => {
       return NextResponse.redirect(dashboard);
     }
     const plan = authenticate.sessionClaims?.metadata.plan;
-    if (plan !== "premium") {
+    if (!hasPaidPracticeAccess(plan, authenticate.sessionClaims?.metadata.purchaseDate)) {
       const homeUrl = new URL("/", req.url);
       return NextResponse.redirect(homeUrl);
     }
@@ -123,7 +124,7 @@ export default clerkMiddleware(async (auth, req) => {
 
     // For authenticated users, check plan
     const plan = authenticate.sessionClaims?.metadata.plan;
-    if (plan !== "premium") {
+    if (!hasPaidPracticeAccess(plan, authenticate.sessionClaims?.metadata.purchaseDate)) {
       const homeUrl = new URL("/", req.url);
       return NextResponse.redirect(homeUrl);
     }
@@ -142,7 +143,10 @@ export default clerkMiddleware(async (auth, req) => {
   // Create referral code when user becomes premium
   if (
     authenticate.userId &&
-    authenticate.sessionClaims?.metadata.plan === "premium"
+    hasPaidPracticeAccess(
+      authenticate.sessionClaims?.metadata.plan,
+      authenticate.sessionClaims?.metadata.purchaseDate
+    )
   ) {
     const hasReferralCode = (authenticate.sessionClaims?.metadata as any)
       ?.referralCode;

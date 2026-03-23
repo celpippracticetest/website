@@ -3,6 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 
 interface UserContext {
   targetCLB?: string;
+  onboardingProfile?: {
+    testDate?: string | null;
+    focusSkill?: string | null;
+    targetScore?: number | null;
+    subGoal?: string | null;
+  };
   mockScores?: {
     listening?: number | null;
     reading?: number | null;
@@ -39,6 +45,7 @@ export const useUserContext = (): UserContext => {
           const data = await response.json();
           return {
             targetCLB: data.targetCLB,
+            onboardingProfile: data.onboardingProfile,
             mockScores: data.scoresToUse,
             weakAreas: data.weakAreas,
             practiceHistory: data.practiceHistory,
@@ -53,6 +60,12 @@ export const useUserContext = (): UserContext => {
       // Fallback to empty data if API fails
       return {
         targetCLB: "Not specified",
+        onboardingProfile: {
+          testDate: null,
+          focusSkill: null,
+          targetScore: null,
+          subGoal: null,
+        },
         mockScores: null,
         weakAreas: [],
         practiceHistory: {

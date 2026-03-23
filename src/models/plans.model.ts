@@ -1,5 +1,7 @@
 import { ObjectId } from "mongodb";
 
+export type PlanBillingInterval = "day" | "week" | "month" | "year";
+
 export interface Plan {
     _id?: ObjectId;
     title: string;        // e.g., "Premium 3-Month"
@@ -10,6 +12,9 @@ export interface Plan {
     discount: string;     // e.g., "70"
     buttonTitle: string;  // e.g., "Save Now"
     features: string[];   // List of features
+    billingInterval?: PlanBillingInterval; // Stripe recurring interval
+    billingIntervalCount?: number; // Stripe recurring interval count
+    stripeProductId?: string; // Optional: Linked Stripe Product ID
     stripePriceId?: string; // Optional: Link to Stripe Price ID
     iconType?: "BestValuePlan" | "PopularPlan" | "FreePlan"; // To map to icons in frontend
     iconWrapperColor?: string; // e.g., "bg-secondary5"

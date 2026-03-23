@@ -18,6 +18,7 @@ import { useSearchParams } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { TQuestion } from "@/models/question.model";
+import { hasPremiumPlusAccess } from "@/lib/subscriptionAccess";
 
 function scaleToBand(weightedPercent: number): number {
   if (isNaN(weightedPercent)) return 0;
@@ -211,7 +212,14 @@ const ResultExamView = ({
     return scaleToBand(weightedPercent);
   })();
 
-  if (isLoaded && (!user || (user && user.publicMetadata.plan !== "premium"))) {
+  if (
+    isLoaded &&
+    (!user ||
+      !hasPremiumPlusAccess(
+        user.publicMetadata.plan as string | undefined,
+        user.publicMetadata.purchaseDate as string | undefined
+      ))
+  ) {
     route.push("exam-overview");
   }
   return (

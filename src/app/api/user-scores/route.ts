@@ -78,6 +78,15 @@ export async function GET(request: NextRequest) {
     const examPartsRepo = new ExamPartsRepository(client);
     const practiceCache = new Map<string, Promise<any>>();
     const examPartCache = new Map<string, Promise<any>>();
+    const userProfile = await db.collection("users").findOne(
+      { clerkUserId: user.id },
+      {
+        projection: {
+          onboarding: 1,
+          intent: 1,
+        },
+      }
+    );
 
     // Get answers from the answers collection
     const answersCollection = db.collection("answers");
@@ -232,6 +241,15 @@ export async function GET(request: NextRequest) {
       targetCLB: user.publicMetadata?.targetCLB || "Not specified",
       scoresToUse: scores,
       weakAreas: weakAreas,
+      onboardingProfile: {
+        testDate: userProfile?.onboarding?.testDate || null,
+        focusSkill: userProfile?.onboarding?.focusSkill || null,
+        targetScore:
+          userProfile?.onboarding?.targetScore ??
+          userProfile?.intent?.targetScore ??
+          null,
+        subGoal: userProfile?.onboarding?.subGoal || null,
+      },
       practiceHistory: {
         totalPractices: allAnswers.length,
         lastPracticeDate:

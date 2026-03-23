@@ -18,6 +18,7 @@ interface IPlanCard {
   id: number;
   className?: string;
   isModal?: boolean;
+  stripePriceId?: string;
 }
 const PlanCard = ({
   title,
@@ -32,6 +33,7 @@ const PlanCard = ({
   id,
   className,
   isModal = false,
+  stripePriceId,
 }: IPlanCard) => {
   const { user, isLoaded, isSignedIn } = useUser();
   const { beginCheckout, selectItem } = useEcommerceTracking();
@@ -68,25 +70,27 @@ const PlanCard = ({
     );
   };
 
+  const checkoutAction = stripePriceId
+    ? `/api/checkout_session?price=${stripePriceId}`
+    : type == "Easy Start"
+      ? "/api/checkout_session?product=" +
+        process.env.NEXT_PUBLIC_MONTHLY_ACCESS_PRODUCT
+      : type == "Weekly"
+        ? "/api/checkout_session?product=" +
+          process.env.NEXT_PUBLIC_WEEKLY_ACCESS_PRODUCT
+        : type == "Best Seller"
+          ? "/api/checkout_session?product=" +
+            process.env.NEXT_PUBLIC_QUARTER_ACCESS_PRODUCT
+          : type == "Best Value"
+            ? "/api/checkout_session?product=" +
+              process.env.NEXT_PUBLIC_YEARLY_ACCESS_PRODUCT
+            : "";
+
   return (
     <form
       className={`relative  before:absolute before:rounded-[24px] hover:before:shadow-[6px_4px_16px_0px_#FC7A5066,_-6px_-4px_16px_0px_#4A7DFF66] before:transition-shadow before:duration-300 flex-col ${!isModal ? "screen1280:!flex-row screen1280:!w-[437px] screen1280:!h-[428px]" : ""} before:ease before:content-[''] before:inset-0 before:transform before:translate-z-[-1px] hover:cursor-pointer w-full h-[438px] rounded-[24px] p-[16px] bg-white ${className}`}
       ref={formRef}
-      action={
-        type == "Easy Start"
-          ? "/api/checkout_session?product=" +
-          process.env.NEXT_PUBLIC_MONTHLY_ACCESS_PRODUCT
-          : type == "Weekly"
-            ? "/api/checkout_session?product=" +
-            process.env.NEXT_PUBLIC_WEEKLY_ACCESS_PRODUCT
-            : type == "Best Seller"
-              ? "/api/checkout_session?product=" +
-              process.env.NEXT_PUBLIC_QUARTER_ACCESS_PRODUCT
-              : type == "Best Value"
-                ? "/api/checkout_session?product=" +
-                process.env.NEXT_PUBLIC_YEARLY_ACCESS_PRODUCT
-                : ""
-      }
+      action={checkoutAction}
       method="POST"
     >
       <CheckoutAttributionFields />

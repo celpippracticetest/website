@@ -18,6 +18,7 @@ import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
 import { ActivityLogger } from "@/lib/userActivity";
 import SvgLeagueKados from "@/components/icons/LeagueKados";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import SvgLeagueKados24 from "@/components/icons/LeagueKados24";
 import SvgCheck from "@/components/icons/Check";
 import { useRouter, usePathname } from "next/navigation";
@@ -109,7 +110,10 @@ const Page = () => {
 
   // Check if user is free or premium
   const isFreeUser = user?.publicMetadata?.plan === "free";
-  const isPremiumUser = user?.publicMetadata?.plan === "premium";
+  const isPremiumUser = hasPaidPracticeAccess(
+    user?.publicMetadata?.plan as string | undefined,
+    user?.publicMetadata?.purchaseDate as string | undefined
+  );
   const noUser = isLoaded ? !isSignedIn : false;
   const showSeoContent = !isSignedIn;
 

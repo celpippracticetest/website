@@ -26,6 +26,7 @@ import { ObjectId } from "mongodb";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { currentUser } from "@clerk/nextjs/server";
+import { hasPremiumPlusAccess } from "@/lib/subscriptionAccess";
 
 const Exam = async ({ params }: { params: { slug: string[] } }) => {
   const resolvedParams = await params;
@@ -48,7 +49,14 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
   const isAdmin: boolean = Array.isArray(roleValue)
     ? roleValue.includes("admin")
     : roleValue === "admin";
-  if (!user || (plan !== "premium" && !isAdmin)) {
+  if (
+    !user ||
+    (!hasPremiumPlusAccess(
+      plan,
+      user?.publicMetadata?.purchaseDate as string | undefined
+    ) &&
+      !isAdmin)
+  ) {
     redirect("/exam-overview", RedirectType.push);
   }
   if (
@@ -168,9 +176,6 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
           <SpeakingExamView
             practice={practice}
             partId={parseInt(partNumber)}
-            examId={examId}
-            partNumber={partNumber}
-            examName={exam?.name}
             examNumber={exam?.order}
           />
         )}

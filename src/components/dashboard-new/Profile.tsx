@@ -20,34 +20,53 @@ import Link from "next/link";
 import SubscriptionRetentionModal from "@/components/modal/SubscriptionRetentionModal";
 import ChangePlanModal from "@/components/modal/ChangePlanModal";
 import AccountDeletionRetentionModal from "@/components/modal/AccountDeletionRetentionModal";
+import { getSubscriptionDisplayName } from "@/lib/subscriptionAccess";
 export default function Profile({ prevCheckout, subscriptionData }: any) {
   const { user, isLoaded: isUserLoaded } = useUser();
   const [planNameDisplay, setPlanNameDisplay] = useState<string>("");
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
+  const userPlan = user?.publicMetadata?.plan as string | undefined;
+  const userPurchaseDate = user?.publicMetadata?.purchaseDate as string | undefined;
 
   useEffect(() => {
     // Priority: Use subscription data if available, otherwise fallback to checkout data
     if (subscriptionData?.planName) {
-      setPlanNameDisplay(subscriptionData.planName);
+      setPlanNameDisplay(
+        getSubscriptionDisplayName(
+          userPlan,
+          userPurchaseDate,
+          subscriptionData.planName
+        )
+      );
       setIsLoaded(true);
     } else if (subscriptionData && subscriptionData.currentPeriodStart && subscriptionData.currentPeriodEnd) {
-      setPlanNameDisplay(subscriptionData.planName || "Premium Plan");
+      setPlanNameDisplay(
+        getSubscriptionDisplayName(
+          userPlan,
+          userPurchaseDate,
+          subscriptionData.planName || "Premium Plan"
+        )
+      );
       setIsLoaded(true);
     } else if (prevCheckout && prevCheckout.createdAt) {
       // Fallback to checkout data for one-time purchases
       const description = prevCheckout.lineItems?.[0]?.description;
-      setPlanNameDisplay(description || "Premium Plan");
+      setPlanNameDisplay(
+        getSubscriptionDisplayName(
+          userPlan,
+          userPurchaseDate,
+          description || "Premium Plan"
+        )
+      );
       setIsLoaded(true);
     } else {
       // Fallback based on metadata if no data found but user is marked as premium
-      if (user?.publicMetadata?.plan === 'premium') {
-        setPlanNameDisplay("Premium Plan");
-      } else if (user?.publicMetadata?.plan === 'pro') {
-        setPlanNameDisplay("Pro Plan");
+      if (userPlan) {
+        setPlanNameDisplay(getSubscriptionDisplayName(userPlan, userPurchaseDate));
       }
       setIsLoaded(true);
     }
-  }, [prevCheckout, subscriptionData, user]);
+  }, [prevCheckout, subscriptionData, userPlan, userPurchaseDate]);
 
   const [showSetPasswordModal, setShowSetPasswordModal] = useState(false);
   const [password, setPassword] = useState("");

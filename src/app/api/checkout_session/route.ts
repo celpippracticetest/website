@@ -9,6 +9,7 @@ import { getDb } from "@/lib/mongodb";
 export async function POST(req: NextRequest) {
   try {
     const product: string | null = req.nextUrl.searchParams.get("product");
+    const price: string | null = req.nextUrl.searchParams.get("price");
     const formData = await req.formData();
     const headersList = await headers();
     const origin = headersList.get("origin");
@@ -20,9 +21,9 @@ export async function POST(req: NextRequest) {
     if (!email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!product) {
+    if (!product && !price) {
       return NextResponse.json(
-        { error: "Product ID is required" },
+        { error: "Product ID or Price ID is required" },
         { status: 400 }
       );
     }
@@ -185,18 +186,33 @@ export async function POST(req: NextRequest) {
     //   );
     // }
 
-    // Create Checkout Sessions from body params.
-    // Retrieve the product details using the product ID
-    const productDetails = await stripe.products.retrieve(product);
-    if (!productDetails.default_price) {
-      return NextResponse.json(
-        { error: "Product does not have a default price" },
-        { status: 400 }
-      );
+    // Create checkout session from either a direct Stripe Price ID
+    // (CMS-driven plans) or a fallback Product ID (legacy env-driven plans).
+    let priceId: string;
+    let priceObject;
+    let productDetails;
+
+    if (price) {
+      priceId = price;
+      priceObject = await stripe.prices.retrieve(priceId);
+      const productId =
+        typeof priceObject.product === "string"
+          ? priceObject.product
+          : priceObject.product.id;
+      productDetails = await stripe.products.retrieve(productId);
+    } else {
+      productDetails = await stripe.products.retrieve(product!);
+      if (!productDetails.default_price) {
+        return NextResponse.json(
+          { error: "Product does not have a default price" },
+          { status: 400 }
+        );
+      }
+
+      priceId = productDetails.default_price as string;
+      priceObject = await stripe.prices.retrieve(priceId);
     }
 
-    const priceId = productDetails.default_price as string;
-    const priceObject = await stripe.prices.retrieve(priceId);
     const mode = priceObject.recurring ? "subscription" : "payment";
     const db = await getDb();
     const userDoc = await db.collection("users").findOne({ clerkUserId: user.id });
@@ -299,6 +315,7 @@ export async function POST(req: NextRequest) {
       email,
       metadata: {
         product,
+        priceId,
         hasPromotionCode: !!promotionCode,
         referralDiscountApplied,
       },

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Plan } from "@/models/plans.model";
+import { formatPlanRecurringLabel, getPlanRecurringConfig } from "@/lib/planBilling";
 import { Plus, Edit2, Trash2, X } from "lucide-react";
 
 const PlansPage = () => {
@@ -18,6 +19,8 @@ const PlansPage = () => {
         discount: "",
         buttonTitle: "Go Premium",
         features: [],
+        billingInterval: "month",
+        billingIntervalCount: 1,
         isActive: true,
         order: 0,
         iconType: "PopularPlan",
@@ -44,8 +47,13 @@ const PlansPage = () => {
 
     const handleOpenModal = (plan?: Plan) => {
         if (plan) {
+            const recurring = getPlanRecurringConfig(plan);
             setEditingPlan(plan);
-            setFormData(plan);
+            setFormData({
+                ...plan,
+                billingInterval: recurring.interval,
+                billingIntervalCount: recurring.interval_count,
+            });
         } else {
             setEditingPlan(null);
             setFormData({
@@ -57,6 +65,8 @@ const PlansPage = () => {
                 discount: "",
                 buttonTitle: "Go Premium",
                 features: [],
+                billingInterval: "month",
+                billingIntervalCount: 1,
                 isActive: true,
                 order: plans.length,
                 iconType: "PopularPlan",
@@ -197,6 +207,22 @@ const PlansPage = () => {
                                         </span>
                                     )}
                                 </div>
+                            </div>
+
+                            <div className="mb-4 rounded-lg border bg-gray-50 px-3 py-2 text-xs text-gray-600 space-y-1">
+                                <div className="flex justify-between gap-3">
+                                    <span>Stripe</span>
+                                    <span className={plan.stripePriceId ? "text-green-700 font-medium" : "text-amber-700 font-medium"}>
+                                        {plan.stripePriceId ? "Connected" : "Not connected"}
+                                    </span>
+                                </div>
+                                <div>{formatPlanRecurringLabel(plan)}</div>
+                                {plan.stripeProductId && (
+                                    <div className="truncate">Product: {plan.stripeProductId}</div>
+                                )}
+                                {plan.stripePriceId && (
+                                    <div className="truncate">Price: {plan.stripePriceId}</div>
+                                )}
                             </div>
 
                             <div className="space-y-2 mb-4">
@@ -343,6 +369,38 @@ const PlansPage = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Billing Interval
+                                    </label>
+                                    <select
+                                        name="billingInterval"
+                                        value={formData.billingInterval || "month"}
+                                        onChange={handleInputChange}
+                                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    >
+                                        <option value="day">Daily</option>
+                                        <option value="week">Weekly</option>
+                                        <option value="month">Monthly</option>
+                                        <option value="year">Yearly</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Billing Interval Count
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        name="billingIntervalCount"
+                                        value={formData.billingIntervalCount ?? 1}
+                                        onChange={handleInputChange}
+                                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        Example: `3` with `month` means billed every 3 months.
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Icon Type
                                     </label>
                                     <select
@@ -379,7 +437,27 @@ const PlansPage = () => {
                                         value={formData.stripePriceId || ""}
                                         onChange={handleInputChange}
                                         className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Leave blank to auto-create in Stripe"
                                     />
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        Leave this blank to auto-create and sync the Stripe product and price.
+                                    </p>
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Stripe Product ID
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="stripeProductId"
+                                        value={formData.stripeProductId || ""}
+                                        onChange={handleInputChange}
+                                        placeholder="Auto-generated when Stripe sync runs"
+                                        className="w-full px-3 py-2 border rounded-lg bg-gray-50 text-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        This is generated automatically when the plan is synced to Stripe.
+                                    </p>
                                 </div>
                             </div>
 

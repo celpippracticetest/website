@@ -5,6 +5,7 @@ import mongoClient from "@/lib/mongodb";
 import { RefundRequestWriteSchema } from "@/models/refund-request.model";
 import { RefundRequestRepository } from "@/repositories/refund-request.repo";
 import { sendEmailWithSender } from "@/lib/email/sender-client";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,7 +60,7 @@ function enforcePremiumAccess(userId: string | null, plan?: string) {
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (plan !== "premium") {
+  if (!hasPaidPracticeAccess(plan, sessionClaims?.metadata?.purchaseDate)) {
     return NextResponse.json(
       { error: "Only subscribed users can submit refund requests" },
       { status: 403 }

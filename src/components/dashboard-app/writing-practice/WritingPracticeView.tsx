@@ -23,6 +23,7 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import PlanCard from "@/components/pages/dashboard/PlanCard";
 import { TTaskSchemaDto } from "@/models/tasks.model";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 // planDetails import removed
 
 import LoginModal from "@/components/modal/LoginModal";
@@ -99,6 +100,7 @@ const WritingPracticeView = ({
   const noUser = isLoaded ? !isSignedIn : false;
   const [showModal, setShowModal] = useState(false);
   const [showContinueModal, setShowContinueModal] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
   const attemptId = searchParams.get("attemptId");
@@ -123,14 +125,19 @@ const WritingPracticeView = ({
   const shouldShowPractice: any =
     practice.isFree ||
     (!practice.isFree &&
-      user &&
-      user.publicMetadata.plan &&
-      user.publicMetadata.plan === "premium");
+      hasPaidPracticeAccess(
+        user?.publicMetadata.plan as string | undefined,
+        user?.publicMetadata.purchaseDate as string | undefined
+      ));
   const [answers, setAnswers] = useState<any[]>([]);
   const [freeAttempts, setFreeAttempts] = useState<number | null>(3);
   const setPremiumPlanModalState = useStore(
     (state) => state.setPremiumPlanModalState
   );
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
 
@@ -319,7 +326,11 @@ const WritingPracticeView = ({
     }));
   };
 
-  if (!isLoaded || (user && user.publicMetadata?.plan === undefined)) {
+  if (
+    !isHydrated ||
+    !isLoaded ||
+    (user && user.publicMetadata?.plan === undefined)
+  ) {
     return (
       <div className="text-center py-10 text-gray-500 w-full">Loading...</div>
     );

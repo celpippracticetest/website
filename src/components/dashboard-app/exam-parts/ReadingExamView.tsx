@@ -23,6 +23,7 @@ import SvgWritingPart from "@/components/icons/WritingPart";
 import SvgReadingPart from "@/components/icons/ReadingPart";
 import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
+import { hasPremiumPlusAccess } from "@/lib/subscriptionAccess";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import { PRACTICE_PARTS } from "@/constants";
@@ -184,11 +185,19 @@ const ReadingExamView = ({
   const shouldShowPractice: boolean =
     practice.isFree ||
     !!(!practice.isFree &&
-      user &&
-      user.publicMetadata.plan &&
-      user.publicMetadata.plan === "premium");
+      hasPremiumPlusAccess(
+        user?.publicMetadata.plan as string | undefined,
+        user?.publicMetadata.purchaseDate as string | undefined
+      ));
 
-  if (isLoaded && (!user || (user && user.publicMetadata.plan !== "premium"))) {
+  if (
+    isLoaded &&
+    (!user ||
+      !hasPremiumPlusAccess(
+        user.publicMetadata.plan as string | undefined,
+        user.publicMetadata.purchaseDate as string | undefined
+      ))
+  ) {
     router.push("exam-overview");
   }
 

@@ -24,6 +24,7 @@ import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import { PRACTICE_PARTS } from "@/constants";
 import ExamHeader from "./components/ExamHeader";
+import { hasPremiumPlusAccess } from "@/lib/subscriptionAccess";
 
 interface SpeakingExamViewProps {
   practice: TPracticeDto;
@@ -84,9 +85,10 @@ const SpeakingExamView = ({
   const shouldShowPractice =
     practice.isFree ||
     (!practice.isFree &&
-      user &&
-      user.publicMetadata.plan &&
-      user.publicMetadata.plan === "premium");
+      hasPremiumPlusAccess(
+        user?.publicMetadata.plan as string | undefined,
+        user?.publicMetadata.purchaseDate as string | undefined
+      ));
 
   const [errorAccessingMicrophone, setErrorAccessingMicrophone] =
     useState(false);
@@ -95,7 +97,14 @@ const SpeakingExamView = ({
     (state) => state.setPremiumPlanModalState
   );
 
-  if (isLoaded && (!user || (user && user.publicMetadata.plan !== "premium"))) {
+  if (
+    isLoaded &&
+    (!user ||
+      !hasPremiumPlusAccess(
+        user.publicMetadata.plan as string | undefined,
+        user.publicMetadata.purchaseDate as string | undefined
+      ))
+  ) {
     router.push("/exam-overview");
   }
   const startRecording = async () => {

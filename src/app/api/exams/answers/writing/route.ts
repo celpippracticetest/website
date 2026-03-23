@@ -7,6 +7,7 @@ import { TaskRepository } from "@/repositories/tasks.repo";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
+import { hasPremiumPlusAccess } from "@/lib/subscriptionAccess";
 
 export const POST = async function (req: NextRequest) {
   const body = await req.json();
@@ -20,7 +21,12 @@ export const POST = async function (req: NextRequest) {
   if (answersParser.success) {
     const answerBody = answersParser.data;
 
-    if (!user.publicMetadata.plan || user.publicMetadata.plan !== "premium") {
+    if (
+      !hasPremiumPlusAccess(
+        user.publicMetadata.plan as string | undefined,
+        user.publicMetadata.purchaseDate as string | undefined
+      )
+    ) {
       return NextResponse.json(
         { message: "You havent any free credit." },
         { status: 400 }

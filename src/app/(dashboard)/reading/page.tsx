@@ -14,6 +14,7 @@ import { redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
 import { skillPagesContent } from "@/data/skill-pages-content";
 import type { Metadata } from "next";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
 const readingMetadataBase: Metadata = {
   title: "Free CELPIP Reading Practice Tests & Mock Exams | CELPIPPRACTICETEST",
@@ -139,9 +140,10 @@ const ReadingPage = async ({
   }
 
   if (
-    (!user ||
-      !user.publicMetadata.plan ||
-      user.publicMetadata.plan !== "premium") &&
+    !hasPaidPracticeAccess(
+      user?.publicMetadata.plan as string | undefined,
+      user?.publicMetadata.purchaseDate as string | undefined
+    ) &&
     selectedPractice &&
     !selectedPractice.isFree &&
     selectedPractice.passages[0] &&

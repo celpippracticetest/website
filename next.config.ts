@@ -146,20 +146,9 @@ const nextConfig: NextConfig = {
   // Performance optimizations
   compress: true,
   poweredByHeader: false,
-  // Required to support PostHog trailing slash API requests
-  skipTrailingSlashRedirect: true,
 
   async rewrites() {
     return [
-      // PostHog first-party proxy
-      {
-        source: "/ingest/static/:path*",
-        destination: "https://us-assets.i.posthog.com/static/:path*",
-      },
-      {
-        source: "/ingest/:path*",
-        destination: "https://us.i.posthog.com/:path*",
-      },
       // Google Tag Gateway — routes GTM & GA4 through first-party domain
       // to improve ad-blocker bypass and eliminate third-party cookie issues
       {

@@ -264,6 +264,7 @@ const PremiumPlanModal = () => {
                                                 discount={item.discount}
                                                 buttonTitle={item.buttonTitle}
                                                 features={item.features}
+                                                stripePriceId={item.stripePriceId}
                                                 icon={item.icon}
                                                 iconWrapperColor={item.iconWrapperColor}
                                                 isModal={true}

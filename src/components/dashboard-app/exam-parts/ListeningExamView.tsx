@@ -23,6 +23,7 @@ import TrophyModal from "@/components/modal/TrophyModal";
 import { PRACTICE_PARTS } from "@/constants";
 import ContinueExamModal from "@/components/modal/ContinueExamModal";
 import ExamHeader from "./components/ExamHeader";
+import { hasPremiumPlusAccess } from "@/lib/subscriptionAccess";
 
 interface ListeningExamViewProps {
   practice: TPracticeDto;
@@ -185,7 +186,14 @@ const ListeningExamView = ({
   //   // const { score } = handleSubmit();
   //   // onComplete();
   // };
-  if (isLoaded && (!user || (user && user.publicMetadata.plan !== "premium"))) {
+  if (
+    isLoaded &&
+    (!user ||
+      !hasPremiumPlusAccess(
+        user.publicMetadata.plan as string | undefined,
+        user.publicMetadata.purchaseDate as string | undefined
+      ))
+  ) {
     router.push("exam-overview");
   }
   //   const practiceIndex = allPractices.findIndex((p) => p.id == selectedPracticeId);

@@ -12,7 +12,7 @@ import SvgMedalMd from "@/components/v2/icons/medal-md";
 import { SvgLearning } from "@/components/icons";
 import SvgWord from "@/components/icons/Word";
 import { cn } from "@/lib/utils";
-import { useEventTracker } from "@/hooks/useTracking";
+import { useHomepageCta } from "@/hooks/useHomepageCta";
 
 const SvgMockExamLight = dynamic(() => import("../../icons/MockExamsLight"), {
   ssr: false,
@@ -48,10 +48,10 @@ const Hero = ({ heroImage }: HeroProps) => {
   const { setVisible, isVisible, isInFooter } = useButtonVisibleStore(
     (state) => state,
   );
-  const { trackCTA } = useEventTracker();
+  const { href, label, shortLabel, trackClick } = useHomepageCta();
 
   const handleCTAClick = (location: string) => {
-    trackCTA("Start Your Free Practice", location);
+    trackClick(location);
   };
 
   useEffect(() => {
@@ -100,11 +100,11 @@ const Hero = ({ heroImage }: HeroProps) => {
         <div onClick={() => handleCTAClick("hero_floating_bottom")}>
           <Button
             size="lg"
-            href="/practice-overview"
-            aria-label="Start your free CELPIP practice">
+            href={href}
+            aria-label={label}>
             <SvgPlus />
-            <span className="hidden sm:!flex">Start Your Free Practice</span>
-            <span className="flex sm:!hidden">Free Practice</span>
+            <span className="hidden sm:!flex">{label}</span>
+            <span className="flex sm:!hidden">{shortLabel}</span>
           </Button>
         </div>
       </div>
@@ -204,11 +204,11 @@ const Hero = ({ heroImage }: HeroProps) => {
               <div className="flex screen744:!justify-start justify-center">
                 <div onClick={() => handleCTAClick("hero_main")}>
                   <Button
-                    href="/practice-overview"
+                    href={href}
                     size="lg"
                     className="mt-[24px]">
                     <SvgPlus />
-                    <span>Start Your Free Practice</span>
+                    <span>{label}</span>
                   </Button>
                 </div>
               </div>

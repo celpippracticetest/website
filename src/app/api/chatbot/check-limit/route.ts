@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import client from "@/lib/mongodb";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,7 +11,10 @@ export async function GET(request: NextRequest) {
     // Check user plan
     const userPlan = user?.publicMetadata?.plan as string;
     const isFreeUser = userPlan === "free";
-    const isPremiumUser = userPlan === "premium";
+    const isPremiumUser = hasPaidPracticeAccess(
+      userPlan,
+      user?.publicMetadata?.purchaseDate
+    );
     const isGuest = !isAuthenticated;
 
     // Only check limits for free users and guests

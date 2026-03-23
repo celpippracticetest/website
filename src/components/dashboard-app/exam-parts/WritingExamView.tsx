@@ -24,6 +24,7 @@ import TrophyModal from "@/components/modal/TrophyModal";
 import { PRACTICE_PARTS } from "@/constants";
 import ContinueExamModal from "@/components/modal/ContinueExamModal";
 import ExamHeader from "./components/ExamHeader";
+import { hasPremiumPlusAccess } from "@/lib/subscriptionAccess";
 
 interface WritingExamViewProps {
   practice: TPracticeDto;
@@ -182,9 +183,10 @@ const WritingExamView = ({
   const shouldShowPractice: boolean =
     practice.isFree ||
     !!(!practice.isFree &&
-      user &&
-      user.publicMetadata.plan &&
-      user.publicMetadata.plan === "premium");
+      hasPremiumPlusAccess(
+        user?.publicMetadata.plan as string | undefined,
+        user?.publicMetadata.purchaseDate as string | undefined
+      ));
 
   const [menuShowModal, setMenuShowModal] = useState(false);
   interface PracticeSection {

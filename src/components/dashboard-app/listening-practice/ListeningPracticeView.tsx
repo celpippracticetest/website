@@ -25,6 +25,7 @@ import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import StatBadge from "@/components/shared/StatBadge";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
 interface ListeningPracticeViewProps {
   practice: TPracticeDto;
@@ -455,9 +456,10 @@ const ListeningPracticeView = ({
                 </div>
                 {practice.isFree ||
                   (!practice.isFree &&
-                    user &&
-                    user.publicMetadata.plan &&
-                    user.publicMetadata.plan === "premium") ? (
+                    hasPaidPracticeAccess(
+                      user?.publicMetadata.plan as string | undefined,
+                      user?.publicMetadata.purchaseDate as string | undefined
+                    )) ? (
                   <div>
                     {completedPractice.includes(practice.id) ? (
                       <div className="flex flex-col gap-[16px] mt-[23px]">

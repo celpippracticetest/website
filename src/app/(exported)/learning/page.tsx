@@ -17,6 +17,7 @@ import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
 import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
 type Skill = {
   label: string;
@@ -49,7 +50,10 @@ const Page = () => {
 
   // Check if user is free or premium
   const isFreeUser = user?.publicMetadata?.plan === "free";
-  const isPremiumUser = user?.publicMetadata?.plan === "premium";
+  const isPremiumUser = hasPaidPracticeAccess(
+    user?.publicMetadata?.plan as string | undefined,
+    user?.publicMetadata?.purchaseDate as string | undefined
+  );
   const noUser = isLoaded ? !isSignedIn : false;
   const showSeoContent = !isSignedIn;
 

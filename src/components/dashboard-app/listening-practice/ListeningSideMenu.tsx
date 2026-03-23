@@ -6,6 +6,7 @@ import SvgCheckSquare from "@/components/icons/CheckSquare";
 import SvgLock from "@/components/icons/Lock";
 import SvgPlay from "@/components/icons/Play";
 import SvgConfirmCheck from "@/components/icons/ConfirmCheck";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
 const ListeningSideMenu = ({
   completedPractice,
@@ -67,7 +68,10 @@ const ListeningSideMenu = ({
               <div className="flex items-center rounded-[24px] bg-[#F0FFFD] h-[33px] px-[16px] text-[12px] font-semibold text-[#0DAA94]">
                 Completed
               </div>
-            ) : user?.publicMetadata.plan !== "premium" ? (
+            ) : !hasPaidPracticeAccess(
+                user?.publicMetadata.plan as string | undefined,
+                user?.publicMetadata.purchaseDate as string | undefined
+              ) ? (
               p.isFree ? (
                 <div className="flex shrink-0 bg-[#F0FFFD] rounded-[24px] text-[12px] justify-center items-center px-[16px] py-[8px]">
                   <span className="text-[12px] font-medium text-[#0DAA94]">

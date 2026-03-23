@@ -6,6 +6,7 @@ import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpe
 import { TaskRepository } from "@/repositories/tasks.repo";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
 export const POST = async function (req: NextRequest) {
   const body = await req.json();
@@ -19,7 +20,12 @@ export const POST = async function (req: NextRequest) {
   if (answersParser.success) {
     const answerBody = answersParser.data;
     const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
-    if (!user.publicMetadata.plan || user.publicMetadata.plan !== "premium") {
+    if (
+      !hasPaidPracticeAccess(
+        user.publicMetadata.plan as string | undefined,
+        user.publicMetadata.purchaseDate as string | undefined
+      )
+    ) {
       const prevAnswer = await answerRepo.getAllWritingAnswers(
         { userId: user.id, practiceId: answerBody.practiceId, type: "WRITING" },
         0,

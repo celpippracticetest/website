@@ -68,6 +68,7 @@ function serializePlan(plan: {
   discount: string;
   buttonTitle: string;
   features: string[];
+  stripePriceId?: string;
   iconType?: string;
   iconWrapperColor?: string;
 }): SerializedPlan {
@@ -84,6 +85,7 @@ function serializePlan(plan: {
     discount: plan.discount,
     buttonTitle: plan.buttonTitle,
     features: plan.features,
+    stripePriceId: plan.stripePriceId,
     iconType: plan.iconType as SerializedPlan["iconType"],
     iconWrapperColor: plan.iconWrapperColor,
   };

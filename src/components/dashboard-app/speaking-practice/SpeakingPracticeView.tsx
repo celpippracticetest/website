@@ -23,6 +23,7 @@ import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import StatBadge from "@/components/shared/StatBadge";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
 
 interface SpeakingPracticeViewProps {
@@ -114,9 +115,10 @@ const SpeakingPracticeView = ({
   const shouldShowPractice: any =
     practice.isFree ||
     (!practice.isFree &&
-      user &&
-      user.publicMetadata.plan &&
-      user.publicMetadata.plan === "premium");
+      hasPaidPracticeAccess(
+        user?.publicMetadata.plan as string | undefined,
+        user?.publicMetadata.purchaseDate as string | undefined
+      ));
   const [answers, setAnswers] = useState<any[]>([]);
   const [freeAttempts, setFreeAttempts] = useState<number | null>(3);
   const [errorAccessingMicrophone, setErrorAccessingMicrophone] =

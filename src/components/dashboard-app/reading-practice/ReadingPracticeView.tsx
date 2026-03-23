@@ -23,6 +23,7 @@ import SvgArrowRight from "@/components/icons/ArrowRight";
 import SvgCircle from "@/components/icons/Circle";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
 import { ActivityLogger } from "@/lib/userActivity";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
@@ -204,9 +205,10 @@ const ReadingPracticeView = ({
   const shouldShowPractice: any =
     practice.isFree ||
     (!practice.isFree &&
-      user &&
-      user.publicMetadata.plan &&
-      user.publicMetadata.plan === "premium");
+      hasPaidPracticeAccess(
+        user?.publicMetadata.plan as string | undefined,
+        user?.publicMetadata.purchaseDate as string | undefined
+      ));
   return (
     <>
       <div className="w-full transition-all duration-300 flex gap-5 items-center ">

@@ -12,6 +12,7 @@ interface IPlanCard {
   icon: React.ReactNode;
   iconWrapperColor: string;
   id: number;
+  stripePriceId?: string;
 }
 const PlanCard = ({
   title,
@@ -22,6 +23,7 @@ const PlanCard = ({
   icon,
   iconWrapperColor,
   id,
+  stripePriceId,
 }: IPlanCard) => {
   const { beginCheckout, selectItem } = useEcommerceTracking();
 
@@ -42,24 +44,26 @@ const PlanCard = ({
     beginCheckout([item], "CAD", amount);
   };
 
-  return (
-    <form
-      className="relative mt-[12px] screen1280:!mt-[32px] w-full screen744:!w-[176px] screen744:!h-[214px] screen1280:!w-[202px] screen1280:!h-[215px]"
-      action={
-        type == "Easy Start"
-          ? "/api/checkout_session?product=" +
-            process.env.NEXT_PUBLIC_MONTHLY_ACCESS_PRODUCT
-          : type == "Weekly"
-          ? "/api/checkout_session?product=" +
-            process.env.NEXT_PUBLIC_WEEKLY_ACCESS_PRODUCT
-          : type == "Best Seller"
+  const checkoutAction = stripePriceId
+    ? `/api/checkout_session?price=${stripePriceId}`
+    : type == "Easy Start"
+      ? "/api/checkout_session?product=" +
+        process.env.NEXT_PUBLIC_MONTHLY_ACCESS_PRODUCT
+      : type == "Weekly"
+        ? "/api/checkout_session?product=" +
+          process.env.NEXT_PUBLIC_WEEKLY_ACCESS_PRODUCT
+        : type == "Best Seller"
           ? "/api/checkout_session?product=" +
             process.env.NEXT_PUBLIC_QUARTER_ACCESS_PRODUCT
           : type == "Best Value"
-          ? "/api/checkout_session?product=" +
-            process.env.NEXT_PUBLIC_YEARLY_ACCESS_PRODUCT
-          : ""
-      }
+            ? "/api/checkout_session?product=" +
+              process.env.NEXT_PUBLIC_YEARLY_ACCESS_PRODUCT
+            : "";
+
+  return (
+    <form
+      className="relative mt-[12px] screen1280:!mt-[32px] w-full screen744:!w-[176px] screen744:!h-[214px] screen1280:!w-[202px] screen1280:!h-[215px]"
+      action={checkoutAction}
       method="POST"
     >
       <CheckoutAttributionFields />

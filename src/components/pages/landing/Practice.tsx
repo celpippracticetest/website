@@ -1,9 +1,14 @@
+"use client";
+
 import React from "react";
 import SvgPlus from "../../icons/Plus";
 import Image from "next/image";
 import Link from "next/link";
+import { useHomepageCta } from "@/hooks/useHomepageCta";
 
 const Practice = () => {
+  const { href, label, trackClick } = useHomepageCta();
+
   return (
     <section aria-labelledby="practice-heading">
       <div className="mx-auto max-w-[1440px] ">
@@ -18,10 +23,11 @@ const Practice = () => {
             <div className="group hover:cursor-pointer hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] shadow-startButton flex gap-[8px] pl-[16px] bg-white max-w-[311px] screen1280:!max-w-[223px] h-[40px] rounded-[24px] items-center justify-center">
               <SvgPlus className="text-text2 group-hover:text-white" />
               <Link
-                href={"/practice-overview"}
+                href={href}
+                onClick={() => trackClick("practice_section")}
                 className="text-text2 group-hover:text-white text-[14px] pr-[24px] leading-[16px] font-medium"
               >
-                Start Your Free Practice
+                {label}
               </Link>
             </div>
 

@@ -8,6 +8,7 @@ export type SerializedPlan = {
   discount: string;
   buttonTitle: string;
   features: string[];
+  stripePriceId?: string;
   iconType?: "BestValuePlan" | "PopularPlan" | "FreePlan";
   iconWrapperColor?: string;
 };

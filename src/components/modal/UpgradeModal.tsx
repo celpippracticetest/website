@@ -164,6 +164,7 @@ const UpgradeModal = ({ setShowModal }: UpgradeModalProps) => {
                   oldPrice={item.oldPrice}
                   price={item.price}
                   buttonTitle={item.buttonTitle}
+                  stripePriceId={item.stripePriceId}
                   icon={item.icon}
                   iconWrapperColor={item.iconWrapperColor}
                 />

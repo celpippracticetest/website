@@ -10,6 +10,7 @@ import ListeningTaskView from "../listening-practice/ListeningTaskView";
 import { useUser } from "@clerk/nextjs";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
 interface SpeakingPracticeProps {
   showHeader?: boolean;
@@ -46,9 +47,10 @@ const SpeakingPractice = ({
     (selectedPractice && selectedPractice.isFree) ||
     (selectedPractice &&
       !selectedPractice.isFree &&
-      user &&
-      user.publicMetadata.plan &&
-      user.publicMetadata.plan === "premium");
+      hasPaidPracticeAccess(
+        user?.publicMetadata.plan as string | undefined,
+        user?.publicMetadata.purchaseDate as string | undefined
+      ));
   const onAnswerButtonClick = (
     practice: TPracticeDto,
     result: Record<string, any>

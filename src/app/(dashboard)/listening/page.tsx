@@ -14,6 +14,7 @@ import { redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
 import { skillPagesContent } from "@/data/skill-pages-content";
 import type { Metadata } from "next";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
 interface PracticeTask {
   taskNumber: string;
@@ -143,9 +144,10 @@ const DashboardApp = async ({
   }
 
   if (
-    (!user ||
-      !user.publicMetadata.plan ||
-      user.publicMetadata.plan !== "premium") &&
+    !hasPaidPracticeAccess(
+      user?.publicMetadata.plan as string | undefined,
+      user?.publicMetadata.purchaseDate as string | undefined
+    ) &&
     selectedPractice &&
     !selectedPractice.isFree
   ) {

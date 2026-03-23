@@ -18,6 +18,14 @@ interface IPlanCard {
   id: number;
   currentPlanTitle: string;
   planTitle: string;
+  highlight?: boolean;
+  muted?: boolean;
+  savingsText?: string;
+  highlightLabel?: string;
+  accessLabel?: string;
+  description?: string;
+  footerNote?: string;
+  stripePriceId?: string;
 }
 const PlanCard = ({
   title,
@@ -32,9 +40,19 @@ const PlanCard = ({
   id,
   currentPlanTitle,
   planTitle,
+  highlight = false,
+  muted = false,
+  savingsText,
+  highlightLabel,
+  accessLabel,
+  description,
+  footerNote,
+  stripePriceId,
 }: IPlanCard) => {
   const { selectItem, beginCheckout } = useEcommerceTracking();
   const { user } = useUser();
+  const hasDiscountValue = Number.parseFloat(discount) > 0;
+  const shouldShowSavingsBadge = Boolean(savingsText) || hasDiscountValue;
 
   const handlePlanClick = () => {
     // Track plan selection
@@ -60,73 +78,111 @@ const PlanCard = ({
 
   };
 
+  const checkoutAction = stripePriceId
+    ? `/api/checkout_session?price=${stripePriceId}`
+    : type == "Easy Start"
+      ? "/api/checkout_session?product=" +
+        process.env.NEXT_PUBLIC_MONTHLY_ACCESS_PRODUCT
+      : type == "Weekly"
+        ? "/api/checkout_session?product=" +
+          process.env.NEXT_PUBLIC_WEEKLY_ACCESS_PRODUCT
+        : type == "Best Seller"
+          ? "/api/checkout_session?product=" +
+            process.env.NEXT_PUBLIC_QUARTER_ACCESS_PRODUCT
+          : type == "Best Value"
+            ? "/api/checkout_session?product=" +
+              process.env.NEXT_PUBLIC_YEARLY_ACCESS_PRODUCT
+            : "";
+
   return (
     <form
-      className="relative w-full screen1280:!max-w-[420px]"
-      action={
-        type == "Easy Start"
-          ? "/api/checkout_session?product=" +
-          process.env.NEXT_PUBLIC_MONTHLY_ACCESS_PRODUCT
-          : type == "Weekly"
-            ? "/api/checkout_session?product=" +
-            process.env.NEXT_PUBLIC_WEEKLY_ACCESS_PRODUCT
-            : type == "Best Seller"
-              ? "/api/checkout_session?product=" +
-              process.env.NEXT_PUBLIC_QUARTER_ACCESS_PRODUCT
-              : type == "Best Value"
-                ? "/api/checkout_session?product=" +
-                process.env.NEXT_PUBLIC_YEARLY_ACCESS_PRODUCT
-                : ""
-      }
+      className="relative h-full w-full screen1280:!max-w-[420px]"
+      action={checkoutAction}
       method="POST"
     >
       <CheckoutAttributionFields />
+      {highlightLabel && (
+        <div className="absolute left-1/2 top-0 z-[3] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-orange-500 via-amber-400 to-blue-500 px-4 py-1 text-[12px] font-semibold uppercase tracking-[0.08em] text-white shadow-lg">
+          {highlightLabel}
+        </div>
+      )}
       <article
         aria-label={`Plan card for ${title} plan`}
-        className="relative  z-[1]  before:absolute before:rounded-[24px] hover:before:shadow-[6px_4px_16px_0px_#FC7A5066,_-6px_-4px_16px_0px_#4A7DFF66] before:transition-shadow before:duration-300 before:ease before:content-[''] before:inset-0 before:transform before:translate-z-[-1px] hover:cursor-pointer  h-[418px] top-[20px]  rounded-[24px] p-[8px] screen1280:!p-[16px] bg-white"
+        className={`relative top-[20px] z-[1] flex min-h-[470px] flex-col rounded-[24px] p-[12px] before:absolute before:inset-0 before:rounded-[24px] before:transition-shadow before:duration-300 before:ease before:content-[''] before:transform before:translate-z-[-1px] screen1280:!p-[18px] ${
+          highlight
+            ? "border-2 border-amber-300 bg-[linear-gradient(180deg,_#FFF8E8_0%,_#FFFFFF_34%,_#F5F9FF_100%)] shadow-[0_18px_45px_rgba(117,156,255,0.18)] before:shadow-[0_18px_45px_rgba(247,157,101,0.18)]"
+            : muted
+              ? "border border-slate-200 bg-slate-50/80 before:shadow-none"
+              : "bg-white hover:before:shadow-[6px_4px_16px_0px_#FC7A5066,_-6px_-4px_16px_0px_#4A7DFF66]"
+        }`}
       >
-        <div className=" flex gap-[16px] justify-between screen1280:!justify-start">
-          <div
-            className={`flex w-[32px] h-[32px] rounded-[24px] items-center justify-center ${iconWrapperColor}`}
-          >
-            {icon}
-          </div>
-          <div
-            className={`px-[24px]  bg-secondary6 h-[35px] flex items-center rounded-[16px] justify-center text-error1`}
-          >
-            {type}
-          </div>
-          {currentPlanTitle === planTitle && (
-            <div className="flex absolute items-center justify-end screen1280:!justify-end w-full text-[#0DAA94] font-medium position top-[110px] right-[16px]  screen1280:!top-[20px] text-[16px] screen1280:!left-auto screen1280:!right-[16px]">
-              Your Current Plan
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-[16px] bg-white/80 shadow-sm">
+            <div
+              className={`flex h-[32px] w-[32px] items-center justify-center rounded-[24px] ${iconWrapperColor}`}
+            >
+              {icon}
             </div>
-          )}
+          </div>
+          <div className="flex flex-1 flex-wrap justify-end gap-2">
+            {accessLabel && (
+              <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-700">
+                {accessLabel}
+              </div>
+            )}
+            <div
+              className={`px-[16px] h-[35px] flex items-center rounded-[16px] justify-center text-[12px] font-semibold ${
+                highlight
+                  ? "bg-amber-100 text-amber-700"
+                  : muted
+                    ? "bg-white text-slate-600"
+                    : "bg-secondary6 text-error1"
+              }`}
+            >
+              {type}
+            </div>
+          </div>
         </div>
 
-        <div
-          className={`flex mt-[24px] flex-col-reverse screen1280:!flex-row ${type === "Free"
-              ? "justify-end screen1280:!justify-start h-[22px]"
-              : "screen1280:!justify-between h-[69px] screen1280:!h-fit"
-            } `}
-        >
-          <h3
-            className={`${type === "Free" ? "h-[29px]" : "h-[35px]"
-              } flex items-center mt-[12px] screen1280:!mt-0 text-[18px]  screen1280:!text-[20px] font-medium text-text1`}
-          >
+        {currentPlanTitle === planTitle && (
+          <div className="mt-4 rounded-[16px] bg-[#F0FFFD] px-4 py-2 text-[14px] font-medium text-[#0DAA94]">
+            Your Current Plan
+          </div>
+        )}
+
+        <div className="mt-5">
+          <p className="text-[13px] font-medium uppercase tracking-[0.08em] text-slate-500">
+            {planTitle}
+          </p>
+          <h3 className="mt-2 text-[24px] font-semibold leading-tight text-text1 screen1280:!text-[28px]">
             {title}
           </h3>
-          {type != "Free" && (
-            <span className="px-[24px] flex-shrink-0  font-semibold w-fit  screen1280:!mt-0 text-[16px] text-white flex items-center justify-center bg-error2 h-[35px] rounded-[16px]">
-              {discount}% OFF
+          {description && (
+            <p className="mt-3 text-[14px] leading-6 text-slate-600">
+              {description}
+            </p>
+          )}
+          {type != "Free" && shouldShowSavingsBadge && (
+            <span
+              className={`mt-4 flex h-[35px] w-fit items-center justify-center rounded-[16px] px-[16px] text-[14px] font-semibold ${
+                highlight
+                  ? "bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-md"
+                  : muted
+                    ? "bg-white text-slate-700 border border-slate-200"
+                    : "bg-error2 text-white"
+              }`}
+            >
+              {savingsText || `${discount}% OFF`}
             </span>
           )}
         </div>
-        <div className="flex gap-[10px] items-center mt-[24px] h-[34px] screen1280:!h-[48px]">
+
+        <div className="mt-6 flex min-h-[48px] items-end gap-[10px]">
           {type != "Free" && (
             <>
               {oldPrice && (
                 <>
-                  <span className="relative text-text3 text-[16px] screen744:!text-[28px] screen1280:!text-[26px] font-medium">
+                  <span className="relative text-[16px] font-medium text-text3 screen744:!text-[28px] screen1280:!text-[26px]">
                     $ {oldPrice}
                     <span
                       className={`${id == 1
@@ -143,7 +199,7 @@ const PlanCard = ({
               )}
             </>
           )}
-          <span className="text-black font-bold text-[18px] screen744:!text-[28px] screen1280:!text-[31px]">
+          <span className="text-[22px] font-bold text-black screen744:!text-[32px] screen1280:!text-[36px]">
             $ {price}
             {type == "Free" && (
               <span className="text-gray font-normal text-[20px]">
@@ -154,21 +210,33 @@ const PlanCard = ({
           </span>
         </div>
 
+        {footerNote && (
+          <p className="mt-2 text-[13px] font-medium text-slate-500">
+            {footerNote}
+          </p>
+        )}
+
         <button
           type="submit"
           onClick={handlePlanClick}
           aria-label={`Select ${title} plan`}
-          className="relative z-[2] mt-[24px] hover:cursor-pointer hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]  shadow-startButton  flex gap-[8px] px-[24px] w-full bg-primary2 mw-full h-[40px] rounded-[24px] items-center justify-center"
+          className={`relative z-[2] mt-[24px] hover:cursor-pointer shadow-startButton flex gap-[8px] px-[24px] w-full mw-full h-[40px] rounded-[24px] items-center justify-center ${
+            highlight
+              ? "bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] hover:opacity-95"
+              : muted
+                ? "bg-slate-700 hover:bg-slate-800"
+                : "bg-primary2 hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]"
+          }`}
         >
           <span className="text-white text-[14px] font-normal leading-[16px] flex items-center justify-center">
             {buttonTitle}
           </span>
         </button>
-        <ul className="flex flex-col gap-[6px] mt-[16px] screen1280:mt-[24px]">
+        <ul className="mt-6 flex flex-1 flex-col gap-[10px]">
           {features.map((item, index) => (
-            <li className="flex gap-[8px] items-center" key={index}>
-              <SvgCheck className="text-[0DAA94]" />
-              <span className="text-text2 font-normal text-[14px] screen1280:!text-[16px] leading-[16px]">
+            <li className="flex items-start gap-[10px]" key={index}>
+              <SvgCheck className="mt-0.5 text-[0DAA94]" />
+              <span className="text-[14px] leading-6 text-text2 screen1280:!text-[15px]">
                 {item}
               </span>
             </li>
