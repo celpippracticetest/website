@@ -28,7 +28,7 @@ import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpe
 import { currentUser } from "@clerk/nextjs/server";
 import { hasPremiumPlusAccess } from "@/lib/subscriptionAccess";
 
-const Exam = async ({ params }: { params: { slug: string[] } }) => {
+const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
   const resolvedParams = await params;
   const examId: string | undefined =
     resolvedParams?.slug?.[0]?.split("exam_")?.[1];

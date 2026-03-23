@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import TaskForm from "@/components/dashboard-app/cms/TaskForm";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,8 @@ import Link from "next/link";
 import { toast } from "@/components/ui/use-toast";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 
-const EditTaskPage = ({ params }: { params: { id: string } }) => {
-    const { id } = params;
+const EditTaskPage = ({ params }: { params: Promise<{ id: string }> }) => {
+    const { id } = use(params);
     const router = useRouter();
     const [task, setTask] = useState<TTaskSchemaDto | null>(null);
     const [isLoading, setIsLoading] = useState(true);

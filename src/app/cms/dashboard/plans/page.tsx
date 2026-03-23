@@ -1,31 +1,72 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Plan } from "@/models/plans.model";
 import { formatPlanRecurringLabel, getPlanRecurringConfig } from "@/lib/planBilling";
-import { Plus, Edit2, Trash2, X } from "lucide-react";
+import {
+    getAccessLabel,
+    getPlanButtonLabel,
+    getAccessTierKey,
+    getDurationGroupKey,
+    getStablePlanId,
+} from "@/lib/pricing";
+import {
+    accessTierMeta,
+    durationDisplayOrder,
+    durationMeta,
+    getPlanTemplateById,
+    planTemplates,
+} from "@/lib/pricingCatalog";
+import type { SerializedPlan } from "@/types/pricing";
+import { Plus, Edit2, Layers3, Trash2, X } from "lucide-react";
 
-const PlansPage = () => {
-    const [plans, setPlans] = useState<Plan[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
-    const [formData, setFormData] = useState<Partial<Plan>>({
+type PlanFormData = Partial<Plan>;
+
+function createEmptyPlanForm(order: number): PlanFormData {
+    return {
         title: "",
         type: "",
         planTitle: "",
         oldPrice: "",
         price: "",
         discount: "",
-        buttonTitle: "Go Premium",
-        features: [],
+        buttonTitle: "Get Premium",
+        features: [""],
         billingInterval: "month",
         billingIntervalCount: 1,
         isActive: true,
-        order: 0,
+        order,
         iconType: "PopularPlan",
         iconWrapperColor: "bg-purple5",
-    });
+    };
+}
+
+function toSerializedPlan(plan: Partial<Plan>): SerializedPlan {
+    return {
+        _id: plan._id?.toString(),
+        title: plan.title || "",
+        type: plan.type || "",
+        planTitle: plan.planTitle || "",
+        oldPrice: plan.oldPrice || "",
+        price: plan.price || "",
+        discount: plan.discount || "",
+        buttonTitle: plan.buttonTitle || "",
+        features: plan.features || [],
+        billingInterval: plan.billingInterval,
+        billingIntervalCount: plan.billingIntervalCount,
+        stripePriceId: plan.stripePriceId,
+        iconType: plan.iconType,
+        iconWrapperColor: plan.iconWrapperColor,
+        order: plan.order,
+    };
+}
+
+const PlansPage = () => {
+    const [plans, setPlans] = useState<Plan[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+    const [formData, setFormData] = useState<PlanFormData>(createEmptyPlanForm(0));
 
     const fetchPlans = async () => {
         try {
@@ -56,22 +97,7 @@ const PlansPage = () => {
             });
         } else {
             setEditingPlan(null);
-            setFormData({
-                title: "",
-                type: "",
-                planTitle: "",
-                oldPrice: "",
-                price: "",
-                discount: "",
-                buttonTitle: "Go Premium",
-                features: [],
-                billingInterval: "month",
-                billingIntervalCount: 1,
-                isActive: true,
-                order: plans.length,
-                iconType: "PopularPlan",
-                iconWrapperColor: "bg-purple5",
-            });
+            setFormData(createEmptyPlanForm(plans.length));
         }
         setIsModalOpen(true);
     };
@@ -87,7 +113,27 @@ const PlansPage = () => {
         const { name, value } = e.target;
         setFormData((prev) => ({
             ...prev,
-            [name]: value,
+            [name]:
+                name === "order" || name === "billingIntervalCount"
+                    ? Number.parseInt(value || "0", 10)
+                    : value,
+        }));
+    };
+
+    const applyTemplate = (templateId: string) => {
+        const template = getPlanTemplateById(templateId);
+        if (!template) return;
+
+        setFormData((prev) => ({
+            ...prev,
+            title: template.title,
+            type: template.type,
+            planTitle: template.planTitle,
+            buttonTitle: template.buttonTitle,
+            billingInterval: template.billingInterval,
+            billingIntervalCount: template.billingIntervalCount,
+            iconType: template.iconType,
+            iconWrapperColor: template.iconWrapperColor,
         }));
     };
 
@@ -107,7 +153,7 @@ const PlansPage = () => {
     const removeFeature = (index: number) => {
         const newFeatures = [...(formData.features || [])];
         newFeatures.splice(index, 1);
-        setFormData((prev) => ({ ...prev, features: newFeatures }));
+        setFormData((prev) => ({ ...prev, features: newFeatures.length > 0 ? newFeatures : [""] }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -115,7 +161,13 @@ const PlansPage = () => {
         try {
             const url = editingPlan ? "/api/admin/plans" : "/api/admin/plans";
             const method = editingPlan ? "PUT" : "POST";
-            const body = editingPlan ? { ...formData, _id: editingPlan._id } : formData;
+            const normalizedFormData = {
+                ...formData,
+                buttonTitle: getPlanButtonLabel(toSerializedPlan(formData)),
+            };
+            const body = editingPlan
+                ? { ...normalizedFormData, _id: editingPlan._id }
+                : normalizedFormData;
 
             const response = await fetch(url, {
                 method,
@@ -152,17 +204,74 @@ const PlansPage = () => {
         }
     };
 
+    const sortedPlans = useMemo(() => {
+        return [...plans].sort((left, right) => left.order - right.order);
+    }, [plans]);
+
+    const planStats = useMemo(() => {
+        const activeCount = plans.filter((plan) => plan.isActive).length;
+        const premiumPlusCount = plans.filter((plan) =>
+            getAccessTierKey(toSerializedPlan(plan)) === "premiumPlus"
+        ).length;
+
+        return {
+            total: plans.length,
+            active: activeCount,
+            premiumPlus: premiumPlusCount,
+        };
+    }, [plans]);
+
+    const groupedPlans = useMemo(() => {
+        return durationDisplayOrder
+            .map((durationKey) => ({
+                key: durationKey,
+                meta: durationMeta[durationKey],
+                items: sortedPlans.filter((plan) => getDurationGroupKey(toSerializedPlan(plan)) === durationKey),
+            }))
+            .filter((section) => section.items.length > 0);
+    }, [sortedPlans]);
+
+    const formPreviewPlan = useMemo(() => toSerializedPlan(formData), [formData]);
+    const selectedDurationKey = getDurationGroupKey(formPreviewPlan);
+    const selectedAccessKey = getAccessTierKey(formPreviewPlan);
+    const selectedAccessLabel = getAccessLabel(formPreviewPlan);
+    const selectedButtonLabel = getPlanButtonLabel(formPreviewPlan);
+
     return (
         <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-800">Plans Management</h1>
+            <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                    <p className="text-sm font-semibold uppercase tracking-[0.08em] text-blue-700">
+                        Shared pricing system
+                    </p>
+                    <h1 className="mt-1 text-2xl font-bold text-gray-800">Plans Management</h1>
+                    <p className="mt-2 max-w-2xl text-sm text-gray-600">
+                        The CMS now follows the same duration and access structure used on the public pricing page.
+                        Use a template first, then fill in pricing and features.
+                    </p>
+                </div>
                 <button
                     onClick={() => handleOpenModal()}
-                    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
                 >
                     <Plus size={20} />
                     Add New Plan
                 </button>
+            </div>
+
+            <div className="mb-6 grid gap-4 md:grid-cols-3">
+                <div className="rounded-2xl border bg-white p-5 shadow-sm">
+                    <p className="text-sm font-medium text-gray-500">Total plans</p>
+                    <p className="mt-2 text-3xl font-bold text-gray-900">{planStats.total}</p>
+                </div>
+                <div className="rounded-2xl border bg-white p-5 shadow-sm">
+                    <p className="text-sm font-medium text-gray-500">Active plans</p>
+                    <p className="mt-2 text-3xl font-bold text-emerald-600">{planStats.active}</p>
+                </div>
+                <div className="rounded-2xl border bg-white p-5 shadow-sm">
+                    <p className="text-sm font-medium text-gray-500">Premium Plus plans</p>
+                    <p className="mt-2 text-3xl font-bold text-amber-600">{planStats.premiumPlus}</p>
+                </div>
             </div>
 
             {isLoading ? (
@@ -170,89 +279,132 @@ const PlansPage = () => {
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {plans.map((plan) => (
-                        <div
-                            key={plan._id?.toString()}
-                            className={`bg-white rounded-xl shadow-sm border p-6 relative ${!plan.isActive ? "opacity-60" : ""
-                                }`}
-                        >
-                            <div className="absolute top-4 right-4 flex gap-2">
-                                <button
-                                    onClick={() => handleOpenModal(plan)}
-                                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
-                                >
-                                    <Edit2 size={18} />
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(plan._id!.toString())}
-                                    className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
-                                >
-                                    <Trash2 size={18} />
-                                </button>
-                            </div>
-
-                            <div className="mb-4">
-                                <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 mb-2">
-                                    {plan.type}
+                <div className="space-y-8">
+                    {groupedPlans.map((section) => (
+                        <div key={section.key}>
+                            <div className="mb-4 flex items-center justify-between gap-3">
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500">
+                                        {section.meta.eyebrow}
+                                    </p>
+                                    <h2 className="text-xl font-semibold text-gray-900">
+                                        {section.meta.title}
+                                    </h2>
+                                    <p className="text-sm text-gray-600">{section.meta.summary}</p>
+                                </div>
+                                <span className="rounded-full border bg-white px-3 py-1 text-xs font-medium text-gray-600">
+                                    {section.items.length} plan{section.items.length === 1 ? "" : "s"}
                                 </span>
-                                <h3 className="text-xl font-bold text-gray-900">{plan.title}</h3>
-                                <div className="flex items-baseline gap-2 mt-2">
-                                    <span className="text-2xl font-bold text-gray-900">
-                                        ${plan.price}
-                                    </span>
-                                    {plan.oldPrice && (
-                                        <span className="text-sm text-gray-500 line-through">
-                                            ${plan.oldPrice}
-                                        </span>
-                                    )}
-                                </div>
                             </div>
 
-                            <div className="mb-4 rounded-lg border bg-gray-50 px-3 py-2 text-xs text-gray-600 space-y-1">
-                                <div className="flex justify-between gap-3">
-                                    <span>Stripe</span>
-                                    <span className={plan.stripePriceId ? "text-green-700 font-medium" : "text-amber-700 font-medium"}>
-                                        {plan.stripePriceId ? "Connected" : "Not connected"}
-                                    </span>
-                                </div>
-                                <div>{formatPlanRecurringLabel(plan)}</div>
-                                {plan.stripeProductId && (
-                                    <div className="truncate">Product: {plan.stripeProductId}</div>
-                                )}
-                                {plan.stripePriceId && (
-                                    <div className="truncate">Price: {plan.stripePriceId}</div>
-                                )}
-                            </div>
+                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                                {section.items.map((plan) => {
+                                    const serializedPlan = toSerializedPlan(plan);
+                                    const accessLabel = getAccessLabel(serializedPlan) || "Unclassified";
+                                    const stableId = getStablePlanId(serializedPlan, plan.order);
 
-                            <div className="space-y-2 mb-4">
-                                {plan.features.slice(0, 3).map((feature, idx) => (
-                                    <div key={idx} className="flex items-center gap-2 text-sm text-gray-600">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-                                        {feature}
-                                    </div>
-                                ))}
-                                {plan.features.length > 3 && (
-                                    <div className="text-xs text-gray-400 pl-3.5">
-                                        +{plan.features.length - 3} more features
-                                    </div>
-                                )}
-                            </div>
+                                    return (
+                                        <div
+                                            key={stableId}
+                                            className={`relative rounded-2xl border bg-white p-6 shadow-sm ${!plan.isActive ? "opacity-60" : ""}`}
+                                        >
+                                            <div className="absolute right-4 top-4 flex gap-2">
+                                                <button
+                                                    onClick={() => handleOpenModal(plan)}
+                                                    className="rounded-full p-2 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                                                >
+                                                    <Edit2 size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(plan._id!.toString())}
+                                                    className="rounded-full p-2 text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
 
-                            <div className="pt-4 border-t flex justify-between items-center text-sm text-gray-500">
-                                <span>Order: {plan.order}</span>
-                                <span>{plan.isActive ? "Active" : "Inactive"}</span>
+                                            <div className="mb-4">
+                                                <div className="mb-3 flex flex-wrap gap-2">
+                                                    <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
+                                                        {accessLabel}
+                                                    </span>
+                                                    <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+                                                        {plan.type}
+                                                    </span>
+                                                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                                                        plan.isActive
+                                                            ? "bg-emerald-100 text-emerald-700"
+                                                            : "bg-gray-100 text-gray-500"
+                                                    }`}>
+                                                        {plan.isActive ? "Active" : "Inactive"}
+                                                    </span>
+                                                </div>
+
+                                                <h3 className="text-xl font-bold text-gray-900">{plan.title}</h3>
+                                                <p className="mt-1 text-sm text-gray-500">
+                                                    {plan.planTitle} · {formatPlanRecurringLabel(plan)}
+                                                </p>
+
+                                                <div className="mt-3 flex items-baseline gap-2">
+                                                    <span className="text-2xl font-bold text-gray-900">
+                                                        CA$ {plan.price}
+                                                    </span>
+                                                    {plan.oldPrice && (
+                                                        <span className="text-sm text-gray-500 line-through">
+                                                            CA$ {plan.oldPrice}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="mb-4 rounded-xl border bg-gray-50 px-3 py-3 text-xs text-gray-600">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <span>Stripe</span>
+                                                    <span className={plan.stripePriceId ? "font-medium text-green-700" : "font-medium text-amber-700"}>
+                                                        {plan.stripePriceId ? "Connected" : "Not connected"}
+                                                    </span>
+                                                </div>
+                                                <div className="mt-2 flex items-center justify-between gap-3">
+                                                    <span>Order</span>
+                                                    <span>{plan.order}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="mb-4 space-y-2">
+                                                {plan.features.slice(0, 3).map((feature, idx) => (
+                                                    <div key={idx} className="flex items-center gap-2 text-sm text-gray-600">
+                                                        <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
+                                                        {feature}
+                                                    </div>
+                                                ))}
+                                                {plan.features.length > 3 && (
+                                                    <div className="pl-3.5 text-xs text-gray-400">
+                                                        +{plan.features.length - 3} more features
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="border-t pt-4 text-xs text-gray-500">
+                                                Public pricing groups this under{" "}
+                                                <span className="font-semibold text-gray-700">
+                                                    {durationMeta[section.key].title}
+                                                </span>
+                                                {" / "}
+                                                <span className="font-semibold text-gray-700">{accessLabel}</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     ))}
                 </div>
             )}
 
-            {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                        <div className="flex justify-between items-center p-6 border-b sticky top-0 bg-white z-10">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+                    <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl bg-white shadow-xl">
+                        <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white p-6">
                             <h2 className="text-xl font-bold text-gray-900">
                                 {editingPlan ? "Edit Plan" : "Create New Plan"}
                             </h2>
@@ -264,8 +416,66 @@ const PlansPage = () => {
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <form onSubmit={handleSubmit} className="space-y-6 p-6">
+                            <div className="rounded-2xl border bg-slate-50 p-4">
+                                <div className="mb-3 flex items-center gap-2">
+                                    <Layers3 size={18} className="text-blue-700" />
+                                    <h3 className="font-semibold text-gray-900">Quick templates</h3>
+                                </div>
+                                <p className="mb-4 text-sm text-gray-600">
+                                    Apply a standard duration and access pattern so this plan matches the public pricing system.
+                                </p>
+                                <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+                                    {planTemplates.map((template) => (
+                                        <button
+                                            key={template.id}
+                                            type="button"
+                                            onClick={() => applyTemplate(template.id)}
+                                            className="rounded-xl border bg-white px-3 py-3 text-left text-sm transition-colors hover:border-blue-300 hover:bg-blue-50"
+                                        >
+                                            <div className="font-semibold text-gray-900">{template.label}</div>
+                                            <div className="mt-1 text-xs text-gray-500">{template.title}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="grid gap-4 md:grid-cols-3">
+                                <div className="rounded-2xl border bg-white p-4 shadow-sm">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500">
+                                        Detected duration
+                                    </p>
+                                    <p className="mt-2 text-lg font-semibold text-gray-900">
+                                        {selectedDurationKey ? durationMeta[selectedDurationKey].title : "Not detected"}
+                                    </p>
+                                </div>
+                                <div className="rounded-2xl border bg-white p-4 shadow-sm">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500">
+                                        Detected access
+                                    </p>
+                                    <p className="mt-2 text-lg font-semibold text-gray-900">
+                                        {selectedAccessLabel || "Not detected"}
+                                    </p>
+                                </div>
+                                <div className="rounded-2xl border bg-white p-4 shadow-sm">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.08em] text-gray-500">
+                                        Public pricing summary
+                                    </p>
+                                    <p className="mt-2 text-sm font-medium text-gray-900">
+                                        {selectedDurationKey ? durationMeta[selectedDurationKey].summary : "Choose a billing interval or apply a template."}
+                                    </p>
+                                    {selectedAccessKey && (
+                                        <p className="mt-1 text-xs text-gray-500">
+                                            {accessTierMeta[selectedAccessKey].summary}
+                                        </p>
+                                    )}
+                                    <p className="mt-2 text-xs font-semibold uppercase tracking-[0.08em] text-blue-700">
+                                        CTA: {selectedButtonLabel}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Title
@@ -300,19 +510,6 @@ const PlansPage = () => {
                                         type="text"
                                         name="planTitle"
                                         value={formData.planTitle}
-                                        onChange={handleInputChange}
-                                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Button Title
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="buttonTitle"
-                                        value={formData.buttonTitle}
                                         onChange={handleInputChange}
                                         className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         required
@@ -494,6 +691,10 @@ const PlansPage = () => {
                                 </div>
                             </div>
 
+                            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                                Premium Plus plans should clearly mention mock exams or use a Premium Plus title so the public pricing page can classify them correctly.
+                            </div>
+
                             <div className="flex items-center gap-2">
                                 <input
                                     type="checkbox"
@@ -510,7 +711,7 @@ const PlansPage = () => {
                                 </label>
                             </div>
 
-                            <div className="flex justify-end gap-3 pt-4 border-t">
+                            <div className="flex justify-end gap-3 border-t pt-4">
                                 <button
                                     type="button"
                                     onClick={handleCloseModal}

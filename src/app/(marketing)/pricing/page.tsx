@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { JsonLd } from "@/components/seo/JsonLd";
 import PricingPageClient from "@/components/pages/pricing/PricingPageClient";
+import { pricingFaqs } from "@/components/pages/pricing/pricingContent";
 import mongoClient from "@/lib/mongodb";
 import { PlansRepository } from "@/repositories/plans.repo";
 import type { SerializedPlan } from "@/types/pricing";
@@ -30,32 +31,14 @@ export const metadata: Metadata = {
 const faqSchema = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
-  mainEntity: [
-    {
-      "@type": "Question",
-      name: "Where can one take a full CELPIP practice test free of charge online?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "You can take a free full-length CELPIP practice test right here on CELPIPPracticetest.com. Simply sign up for a free account to access our sample test which includes Listening, Reading, Writing, and Speaking sections with AI-powered scoring.",
-      },
+  mainEntity: pricingFaqs.map((faq) => ({
+    "@type": "Question",
+    name: faq.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: faq.answer,
     },
-    {
-      "@type": "Question",
-      name: "How exact are CELPIP practice tests compared to the real test?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Our simulations attempt to replicate the actual CELPIP test format and duration. With AI-based scoring, your scores reflect real exam performance, enabling you to better estimate your CLB levels.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Will I get instant online CELPIP scores and feedback?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Yes! Our platform provides instant AI scoring and detailed feedback for all sections, including Speaking and Writing, so you can identify your strengths and weaknesses immediately.",
-      },
-    },
-  ],
+  })),
 };
 
 function serializePlan(plan: {
@@ -68,9 +51,12 @@ function serializePlan(plan: {
   discount: string;
   buttonTitle: string;
   features: string[];
+  billingInterval?: "day" | "week" | "month" | "year";
+  billingIntervalCount?: number;
   stripePriceId?: string;
   iconType?: string;
   iconWrapperColor?: string;
+  order?: number;
 }): SerializedPlan {
   const id = plan._id;
   const idStr =
@@ -85,9 +71,12 @@ function serializePlan(plan: {
     discount: plan.discount,
     buttonTitle: plan.buttonTitle,
     features: plan.features,
+    billingInterval: plan.billingInterval,
+    billingIntervalCount: plan.billingIntervalCount,
     stripePriceId: plan.stripePriceId,
     iconType: plan.iconType as SerializedPlan["iconType"],
     iconWrapperColor: plan.iconWrapperColor,
+    order: plan.order,
   };
 }
 

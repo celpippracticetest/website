@@ -17,6 +17,29 @@ import { Drawer } from "vaul";
 import { useEffect, useState } from "react";
 import { useEcommerceTracking } from "@/hooks/useTracking";
 
+type AvailableStripePlan = {
+  id: string;
+  name: string;
+  priceId: string;
+  amount: number;
+  currency: string;
+  interval?: string;
+  intervalCount?: number;
+  metadata?: Record<string, string>;
+};
+
+function getAvailablePlanPriceId(
+  plans: AvailableStripePlan[],
+  interval: string,
+  intervalCount = 1
+) {
+  return (
+    plans.find(
+      (plan) => plan.interval === interval && (plan.intervalCount ?? 1) === intervalCount
+    )?.priceId || ""
+  );
+}
+
 const PlanForGuesVisitor = () => {
   return (
     <div className="mx-auto w-full max-w-sm p-4">
@@ -67,8 +90,14 @@ const PlansForUsers = (
     itemId: string,
     itemName: string,
     price: number
-  ) => void
+  ) => void,
+  availablePlans: AvailableStripePlan[]
 ) => {
+  const yearlyPriceId = getAvailablePlanPriceId(availablePlans, "year", 1);
+  const quarterPriceId = getAvailablePlanPriceId(availablePlans, "month", 3);
+  const monthlyPriceId = getAvailablePlanPriceId(availablePlans, "month", 1);
+  const weeklyPriceId = getAvailablePlanPriceId(availablePlans, "week", 1);
+
   return (
     <div className="w-full lg:px-0  py-4 overflow-y-auto pb-5">
       <h2
@@ -217,10 +246,7 @@ const PlansForUsers = (
           <div className="flex flex-col w-full max-w-5xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 lg:px-20 w-full mb-6">
               <form
-                action={
-                  "/api/checkout_session?product=" +
-                  process.env.NEXT_PUBLIC_YEARLY_ACCESS_PRODUCT
-                }
+                action={yearlyPriceId ? `/api/checkout_session?price=${yearlyPriceId}` : ""}
                 method="POST"
               >
                 <CheckoutAttributionFields />
@@ -228,6 +254,7 @@ const PlansForUsers = (
                   type="submit"
                   role="link"
                   className="h-full w-full"
+                  disabled={!yearlyPriceId}
                   onClick={() =>
                     onCheckoutIntent(
                       "yearly_access",
@@ -292,10 +319,7 @@ const PlansForUsers = (
                 </button>
               </form>
               <form
-                action={
-                  "/api/checkout_session?product=" +
-                  process.env.NEXT_PUBLIC_QUARTER_ACCESS_PRODUCT
-                }
+                action={quarterPriceId ? `/api/checkout_session?price=${quarterPriceId}` : ""}
                 method="POST"
               >
                 <CheckoutAttributionFields />
@@ -303,6 +327,7 @@ const PlansForUsers = (
                   type="submit"
                   role="link"
                   className="h-full w-full"
+                  disabled={!quarterPriceId}
                   onClick={() =>
                     onCheckoutIntent(
                       "quarter_access",
@@ -367,10 +392,7 @@ const PlansForUsers = (
                 </button>
               </form>
               <form
-                action={
-                  "/api/checkout_session?product=" +
-                  process.env.NEXT_PUBLIC_MONTHLY_ACCESS_PRODUCT
-                }
+                action={monthlyPriceId ? `/api/checkout_session?price=${monthlyPriceId}` : ""}
                 method="POST"
               >
                 <CheckoutAttributionFields />
@@ -378,6 +400,7 @@ const PlansForUsers = (
                   type="submit"
                   role="link"
                   className="h-full w-full"
+                  disabled={!monthlyPriceId}
                   onClick={() =>
                     onCheckoutIntent(
                       "monthly_access",
@@ -437,10 +460,7 @@ const PlansForUsers = (
                 </button>
               </form>
               <form
-                action={
-                  "/api/checkout_session?product=" +
-                  process.env.NEXT_PUBLIC_WEEKLY_ACCESS_PRODUCT
-                }
+                action={weeklyPriceId ? `/api/checkout_session?price=${weeklyPriceId}` : ""}
                 method="POST"
               >
                 <CheckoutAttributionFields />
@@ -448,6 +468,7 @@ const PlansForUsers = (
                   type="submit"
                   role="link"
                   className="h-full w-full"
+                  disabled={!weeklyPriceId}
                   onClick={() =>
                     onCheckoutIntent(
                       "weekly_access",
@@ -557,6 +578,7 @@ const PlansForUsers = (
 export default function PremiumPlanDrawer() {
   const [time, setTime] = useState(0);
   const [showCopied, setShowCopied] = useState(false);
+  const [availablePlans, setAvailablePlans] = useState<AvailableStripePlan[]>([]);
   const { user } = useUser();
   const { beginCheckout, selectItem } = useEcommerceTracking();
   useEffect(() => {
@@ -596,6 +618,26 @@ export default function PremiumPlanDrawer() {
   const setPremiumPlanModalState = useStore(
     (state) => state.setPremiumPlanModalState
   );
+
+  useEffect(() => {
+    const fetchAvailablePlans = async () => {
+      try {
+        const response = await fetch("/api/plans/available");
+        if (!response.ok) {
+          return;
+        }
+
+        const data = await response.json();
+        setAvailablePlans(data.plans || []);
+      } catch (error) {
+        console.error("Error fetching available plans:", error);
+      }
+    };
+
+    if (isPremiumPlanModalOpen && availablePlans.length === 0) {
+      fetchAvailablePlans();
+    }
+  }, [availablePlans.length, isPremiumPlanModalOpen]);
 
   const handleCheckoutIntent = (
     itemId: string,
@@ -646,7 +688,13 @@ export default function PremiumPlanDrawer() {
 
             {!user
               ? PlanForGuesVisitor()
-              : PlansForUsers(time, showCopied, setShowCopied, handleCheckoutIntent)}
+              : PlansForUsers(
+                  time,
+                  showCopied,
+                  setShowCopied,
+                  handleCheckoutIntent,
+                  availablePlans
+                )}
           </Drawer.Content>
         </Drawer.Portal>
       </Drawer.Root>

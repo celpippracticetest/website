@@ -46,19 +46,7 @@ const PlanCard = ({
 
   const checkoutAction = stripePriceId
     ? `/api/checkout_session?price=${stripePriceId}`
-    : type == "Easy Start"
-      ? "/api/checkout_session?product=" +
-        process.env.NEXT_PUBLIC_MONTHLY_ACCESS_PRODUCT
-      : type == "Weekly"
-        ? "/api/checkout_session?product=" +
-          process.env.NEXT_PUBLIC_WEEKLY_ACCESS_PRODUCT
-        : type == "Best Seller"
-          ? "/api/checkout_session?product=" +
-            process.env.NEXT_PUBLIC_QUARTER_ACCESS_PRODUCT
-          : type == "Best Value"
-            ? "/api/checkout_session?product=" +
-              process.env.NEXT_PUBLIC_YEARLY_ACCESS_PRODUCT
-            : "";
+    : "";
 
   return (
     <form
@@ -128,7 +116,12 @@ const PlanCard = ({
           type="submit"
           onClick={handleCheckoutTracking}
           aria-label={`Select ${title} plan`}
-          className="relative z-[2] mt-[24px] hover:cursor-pointer hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]  shadow-startButton  flex gap-[8px] px-[24px] w-full bg-primary2 mw-full h-[40px] rounded-[24px] items-center justify-center"
+          disabled={!checkoutAction}
+          className={`relative z-[2] mt-[24px] shadow-startButton flex gap-[8px] px-[24px] w-full mw-full h-[40px] rounded-[24px] items-center justify-center ${
+            checkoutAction
+              ? "bg-primary2 hover:cursor-pointer hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]"
+              : "cursor-not-allowed bg-slate-400 opacity-60"
+          }`}
         >
           <span className="text-white text-[14px] font-normal leading-[16px] flex items-center justify-center">
             {buttonTitle}
