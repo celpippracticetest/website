@@ -236,13 +236,21 @@ export default async function UserProfilePage() {
                 }
               }
               
+              const price = subscription.items.data[0]?.price;
+              const product = price?.product;
+              const planNameFromStripe =
+                product && typeof product === "object" && "name" in product
+                  ? (product as Stripe.Product).name
+                  : undefined;
+
               subscriptionData = {
                 id: subscription.id,
                 status: subscription.status,
                 currentPeriodStart: currentPeriodStart,
                 currentPeriodEnd: currentPeriodEnd,
                 cancelAtPeriodEnd: subscription.cancel_at_period_end,
-                planId: subscription.items.data[0]?.price?.id,
+                planId: price?.id,
+                planName: planNameFromStripe,
               };
               console.log("Debug - Active subscription found:", subscriptionData);
             } else {
@@ -266,7 +274,8 @@ export default async function UserProfilePage() {
                     currentPeriodEnd: Math.floor(endDate.getTime() / 1000),
                     cancelAtPeriodEnd: false,
                     planId: "one_time_payment",
-                    isOneTimePayment: true
+                    isOneTimePayment: true,
+                    planName: latestCharge.description || "One-time Payment",
                   };
                   console.log("Debug - One-time payment found:", subscriptionData);
                 }

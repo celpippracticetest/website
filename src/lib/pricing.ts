@@ -132,6 +132,41 @@ export function isPremiumPlusPlan(plan: SerializedPlan) {
   );
 }
 
+/** Bullets on /pricing compact PlanCard for Premium (and shared tail for Premium Plus). */
+export const PRICING_COMPACT_CARD_CORE_FEATURES = [
+  "3,000+ practice questions",
+  "AI scoring + feedback",
+  "Progress tracking",
+  "Smart Flashcards",
+  "CLB Vocabulary Trainer",
+  "AI Vocabulary Booster",
+] as const;
+
+/** Leading bullets on Premium Plus compact cards (rendered bold in PlanCard). */
+export const PRICING_COMPACT_CARD_PLUS_LEAD_FEATURES = [
+  "60 full mock exams",
+  "Real exam simulation",
+] as const;
+
+export function getPricingCompactPlanCardFeatures(plan: SerializedPlan): {
+  features: string[];
+  leadingBoldFeatureCount: number;
+} {
+  if (isPremiumPlusPlan(plan)) {
+    return {
+      features: [
+        ...PRICING_COMPACT_CARD_PLUS_LEAD_FEATURES,
+        ...PRICING_COMPACT_CARD_CORE_FEATURES,
+      ],
+      leadingBoldFeatureCount: PRICING_COMPACT_CARD_PLUS_LEAD_FEATURES.length,
+    };
+  }
+  return {
+    features: [...PRICING_COMPACT_CARD_CORE_FEATURES],
+    leadingBoldFeatureCount: 0,
+  };
+}
+
 export function getDurationGroupKey(plan: SerializedPlan): DurationGroupKey | null {
   return getDurationGroupKeyFromName(plan) || getDurationGroupKeyFromBilling(plan);
 }

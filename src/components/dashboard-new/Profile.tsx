@@ -29,15 +29,9 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
   const userPurchaseDate = user?.publicMetadata?.purchaseDate as string | undefined;
 
   useEffect(() => {
-    // Priority: Use subscription data if available, otherwise fallback to checkout data
+    // Stripe product / charge description is the source of truth for the plan label
     if (subscriptionData?.planName) {
-      setPlanNameDisplay(
-        getSubscriptionDisplayName(
-          userPlan,
-          userPurchaseDate,
-          subscriptionData.planName
-        )
-      );
+      setPlanNameDisplay(String(subscriptionData.planName).trim());
       setIsLoaded(true);
     } else if (subscriptionData && subscriptionData.currentPeriodStart && subscriptionData.currentPeriodEnd) {
       setPlanNameDisplay(

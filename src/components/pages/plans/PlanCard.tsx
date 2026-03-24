@@ -1,6 +1,5 @@
 "use client";
 import type { ReactNode } from "react";
-import SvgCheck from "../../icons/Check";
 import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
 import { useEcommerceTracking } from "@/hooks/useTracking";
 import {
@@ -34,7 +33,8 @@ interface IPlanCard {
   stripePriceId?: string;
   compact?: boolean;
   featureLimit?: number;
-  mockExamStatus?: "included" | "notIncluded";
+  /** First N feature lines render bold (e.g. Premium Plus mock-exam highlights on /pricing). */
+  leadingBoldFeatureCount?: number;
   billingInterval?: PlanBillingInterval;
   billingIntervalCount?: number;
   /** Hidden inputs appended to checkout POST (e.g. pricing A/B variant). */
@@ -63,7 +63,7 @@ const PlanCard = ({
   stripePriceId,
   compact = false,
   featureLimit,
-  mockExamStatus,
+  leadingBoldFeatureCount = 0,
   billingInterval,
   billingIntervalCount,
   checkoutHiddenFields,
@@ -183,19 +183,6 @@ const PlanCard = ({
               <h3 className="text-[16px] font-semibold leading-tight text-text1">
                 {accessLabel || title}
               </h3>
-              <div className="mt-0.5 flex min-h-0 flex-col justify-start">
-                {mockExamStatus === "notIncluded" && (
-                  <a
-                    href="#compare-access"
-                    className="inline-flex text-[12px] font-medium text-slate-400 underline decoration-slate-300 underline-offset-2"
-                  >
-                    Mock exams not included
-                  </a>
-                )}
-                {mockExamStatus === "included" && (
-                  <p className="text-[12px] font-bold text-amber-600">Mock exams included</p>
-                )}
-              </div>
               {type != "Free" && shouldShowSavingsBadge && (
                 <span
                   className={`mt-1 flex min-h-0 w-fit items-center justify-center rounded-[16px] px-2.5 py-1 text-[12px] font-semibold ${
@@ -211,11 +198,16 @@ const PlanCard = ({
               )}
             </div>
 
-            <ul className="mt-0 flex shrink-0 flex-col gap-1">
+            <ul className="mt-0 flex shrink-0 list-none flex-col gap-1 p-0">
               {visibleFeatures.map((item, index) => (
-                <li className="flex items-start gap-2" key={index}>
-                  <SvgCheck className="mt-0.5 text-[0DAA94]" />
-                  <span className="text-[12px] leading-4 text-text2">{item}</span>
+                <li key={index}>
+                  <span
+                    className={`text-[12px] leading-4 text-text2 ${
+                      index < leadingBoldFeatureCount ? "font-bold text-text1" : ""
+                    }`}
+                  >
+                    {item}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -332,11 +324,14 @@ const PlanCard = ({
                 {buttonTitle}
               </span>
             </button>
-            <ul className="mt-6 flex flex-1 flex-col gap-[10px]">
+            <ul className="mt-6 flex flex-1 list-none flex-col gap-[10px] p-0">
               {visibleFeatures.map((item, index) => (
-                <li className="flex items-start gap-[10px]" key={index}>
-                  <SvgCheck className="mt-0.5 text-[0DAA94]" />
-                  <span className="text-[14px] leading-6 text-text2 screen1280:!text-[15px]">
+                <li key={index}>
+                  <span
+                    className={`text-[14px] leading-6 text-text2 screen1280:!text-[15px] ${
+                      index < leadingBoldFeatureCount ? "font-bold text-text1" : ""
+                    }`}
+                  >
                     {item}
                   </span>
                 </li>

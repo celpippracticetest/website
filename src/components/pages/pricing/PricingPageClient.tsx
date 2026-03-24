@@ -25,6 +25,7 @@ import {
   getDurationGroupKey,
   getFooterNote,
   getPlanDescription,
+  getPricingCompactPlanCardFeatures,
   getStablePlanId,
   isPremiumPlusPlan,
 } from "@/lib/pricing";
@@ -648,7 +649,10 @@ export default function PricingPageClient({
                       : section.premium!
                     : null;
 
-                  const planCardForItem = (item: GroupedPlanItem) => (
+                  const planCardForItem = (item: GroupedPlanItem) => {
+                    const { features: compactFeatures, leadingBoldFeatureCount } =
+                      getPricingCompactPlanCardFeatures(item.plan);
+                    return (
                     <PlanCard
                       id={item.index}
                       title={item.plan.title}
@@ -657,7 +661,8 @@ export default function PricingPageClient({
                       price={item.plan.price}
                       discount={item.plan.discount}
                       buttonTitle="Subscribe"
-                      features={item.plan.features}
+                      features={compactFeatures}
+                      leadingBoldFeatureCount={leadingBoldFeatureCount}
                       stripePriceId={item.plan.stripePriceId}
                       billingInterval={item.plan.billingInterval}
                       billingIntervalCount={item.plan.billingIntervalCount}
@@ -666,8 +671,6 @@ export default function PricingPageClient({
                       currentPlanTitle=""
                       planTitle={item.plan.planTitle || item.plan.title}
                       compact
-                      featureLimit={3}
-                      mockExamStatus={isPremiumPlusPlan(item.plan) ? "included" : "notIncluded"}
                       highlight={
                         recommendedPlanId === item.stableId ||
                         (section.key === "threeMonth" && isPremiumPlusPlan(item.plan))
@@ -686,7 +689,8 @@ export default function PricingPageClient({
                       footerNote={getFooterNote(item.plan)}
                       checkoutHiddenFields={pricingCheckoutFields}
                     />
-                  );
+                    );
+                  };
 
                   if (useSwitchLayout && activeItem) {
                     return (
