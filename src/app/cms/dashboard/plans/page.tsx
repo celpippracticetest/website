@@ -18,7 +18,29 @@ import {
     planTemplates,
 } from "@/lib/pricingCatalog";
 import type { SerializedPlan } from "@/types/pricing";
-import { Plus, Edit2, Layers3, Trash2, X, BarChart2, RefreshCw } from "lucide-react";
+import {
+    Plus,
+    Edit2,
+    Layers3,
+    Trash2,
+    X,
+    BarChart2,
+    RefreshCw,
+    UserCog,
+    Loader2,
+} from "lucide-react";
+
+type MigratePremiumToPlusResult = {
+    ok?: boolean;
+    dryRun?: boolean;
+    scanned?: number;
+    updated?: number;
+    capped?: boolean;
+    maxUpdates?: number | null;
+    errorCount?: number;
+    errors?: string[];
+    error?: string;
+};
 
 type PlanFormData = Partial<Plan>;
 
@@ -85,6 +107,41 @@ const PlansPage = () => {
     const [abStatsLoading, setAbStatsLoading] = useState(false);
     const [abStatsDays, setAbStatsDays] = useState(30);
     const [abStatsRefreshTick, setAbStatsRefreshTick] = useState(0);
+    const [migrateLoading, setMigrateLoading] = useState(false);
+    const [migrateResult, setMigrateResult] = useState<MigratePremiumToPlusResult | null>(null);
+    const [migrateMaxUpdates, setMigrateMaxUpdates] = useState("");
+
+    const runPremiumToPlusMigration = async (dryRun: boolean) => {
+        setMigrateLoading(true);
+        setMigrateResult(null);
+        const cap = Number.parseInt(migrateMaxUpdates.trim(), 10);
+        const payload: { dryRun: boolean; maxUpdates?: number } = { dryRun };
+        if (Number.isFinite(cap) && cap > 0) {
+            payload.maxUpdates = cap;
+        }
+        try {
+            const response = await fetch("/api/admin/migrate-clerk-premium-to-plus", {
+                method: "POST",
+                credentials: "same-origin",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+            const data = (await response.json()) as MigratePremiumToPlusResult;
+            if (!response.ok) {
+                setMigrateResult({
+                    error: data.error || `Request failed (${response.status})`,
+                });
+                return;
+            }
+            setMigrateResult(data);
+        } catch (e) {
+            setMigrateResult({
+                error: e instanceof Error ? e.message : "Request failed",
+            });
+        } finally {
+            setMigrateLoading(false);
+        }
+    };
 
     const fetchPlans = async () => {
         try {
@@ -313,6 +370,139 @@ const PlansPage = () => {
                     <p className="text-sm font-medium text-gray-500">Premium Plus plans</p>
                     <p className="mt-2 text-3xl font-bold text-amber-600">{planStats.premiumPlus}</p>
                 </div>
+            </div>
+
+            <div className="mb-8 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50/90 to-white p-6 shadow-sm">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="flex items-start gap-3">
+                        <UserCog className="mt-0.5 h-6 w-6 shrink-0 text-amber-700" />
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-amber-800">
+                                One-time subscriber migration
+                            </p>
+                            <h2 className="mt-1 text-lg font-bold text-gray-900">
+                                Legacy Premium → Premium Plus (Clerk)
+                            </h2>
+                            <p className="mt-1 max-w-2xl text-sm text-gray-600">
+                                Users who still have Clerk{" "}
+                                <code className="rounded bg-white/90 px-1 py-0.5 text-xs">
+                                    {`publicMetadata.plan = 'premium'`}
+                                </code>{" "}
+                                from the single-tier era are updated to{" "}
+                                <code className="rounded bg-white/90 px-1 py-0.5 text-xs">plus</code>{" "}
+                                (same access as Premium Plus). Runs in batches. Use{" "}
+                                <strong className="font-semibold">Dry run</strong> first (no writes), then
+                                optionally set <strong className="font-semibold">Max updates</strong> to{" "}
+                                <code className="rounded bg-white/90 px-1 py-0.5 text-xs">1</code> for a live
+                                canary before running the full migration.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex w-full max-w-md flex-col gap-3 sm:max-w-none">
+                        <label className="flex flex-col gap-1 text-sm text-gray-700">
+                            <span className="font-medium text-gray-800">Max updates (optional)</span>
+                            <input
+                                type="number"
+                                min={1}
+                                placeholder="Leave empty = all matching users"
+                                value={migrateMaxUpdates}
+                                onChange={(e) => setMigrateMaxUpdates(e.target.value)}
+                                className="rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm shadow-sm"
+                            />
+                            <span className="text-xs text-gray-500">
+                                Cap how many users are counted (dry run) or updated (live). Empty means no
+                                limit.
+                            </span>
+                        </label>
+                        <div className="flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            disabled={migrateLoading}
+                            onClick={() => void runPremiumToPlusMigration(true)}
+                            className="inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-medium text-amber-900 shadow-sm transition-colors hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            {migrateLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : null}
+                            Dry run (preview)
+                        </button>
+                        <button
+                            type="button"
+                            disabled={migrateLoading}
+                            onClick={() => {
+                                const cap = Number.parseInt(migrateMaxUpdates.trim(), 10);
+                                const limitMsg =
+                                    Number.isFinite(cap) && cap > 0
+                                        ? `Update at most ${cap} user(s) with plan "premium" to "plus"?`
+                                        : "Update all Clerk users with plan \"premium\" to \"plus\"?";
+                                if (
+                                    !confirm(
+                                        `${limitMsg} This cannot be undone from here (restore manually in Clerk if needed).`,
+                                    )
+                                ) {
+                                    return;
+                                }
+                                void runPremiumToPlusMigration(false);
+                            }}
+                            className="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            {migrateLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : null}
+                            Run migration
+                        </button>
+                        </div>
+                    </div>
+                </div>
+                {migrateResult ? (
+                    <div className="mt-4 rounded-xl border border-gray-200 bg-white/80 p-4 text-sm">
+                        {migrateResult.error ? (
+                            <p className="font-medium text-red-700">{migrateResult.error}</p>
+                        ) : (
+                            <ul className="space-y-1 text-gray-700">
+                                <li>
+                                    <span className="font-medium">Mode:</span>{" "}
+                                    {migrateResult.dryRun ? "Dry run (no changes)" : "Live update"}
+                                </li>
+                                <li>
+                                    <span className="font-medium">Users scanned:</span>{" "}
+                                    {migrateResult.scanned ?? "—"}
+                                </li>
+                                <li>
+                                    <span className="font-medium">Would update / updated:</span>{" "}
+                                    {migrateResult.updated ?? "—"}
+                                </li>
+                                {migrateResult.capped ? (
+                                    <li className="text-amber-800">
+                                        <span className="font-medium">Stopped early:</span> hit max updates
+                                        cap
+                                        {migrateResult.maxUpdates != null
+                                            ? ` (${migrateResult.maxUpdates})`
+                                            : ""}
+                                        . Run again to continue (remaining users still have{" "}
+                                        <code className="rounded bg-gray-100 px-1 text-xs">premium</code>
+                                        until migrated).
+                                    </li>
+                                ) : null}
+                                {(migrateResult.errorCount ?? 0) > 0 ? (
+                                    <li className="text-red-700">
+                                        <span className="font-medium">Errors:</span>{" "}
+                                        {migrateResult.errorCount}
+                                        {migrateResult.errors && migrateResult.errors.length > 0 ? (
+                                            <ul className="mt-2 list-inside list-disc text-xs">
+                                                {migrateResult.errors.slice(0, 10).map((line, i) => (
+                                                    <li key={i} className="break-all">
+                                                        {line}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : null}
+                                    </li>
+                                ) : null}
+                            </ul>
+                        )}
+                    </div>
+                ) : null}
             </div>
 
             <div className="mb-8 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 to-white p-6 shadow-sm">

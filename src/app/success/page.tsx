@@ -112,7 +112,7 @@ export default async function Success({ searchParams }: any) {
     await client.users.updateUserMetadata(user.id, {
       publicMetadata: {
         ...publicMetadata,
-        plan: "premium",
+        plan: "plus",
         // Ensure referral is disabled immediately after a successful purchase
         referralActive: false,
         referralDiscountUsed: true,
@@ -129,7 +129,7 @@ export default async function Success({ searchParams }: any) {
       traits: {
         email: user.emailAddresses[0].emailAddress,
         name: user.fullName,
-        plan: "premium",
+        plan: "plus",
       },
     });
 

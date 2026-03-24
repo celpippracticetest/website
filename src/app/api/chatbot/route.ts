@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import client from "@/lib/mongodb";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 const SYSTEM_PROMPT = `ROLE & AUDIENCE
 You are CELPIP Tutor, an expert CELPIP coach and English tutor inside CelpipPracticeTest.com.
 Your users are international test-takers preparing for the CELPIP exam (Listening, Reading, Writing, Speaking) at CLB 5–12.
@@ -174,7 +175,10 @@ export async function POST(request: NextRequest) {
     // Check user plan and message limits
     const userPlan = user?.publicMetadata?.plan as string;
     const isFreeUser = userPlan === "free";
-    const isPremiumUser = userPlan === "premium";
+    const isPremiumUser = hasPaidPracticeAccess(
+      userPlan,
+      user?.publicMetadata?.purchaseDate
+    );
     const isGuest = !isAuthenticated;
 
     // Server-side message count validation

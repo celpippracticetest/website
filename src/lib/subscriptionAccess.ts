@@ -38,6 +38,7 @@ export function hasPaidPracticeAccess(
     isGrandfatheredPremium(plan, purchaseDate) ||
     normalizedPlan === "premium" ||
     normalizedPlan === "pro" ||
+    normalizedPlan === "plus" ||
     normalizedPlan === "enterprise"
   );
 }
@@ -48,7 +49,9 @@ export function hasPremiumPlusAccess(
 ) {
   const normalizedPlan = normalizePlan(plan);
   return (
-    normalizedPlan === "pro" || normalizedPlan === "enterprise"
+    normalizedPlan === "pro" ||
+    normalizedPlan === "plus" ||
+    normalizedPlan === "enterprise"
   );
 }
 

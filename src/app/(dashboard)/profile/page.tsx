@@ -2,6 +2,7 @@ import Profile from "@/components/dashboard-new/Profile";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import mongoClient from "@/lib/mongodb";
+import { normalizePlan } from "@/lib/subscriptionAccess";
 import { redirect } from "next/navigation";
 import Stripe from "stripe";
 
@@ -29,6 +30,133 @@ async function resolveStripePlanDisplayName(
   return nick || undefined;
 }
 
+export type ProfileSubscriptionData = {
+  id: string;
+  status: string;
+  currentPeriodStart?: number;
+  currentPeriodEnd?: number;
+  cancelAtPeriodEnd?: boolean;
+  planId?: string;
+  planName?: string;
+  isOneTimePayment?: boolean;
+};
+
+async function buildSubscriptionDataFromStripeSub(
+  subscription: Stripe.Subscription
+): Promise<ProfileSubscriptionData> {
+  const sub = subscription;
+  let currentPeriodStart: number | undefined;
+  let currentPeriodEnd: number | undefined;
+
+  const terminal =
+    sub.status === "canceled" || sub.status === "incomplete_expired";
+
+  if (terminal && sub.current_period_end) {
+    currentPeriodStart = sub.current_period_start ?? undefined;
+    currentPeriodEnd = sub.current_period_end;
+  } else if (sub.billing_cycle_anchor) {
+    const anchorDate = new Date(sub.billing_cycle_anchor * 1000);
+    const now = new Date();
+    const weeksSinceAnchor = Math.floor(
+      (now.getTime() - anchorDate.getTime()) / (7 * 24 * 60 * 60 * 1000)
+    );
+    currentPeriodStart =
+      sub.billing_cycle_anchor + weeksSinceAnchor * 7 * 24 * 60 * 60;
+    currentPeriodEnd = currentPeriodStart + 7 * 24 * 60 * 60;
+  } else if (sub.latest_invoice) {
+    const invId =
+      typeof sub.latest_invoice === "string"
+        ? sub.latest_invoice
+        : sub.latest_invoice.id;
+    if (invId) {
+      try {
+        const invoice = await stripe.invoices.retrieve(invId);
+        currentPeriodStart = invoice.period_start;
+        currentPeriodEnd = invoice.period_end;
+      } catch (invoiceError) {
+        console.error("Error fetching invoice:", invoiceError);
+      }
+    }
+  }
+
+  if (currentPeriodEnd === undefined && sub.current_period_end) {
+    currentPeriodStart = sub.current_period_start ?? undefined;
+    currentPeriodEnd = sub.current_period_end;
+  }
+
+  const price = sub.items.data[0]?.price as Stripe.Price | undefined;
+  const planName = await resolveStripePlanDisplayName(price);
+
+  return {
+    id: sub.id,
+    status: sub.status,
+    currentPeriodStart,
+    currentPeriodEnd,
+    cancelAtPeriodEnd: Boolean(sub.cancel_at_period_end),
+    planId: price?.id,
+    planName,
+  };
+}
+
+/**
+ * Uses only billable Stripe subscription statuses so canceled subs (e.g. canceled in Dashboard)
+ * are not shown as renewing. If the customer has any subscription object but none billable,
+ * skips the charges fallback so a past subscription payment is not shown as a fake renewal.
+ */
+async function resolveSubscriptionDataForCustomer(
+  customerId: string
+): Promise<ProfileSubscriptionData | null> {
+  const billableStatuses = [
+    "active",
+    "trialing",
+    "past_due",
+    "unpaid",
+  ] as const;
+
+  for (const status of billableStatuses) {
+    const { data } = await stripe.subscriptions.list({
+      customer: customerId,
+      status,
+      limit: 1,
+    });
+    if (data[0]) {
+      const subscription = await stripe.subscriptions.retrieve(data[0].id, {
+        expand: ["items.data.price.product"],
+      });
+      return buildSubscriptionDataFromStripeSub(subscription);
+    }
+  }
+
+  const anySubscription = await stripe.subscriptions.list({
+    customer: customerId,
+    limit: 1,
+  });
+  if (anySubscription.data.length > 0) {
+    return null;
+  }
+
+  const charges = await stripe.charges.list({ customer: customerId, limit: 1 });
+  if (charges.data.length === 0) return null;
+
+  const latestCharge = charges.data[0];
+  if (latestCharge.status !== "succeeded") return null;
+
+  const chargeDate = new Date(latestCharge.created * 1000);
+  const endDate = new Date(chargeDate);
+  endDate.setDate(endDate.getDate() + 30);
+
+  return {
+    id: latestCharge.id,
+    status: "active",
+    currentPeriodStart: latestCharge.created,
+    currentPeriodEnd: Math.floor(endDate.getTime() / 1000),
+    cancelAtPeriodEnd: false,
+    planId: "one_time_payment",
+    isOneTimePayment: true,
+    planName: latestCharge.description || "One-time Payment",
+  };
+}
+
 export default async function UserProfilePage() {
   const { userId } = await auth();
 
@@ -40,268 +168,30 @@ export default async function UserProfilePage() {
     const userRepo = new CheckoutRepository(mongoClient);
     const prevCheckout = await userRepo.findLatestCheckoutByUserId(userId);
 
-    // Get user's Stripe customer ID
     const client = await clerkClient();
     const user = await client.users.getUser(userId);
     let customerId = user.privateMetadata?.stripeCustomerId as string | undefined;
 
-    console.log("Debug - User metadata:", {
-      userId,
-      privateMetadata: user.privateMetadata,
-      customerId
-    });
+    let subscriptionData: ProfileSubscriptionData | null = null;
 
-    let subscriptionData = null;
     if (customerId) {
       try {
-        // First try to get active or trialing subscriptions
-        const subscriptions = await stripe.subscriptions.list({
-          customer: customerId,
-          // status: "active", // Removed to find all statuses (we'll filter later if needed)
-          limit: 1,
-        });
-
-        console.log("Debug - Active subscriptions found:", subscriptions.data.length);
-
-        if (subscriptions.data.length > 0) {
-          const subscriptionId = subscriptions.data[0].id;
-          console.log("Debug - Found subscription ID:", subscriptionId);
-          
-          // Get full subscription details
-          const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
-            expand: ["items.data.price.product"],
-          }) as any;
-          
-          console.log("Debug - Raw subscription data:", {
-            id: subscription.id,
-            status: subscription.status,
-            current_period_start: subscription.current_period_start,
-            current_period_end: subscription.current_period_end,
-            cancel_at_period_end: subscription.cancel_at_period_end,
-            items: subscription.items
-          });
-          
-          console.log("Debug - Subscription current_period_start:", subscription.current_period_start);
-          console.log("Debug - Subscription current_period_end:", subscription.current_period_end);
-          console.log("Debug - Subscription billing_cycle_anchor:", subscription.billing_cycle_anchor);
-          console.log("Debug - Subscription created:", subscription.created);
-          
-          console.log("Debug - Full subscription object keys:", Object.keys(subscription));
-          console.log("Debug - Subscription type:", typeof subscription);
-          console.log("Debug - Latest invoice ID:", subscription.latest_invoice);
-          
-          // Calculate current period from billing cycle anchor
-          let currentPeriodStart, currentPeriodEnd;
-          
-          if (subscription.billing_cycle_anchor) {
-            // Calculate current period based on billing cycle anchor and interval
-            const anchorDate = new Date(subscription.billing_cycle_anchor * 1000);
-            const now = new Date();
-            
-            // For weekly subscription, calculate current week
-            const weeksSinceAnchor = Math.floor((now.getTime() - anchorDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
-            
-            currentPeriodStart = subscription.billing_cycle_anchor + (weeksSinceAnchor * 7 * 24 * 60 * 60);
-            currentPeriodEnd = currentPeriodStart + (7 * 24 * 60 * 60); // 7 days later
-            
-            console.log("Debug - Calculated period:", {
-              anchorDate: anchorDate.toISOString(),
-              weeksSinceAnchor,
-              currentPeriodStart: new Date(currentPeriodStart * 1000).toISOString(),
-              currentPeriodEnd: new Date(currentPeriodEnd * 1000).toISOString()
-            });
-          } else if (subscription.latest_invoice) {
-            try {
-              const invoice = await stripe.invoices.retrieve(subscription.latest_invoice);
-              console.log("Debug - Invoice data:", {
-                id: invoice.id,
-                period_start: invoice.period_start,
-                period_end: invoice.period_end,
-                status: invoice.status
-              });
-              
-              // Use the invoice period as fallback
-              currentPeriodStart = invoice.period_start;
-              currentPeriodEnd = invoice.period_end;
-            } catch (invoiceError) {
-              console.error("Error fetching invoice:", invoiceError);
-            }
-          }
-          
-          const price = subscription.items.data[0]?.price as Stripe.Price | undefined;
-          const planName = await resolveStripePlanDisplayName(price);
-
-          subscriptionData = {
-            id: subscription.id,
-            status: subscription.status,
-            currentPeriodStart: currentPeriodStart,
-            currentPeriodEnd: currentPeriodEnd,
-            cancelAtPeriodEnd: subscription.cancel_at_period_end,
-            planId: price?.id,
-            planName,
-          };
-          console.log("Debug - Subscription data:", subscriptionData);
-        } else {
-          // If no active subscription, check for recent successful payments
-          console.log("Debug - No active subscription, checking recent payments...");
-          const charges = await stripe.charges.list({
-            customer: customerId,
-            limit: 1,
-          });
-
-          console.log("Debug - Recent charges found:", charges.data.length);
-          
-          if (charges.data.length > 0) {
-            const latestCharge = charges.data[0];
-            console.log("Debug - Latest charge:", {
-              id: latestCharge.id,
-              amount: latestCharge.amount,
-              status: latestCharge.status,
-              created: new Date(latestCharge.created * 1000).toISOString()
-            });
-
-            // For one-time payments, create a subscription-like object
-            if (latestCharge.status === "succeeded") {
-              const chargeDate = new Date(latestCharge.created * 1000);
-              const endDate = new Date(chargeDate);
-              endDate.setDate(endDate.getDate() + 30); // Assume 30-day validity for one-time payments
-
-              subscriptionData = {
-                id: latestCharge.id,
-                status: "active",
-                currentPeriodStart: latestCharge.created,
-                currentPeriodEnd: Math.floor(endDate.getTime() / 1000),
-                cancelAtPeriodEnd: false,
-                planId: "one_time_payment",
-                isOneTimePayment: true,
-                planName: latestCharge.description || "One-time Payment",
-              };
-              console.log("Debug - One-time payment data:", subscriptionData);
-            }
-          }
-        }
+        subscriptionData = await resolveSubscriptionDataForCustomer(customerId);
       } catch (stripeError) {
         console.error("Error fetching subscription data:", stripeError);
       }
     } else {
-      // Try to find customer by email if no customerId in metadata
       const userEmail = user.emailAddresses?.[0]?.emailAddress;
       if (userEmail) {
         try {
-          console.log("Debug - Searching customer by email:", userEmail);
-          const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
-          
+          const customers = await stripe.customers.list({
+            email: userEmail,
+            limit: 1,
+          });
           if (customers.data.length > 0) {
             customerId = customers.data[0].id;
-            console.log("Debug - Found customer by email:", customerId);
-            
-            // Check for subscriptions (any status)
-            const subscriptions = await stripe.subscriptions.list({
-              customer: customerId,
-              limit: 1,
-            });
-
-            if (subscriptions.data.length > 0) {
-              const subscriptionId = subscriptions.data[0].id;
-              console.log("Debug - Found subscription ID:", subscriptionId);
-              
-              // Get full subscription details
-              const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
-                expand: ["items.data.price.product"],
-              }) as any;
-              
-              console.log("Debug - Raw subscription data:", {
-                id: subscription.id,
-                status: subscription.status,
-                current_period_start: subscription.current_period_start,
-                current_period_end: subscription.current_period_end,
-                cancel_at_period_end: subscription.cancel_at_period_end,
-                items: subscription.items
-              });
-              
-              console.log("Debug - Full subscription object keys:", Object.keys(subscription));
-              console.log("Debug - Subscription type:", typeof subscription);
-              console.log("Debug - Latest invoice ID:", subscription.latest_invoice);
-              
-              // Calculate current period from billing cycle anchor
-              let currentPeriodStart, currentPeriodEnd;
-              
-              if (subscription.billing_cycle_anchor) {
-                // Calculate current period based on billing cycle anchor and interval
-                const anchorDate = new Date(subscription.billing_cycle_anchor * 1000);
-                const now = new Date();
-                
-                // For weekly subscription, calculate current week
-                const weeksSinceAnchor = Math.floor((now.getTime() - anchorDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
-                
-                currentPeriodStart = subscription.billing_cycle_anchor + (weeksSinceAnchor * 7 * 24 * 60 * 60);
-                currentPeriodEnd = currentPeriodStart + (7 * 24 * 60 * 60); // 7 days later
-                
-                console.log("Debug - Calculated period:", {
-                  anchorDate: anchorDate.toISOString(),
-                  weeksSinceAnchor,
-                  currentPeriodStart: new Date(currentPeriodStart * 1000).toISOString(),
-                  currentPeriodEnd: new Date(currentPeriodEnd * 1000).toISOString()
-                });
-              } else if (subscription.latest_invoice) {
-                try {
-                  const invoice = await stripe.invoices.retrieve(subscription.latest_invoice);
-                  console.log("Debug - Invoice data:", {
-                    id: invoice.id,
-                    period_start: invoice.period_start,
-                    period_end: invoice.period_end,
-                    status: invoice.status
-                  });
-                  
-                  // Use the invoice period as fallback
-                  currentPeriodStart = invoice.period_start;
-                  currentPeriodEnd = invoice.period_end;
-                } catch (invoiceError) {
-                  console.error("Error fetching invoice:", invoiceError);
-                }
-              }
-              
-              const price = subscription.items.data[0]?.price as Stripe.Price | undefined;
-              const planNameFromStripe = await resolveStripePlanDisplayName(price);
-
-              subscriptionData = {
-                id: subscription.id,
-                status: subscription.status,
-                currentPeriodStart: currentPeriodStart,
-                currentPeriodEnd: currentPeriodEnd,
-                cancelAtPeriodEnd: subscription.cancel_at_period_end,
-                planId: price?.id,
-                planName: planNameFromStripe,
-              };
-              console.log("Debug - Active subscription found:", subscriptionData);
-            } else {
-              // Check for recent payments
-              const charges = await stripe.charges.list({
-                customer: customerId,
-                limit: 1,
-              });
-
-              if (charges.data.length > 0) {
-                const latestCharge = charges.data[0];
-                if (latestCharge.status === "succeeded") {
-                  const chargeDate = new Date(latestCharge.created * 1000);
-                  const endDate = new Date(chargeDate);
-                  endDate.setDate(endDate.getDate() + 30);
-
-                  subscriptionData = {
-                    id: latestCharge.id,
-                    status: "active",
-                    currentPeriodStart: latestCharge.created,
-                    currentPeriodEnd: Math.floor(endDate.getTime() / 1000),
-                    cancelAtPeriodEnd: false,
-                    planId: "one_time_payment",
-                    isOneTimePayment: true,
-                    planName: latestCharge.description || "One-time Payment",
-                  };
-                  console.log("Debug - One-time payment found:", subscriptionData);
-                }
-              }
-            }
+            subscriptionData =
+              await resolveSubscriptionDataForCustomer(customerId);
           }
         } catch (emailError) {
           console.error("Error finding customer by email:", emailError);
@@ -309,24 +199,41 @@ export default async function UserProfilePage() {
       }
     }
 
-
-    // Sync metadata if needed
     if (subscriptionData) {
-      const shouldBePlan = subscriptionData.planName?.toLowerCase().includes("pro") ? "pro" : "premium";
+      const lower = (subscriptionData.planName ?? "").toLowerCase();
+      const fromStripe =
+        /\bplus\b/.test(lower) ||
+        lower.includes("premium plus") ||
+        /\bpro\b/.test(lower)
+          ? "pro"
+          : "premium";
+      const currentPlan = normalizePlan(user.publicMetadata?.plan as string);
+      const alreadyPlusTier = currentPlan === "pro" || currentPlan === "plus";
+      // Legacy Stripe products named only "Premium" must not downgrade migrated Plus (plan "plus"/"pro").
+      const shouldBePlan =
+        alreadyPlusTier && fromStripe === "premium"
+          ? currentPlan === "plus"
+            ? "plus"
+            : "pro"
+          : fromStripe;
       if (user.publicMetadata.plan !== shouldBePlan) {
-        console.log(`Debug - Updating user metadata from ${user.publicMetadata.plan} to ${shouldBePlan}`);
         await client.users.updateUserMetadata(userId, {
           publicMetadata: {
             ...user.publicMetadata,
-            plan: shouldBePlan
-          }
+            plan: shouldBePlan,
+          },
         });
-        // Update local user object to reflect changes in UI immediately
         user.publicMetadata.plan = shouldBePlan;
       }
     }
 
-    return <Profile user={JSON.parse(JSON.stringify(user))} prevCheckout={prevCheckout} subscriptionData={subscriptionData} />;
+    return (
+      <Profile
+        user={JSON.parse(JSON.stringify(user))}
+        prevCheckout={prevCheckout}
+        subscriptionData={subscriptionData}
+      />
+    );
   } catch (error) {
     console.error("Unexpected error in profile page:", error);
     redirect("/");

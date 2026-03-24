@@ -4,6 +4,7 @@ import ArrowLeft from "@/components/icons/ArrowLeft";
 import SvgFailed from "@/components/icons/Failed";
 import LoginModal from "@/components/modal/LoginModal";
 import { useUser } from "@clerk/nextjs";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -11,7 +12,10 @@ export default function Success() {
   const { user, isLoaded, isSignedIn } = useUser();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
-  const proUser = user?.publicMetadata.plan == "premium";
+  const proUser = hasPaidPracticeAccess(
+    user?.publicMetadata?.plan as string | undefined,
+    user?.publicMetadata?.purchaseDate
+  );
   const [showLoginModal, setShowLoginModal] = useState(false);
   const router = useRouter();
 

@@ -20,7 +20,10 @@ import Link from "next/link";
 import SubscriptionRetentionModal from "@/components/modal/SubscriptionRetentionModal";
 import ChangePlanModal from "@/components/modal/ChangePlanModal";
 import AccountDeletionRetentionModal from "@/components/modal/AccountDeletionRetentionModal";
-import { getSubscriptionDisplayName } from "@/lib/subscriptionAccess";
+import {
+  getSubscriptionDisplayName,
+  hasPaidPracticeAccess,
+} from "@/lib/subscriptionAccess";
 export default function Profile({ prevCheckout, subscriptionData }: any) {
   const { user, isLoaded: isUserLoaded } = useUser();
   const [planNameDisplay, setPlanNameDisplay] = useState<string>("");
@@ -112,6 +115,23 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
       subscriptionData?.status
     ) &&
     !subscriptionData?.cancelAtPeriodEnd;
+
+  /** Shown only when Stripe will charge again; excludes cancel-at-period-end and one-time purchases. */
+  const showNextPaymentDate =
+    Boolean(subscriptionData?.currentPeriodEnd) &&
+    !subscriptionData?.isOneTimePayment &&
+    ["active", "trialing", "past_due", "unpaid"].includes(
+      subscriptionData?.status ?? ""
+    ) &&
+    !subscriptionData?.cancelAtPeriodEnd &&
+    !user?.publicMetadata?.planCancelled;
+
+  /** Stripe cancel-at-period-end without Clerk planCancelled yet (e.g. canceled in Stripe Dashboard). */
+  const showAccessEndsUnderPlan =
+    Boolean(subscriptionData?.currentPeriodEnd) &&
+    !subscriptionData?.isOneTimePayment &&
+    Boolean(subscriptionData?.cancelAtPeriodEnd) &&
+    !user?.publicMetadata?.planCancelled;
 
   const fetchAvailablePlans = async () => {
     try {
@@ -616,21 +636,32 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
                 Premium Account
               </span>
 
-              {(user?.publicMetadata.plan == "premium" || user?.publicMetadata.plan == "pro" || subscriptionData) && (
+              {(hasPaidPracticeAccess(userPlan, userPurchaseDate) || subscriptionData) && (
                 <div className="flex flex-col">
                   <span className="text-[14px] font-semibold text-[#F27059]">
                     {isLoaded ? planNameDisplay : "Loading..."}
                   </span>
-                  {!user?.publicMetadata?.planCancelled && subscriptionData?.currentPeriodEnd && (
+                  {showNextPaymentDate && (
                     <span className="text-[12px] text-[#76808F] font-normal">
-                      Next payment: {new Date(subscriptionData.currentPeriodEnd * 1000).toLocaleDateString()}
+                      Next payment:{" "}
+                      {new Date(
+                        subscriptionData!.currentPeriodEnd! * 1000
+                      ).toLocaleDateString()}
+                    </span>
+                  )}
+                  {showAccessEndsUnderPlan && !showNextPaymentDate && (
+                    <span className="text-[12px] text-[#76808F] font-normal">
+                      Access until{" "}
+                      {new Date(
+                        subscriptionData!.currentPeriodEnd! * 1000
+                      ).toLocaleDateString()}
                     </span>
                   )}
                 </div>
               )}
             </div>
             <div>
-              {(user?.publicMetadata.plan == "premium" || user?.publicMetadata.plan == "pro" || subscriptionData) ? (
+              {(hasPaidPracticeAccess(userPlan, userPurchaseDate) || subscriptionData) ? (
                 <div className="flex gap-[8px] screen744:!gap-[16px] items-center flex-row-reverse justify-start flex-wrap">
                   {user.publicMetadata.planCancelled ? (
                     <div className="flex flex-col items-end gap-1">
@@ -667,7 +698,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
               )}
             </div>
           </div>
-          {(user?.publicMetadata.plan == "premium" || user?.publicMetadata.plan == "pro" || subscriptionData) &&
+          {(hasPaidPracticeAccess(userPlan, userPurchaseDate) || subscriptionData) &&
             !user.publicMetadata.planCancelled && (
               <div className="flex justify-end mt-2">
                 {/* Cancel button moved to Change Plan Modal */}

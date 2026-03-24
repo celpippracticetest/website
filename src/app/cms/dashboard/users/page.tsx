@@ -515,14 +515,18 @@ export default function UsersPage() {
                           <Chip
                             size="small"
                             label={
-                              user.plan === "premium" || user.plan === "pro"
+                              user.plan === "premium" ||
+                              user.plan === "pro" ||
+                              user.plan === "plus"
                                 ? user.planType
                                   ? formatPlanType(user.planType)
                                   : "Premium"
                                 : "Free"
                             }
                             color={
-                              user.plan === "premium" || user.plan === "pro"
+                              user.plan === "premium" ||
+                              user.plan === "pro" ||
+                              user.plan === "plus"
                                 ? "secondary"
                                 : "default"
                             }
@@ -651,6 +655,7 @@ export default function UsersPage() {
                           {user.subscriptionStatus === "active" &&
                             (user.plan === "premium" ||
                               user.plan === "pro" ||
+                              user.plan === "plus" ||
                               user.plan === "enterprise") && (
                               <Tooltip title="Cancel Subscription">
                                 <IconButton

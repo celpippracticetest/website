@@ -12,6 +12,7 @@ import {
   useUser,
 } from "@clerk/nextjs";
 import { useHasEverPurchased } from "@/hooks/useHasEverPurchased";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
 import SvgChevronRight from "@/components/icons/ChevronRight";
 import SvgPractice from "@/components/icons/Practice";
@@ -231,7 +232,10 @@ const LayoutClient = ({ children, showSurvey }: any) => {
     new Date().getTime() - new Date(user.createdAt).getTime() <
     24 * 60 * 60 * 1000;
   const freeUser = user?.publicMetadata.plan == "free";
-  const proUser = user?.publicMetadata.plan == "premium";
+  const proUser = hasPaidPracticeAccess(
+    user?.publicMetadata?.plan as string | undefined,
+    user?.publicMetadata?.purchaseDate
+  );
 
   const { selectedTask, setSelectedTask } = useSelectedTask();
   const { selectedExam, setSelectedExam } = useSelectedExam();

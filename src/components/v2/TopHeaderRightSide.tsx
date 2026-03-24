@@ -8,11 +8,13 @@ import SvgLearningGift from "@/components/icons/LearningGift"
 import { useUser } from "@clerk/nextjs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useHasEverPurchased } from "@/hooks/useHasEverPurchased";
+import { isPaidClerkSubscriptionPlan } from "@/lib/clerkSubscriptionPlan";
 
 const TopHeaderRightSide = () => {
     const [mounted, setMounted] = useState(false);
     const { user, isLoaded } = useUser();
-    const hasActivePlan = user?.publicMetadata?.plan === "premium" || user?.publicMetadata?.plan === "pro";
+    const showPricingCta =
+        !user || !isPaidClerkSubscriptionPlan(user.publicMetadata?.plan);
     const { hasEverPurchased } = useHasEverPurchased();
 
     useEffect(() => {
@@ -34,7 +36,7 @@ const TopHeaderRightSide = () => {
                     </>
                 ) : (
                     <>
-                        {!hasActivePlan && (
+                        {showPricingCta && (
                             <>
                                 <Button className="screen744:!hidden flex" variant="secondary" round="sm" href="/pricing" aria-label="Go to pricing">
                                     <SvgCrown />

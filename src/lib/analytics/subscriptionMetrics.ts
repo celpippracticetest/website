@@ -35,7 +35,9 @@ export async function getSubscriptionMetrics(
     // ALWAYS show current snapshot of ALL users by plan
     // (Not filtered by period - this shows your entire user base)
     const activeSubs = await db.collection("users").countDocuments({
-      plan: { $in: ["premium", "pro", "Premium", "Pro"] },
+      plan: {
+        $in: ["premium", "pro", "plus", "Premium", "Pro", "Plus"],
+      },
     });
 
     // Get current plan distribution for ALL users
@@ -56,7 +58,7 @@ export async function getSubscriptionMetrics(
       const plan = item._id?.toLowerCase();
       if (plan === "free") byPlan.free = item.count;
       else if (plan === "premium") byPlan.premium = item.count;
-      else if (plan === "pro") byPlan.pro = item.count;
+      else if (plan === "pro" || plan === "plus") byPlan.pro += item.count;
     });
 
     // Count NEW premium/pro users in the period
@@ -70,7 +72,7 @@ export async function getSubscriptionMetrics(
     });
 
     const newProInPeriod = await db.collection("users").countDocuments({
-      plan: { $in: ["pro", "Pro"] },
+      plan: { $in: ["pro", "Pro", "plus", "Plus"] },
       "publicMetadata.purchaseDate": { $gte: startDateStr, $lte: endDateStr },
     });
 

@@ -9,6 +9,7 @@ import useStore from "@/store";
 import { useRouter } from "nextjs-toploader/app";
 import { useUser } from "@clerk/nextjs";
 import { useEventTracker } from "@/hooks/useTracking";
+import { isPaidClerkSubscriptionPlan } from "@/lib/clerkSubscriptionPlan";
 import {
   SignedIn,
   SignedOut,
@@ -140,11 +141,7 @@ const MobileHeader = (props: {
           {/* Auth buttons */}
           <div className="flex items-right gap-4 lg:gap-5 md:gap-3 ">
             {(!user ||
-              (user && !user.publicMetadata.plan) ||
-              (user &&
-                user.publicMetadata.plan &&
-                user?.publicMetadata.plan !== "premium" && 
-                user?.publicMetadata.plan !== "pro")) && (
+              !isPaidClerkSubscriptionPlan(user.publicMetadata?.plan)) && (
               <div
                 onClick={() => {
                   trackCTA("Upgrade Button", "header");
