@@ -1,11 +1,16 @@
 import { redirect } from "next/navigation";
 import { stripe } from "../../lib/stripe";
 import DashboardHome from "@/components/dashboard-app/dashboardHome";
-import mongoClient from "@/lib/mongodb";
+import mongoClient, { getDb } from "@/lib/mongodb";
 import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
 import { Analytics } from "@customerio/cdp-analytics-node";
 import SuccessPageTracking from "@/components/analytics/SuccessPageTracking";
+import {
+  resolveSuccessUpgradeOffer,
+  toClientUpgradeOffer,
+  type SuccessUpgradeOfferForClient,
+} from "@/lib/successPageUpgrade";
 
 export default async function Success({ searchParams }: any) {
   const params = searchParams ? await searchParams : {};
@@ -46,6 +51,20 @@ export default async function Success({ searchParams }: any) {
   const customerEmail = session?.customer_details?.email;
   const lineItems = session?.line_items?.data;
   const checkoutMetadata = session?.metadata || {};
+
+  let upgradeOffer: SuccessUpgradeOfferForClient | null = null;
+  if (user?.id) {
+    try {
+      const db = await getDb();
+      const resolved = await resolveSuccessUpgradeOffer(session_id, db, {
+        clerkUserId: user.id,
+        clerkEmail: user.primaryEmailAddress?.emailAddress ?? null,
+      });
+      if (resolved) upgradeOffer = toClientUpgradeOffer(resolved);
+    } catch (err) {
+      console.error("[success] upgrade offer:", err);
+    }
+  }
   const purchaseAttributionData = {
     attribution_source:
       checkoutMetadata.attribution_source || checkoutMetadata.utm_source || null,
@@ -69,7 +88,11 @@ export default async function Success({ searchParams }: any) {
   if (prevCheckout !== null) {
     return (
       <div className=" bg-[#F4F7FF] min-h-screen flex w-full lg:pt-[108px] pt-[70px]">
-        <DashboardHome session={sessionData} email={customerEmail} />
+        <DashboardHome
+          session={sessionData}
+          email={customerEmail}
+          upgradeOffer={upgradeOffer}
+        />
       </div>
     );
   }
@@ -121,7 +144,11 @@ export default async function Success({ searchParams }: any) {
           attributionData={purchaseAttributionData}
         />
 
-        <DashboardHome session={sessionData} email={customerEmail} />
+        <DashboardHome
+          session={sessionData}
+          email={customerEmail}
+          upgradeOffer={upgradeOffer}
+        />
       </div>
     );
   }

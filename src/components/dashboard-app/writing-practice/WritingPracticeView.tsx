@@ -26,7 +26,6 @@ import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 // planDetails import removed
 
 import LoginModal from "@/components/modal/LoginModal";
-import UpgradeModal from "@/components/modal/UpgradeModal";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 import { ActivityLogger } from "@/lib/userActivity";
@@ -97,7 +96,6 @@ const WritingPracticeView = ({
   } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
-  const [showModal, setShowModal] = useState(false);
   const [showContinueModal, setShowContinueModal] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -334,9 +332,7 @@ const WritingPracticeView = ({
 
   return (
     <div className=" w-full transition-all duration-300 flex gap-5">
-      {freeUser ? (
-        showModal && <UpgradeModal setShowModal={setShowModal} />
-      ) : noUser ? (
+      {noUser ? (
         showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />
       ) : (
         <></>
@@ -449,7 +445,7 @@ const WritingPracticeView = ({
                           aria-label="Next testimonial"
                           onClick={() => {
                             if (freeUser) {
-                              setShowModal(true);
+                              router.push("/pricing");
                             } else {
                               setShowLoginModal(true);
                             }

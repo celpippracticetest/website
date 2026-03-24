@@ -32,4 +32,13 @@ export class PlansRepository {
             .toArray();
         return plans as unknown as Plan[];
     }
+
+    async findActivePlanByStripePriceId(priceId: string): Promise<Plan | null> {
+        if (!priceId?.trim()) return null;
+        const doc = await this.db.collection(this.collectionName).findOne({
+            isActive: true,
+            stripePriceId: priceId.trim(),
+        });
+        return (doc as Plan | null) ?? null;
+    }
 }

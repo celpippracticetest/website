@@ -8,6 +8,9 @@ import { ReferralInvitationRepository } from "@/repositories/referral-invitation
 import { clerkClient } from "@clerk/express";
 import { ActivityLogger } from "@/lib/userActivity";
 import { isPricingAbLayout } from "@/lib/pricingAbTest";
+import { getAccessTierKey } from "@/lib/pricing";
+import { toSerializedPlan } from "@/lib/planSerialization";
+import type { Plan } from "@/models/plans.model";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -542,6 +545,69 @@ export async function POST(req: Request) {
         }
         return NextResponse.json({ received: true });
       }
+
+      if (
+        metadata?.user_id &&
+        (subscription.status === "active" ||
+          subscription.status === "trialing")
+      ) {
+        try {
+          const item = subscription.items.data[0];
+          const priceRaw = item?.price;
+          const priceId =
+            typeof priceRaw === "string"
+              ? priceRaw
+              : priceRaw && typeof priceRaw === "object" && "id" in priceRaw
+                ? (priceRaw as Stripe.Price).id
+                : null;
+
+          if (priceId) {
+            const db = await mongoClient.db();
+            const planDoc = await db.collection("plans").findOne({
+              isActive: true,
+              stripePriceId: priceId,
+            });
+
+            let plan: string | null = null;
+            let planType: string | undefined;
+
+            if (planDoc) {
+              const serialized = toSerializedPlan(planDoc as Plan);
+              const tier = getAccessTierKey(serialized);
+              planType = (planDoc as Plan).title;
+              if (tier === "premiumPlus") plan = "pro";
+              else if (tier === "premium") plan = "premium";
+            }
+
+            if (
+              !plan &&
+              typeof metadata.plan_name === "string" &&
+              metadata.plan_name.trim()
+            ) {
+              planType = metadata.plan_name;
+              const lower = metadata.plan_name.toLowerCase();
+              plan = /\bplus\b/.test(lower) ? "pro" : "premium";
+            }
+
+            if (plan) {
+              await updateUserPublicMetadata(metadata.user_id, {
+                plan,
+                planType: planType ?? metadata.plan_name,
+                planCancelled: false,
+                planExpiresAt: null,
+              });
+            }
+          }
+        } catch (syncErr) {
+          logger.error("subscription.updated: plan metadata sync failed", {
+            component: "stripe_webhook",
+            action: "subscription_updated_plan_sync",
+            error: syncErr,
+          });
+        }
+      }
+
+      return NextResponse.json({ received: true });
     }
 
     const checkoutRepo = new CheckoutRepository(mongoClient);

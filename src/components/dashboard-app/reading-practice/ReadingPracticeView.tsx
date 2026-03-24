@@ -16,7 +16,6 @@ import { useUser } from "@clerk/nextjs";
 import React from "react";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
-import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import SvgCircle from "@/components/icons/Circle";
@@ -64,7 +63,6 @@ const ReadingPracticeView = ({
   } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
-  const [showModal, setShowModal] = useState(false);
   const [pointsAwarded, setPointsAwarded] = useState(false);
   const timerTime = practice.taskId === "67f168222f0ca7f9a751ed3d" ? 780 : 660;
   const router = useRouter();
@@ -208,9 +206,7 @@ const ReadingPracticeView = ({
   return (
     <>
       <div className="w-full transition-all duration-300 flex gap-5 items-center ">
-        {freeUser ? (
-          showModal && <UpgradeModal setShowModal={setShowModal} />
-        ) : noUser ? (
+        {noUser ? (
           showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />
         ) : (
           <></>
@@ -558,7 +554,7 @@ const ReadingPracticeView = ({
                             aria-label="Next testimonial"
                             onClick={() => {
                               if (freeUser) {
-                                setShowModal(true);
+                                router.push("/pricing");
                               } else {
                                 setShowLoginModal(true);
                               }

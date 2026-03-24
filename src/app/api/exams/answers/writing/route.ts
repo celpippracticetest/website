@@ -7,7 +7,8 @@ import { TaskRepository } from "@/repositories/tasks.repo";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
-import { hasPremiumPlusAccess } from "@/lib/subscriptionAccess";
+import { hasMockExamAccess } from "@/lib/subscriptionAccess";
+import { getFirstReadyMockExamId } from "@/lib/getFirstReadyMockExam";
 
 export const POST = async function (req: NextRequest) {
   const body = await req.json();
@@ -21,20 +22,23 @@ export const POST = async function (req: NextRequest) {
   if (answersParser.success) {
     const answerBody = answersParser.data;
 
+    if (!answerBody.examId || !answerBody.partId) {
+      return NextResponse.json(
+        { message: "Exam id and part id not provided" },
+        { status: 400 }
+      );
+    }
+    const firstReadyExamId = await getFirstReadyMockExamId();
     if (
-      !hasPremiumPlusAccess(
+      !hasMockExamAccess(
         user.publicMetadata.plan as string | undefined,
-        user.publicMetadata.purchaseDate as string | undefined
+        user.publicMetadata.purchaseDate,
+        answerBody.examId,
+        firstReadyExamId
       )
     ) {
       return NextResponse.json(
         { message: "You havent any free credit." },
-        { status: 400 }
-      );
-    }
-    if (!answerBody.examId || !answerBody.partId) {
-      return NextResponse.json(
-        { message: "Exam id and part id not provided" },
         { status: 400 }
       );
     }

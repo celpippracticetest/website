@@ -12,7 +12,6 @@ import { useRouter } from "nextjs-toploader/app";
 import { useUser } from "@clerk/nextjs";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import { TTaskSchemaDto } from "@/models/tasks.model";
-import UpgradeModal from "@/components/modal/UpgradeModal";
 import { TWritingAnswerDto } from "@/models/answer";
 import LoginModal from "@/components/modal/LoginModal";
 import SvgRecording from "@/components/icons/Recording";
@@ -88,7 +87,6 @@ const SpeakingPracticeView = ({
   } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
-  const [showModal, setShowModal] = useState(false);
   const router = useRouter();
   const [isPlaying] = useState(false);
   const [page, setPage] = useState("question");
@@ -163,7 +161,7 @@ const SpeakingPracticeView = ({
     if (time === 0) {
       if (freeAttempts === 0) {
         if (freeUser) {
-          setShowModal(true);
+          router.push("/pricing");
         }
         if (noUser) {
           setShowLoginModal(true);
@@ -428,9 +426,7 @@ const SpeakingPracticeView = ({
 
   return (
     <div className="h-full mx-auto w-full transition-all duration-300 flex gap-5 mb-[120px]">
-      {freeUser ? (
-        showModal && <UpgradeModal setShowModal={setShowModal} />
-      ) : noUser ? (
+      {noUser ? (
         showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />
       ) : (
         <></>
@@ -578,7 +574,7 @@ const SpeakingPracticeView = ({
                           aria-label="Next testimonial"
                           onClick={() => {
                             if (freeUser) {
-                              setShowModal(true);
+                              router.push("/pricing");
                             } else {
                               setShowLoginModal(true);
                             }
@@ -853,7 +849,7 @@ const SpeakingPracticeView = ({
                           aria-label="Next testimonial"
                           onClick={() => {
                             if (freeUser) {
-                              setShowModal(true);
+                              router.push("/pricing");
                             } else {
                               setShowLoginModal(true);
                             }

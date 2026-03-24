@@ -16,10 +16,11 @@ import {
 import { useRouter } from "nextjs-toploader/app";
 import { useState } from "react";
 import LoginModal from "../modal/LoginModal";
-import UpgradeModal from "../modal/UpgradeModal";
 import {
+  hasMockExamAccess,
   hasPaidPracticeAccess,
   hasPremiumPlusAccess,
+  normalizePlan,
 } from "@/lib/subscriptionAccess";
 
 const examSections = [
@@ -46,19 +47,28 @@ const ExamOverview = ({
 }) => {
   const router = useRouter();
   const { user, isLoaded, isSignedIn } = useUser();
-  const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
   const plan = user?.publicMetadata?.plan as string | undefined;
   const purchaseDate = user?.publicMetadata?.purchaseDate as
     | string
     | undefined;
+  const signedInFreeUser =
+    isLoaded &&
+    isSignedIn &&
+    (!plan || normalizePlan(plan) === "free");
+  const firstReadyExamId = exams[0]?.id ?? null;
+  const mockExamUnlocked = (exam: TExamSchemaDto) =>
+    Boolean(
+      isLoaded &&
+        isSignedIn &&
+        hasMockExamAccess(plan, purchaseDate, exam.id, firstReadyExamId)
+    );
   const needsPremiumPlusUpgrade =
     isLoaded &&
     isSignedIn &&
     hasPaidPracticeAccess(plan, purchaseDate) &&
     !hasPremiumPlusAccess(plan, purchaseDate);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeSubmitting, setUpgradeSubmitting] = useState(false);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
 
@@ -91,34 +101,56 @@ const ExamOverview = ({
     }
   };
 
-  const handleStart = (
+  const navigateToExamPart = (
     exam: TExamSchemaDto,
-    partId: number = 1,
+    partId: number,
     section?: string
   ) => {
+    setSelectedExam(exam.name);
+    const attemptId = `att_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const query = section
+      ? `?section=${section}&attemptId=${attemptId}`
+      : `?attemptId=${attemptId}`;
+    router.push(`/exams/exam_${exam.id}/part${partId}${query}`);
+  };
+
+  const handleSectionStart = (
+    exam: TExamSchemaDto,
+    partId: number,
+    section?: string
+  ) => {
+    if (!mockExamUnlocked(exam)) {
+      return;
+    }
+    navigateToExamPart(exam, partId, section);
+  };
+
+  const handlePrimaryAction = (exam: TExamSchemaDto) => {
+    if (!isLoaded) {
+      return;
+    }
     if (noUser) {
       setShowLoginModal(true);
       return;
     }
-    if (freeUser) {
-      setShowUpgradeModal(true);
+    if (signedInFreeUser) {
+      router.push("/pricing");
       return;
     }
     if (needsPremiumPlusUpgrade) {
+      if (exam.id === firstReadyExamId) {
+        navigateToExamPart(exam, 1);
+        return;
+      }
       void runPremiumPlusUpgrade();
       return;
     }
-    setSelectedExam(exam.name);
-    const attemptId = `att_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    const query = section ? `?section=${section}&attemptId=${attemptId}` : `?attemptId=${attemptId}`;
-    router.push(`/exams/exam_${exam.id}/part${partId}${query}`);
+    navigateToExamPart(exam, 1);
   };
 
   return (
     <>
-      {freeUser ? (
-        showUpgradeModal && <UpgradeModal setShowModal={setShowUpgradeModal} />
-      ) : noUser ? (
+      {noUser ? (
         showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />
       ) : (
         <></>
@@ -146,9 +178,10 @@ const ExamOverview = ({
                 Upgrade account for mock exams
               </Typography>
               <Typography sx={{ fontSize: "0.9rem", color: "#5A6678" }}>
-                Your Premium plan includes practice; full mock exams need
-                Premium Plus. Upgrade keeps the same billing period—you only pay
-                the prorated difference.
+                Your Premium plan includes practice and one full mock exam (the
+                first test in this list). Unlock every mock exam with Premium
+                Plus. Upgrade keeps the same billing period—you only pay the
+                prorated difference.
               </Typography>
               {upgradeError && (
                 <Alert severity="error" onClose={() => setUpgradeError(null)}>
@@ -177,7 +210,7 @@ const ExamOverview = ({
                   {upgradeSubmitting ? (
                     <CircularProgress size={22} color="inherit" />
                   ) : (
-                    "Upgrade account"
+                    "Upgrade"
                   )}
                 </Button>
               </Box>
@@ -194,6 +227,7 @@ const ExamOverview = ({
         >
           {exams.map((exam: TExamSchemaDto, i: number) => {
             const progress = examProgressById[exam.id];
+            const unlocked = mockExamUnlocked(exam);
 
             return (
               <Paper
@@ -277,14 +311,21 @@ const ExamOverview = ({
                           key={skill.label}
                           component="button"
                           type="button"
-                          onClick={() => handleStart(exam, skill.partId, skill.section)}
+                          disabled={!unlocked}
+                          onClick={() =>
+                            handleSectionStart(
+                              exam,
+                              skill.partId,
+                              skill.section
+                            )
+                          }
                           sx={{
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             width: "calc(50% - 4px)",
                             minHeight: 38,
-                            cursor: "pointer",
+                            cursor: unlocked ? "pointer" : "not-allowed",
                             appearance: "none",
                             outline: "none",
                             px: 1.5,
@@ -296,9 +337,10 @@ const ExamOverview = ({
                             fontWeight: 600,
                             textAlign: "center",
                             border: "1px solid #E6ECF5",
+                            opacity: unlocked ? 1 : 0.45,
                             transition:
-                              "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease",
-                            "&:hover": {
+                              "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, opacity 0.2s ease",
+                            "&:hover:not(:disabled)": {
                               backgroundColor: "#EEF4FF",
                               borderColor: "#BFD1FF",
                               color: "#2F5FD7",
@@ -368,8 +410,13 @@ const ExamOverview = ({
 
                   <Button
                     variant="contained"
-                    disabled={needsPremiumPlusUpgrade && upgradeSubmitting}
-                    onClick={() => handleStart(exam, 1)}
+                    disabled={
+                      !isLoaded ||
+                      (needsPremiumPlusUpgrade &&
+                        exam.id !== firstReadyExamId &&
+                        upgradeSubmitting)
+                    }
+                    onClick={() => handlePrimaryAction(exam)}
                     sx={{
                       minHeight: 48,
                       borderRadius: "999px",
@@ -384,11 +431,15 @@ const ExamOverview = ({
                       },
                     }}
                   >
-                    {needsPremiumPlusUpgrade
-                      ? upgradeSubmitting
-                        ? "Upgrading…"
-                        : "Upgrade account"
-                      : "Start Full Test"}
+                    {signedInFreeUser
+                      ? "Subscribe"
+                      : needsPremiumPlusUpgrade
+                        ? exam.id === firstReadyExamId
+                          ? "Start Full Test"
+                          : upgradeSubmitting
+                            ? "Upgrading…"
+                            : "Upgrade"
+                        : "Start Full Test"}
                   </Button>
                 </Stack>
               </Paper>

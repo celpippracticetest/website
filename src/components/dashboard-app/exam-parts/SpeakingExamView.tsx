@@ -8,7 +8,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 
-import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
 import SvgRecording from "@/components/icons/Recording";
@@ -22,7 +21,10 @@ import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import { PRACTICE_PARTS } from "@/constants";
 import ExamHeader from "./components/ExamHeader";
-import { hasPremiumPlusAccess } from "@/lib/subscriptionAccess";
+import {
+  hasMockExamAccess,
+  hasPremiumPlusAccess,
+} from "@/lib/subscriptionAccess";
 import SpeakingOfficialView from "./components/official/SpeakingOfficialView";
 import {
   buildOfficialExamTitle,
@@ -51,11 +53,13 @@ interface SpeakingExamViewProps {
   setViewMode?: (mode: MockExamViewMode) => void;
   practiceSections?: PracticeSectionItem[];
   getPartsForSection?: (route: string) => { title: string; index: number }[];
+  firstReadyExamId?: string | null;
 }
 
 const SpeakingExamView = ({
   practice,
   partId,
+  examId,
   examName,
   examNumber,
   hideHeader = false,
@@ -63,6 +67,7 @@ const SpeakingExamView = ({
   setViewMode,
   practiceSections,
   getPartsForSection,
+  firstReadyExamId,
 }: SpeakingExamViewProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -88,7 +93,6 @@ const SpeakingExamView = ({
   } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
-  const [showModal, setShowModal] = useState(false);
   const [page, setPage] = useState(partId == 13 ? "description" : "question");
   const [progressBar, setProgressBar] = useState(0);
   const [isSubmit, setIsSubmit] = useState(false);
@@ -116,13 +120,21 @@ const SpeakingExamView = ({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const hasStartedRecordingRef = useRef(false);
   const audioChunks = useRef<Blob[]>([]);
+  const resolvedExamId = examId ?? practice.taskId;
   const shouldShowPractice: boolean =
     practice.isFree ||
     (!practice.isFree &&
-      hasPremiumPlusAccess(
-        user?.publicMetadata.plan as string | undefined,
-        user?.publicMetadata.purchaseDate as string | undefined
-      ));
+      (hideHeader
+        ? hasMockExamAccess(
+            user?.publicMetadata.plan as string | undefined,
+            user?.publicMetadata.purchaseDate,
+            resolvedExamId,
+            firstReadyExamId ?? null
+          )
+        : hasPremiumPlusAccess(
+            user?.publicMetadata.plan as string | undefined,
+            user?.publicMetadata.purchaseDate as string | undefined
+          )));
 
   const [errorAccessingMicrophone, setErrorAccessingMicrophone] =
     useState(false);
@@ -130,10 +142,17 @@ const SpeakingExamView = ({
   if (
     isLoaded &&
     (!user ||
-      !hasPremiumPlusAccess(
-        user.publicMetadata.plan as string | undefined,
-        user.publicMetadata.purchaseDate as string | undefined
-      ))
+      !(hideHeader
+        ? hasMockExamAccess(
+            user.publicMetadata.plan as string | undefined,
+            user.publicMetadata.purchaseDate,
+            resolvedExamId,
+            firstReadyExamId ?? null
+          )
+        : hasPremiumPlusAccess(
+            user.publicMetadata.plan as string | undefined,
+            user.publicMetadata.purchaseDate as string | undefined
+          )))
   ) {
     router.push("/exam-overview");
   }
@@ -465,9 +484,7 @@ const SpeakingExamView = ({
 
   return (
     <div className="h-full mx-auto w-full  transition-all duration-300 flex gap-5">
-      {freeUser ? (
-        showModal && <UpgradeModal setShowModal={setShowModal} />
-      ) : noUser ? (
+      {noUser ? (
         showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />
       ) : (
         <></>
@@ -648,7 +665,7 @@ const SpeakingExamView = ({
                             aria-label="Next testimonial"
                             onClick={() => {
                               if (freeUser) {
-                                setShowModal(true);
+                                router.push("/pricing");
                               } else {
                                 setShowLoginModal(true);
                               }

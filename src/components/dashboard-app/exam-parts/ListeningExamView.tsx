@@ -28,7 +28,10 @@ import TrophyModal from "@/components/modal/TrophyModal";
 import { PRACTICE_PARTS } from "@/constants";
 import ContinueExamModal from "@/components/modal/ContinueExamModal";
 import ExamHeader from "./components/ExamHeader";
-import { hasPremiumPlusAccess } from "@/lib/subscriptionAccess";
+import {
+  hasMockExamAccess,
+  hasPremiumPlusAccess,
+} from "@/lib/subscriptionAccess";
 import { formatOfficialTimeRemaining } from "./components/officialTimerText";
 import ListeningOfficialView from "./components/official/ListeningOfficialView";
 import {
@@ -58,6 +61,7 @@ interface ListeningExamViewProps {
   setViewMode?: (mode: MockExamViewMode) => void;
   practiceSections?: PracticeSectionItem[];
   getPartsForSection?: (route: string) => { title: string; index: number }[];
+  firstReadyExamId?: string | null;
 }
 
 type ListeningPage =
@@ -89,6 +93,7 @@ const ListeningExamView = (props: ListeningExamViewProps) => {
   const {
     practice,
     partId,
+    examId,
     examName,
     examNumber,
     hideHeader = false,
@@ -96,6 +101,7 @@ const ListeningExamView = (props: ListeningExamViewProps) => {
     setViewMode,
     practiceSections,
     getPartsForSection,
+    firstReadyExamId,
   } = props;
 
   const router = useRouter();
@@ -299,17 +305,30 @@ const ListeningExamView = (props: ListeningExamViewProps) => {
   }, []);
 
   useEffect(() => {
-    if (
-      isLoaded &&
-      (!user ||
-        !hasPremiumPlusAccess(
-          user.publicMetadata.plan as string | undefined,
-          user.publicMetadata.purchaseDate as string | undefined
-        ))
-    ) {
+    const resolvedExamId = examId ?? practice.taskId;
+    const canAccess = hideHeader
+      ? hasMockExamAccess(
+          user?.publicMetadata.plan as string | undefined,
+          user?.publicMetadata.purchaseDate,
+          resolvedExamId,
+          firstReadyExamId ?? null
+        )
+      : hasPremiumPlusAccess(
+          user?.publicMetadata.plan as string | undefined,
+          user?.publicMetadata.purchaseDate as string | undefined
+        );
+    if (isLoaded && (!user || !canAccess)) {
       router.push("/exam-overview");
     }
-  }, [isLoaded, router, user]);
+  }, [
+    examId,
+    firstReadyExamId,
+    hideHeader,
+    isLoaded,
+    practice.taskId,
+    router,
+    user,
+  ]);
 
   const currentPassage = practice.passages[passageIndex];
   const isMultiQuestionPart = [4, 5, 6].includes(partId);

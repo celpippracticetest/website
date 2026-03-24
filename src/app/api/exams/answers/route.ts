@@ -5,6 +5,8 @@ import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAnd
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
 import { TExamPartSchemaDto } from "@/models/examParts.model";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
+import { hasMockExamAccess } from "@/lib/subscriptionAccess";
+import { getFirstReadyMockExamId } from "@/lib/getFirstReadyMockExam";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -18,6 +20,17 @@ export async function POST(req: NextRequest) {
     const user = authContext.user;
     if (!parseResult.data.examId || !parseResult.data.partId) {
       return NextResponse.json({ message: "exam id or part id is missing" }, { status: 400 });
+    }
+    const firstReadyExamId = await getFirstReadyMockExamId();
+    if (
+      !hasMockExamAccess(
+        user.publicMetadata.plan as string | undefined,
+        user.publicMetadata.purchaseDate,
+        parseResult.data.examId,
+        firstReadyExamId
+      )
+    ) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
     const examPartsRepo = new ExamPartsRepository(mongoClient);
     const examPart: TExamPartSchemaDto | null = await examPartsRepo.findExamPartByExamIdAndPartId(parseResult.data.examId, parseResult.data.partId);

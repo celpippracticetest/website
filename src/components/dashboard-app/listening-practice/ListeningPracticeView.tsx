@@ -15,7 +15,6 @@ import { TTaskSchemaDto } from "@/models/tasks.model";
 import { useUser } from "@clerk/nextjs";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
 import SvgArrowRight from "@/components/icons/ArrowRight";
-import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
 import SvgChevronRight from "@/components/icons/ChevronRight";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
@@ -77,7 +76,6 @@ const ListeningPracticeView = ({
   } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
-  const [showModal, setShowModal] = useState(false);
   const router = useRouter();
   const [isPlaying] = useState(false);
   const [page, setPage] = useState("instructions");
@@ -258,9 +256,7 @@ const ListeningPracticeView = ({
 
   return (
     <div className="">
-      {freeUser ? (
-        showModal && <UpgradeModal setShowModal={setShowModal} />
-      ) : noUser ? (
+      {noUser ? (
         showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />
       ) : (
         <></>
@@ -512,7 +508,7 @@ const ListeningPracticeView = ({
                     aria-label="Next testimonial"
                     onClick={() => {
                       if (freeUser) {
-                        setShowModal(true);
+                        router.push("/pricing");
                       } else {
                         setShowLoginModal(true);
                       }

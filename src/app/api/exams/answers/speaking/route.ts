@@ -7,6 +7,8 @@ import { ExamPartsRepository } from "@/repositories/examParts.repo";
 import { USER_PROMPTS } from "./userPrompts";
 import { SYSTEM_PROPMTS } from "./systemPrompts";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
+import { hasMockExamAccess } from "@/lib/subscriptionAccess";
+import { getFirstReadyMockExamId } from "@/lib/getFirstReadyMockExam";
 
 /**
  * Wraps a promise with a timeout.
@@ -105,6 +107,19 @@ export const POST = async function (req: Request) {
     );
     if (!examPart || examPart.examId === undefined) {
       return NextResponse.json({ message: "exam not found" }, { status: 404 });
+    }
+
+    const firstReadyExamId = await getFirstReadyMockExamId();
+    const resolvedExamId = examPart.examId.toString();
+    if (
+      !hasMockExamAccess(
+        user.publicMetadata.plan as string | undefined,
+        user.publicMetadata.purchaseDate,
+        resolvedExamId,
+        firstReadyExamId
+      )
+    ) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
     const commandTemplate = USER_PROMPTS[parseInt(partId)];

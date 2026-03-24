@@ -18,7 +18,7 @@ import { useSearchParams } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { TQuestion } from "@/models/question.model";
-import { hasPremiumPlusAccess } from "@/lib/subscriptionAccess";
+import { hasMockExamAccess } from "@/lib/subscriptionAccess";
 import {
   MOCK_EXAM_VIEW_MODE_EVENT,
   MOCK_EXAM_VIEW_MODE_STORAGE_KEY,
@@ -34,11 +34,13 @@ const ResultExamView = ({
   examParts,
   answers: allAnswers,
   speakingAndWritingAnswers: allSpeakingAndWritingAnswers,
+  firstReadyExamId,
 }: {
   exams: TExamSchemaDto;
   examParts: TExamPartSchemaDto[];
   answers: (TListeningAndReadingAnswerDto & { overalScore?: number })[];
   speakingAndWritingAnswers: TWritingAnswerDto[];
+  firstReadyExamId: string | null;
 }) => {
   const route = useRouter();
   const searchParams = useSearchParams();
@@ -230,9 +232,11 @@ const ResultExamView = ({
   if (
     isLoaded &&
     (!user ||
-      !hasPremiumPlusAccess(
+      !hasMockExamAccess(
         user.publicMetadata.plan as string | undefined,
-        user.publicMetadata.purchaseDate as string | undefined
+        user.publicMetadata.purchaseDate,
+        exams.id,
+        firstReadyExamId
       ))
   ) {
     route.push("exam-overview");

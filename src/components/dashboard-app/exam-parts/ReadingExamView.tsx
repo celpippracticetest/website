@@ -12,7 +12,6 @@ import { useUser } from "@clerk/nextjs";
 import React from "react";
 import Image from "next/image";
 import SvgArrowRight from "@/components/icons/ArrowRight";
-import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
 import SvgCircle from "@/components/icons/Circle";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
@@ -22,7 +21,10 @@ import SvgWritingPart from "@/components/icons/WritingPart";
 import SvgReadingPart from "@/components/icons/ReadingPart";
 import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
-import { hasPremiumPlusAccess } from "@/lib/subscriptionAccess";
+import {
+  hasMockExamAccess,
+  hasPremiumPlusAccess,
+} from "@/lib/subscriptionAccess";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import { PRACTICE_PARTS } from "@/constants";
@@ -57,6 +59,7 @@ interface ReadingExamViewProps {
   setViewMode?: (mode: MockExamViewMode) => void;
   practiceSections?: PracticeSectionItem[];
   getPartsForSection?: (route: string) => { title: string; index: number }[];
+  firstReadyExamId?: string | null;
 }
 
 const formatTime = (value: number) => {
@@ -79,6 +82,7 @@ const ReadingExamView = ({
   setViewMode,
   practiceSections,
   getPartsForSection,
+  firstReadyExamId,
 }: ReadingExamViewProps) => {
   const timerTime = partId == 10 ? 780 : 660;
   const router = useRouter();
@@ -98,7 +102,6 @@ const ReadingExamView = ({
   } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
-  const [showModal, setShowModal] = useState(false);
   const [showContinueModal, setShowContinueModal] = useState(false);
   const localExamViewMode = useExamViewMode();
   const resolvedViewMode = viewMode ?? localExamViewMode.viewMode;
@@ -234,21 +237,36 @@ const ReadingExamView = ({
     }));
   };
 
+  const resolvedExamId = examId ?? practice.taskId;
   const shouldShowPractice: boolean =
     practice.isFree ||
     !!(!practice.isFree &&
-      hasPremiumPlusAccess(
-        user?.publicMetadata.plan as string | undefined,
-        user?.publicMetadata.purchaseDate as string | undefined
-      ));
+      (hideHeader
+        ? hasMockExamAccess(
+            user?.publicMetadata.plan as string | undefined,
+            user?.publicMetadata.purchaseDate,
+            resolvedExamId,
+            firstReadyExamId ?? null
+          )
+        : hasPremiumPlusAccess(
+            user?.publicMetadata.plan as string | undefined,
+            user?.publicMetadata.purchaseDate as string | undefined
+          )));
 
   if (
     isLoaded &&
     (!user ||
-      !hasPremiumPlusAccess(
-        user.publicMetadata.plan as string | undefined,
-        user.publicMetadata.purchaseDate as string | undefined
-      ))
+      !(hideHeader
+        ? hasMockExamAccess(
+            user.publicMetadata.plan as string | undefined,
+            user.publicMetadata.purchaseDate,
+            resolvedExamId,
+            firstReadyExamId ?? null
+          )
+        : hasPremiumPlusAccess(
+            user.publicMetadata.plan as string | undefined,
+            user.publicMetadata.purchaseDate as string | undefined
+          )))
   ) {
     router.push("exam-overview");
   }
@@ -334,9 +352,7 @@ const ReadingExamView = ({
 
   return (
     <div className="w-full p-2  transition-all duration-300 flex gap-5">
-      {freeUser ? (
-        showModal && <UpgradeModal setShowModal={setShowModal} />
-      ) : noUser ? (
+      {noUser ? (
         showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />
       ) : (
         <></>
@@ -494,7 +510,7 @@ const ReadingExamView = ({
                             aria-label="Next testimonial"
                             onClick={() => {
                               if (freeUser) {
-                                setShowModal(true);
+                                router.push("/pricing");
                               } else {
                                 setShowLoginModal(true);
                               }

@@ -13,6 +13,7 @@ import ActiveUsersTracker from "@/components/analytics/ActiveUsersTracker";
 import AttributionTracker from "@/components/analytics/AttributionTracker";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
 import FooterWrapper from "@/components/pages/landing/FooterWrapper";
+import MuiAppRouterCacheProvider from "@/components/MuiAppRouterCacheProvider";
 import { getHomepageHeroDisplay } from "@/lib/homepage-hero";
 import type { Metadata, Viewport } from "next";
 import { Suspense, type ComponentType } from "react";
@@ -274,7 +275,8 @@ export default async function RootLayout({
       </head>
 
       <body className="bg-[#F4F7FF]">
-        <ClerkProvider>
+        <MuiAppRouterCacheProvider>
+          <ClerkProvider>
           {enableGtm && (
             <noscript>
               <iframe
@@ -320,7 +322,8 @@ export default async function RootLayout({
           )}
 
           <Script src="/scripts/third-party-loader.js" strategy="lazyOnload" />
-        </ClerkProvider>
+          </ClerkProvider>
+        </MuiAppRouterCacheProvider>
       </body>
     </html>
   );

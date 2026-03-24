@@ -44,14 +44,28 @@ export function hasPaidPracticeAccess(
 
 export function hasPremiumPlusAccess(
   plan: string | null | undefined,
-  purchaseDate?: unknown
+  _purchaseDate?: unknown
 ) {
   const normalizedPlan = normalizePlan(plan);
   return (
-    isGrandfatheredPremium(plan, purchaseDate) ||
-    normalizedPlan === "pro" ||
-    normalizedPlan === "enterprise"
+    normalizedPlan === "pro" || normalizedPlan === "enterprise"
   );
+}
+
+/** Full mock exam access: Plus/Enterprise for all exams; Premium only for the first ready exam (catalog order). */
+export function hasMockExamAccess(
+  plan: string | null | undefined,
+  purchaseDate: unknown,
+  examId: string | null | undefined,
+  firstReadyExamId: string | null | undefined
+) {
+  if (hasPremiumPlusAccess(plan)) {
+    return true;
+  }
+  if (!examId || !firstReadyExamId || examId !== firstReadyExamId) {
+    return false;
+  }
+  return hasPaidPracticeAccess(plan, purchaseDate);
 }
 
 export function getSubscriptionDisplayName(

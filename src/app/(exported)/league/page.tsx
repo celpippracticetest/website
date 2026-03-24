@@ -14,7 +14,6 @@ import SvgSvgBeforeTypingWord from "@/components/icons/SvgBeforeTypingWord";
 import SvgLearningArrowUp from "@/components/icons/LearningArrowUp";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useUser } from "@clerk/nextjs";
-import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
 import { ActivityLogger } from "@/lib/userActivity";
 import SvgLeagueKados from "@/components/icons/LeagueKados";
@@ -85,7 +84,6 @@ const Page = () => {
   const [isInConversation, setIsInConversation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isChatLocked, setIsChatLocked] = useState(false);
   const [serverMessageCount, setServerMessageCount] = useState(0);
@@ -1285,7 +1283,7 @@ const Page = () => {
     const currentMessageCount =
       serverMessageCount + messages.filter((m) => m.type === "user").length;
     if (isFreeUser && !isPremiumUser && currentMessageCount >= 1) {
-      setShowUpgradeModal(true);
+      router.push("/pricing");
       return;
     }
 
@@ -1312,7 +1310,7 @@ const Page = () => {
         if (noUser) {
           setShowLoginModal(true);
         } else if (isFreeUser) {
-          setShowUpgradeModal(true);
+          router.push("/pricing");
         }
         setIsChatLocked(true);
         return;
@@ -1369,7 +1367,7 @@ const Page = () => {
           if (noUser) {
             setShowLoginModal(true);
           } else if (isFreeUser) {
-            setShowUpgradeModal(true);
+            router.push("/pricing");
           }
           setIsChatLocked(true);
           throw new Error("Upgrade required");
@@ -1430,7 +1428,6 @@ const Page = () => {
       <section className="relative w-full transition-all duration-300 overflow-hidden">
         <h1 className="sr-only">CELPIP League</h1>
         {/* Modals */}
-        {showUpgradeModal && <UpgradeModal setShowModal={setShowUpgradeModal} />}
         {showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />}
         <MedalModal />
         <TaskCompletionModal />
@@ -1572,7 +1569,6 @@ const Page = () => {
     <section className="relative w-full transition-all duration-300 overflow-hidden">
       <h1 className="sr-only">CELPIP League</h1>
       {/* Modals */}
-      {showUpgradeModal && <UpgradeModal setShowModal={setShowUpgradeModal} />}
       {showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />}
       <MedalModal />
       <TaskCompletionModal />

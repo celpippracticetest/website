@@ -32,7 +32,6 @@ import SvgCopy from "@/components/icons/Copy";
 import React from "react";
 import { motion } from "framer-motion";
 import SvgClose from "@/components/icons/Close";
-import UpgradeModal from "../../modal/UpgradeModal";
 import { useMenuCollapsedStore } from "@/store/menuCollapsed.store";
 import CountdownTimer from "@/components/dashboard-app/CounterDownTimer";
 import OnboardingSurvey from "@/components/onboardingSurvey";
@@ -216,9 +215,7 @@ const LayoutClient = ({ children, showSurvey }: any) => {
 
   const noUser = isLoaded ? !isSignedIn : false;
 
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
   const loginRef = useRef<HTMLDivElement>(null);
   const { collapsed, setCollapsed } = useMenuCollapsedStore((state) => state);
   const [open, setOpen] = useState(false);
@@ -287,12 +284,7 @@ const LayoutClient = ({ children, showSurvey }: any) => {
     }
   }, [hasClosedModal]);
 
-  const upgradeModalOpenRef = useRef(showUpgradeModal);
   const loginModalOpenRef = useRef(showLoginModal);
-
-  useEffect(() => {
-    upgradeModalOpenRef.current = showUpgradeModal;
-  }, [showUpgradeModal]);
 
   useEffect(() => {
     loginModalOpenRef.current = showLoginModal;
@@ -305,9 +297,7 @@ const LayoutClient = ({ children, showSurvey }: any) => {
         !sidebarMenuRef.current.contains(event.target)
       ) {
         if (freeUser) {
-          if (!upgradeModalOpenRef.current) {
-            setIsMenuOpen(false);
-          }
+          setIsMenuOpen(false);
         } else if (noUser) {
           if (!loginModalOpenRef.current) {
             setIsMenuOpen(false);
@@ -317,9 +307,6 @@ const LayoutClient = ({ children, showSurvey }: any) => {
         }
       }
 
-      if (ref.current && !ref.current.contains(event.target)) {
-        setShowUpgradeModal(false);
-      }
       if (loginRef.current && !loginRef.current.contains(event.target)) {
         setShowLoginModal(false);
       }
@@ -412,7 +399,7 @@ const LayoutClient = ({ children, showSurvey }: any) => {
               <div
                 onClick={() => {
                   if (freeUser) {
-                    setShowUpgradeModal(true);
+                    router.push("/pricing");
                   } else {
                     setShowLoginModal(true);
                   }
@@ -459,20 +446,15 @@ const LayoutClient = ({ children, showSurvey }: any) => {
                 </div>
                 <div
                   onClick={() => {
-                    if (freeUser) {
-                      setShowUpgradeModal(true);
-                    } else {
+                    if (noUser) {
                       setShowLoginModal(true);
+                    } else {
+                      router.push("/earn100");
                     }
                   }}
                   className="cursor-pointer max-w-[95px]  screen1280:!max-w-[95px] screen744:!w-full  flex items-center justify-center text-white border-[1px]  h-[24px] w-full rounded-[24px] "
                 >
-                  <Link
-                    href={"/earn100"}
-                    className=" text-[14px] font-normal ]"
-                  >
-                    see details
-                  </Link>
+                  <span className="text-[14px] font-normal">see details</span>
                 </div>
               </div>
             </>
@@ -640,11 +622,7 @@ const LayoutClient = ({ children, showSurvey }: any) => {
 
   return (
     <>
-      {freeUser ? (
-        <>
-          {showUpgradeModal && <UpgradeModal setShowModal={setShowUpgradeModal} />}
-        </>
-      ) : noUser ? (
+      {noUser ? (
         showLoginModal && <LoginModal />
       ) : (
         <></>

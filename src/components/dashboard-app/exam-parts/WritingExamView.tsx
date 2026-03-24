@@ -9,7 +9,6 @@ import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import SvgArrowRight from "@/components/icons/ArrowRight";
-import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
 import SvgWritingPart from "@/components/icons/WritingPart";
@@ -23,7 +22,10 @@ import TrophyModal from "@/components/modal/TrophyModal";
 import { PRACTICE_PARTS } from "@/constants";
 import ContinueExamModal from "@/components/modal/ContinueExamModal";
 import ExamHeader from "./components/ExamHeader";
-import { hasPremiumPlusAccess } from "@/lib/subscriptionAccess";
+import {
+  hasMockExamAccess,
+  hasPremiumPlusAccess,
+} from "@/lib/subscriptionAccess";
 import { formatOfficialTimeRemaining } from "./components/officialTimerText";
 import WritingOfficialView from "./components/official/WritingOfficialView";
 import {
@@ -53,6 +55,7 @@ interface WritingExamViewProps {
   setViewMode?: (mode: MockExamViewMode) => void;
   practiceSections?: PracticeSectionItem[];
   getPartsForSection?: (route: string) => { title: string; index: number }[];
+  firstReadyExamId?: string | null;
 }
 
 const formatTime = (value: number) => {
@@ -75,6 +78,7 @@ const WritingExamView = ({
   setViewMode,
   practiceSections,
   getPartsForSection,
+  firstReadyExamId,
 }: WritingExamViewProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -101,7 +105,6 @@ const WritingExamView = ({
   } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
-  const [showModal, setShowModal] = useState(false);
   const [showContinueModal, setShowContinueModal] = useState(false);
   const localExamViewMode = useExamViewMode();
   const resolvedViewMode = viewMode ?? localExamViewMode.viewMode;
@@ -232,13 +235,21 @@ const WritingExamView = ({
     }
   };
 
+  const resolvedExamId = examId ?? practice.taskId;
   const shouldShowPractice: boolean =
     practice.isFree ||
     !!(!practice.isFree &&
-      hasPremiumPlusAccess(
-        user?.publicMetadata.plan as string | undefined,
-        user?.publicMetadata.purchaseDate as string | undefined
-      ));
+      (hideHeader
+        ? hasMockExamAccess(
+            user?.publicMetadata.plan as string | undefined,
+            user?.publicMetadata.purchaseDate,
+            resolvedExamId,
+            firstReadyExamId ?? null
+          )
+        : hasPremiumPlusAccess(
+            user?.publicMetadata.plan as string | undefined,
+            user?.publicMetadata.purchaseDate as string | undefined
+          )));
 
   const [menuShowModal, setMenuShowModal] = useState(false);
 
@@ -332,9 +343,7 @@ const WritingExamView = ({
 
   return (
     <div className=" mx-auto w-full h-full  p-2  transition-all duration-300 flex gap-5">
-      {freeUser ? (
-        showModal && <UpgradeModal setShowModal={setShowModal} />
-      ) : noUser ? (
+      {noUser ? (
         showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />
       ) : (
         <></>
@@ -496,7 +505,7 @@ const WritingExamView = ({
                             aria-label="Next testimonial"
                             onClick={() => {
                               if (freeUser) {
-                                setShowModal(true);
+                                router.push("/pricing");
                               } else {
                                 setShowLoginModal(true);
                               }

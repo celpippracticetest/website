@@ -1,4 +1,4 @@
-import { SignInButton, SignUpButton } from "@clerk/nextjs";
+import { SignUpButton } from "@clerk/nextjs";
 import { useAuthModalStore } from "@/store/useAuthModal.store";
 import Close from "../icons/Close";
 import { useRef, useEffect } from "react";
@@ -33,10 +33,10 @@ const LoginModal = (params: any) => {
           <Close />
         </div>
         <div className="text-[#212E42] text-[20px] text-center font-semibold">
-          Login to your account
+          Sign up to continue
         </div>
         <div className="text-[#76808F] mt-[12px] text-[14px] text-center font-normal">
-          {loginMessage || "Please log in to start the exam"}{" "}
+          {loginMessage || "Please create an account to start the exam"}
           <SignUpButton>
             <div className="text-[14px] mx-[16px] cursor-pointer flex items-center justify-center text-white bg-[#4A7DFF] rounded-[24px] h-[40px] mt-[12px]  text-center font-normal">
               Create a free account
@@ -49,11 +49,10 @@ const LoginModal = (params: any) => {
           <span className="text-[#37465C] text-[14px]">Or</span>
           <div className="h-[1px] w-full bg-[#D5D6D8]"></div>
         </div>
-        <div className="text-[16px]   mt-[32px]  text-center font-medium">
-          <span>Do you have an account? </span>{" "}
-          <SignInButton>
-            <span className="text-[#316BFF] cursor-pointer"> Login </span>
-          </SignInButton>
+        <div className="text-[16px] mt-[32px] text-center font-medium">
+          <SignUpButton>
+            <span className="text-[#316BFF] cursor-pointer">Sign up</span>
+          </SignUpButton>
         </div>
       </div>
     </div>

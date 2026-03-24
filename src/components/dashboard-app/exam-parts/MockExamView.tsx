@@ -21,6 +21,7 @@ interface MockExamViewProps {
   partNumber?: string;
   examName?: string;
   examNumber?: number;
+  firstReadyExamId?: string | null;
 }
 
 const MockExamView = ({
@@ -30,6 +31,7 @@ const MockExamView = ({
   partNumber,
   examName,
   examNumber,
+  firstReadyExamId,
 }: MockExamViewProps) => {
   const [menuShowModal, setMenuShowModal] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -81,6 +83,7 @@ const MockExamView = ({
             setViewMode={setViewMode}
             practiceSections={practiceSections}
             getPartsForSection={getMockExamPartsForSection}
+            firstReadyExamId={firstReadyExamId}
           />
         )}
 
@@ -97,6 +100,7 @@ const MockExamView = ({
             setViewMode={setViewMode}
             practiceSections={practiceSections}
             getPartsForSection={getMockExamPartsForSection}
+            firstReadyExamId={firstReadyExamId}
           />
         )}
 
@@ -113,6 +117,7 @@ const MockExamView = ({
             setViewMode={setViewMode}
             practiceSections={practiceSections}
             getPartsForSection={getMockExamPartsForSection}
+            firstReadyExamId={firstReadyExamId}
           />
         )}
 
@@ -129,6 +134,7 @@ const MockExamView = ({
             setViewMode={setViewMode}
             practiceSections={practiceSections}
             getPartsForSection={getMockExamPartsForSection}
+            firstReadyExamId={firstReadyExamId}
           />
         )}
       </Box>

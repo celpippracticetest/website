@@ -26,7 +26,8 @@ import { ObjectId } from "mongodb";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { currentUser } from "@clerk/nextjs/server";
-import { hasPremiumPlusAccess } from "@/lib/subscriptionAccess";
+import { hasMockExamAccess } from "@/lib/subscriptionAccess";
+import { getFirstReadyMockExamId } from "@/lib/getFirstReadyMockExam";
 
 const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
   const resolvedParams = await params;
@@ -42,6 +43,7 @@ const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
     // Fallback: treat as unauthenticated
     user = null;
   }
+  const firstReadyExamId = await getFirstReadyMockExamId();
   const plan: string | undefined = user?.publicMetadata?.plan as
     | string
     | undefined;
@@ -51,11 +53,13 @@ const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
     : roleValue === "admin";
   if (
     !user ||
-    (!hasPremiumPlusAccess(
-      plan,
-      user?.publicMetadata?.purchaseDate as string | undefined
-    ) &&
-      !isAdmin)
+    (!isAdmin &&
+      !hasMockExamAccess(
+        plan,
+        user?.publicMetadata?.purchaseDate as string | undefined,
+        examId,
+        firstReadyExamId
+      ))
   ) {
     redirect("/exam-overview", RedirectType.push);
   }
@@ -124,6 +128,7 @@ const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
             examParts={examParts.items}
             answers={answers.items}
             speakingAndWritingAnswers={speakingAndWritingAnswers}
+            firstReadyExamId={firstReadyExamId}
           />
         </Box>
       </Box>
@@ -234,6 +239,7 @@ const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
           partNumber={partNumber}
           examName={exam?.name}
           examNumber={exam?.order}
+          firstReadyExamId={firstReadyExamId}
         />
       </Box>
     </Box>

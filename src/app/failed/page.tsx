@@ -3,7 +3,6 @@
 import ArrowLeft from "@/components/icons/ArrowLeft";
 import SvgFailed from "@/components/icons/Failed";
 import LoginModal from "@/components/modal/LoginModal";
-import UpgradeModal from "@/components/modal/UpgradeModal";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -14,14 +13,11 @@ export default function Success() {
   const noUser = isLoaded ? !isSignedIn : false;
   const proUser = user?.publicMetadata.plan == "premium";
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showModal, setShowModal] = useState(false);
   const router = useRouter();
 
   return (
     <main className="w-full flex flex-col  items-center   bg-[#F4F7FF] min-h-screen pt-[96px]">
-      {freeUser || proUser ? (
-        showModal && <UpgradeModal setShowModal={setShowModal} />
-      ) : noUser ? (
+      {noUser ? (
         showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />
       ) : (
         <></>
@@ -53,11 +49,11 @@ export default function Success() {
           <div
             onClick={() => {
               if (freeUser || proUser) {
-                setShowModal(true);
+                router.push("/pricing");
                 return;
-              } else if (noUser) {
+              }
+              if (noUser) {
                 setShowLoginModal(true);
-                return;
               }
             }}
             className="flex items-center cursor-pointer justify-center mt-[40px] font-normal bg-[#4A7DFF] text-white text-[14px] h-[40px] rounded-[24px] px-[24px] py-[12px]"
