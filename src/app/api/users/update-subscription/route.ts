@@ -27,21 +27,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get active subscription
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
-      status: "active",
-      limit: 1,
+      limit: 20,
     });
 
-    if (subscriptions.data.length === 0) {
+    const subscription = subscriptions.data.find((s) =>
+      ["active", "trialing", "past_due", "unpaid"].includes(s.status)
+    );
+
+    if (!subscription) {
       return NextResponse.json(
         { error: "No active subscription found" },
         { status: 404 }
       );
     }
-
-    const subscription = subscriptions.data[0];
     const subscriptionItemId = subscription.items.data[0].id;
 
     // Update the subscription

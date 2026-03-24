@@ -1,50 +1,22 @@
 import { NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
-import Stripe from "stripe";
+import { getDb } from "@/lib/mongodb";
+import { loadActivePlansWithStripePrices } from "@/lib/loadActivePlansWithStripePrices";
 
+/**
+ * Same plan catalog and ordering as `/pricing` (Mongo active plans), with live
+ * recurring price data from Stripe — mirrors checkout and pricing `stripePriceId` usage.
+ */
 export async function GET() {
   try {
-    const productIds = [
-      process.env.NEXT_PUBLIC_WEEKLY_ACCESS_PRODUCT,
-      process.env.NEXT_PUBLIC_MONTHLY_ACCESS_PRODUCT,
-      process.env.NEXT_PUBLIC_QUARTER_ACCESS_PRODUCT,
-      process.env.NEXT_PUBLIC_YEARLY_ACCESS_PRODUCT,
-    ].filter(Boolean) as string[];
-
-    const plans = await Promise.all(
-      productIds.map(async (productId) => {
-        try {
-          const product = await stripe.products.retrieve(productId, {
-            expand: ["default_price"],
-          });
-
-          const price = product.default_price as Stripe.Price;
-
-          return {
-            id: productId,
-            name: product.name,
-            priceId: price.id,
-            amount: price.unit_amount ? price.unit_amount / 100 : 0,
-            currency: price.currency,
-            interval: price.recurring?.interval,
-            intervalCount: price.recurring?.interval_count,
-            metadata: product.metadata,
-          };
-        } catch (error) {
-          console.error(`Error fetching product ${productId}:`, error);
-          return null;
-        }
-      })
-    );
-
-    return NextResponse.json({
-      plans: plans.filter(Boolean),
-    });
-  } catch (error) {
-    console.error("Error fetching available plans:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch plans" },
-      { status: 500 }
-    );
+    const db = await getDb();
+    const plans = await loadActivePlansWithStripePrices(db);
+    return NextResponse.json({ plans });
+  } catch (err) {
+    console.error("Error fetching available plans:", err);
+    const message = err instanceof Error ? err.message : "Failed to fetch plans";
+    if (message.includes("MONGODB_URI") || message.includes("not initialized")) {
+      return NextResponse.json({ plans: [], error: "Database unavailable" }, { status: 503 });
+    }
+    return NextResponse.json({ error: "Failed to fetch plans" }, { status: 500 });
   }
 }

@@ -3,14 +3,29 @@ import SvgCloseCircle from "@/components/icons/CloseCircle";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
 
 interface Plan {
-  id: string; // Product ID
+  id: string;
   name: string;
   priceId: string;
   amount: number;
   currency: string;
   interval: string;
   intervalCount: number;
+  /** Same `order` as marketing pricing page; lower first. */
+  order?: number;
   metadata?: Record<string, string>;
+}
+
+function formatPlanPrice(amount: number, currency: string) {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: currency.toUpperCase(),
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    return `${currency.toUpperCase()} ${amount.toFixed(2)}`;
+  }
 }
 
 interface ChangePlanModalProps {
@@ -36,8 +51,12 @@ const ChangePlanModal = ({
 }: ChangePlanModalProps) => {
   if (!isOpen) return null;
 
-  // Sort plans by amount
-  const sortedPlans = [...availablePlans].sort((a, b) => a.amount - b.amount);
+  const sortedPlans = [...availablePlans].sort((a, b) => {
+    const oa = a.order ?? Number.MAX_SAFE_INTEGER;
+    const ob = b.order ?? Number.MAX_SAFE_INTEGER;
+    if (oa !== ob) return oa - ob;
+    return a.amount - b.amount;
+  });
 
   const currentPlan = availablePlans.find((p) => {
     if (currentPriceId) return p.priceId === currentPriceId;
@@ -86,6 +105,10 @@ const ChangePlanModal = ({
             <div className="text-center py-8 text-gray-500">
               Loading available plans...
             </div>
+          ) : availablePlans.length === 0 ? (
+            <div className="text-center py-8 px-2 text-[#76808F] text-[14px] leading-relaxed">
+              No plans could be loaded. You can still open the billing portal from your account to change or cancel your subscription, or try again in a moment.
+            </div>
           ) : (
             sortedPlans.map((plan) => {
               let isCurrent = false;
@@ -133,7 +156,7 @@ const ChangePlanModal = ({
                       {plan.name}
                     </h3>
                     <div className="text-[#76808F] text-[14px]">
-                      ${plan.amount.toFixed(2)} /{" "}
+                      {formatPlanPrice(plan.amount, plan.currency)} /{" "}
                       {plan.intervalCount && plan.intervalCount > 1
                         ? `${plan.intervalCount} ${plan.interval}s`
                         : plan.interval}

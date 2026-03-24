@@ -9,6 +9,7 @@ import {
   parsePricingAbLayout,
   parsePricingStylePreviewQuery,
 } from "@/lib/pricingAbTest";
+import { attachStripePricingToSerializedPlans } from "@/lib/loadActivePlansWithStripePrices";
 import { PlansRepository } from "@/repositories/plans.repo";
 import type { SerializedPlan } from "@/types/pricing";
 
@@ -104,11 +105,12 @@ export default async function PricingPage({ searchParams }: PricingPageProps) {
   const plansRepo = new PlansRepository(db);
   const plans = await plansRepo.getActivePlans();
   const serializedPlans = plans.map(serializePlan);
+  const plansWithStripePricing = await attachStripePricingToSerializedPlans(serializedPlans);
 
   const itemListSchema = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    itemListElement: serializedPlans.map((plan, index) => {
+    itemListElement: plansWithStripePricing.map((plan, index) => {
       const numericPrice = plan.price?.replace?.(/[^0-9.]/g, "") || "0";
       const isFree = numericPrice === "0";
       return {
@@ -144,7 +146,7 @@ export default async function PricingPage({ searchParams }: PricingPageProps) {
       <JsonLd data={faqSchema} />
       <JsonLd data={itemListSchema} />
       <PricingPageClient
-        plans={serializedPlans}
+        plans={plansWithStripePricing}
         pricingAbLayout={pricingAbLayout}
         pricingAbParticipatesInExperiment={pricingAbParticipatesInExperiment}
       />

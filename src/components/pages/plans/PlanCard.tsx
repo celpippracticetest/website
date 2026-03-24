@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import type { ReactNode } from "react";
 import SvgCheck from "../../icons/Check";
 import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
 import { useEcommerceTracking } from "@/hooks/useTracking";
@@ -19,7 +19,7 @@ interface IPlanCard {
   discount: string;
   buttonTitle: string;
   features: string[];
-  icon: React.ReactNode;
+  icon: ReactNode;
   iconWrapperColor: string;
   id: number;
   currentPlanTitle: string;
@@ -113,7 +113,7 @@ const PlanCard = ({
           value ? <input key={name} type="hidden" name={name} value={value} /> : null
         )}
       {highlightLabel && (
-        <div className={`absolute left-1/2 top-0 z-[3] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-orange-500 via-amber-400 to-blue-500 font-semibold uppercase tracking-[0.08em] text-white shadow-lg ${
+        <div className={`absolute left-1/2 top-0 z-[3] -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-gradient-to-r from-orange-500 via-amber-400 to-blue-500 font-semibold uppercase tracking-[0.08em] text-white shadow-lg ${
           compact ? "px-3 py-1 text-[10px]" : "px-4 py-1 text-[12px]"
         }`}>
           {highlightLabel}

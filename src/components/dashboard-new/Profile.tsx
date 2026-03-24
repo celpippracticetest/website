@@ -134,19 +134,16 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
       if (response.ok) {
         const data = await response.json();
         setAvailablePlans(data.plans || []);
+      } else {
+        setAvailablePlans([]);
       }
     } catch (error) {
       console.error("Error fetching plans:", error);
+      setAvailablePlans([]);
     } finally {
       setLoadingPlans(false);
     }
   };
-
-  useEffect(() => {
-    if (showChangePlanModal && availablePlans.length === 0) {
-      fetchAvailablePlans();
-    }
-  }, [showChangePlanModal]);
 
   const redirectToPortal = async () => {
     try {
@@ -174,7 +171,9 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
   };
 
   const handleManageSubscription = () => {
+    setLoadingPlans(true);
     setShowChangePlanModal(true);
+    void fetchAvailablePlans();
   };
 
   const handleCancelSubscription = () => {
@@ -896,7 +895,10 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
       {/* Change Plan Modal */}
       <ChangePlanModal
         isOpen={showChangePlanModal}
-        onClose={() => setShowChangePlanModal(false)}
+        onClose={() => {
+          setShowChangePlanModal(false);
+          setLoadingPlans(false);
+        }}
         availablePlans={availablePlans}
         currentPlanName={planNameDisplay}
         currentPriceId={subscriptionData?.planId}
