@@ -1,8 +1,14 @@
 import { Metadata } from "next";
+import { cookies } from "next/headers";
 import { JsonLd } from "@/components/seo/JsonLd";
 import PricingPageClient from "@/components/pages/pricing/PricingPageClient";
 import { pricingFaqs } from "@/components/pages/pricing/pricingContent";
 import mongoClient from "@/lib/mongodb";
+import {
+  PRICING_AB_COOKIE,
+  parsePricingAbLayout,
+  parsePricingStylePreviewQuery,
+} from "@/lib/pricingAbTest";
 import { PlansRepository } from "@/repositories/plans.repo";
 import type { SerializedPlan } from "@/types/pricing";
 
@@ -80,7 +86,20 @@ function serializePlan(plan: {
   };
 }
 
-export default async function PricingPage() {
+type PricingPageProps = {
+  searchParams: Promise<{ s?: string }>;
+};
+
+export default async function PricingPage({ searchParams }: PricingPageProps) {
+  const { s } = await searchParams;
+  const cookieStore = await cookies();
+  const assignedLayout = parsePricingAbLayout(
+    cookieStore.get(PRICING_AB_COOKIE)?.value
+  );
+  const previewLayout = parsePricingStylePreviewQuery(s);
+  const pricingAbParticipatesInExperiment = previewLayout === null;
+  const pricingAbLayout = previewLayout ?? assignedLayout;
+
   const db = await mongoClient.db();
   const plansRepo = new PlansRepository(db);
   const plans = await plansRepo.getActivePlans();
@@ -124,7 +143,11 @@ export default async function PricingPage() {
     <>
       <JsonLd data={faqSchema} />
       <JsonLd data={itemListSchema} />
-      <PricingPageClient plans={serializedPlans} />
+      <PricingPageClient
+        plans={serializedPlans}
+        pricingAbLayout={pricingAbLayout}
+        pricingAbParticipatesInExperiment={pricingAbParticipatesInExperiment}
+      />
     </>
   );
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
-import client from "@/lib/mongodb";
+import { getDb } from "@/lib/mongodb";
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const db = client.db();
+    const db = await getDb();
     const checkoutsCollection = db.collection("checkouts");
 
     // Check if user has any completed checkout

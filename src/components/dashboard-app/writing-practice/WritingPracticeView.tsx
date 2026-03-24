@@ -15,7 +15,6 @@ import { useRouter } from "nextjs-toploader/app";
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 
-import useStore from "@/store";
 import { TWritingAnswerDto } from "@/models/answer";
 import { cn } from "@/lib/utils";
 import { SignInButton, SignUpButton, useUser } from "@clerk/nextjs";
@@ -131,9 +130,6 @@ const WritingPracticeView = ({
       ));
   const [answers, setAnswers] = useState<any[]>([]);
   const [freeAttempts, setFreeAttempts] = useState<number | null>(3);
-  const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState
-  );
   useEffect(() => {
     setIsHydrated(true);
   }, []);
@@ -550,9 +546,9 @@ const WritingPracticeView = ({
                       value={text}
                       onChange={(e) => {
                         if (!user) {
-                          setPremiumPlanModalState();
+                          router.push("/pricing");
                         } else if (!shouldShowPractice) {
-                          setPremiumPlanModalState();
+                          router.push("/pricing");
                         }
                         const wordCount = e.target.value
                           .trim()
@@ -625,11 +621,11 @@ const WritingPracticeView = ({
                             className="cursor-pointer flex h-[40px] items-center justify-center text-white text-[14px] font-normal  rounded-[24px] bg-[#4A7DFF] w-full"
                             onClick={() => {
                               if (!user) {
-                                setPremiumPlanModalState();
+                                router.push("/pricing");
                                 return;
                               }
                               if (!shouldShowPractice) {
-                                setPremiumPlanModalState();
+                                router.push("/pricing");
                                 return;
                               }
                               if (!isSubmit && wordCount > 20) {
@@ -650,7 +646,7 @@ const WritingPracticeView = ({
                           disabled={progressBar > 0}
                           className="flex h-[40px] items-center justify-center text-white text-[14px] font-normal  rounded-[24px] bg-[#4A7DFF] w-full"
                           onClick={() => {
-                            setPremiumPlanModalState();
+                            router.push("/pricing");
                           }}
                         >
                           <Gem className="mr-2 h-4 w-4"></Gem>

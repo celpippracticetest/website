@@ -7,7 +7,6 @@ import { TPracticeDto } from "@/models/practice.model";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import ReadingQuestionList from "../reading-practice/components/ReadingQuestionList";
-import useStore from "@/store";
 import { Popover } from "radix-ui";
 import { useUser } from "@clerk/nextjs";
 import React from "react";
@@ -116,9 +115,6 @@ const ReadingExamView = ({
   >({});
   const [time, setTime] = useState(timerTime);
   const officialAutoAdvanceTriggeredRef = useRef(false);
-  const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState
-  );
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
 
@@ -359,7 +355,7 @@ const ReadingExamView = ({
             shouldShowPractice={shouldShowPractice}
             selectedAnswers={selectedAnswers}
             onAnswerSelect={handleAnswerSelect}
-            onLockedAction={setPremiumPlanModalState}
+            onLockedAction={() => router.push("/pricing")}
             primaryActionLabel={page == "answer" ? undefined : "Next"}
             onPrimaryAction={page == "answer" ? undefined : handleNext}
             primaryActionDisabled={page == "answer"}
@@ -527,7 +523,7 @@ const ReadingExamView = ({
                               if (shouldShowPractice) {
                                 handleAnswerSelect(questionId, answerId);
                               } else {
-                                setPremiumPlanModalState();
+                                router.push("/pricing");
                               }
                             }}
                             selectedAnswers={selectedAnswers}
@@ -594,7 +590,7 @@ const ReadingExamView = ({
                                                               choice.id
                                                             );
                                                           } else {
-                                                            setPremiumPlanModalState();
+                                                            router.push("/pricing");
                                                           }
                                                         }}
                                                       >
@@ -688,7 +684,7 @@ const ReadingExamView = ({
                                     answerId
                                   );
                                 } else {
-                                  setPremiumPlanModalState();
+                                  router.push("/pricing");
                                 }
                               }}
                               selectedAnswers={selectedAnswers}

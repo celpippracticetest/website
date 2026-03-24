@@ -9,6 +9,8 @@ declare global {
       roles?: Roles[]
       plan: "free" | "premium"
       celloToken?: string
+      /** ISO string from Clerk publicMetadata (subscription / purchase time). */
+      purchaseDate?: string
     }
   }
 }

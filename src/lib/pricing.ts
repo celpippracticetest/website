@@ -62,6 +62,30 @@ function getDurationGroupKeyFromBilling(plan: SerializedPlan): DurationGroupKey 
   return null;
 }
 
+/** Map Stripe recurring fields to our duration bucket (same rules as billing on SerializedPlan). */
+export function getDurationGroupKeyFromStripeRecurring(
+  interval: "day" | "week" | "month" | "year" | undefined,
+  intervalCount: number | undefined
+): DurationGroupKey | null {
+  if (!interval || interval === "day") {
+    return null;
+  }
+  const count = intervalCount ?? 1;
+  if (interval === "week" && count === 1) {
+    return "weekly";
+  }
+  if (interval === "month" && count === 1) {
+    return "monthly";
+  }
+  if (interval === "month" && count === 3) {
+    return "threeMonth";
+  }
+  if (interval === "year" && count === 1) {
+    return "yearly";
+  }
+  return null;
+}
+
 export function parsePrice(value: string) {
   const numericValue = Number.parseFloat(value?.replace?.(/[^0-9.]/g, "") || "");
   return Number.isFinite(numericValue) ? numericValue : 0;
@@ -244,20 +268,46 @@ export function buildMonthlySavingsMap(plans: SerializedPlan[]) {
   }
 
   plans.forEach((plan, index) => {
-    if (!isMonthlyPlan(plan)) {
+    const stableId = getStablePlanId(plan, index);
+    const planPrice = parsePrice(plan.price);
+
+    if (planPrice <= 0) {
       return;
     }
 
-    const monthlyPrice = parsePrice(plan.price);
-    const fourWeeksPrice = weeklyPrice * 4;
-
-    if (monthlyPrice <= 0 || fourWeeksPrice <= monthlyPrice) {
+    if (isMonthlyPlan(plan)) {
+      const fourWeeksPrice = weeklyPrice * 4;
+      if (fourWeeksPrice <= planPrice) {
+        return;
+      }
+      const off = Math.round(((fourWeeksPrice - planPrice) / fourWeeksPrice) * 100);
+      if (off > 0) {
+        savingsById.set(stableId, `Save ${off}%`);
+      }
       return;
     }
 
-    const monthlyOff = Math.round(((fourWeeksPrice - monthlyPrice) / fourWeeksPrice) * 100);
-    if (monthlyOff > 0) {
-      savingsById.set(getStablePlanId(plan, index), `Save ${monthlyOff}%`);
+    if (isThreeMonthPlan(plan)) {
+      const twelveWeeksPrice = weeklyPrice * 12;
+      if (twelveWeeksPrice <= planPrice) {
+        return;
+      }
+      const off = Math.round(((twelveWeeksPrice - planPrice) / twelveWeeksPrice) * 100);
+      if (off > 0) {
+        savingsById.set(stableId, `Save ${off}%`);
+      }
+      return;
+    }
+
+    if (isYearlyPlan(plan)) {
+      const fiftyTwoWeeksPrice = weeklyPrice * 52;
+      if (fiftyTwoWeeksPrice <= planPrice) {
+        return;
+      }
+      const off = Math.round(((fiftyTwoWeeksPrice - planPrice) / fiftyTwoWeeksPrice) * 100);
+      if (off > 0) {
+        savingsById.set(stableId, `Save ${off}%`);
+      }
     }
   });
 

@@ -6,7 +6,7 @@ import { auth } from "@clerk/nextjs/server";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import ReactQueryProvider from "@/components/ReactQueryProvider";
-import { LazyLeadCapturePopup, LazyPremiumPlanModal, LazyPromotionManager } from "@/components/LazyComponents";
+import { LazyLeadCapturePopup, LazyPromotionManager } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ActiveUsersTracker from "@/components/analytics/ActiveUsersTracker";
@@ -293,7 +293,6 @@ export default async function RootLayout({
               <FooterWrapper isSignedIn={isSignedIn} />
             </ErrorBoundary>
           </ReactQueryProvider>
-          <LazyPremiumPlanModal />
           <LazyPromotionManager />
           <PerformanceMonitor />
           <Analytics />

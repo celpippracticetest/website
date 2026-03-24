@@ -7,6 +7,7 @@ import { ReferralRepository } from "@/repositories/referral.repo";
 import { ReferralInvitationRepository } from "@/repositories/referral-invitation.repo";
 import { clerkClient } from "@clerk/express";
 import { ActivityLogger } from "@/lib/userActivity";
+import { isPricingAbLayout } from "@/lib/pricingAbTest";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -449,6 +450,30 @@ export async function POST(req: Request) {
           console.error("Payment activity logging failed:", logErr);
         }
 
+      }
+
+      const pricingAbRaw = metadata?.pricing_ab_layout;
+      if (
+        typeof pricingAbRaw === "string" &&
+        isPricingAbLayout(pricingAbRaw) &&
+        metadata?.user_id
+      ) {
+        try {
+          const db = await mongoClient.db();
+          await db.collection("pricing_ab_events").insertOne({
+            eventType: "purchase",
+            layout: pricingAbRaw,
+            userId: metadata.user_id,
+            sessionId: session.id,
+            amountTotal: session.amount_total ?? null,
+            planName: typeof metadata.plan_name === "string" ? metadata.plan_name : null,
+            purchasePage:
+              typeof metadata.purchase_page === "string" ? metadata.purchase_page : null,
+            createdAt: new Date(),
+          });
+        } catch (abErr) {
+          console.error("pricing_ab purchase log failed:", abErr);
+        }
       }
 
       return NextResponse.json({ received: true });

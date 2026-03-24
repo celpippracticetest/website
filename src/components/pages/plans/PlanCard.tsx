@@ -37,6 +37,8 @@ interface IPlanCard {
   mockExamStatus?: "included" | "notIncluded";
   billingInterval?: PlanBillingInterval;
   billingIntervalCount?: number;
+  /** Hidden inputs appended to checkout POST (e.g. pricing A/B variant). */
+  checkoutHiddenFields?: Record<string, string>;
 }
 const PlanCard = ({
   title,
@@ -64,6 +66,7 @@ const PlanCard = ({
   mockExamStatus,
   billingInterval,
   billingIntervalCount,
+  checkoutHiddenFields,
 }: IPlanCard) => {
   const { selectItem, beginCheckout } = useEcommerceTracking();
   const { user } = useUser();
@@ -98,11 +101,17 @@ const PlanCard = ({
 
   return (
     <form
-      className="relative h-full w-full screen1280:!max-w-[420px]"
+      className={`relative w-full screen1280:!max-w-[420px] ${
+        compact ? "flex h-full min-h-0 flex-col" : ""
+      } ${!compact ? "h-full" : ""}`}
       action={checkoutAction}
       method="POST"
     >
       <CheckoutAttributionFields />
+      {checkoutHiddenFields &&
+        Object.entries(checkoutHiddenFields).map(([name, value]) =>
+          value ? <input key={name} type="hidden" name={name} value={value} /> : null
+        )}
       {highlightLabel && (
         <div className={`absolute left-1/2 top-0 z-[3] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-orange-500 via-amber-400 to-blue-500 font-semibold uppercase tracking-[0.08em] text-white shadow-lg ${
           compact ? "px-3 py-1 text-[10px]" : "px-4 py-1 text-[12px]"
@@ -112,10 +121,10 @@ const PlanCard = ({
       )}
       <article
         aria-label={`Plan card for ${title} plan`}
-        className={`relative z-[1] flex h-full flex-col before:absolute before:inset-0 before:transition-shadow before:duration-300 before:ease before:content-[''] before:transform before:translate-z-[-1px] ${
+        className={`relative z-[1] flex flex-col before:absolute before:inset-0 before:transition-shadow before:duration-300 before:ease before:content-[''] before:transform before:translate-z-[-1px] ${
           compact
-            ? "top-[6px] min-h-[255px] rounded-[18px] p-3 before:rounded-[18px]"
-            : "top-[20px] min-h-[470px] rounded-[24px] p-[12px] before:rounded-[24px] screen1280:!p-[18px]"
+            ? "top-[6px] min-h-[220px] min-w-0 flex-1 rounded-[18px] p-2.5 before:rounded-[18px]"
+            : "top-[20px] h-full min-h-[470px] rounded-[24px] p-[12px] before:rounded-[24px] screen1280:!p-[18px]"
         } ${
           highlight
             ? "border-2 border-amber-300 bg-[linear-gradient(180deg,_#FFF8E8_0%,_#FFFFFF_34%,_#F5F9FF_100%)] shadow-[0_18px_45px_rgba(117,156,255,0.18)] before:shadow-[0_18px_45px_rgba(247,157,101,0.18)]"
@@ -168,131 +177,173 @@ const PlanCard = ({
           </div>
         )}
 
-        <div className={compact ? "mt-4" : "mt-5"}>
-          {compact ? (
-            <>
+        {compact ? (
+          <>
+            <div className="mt-2 shrink-0">
               <h3 className="text-[16px] font-semibold leading-tight text-text1">
                 {accessLabel || title}
               </h3>
-              {mockExamStatus === "notIncluded" && (
-                <a
-                  href="#compare-access"
-                  className="mt-1 inline-flex text-[12px] font-medium text-slate-400 underline decoration-slate-300 underline-offset-2"
+              <div className="mt-0.5 flex min-h-0 flex-col justify-start">
+                {mockExamStatus === "notIncluded" && (
+                  <a
+                    href="#compare-access"
+                    className="inline-flex text-[12px] font-medium text-slate-400 underline decoration-slate-300 underline-offset-2"
+                  >
+                    Mock exams not included
+                  </a>
+                )}
+                {mockExamStatus === "included" && (
+                  <p className="text-[12px] font-bold text-amber-600">Mock exams included</p>
+                )}
+              </div>
+              {type != "Free" && shouldShowSavingsBadge && (
+                <span
+                  className={`mt-1 flex min-h-0 w-fit items-center justify-center rounded-[16px] px-2.5 py-1 text-[12px] font-semibold ${
+                    highlight
+                      ? "bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-md"
+                      : muted
+                        ? "border border-slate-200 bg-white text-slate-700"
+                        : "bg-error2 text-white"
+                  }`}
                 >
-                  Mock exams not included
-                </a>
+                  {savingsText || `${discount}% OFF`}
+                </span>
               )}
-              {mockExamStatus === "included" && (
-                <p className="mt-1 text-[12px] font-bold text-amber-600">
-                  Mock exams included
-                </p>
-              )}
-            </>
-          ) : (
-            <>
-              <p className={`font-medium uppercase tracking-[0.08em] text-slate-500 ${
-                compact ? "text-[11px]" : "text-[13px]"
-              }`}>
+            </div>
+
+            <ul className="mt-0 flex shrink-0 flex-col gap-1">
+              {visibleFeatures.map((item, index) => (
+                <li className="flex items-start gap-2" key={index}>
+                  <SvgCheck className="mt-0.5 text-[0DAA94]" />
+                  <span className="text-[12px] leading-4 text-text2">{item}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="min-h-0 min-w-0 flex-1 basis-0" aria-hidden />
+
+            <div className="flex shrink-0 flex-col gap-2 pt-0">
+              <div className="flex min-h-0 flex-col justify-end gap-0.5">
+                {type != "Free" && oldPrice && (
+                  <span className="text-[13px] font-medium text-slate-400 line-through">
+                    CA$ {formatPlanCadPrice(oldPrice)}
+                  </span>
+                )}
+                <span className="text-[22px] font-bold text-black">
+                  CA$ {formatPlanCadPrice(price)}
+                  {type == "Free" && (
+                    <span className="text-[20px] font-normal text-gray">
+                      {" "}
+                      (forever)
+                    </span>
+                  )}
+                </span>
+              </div>
+              <button
+                type="submit"
+                onClick={handlePlanClick}
+                aria-label={`Select ${title} plan`}
+                disabled={!checkoutAction}
+                className={`relative z-[2] flex h-[38px] w-full shrink-0 items-center justify-center gap-[8px] rounded-[24px] px-[18px] shadow-startButton hover:cursor-pointer ${
+                  highlight
+                    ? "bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] hover:opacity-95"
+                    : muted
+                      ? "bg-slate-700 hover:bg-slate-800"
+                      : "bg-primary2 hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]"
+                } ${!checkoutAction ? "cursor-not-allowed opacity-60 hover:opacity-60" : ""}`}
+              >
+                <span className="flex items-center justify-center text-[13px] font-normal leading-[16px] text-white">
+                  {buttonTitle}
+                </span>
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="mt-5">
+              <p className="text-[13px] font-medium uppercase tracking-[0.08em] text-slate-500">
                 {planTitle}
               </p>
-              <h3 className={`mt-2 font-semibold leading-tight text-text1 ${
-                compact ? "text-[20px]" : "text-[24px] screen1280:!text-[28px]"
-              }`}>
+              <h3 className="mt-2 text-[24px] font-semibold leading-tight text-text1 screen1280:!text-[28px]">
                 {title}
               </h3>
               {description && (
-                <p className={`mt-2 text-slate-600 ${compact ? "text-[13px] leading-5" : "text-[14px] leading-6"}`}>
+                <p className="mt-2 text-[14px] leading-6 text-slate-600">
                   {description}
                 </p>
               )}
-            </>
-          )}
-          {type != "Free" && shouldShowSavingsBadge && (
-            <span
-              className={`mt-3 flex w-fit items-center justify-center rounded-[16px] font-semibold ${
-                compact ? "h-[30px] px-3 text-[12px]" : "h-[35px] px-[16px] text-[14px]"
-              } ${
-                highlight
-                  ? "bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-md"
-                  : muted
-                    ? "bg-white text-slate-700 border border-slate-200"
-                    : "bg-error2 text-white"
-              }`}
-            >
-              {savingsText || `${discount}% OFF`}
-            </span>
-          )}
-        </div>
-
-        <div className={`flex flex-col ${compact ? "mt-3 min-h-[56px] gap-1" : "mt-6 min-h-[48px] items-end gap-[10px]"}`}>
-          {type != "Free" && (
-            <>
-              {oldPrice && (
+              {type != "Free" && shouldShowSavingsBadge && (
                 <span
-                  className={`font-medium text-slate-400 line-through ${
-                    compact ? "text-[13px]" : "text-[15px]"
+                  className={`mt-3 flex h-[35px] w-fit items-center justify-center rounded-[16px] px-[16px] text-[14px] font-semibold ${
+                    highlight
+                      ? "bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-md"
+                      : muted
+                        ? "border border-slate-200 bg-white text-slate-700"
+                        : "bg-error2 text-white"
                   }`}
                 >
-                  CA$ {formatPlanCadPrice(oldPrice)}
+                  {savingsText || `${discount}% OFF`}
                 </span>
               )}
-            </>
-          )}
-          <span className={`font-bold text-black ${
-            compact ? "text-[22px]" : "text-[22px] screen744:!text-[32px] screen1280:!text-[36px]"
-          }`}>
-            CA$ {formatPlanCadPrice(price)}
-            {type != "Free" && billingCycle && (
-              <span className="ml-1 text-sm font-medium text-slate-500">
-                / {billingCycle}
-              </span>
-            )}
-            {type == "Free" && (
-              <span className="text-gray font-normal text-[20px]">
-                {" "}
-                (forever)
-              </span>
-            )}
-          </span>
-        </div>
+            </div>
 
-        {!compact && footerNote && (
-          <p className={`mt-2 font-medium text-slate-500 ${compact ? "text-[12px] leading-5" : "text-[13px]"}`}>
-            {footerNote}
-          </p>
+            <div className="mt-6 flex min-h-[48px] flex-col items-end gap-[10px]">
+              {type != "Free" && (
+                <>
+                  {oldPrice && (
+                    <span className="text-[15px] font-medium text-slate-400 line-through">
+                      CA$ {formatPlanCadPrice(oldPrice)}
+                    </span>
+                  )}
+                </>
+              )}
+              <span className="text-[22px] font-bold text-black screen744:!text-[32px] screen1280:!text-[36px]">
+                CA$ {formatPlanCadPrice(price)}
+                {type != "Free" && billingCycle && (
+                  <span className="ml-1 text-sm font-medium text-slate-500">/ {billingCycle}</span>
+                )}
+                {type == "Free" && (
+                  <span className="text-[20px] font-normal text-gray">
+                    {" "}
+                    (forever)
+                  </span>
+                )}
+              </span>
+            </div>
+
+            {footerNote && (
+              <p className="mt-2 text-[13px] font-medium text-slate-500">{footerNote}</p>
+            )}
+
+            <button
+              type="submit"
+              onClick={handlePlanClick}
+              aria-label={`Select ${title} plan`}
+              disabled={!checkoutAction}
+              className={`relative z-[2] mt-[24px] flex h-[40px] w-full items-center justify-center gap-[8px] rounded-[24px] px-[24px] shadow-startButton hover:cursor-pointer ${
+                highlight
+                  ? "bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] hover:opacity-95"
+                  : muted
+                    ? "bg-slate-700 hover:bg-slate-800"
+                    : "bg-primary2 hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]"
+              } ${!checkoutAction ? "cursor-not-allowed opacity-60 hover:opacity-60" : ""}`}
+            >
+              <span className="flex items-center justify-center text-[14px] font-normal leading-[16px] text-white">
+                {buttonTitle}
+              </span>
+            </button>
+            <ul className="mt-6 flex flex-1 flex-col gap-[10px]">
+              {visibleFeatures.map((item, index) => (
+                <li className="flex items-start gap-[10px]" key={index}>
+                  <SvgCheck className="mt-0.5 text-[0DAA94]" />
+                  <span className="text-[14px] leading-6 text-text2 screen1280:!text-[15px]">
+                    {item}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
-
-        <button
-          type="submit"
-          onClick={handlePlanClick}
-          aria-label={`Select ${title} plan`}
-          disabled={!checkoutAction}
-          className={`relative z-[2] hover:cursor-pointer shadow-startButton flex gap-[8px] w-full mw-full items-center justify-center rounded-[24px] ${
-            compact ? "mt-4 h-[38px] px-[18px]" : "mt-[24px] h-[40px] px-[24px]"
-          } ${
-            highlight
-              ? "bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] hover:opacity-95"
-              : muted
-                ? "bg-slate-700 hover:bg-slate-800"
-                : "bg-primary2 hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]"
-          } ${!checkoutAction ? "cursor-not-allowed opacity-60 hover:opacity-60" : ""}`}
-        >
-          <span className={`flex items-center justify-center text-white font-normal leading-[16px] ${
-            compact ? "text-[13px]" : "text-[14px]"
-          }`}>
-            {buttonTitle}
-          </span>
-        </button>
-        <ul className={`flex flex-1 flex-col ${compact ? "mt-3 gap-[6px]" : "mt-6 gap-[10px]"}`}>
-          {visibleFeatures.map((item, index) => (
-            <li className="flex items-start gap-[10px]" key={index}>
-              <SvgCheck className="mt-0.5 text-[0DAA94]" />
-              <span className={`text-text2 ${compact ? "text-[12px] leading-4" : "text-[14px] leading-6 screen1280:!text-[15px]"}`}>
-                {item}
-              </span>
-            </li>
-          ))}
-        </ul>
       </article>
     </form>
   );

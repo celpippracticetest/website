@@ -6,12 +6,26 @@ import {
 } from "@clerk/nextjs/server";
 import { logger, trackUserAction, captureException } from "@/lib/sentry-logger";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import { PRICING_AB_COOKIE, type PricingAbLayout } from "@/lib/pricingAbTest";
 
 const isAdminRoute = createRouteMatcher(["/cms(.*)"]);
 const isProfileRoute = createRouteMatcher(["/profile(.*)"]);
 const isReferralRoute = createRouteMatcher(["/referral(.*)"]);
 const isPlansRoute = createRouteMatcher(["/plans(.*)"]);
 const isPreviewEnvironment = process.env.VERCEL_ENV === "preview";
+
+/** Clerk JWT public metadata used for practice gating (see `src/types/globals.d.ts`). */
+type JwtPracticeMetadata = {
+  plan?: "free" | "premium";
+  purchaseDate?: string;
+};
+
+function jwtPracticeMetadata(
+  sessionClaims: { metadata?: unknown } | null | undefined,
+): JwtPracticeMetadata | undefined {
+  if (!sessionClaims?.metadata) return undefined;
+  return sessionClaims.metadata as JwtPracticeMetadata;
+}
 
 const requiresPreviewAuth = (req: NextRequest) => {
   // Keep incoming third-party webhooks reachable in preview if needed.
@@ -64,6 +78,21 @@ export default clerkMiddleware(async (auth, req) => {
 
   const authenticate = await auth();
 
+  if (req.nextUrl.pathname === "/pricing") {
+    const existing = req.cookies.get(PRICING_AB_COOKIE)?.value;
+    if (existing !== "two_card" && existing !== "switch_toggle") {
+      const layout: PricingAbLayout = Math.random() < 0.5 ? "two_card" : "switch_toggle";
+      const redirectUrl = req.nextUrl.clone();
+      const response = NextResponse.redirect(redirectUrl, 307);
+      response.cookies.set(PRICING_AB_COOKIE, layout, {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 180,
+        sameSite: "lax",
+      });
+      return response;
+    }
+  }
+
   if (
     req.nextUrl.pathname.startsWith("/sign-up") ||
     req.nextUrl.pathname.startsWith("/sign-in")
@@ -107,8 +136,9 @@ export default clerkMiddleware(async (auth, req) => {
       const dashboard = new URL("/practice-overview", req.url);
       return NextResponse.redirect(dashboard);
     }
-    const plan = authenticate.sessionClaims?.metadata.plan;
-    if (!hasPaidPracticeAccess(plan, authenticate.sessionClaims?.metadata.purchaseDate)) {
+    const meta = jwtPracticeMetadata(authenticate.sessionClaims);
+    const plan = meta?.plan;
+    if (!hasPaidPracticeAccess(plan, meta?.purchaseDate)) {
       const homeUrl = new URL("/", req.url);
       return NextResponse.redirect(homeUrl);
     }
@@ -123,8 +153,9 @@ export default clerkMiddleware(async (auth, req) => {
     }
 
     // For authenticated users, check plan
-    const plan = authenticate.sessionClaims?.metadata.plan;
-    if (!hasPaidPracticeAccess(plan, authenticate.sessionClaims?.metadata.purchaseDate)) {
+    const meta = jwtPracticeMetadata(authenticate.sessionClaims);
+    const plan = meta?.plan;
+    if (!hasPaidPracticeAccess(plan, meta?.purchaseDate)) {
       const homeUrl = new URL("/", req.url);
       return NextResponse.redirect(homeUrl);
     }
@@ -141,12 +172,10 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   // Create referral code when user becomes premium
+  const practiceMeta = jwtPracticeMetadata(authenticate.sessionClaims);
   if (
     authenticate.userId &&
-    hasPaidPracticeAccess(
-      authenticate.sessionClaims?.metadata.plan,
-      authenticate.sessionClaims?.metadata.purchaseDate
-    )
+    hasPaidPracticeAccess(practiceMeta?.plan, practiceMeta?.purchaseDate)
   ) {
     const hasReferralCode = (authenticate.sessionClaims?.metadata as any)
       ?.referralCode;

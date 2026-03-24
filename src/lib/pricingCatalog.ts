@@ -49,7 +49,6 @@ export const durationMeta: Record<DurationGroupKey, DurationMeta> = {
     eyebrow: "Best Value",
     title: "3-Month",
     summary: "Best for full prep, stronger improvement, and better savings.",
-    badge: "Popular choice",
   },
   yearly: {
     eyebrow: "Long-Term Access",

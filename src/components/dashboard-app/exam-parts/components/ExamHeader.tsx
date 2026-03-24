@@ -3,9 +3,10 @@ import SvgChevronDownExam from "@/components/icons/ChevronDownExam";
 import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { forwardRef } from "react";
-import { Box, Button, Paper, Stack, Switch, Typography } from "@mui/material";
+import { Box, Button, Paper, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import type { MockExamViewMode } from "./useExamViewMode";
+import ExamLayoutToggle from "./ExamLayoutToggle";
 
 interface PracticeSectionItem {
     title: string;
@@ -50,6 +51,8 @@ interface ExamHeaderProps {
     examNumber: number | undefined;
     viewMode: MockExamViewMode;
     setViewMode: (mode: MockExamViewMode) => void;
+    /** When true, layout toggle is rendered elsewhere (e.g. mock exam sticky toolbar). */
+    hideLayoutToggle?: boolean;
 }
 
 const ExamHeader = forwardRef<HTMLDivElement, ExamHeaderProps>(
@@ -66,6 +69,7 @@ const ExamHeader = forwardRef<HTMLDivElement, ExamHeaderProps>(
             examNumber,
             viewMode,
             setViewMode,
+            hideLayoutToggle = false,
         },
         ref
     ) => {
@@ -79,6 +83,7 @@ const ExamHeader = forwardRef<HTMLDivElement, ExamHeaderProps>(
             ? `&attemptId=${attemptId}`
             : ""
             }`;
+        const isOfficial = viewMode === "official";
 
         return (
             <>
@@ -257,165 +262,116 @@ const ExamHeader = forwardRef<HTMLDivElement, ExamHeaderProps>(
                 <Box
                     sx={{
                         display: "flex",
-                        flexDirection: { xs: "column", lg: "row" },
-                        alignItems: { lg: "center" },
-                        justifyContent: "space-between",
+                        flexDirection: isOfficial
+                            ? "row"
+                            : { xs: "column", lg: "row" },
+                        alignItems: isOfficial ? "center" : { lg: "center" },
+                        justifyContent: isOfficial ? "flex-end" : "space-between",
                         gap: 2.5,
                         mb: 3,
                     }}
                 >
-                    <Stack
-                        direction={{ xs: "column", sm: "row" }}
-                        spacing={1.5}
-                        useFlexGap
-                        flexWrap="wrap"
-                        alignItems={{ sm: "center" }}
-                    >
-                        <Typography
-                            component="span"
-                            sx={{
-                                fontSize: "1rem",
-                                fontWeight: 700,
-                                color: "#37465C",
-                            }}
-                        >
-                            Exam {examLabel}
-                        </Typography>
-                        <Box
-                            sx={{
-                                display: "flex",
-                                gap: 1.25,
-                                flexWrap: "wrap",
-                                alignItems: "center",
-                            }}
-                        >
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 0.8,
-                                    px: 1.25,
-                                    py: 0.35,
-                                    borderRadius: "999px",
-                                    border: "1px solid #D5DDE8",
-                                    backgroundColor: "#FFFFFF",
-                                }}
+                    {isOfficial ? (
+                        !hideLayoutToggle && (
+                            <ExamLayoutToggle viewMode={viewMode} setViewMode={setViewMode} />
+                        )
+                    ) : (
+                        <>
+                            <Stack
+                                direction={{ xs: "column", sm: "row" }}
+                                spacing={1.5}
+                                useFlexGap
+                                flexWrap="wrap"
+                                alignItems={{ sm: "center" }}
                             >
                                 <Typography
                                     component="span"
                                     sx={{
-                                        fontSize: "0.82rem",
-                                        fontWeight: viewMode === "classic" ? 800 : 600,
-                                        color: viewMode === "classic" ? "#37465C" : "#90A0B3",
+                                        fontSize: "1rem",
+                                        fontWeight: 700,
+                                        color: "#37465C",
                                     }}
                                 >
-                                    Classic
+                                    Exam {examLabel}
                                 </Typography>
-                                <Switch
-                                    size="small"
-                                    checked={viewMode === "official"}
-                                    onChange={(event) =>
-                                        setViewMode(event.target.checked ? "official" : "classic")
-                                    }
-                                    inputProps={{ "aria-label": "Toggle CELPIP exam layout" }}
+                                <Box
                                     sx={{
-                                        mx: 0.2,
-                                        "& .MuiSwitch-switchBase": {
-                                            color: "#FFFFFF",
-                                        },
-                                        "& .MuiSwitch-switchBase.Mui-checked": {
-                                            color: "#FFFFFF",
-                                        },
-                                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                                            backgroundColor: "#316BFF",
-                                            opacity: 1,
-                                        },
-                                        "& .MuiSwitch-track": {
+                                        display: "flex",
+                                        gap: 1.25,
+                                        flexWrap: "wrap",
+                                        alignItems: "center",
+                                    }}
+                                >
+                                    {!hideLayoutToggle && (
+                                        <ExamLayoutToggle viewMode={viewMode} setViewMode={setViewMode} />
+                                    )}
+                                    <Button
+                                        component="a"
+                                        href={resultsHref}
+                                        variant="outlined"
+                                        sx={{
+                                            minHeight: "44px",
+                                            px: 2,
                                             borderRadius: "999px",
-                                            backgroundColor: "#C9D4E3",
-                                            opacity: 1,
-                                        },
-                                        "& .MuiSwitch-thumb": {
-                                            boxShadow: "0 2px 8px rgba(55, 70, 92, 0.16)",
-                                        },
-                                    }}
-                                />
-                                <Typography
-                                    component="span"
-                                    sx={{
-                                        fontSize: "0.82rem",
-                                        fontWeight: viewMode === "official" ? 800 : 600,
-                                        color: viewMode === "official" ? "#316BFF" : "#90A0B3",
-                                    }}
-                                >
-                                    CELPIP
-                                </Typography>
-                            </Box>
+                                            textTransform: "none",
+                                            fontSize: "0.95rem",
+                                            fontWeight: 700,
+                                            color: "#37465C",
+                                            borderColor: "#D5DDE8",
+                                            backgroundColor: "#FFFFFF",
+                                            "&:hover": {
+                                                borderColor: "#BFCDE2",
+                                                backgroundColor: "#F7F9FC",
+                                            },
+                                        }}
+                                    >
+                                        View Answers &amp; Score
+                                    </Button>
+                                    <AskBeavoButton
+                                        className="screen744:block hidden screen744:!right-6 screen744:!left-auto screen744:!translate-x-0 screen744:!fixed screen744:!bottom-6 screen1280:!left-1/2 screen1280:!right-auto screen1280:!-translate-x-1/2"
+                                    />
+                                </Box>
+                            </Stack>
                             <Button
-                                component="a"
-                                href={resultsHref}
+                                onClick={() => setShowModal(true)}
                                 variant="outlined"
+                                endIcon={<SvgChevronDownExam />}
                                 sx={{
-                                    minHeight: "44px",
+                                    width: { xs: "100%", lg: "auto" },
+                                    maxWidth: "460px",
+                                    minHeight: "56px",
+                                    justifyContent: "space-between",
                                     px: 2,
-                                    borderRadius: "999px",
-                                    textTransform: "none",
-                                    fontSize: "0.95rem",
-                                    fontWeight: 700,
-                                    color: "#37465C",
+                                    borderRadius: "18px",
                                     borderColor: "#D5DDE8",
                                     backgroundColor: "#FFFFFF",
+                                    color: "#37465C",
+                                    textTransform: "none",
                                     "&:hover": {
                                         borderColor: "#BFCDE2",
                                         backgroundColor: "#F7F9FC",
                                     },
                                 }}
                             >
-                                View Answers &amp; Score
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        flexWrap: "wrap",
+                                        alignItems: "baseline",
+                                        gap: 0.75,
+                                        textAlign: "left",
+                                    }}
+                                >
+                                    <Typography component="span" sx={{ fontSize: "1rem", color: "#526071" }}>
+                                        {examPractice} Part {partId}:
+                                    </Typography>
+                                    <Typography component="span" sx={{ fontSize: "1rem", fontWeight: 800 }}>
+                                        {PRACTICE_PARTS[partId - 1]}
+                                    </Typography>
+                                </Box>
                             </Button>
-                            <AskBeavoButton
-                                className="screen744:block hidden screen744:!right-6 screen744:!left-auto screen744:!translate-x-0 screen744:!fixed screen744:!bottom-6 screen1280:!left-1/2 screen1280:!right-auto screen1280:!-translate-x-1/2"
-                            />
-                        </Box>
-                    </Stack>
-                    <Button
-                        onClick={() => setShowModal(true)}
-                        variant="outlined"
-                        endIcon={<SvgChevronDownExam />}
-                        sx={{
-                            width: { xs: "100%", lg: "auto" },
-                            maxWidth: "460px",
-                            minHeight: "56px",
-                            justifyContent: "space-between",
-                            px: 2,
-                            borderRadius: "18px",
-                            borderColor: "#D5DDE8",
-                            backgroundColor: "#FFFFFF",
-                            color: "#37465C",
-                            textTransform: "none",
-                            "&:hover": {
-                                borderColor: "#BFCDE2",
-                                backgroundColor: "#F7F9FC",
-                            },
-                        }}
-                    >
-                        <Box
-                            sx={{
-                                display: "flex",
-                                flexWrap: "wrap",
-                                alignItems: "baseline",
-                                gap: 0.75,
-                                textAlign: "left",
-                            }}
-                        >
-                            <Typography component="span" sx={{ fontSize: "1rem", color: "#526071" }}>
-                                {examPractice} Part {partId}:
-                            </Typography>
-                            <Typography component="span" sx={{ fontSize: "1rem", fontWeight: 800 }}>
-                                {PRACTICE_PARTS[partId - 1]}
-                            </Typography>
-                        </Box>
-                    </Button>
+                        </>
+                    )}
                 </Box>
             </>
         );

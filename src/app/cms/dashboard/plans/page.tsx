@@ -18,7 +18,7 @@ import {
     planTemplates,
 } from "@/lib/pricingCatalog";
 import type { SerializedPlan } from "@/types/pricing";
-import { Plus, Edit2, Layers3, Trash2, X } from "lucide-react";
+import { Plus, Edit2, Layers3, Trash2, X, BarChart2, RefreshCw } from "lucide-react";
 
 type PlanFormData = Partial<Plan>;
 
@@ -61,12 +61,30 @@ function toSerializedPlan(plan: Partial<Plan>): SerializedPlan {
     };
 }
 
+type PricingAbVariantRow = {
+    layout: string;
+    page_views: number;
+    checkout_started: number;
+    purchases: number;
+    checkout_rate: number;
+    purchase_rate: number;
+    purchase_per_checkout: number;
+};
+
 const PlansPage = () => {
     const [plans, setPlans] = useState<Plan[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
     const [formData, setFormData] = useState<PlanFormData>(createEmptyPlanForm(0));
+    const [abStats, setAbStats] = useState<{
+        days: number;
+        since: string;
+        variants: PricingAbVariantRow[];
+    } | null>(null);
+    const [abStatsLoading, setAbStatsLoading] = useState(false);
+    const [abStatsDays, setAbStatsDays] = useState(30);
+    const [abStatsRefreshTick, setAbStatsRefreshTick] = useState(0);
 
     const fetchPlans = async () => {
         try {
@@ -85,6 +103,29 @@ const PlansPage = () => {
     useEffect(() => {
         fetchPlans();
     }, []);
+
+    useEffect(() => {
+        let cancelled = false;
+        setAbStatsLoading(true);
+        fetch(`/api/admin/pricing-ab-stats?days=${abStatsDays}`)
+            .then((res) => res.json())
+            .then((data) => {
+                if (!cancelled && Array.isArray(data.variants)) {
+                    setAbStats({
+                        days: data.days,
+                        since: data.since,
+                        variants: data.variants,
+                    });
+                }
+            })
+            .catch((err) => console.error("pricing-ab-stats:", err))
+            .finally(() => {
+                if (!cancelled) setAbStatsLoading(false);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [abStatsDays, abStatsRefreshTick]);
 
     const handleOpenModal = (plan?: Plan) => {
         if (plan) {
@@ -272,6 +313,108 @@ const PlansPage = () => {
                     <p className="text-sm font-medium text-gray-500">Premium Plus plans</p>
                     <p className="mt-2 text-3xl font-bold text-amber-600">{planStats.premiumPlus}</p>
                 </div>
+            </div>
+
+            <div className="mb-8 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 to-white p-6 shadow-sm">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-start gap-3">
+                        <BarChart2 className="mt-0.5 h-6 w-6 text-indigo-600" />
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-indigo-700">
+                                Public pricing page A/B
+                            </p>
+                            <h2 className="mt-1 text-lg font-bold text-gray-900">
+                                Layout conversion (50/50 experiment)
+                            </h2>
+                            <p className="mt-1 max-w-2xl text-sm text-gray-600">
+                                Visitors to <code className="rounded bg-white/80 px-1">/pricing</code> see
+                                either two side-by-side plan cards or a single card with a Premium /
+                                Premium Plus toggle. Metrics: page views (per session), checkout starts,
+                                and completed purchases attributed from Stripe. Preview URLs{" "}
+                                <code className="rounded bg-white/80 px-1">?s=1</code> and{" "}
+                                <code className="rounded bg-white/80 px-1">?s=2</code> force a layout for
+                                that load only and are excluded from this report.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <label className="flex items-center gap-2 text-sm text-gray-600">
+                            <span>Range</span>
+                            <select
+                                value={abStatsDays}
+                                onChange={(e) => setAbStatsDays(Number(e.target.value))}
+                                className="rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm"
+                            >
+                                <option value={7}>7 days</option>
+                                <option value={30}>30 days</option>
+                                <option value={90}>90 days</option>
+                            </select>
+                        </label>
+                        <button
+                            type="button"
+                            onClick={() => setAbStatsRefreshTick((t) => t + 1)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            title="Reload stats"
+                        >
+                            <RefreshCw className={`h-4 w-4 ${abStatsLoading ? "animate-spin" : ""}`} />
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+                {abStatsLoading && !abStats ? (
+                    <p className="mt-4 text-sm text-gray-500">Loading experiment stats…</p>
+                ) : abStats ? (
+                    <div className="mt-5 overflow-x-auto">
+                        <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+                            <thead>
+                                <tr className="border-b border-gray-200 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                    <th className="py-2 pr-4">Layout</th>
+                                    <th className="py-2 pr-4">Page views</th>
+                                    <th className="py-2 pr-4">Checkouts started</th>
+                                    <th className="py-2 pr-4">Purchases</th>
+                                    <th className="py-2 pr-4">Checkout / view</th>
+                                    <th className="py-2 pr-4">Purchase / view</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {abStats.variants.map((row) => (
+                                    <tr
+                                        key={row.layout}
+                                        className="border-b border-gray-100 last:border-0"
+                                    >
+                                        <td className="py-3 pr-4 font-medium text-gray-900">
+                                            {row.layout === "two_card"
+                                                ? "Two cards"
+                                                : row.layout === "switch_toggle"
+                                                  ? "Premium / Plus toggle"
+                                                  : row.layout}
+                                        </td>
+                                        <td className="py-3 pr-4 tabular-nums text-gray-800">
+                                            {row.page_views}
+                                        </td>
+                                        <td className="py-3 pr-4 tabular-nums text-gray-800">
+                                            {row.checkout_started}
+                                        </td>
+                                        <td className="py-3 pr-4 tabular-nums text-gray-800">
+                                            {row.purchases}
+                                        </td>
+                                        <td className="py-3 pr-4 tabular-nums text-gray-700">
+                                            {(row.checkout_rate * 100).toFixed(1)}%
+                                        </td>
+                                        <td className="py-3 pr-4 tabular-nums text-emerald-700">
+                                            {(row.purchase_rate * 100).toFixed(1)}%
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        <p className="mt-3 text-xs text-gray-500">
+                            Since {new Date(abStats.since).toLocaleDateString()} ({abStats.days}-day window).
+                        </p>
+                    </div>
+                ) : (
+                    <p className="mt-4 text-sm text-gray-500">No experiment data yet.</p>
+                )}
             </div>
 
             {isLoading ? (

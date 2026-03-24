@@ -5,14 +5,12 @@ import { Button } from "./Button"
 import SvgCrown from "./icons/crown"
 import SvgCup from "./icons/cup"
 import SvgLearningGift from "@/components/icons/LearningGift"
-import useStore from "@/store";
 import { useUser } from "@clerk/nextjs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useHasEverPurchased } from "@/hooks/useHasEverPurchased";
 
 const TopHeaderRightSide = () => {
     const [mounted, setMounted] = useState(false);
-    const setPremiumPlanModalState = useStore((state) => state.setPremiumPlanModalState);
     const { user, isLoaded } = useUser();
     const hasActivePlan = user?.publicMetadata?.plan === "premium" || user?.publicMetadata?.plan === "pro";
     const { hasEverPurchased } = useHasEverPurchased();
@@ -38,10 +36,10 @@ const TopHeaderRightSide = () => {
                     <>
                         {!hasActivePlan && (
                             <>
-                                <Button className="screen744:!hidden flex" variant="secondary" round="sm" onClick={() => setPremiumPlanModalState()} aria-label="Open Premium Plans">
+                                <Button className="screen744:!hidden flex" variant="secondary" round="sm" href="/pricing" aria-label="Go to pricing">
                                     <SvgCrown />
                                 </Button>
-                                <Button className="screen744:!flex hidden" variant="secondary" size="sm" onClick={() => setPremiumPlanModalState()} aria-label="Open Premium Plans">
+                                <Button className="screen744:!flex hidden" variant="secondary" size="sm" href="/pricing" aria-label="Go to pricing">
                                     <SvgCrown /> Pricing
                                 </Button>
                             </>

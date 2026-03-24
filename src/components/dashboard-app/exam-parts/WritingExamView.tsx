@@ -7,7 +7,6 @@ import { TPracticeDto } from "@/models/practice.model";
 import { useRouter } from "nextjs-toploader/app";
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
-import useStore from "@/store";
 import { useUser } from "@clerk/nextjs";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import UpgradeModal from "@/components/modal/UpgradeModal";
@@ -114,9 +113,6 @@ const WritingExamView = ({
     getPartsForSection ?? getMockExamPartsForSection;
   const ref = useRef<HTMLDivElement>(null);
   const officialAutoAdvanceTriggeredRef = useRef(false);
-  const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState
-  );
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
 
@@ -366,10 +362,10 @@ const WritingExamView = ({
                   : "Next Section"
                 : "Next Part"
             }
-            onLockedAction={setPremiumPlanModalState}
+            onLockedAction={() => router.push("/pricing")}
             onTextChange={(value) => {
               if (!user || !shouldShowPractice) {
-                setPremiumPlanModalState();
+                router.push("/pricing");
               }
               setTryToSubmit(false);
               const nextWordCount = value.trim().split(/\s+/).filter(Boolean).length;
@@ -378,7 +374,7 @@ const WritingExamView = ({
             }}
             onSubmit={() => {
               if (!user || !shouldShowPractice) {
-                setPremiumPlanModalState();
+                router.push("/pricing");
                 return;
               }
               if (!isSubmit && wordCount > 20) {
@@ -532,9 +528,9 @@ const WritingExamView = ({
                           value={text}
                           onChange={(e) => {
                             if (!user) {
-                              setPremiumPlanModalState();
+                              router.push("/pricing");
                             } else if (!shouldShowPractice) {
-                              setPremiumPlanModalState();
+                              router.push("/pricing");
                             }
                             setTryToSubmit(false);
                             const wordCount = e.target.value
@@ -561,11 +557,11 @@ const WritingExamView = ({
                             className="flex h-[40px] items-center justify-center text-white text-[14px] font-normal  rounded-[24px] bg-[#4A7DFF] w-full"
                             onClick={() => {
                               if (!user) {
-                                setPremiumPlanModalState();
+                                router.push("/pricing");
                                 return;
                               }
                               if (!shouldShowPractice) {
-                                setPremiumPlanModalState();
+                                router.push("/pricing");
                                 return;
                               }
                               if (!isSubmit && wordCount > 20) {

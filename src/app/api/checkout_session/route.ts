@@ -6,6 +6,7 @@ import { stripe } from "@/lib/stripe";
 import { currentUser } from "@clerk/nextjs/server";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
 import { getDb } from "@/lib/mongodb";
+import { isPricingAbLayout } from "@/lib/pricingAbTest";
 export async function POST(req: NextRequest) {
   try {
     const product: string | null = req.nextUrl.searchParams.get("product");
@@ -308,6 +309,26 @@ export async function POST(req: NextRequest) {
       promotion_code_id: promotionCode || null,
     };
 
+    const pricingAbLayoutRaw = readRequestAttribution("pricing_ab_layout");
+    const pricingAbLayout = isPricingAbLayout(pricingAbLayoutRaw) ? pricingAbLayoutRaw : null;
+    const pricingAbMeta =
+      pricingAbLayout !== null ? { pricing_ab_layout: pricingAbLayout } : {};
+
+    if (pricingAbLayout) {
+      try {
+        await db.collection("pricing_ab_events").insertOne({
+          eventType: "checkout_started",
+          layout: pricingAbLayout,
+          userId: user.id,
+          priceId,
+          planName: productDetails.name,
+          createdAt: new Date(),
+        });
+      } catch (abErr) {
+        console.error("pricing_ab checkout_started log failed:", abErr);
+      }
+    }
+
     logger.info("Creating checkout session", {
       component: "checkout_session_api",
       action: "create_checkout_session",
@@ -342,6 +363,7 @@ export async function POST(req: NextRequest) {
         referral_code: userMetadata?.referralCode || null,
         ...attributionMetadata,
         ...attributionSnapshot,
+        ...pricingAbMeta,
         ...(referralDiscountApplied && {
           referral_discount_applied:
             userMetadata?.referralDiscount || "referral",
@@ -355,6 +377,7 @@ export async function POST(req: NextRequest) {
             referral_code: userMetadata?.referralCode || null,
             ...attributionMetadata,
             ...attributionSnapshot,
+            ...pricingAbMeta,
             ...(referralDiscountApplied && {
               referral_discount_applied:
                 userMetadata?.referralDiscount || "referral",
@@ -388,6 +411,7 @@ export async function POST(req: NextRequest) {
           referral_code: userMetadata?.referralCode || null,
           ...attributionMetadata,
           ...attributionSnapshot,
+          ...pricingAbMeta,
           ...(referralDiscountApplied && {
             referral_discount_applied:
               userMetadata?.referralDiscount || "referral",

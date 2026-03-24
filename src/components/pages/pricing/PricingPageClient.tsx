@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
 import { CheckCircle2, ChevronDown, ChevronUp, Sparkles, Star } from "lucide-react";
@@ -22,13 +22,13 @@ import { durationDisplayOrder, durationMeta } from "@/lib/pricingCatalog";
 import {
   buildMonthlySavingsMap,
   getAccessLabel,
-  getPlanButtonLabel,
   getDurationGroupKey,
   getFooterNote,
   getPlanDescription,
   getStablePlanId,
   isPremiumPlusPlan,
 } from "@/lib/pricing";
+import type { PricingAbLayout } from "@/lib/pricingAbTest";
 import type { DurationGroupKey, PricingFaq, SerializedPlan } from "@/types/pricing";
 const avatarSources = ["Carlos.png", "Li.png", "Tatiana.png"];
 
@@ -240,11 +240,7 @@ function getSectionSavingsBadge(section: {
   const savingsCandidates = [section.premium, section.premiumPlus]
     .filter(Boolean)
     .map((item) => {
-      const savingsText =
-        (section.key === "threeMonth" || section.key === "yearly") &&
-        isPremiumPlusPlan(item!.plan)
-          ? "Best value"
-          : monthlySavingsById.get(item!.stableId);
+      const savingsText = monthlySavingsById.get(item!.stableId);
 
       if (!savingsText) {
         return null;
@@ -254,8 +250,8 @@ function getSectionSavingsBadge(section: {
       const numericValue = numericMatch ? Number.parseInt(numericMatch[1], 10) : 0;
 
       return {
-        label: savingsText === "Best value" ? "Best value" : `Save ${numericValue}%`,
-        score: savingsText === "Best value" ? Number.MAX_SAFE_INTEGER : numericValue,
+        label: savingsText,
+        score: numericValue,
       };
     })
     .filter(Boolean) as Array<{ label: string; score: number }>;
@@ -280,6 +276,47 @@ function AvatarStack() {
           className="rounded-full border-2 border-white object-cover"
         />
       ))}
+    </Box>
+  );
+}
+
+type AccessTierChoice = "premium" | "premiumPlus";
+
+function PremiumAccessSegmentedToggle({
+  value,
+  onChange,
+}: {
+  value: AccessTierChoice;
+  onChange: (next: AccessTierChoice) => void;
+}) {
+  return (
+    <Box
+      className="inline-flex w-full max-w-md rounded-full border border-slate-200 bg-slate-100 p-1 sm:w-auto"
+      role="group"
+      aria-label="Choose Premium or Premium Plus"
+    >
+      <button
+        type="button"
+        onClick={() => onChange("premium")}
+        className={`flex-1 rounded-full px-4 py-2 text-sm font-semibold transition-colors sm:flex-none sm:min-w-[120px] ${
+          value === "premium"
+            ? "bg-white text-blue-950 shadow-sm"
+            : "text-slate-600 hover:text-slate-900"
+        }`}
+      >
+        Premium
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("premiumPlus")}
+        className={`flex-1 rounded-full px-4 py-2 text-sm font-semibold transition-colors sm:flex-none sm:min-w-[140px] ${
+          value === "premiumPlus"
+            ? "bg-white text-amber-900 shadow-sm ring-1 ring-amber-200/80"
+            : "text-slate-600 hover:text-slate-900"
+        }`}
+      >
+        Premium Plus
+      </button>
     </Box>
   );
 }
@@ -319,11 +356,42 @@ function TestimonialCard({
 
 interface PricingPageClientProps {
   plans: SerializedPlan[];
+  pricingAbLayout: PricingAbLayout;
+  /** When false (?s=1|2 preview), skip experiment page_view and checkout attribution. */
+  pricingAbParticipatesInExperiment: boolean;
 }
 
-export default function PricingPageClient({ plans }: PricingPageClientProps) {
+export default function PricingPageClient({
+  plans,
+  pricingAbLayout,
+  pricingAbParticipatesInExperiment,
+}: PricingPageClientProps) {
   const { isSignedIn } = useUser();
   const userContext = useUserContext();
+  const [tierByDuration, setTierByDuration] = useState<
+    Partial<Record<DurationGroupKey, AccessTierChoice>>
+  >({});
+
+  const pricingCheckoutFields = useMemo(
+    () =>
+      pricingAbParticipatesInExperiment
+        ? { pricing_ab_layout: pricingAbLayout }
+        : undefined,
+    [pricingAbLayout, pricingAbParticipatesInExperiment]
+  );
+
+  useEffect(() => {
+    if (!pricingAbParticipatesInExperiment) return;
+    if (typeof window === "undefined") return;
+    const key = `pricing_ab_pv_${pricingAbLayout}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    void fetch("/api/analytics/pricing-ab-event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ eventType: "page_view", layout: pricingAbLayout }),
+    });
+  }, [pricingAbLayout, pricingAbParticipatesInExperiment]);
 
   const orderedPlans = useMemo(() => {
     return [...plans].sort((left, right) => {
@@ -503,7 +571,7 @@ export default function PricingPageClient({ plans }: PricingPageClientProps) {
           </Box>
         )}
 
-        <Box className="mt-8 grid gap-5 xl:grid-cols-2">
+        <Box className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-flow-col lg:grid-cols-none lg:auto-cols-fr lg:grid-rows-1 lg:items-stretch">
           {groupedPlans.map((section) => {
             const visiblePlanItems = [section.premium, section.premiumPlus].filter(Boolean) as GroupedPlanItem[];
             const sectionSavingsBadge = getSectionSavingsBadge(section, monthlySavingsById);
@@ -512,7 +580,7 @@ export default function PricingPageClient({ plans }: PricingPageClientProps) {
               <Box
                 key={section.key}
                 id={`duration-${section.key}`}
-                className={`rounded-[28px] border bg-white p-5 shadow-sm ${
+                className={`flex h-full min-h-0 min-w-0 flex-col rounded-[28px] border bg-white p-5 shadow-sm ${
                   section.key === "threeMonth"
                     ? "border-amber-200 shadow-[0_16px_40px_rgba(247,157,101,0.10)]"
                     : recommendedSection?.key === section.key
@@ -520,86 +588,154 @@ export default function PricingPageClient({ plans }: PricingPageClientProps) {
                       : "border-slate-200"
                 }`}
               >
-                <Box className="flex flex-wrap items-start justify-between gap-3">
-                  <Box className="max-w-xl">
-                    <p
-                      className={`text-[11px] font-semibold uppercase tracking-[0.08em] ${
-                        section.key === "threeMonth" ? "text-amber-700" : "text-slate-500"
-                      }`}
-                    >
-                      {section.eyebrow}
-                    </p>
-                    <h3 className="mt-1 text-2xl font-semibold text-blue-950">
-                      {section.title}
-                    </h3>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                <Box className="shrink-0">
+                  <Box className="flex flex-col gap-2 sm:gap-3">
+                    <Box className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 gap-y-2 sm:gap-x-3">
+                      <Box className="min-w-0">
+                        <p
+                          className={`text-[11px] font-semibold uppercase tracking-[0.08em] ${
+                            section.key === "threeMonth" ? "text-amber-700" : "text-slate-500"
+                          }`}
+                        >
+                          {section.eyebrow}
+                        </p>
+                        <h3 className="mt-1 text-2xl font-semibold text-blue-950">
+                          {section.title}
+                        </h3>
+                      </Box>
+                      <Box className="flex w-max max-w-full flex-nowrap items-center justify-end justify-self-end gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] pl-1 [&::-webkit-scrollbar]:hidden">
+                        {recommendedSection?.key === section.key && (
+                          <span className="shrink-0 rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-blue-700 sm:px-3 sm:text-[11px]">
+                            Recommended
+                          </span>
+                        )}
+                        {section.badge && (
+                          <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-700 sm:px-3 sm:text-[11px]">
+                            {section.badge}
+                          </span>
+                        )}
+                        {sectionSavingsBadge && (
+                          <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-emerald-700 sm:px-3 sm:text-[11px]">
+                            {sectionSavingsBadge}
+                          </span>
+                        )}
+                      </Box>
+                    </Box>
+                    <p className="w-full min-w-0 text-sm leading-6 text-slate-600">
                       {section.summary}
                     </p>
                   </Box>
-                  <Box className="flex flex-wrap gap-2">
-                    {recommendedSection?.key === section.key && (
-                      <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700">
-                        Recommended
-                      </span>
-                    )}
-                    {section.badge && (
-                      <span className="rounded-full bg-amber-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-700">
-                        {section.badge}
-                      </span>
-                    )}
-                    {sectionSavingsBadge && (
-                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-700">
-                        {sectionSavingsBadge}
-                      </span>
-                    )}
-                  </Box>
                 </Box>
 
-                <Box className={`mt-5 grid gap-3 ${visiblePlanItems.length > 1 ? "sm:grid-cols-2" : "grid-cols-1"}`}>
-                  {visiblePlanItems.map((item) => (
+                {(() => {
+                  const defaultTier: AccessTierChoice = (() => {
+                    if (recommendedSection?.key === section.key && recommendedPlanEntry) {
+                      return isPremiumPlusPlan(recommendedPlanEntry.plan)
+                        ? "premiumPlus"
+                        : "premium";
+                    }
+                    if (section.premium && !section.premiumPlus) return "premium";
+                    if (!section.premium && section.premiumPlus) return "premiumPlus";
+                    return "premium";
+                  })();
+                  const tier = tierByDuration[section.key] ?? defaultTier;
+                  const useSwitchLayout =
+                    pricingAbLayout === "switch_toggle" &&
+                    Boolean(section.premium && section.premiumPlus);
+                  const activeItem = useSwitchLayout
+                    ? tier === "premiumPlus"
+                      ? section.premiumPlus!
+                      : section.premium!
+                    : null;
+
+                  const planCardForItem = (item: GroupedPlanItem) => (
+                    <PlanCard
+                      id={item.index}
+                      title={item.plan.title}
+                      type={item.plan.type}
+                      oldPrice={item.plan.oldPrice}
+                      price={item.plan.price}
+                      discount={item.plan.discount}
+                      buttonTitle="Subscribe"
+                      features={item.plan.features}
+                      stripePriceId={item.plan.stripePriceId}
+                      billingInterval={item.plan.billingInterval}
+                      billingIntervalCount={item.plan.billingIntervalCount}
+                      icon={getIconComponent(item.plan.iconType)}
+                      iconWrapperColor={item.plan.iconWrapperColor || "bg-purple5"}
+                      currentPlanTitle=""
+                      planTitle={item.plan.planTitle || item.plan.title}
+                      compact
+                      featureLimit={3}
+                      mockExamStatus={isPremiumPlusPlan(item.plan) ? "included" : "notIncluded"}
+                      highlight={
+                        recommendedPlanId === item.stableId ||
+                        (section.key === "threeMonth" && isPremiumPlusPlan(item.plan))
+                      }
+                      savingsText={undefined}
+                      highlightLabel={
+                        recommendedPlanId === item.stableId
+                          ? "Recommended"
+                          : (section.key === "threeMonth" || section.key === "yearly") &&
+                              isPremiumPlusPlan(item.plan)
+                            ? "Best value"
+                            : undefined
+                      }
+                      accessLabel={getAccessLabel(item.plan)}
+                      description={getPlanDescription(item.plan)}
+                      footerNote={getFooterNote(item.plan)}
+                      checkoutHiddenFields={pricingCheckoutFields}
+                    />
+                  );
+
+                  if (useSwitchLayout && activeItem) {
+                    return (
+                      <Box className="mt-3 flex min-h-0 flex-1 flex-col gap-3">
+                        <Box className="flex shrink-0 justify-center">
+                          <PremiumAccessSegmentedToggle
+                            value={tier}
+                            onChange={(next) =>
+                              setTierByDuration((prev) => ({ ...prev, [section.key]: next }))
+                            }
+                          />
+                        </Box>
+                        <Box className="mx-auto flex min-h-0 w-full max-w-[420px] flex-1 flex-col">
+                          <Box
+                            key={activeItem.stableId}
+                            className="flex h-full min-h-[220px] min-w-0 flex-1 flex-col"
+                            id={
+                              recommendedPlanId === activeItem.stableId
+                                ? "recommended-plan"
+                                : undefined
+                            }
+                          >
+                            {planCardForItem(activeItem)}
+                          </Box>
+                        </Box>
+                      </Box>
+                    );
+                  }
+
+                  return (
                     <Box
-                      key={item.stableId}
-                      id={recommendedPlanId === item.stableId ? "recommended-plan" : undefined}
+                      className={`mt-3 grid h-full min-h-0 w-full min-w-0 flex-1 auto-rows-fr gap-1 ${
+                        visiblePlanItems.length > 1 ? "sm:grid-cols-2" : "grid-cols-1"
+                      }`}
                     >
-                      <PlanCard
-                        id={item.index}
-                        title={item.plan.title}
-                        type={item.plan.type}
-                        oldPrice={item.plan.oldPrice}
-                        price={item.plan.price}
-                        discount={item.plan.discount}
-                        buttonTitle={getPlanButtonLabel(item.plan)}
-                        features={item.plan.features}
-                        stripePriceId={item.plan.stripePriceId}
-                        billingInterval={item.plan.billingInterval}
-                        billingIntervalCount={item.plan.billingIntervalCount}
-                        icon={getIconComponent(item.plan.iconType)}
-                        iconWrapperColor={item.plan.iconWrapperColor || "bg-purple5"}
-                        currentPlanTitle=""
-                        planTitle={item.plan.planTitle || item.plan.title}
-                        compact
-                        featureLimit={3}
-                        mockExamStatus={isPremiumPlusPlan(item.plan) ? "included" : "notIncluded"}
-                        highlight={
-                          recommendedPlanId === item.stableId ||
-                          (section.key === "threeMonth" && isPremiumPlusPlan(item.plan))
-                        }
-                        savingsText={undefined}
-                        highlightLabel={
-                          recommendedPlanId === item.stableId
-                            ? "Recommended"
-                            : (section.key === "threeMonth" || section.key === "yearly") &&
-                                isPremiumPlusPlan(item.plan)
-                              ? "Best value"
-                              : undefined
-                        }
-                        accessLabel={getAccessLabel(item.plan)}
-                        description={getPlanDescription(item.plan)}
-                        footerNote={getFooterNote(item.plan)}
-                      />
+                      {visiblePlanItems.map((item) => (
+                        <Box
+                          key={item.stableId}
+                          className="flex h-full min-h-[220px] min-w-0 flex-col"
+                          id={
+                            recommendedPlanId === item.stableId ? "recommended-plan" : undefined
+                          }
+                        >
+                          {planCardForItem(item)}
+                        </Box>
+                      ))}
                     </Box>
-                  ))}
-                </Box>
+                  );
+                })()}
               </Box>
             );
           })}

@@ -11,7 +11,6 @@ import { TPassage } from "@/models/listenExam.model";
 import { useRouter } from "nextjs-toploader/app";
 import { useEffect } from "react";
 import ReadingQuestionList from "./components/ReadingQuestionList";
-import useStore from "@/store";
 import { Popover } from "radix-ui";
 import { useUser } from "@clerk/nextjs";
 import React from "react";
@@ -84,9 +83,6 @@ const ReadingPracticeView = ({
     Record<string, string>
   >({});
   const [time, setTime] = useState(timerTime);
-  const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState
-  );
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
 
@@ -590,7 +586,7 @@ const ReadingPracticeView = ({
                             if (shouldShowPractice) {
                               handleAnswerSelect(questionId, answerId);
                             } else {
-                              setPremiumPlanModalState();
+                              router.push("/pricing");
                             }
                           }}
                           selectedAnswers={selectedAnswers}
@@ -660,7 +656,7 @@ const ReadingPracticeView = ({
                                                             choice.id
                                                           );
                                                         } else {
-                                                          setPremiumPlanModalState();
+                                                          router.push("/pricing");
                                                         }
                                                       }}
                                                     >
@@ -756,7 +752,7 @@ const ReadingPracticeView = ({
                                     answerId
                                   );
                                 } else {
-                                  setPremiumPlanModalState();
+                                  router.push("/pricing");
                                 }
                               }}
                               selectedAnswers={selectedAnswers}

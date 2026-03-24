@@ -4,8 +4,10 @@ import { TExamSchemaDto } from "@/models/exam.model";
 import { useSelectedExam } from "@/store/useSelectedExam.store";
 import { useUser } from "@clerk/nextjs";
 import {
+  Alert,
   Box,
   Button,
+  CircularProgress,
   LinearProgress,
   Paper,
   Stack,
@@ -15,6 +17,10 @@ import { useRouter } from "nextjs-toploader/app";
 import { useState } from "react";
 import LoginModal from "../modal/LoginModal";
 import UpgradeModal from "../modal/UpgradeModal";
+import {
+  hasPaidPracticeAccess,
+  hasPremiumPlusAccess,
+} from "@/lib/subscriptionAccess";
 
 const examSections = [
   { label: "Listening", partId: 1, section: "listening" },
@@ -42,21 +48,64 @@ const ExamOverview = ({
   const { user, isLoaded, isSignedIn } = useUser();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
+  const plan = user?.publicMetadata?.plan as string | undefined;
+  const purchaseDate = user?.publicMetadata?.purchaseDate as
+    | string
+    | undefined;
+  const needsPremiumPlusUpgrade =
+    isLoaded &&
+    isSignedIn &&
+    hasPaidPracticeAccess(plan, purchaseDate) &&
+    !hasPremiumPlusAccess(plan, purchaseDate);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeSubmitting, setUpgradeSubmitting] = useState(false);
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
 
   const { setSelectedExam } = useSelectedExam();
+
+  const runPremiumPlusUpgrade = async () => {
+    if (upgradeSubmitting || !needsPremiumPlusUpgrade) {
+      return;
+    }
+    setUpgradeError(null);
+    setUpgradeSubmitting(true);
+    try {
+      const res = await fetch("/api/users/upgrade-to-premium-plus", {
+        method: "POST",
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        throw new Error(data.error || "Could not upgrade your plan.");
+      }
+      await user?.reload();
+      if (typeof (router as { refresh?: () => void }).refresh === "function") {
+        (router as { refresh: () => void }).refresh();
+      }
+    } catch (e) {
+      setUpgradeError(
+        e instanceof Error ? e.message : "Could not upgrade your plan."
+      );
+    } finally {
+      setUpgradeSubmitting(false);
+    }
+  };
 
   const handleStart = (
     exam: TExamSchemaDto,
     partId: number = 1,
     section?: string
   ) => {
+    if (noUser) {
+      setShowLoginModal(true);
+      return;
+    }
     if (freeUser) {
       setShowUpgradeModal(true);
       return;
-    } else if (noUser) {
-      setShowLoginModal(true);
+    }
+    if (needsPremiumPlusUpgrade) {
+      void runPremiumPlusUpgrade();
       return;
     }
     setSelectedExam(exam.name);
@@ -75,6 +124,66 @@ const ExamOverview = ({
         <></>
       )}
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {needsPremiumPlusUpgrade && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 2, sm: 2.5 },
+              borderRadius: "20px",
+              border: "1px solid #C7D6F8",
+              background:
+                "linear-gradient(135deg, rgba(74, 125, 255, 0.12), rgba(13, 170, 148, 0.08))",
+            }}
+          >
+            <Stack spacing={1.5}>
+              <Typography
+                sx={{
+                  fontSize: { xs: "1rem", sm: "1.05rem" },
+                  fontWeight: 700,
+                  color: "#2F3A4C",
+                }}
+              >
+                Upgrade account for mock exams
+              </Typography>
+              <Typography sx={{ fontSize: "0.9rem", color: "#5A6678" }}>
+                Your Premium plan includes practice; full mock exams need
+                Premium Plus. Upgrade keeps the same billing period—you only pay
+                the prorated difference.
+              </Typography>
+              {upgradeError && (
+                <Alert severity="error" onClose={() => setUpgradeError(null)}>
+                  {upgradeError}
+                </Alert>
+              )}
+              <Box>
+                <Button
+                  variant="contained"
+                  disabled={upgradeSubmitting}
+                  onClick={() => void runPremiumPlusUpgrade()}
+                  sx={{
+                    minHeight: 44,
+                    borderRadius: "999px",
+                    textTransform: "none",
+                    fontWeight: 700,
+                    px: 3,
+                    backgroundColor: "#4A7DFF",
+                    boxShadow: "none",
+                    "&:hover": {
+                      backgroundColor: "#3A6DEB",
+                      boxShadow: "none",
+                    },
+                  }}
+                >
+                  {upgradeSubmitting ? (
+                    <CircularProgress size={22} color="inherit" />
+                  ) : (
+                    "Upgrade account"
+                  )}
+                </Button>
+              </Box>
+            </Stack>
+          </Paper>
+        )}
         <Box
           sx={{
             display: "flex",
@@ -259,6 +368,7 @@ const ExamOverview = ({
 
                   <Button
                     variant="contained"
+                    disabled={needsPremiumPlusUpgrade && upgradeSubmitting}
                     onClick={() => handleStart(exam, 1)}
                     sx={{
                       minHeight: 48,
@@ -274,7 +384,11 @@ const ExamOverview = ({
                       },
                     }}
                   >
-                    Start Full Test
+                    {needsPremiumPlusUpgrade
+                      ? upgradeSubmitting
+                        ? "Upgrading…"
+                        : "Upgrade account"
+                      : "Start Full Test"}
                   </Button>
                 </Stack>
               </Paper>

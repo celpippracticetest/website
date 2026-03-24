@@ -40,9 +40,6 @@ const DesktopHeader = (props: {
   const isMobile = useIsMobile();
   const [isUserDropDownOpen, setUserDropDownOpen] = useState(false);
   const { user } = useUser();
-  const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState
-  );
   let headerButton: JSX.Element;
   // const dashboard = useStore((state) => state.dashboard);
   const setViewMode = useStore((state) => state.dashboard.setView);
@@ -135,7 +132,7 @@ const DesktopHeader = (props: {
               <div
                 onClick={() => {
                   trackCTA("Upgrade Button", "header");
-                  setPremiumPlanModalState();
+                  router.push("/pricing");
                 }}
                 className="relative border border-slate-300 rounded-full pl-1 pr-1 shadow-sm min-w-13 min-h-10 justify-center outline-none flex items-center gap-2 cursor-pointer hover:-translate-y-0.5 transition-all duration-300 hover:shadow-md"
               >

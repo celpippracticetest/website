@@ -7,8 +7,6 @@ import ListeningSideMenu from "../listening-practice/ListeningSideMenu";
 import ListeningAnswerList from "./components/ListeningAnswers";
 import { TPassage } from "@/models/listenExam.model";
 import { useEffect } from "react";
-import useStore from "@/store";
-
 import { cn } from "@/lib/utils";
 import { useRouter } from "nextjs-toploader/app";
 import { useUser } from "@clerk/nextjs";
@@ -124,9 +122,6 @@ const SpeakingPracticeView = ({
   const [errorAccessingMicrophone, setErrorAccessingMicrophone] =
     useState(false);
   const [needsUserInteraction, setNeedsUserInteraction] = useState(false);
-  const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState
-  );
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
     let recordingTimer: NodeJS.Timeout | null = null;
@@ -293,11 +288,11 @@ const SpeakingPracticeView = ({
   const startRecording = async () => {
     try {
       if (!user) {
-        setPremiumPlanModalState();
+        router.push("/pricing");
         return;
       }
       if (!shouldShowPractice) {
-        setPremiumPlanModalState();
+        router.push("/pricing");
         return;
       }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });

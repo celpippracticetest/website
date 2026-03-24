@@ -12,11 +12,6 @@ export const LazyLeadCapturePopup = dynamic(
   }
 );
 
-export const LazyPremiumPlanModal = dynamic(
-  () => import("./premium-plan/PremiumPlanModal"),
-  { ssr: false }
-);
-
 export const LazyPromotionManager = dynamic(
   () => import("./league/PromotionManager"),
   { ssr: false }

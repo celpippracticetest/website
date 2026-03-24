@@ -4,8 +4,6 @@ import { Button } from "@/components/ui/button";
 
 import { ArrowLeft, CircleAlert, LoaderCircle } from "lucide-react";
 import { TPracticeDto } from "@/models/practice.model";
-import useStore from "@/store";
-
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import SvgArrowRight from "@/components/icons/ArrowRight";
@@ -129,10 +127,6 @@ const SpeakingExamView = ({
   const [errorAccessingMicrophone, setErrorAccessingMicrophone] =
     useState(false);
   const [needsUserInteraction, setNeedsUserInteraction] = useState(false);
-  const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState
-  );
-
   if (
     isLoaded &&
     (!user ||
@@ -146,7 +140,7 @@ const SpeakingExamView = ({
   const startRecording = async () => {
     try {
       if (!user) {
-        setPremiumPlanModalState();
+        router.push("/pricing");
         return;
       }
 
@@ -500,7 +494,7 @@ const SpeakingExamView = ({
             errorAccessingMicrophone={errorAccessingMicrophone}
             needsUserInteraction={needsUserInteraction}
             resultHref={`/exams/exam_${practice.taskId}/results?attemptId=${searchParams.get("attemptId")}`}
-            onLockedAction={setPremiumPlanModalState}
+            onLockedAction={() => router.push("/pricing")}
             onStartRecording={() => {
               setNeedsUserInteraction(false);
               hasStartedRecordingRef.current = true;

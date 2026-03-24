@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
-import client from "@/lib/mongodb";
+import { getDb } from "@/lib/mongodb";
 
 export async function POST(req: NextRequest) {
   try {
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Update MongoDB
-    const db = client.db();
+    const db = await getDb();
     const usersCollection = db.collection("users");
     const existingUser = await usersCollection.findOne({ clerkUserId: userId });
     const existingPublicMetadataMongo = (existingUser?.publicMetadata || {}) as Record<string, any>;
