@@ -7,6 +7,28 @@ import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
+/** Stripe product name for the profile label (handles product as id string when expand misses). */
+async function resolveStripePlanDisplayName(
+  price: Stripe.Price | undefined
+): Promise<string | undefined> {
+  if (!price) return undefined;
+  const product = price.product;
+  if (product && typeof product === "object" && "name" in product) {
+    const name = (product as Stripe.Product).name;
+    if (name?.trim()) return name.trim();
+  }
+  if (typeof product === "string") {
+    try {
+      const prod = await stripe.products.retrieve(product);
+      if (prod.name?.trim()) return prod.name.trim();
+    } catch {
+      /* use nickname fallback below */
+    }
+  }
+  const nick = price.nickname?.trim();
+  return nick || undefined;
+}
+
 export default async function UserProfilePage() {
   const { userId } = await auth();
 
@@ -106,14 +128,17 @@ export default async function UserProfilePage() {
             }
           }
           
+          const price = subscription.items.data[0]?.price as Stripe.Price | undefined;
+          const planName = await resolveStripePlanDisplayName(price);
+
           subscriptionData = {
             id: subscription.id,
             status: subscription.status,
             currentPeriodStart: currentPeriodStart,
             currentPeriodEnd: currentPeriodEnd,
             cancelAtPeriodEnd: subscription.cancel_at_period_end,
-            planId: subscription.items.data[0]?.price?.id,
-            planName: subscription.items.data[0]?.price?.product?.name,
+            planId: price?.id,
+            planName,
           };
           console.log("Debug - Subscription data:", subscriptionData);
         } else {
@@ -236,12 +261,8 @@ export default async function UserProfilePage() {
                 }
               }
               
-              const price = subscription.items.data[0]?.price;
-              const product = price?.product;
-              const planNameFromStripe =
-                product && typeof product === "object" && "name" in product
-                  ? (product as Stripe.Product).name
-                  : undefined;
+              const price = subscription.items.data[0]?.price as Stripe.Price | undefined;
+              const planNameFromStripe = await resolveStripePlanDisplayName(price);
 
               subscriptionData = {
                 id: subscription.id,

@@ -87,7 +87,6 @@ const SubscriptionRetentionModal = ({
   const reason = useWatch({ control, name: "reason" });
   const scores = useWatch({ control, name: "scores" });
   const finalRating = useWatch({ control, name: "cancellationRating" });
-  const finalReview = useWatch({ control, name: "cancellationReview" }) || "";
 
   const allScoresValid = useMemo(() => {
     if (!scores) return false;
@@ -97,9 +96,6 @@ const SubscriptionRetentionModal = ({
       return Number.isFinite(score) && score >= 1 && score <= 12;
     });
   }, [scores]);
-
-  const finalFeedbackValid =
-    finalRating !== null && finalRating >= 1 && Boolean(finalReview.trim());
 
   const trackCancellationEvent = (
     eventName: string,
@@ -204,8 +200,8 @@ const SubscriptionRetentionModal = ({
           scores: values.reason === "passed" ? values.scores : undefined,
           serviceFeedback:
             values.reason === "passed" ? values.serviceFeedback : undefined,
-          cancellationRating: values.cancellationRating,
-          cancellationReview: values.cancellationReview.trim(),
+          cancellationRating: values.cancellationRating ?? null,
+          cancellationReview: values.cancellationReview?.trim() ?? "",
         }),
       });
     } catch (error) {
@@ -553,8 +549,7 @@ const SubscriptionRetentionModal = ({
 
       <div className="border border-gray-200 rounded-xl text-center p-4 flex flex-col gap-3">
         <p className="text-[13px] text-[#212E42] font-medium">
-          Before you cancel, please rate your experience.{" "}
-          <span className="text-[#EE4266]">*</span>
+          Optionally rate your experience with us.
         </p>
         <Rating
           name="cancellation-experience-rating"
@@ -585,21 +580,16 @@ const SubscriptionRetentionModal = ({
 
         <div className="flex flex-col gap-1 text-left">
           <label className="text-[13px] text-[#212E42] font-medium">
-            Feedback <span className="text-[#EE4266]">*</span>
+            Feedback <span className="text-[#76808F] font-normal">(optional)</span>
           </label>
           <TextField
             fullWidth
             multiline
             minRows={3}
-            placeholder="Please share your feedback before canceling..."
+            placeholder="Share any feedback (optional)…"
             {...register("cancellationReview")}
           />
         </div>
-        {!finalFeedbackValid && (
-          <p className="text-xs text-[#EE4266] text-left">
-            Rating and feedback are required to continue.
-          </p>
-        )}
       </div>
 
       <div className="flex gap-3 mt-6">
@@ -625,14 +615,13 @@ const SubscriptionRetentionModal = ({
         </Button>
         <Button
           onClick={() => {
-            if (!finalFeedbackValid) return;
             trackCancellationEvent("confirm_cancel_clicked", {
               step: "confirm",
             });
             submitSurvey();
             onConfirmCancellation(flowId);
           }}
-          disabled={loading || !finalFeedbackValid}
+          disabled={loading}
           variant="outlined"
           fullWidth
           sx={{

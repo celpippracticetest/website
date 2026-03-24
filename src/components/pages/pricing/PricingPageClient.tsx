@@ -770,41 +770,43 @@ export default function PricingPageClient({
   }, [groupedPlans, stickyCtaEntry]);
 
   return (
-    <Box className="flex-1 overflow-y-auto bg-[linear-gradient(180deg,_#F6F9FF_0%,_#FFFFFF_35%,_#F9FBFF_100%)] p-4 md:p-8 lg:p-10">
+    <Box className="flex-1 overflow-y-auto bg-[linear-gradient(180deg,_#F6F9FF_0%,_#FFFFFF_35%,_#F9FBFF_100%)] px-4 py-0 md:px-8 lg:px-10">
       <Box className="mx-auto w-full max-w-6xl">
-        <Box className="rounded-[32px] border border-blue-100 bg-white px-5 py-6 shadow-[0_20px_60px_rgba(74,125,255,0.08)] md:px-8 md:py-8">
-          <Box className="mx-auto max-w-4xl text-center">
-            <Box className="mb-4 flex items-center justify-center gap-2">
-              <SvgDiamond className="-rotate-30" />
-              <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-blue-700">
-                Simple pricing
-              </span>
-            </Box>
-            <h1 className="text-3xl font-semibold leading-tight text-blue-950 md:text-5xl">
-              Choose the plan that matches your CELPIP timeline
-            </h1>
-            <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-600 md:text-base">
-              Start with the study length that fits your exam date, then choose
-              the access level you need. Premium covers daily practice. Premium
-              Plus adds mock exams for full-test preparation.
-            </p>
-          </Box>
-
-          <Box className="mt-6 flex flex-nowrap items-stretch justify-center gap-3">
-            <Box className="flex min-h-[42px] items-center justify-center gap-3 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-center text-sm font-medium text-slate-700 whitespace-nowrap">
-              <AvatarStack />
-              <span className="whitespace-nowrap">Trusted by 70k+ test-takers</span>
-            </Box>
-            {pricingHeroStats.slice(1).map((stat) => (
-              <Box
-                key={stat}
-                className="flex min-h-[52px] items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-center text-sm font-medium text-slate-700 whitespace-nowrap"
-              >
-                {stat}
+        {!isSignedIn && (
+          <Box className="rounded-[32px] border border-blue-100 bg-white px-5 py-6 shadow-[0_20px_60px_rgba(74,125,255,0.08)] md:px-8 md:py-8">
+            <Box className="mx-auto max-w-4xl text-center">
+              <Box className="mb-4 flex items-center justify-center gap-2">
+                <SvgDiamond className="-rotate-30" />
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-blue-700">
+                  Simple pricing
+                </span>
               </Box>
-            ))}
+              <h1 className="text-3xl font-semibold leading-tight text-blue-950 md:text-5xl">
+                Choose the plan that matches your CELPIP timeline
+              </h1>
+              <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-600 md:text-base">
+                Start with the study length that fits your exam date, then choose
+                the access level you need. Premium covers daily practice. Premium
+                Plus adds mock exams for full-test preparation.
+              </p>
+            </Box>
+
+            <Box className="mt-6 flex flex-nowrap items-stretch justify-center gap-3">
+              <Box className="flex min-h-[42px] items-center justify-center gap-3 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-center text-sm font-medium text-slate-700 whitespace-nowrap">
+                <AvatarStack />
+                <span className="whitespace-nowrap">Trusted by 70k+ test-takers</span>
+              </Box>
+              {pricingHeroStats.slice(1).map((stat) => (
+                <Box
+                  key={stat}
+                  className="flex min-h-[52px] items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-center text-sm font-medium text-slate-700 whitespace-nowrap"
+                >
+                  {stat}
+                </Box>
+              ))}
+            </Box>
           </Box>
-        </Box>
+        )}
 
         {personalizedRecommendation && recommendedPlanEntry && (
           <Box className="mt-6 rounded-[24px] border border-blue-200 bg-[linear-gradient(90deg,_rgba(74,125,255,0.08)_0%,_rgba(247,157,101,0.08)_100%)] px-5 py-5 shadow-sm">

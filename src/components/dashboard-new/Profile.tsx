@@ -29,18 +29,10 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
   const userPurchaseDate = user?.publicMetadata?.purchaseDate as string | undefined;
 
   useEffect(() => {
-    // Stripe product / charge description is the source of truth for the plan label
-    if (subscriptionData?.planName) {
-      setPlanNameDisplay(String(subscriptionData.planName).trim());
-      setIsLoaded(true);
-    } else if (subscriptionData && subscriptionData.currentPeriodStart && subscriptionData.currentPeriodEnd) {
-      setPlanNameDisplay(
-        getSubscriptionDisplayName(
-          userPlan,
-          userPurchaseDate,
-          subscriptionData.planName || "Premium Plan"
-        )
-      );
+    // When we have Stripe-backed subscriptionData, show only Stripe (planName); never Clerk/DB display names.
+    if (subscriptionData) {
+      const stripeLabel = subscriptionData.planName?.trim();
+      setPlanNameDisplay(stripeLabel || "Subscription");
       setIsLoaded(true);
     } else if (prevCheckout && prevCheckout.createdAt) {
       // Fallback to checkout data for one-time purchases
@@ -666,7 +658,12 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
                   )}
                 </div>
               ) : (
-                <span className="text-green-700">Free</span>
+                <Link
+                  href="/pricing"
+                  className="flex items-center justify-center bg-[#4A7DFF] text-white rounded-[24px] font-normal text-[14px] min-w-[140px] px-4 h-[40px] cursor-pointer hover:bg-[#3d6fe6] transition-colors"
+                >
+                  Get a plan
+                </Link>
               )}
             </div>
           </div>
