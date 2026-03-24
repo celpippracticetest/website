@@ -35,6 +35,8 @@ interface IPlanCard {
   featureLimit?: number;
   /** First N feature lines render bold (e.g. Premium Plus mock-exam highlights on /pricing). */
   leadingBoldFeatureCount?: number;
+  /** When false in compact mode, hide the in-card feature list (e.g. shared comparison table below). */
+  showCompactFeatures?: boolean;
   billingInterval?: PlanBillingInterval;
   billingIntervalCount?: number;
   /** Hidden inputs appended to checkout POST (e.g. pricing A/B variant). */
@@ -64,6 +66,7 @@ const PlanCard = ({
   compact = false,
   featureLimit,
   leadingBoldFeatureCount = 0,
+  showCompactFeatures = true,
   billingInterval,
   billingIntervalCount,
   checkoutHiddenFields,
@@ -198,19 +201,30 @@ const PlanCard = ({
               )}
             </div>
 
-            <ul className="mt-0 flex shrink-0 list-none flex-col gap-1 p-0">
-              {visibleFeatures.map((item, index) => (
-                <li key={index}>
-                  <span
-                    className={`text-[12px] leading-4 text-text2 ${
-                      index < leadingBoldFeatureCount ? "font-bold text-text1" : ""
-                    }`}
-                  >
-                    {item}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            {showCompactFeatures && (
+              <div className="mt-2 w-full shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-50/40">
+                <table className="w-full border-collapse text-left">
+                  <tbody>
+                    {visibleFeatures.map((item, index) => (
+                      <tr
+                        key={index}
+                        className="border-b border-slate-200 bg-white last:border-b-0 odd:bg-white even:bg-slate-50/80"
+                      >
+                        <td className="px-2.5 py-1.5 align-top text-[12px] leading-snug text-text2">
+                          <span
+                            className={
+                              index < leadingBoldFeatureCount ? "font-bold text-text1" : ""
+                            }
+                          >
+                            {item}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
             <div className="min-h-0 min-w-0 flex-1 basis-0" aria-hidden />
 

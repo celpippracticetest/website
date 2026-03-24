@@ -167,6 +167,35 @@ export function getPricingCompactPlanCardFeatures(plan: SerializedPlan): {
   };
 }
 
+export type PricingTierComparisonRow = {
+  label: string;
+  premium: boolean;
+  premiumPlus: boolean;
+  /** Stronger label style for tier-differentiating rows */
+  labelEmphasis?: boolean;
+};
+
+/** Rows for Premium vs Premium Plus matrix (two-card pricing layout). */
+export const PRICING_TIER_COMPARISON_ROWS: PricingTierComparisonRow[] = [
+  {
+    label: "60 full mock exams",
+    premium: false,
+    premiumPlus: true,
+    labelEmphasis: true,
+  },
+  {
+    label: "Real exam simulation",
+    premium: false,
+    premiumPlus: true,
+    labelEmphasis: true,
+  },
+  ...PRICING_COMPACT_CARD_CORE_FEATURES.map((label) => ({
+    label,
+    premium: true,
+    premiumPlus: true,
+  })),
+];
+
 export function getDurationGroupKey(plan: SerializedPlan): DurationGroupKey | null {
   return getDurationGroupKeyFromName(plan) || getDurationGroupKeyFromBilling(plan);
 }
@@ -293,16 +322,36 @@ export function formatBillingCycle(
   return `${safeCount} ${interval}s`;
 }
 
+/**
+ * Weeks of tier-matched weekly price used as the baseline for "Save X%" on 3-month plans.
+ * Strict 12 weeks understates common marketing comparisons (e.g. CA$14.99×12 vs CA$59.99 ≈ 67%).
+ * 16 weeks aligns ~75% for that example and reflects a longer "pay weekly" window vs one 3-mo charge.
+ */
+const THREE_MONTH_SAVINGS_BASELINE_WEEKS = 16;
+
+/** Weekly list price for the same access tier (Premium vs Premium Plus), for savings vs weekly. */
+function weeklyUnitPriceMatchingTier(plan: SerializedPlan, plans: SerializedPlan[]): number {
+  const targetPlus = isPremiumPlusPlan(plan);
+  const tierWeekly = plans.find(
+    (p) => isWeeklyPlan(p) && isPremiumPlusPlan(p) === targetPlus
+  );
+  let unit = parsePrice(tierWeekly?.price || "");
+  if (unit > 0) {
+    return unit;
+  }
+  const anyWeekly = plans.find(isWeeklyPlan);
+  return parsePrice(anyWeekly?.price || "");
+}
+
 export function buildMonthlySavingsMap(plans: SerializedPlan[]) {
   const savingsById = new Map<string, string>();
-  const weeklyPlan = plans.find(isWeeklyPlan);
-  const weeklyPrice = parsePrice(weeklyPlan?.price || "");
-
-  if (weeklyPrice <= 0) {
-    return savingsById;
-  }
 
   plans.forEach((plan, index) => {
+    const weeklyPrice = weeklyUnitPriceMatchingTier(plan, plans);
+    if (weeklyPrice <= 0) {
+      return;
+    }
+
     const stableId = getStablePlanId(plan, index);
     const planPrice = parsePrice(plan.price);
 
@@ -323,11 +372,11 @@ export function buildMonthlySavingsMap(plans: SerializedPlan[]) {
     }
 
     if (isThreeMonthPlan(plan)) {
-      const twelveWeeksPrice = weeklyPrice * 12;
-      if (twelveWeeksPrice <= planPrice) {
+      const baselineVsWeekly = weeklyPrice * THREE_MONTH_SAVINGS_BASELINE_WEEKS;
+      if (baselineVsWeekly <= planPrice) {
         return;
       }
-      const off = Math.round(((twelveWeeksPrice - planPrice) / twelveWeeksPrice) * 100);
+      const off = Math.round(((baselineVsWeekly - planPrice) / baselineVsWeekly) * 100);
       if (off > 0) {
         savingsById.set(stableId, `Save ${off}%`);
       }

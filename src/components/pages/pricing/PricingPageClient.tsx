@@ -3,11 +3,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
-import { CheckCircle2, ChevronDown, ChevronUp, Sparkles, Star } from "lucide-react";
+import { Check, CheckCircle2, ChevronDown, ChevronUp, Sparkles, Star } from "lucide-react";
 import SvgBestValuePlan from "@/components/icons/BestValuePlan";
 import SvgDiamond from "@/components/icons/Diamond";
 import SvgFreePlan from "@/components/icons/FreePlan";
 import SvgPopularPlan from "@/components/icons/PopularPlan";
+import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
 import PlanCard from "@/components/pages/plans/PlanCard";
 import {
   comparisonRows,
@@ -16,11 +17,13 @@ import {
   pricingTestimonials,
 } from "@/components/pages/pricing/pricingContent";
 import { Box } from "@/components/ui/Box";
-import { useEngagementTracking } from "@/hooks/useTracking";
+import { useEcommerceTracking, useEngagementTracking } from "@/hooks/useTracking";
 import { useUserContext } from "@/hooks/useUserContext";
 import { durationDisplayOrder, durationMeta } from "@/lib/pricingCatalog";
 import {
   buildMonthlySavingsMap,
+  formatBillingCycle,
+  formatPlanCadPrice,
   getAccessLabel,
   getDurationGroupKey,
   getFooterNote,
@@ -28,6 +31,8 @@ import {
   getPricingCompactPlanCardFeatures,
   getStablePlanId,
   isPremiumPlusPlan,
+  parsePrice,
+  PRICING_TIER_COMPARISON_ROWS,
 } from "@/lib/pricing";
 import type { PricingAbLayout } from "@/lib/pricingAbTest";
 import type { DurationGroupKey, PricingFaq, SerializedPlan } from "@/types/pricing";
@@ -45,6 +50,217 @@ type GroupedPlanItem = {
   index: number;
   stableId: string;
 };
+
+function PricingStyleOneSubscribeForm({
+  item,
+  pricingCheckoutFields,
+  anchorId,
+}: {
+  item: GroupedPlanItem | null;
+  pricingCheckoutFields?: Record<string, string>;
+  anchorId?: string;
+}) {
+  const { user } = useUser();
+  const { selectItem, beginCheckout } = useEcommerceTracking();
+
+  if (!item?.plan.stripePriceId) {
+    return <span className="text-sm text-slate-400">Unavailable</span>;
+  }
+
+  const p = item.plan;
+  const checkoutAction = `/api/checkout_session?price=${p.stripePriceId}`;
+  const normalizedPrice = parsePrice(p.price);
+  const trackingItem = {
+    item_id: p.planTitle,
+    item_name: p.title,
+    price: normalizedPrice,
+    quantity: 1,
+    item_brand: "CELPIP Practice Test",
+    item_category: "Subscription",
+  };
+
+  const handleClick = () => {
+    selectItem([trackingItem], "plans_page", "Pricing Plans");
+    beginCheckout([trackingItem], "CAD", normalizedPrice, undefined, {
+      email: user?.primaryEmailAddress?.emailAddress?.trim().toLowerCase(),
+      address: {
+        first_name: user?.firstName || "",
+        last_name: user?.lastName || "",
+      },
+    });
+  };
+
+  return (
+    <form
+      id={anchorId}
+      action={checkoutAction}
+      method="POST"
+      className="mx-auto w-full max-w-[220px]"
+    >
+      <CheckoutAttributionFields />
+      {pricingCheckoutFields &&
+        Object.entries(pricingCheckoutFields).map(([name, value]) =>
+          value ? <input key={name} type="hidden" name={name} value={value} /> : null
+        )}
+      <button
+        type="submit"
+        onClick={handleClick}
+        className="flex h-10 w-full cursor-pointer items-center justify-center rounded-full bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] text-sm font-semibold text-white shadow-md hover:opacity-95"
+      >
+        Subscribe
+      </button>
+    </form>
+  );
+}
+
+function pricingStyleOnePriceCell(plan: SerializedPlan | null | undefined) {
+  if (!plan) {
+    return <span className="text-slate-400">—</span>;
+  }
+  const cycle = formatBillingCycle(plan.billingInterval, plan.billingIntervalCount);
+  const oldP = plan.oldPrice && Number.parseFloat(plan.oldPrice) > 0;
+  return (
+    <div className="flex flex-col items-center gap-0.5 py-1">
+      {oldP && (
+        <span className="text-xs font-medium text-slate-400 line-through">
+          CA$ {formatPlanCadPrice(plan.oldPrice)}
+        </span>
+      )}
+      <span className="text-lg font-bold text-blue-950">
+        CA$ {formatPlanCadPrice(plan.price)}
+      </span>
+      {cycle ? (
+        <span className="text-[11px] font-medium text-slate-500">per {cycle}</span>
+      ) : null}
+    </div>
+  );
+}
+
+function PricingStyleOnePlanTable({
+  section,
+  pricingCheckoutFields,
+  recommendedPlanId,
+  recommendedSectionKey,
+}: {
+  section: {
+    key: DurationGroupKey;
+    premium: GroupedPlanItem | null;
+    premiumPlus: GroupedPlanItem | null;
+  };
+  pricingCheckoutFields?: Record<string, string>;
+  recommendedPlanId: string | null;
+  recommendedSectionKey: DurationGroupKey | null | undefined;
+}) {
+  const prem = section.premium;
+  const plus = section.premiumPlus;
+
+  const recommendedAnchor = (item: GroupedPlanItem | null) =>
+    item &&
+    recommendedPlanId &&
+    item.stableId === recommendedPlanId &&
+    section.key === recommendedSectionKey
+      ? "recommended-plan"
+      : undefined;
+
+  return (
+    <Box className="w-full min-w-0 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+      <table className="w-full min-w-[300px] border-collapse text-left text-[11px] leading-snug sm:text-[12px]">
+        <thead>
+          <tr className="border-b border-slate-200 bg-slate-50">
+            <th
+              scope="col"
+              className="px-2 py-2.5 font-semibold text-slate-700 sm:px-3"
+            >
+              Feature
+            </th>
+            <th
+              scope="col"
+              className="w-[26%] px-1 py-2.5 text-center font-semibold text-slate-700 sm:px-3"
+            >
+              Premium
+            </th>
+            <th
+              scope="col"
+              className="w-[26%] px-1 py-2.5 text-center font-semibold text-slate-700 sm:px-3"
+            >
+              Premium Plus
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {PRICING_TIER_COMPARISON_ROWS.map((row) => (
+            <tr
+              key={row.label}
+              className="border-b border-slate-100 odd:bg-white even:bg-slate-50/60"
+            >
+              <td
+                className={`px-2 py-1.5 sm:px-3 sm:py-2 ${
+                  row.labelEmphasis ? "font-semibold text-slate-900" : "text-slate-700"
+                }`}
+              >
+                {row.label}
+              </td>
+              <td className="px-1 py-1.5 text-center sm:px-3 sm:py-2">
+                {row.premium ? (
+                  <Check
+                    className="mx-auto size-3.5 text-emerald-600 sm:size-4"
+                    strokeWidth={2.5}
+                    aria-label="Included in Premium"
+                  />
+                ) : (
+                  <span className="text-slate-300" aria-hidden>
+                    —
+                  </span>
+                )}
+              </td>
+              <td className="px-1 py-1.5 text-center sm:px-3 sm:py-2">
+                {row.premiumPlus ? (
+                  <Check
+                    className="mx-auto size-3.5 text-emerald-600 sm:size-4"
+                    strokeWidth={2.5}
+                    aria-label="Included in Premium Plus"
+                  />
+                ) : (
+                  <span className="text-slate-300" aria-hidden>
+                    —
+                  </span>
+                )}
+              </td>
+            </tr>
+          ))}
+          <tr className="border-t-2 border-slate-200 bg-slate-50/90">
+            <td className="px-2 py-2.5 font-semibold text-slate-800 sm:px-3">Price</td>
+            <td className="px-1 py-2 text-center sm:px-3">
+              {pricingStyleOnePriceCell(prem?.plan)}
+            </td>
+            <td className="px-1 py-2 text-center sm:px-3">
+              {pricingStyleOnePriceCell(plus?.plan)}
+            </td>
+          </tr>
+          <tr className="border-t border-slate-100 bg-white">
+            <td className="px-2 py-3 font-semibold text-slate-800 sm:px-3">
+              Subscribe
+            </td>
+            <td className="px-1 py-3 text-center align-top sm:px-3">
+              <PricingStyleOneSubscribeForm
+                item={prem}
+                pricingCheckoutFields={pricingCheckoutFields}
+                anchorId={recommendedAnchor(prem)}
+              />
+            </td>
+            <td className="px-1 py-3 text-center align-top sm:px-3">
+              <PricingStyleOneSubscribeForm
+                item={plus}
+                pricingCheckoutFields={pricingCheckoutFields}
+                anchorId={recommendedAnchor(plus)}
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </Box>
+  );
+}
 
 function getIconComponent(iconType?: string) {
   switch (iconType) {
@@ -499,6 +715,60 @@ export default function PricingPageClient({
 
   const stickyCtaEntry = personalizedRecommendation ? recommendedPlanEntry : bestValuePlanEntry;
 
+  const defaultStyleOneDurationKey = useMemo((): DurationGroupKey | null => {
+    if (groupedPlans.length === 0) {
+      return null;
+    }
+    const rec = personalizedRecommendation?.planType;
+    if (rec && groupedPlans.some((s) => s.key === rec)) {
+      return rec;
+    }
+    if (groupedPlans.some((s) => s.key === "threeMonth")) {
+      return "threeMonth";
+    }
+    return groupedPlans[0]!.key;
+  }, [groupedPlans, personalizedRecommendation]);
+
+  const [styleOneDurationOverride, setStyleOneDurationOverride] =
+    useState<DurationGroupKey | null>(null);
+
+  useEffect(() => {
+    if (
+      styleOneDurationOverride &&
+      !groupedPlans.some((s) => s.key === styleOneDurationOverride)
+    ) {
+      setStyleOneDurationOverride(null);
+    }
+  }, [groupedPlans, styleOneDurationOverride]);
+
+  const styleOneSelectedDurationKey =
+    (styleOneDurationOverride &&
+    groupedPlans.some((s) => s.key === styleOneDurationOverride)
+      ? styleOneDurationOverride
+      : null) ??
+    defaultStyleOneDurationKey;
+
+  const activeStyleOneSection =
+    (styleOneSelectedDurationKey &&
+      groupedPlans.find((s) => s.key === styleOneSelectedDurationKey)) ||
+    groupedPlans[0] ||
+    null;
+
+  const stickyCtaDurationKey = useMemo(() => {
+    if (!stickyCtaEntry) {
+      return null;
+    }
+    for (const s of groupedPlans) {
+      if (
+        s.premium?.stableId === stickyCtaEntry.stableId ||
+        s.premiumPlus?.stableId === stickyCtaEntry.stableId
+      ) {
+        return s.key;
+      }
+    }
+    return null;
+  }, [groupedPlans, stickyCtaEntry]);
+
   return (
     <Box className="flex-1 overflow-y-auto bg-[linear-gradient(180deg,_#F6F9FF_0%,_#FFFFFF_35%,_#F9FBFF_100%)] p-4 md:p-8 lg:p-10">
       <Box className="mx-auto w-full max-w-6xl">
@@ -551,7 +821,16 @@ export default function PricingPageClient({
                 </p>
               </Box>
               <a
-                href={`#duration-${recommendedSection?.key || "threeMonth"}`}
+                href={
+                  pricingAbLayout === "two_card"
+                    ? "#pricing-style-one"
+                    : `#duration-${recommendedSection?.key || "threeMonth"}`
+                }
+                onClick={
+                  pricingAbLayout === "two_card" && recommendedSection
+                    ? () => setStyleOneDurationOverride(recommendedSection.key)
+                    : undefined
+                }
                 className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-blue-950 px-5 text-sm font-semibold text-white"
               >
                 View recommended plan
@@ -572,6 +851,87 @@ export default function PricingPageClient({
           </Box>
         )}
 
+        {pricingAbLayout === "two_card" && activeStyleOneSection ? (
+          <Box
+            id="pricing-style-one"
+            className={`mt-8 rounded-[28px] border bg-white p-5 shadow-sm md:p-8 ${
+              activeStyleOneSection.key === "threeMonth"
+                ? "border-amber-200 shadow-[0_16px_40px_rgba(247,157,101,0.10)]"
+                : recommendedSection?.key === activeStyleOneSection.key
+                  ? "border-blue-200 shadow-[0_16px_40px_rgba(117,156,255,0.10)]"
+                  : "border-slate-200"
+            }`}
+          >
+            <Box className="flex min-w-0 flex-col">
+              <p
+                id="pricing-style-one-duration-label"
+                className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500"
+              >
+                Billing period
+              </p>
+              <Box
+                className="mt-2 flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-slate-100 p-1 sm:flex-nowrap sm:gap-0.5"
+                role="tablist"
+                aria-labelledby="pricing-style-one-duration-label"
+              >
+                {durationDisplayOrder
+                  .filter((key) => groupedPlans.some((s) => s.key === key))
+                  .map((key) => {
+                    const sec = groupedPlans.find((s) => s.key === key)!;
+                    const selected =
+                      key === (styleOneSelectedDurationKey ?? activeStyleOneSection.key);
+                    const tabSavingsBadge = getSectionSavingsBadge(sec, monthlySavingsById);
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        role="tab"
+                        aria-selected={selected}
+                        id={`pricing-duration-tab-${key}`}
+                        onClick={() => setStyleOneDurationOverride(key)}
+                        className={`min-w-0 flex-1 rounded-lg px-2.5 py-2 text-center transition-all sm:px-3 sm:py-2.5 ${
+                          selected
+                            ? key === "threeMonth"
+                              ? "bg-white font-semibold text-amber-950 shadow-sm ring-1 ring-amber-200/90"
+                              : "bg-white font-semibold text-blue-950 shadow-sm ring-1 ring-slate-200/80"
+                            : "text-slate-600 hover:bg-white/70 hover:text-slate-900"
+                        }`}
+                      >
+                        <span className="block text-sm font-semibold leading-tight">
+                          {sec.title}
+                        </span>
+                        <span className="mt-0.5 block text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                          {sec.eyebrow}
+                        </span>
+                        {tabSavingsBadge ? (
+                          <span
+                            className={`mt-1.5 inline-flex rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] sm:px-2.5 sm:text-[10px] ${
+                              selected
+                                ? "bg-emerald-50 text-emerald-700"
+                                : "bg-emerald-50/70 text-emerald-700/90"
+                            }`}
+                          >
+                            {tabSavingsBadge}
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+              </Box>
+            </Box>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              {activeStyleOneSection.summary}
+            </p>
+            <Box className="mt-6">
+              <PricingStyleOnePlanTable
+                section={activeStyleOneSection}
+                pricingCheckoutFields={pricingCheckoutFields}
+                recommendedPlanId={recommendedPlanId}
+                recommendedSectionKey={recommendedSection?.key}
+              />
+            </Box>
+          </Box>
+        ) : (
         <Box className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-flow-col lg:grid-cols-none lg:auto-cols-fr lg:grid-rows-1 lg:items-stretch">
           {groupedPlans.map((section) => {
             const visiblePlanItems = [section.premium, section.premiumPlus].filter(Boolean) as GroupedPlanItem[];
@@ -591,7 +951,7 @@ export default function PricingPageClient({
               >
                 <Box className="shrink-0">
                   <Box className="flex flex-col gap-2 sm:gap-3">
-                    <Box className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 gap-y-2 sm:gap-x-3">
+                    <Box className="grid grid-cols-[minmax(min-content,1fr)_auto] items-start gap-x-2 gap-y-2 sm:gap-x-3">
                       <Box className="min-w-0">
                         <p
                           className={`text-[11px] font-semibold uppercase tracking-[0.08em] ${
@@ -600,7 +960,7 @@ export default function PricingPageClient({
                         >
                           {section.eyebrow}
                         </p>
-                        <h3 className="mt-1 text-2xl font-semibold text-blue-950">
+                        <h3 className="mt-1 whitespace-nowrap text-2xl font-semibold text-blue-950">
                           {section.title}
                         </h3>
                       </Box>
@@ -721,22 +1081,22 @@ export default function PricingPageClient({
                   }
 
                   return (
-                    <Box
-                      className={`mt-3 grid h-full min-h-0 w-full min-w-0 flex-1 auto-rows-fr gap-1 ${
-                        visiblePlanItems.length > 1 ? "sm:grid-cols-2" : "grid-cols-1"
-                      }`}
-                    >
-                      {visiblePlanItems.map((item) => (
-                        <Box
-                          key={item.stableId}
-                          className="flex h-full min-h-[220px] min-w-0 flex-col"
-                          id={
-                            recommendedPlanId === item.stableId ? "recommended-plan" : undefined
-                          }
-                        >
-                          {planCardForItem(item)}
-                        </Box>
-                      ))}
+                    <Box className="mt-3 flex min-h-0 w-full min-w-0 flex-1 flex-col gap-3">
+                      <Box className="grid h-full min-h-0 w-full min-w-0 flex-1 auto-rows-fr grid-cols-1 gap-1">
+                        {visiblePlanItems.map((item) => (
+                          <Box
+                            key={item.stableId}
+                            className="flex h-full min-h-[220px] min-w-0 flex-col"
+                            id={
+                              recommendedPlanId === item.stableId
+                                ? "recommended-plan"
+                                : undefined
+                            }
+                          >
+                            {planCardForItem(item)}
+                          </Box>
+                        ))}
+                      </Box>
                     </Box>
                   );
                 })()}
@@ -744,6 +1104,7 @@ export default function PricingPageClient({
             );
           })}
         </Box>
+        )}
 
         <Box
           id="compare-access"
@@ -897,7 +1258,18 @@ export default function PricingPageClient({
               </p>
             </Box>
             <a
-              href={personalizedRecommendation ? "#recommended-plan" : `#duration-${recommendedSection?.key || "threeMonth"}`}
+              href={
+                pricingAbLayout === "two_card"
+                  ? "#pricing-style-one"
+                  : personalizedRecommendation
+                    ? "#recommended-plan"
+                    : `#duration-${recommendedSection?.key || "threeMonth"}`
+              }
+              onClick={
+                pricingAbLayout === "two_card" && stickyCtaDurationKey
+                  ? () => setStyleOneDurationOverride(stickyCtaDurationKey)
+                  : undefined
+              }
               className="inline-flex shrink-0 items-center justify-center rounded-full bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] px-4 py-2 text-sm font-semibold text-white shadow-md"
             >
               <Sparkles className="mr-2 h-4 w-4" />
