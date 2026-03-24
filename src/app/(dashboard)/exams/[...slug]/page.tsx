@@ -6,21 +6,21 @@ import { PracticeDtoSchema } from "@/models/practice.model";
 import { ExamRepository } from "@/repositories/exams.repo";
 import { TExamSchemaDto } from "@/models/exam.model";
 import dynamic from "next/dynamic";
+import { Box, Link, Typography } from "@mui/material";
 
-const ListeningExamView = dynamic(() => import("@/components/dashboard-app/exam-parts/ListeningExamView"), {
-  loading: () => <p>Loading Listening Exam...</p>,
-});
-const ReadingExamView = dynamic(() => import("@/components/dashboard-app/exam-parts/ReadingExamView"), {
-  loading: () => <p>Loading Reading Exam...</p>,
-});
-const WritingExamView = dynamic(() => import("@/components/dashboard-app/exam-parts/WritingExamView"), {
-  loading: () => <p>Loading Writing Exam...</p>,
-});
-const SpeakingExamView = dynamic(() => import("@/components/dashboard-app/exam-parts/SpeakingExamView"), {
-  loading: () => <p>Loading Speaking Exam...</p>,
+const MockExamView = dynamic(() => import("@/components/dashboard-app/exam-parts/MockExamView"), {
+  loading: () => (
+    <Typography sx={{ py: 4, textAlign: "center", color: "#526071" }}>
+      Loading Exam...
+    </Typography>
+  ),
 });
 const ResultExamView = dynamic(() => import("@/components/dashboard-app/exam-parts/ResultExamView"), {
-  loading: () => <p>Loading Results...</p>,
+  loading: () => (
+    <Typography sx={{ py: 4, textAlign: "center", color: "#526071" }}>
+      Loading Results...
+    </Typography>
+  ),
 });
 import { ObjectId } from "mongodb";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
@@ -101,16 +101,32 @@ const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
     ];
 
     return (
-      <main className=" bg-[#F2F6FF] min-h-screen flex w-full justify-center  max-w-[1280px] mx-auto">
-        <div className=" mx-auto w-full flex flex-col rounded-lg">
+      <Box
+        component="main"
+        sx={{
+          width: "100%",
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          backgroundColor: "#F2F6FF",
+        }}
+      >
+        <Box
+          sx={{
+            width: "100%",
+            maxWidth: "1280px",
+            px: { xs: 2, md: 3 },
+            py: { xs: 3, md: 4 },
+          }}
+        >
           <ResultExamView
             exams={exam}
             examParts={examParts.items}
             answers={answers.items}
             speakingAndWritingAnswers={speakingAndWritingAnswers}
           />
-        </div>
-      </main>
+        </Box>
+      </Box>
     );
   }
 
@@ -121,17 +137,70 @@ const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
     );
   if (!part) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <h1 className="text-2xl font-bold text-red-600 mb-4">Exam Part Not Found</h1>
-        <p className="text-gray-700 mb-2">Could not find exam part for:</p>
-        <ul className="text-sm text-gray-600 list-disc mb-6">
-          <li>Exam ID: {examId}</li>
-          <li>Part Number: {partNumber}</li>
-        </ul>
-        <a href="/exam-overview" className="text-blue-600 hover:underline">
+      <Box
+        component="main"
+        sx={{
+          minHeight: "100vh",
+          px: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#F2F6FF",
+        }}
+      >
+        <Box
+          sx={{
+            width: "100%",
+            maxWidth: "540px",
+            p: { xs: 3, md: 4 },
+            borderRadius: "28px",
+            border: "1px solid #E2EAF6",
+            backgroundColor: "#FFFFFF",
+            boxShadow: "0 18px 40px rgba(55, 70, 92, 0.08)",
+            textAlign: "center",
+          }}
+        >
+          <Typography
+            component="h1"
+            sx={{
+              mb: 1.5,
+              fontSize: { xs: "1.6rem", md: "2rem" },
+              fontWeight: 800,
+              color: "#D14343",
+            }}
+          >
+            Exam Part Not Found
+          </Typography>
+          <Typography sx={{ mb: 1, color: "#526071" }}>
+            Could not find exam part for:
+          </Typography>
+          <Box
+            component="ul"
+            sx={{
+              mb: 3,
+              pl: 3,
+              textAlign: "left",
+              color: "#6B7888",
+              "& li": {
+                mb: 0.75,
+              },
+            }}
+          >
+            <li>Exam ID: {examId}</li>
+            <li>Part Number: {partNumber}</li>
+          </Box>
+          <Link
+            href="/exam-overview"
+            underline="hover"
+            sx={{
+              fontWeight: 700,
+              color: "#316BFF",
+            }}
+          >
           Return to Exam Overview
-        </a>
-      </div>
+          </Link>
+        </Box>
+      </Box>
     );
   }
   const practice = PracticeDtoSchema.parse({
@@ -140,47 +209,34 @@ const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
   });
 
   return (
-    <main className="max-w-[1200px] w-full h-full mx-auto">
-      <div className=" w-full pb-[24px] px-[16px] screen744:!px-0 flex h-full flex-col rounded-lg">
-        {practice.type == "LISTENING" && (
-          <ListeningExamView
-            examId={examId}
-            partNumber={partNumber}
-            practice={practice}
-            partId={parseInt(partNumber)}
-            examName={exam?.name}
-            examNumber={exam?.order}
-          />
-        )}
-        {practice.type == "READING" && (
-          <ReadingExamView
-            practice={practice}
-            partNumber={partNumber}
-            partId={parseInt(partNumber)}
-            examId={examId}
-            examName={exam?.name}
-            examNumber={exam?.order}
-          />
-        )}
-        {practice.type == "WRITING" && (
-          <WritingExamView
-            practice={practice}
-            partId={parseInt(partNumber)}
-            partNumber={partNumber}
-            examId={examId}
-            examName={exam?.name}
-            examNumber={exam?.order}
-          />
-        )}
-        {practice.type == "SPEAKING" && (
-          <SpeakingExamView
-            practice={practice}
-            partId={parseInt(partNumber)}
-            examNumber={exam?.order}
-          />
-        )}
-      </div>
-    </main>
+    <Box
+      component="main"
+      sx={{
+        width: "100%",
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        backgroundColor: "#F2F6FF",
+      }}
+    >
+      <Box
+        sx={{
+          width: "100%",
+          maxWidth: "1280px",
+          px: { xs: 2, md: 3 },
+          py: { xs: 3, md: 4 },
+        }}
+      >
+        <MockExamView
+          practice={practice}
+          partId={parseInt(partNumber)}
+          examId={examId}
+          partNumber={partNumber}
+          examName={exam?.name}
+          examNumber={exam?.order}
+        />
+      </Box>
+    </Box>
   );
 };
 

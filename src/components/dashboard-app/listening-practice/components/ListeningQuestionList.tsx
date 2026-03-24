@@ -1,9 +1,11 @@
 import QuestionOption from "./QuestionOption";
 import { TQuestion } from "@/models/question.model";
-import AudioPlayer from "./AudioPlayer";
 import QuestionPlayer from "./QuestionPlayer";
 import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { Box, Button, Collapse, Paper, Stack, Typography } from "@mui/material";
+
+const officialFontFamily =
+  '"Fira Sans", "Trebuchet MS", "Helvetica Neue", Helvetica, Arial, sans-serif';
 
 interface ListeningQuestionListProps {
   question: TQuestion;
@@ -11,6 +13,7 @@ interface ListeningQuestionListProps {
   selectedAnswers: Record<string, string>;
   questionIndex: number;
   totalQuestions: number;
+  playerVariant?: "default" | "official";
 }
 
 const ListeningQuestionList = ({
@@ -19,63 +22,215 @@ const ListeningQuestionList = ({
   selectedAnswers,
   questionIndex,
   totalQuestions,
+  playerVariant = "default",
 }: ListeningQuestionListProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  return (
-    <div className="grid grid-cols-1 screen1280:!grid-cols-2 shrink-0 w-full h-full grow divide-y screen1280:!divide-y-0 screen1280:!divide-x divide-slate-300">
-      <div className="p-6  flex screen1280:!block flex-col items-center">
-        <p className="text-[18px] text-[#212E42] font-semibold ">
-          Listen to the question.
-        </p>
-        <p className="text-[16px] mt-[10px] text-[#37465C] font-regular">
-          You will hear it only once.
-        </p>
-        {question && (
-          <QuestionPlayer
-            audioUrl={question.audioUrl}
-            maxPlays={2}
-            className="mb-4"
-          />
-        )}
-        <div className="flex w-full items-center screen1280:!items-start  flex-col mt-6 max-w-[450px] mx-auto">
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className={`${
-              isOpen ? "!bg-[#F2F6FF] " : " bg-white "
-            } w-full border flex justify-center border-[#76808F] items-center rounded-[24px] borderitems-center cursor-pointer max-w-[153px] h-[40px] text-[14px] font-medium text-[#212E42]`}
-          >
-            {isOpen ? "Hide Transcript" : "Show Transcript"}
-          </button>
+  const isOfficialMode = playerVariant === "official";
 
-          {isOpen && (
-            <div className="w-full mx-auto mt-[16px] border border-[#D5D6D8] rounded-[12px]">
-              <div className="">
-                <div className="max-w-[450px] flex flex-col gap-[16px] p-[16px]">
-                  {question.question}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="px-[5px]">
-          <p className="mt-[39px] px-[16px] py-[8px]  text-[#F4845F] font-medium leading-[24px]  w-full bg-[#FFF7EE] rounded-[8px]">
-            In the official test, you can't rewind or replay the audio, and
-            there's no transcript.
-          </p>
-        </div>
-      </div>
-      <div className=" p-6  h-full shrink-0">
-        <div
-          key={question.id}
-          className="border-b pb-6 last:border-b-0 last:pb-0"
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: isOfficialMode ? "row" : { xs: "column", xl: "row" },
+        width: "100%",
+        minHeight: isOfficialMode ? "559px" : "100%",
+      }}
+    >
+      <Box
+        id={isOfficialMode ? "panelLeft" : undefined}
+        className={isOfficialMode ? "graybg" : undefined}
+        sx={{
+          width: isOfficialMode ? "50%" : { xs: "100%", xl: "46%" },
+          flex: isOfficialMode ? "0 0 50%" : undefined,
+          minHeight: isOfficialMode ? "559px" : undefined,
+          p: { xs: 3, md: 4 },
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: isOfficialMode ? "flex-start" : undefined,
+          alignItems: isOfficialMode ? "flex-start" : { xs: "center", xl: "flex-start" },
+          borderBottom: {
+            xs:
+              isOfficialMode ? "none" : "1px solid #E2EAF6",
+            xl: "none",
+          },
+          borderRight: {
+            xl: isOfficialMode ? "1px solid #D7DCE4" : "1px solid #E2EAF6",
+          },
+          background:
+            isOfficialMode
+              ? "#F1F3F6"
+              : "linear-gradient(180deg, rgba(247, 249, 252, 0.72), rgba(255, 255, 255, 0.96))",
+        }}
+      >
+        <Typography
+          component="p"
+          sx={{
+            fontFamily: isOfficialMode ? officialFontFamily : undefined,
+            fontSize:
+              isOfficialMode
+                ? "16px"
+                : { xs: "1.15rem", md: "1.3rem" },
+            lineHeight: isOfficialMode ? "20px" : undefined,
+            fontWeight: isOfficialMode ? 700 : 800,
+            color: isOfficialMode ? "#516D91" : "#212E42",
+            textAlign:
+              isOfficialMode ? "left" : { xs: "center", xl: "left" },
+          }}
         >
-          <p className="text-[14px] font-medium text-[#37465C]">
+          {isOfficialMode
+            ? "Listen to the question. You will hear it only once."
+            : "Listen to the question."}
+        </Typography>
+        {!isOfficialMode && (
+          <Typography
+            sx={{
+              mt: 1,
+              fontSize: "1rem",
+              color: "#526071",
+              textAlign: { xs: "center", xl: "left" },
+            }}
+          >
+            You will hear it only once.
+          </Typography>
+        )}
+        {question?.audioUrl && (
+          <Box sx={{ mt: isOfficialMode ? 3 : 0, mb: 1, width: isOfficialMode ? "100%" : undefined }}>
+            <QuestionPlayer audioUrl={question.audioUrl} variant={playerVariant} />
+          </Box>
+        )}
+
+        {!isOfficialMode && (
+          <>
+            <Stack
+              spacing={2}
+              sx={{
+                width: "100%",
+                maxWidth: "450px",
+                mt: 3,
+                alignItems: { xs: "center", xl: "flex-start" },
+              }}
+            >
+              <Button
+                onClick={() => setIsOpen(!isOpen)}
+                variant="outlined"
+                sx={{
+                  minWidth: "164px",
+                  minHeight: "44px",
+                  px: 2.25,
+                  borderRadius: "999px",
+                  textTransform: "none",
+                  fontWeight: 700,
+                  color: "#212E42",
+                  borderColor: "#76808F",
+                  backgroundColor: isOpen ? "#F2F6FF" : "#FFFFFF",
+                  "&:hover": {
+                    borderColor: "#5E6878",
+                    backgroundColor: "#F2F6FF",
+                  },
+                }}
+              >
+                {isOpen ? "Hide Transcript" : "Show Transcript"}
+              </Button>
+
+              <Collapse in={isOpen} sx={{ width: "100%" }}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    borderRadius: "18px",
+                    border: "1px solid #D5DDE8",
+                    backgroundColor: "#FFFFFF",
+                    p: 2,
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontSize: "0.96rem",
+                      lineHeight: 1.8,
+                      color: "#243244",
+                    }}
+                  >
+                    {question.question}
+                  </Typography>
+                </Paper>
+              </Collapse>
+            </Stack>
+
+            <Paper
+              elevation={0}
+              sx={{
+                mt: 4,
+                width: "100%",
+                maxWidth: "520px",
+                px: 2,
+                py: 1.5,
+                borderRadius: "16px",
+                backgroundColor: "#FFF7EE",
+                border: "1px solid #FFE2C4",
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: "0.95rem",
+                  lineHeight: 1.7,
+                  fontWeight: 600,
+                  color: "#F4845F",
+                }}
+              >
+                In the official test, you can&apos;t rewind or replay the audio,
+                and there&apos;s no transcript.
+              </Typography>
+            </Paper>
+          </>
+        )}
+      </Box>
+
+      <Box
+        id={isOfficialMode ? "panelRight" : undefined}
+        className={isOfficialMode ? "bluebg" : undefined}
+        sx={{
+          flex: isOfficialMode ? "0 0 50%" : 1,
+          width: isOfficialMode ? "50%" : undefined,
+          minHeight: isOfficialMode ? "559px" : undefined,
+          p: { xs: 3, md: 4 },
+          backgroundColor: isOfficialMode ? "#EAF2FF" : undefined,
+        }}
+      >
+        <Stack spacing={2.25} key={question.id}>
+          <Typography
+            sx={{
+              fontFamily: isOfficialMode ? officialFontFamily : undefined,
+              fontSize: isOfficialMode ? "12px" : "0.92rem",
+              lineHeight: isOfficialMode ? "19px" : undefined,
+              fontWeight: isOfficialMode ? 400 : 600,
+              color: isOfficialMode ? "#5E7088" : "#526071",
+            }}
+          >
             Question {questionIndex} of {totalQuestions}
-          </p>
-          <p className="text-[14px] font-semibold text-[#212E42] mt-[8px]">
-            Choose the best answer to the question.
-          </p>
-          <div className="flex flex-col mt-[16px] gap-[8px]">
+          </Typography>
+          <Typography
+            sx={{
+              fontFamily: isOfficialMode ? officialFontFamily : undefined,
+              fontSize:
+                isOfficialMode
+                  ? "16px"
+                  : { xs: "1.05rem", md: "1.15rem" },
+              lineHeight: isOfficialMode ? "20px" : undefined,
+              fontWeight: isOfficialMode ? 700 : 800,
+              color: isOfficialMode ? "#516D91" : "#212E42",
+            }}
+          >
+            {isOfficialMode
+              ? "Choose the best answer to each question."
+              : "Choose the best answer to the question."}
+          </Typography>
+          <Stack
+            component={isOfficialMode ? "ol" : "div"}
+            spacing={isOfficialMode ? 0 : 1.25}
+            sx={{
+              m: 0,
+              pl: isOfficialMode ? "18px" : 0,
+            }}
+          >
             {question.choices.map((option, index) => (
               <QuestionOption
                 key={option.id}
@@ -85,12 +240,14 @@ const ListeningQuestionList = ({
                 showResults={false}
                 isCorrect={false}
                 onClick={() => onAnswerSelect(questionIndex, option.id)}
+                isLastItem={index === question.choices.length - 1}
+                variant={isOfficialMode ? "official" : "default"}
               />
             ))}
-          </div>
-        </div>
-      </div>
-    </div>
+          </Stack>
+        </Stack>
+      </Box>
+    </Box>
   );
 };
 

@@ -6,7 +6,7 @@ import { ArrowLeft, CircleAlert, LoaderCircle } from "lucide-react";
 import { TPracticeDto } from "@/models/practice.model";
 import useStore from "@/store";
 
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 
@@ -25,20 +25,48 @@ import TrophyModal from "@/components/modal/TrophyModal";
 import { PRACTICE_PARTS } from "@/constants";
 import ExamHeader from "./components/ExamHeader";
 import { hasPremiumPlusAccess } from "@/lib/subscriptionAccess";
+import SpeakingOfficialView from "./components/official/SpeakingOfficialView";
+import {
+  buildOfficialExamTitle,
+  OfficialStatusText,
+} from "./components/official/shared";
+import {
+  useExamViewMode,
+  type MockExamViewMode,
+} from "./components/useExamViewMode";
+import { Box, Typography } from "@mui/material";
+import {
+  createMockPracticeSections,
+  getMockExamPartsForSection,
+  type PracticeSectionItem,
+} from "./mockExamShared";
 
 interface SpeakingExamViewProps {
   practice: TPracticeDto;
   partId: number;
+  examId?: string;
+  examName?: string;
+  partNumber?: string;
   examNumber?: number;
+  hideHeader?: boolean;
+  viewMode?: MockExamViewMode;
+  setViewMode?: (mode: MockExamViewMode) => void;
+  practiceSections?: PracticeSectionItem[];
+  getPartsForSection?: (route: string) => { title: string; index: number }[];
 }
 
 const SpeakingExamView = ({
   practice,
   partId,
+  examName,
   examNumber,
+  hideHeader = false,
+  viewMode,
+  setViewMode,
+  practiceSections,
+  getPartsForSection,
 }: SpeakingExamViewProps) => {
   const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const section = searchParams.get("section");
   const [sendingResult] = useState(false);
@@ -68,6 +96,14 @@ const SpeakingExamView = ({
   const [isSubmit, setIsSubmit] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [audioURL, setAudioURL] = useState<string | null>(null);
+  const localExamViewMode = useExamViewMode();
+  const resolvedViewMode = viewMode ?? localExamViewMode.viewMode;
+  const isOfficialMode = resolvedViewMode === "official";
+  const resolvedSetViewMode = setViewMode ?? localExamViewMode.setViewMode;
+  const resolvedPracticeSections =
+    practiceSections ?? createMockPracticeSections();
+  const resolvedGetPartsForSection =
+    getPartsForSection ?? getMockExamPartsForSection;
   useEffect(() => {
     if (audioURL) {
       console.log("Audio recorded:", audioURL);
@@ -82,7 +118,7 @@ const SpeakingExamView = ({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const hasStartedRecordingRef = useRef(false);
   const audioChunks = useRef<Blob[]>([]);
-  const shouldShowPractice =
+  const shouldShowPractice: boolean =
     practice.isFree ||
     (!practice.isFree &&
       hasPremiumPlusAccess(
@@ -334,13 +370,6 @@ const SpeakingExamView = ({
   }, [practice.taskId, partId, user]);
 
   const [menuShowModal, setMenuShowModal] = useState(false);
-  interface PracticeSection {
-    title: string;
-    color: string;
-    icon: React.ReactNode;
-    route: string;
-    bgColor: string;
-  }
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -355,51 +384,90 @@ const SpeakingExamView = ({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-  const practiceSections: PracticeSection[] = [
-    {
-      title: "Listening",
-      color: "text-[#316BFF]",
-      icon: <SvgListeningPart />,
-      bgColor: "bg-[#D1DEFF]",
-      route: "listening",
-    },
-    {
-      title: "Reading",
-      color: "text-[#F27059]",
-      bgColor: "bg-[#FFE2E8]",
-      icon: <SvgReadingPart />,
-      route: "reading",
-    },
-    {
-      title: "Writing",
-      color: "text-[#0DAA94]",
-      icon: <SvgWritingPart />,
-      bgColor: "bg-[#F0FFFD]",
-      route: "writing",
-    },
+  const buildFinalQuery = () => {
+    const params = new URLSearchParams();
+    const attemptId = searchParams.get("attemptId");
 
-    {
-      title: "Speaking",
-      color: "text-[#EE4266]",
-      icon: <SvgSpeakingPart />,
-      bgColor: "bg-[#FFEBD6]",
+    if (attemptId) params.set("attemptId", attemptId);
+    if (section) params.set("section", section);
 
-      route: "speaking",
-    },
-  ];
-  const sectionRanges: Record<string, { start: number; end: number }> = {
-    listening: { start: 0, end: 6 },
-    reading: { start: 6, end: 10 },
-    writing: { start: 10, end: 12 },
-    speaking: { start: 12, end: 20 },
+    const query = params.toString();
+    return query ? `?${query}` : "";
   };
 
-  const getPartsForSection = (route: string) => {
-    const range = sectionRanges[route];
-    if (!range) return [] as { title: string; index: number }[];
-    const slice = PRACTICE_PARTS.slice(range.start, range.end);
-    return slice.map((title, i) => ({ title, index: range.start + i + 1 }));
+  const resetSpeakingTimers = () => {
+    setTime(partId == 17 || partId == 18 ? 60 : 30);
   };
+
+  const handleBack = () => {
+    const finalQuery = buildFinalQuery();
+
+    if (isRecording) {
+      void cancelRecording();
+    }
+
+    if (page == "description" && passageIndex == 0) {
+      if (partId === 1 || (section === "speaking" && partId === 13)) {
+        router.push("/exam-overview");
+      } else {
+        router.push(
+          `/exams/exam_${practice.taskId}/part${partId - 1}${finalQuery}`
+        );
+      }
+    } else if (page == "question" && partId === 13) {
+      setPage("description");
+    } else if (page == "question") {
+      router.push(
+        `/exams/exam_${practice.taskId}/part${partId - 1}${finalQuery}`
+      );
+    } else if (page == "evaluateResult") {
+      setPage("question");
+    }
+
+    resetSpeakingTimers();
+  };
+
+  const handleHeaderNext = () => {
+    const finalQuery = buildFinalQuery();
+
+    if (isRecording) {
+      void cancelRecording();
+    }
+
+    if (page == "description") {
+      setPage("question");
+      resetSpeakingTimers();
+    } else if (page == "question") {
+      if (partId == 20) {
+        setPage("evaluateResult");
+        setTime(10);
+      } else {
+        router.push(
+          `/exams/exam_${practice.taskId}/part${partId + 1}${finalQuery}`
+        );
+        resetSpeakingTimers();
+      }
+    } else if (page == "evaluateResult") {
+      router.push(
+        `/exams/exam_${practice.taskId}/results?attemptId=${searchParams.get("attemptId")}`
+      );
+      resetSpeakingTimers();
+    }
+  };
+
+  const officialFrameTitle = buildOfficialExamTitle(
+    examName ?? practice.name,
+    `Practice Test ${examNumber ?? ""}`.trim() || "Practice Test",
+    "Speaking Test"
+  );
+
+  const officialStatusSlot =
+    page === "question" ? (
+      <OfficialStatusText>
+        Preparation: {partId == 17 || partId == 18 ? 60 : 30} seconds Recording:{" "}
+        {partId == 18 || partId == 19 ? 90 : 60} seconds
+      </OfficialStatusText>
+    ) : null;
 
   return (
     <div className="h-full mx-auto w-full  transition-all duration-300 flex gap-5">
@@ -412,9 +480,43 @@ const SpeakingExamView = ({
       )}
 
       <div className="flex flex-col w-full">
-        <ExamHeader examPractice="Speaking" ref={ref} setShowModal={setMenuShowModal} menuShowModal={menuShowModal} examId={practice.taskId} partId={partId} examName={practice.name} examNumber={examNumber} practiceSections={practiceSections} getPartsForSection={getPartsForSection} />
+        {!hideHeader && (
+          <ExamHeader examPractice="Speaking" ref={ref} setShowModal={setMenuShowModal} menuShowModal={menuShowModal} examId={practice.taskId} partId={partId} examName={examName ?? practice.name} examNumber={examNumber} practiceSections={resolvedPracticeSections} getPartsForSection={resolvedGetPartsForSection} viewMode={resolvedViewMode} setViewMode={resolvedSetViewMode} />
+        )}
 
-
+        {isOfficialMode ? (
+          <SpeakingOfficialView
+            title={officialFrameTitle}
+            page={page as "description" | "question" | "evaluateResult"}
+            practice={practice}
+            partId={partId}
+            shouldShowPractice={shouldShowPractice}
+            sendingResult={sendingResult}
+            time={time}
+            recordingTime={recordingTime}
+            progressBar={progressBar}
+            isSubmit={isSubmit}
+            isRecording={isRecording}
+            errorAccessingMicrophone={errorAccessingMicrophone}
+            needsUserInteraction={needsUserInteraction}
+            resultHref={`/exams/exam_${practice.taskId}/results?attemptId=${searchParams.get("attemptId")}`}
+            onLockedAction={setPremiumPlanModalState}
+            onStartRecording={() => {
+              setNeedsUserInteraction(false);
+              hasStartedRecordingRef.current = true;
+              setProgressBar(1);
+              setIsRecording(true);
+              startRecording();
+            }}
+            onStopRecording={() => {
+              stopRecording();
+            }}
+            primaryActionLabel={page == "evaluateResult" ? "View Results" : section === "speaking" && partId >= 20 ? "Finish Exam" : "Next"}
+            onPrimaryAction={handleHeaderNext}
+            onBack={handleBack}
+            statusSlot={officialStatusSlot}
+          />
+        ) : (
         <div className="bg-white rounded-xl flex flex-col screen1280:!h-[920px] overflow-scroll border border-[#D5D6D8] w-full">
           <div className="flex justify-between pb-[21px]  lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
             <div className="flex screen744:!items-center flex-col-reverse screen744:!flex-row gap-[16px]">
@@ -428,80 +530,13 @@ const SpeakingExamView = ({
             {
               <div className="flex items-center gap-2 justify-end pb-[10px] ">
                 <button
-                  onClick={() => {
-                    const query = section ? `?section=${section}` : "";
-                    if (isRecording) cancelRecording();
-                    if (page == "description" && passageIndex == 0) {
-                      if (partId === 1 || (section === "speaking" && partId === 13)) {
-                        router.push("/exam-overview");
-                      } else {
-                        const attemptId = searchParams.get("attemptId");
-                        const attemptQuery = attemptId ? `attemptId=${attemptId}` : "";
-                        const finalQuery = query
-                          ? (attemptQuery ? `?${attemptQuery}&${query.replace("?", "")}` : query)
-                          : (attemptQuery ? `?${attemptQuery}` : "");
-
-                        const prevPartId = partId - 1;
-                        const prevUrl = pathname.includes(`/part${partId}`)
-                          ? pathname.replace(`/part${partId}`, `/part${prevPartId}`) + finalQuery
-                          : `/exams/exam_${practice.taskId}/part${prevPartId}${finalQuery}`;
-                        router.push(prevUrl);
-                      }
-                    } else if (page == "question" && partId === 13) {
-                      setPage("description");
-                    } else if (page == "question") {
-                      const attemptId = searchParams.get("attemptId");
-                      const attemptQuery = attemptId ? `attemptId=${attemptId}` : "";
-                      const finalQuery = query
-                        ? (attemptQuery ? `?${attemptQuery}&${query.replace("?", "")}` : query)
-                        : (attemptQuery ? `?${attemptQuery}` : "");
-
-                      const prevPartId = partId - 1;
-                      const prevUrl = pathname.includes(`/part${partId}`)
-                        ? pathname.replace(`/part${partId}`, `/part${prevPartId}`) + finalQuery
-                        : `/exams/exam_${practice.taskId}/part${prevPartId}${finalQuery}`;
-                      router.push(prevUrl);
-                    } else if (page == "evaluateResult") {
-                      setPage("question");
-                    }
-                    setTime(partId == 17 || partId == 18 ? 60 : 30);
-                  }}
+                  onClick={handleBack}
                   className="cursor-pointer inline-flex items-center justify-center border-[1px] border-[#37465C] rounded-[100%]  w-[40px] h-[40px]"
                 >
                   <ArrowLeft size={18} strokeWidth={1.7}></ArrowLeft>
                 </button>
                 <button
-                  onClick={() => {
-                    const query = section ? `?section=${section}` : "";
-                    if (isRecording) cancelRecording();
-                    if (page == "description") {
-                      setPage("question");
-                      setTime(partId == 17 || partId == 18 ? 60 : 30);
-                    } else if (page == "question") {
-                      if (partId == 20) {
-                        setPage("evaluateResult");
-                        setTime(10);
-                      } else {
-                        const attemptId = searchParams.get("attemptId");
-                        const attemptQuery = attemptId ? `attemptId=${attemptId}` : "";
-                        const finalQuery = query
-                          ? (attemptQuery ? `?${attemptQuery}&${query.replace("?", "")}` : query)
-                          : (attemptQuery ? `?${attemptQuery}` : "");
-
-                        const nextPartId = partId + 1;
-                        const nextUrl = pathname.includes(`/part${partId}`)
-                          ? pathname.replace(`/part${partId}`, `/part${nextPartId}`) + finalQuery
-                          : `/exams/exam_${practice.taskId}/part${nextPartId}${finalQuery}`;
-                        router.push(nextUrl);
-                        setTime(partId == 17 || partId == 18 ? 60 : 30);
-                      }
-                    } else if (page == "evaluateResult") {
-                      router.push(
-                        `/exams/exam_${practice.taskId}/results?attemptId=${searchParams.get("attemptId")}`
-                      );
-                      setTime(partId == 17 || partId == 18 ? 60 : 30);
-                    }
-                  }}
+                  onClick={handleHeaderNext}
                   className={
                     "cursor-pointer flex items-center gap-[8px] justify-center h-[40px] font-normal text-[#212E42] text-[14px] w-[96px] bg-white rounded-[24px]"
                   }
@@ -785,6 +820,7 @@ const SpeakingExamView = ({
             )}
           </div>
         </div>
+        )}
       </div>
 
       {/* Trophy Modal */}

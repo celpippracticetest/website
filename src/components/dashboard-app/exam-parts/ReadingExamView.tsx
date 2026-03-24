@@ -29,6 +29,22 @@ import TrophyModal from "@/components/modal/TrophyModal";
 import { PRACTICE_PARTS } from "@/constants";
 import ContinueExamModal from "@/components/modal/ContinueExamModal";
 import ExamHeader from "./components/ExamHeader";
+import { formatOfficialTimeRemaining } from "./components/officialTimerText";
+import ReadingOfficialView from "./components/official/ReadingOfficialView";
+import {
+  buildOfficialExamTitle,
+  OfficialStatusText,
+} from "./components/official/shared";
+import {
+  useExamViewMode,
+  type MockExamViewMode,
+} from "./components/useExamViewMode";
+import { Box, Stack, Typography } from "@mui/material";
+import {
+  createMockPracticeSections,
+  getMockExamPartsForSection,
+  type PracticeSectionItem,
+} from "./mockExamShared";
 
 interface ReadingExamViewProps {
   practice: TPracticeDto;
@@ -37,7 +53,20 @@ interface ReadingExamViewProps {
   examName?: string;
   partNumber?: string;
   examNumber?: number;
+  hideHeader?: boolean;
+  viewMode?: MockExamViewMode;
+  setViewMode?: (mode: MockExamViewMode) => void;
+  practiceSections?: PracticeSectionItem[];
+  getPartsForSection?: (route: string) => { title: string; index: number }[];
 }
+
+const formatTime = (value: number) => {
+  if (value <= 0) {
+    return "Time's Up!";
+  }
+
+  return `${Math.floor(value / 60)}:${value % 60 < 10 ? `0${value % 60}` : value % 60}`;
+};
 
 const ReadingExamView = ({
   practice,
@@ -46,6 +75,11 @@ const ReadingExamView = ({
   examName,
   partNumber,
   examNumber,
+  hideHeader = false,
+  viewMode,
+  setViewMode,
+  practiceSections,
+  getPartsForSection,
 }: ReadingExamViewProps) => {
   const timerTime = partId == 10 ? 780 : 660;
   const router = useRouter();
@@ -67,12 +101,21 @@ const ReadingExamView = ({
   const noUser = isLoaded ? !isSignedIn : false;
   const [showModal, setShowModal] = useState(false);
   const [showContinueModal, setShowContinueModal] = useState(false);
+  const localExamViewMode = useExamViewMode();
+  const resolvedViewMode = viewMode ?? localExamViewMode.viewMode;
+  const isOfficialMode = resolvedViewMode === "official";
+  const resolvedSetViewMode = setViewMode ?? localExamViewMode.setViewMode;
+  const resolvedPracticeSections =
+    practiceSections ?? createMockPracticeSections();
+  const resolvedGetPartsForSection =
+    getPartsForSection ?? getMockExamPartsForSection;
   const [page, setPage] = useState(partId == 7 ? "description" : "question");
   const [passageIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<
     Record<string, string>
   >({});
   const [time, setTime] = useState(timerTime);
+  const officialAutoAdvanceTriggeredRef = useRef(false);
   const setPremiumPlanModalState = useStore(
     (state) => state.setPremiumPlanModalState
   );
@@ -96,6 +139,19 @@ const ReadingExamView = ({
       }
     };
   }, [page, time]);
+  useEffect(() => {
+    if (!isOfficialMode || page !== "question" || time > 0) {
+      officialAutoAdvanceTriggeredRef.current = false;
+      return;
+    }
+
+    if (officialAutoAdvanceTriggeredRef.current) {
+      return;
+    }
+
+    officialAutoAdvanceTriggeredRef.current = true;
+    handleNext();
+  }, [isOfficialMode, page, time]);
   useEffect(() => {
     // Log mock exam started when component mounts
     if (user && practice.taskId) {
@@ -203,13 +259,6 @@ const ReadingExamView = ({
 
   const [menuShowModal, setMenuShowModal] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  interface PracticeSection {
-    title: string;
-    color: string;
-    icon: React.ReactNode;
-    route: string;
-    bgColor: string;
-  }
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -223,51 +272,69 @@ const ReadingExamView = ({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-  const practiceSections: PracticeSection[] = [
-    {
-      title: "Listening",
-      color: "text-[#316BFF]",
-      icon: <SvgListeningPart />,
-      bgColor: "bg-[#D1DEFF]",
-      route: "listening",
-    },
-    {
-      title: "Reading",
-      color: "text-[#F27059]",
-      bgColor: "bg-[#FFE2E8]",
-      icon: <SvgReadingPart />,
-      route: "reading",
-    },
-    {
-      title: "Writing",
-      color: "text-[#0DAA94]",
-      icon: <SvgWritingPart />,
-      bgColor: "bg-[#F0FFFD]",
-      route: "writing",
-    },
+  const buildCurrentQuery = () => {
+    const params = new URLSearchParams();
+    const attemptId = searchParams.get("attemptId");
 
-    {
-      title: "Speaking",
-      color: "text-[#EE4266]",
-      icon: <SvgSpeakingPart />,
-      bgColor: "bg-[#FFEBD6]",
+    if (section) params.set("section", section);
+    if (attemptId) params.set("attemptId", attemptId);
 
-      route: "speaking",
-    },
-  ];
-  const sectionRanges: Record<string, { start: number; end: number }> = {
-    listening: { start: 0, end: 6 },
-    reading: { start: 6, end: 10 },
-    writing: { start: 10, end: 12 },
-    speaking: { start: 12, end: 20 },
+    const query = params.toString();
+    return query ? `?${query}` : "";
   };
 
-  const getPartsForSection = (route: string) => {
-    const range = sectionRanges[route];
-    if (!range) return [] as { title: string; index: number }[];
-    const slice = PRACTICE_PARTS.slice(range.start, range.end);
-    return slice.map((title, i) => ({ title, index: range.start + i + 1 }));
+  const handleBack = () => {
+    const query = buildCurrentQuery();
+
+    if (page == "description" && passageIndex == 0) {
+      if (partId === 1 || (section === "reading" && partId === 7)) {
+        router.push("/exam-overview");
+      } else {
+        router.push(
+          "/exams/exam_" +
+            practice.taskId +
+            "/part" +
+            (partId - 1).toString() +
+            query
+        );
+      }
+    } else if (page == "question" && partId === 7) {
+      setPage("description");
+    } else if (page == "question") {
+      router.push(
+        "/exams/exam_" +
+          practice.taskId +
+          "/part" +
+          (partId - 1).toString() +
+          query
+      );
+    }
+
+    setTime(timerTime);
   };
+
+  const handleNext = () => {
+    if (page == "description") {
+      setPage("question");
+    } else if (page == "question") {
+      setPage("answer");
+    }
+
+    setTime(timerTime);
+  };
+
+  const officialFrameTitle = buildOfficialExamTitle(
+    examName ?? practice.name,
+    `Practice Test ${examNumber ?? ""}`.trim() || "Practice Test",
+    "Reading Test"
+  );
+
+  const officialStatusSlot =
+    shouldShowPractice && page === "question" ? (
+      <OfficialStatusText>
+        {formatOfficialTimeRemaining(time)}
+      </OfficialStatusText>
+    ) : null;
 
   return (
     <div className="w-full p-2  transition-all duration-300 flex gap-5">
@@ -280,8 +347,27 @@ const ReadingExamView = ({
       )}
       <div className="flex flex-col w-full">
 
-        <ExamHeader examPractice="Reading" ref={ref} setShowModal={setMenuShowModal} menuShowModal={menuShowModal} examId={practice.taskId} partId={partId} examName={practice.name} examNumber={examNumber} practiceSections={practiceSections} getPartsForSection={getPartsForSection} />
+        {!hideHeader && (
+          <ExamHeader examPractice="Reading" ref={ref} setShowModal={setMenuShowModal} menuShowModal={menuShowModal} examId={practice.taskId} partId={partId} examName={examName ?? practice.name} examNumber={examNumber} practiceSections={resolvedPracticeSections} getPartsForSection={resolvedGetPartsForSection} viewMode={resolvedViewMode} setViewMode={resolvedSetViewMode} />
+        )}
 
+        {isOfficialMode ? (
+          <ReadingOfficialView
+            title={officialFrameTitle}
+            page={page as "description" | "question" | "answer"}
+            practice={practice}
+            shouldShowPractice={shouldShowPractice}
+            selectedAnswers={selectedAnswers}
+            onAnswerSelect={handleAnswerSelect}
+            onLockedAction={setPremiumPlanModalState}
+            primaryActionLabel={page == "answer" ? undefined : "Next"}
+            onPrimaryAction={page == "answer" ? undefined : handleNext}
+            primaryActionDisabled={page == "answer"}
+            onBack={handleBack}
+            backDisabled={page == "answer"}
+            statusSlot={officialStatusSlot}
+          />
+        ) : (
         <div className="bg-white rounded-xl flex flex-col screen1280:!h-[920px] overflow-scroll border border-[#D5D6D8] w-full">
           <div className="flex justify-between pb-[21px]  lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
             <div className="flex screen744:!items-center flex-col-reverse screen744:!flex-row gap-[16px]">
@@ -309,47 +395,14 @@ const ReadingExamView = ({
 
                 <button
                   disabled={page == "answer"}
-                  onClick={() => {
-                    const query = section ? `?section=${section}` : "";
-                    if (page == "description" && passageIndex == 0) {
-                      if (partId === 1 || (section === "reading" && partId === 7)) {
-                        router.push("/exam-overview");
-                      } else {
-                        router.push(
-                          "/exams/exam_" +
-                          practice.taskId +
-                          "/part" +
-                          (partId - 1).toString() +
-                          query
-                        );
-                      }
-                    } else if (page == "question" && partId === 7) {
-                      setPage("description");
-                    } else if (page == "question") {
-                      router.push(
-                        "/exams/exam_" +
-                        practice.taskId +
-                        "/part" +
-                        (partId - 1).toString() +
-                        (query ? query + "&" : "?") + `attemptId=${searchParams.get("attemptId")}`
-                      );
-                    }
-                    setTime(timerTime);
-                  }}
+                  onClick={handleBack}
                   className="cursor-pointer inline-flex items-center justify-center border-[1px] border-[#37465C] rounded-[100%]  w-[40px] h-[40px]"
                 >
                   <ArrowLeft size={18} strokeWidth={1.7}></ArrowLeft>
                 </button>
                 <button
                   disabled={page == "answer"}
-                  onClick={() => {
-                    if (page == "description") {
-                      setPage("question");
-                    } else if (page == "question") {
-                      setPage("answer");
-                    }
-                    setTime(timerTime);
-                  }}
+                  onClick={handleNext}
                   className={
                     "cursor-pointer flex items-center gap-[8px] justify-center h-[40px] font-normal text-[#212E42] text-[14px] w-[96px] bg-white rounded-[24px]"
                   }
@@ -649,6 +702,7 @@ const ReadingExamView = ({
             )}
           </div>
         </div>
+        )}
       </div>
 
       {/* Trophy Modal */}
