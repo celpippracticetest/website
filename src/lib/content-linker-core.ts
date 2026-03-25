@@ -14,16 +14,49 @@ function escapeRegExp(string: string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function normalizeToPath(input: string): string {
+  const raw = (input ?? "").trim();
+  if (!raw) return "";
+
+  // Strip query/hash for consistent comparisons.
+  const withoutQueryOrHash = raw.split(/[?#]/)[0]!;
+
+  try {
+    // If it's a full URL, extract its pathname.
+    if (/^https?:\/\//i.test(withoutQueryOrHash)) {
+      return new URL(withoutQueryOrHash).pathname.toLowerCase().replace(/\/+$/, "") || "/";
+    }
+  } catch {
+    // Fall through to relative-path normalization.
+  }
+
+  // Relative path (or just a pathname).
+  const withLeadingSlash = withoutQueryOrHash.startsWith("/") ? withoutQueryOrHash : `/${withoutQueryOrHash}`;
+  return withLeadingSlash.toLowerCase().replace(/\/+$/, "") || "/";
+}
+
 /**
  * Pure function to inject internal links into HTML content.
  * Does NOT fetch data - requires links to be passed in.
  * Safely handles existing tags to avoid breaking HTML structure.
  */
-export function linkContentCore(html: string, links: LinkerConfig[]): string {
+export function linkContentCore(
+  html: string,
+  links: LinkerConfig[],
+  currentPath?: string
+): string {
   if (!html || !links || links.length === 0) return html;
 
+  // Avoid "self links" where a keyword would link to the page currently being rendered.
+  // Example: keyword "CLB 9" targeting "/wiki/clb9" should not be linked inside "/wiki/clb9".
+  const normalizedCurrentPath = currentPath ? normalizeToPath(currentPath) : "";
+  const filteredLinks =
+    normalizedCurrentPath
+      ? links.filter((l) => normalizeToPath(l.url) !== normalizedCurrentPath)
+      : links;
+
   // Sort links by length (descending) to prioritize longer phrases and specific matches
-  const sortedLinks = [...links].sort((a, b) => b.keyword.length - a.keyword.length);
+  const sortedLinks = [...filteredLinks].sort((a, b) => b.keyword.length - a.keyword.length);
 
   // Create a master pattern of all keywords
   const patterns = sortedLinks.map(link => {

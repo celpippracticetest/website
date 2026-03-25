@@ -221,7 +221,7 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
     }
     : null;
 
-  const linkedContent = await linkContentServer(post.contentHtml);
+  const linkedContent = await linkContentServer(post.contentHtml, `/blog/${post.slug}`);
 
   return (
     <Box className="cel-container py-10 md:py-14">

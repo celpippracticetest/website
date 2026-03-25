@@ -42,7 +42,10 @@ const getCachedInternalLinks = unstable_cache(
  * Server-side wrapper that fetches links and applies them to content.
  * Intended for use in Server Components only.
  */
-export async function linkContentServer(html: string): Promise<string> {
+export async function linkContentServer(
+  html: string,
+  currentPath?: string
+): Promise<string> {
   const links = await getCachedInternalLinks();
-  return linkContentCore(html, links);
+  return linkContentCore(html, links, currentPath);
 }

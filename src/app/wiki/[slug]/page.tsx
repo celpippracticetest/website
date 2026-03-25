@@ -60,7 +60,7 @@ export default async function WikiPage({ params, searchParams }: PageProps) {
 
   const [linkedContent, nextArticle, relatedArticles, allArticles] =
     await Promise.all([
-      linkContentServer(currentArticle.content),
+      linkContentServer(currentArticle.content, `/wiki/${slug}`),
       getNextWikiArticle(slug),
       getRelatedWikiArticles(currentArticle.id, currentArticle.category, 2),
       getAllWikiArticles(),
