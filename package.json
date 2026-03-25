@@ -11,6 +11,7 @@
     "google-ads:refresh-token": "node ./scripts/google-ads-refresh-token.js",
     "migrate:plans:billing-fields": "node ./scripts/migrate-plans-billing-fields.js",
     "migrate:onboarding:new-to-onboarding": "node ./scripts/migrate-onboarding-new-to-onboarding.js",
+    "seed:profession-pages": "node ./scripts/seed-profession-pages.js",
     "export:clerk:google-ads": "node ./scripts/export-clerk-users-google-ads.js",
     "export:clerk:inactive-nonpremium": "node ./scripts/export-clerk-inactive-nonpremium.js",
     "postbuild": "next-sitemap",

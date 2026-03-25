@@ -4,6 +4,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import dynamic from "next/dynamic";
 import Practice from "./Practice";
 import FAQ from "./FAQ";
+import { ExamModeFeatureSectionLanding } from "@/components/marketing/ExamModeFeatureSection";
 import { useChunkErrorHandler } from "@/hooks/useChunkErrorHandler";
 import OnlineUsersCount from "@/components/analytics/OnlineUsersCount";
 
@@ -61,6 +62,7 @@ export default function HomePageClient({ heroImage }: HomePageClientProps) {
         </div>
         <Comments />
         <Practice />
+        <ExamModeFeatureSectionLanding />
         {/* <Blog /> */}
         <FAQ />
         <FloatingChatIcon autoOpen={false} />

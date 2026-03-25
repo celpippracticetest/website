@@ -1,10 +1,14 @@
 import { MetadataRoute } from "next";
 import { getWikiSlugs } from "@/lib/wiki/public";
 import { getPublishedBlogSlugs } from "@/lib/blog/public";
+import { getPublishedProfessionPageSlugs } from "@/lib/profession-pages/public";
 
 const BASE_URL = process.env.APP_BASE_URL || "https://celpippracticetest.com";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const professionSlugs = await getPublishedProfessionPageSlugs();
+  const professionRoutes = professionSlugs.map((slug) => `/${slug}`);
+
   const routes = [
     "",
     "/listening",
@@ -20,26 +24,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/refund-policy",
     "/pricing",
     "/app",
-    "/celpip-for-nurses",
-    "/celpip-for-immigration-consultant",
-    "/celpip-for-real-estate",
-    "/celpip-for-professional-licensure",
-    "/celpip-for-physicians-surgeons",
-    "/celpip-for-early-childhood-educator",
-    "/celpip-for-mortgage-broker",
-    "/celpip-for-pharmacist",
-    "/celpip-for-medical-laboratory-technologist",
-    "/celpip-for-teacher-certification",
-    "/celpip-for-health-care-aide",
-    "/celpip-for-physiotherapist",
-    "/celpip-for-commercial-truck-driver",
-    "/celpip-for-caregiver-home-support",
-    "/celpip-for-skilled-trades",
-    "/celpip-for-dentist-dental-hygienist",
-    "/celpip-for-startup-visa-entrepreneur",
-    "/celpip-for-social-worker",
-    "/celpip-for-midwife",
-    "/celpip-for-tech-worker",
+    ...professionRoutes,
     "/score-calculator",
     "/words",
     "/learning",

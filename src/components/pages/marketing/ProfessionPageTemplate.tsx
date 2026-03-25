@@ -4,7 +4,6 @@ import { Box } from "@/components/ui/Box";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import CheckCircle from "@mui/icons-material/CheckCircle";
@@ -21,6 +20,15 @@ import RocketLaunch from "@mui/icons-material/RocketLaunch";
 import People from "@mui/icons-material/People";
 import ChildCare from "@mui/icons-material/ChildCare";
 import Memory from "@mui/icons-material/Memory";
+import MedicalServices from "@mui/icons-material/MedicalServices";
+import Medication from "@mui/icons-material/Medication";
+import Policy from "@mui/icons-material/Policy";
+import Apartment from "@mui/icons-material/Apartment";
+import School from "@mui/icons-material/School";
+import Science from "@mui/icons-material/Science";
+import Mic from "@mui/icons-material/Mic";
+import { ExamModeFeatureSection } from "@/components/marketing/ExamModeFeatureSection";
+import OnlineUsersCount from "@/components/analytics/OnlineUsersCount";
 
 const iconMap = {
   Briefcase: Work,
@@ -32,13 +40,31 @@ const iconMap = {
   Users: People,
   Baby: ChildCare,
   Cpu: Memory,
+  MedicalServices,
+  Medication,
+  Policy,
+  Apartment,
+  School,
+  Science,
+  Mic,
 } as const;
+
+const PLATFORM_FEATURE_ROWS: { title: string; description: string }[] = [
+  { title: "Writing and Speaking AI Feedback", description: "Instant scores and feedback." },
+  { title: "60 Full-Length Mock Exams", description: "Practice in exam conditions." },
+  { title: "Task-Specific Practice", description: "Focus on weaker sections." },
+  { title: "Study on Your Schedule", description: "Access from any device." },
+];
 
 export type ProfessionPageConfig = {
   slug: string;
   title: string;
   badge: string;
   h1Highlight: string;
+  /** Conversational question for AI search; optional, shown above the position-zero answer. */
+  aiSnippetQuestion?: string;
+  /** Informational lead (50–60 words) under H1 for AI/search snippets; not promotional. */
+  aiSnippet: string;
   intro: string;
   sectionTitle: string;
   sectionSubtitle: string;
@@ -48,12 +74,7 @@ export type ProfessionPageConfig = {
   card1Solution: string;
   chooseUsTitle: string;
   chooseUsSubtitle: string;
-  faq1Q: string;
-  faq1A: string;
-  faq2Q: string;
-  faq2A: string;
-  faq3Q: string;
-  faq3A: string;
+  faq: { question: string; answer: string }[];
   ctaTitle: string;
   accent: "blue" | "teal" | "amber" | "emerald" | "rose" | "cyan" | "indigo" | "violet" | "slate";
   icon: keyof typeof iconMap;
@@ -73,21 +94,39 @@ const accentClasses = {
   slate: { badge: "bg-slate-100 text-slate-700", btn: "bg-slate-600 hover:bg-slate-700 shadow-slate-600/20", card: "border-t-slate-500", icon: "bg-slate-100 text-slate-600", cta: "from-slate-500", highlight: "text-slate-600" },
 };
 
-export function ProfessionPageTemplate({ config }: { config: ProfessionPageConfig }) {
+export function ProfessionPageTemplate({
+  config,
+  pageUrl,
+}: {
+  config: ProfessionPageConfig;
+  /** Canonical URL for WebPage structured data (abstract = aiSnippet). */
+  pageUrl: string;
+}) {
   const c = accentClasses[config.accent];
   const IconComponent = iconMap[config.icon];
+  const webPageLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    url: pageUrl,
+    name: `${config.title}: ${config.h1Highlight}`,
+    abstract: config.aiSnippet,
+    ...(config.aiSnippetQuestion
+      ? { description: config.aiSnippetQuestion }
+      : {}),
+  };
   const faqData = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: [
-      { "@type": "Question", name: config.faq1Q, acceptedAnswer: { "@type": "Answer", text: config.faq1A } },
-      { "@type": "Question", name: config.faq2Q, acceptedAnswer: { "@type": "Answer", text: config.faq2A } },
-      { "@type": "Question", name: config.faq3Q, acceptedAnswer: { "@type": "Answer", text: config.faq3A } },
-    ],
+    mainEntity: config.faq.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
+    })),
   };
 
   return (
     <Box className="min-h-screen bg-slate-50">
+      <JsonLd data={webPageLd} />
       <JsonLd data={faqData} />
       <Box className="bg-white border-b border-slate-200">
         <Box className="max-w-5xl mx-auto px-4 py-16 md:py-24 text-center">
@@ -95,11 +134,21 @@ export function ProfessionPageTemplate({ config }: { config: ProfessionPageConfi
             {IconComponent ? <IconComponent className="w-4 h-4" /> : null}
             <span>{config.badge}</span>
           </Box>
-          <h1 className="text-4xl md:text-6xl font-extrabold mb-6 text-slate-900 tracking-tight leading-[1.1]">
+          <h1 className="text-4xl md:text-[40px] font-extrabold mb-6 text-slate-900 tracking-tight leading-[1.1]">
             {config.title}: <br className="hidden md:block" />
-            <span className={c.highlight}>{config.h1Highlight}</span>
+            <span className={`block text-2xl md:text-4xl font-extrabold mt-1 md:mt-2 ${c.highlight}`}>
+              {config.h1Highlight}
+            </span>
           </h1>
-          <p className="text-xl text-slate-600 mb-8 max-w-3xl mx-auto leading-relaxed">{config.intro}</p>
+          {config.aiSnippetQuestion ? (
+            <p className="text-lg md:text-xl text-slate-900 max-w-3xl mx-auto font-medium leading-snug mb-3 text-left md:text-center">
+              {config.aiSnippetQuestion}
+            </p>
+          ) : null}
+          <p className="text-base md:text-[1.0625rem] text-slate-800 max-w-3xl mx-auto leading-relaxed mb-6 text-left md:text-center font-normal">
+            {config.aiSnippet}
+          </p>
+          <p className="text-[17px] text-slate-600 mb-8 max-w-3xl mx-auto leading-relaxed">{config.intro}</p>
           <Box className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link href="/exam-overview">
               <Button size="lg" className={`h-14 px-8 text-lg rounded-full shadow-lg hover:shadow-xl ${c.btn}`}>
@@ -111,6 +160,9 @@ export function ProfessionPageTemplate({ config }: { config: ProfessionPageConfi
         </Box>
       </Box>
       <Box className="max-w-6xl mx-auto px-4 py-16">
+        <Box className="mb-10 md:mb-12">
+          <OnlineUsersCount variant="marketing" className="w-full shadow-sm ring-1 ring-slate-200/80" />
+        </Box>
         <Box className="mb-20">
           <Box className="text-center mb-12">
             <h2 className="text-3xl font-bold text-slate-900 mb-4">{config.sectionTitle}</h2>
@@ -144,19 +196,50 @@ export function ProfessionPageTemplate({ config }: { config: ProfessionPageConfi
           </Box>
         </Box>
         <Box className="mb-20">
-          <Box className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4"><Box><h2 className="text-3xl font-bold text-slate-900">{config.chooseUsTitle}</h2><p className="text-slate-600 mt-2">{config.chooseUsSubtitle}</p></Box><Link href="/exam-overview"><Button variant="outline">View All Features</Button></Link></Box>
-          <Card className="overflow-hidden border-0 shadow-lg">
-            <Table>
-              <TableHeader><TableRow className="bg-slate-50 hover:bg-slate-50"><TableHead className="w-[35%] py-4 pl-6 font-bold text-slate-900">Feature</TableHead><TableHead className="py-4 font-bold text-slate-900">How It Helps You</TableHead></TableRow></TableHeader>
-              <TableBody>
-                <TableRow className="hover:bg-slate-50/50"><TableCell className="font-medium pl-6 py-4"><Box className={`flex items-center gap-3`}><Box className={`p-2 rounded ${c.icon}`}><CheckCircle className="w-4 h-4" /></Box>Writing and Speaking AI Feedback</Box></TableCell><TableCell className="py-4 text-slate-600">Instant scores and feedback.</TableCell></TableRow>
-                <TableRow className="hover:bg-slate-50/50"><TableCell className="font-medium pl-6 py-4"><Box className="flex items-center gap-3"><Box className={`p-2 rounded ${c.icon}`}><CheckCircle className="w-4 h-4" /></Box>60 Full-Length Mock Exams</Box></TableCell><TableCell className="py-4 text-slate-600">Practice in exam conditions.</TableCell></TableRow>
-                <TableRow className="hover:bg-slate-50/50"><TableCell className="font-medium pl-6 py-4"><Box className="flex items-center gap-3"><Box className={`p-2 rounded ${c.icon}`}><CheckCircle className="w-4 h-4" /></Box>Task-Specific Practice</Box></TableCell><TableCell className="py-4 text-slate-600">Focus on weaker sections.</TableCell></TableRow>
-                <TableRow className="hover:bg-slate-50/50"><TableCell className="font-medium pl-6 py-4"><Box className="flex items-center gap-3"><Box className={`p-2 rounded ${c.icon}`}><CheckCircle className="w-4 h-4" /></Box>Study on Your Schedule</Box></TableCell><TableCell className="py-4 text-slate-600">Access from any device.</TableCell></TableRow>
-              </TableBody>
-            </Table>
-          </Card>
+          <Box className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <Box>
+              <h2 className="text-3xl font-bold text-slate-900">{config.chooseUsTitle}</h2>
+              <p className="mt-2 max-w-2xl text-slate-600">{config.chooseUsSubtitle}</p>
+            </Box>
+            <Link href="/exam-overview" className="shrink-0">
+              <Button variant="outline" className="w-full md:w-auto">
+                View All Features
+              </Button>
+            </Link>
+          </Box>
+          <Box
+            className={`overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-md ring-1 ring-slate-900/5 border-t-4 ${c.card}`}
+          >
+            <Box className="hidden border-b border-slate-100 bg-slate-50/90 px-6 py-3.5 md:grid md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] md:gap-8 md:px-8">
+              <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">Feature</span>
+              <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">How it helps you</span>
+            </Box>
+            <Box className="divide-y divide-slate-100">
+              {PLATFORM_FEATURE_ROWS.map((row, i) => (
+                <Box
+                  key={i}
+                  className="px-5 py-5 transition-colors duration-200 hover:bg-slate-50/80 md:px-8 md:py-5"
+                >
+                  <Box className="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] md:items-center md:gap-8">
+                    <Box className="flex items-start gap-3.5 md:items-center">
+                      <Box className={`shrink-0 rounded-xl p-2.5 shadow-sm ${c.icon}`}>
+                        <CheckCircle className="h-5 w-5" />
+                      </Box>
+                      <span className="pt-0.5 text-base font-semibold leading-snug text-slate-900 md:pt-0">
+                        {row.title}
+                      </span>
+                    </Box>
+                    <Box className="border-t border-slate-100 pt-4 md:border-t-0 md:pt-0 pl-14 md:pl-0">
+                      <p className="text-[15px] leading-relaxed text-slate-600">{row.description}</p>
+                    </Box>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          </Box>
         </Box>
+
+        <ExamModeFeatureSection variant="profession" accent={config.accent} />
 
         {/* Related Resources Section */}
         {(config.relatedArticles?.length || config.relatedProfessions?.length) ? (
@@ -215,9 +298,12 @@ export function ProfessionPageTemplate({ config }: { config: ProfessionPageConfi
         <Box className="max-w-3xl mx-auto mb-20">
           <h2 className="text-3xl font-bold mb-8 text-center text-slate-900">Frequently Asked Questions</h2>
           <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="item-1"><AccordionTrigger className="text-left">{config.faq1Q}</AccordionTrigger><AccordionContent className="text-slate-600 leading-relaxed">{config.faq1A}</AccordionContent></AccordionItem>
-            <AccordionItem value="item-2"><AccordionTrigger className="text-left">{config.faq2Q}</AccordionTrigger><AccordionContent className="text-slate-600 leading-relaxed">{config.faq2A}</AccordionContent></AccordionItem>
-            <AccordionItem value="item-3"><AccordionTrigger className="text-left">{config.faq3Q}</AccordionTrigger><AccordionContent className="text-slate-600 leading-relaxed">{config.faq3A}</AccordionContent></AccordionItem>
+            {config.faq.map((item, i) => (
+              <AccordionItem key={i} value={`faq-${i}`}>
+                <AccordionTrigger className="text-left">{item.question}</AccordionTrigger>
+                <AccordionContent className="text-slate-600 leading-relaxed">{item.answer}</AccordionContent>
+              </AccordionItem>
+            ))}
           </Accordion>
         </Box>
         <Box className="relative overflow-hidden bg-slate-900 text-white rounded-3xl p-8 md:p-12 text-center">

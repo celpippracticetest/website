@@ -9,21 +9,20 @@ import Description from "@mui/icons-material/Description";
 import Image from "@mui/icons-material/Image";
 import People from "@mui/icons-material/People";
 import Settings from "@mui/icons-material/Settings";
-import Menu from "@mui/icons-material/Menu";
 import ChevronLeft from "@mui/icons-material/ChevronLeft";
 import ChevronRight from "@mui/icons-material/ChevronRight";
 import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
 import Assignment from "@mui/icons-material/Assignment";
 import MenuBook from "@mui/icons-material/MenuBook";
 import BorderColor from "@mui/icons-material/BorderColor";
-import Mic from "@mui/icons-material/Mic";
-import Headphones from "@mui/icons-material/Headphones";
+import Tag from "@mui/icons-material/Tag";
 import Book from "@mui/icons-material/Book";
 import Language from "@mui/icons-material/Language";
 import EmojiEvents from "@mui/icons-material/EmojiEvents";
 import Mail from "@mui/icons-material/Mail";
 import BarChart from "@mui/icons-material/BarChart";
 import CheckBox from "@mui/icons-material/CheckBox";
+import Work from "@mui/icons-material/Work";
 import { cn } from "@/lib/utils";
 import { Box } from "@/components/ui/Box";
 
@@ -87,7 +86,9 @@ const contentItems: SidebarGroup = {
     { key: "homepage-hero", label: "Homepage Hero", icon: Image, href: "/cms/dashboard/homepage-hero" },
     { key: "tasks", label: "Tasks", icon: CheckBox, href: "/cms/dashboard/tasks" },
     { key: "blog", label: "Blog", icon: BorderColor, href: "/cms/dashboard/blog" },
+    { key: "blog-keywords", label: "Blog keywords", icon: Tag, href: "/cms/dashboard/blog/keywords" },
     { key: "wiki", label: "Wiki", icon: Book, href: "/cms/dashboard/wiki" },
+    { key: "profession-pages", label: "Profession pages", icon: Work, href: "/cms/dashboard/profession-pages" },
     { key: "seo", label: "SEO Links", icon: Language, href: "/cms/dashboard/seo/internal-links" },
   ],
 };
@@ -136,8 +137,13 @@ export function AdminSidebar({
     if (key === "league" && pathname.startsWith("/cms/dashboard/league")) return true;
     if (key === "homepage-hero" && pathname.startsWith("/cms/dashboard/homepage-hero")) return true;
     if (key === "tasks" && pathname.startsWith("/cms/dashboard/tasks")) return true;
-    if (key === "blog" && pathname.startsWith("/cms/dashboard/blog")) return true;
+    if (key === "blog-keywords" && pathname.startsWith("/cms/dashboard/blog/keywords")) return true;
+    if (key === "blog" && pathname.startsWith("/cms/dashboard/blog")) {
+      if (pathname.startsWith("/cms/dashboard/blog/keywords")) return false;
+      return true;
+    }
     if (key === "wiki" && pathname.startsWith("/cms/dashboard/wiki")) return true;
+    if (key === "profession-pages" && pathname.startsWith("/cms/dashboard/profession-pages")) return true;
     if (key === "seo" && pathname.startsWith("/cms/dashboard/seo")) return true;
 
     return false;
