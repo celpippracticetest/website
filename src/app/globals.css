@@ -164,6 +164,22 @@ svg {
     @apply text-foreground;
   }
 
+  /* Ensure long wiki/blog editor content wraps nicely on mobile.
+     Some wiki articles include long text blocks inside `.article-content`
+     that are not headings (e.g. `<div class="p-6 py-0">...`), so we add
+     word-breaking here rather than relying only on `.prose` typography. */
+  .article-content {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  @media (max-width: 640px) {
+    .article-content .p-6.py-0 {
+      font-size: 0.875rem; /* text-sm */
+      line-height: 1.5rem; /* leading-6 */
+    }
+  }
+
   .prose h1,
   .prose h2,
   .prose h3,
