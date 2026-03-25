@@ -24,15 +24,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  CheckCircle2,
-  AlertTriangle,
-  Gavel,
-  ArrowRight,
-  FileText,
-  Scale,
-  BookOpen,
-} from "lucide-react";
+import CheckCircle from "@mui/icons-material/CheckCircle";
+import Warning from "@mui/icons-material/Warning";
+import Policy from "@mui/icons-material/Policy";
+import ArrowForward from "@mui/icons-material/ArrowForward";
+import Description from "@mui/icons-material/Description";
+import AccountBalance from "@mui/icons-material/AccountBalance";
+import MenuBook from "@mui/icons-material/MenuBook";
 
 export const metadata: Metadata = {
   title: "CELPIP for Immigration Consultants: RCIC & CICC Language Requirements",
@@ -97,7 +95,7 @@ export default function CelpipForImmigrationConsultantPage() {
       <Box className="bg-white border-b border-slate-200">
         <Box className="max-w-5xl mx-auto px-4 py-16 md:py-24 text-center">
           <Box className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-sm font-medium mb-6">
-            <Scale className="w-4 h-4" />
+            <AccountBalance className="w-4 h-4" />
             <span>Trusted by Aspiring RCICs & Immigration Professionals</span>
           </Box>
 
@@ -114,7 +112,7 @@ export default function CelpipForImmigrationConsultantPage() {
             <Link href="/exam-overview">
               <Button size="lg" className="h-14 px-8 text-lg rounded-full shadow-lg shadow-purple-600/20 hover:shadow-xl hover:translate-y-[-2px] transition-all bg-purple-600 hover:bg-purple-700">
                 Start Free Practice Test
-                <ArrowRight className="ml-2 w-5 h-5" />
+                <ArrowForward className="ml-2 w-5 h-5" />
               </Button>
             </Link>
             <p className="text-sm text-slate-500 mt-4 sm:mt-0">No credit card required</p>
@@ -137,7 +135,7 @@ export default function CelpipForImmigrationConsultantPage() {
             <Card className="flex-1 hover:shadow-md transition-shadow border-t-4 border-t-purple-500">
               <CardHeader>
                 <Box className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center mb-4 text-purple-600">
-                  <FileText className="w-6 h-6" />
+                  <Description className="w-6 h-6" />
                 </Box>
                 <CardTitle>Writing & Speaking at CLB 9</CardTitle>
                 <CardDescription>RCIC & CICC Requirements</CardDescription>
@@ -149,13 +147,13 @@ export default function CelpipForImmigrationConsultantPage() {
                 <Box className="space-y-3">
                   <Box className="bg-red-50 p-3 rounded-md border border-red-100">
                     <Box className="flex gap-2 text-red-700 text-sm font-semibold mb-1">
-                      <AlertTriangle className="w-4 h-4" /> The Bar
+                      <Warning className="w-4 h-4" /> The Bar
                     </Box>
                     <p className="text-red-600 text-xs">Writing and Speaking at CLB 9 demand strong structure, vocabulary, and clarity—generic prep often isn't enough.</p>
                   </Box>
                   <Box className="bg-green-50 p-3 rounded-md border border-green-100">
                     <Box className="flex gap-2 text-green-700 text-sm font-semibold mb-1">
-                      <CheckCircle2 className="w-4 h-4" /> Our Solution
+                      <CheckCircle className="w-4 h-4" /> Our Solution
                     </Box>
                     <p className="text-green-600 text-xs">AI scoring and feedback calibrated to CLB levels so you know when you're ready for the real exam.</p>
                   </Box>
@@ -166,7 +164,7 @@ export default function CelpipForImmigrationConsultantPage() {
             <Card className="flex-1 hover:shadow-md transition-shadow border-t-4 border-t-slate-500">
               <CardHeader>
                 <Box className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mb-4 text-slate-600">
-                  <Gavel className="w-6 h-6" />
+                  <Policy className="w-6 h-6" />
                 </Box>
                 <CardTitle>Full CELPIP-General Prep</CardTitle>
                 <CardDescription>All Four Skills</CardDescription>
@@ -178,13 +176,13 @@ export default function CelpipForImmigrationConsultantPage() {
                 <Box className="space-y-3">
                   <Box className="bg-amber-50 p-3 rounded-md border border-amber-100">
                     <Box className="flex gap-2 text-amber-700 text-sm font-semibold mb-1">
-                      <BookOpen className="w-4 h-4" /> The Requirement
+                      <MenuBook className="w-4 h-4" /> The Requirement
                     </Box>
                     <p className="text-amber-700 text-xs">Listening and Reading matter as much as Writing and Speaking for RCIC eligibility.</p>
                   </Box>
                   <Box className="bg-green-50 p-3 rounded-md border border-green-100">
                     <Box className="flex gap-2 text-green-700 text-sm font-semibold mb-1">
-                      <CheckCircle2 className="w-4 h-4" /> Our Solution
+                      <CheckCircle className="w-4 h-4" /> Our Solution
                     </Box>
                     <p className="text-green-600 text-xs">60+ mock exams and task-specific practice so you can strengthen every skill to CLB 9.</p>
                   </Box>
@@ -221,7 +219,7 @@ export default function CelpipForImmigrationConsultantPage() {
                   <TableCell className="font-medium pl-6 py-4">
                     <Box className="flex items-center gap-3">
                       <Box className="p-2 rounded bg-purple-100 text-purple-600">
-                        <CheckCircle2 className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4" />
                       </Box>
                       Writing & Speaking AI Feedback
                     </Box>
@@ -232,7 +230,7 @@ export default function CelpipForImmigrationConsultantPage() {
                   <TableCell className="font-medium pl-6 py-4">
                     <Box className="flex items-center gap-3">
                       <Box className="p-2 rounded bg-purple-100 text-purple-600">
-                        <CheckCircle2 className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4" />
                       </Box>
                       60 Full-Length Mock Exams
                     </Box>
@@ -243,7 +241,7 @@ export default function CelpipForImmigrationConsultantPage() {
                   <TableCell className="font-medium pl-6 py-4">
                     <Box className="flex items-center gap-3">
                       <Box className="p-2 rounded bg-purple-100 text-purple-600">
-                        <CheckCircle2 className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4" />
                       </Box>
                       Task-Specific Practice
                     </Box>
@@ -254,7 +252,7 @@ export default function CelpipForImmigrationConsultantPage() {
                   <TableCell className="font-medium pl-6 py-4">
                     <Box className="flex items-center gap-3">
                       <Box className="p-2 rounded bg-purple-100 text-purple-600">
-                        <CheckCircle2 className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4" />
                       </Box>
                       Study on Your Schedule
                     </Box>

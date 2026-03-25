@@ -29,7 +29,10 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Card } from "@/components/ui/card";
-import { PlusCircle, Trash2, Upload as UploadIcon, Check } from "lucide-react";
+import AddCircle from "@mui/icons-material/AddCircle";
+import Delete from "@mui/icons-material/Delete";
+import UploadIcon from "@mui/icons-material/CloudUpload";
+import Check from "@mui/icons-material/Check";
 import { saveListeningPractice } from "./cmsListeningService";
 import { ListeningPracticeInput } from "./ListeningPractice";
 
@@ -302,7 +305,7 @@ export default function ListeningPracticeInputForm() {
             htmlFor={inputId}
             className="flex items-center gap-2 px-4 py-2 cursor-pointer border rounded bg-gray-50 hover:bg-gray-100"
           >
-            <UploadIcon size={16} />
+            <UploadIcon sx={{ fontSize: 16 }} />
             <span>Upload Audio</span>
           </label>
           <input
@@ -497,7 +500,7 @@ export default function ListeningPracticeInputForm() {
                   size="sm"
                   onClick={() => appendInstruction("")}
                 >
-                  <PlusCircle className="h-4 w-4 mr-2" />
+                  <AddCircle className="h-4 w-4 mr-2" />
                   Add Instruction
                 </Button>
               </div>
@@ -526,7 +529,7 @@ export default function ListeningPracticeInputForm() {
                       size="icon"
                       onClick={() => removeInstruction(index)}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Delete className="h-4 w-4" />
                     </Button>
                   )}
                 </div>
@@ -565,7 +568,7 @@ export default function ListeningPracticeInputForm() {
                   })
                 }
               >
-                <PlusCircle className="h-4 w-4 mr-2" />
+                <AddCircle className="h-4 w-4 mr-2" />
                 Add Passage
               </Button>
             </div>
@@ -591,7 +594,7 @@ export default function ListeningPracticeInputForm() {
                         onClick={() => removePassage(passageIndex)}
                         className="ml-auto"
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
+                        <Delete className="h-4 w-4 mr-2" />
                         Remove
                       </Button>
                     )}
@@ -800,7 +803,7 @@ export default function ListeningPracticeInputForm() {
                             );
                           }}
                         >
-                          <PlusCircle className="h-4 w-4 mr-2" />
+                          <AddCircle className="h-4 w-4 mr-2" />
                           Add Turn
                         </Button>
                       </div>
@@ -881,7 +884,7 @@ export default function ListeningPracticeInputForm() {
                             );
                           }}
                         >
-                          <PlusCircle className="h-4 w-4 mr-2" />
+                          <AddCircle className="h-4 w-4 mr-2" />
                           Add Question
                         </Button>
                       </div>
@@ -923,7 +926,7 @@ export default function ListeningPracticeInputForm() {
                                     }}
                                     className="ml-auto"
                                   >
-                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    <Delete className="h-4 w-4 mr-2" />
                                     Remove
                                   </Button>
                                 )}

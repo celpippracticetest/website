@@ -3,7 +3,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
-import { Check, CheckCircle2, ChevronDown, ChevronUp, Sparkles, Star } from "lucide-react";
+import Check from "@mui/icons-material/Check";
+import CheckCircle from "@mui/icons-material/CheckCircle";
+import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
+import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
+import AutoAwesome from "@mui/icons-material/AutoAwesome";
+import Star from "@mui/icons-material/Star";
 import SvgBestValuePlan from "@/components/icons/BestValuePlan";
 import SvgDiamond from "@/components/icons/Diamond";
 import SvgFreePlan from "@/components/icons/FreePlan";
@@ -1172,13 +1177,13 @@ export default function PricingPageClient({
                 <Box className="px-5 py-4 text-sm text-slate-700">{row.label}</Box>
                 <Box className="flex items-center justify-center px-5 py-4">
                   {row.premium ? (
-                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                    <CheckCircle className="h-5 w-5 text-emerald-500" />
                   ) : (
                     <span className="text-sm font-medium text-slate-400">Not included</span>
                   )}
                 </Box>
                 <Box className="flex items-center justify-center px-5 py-4">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                  <CheckCircle className="h-5 w-5 text-emerald-500" />
                 </Box>
               </Box>
             ))}
@@ -1274,7 +1279,7 @@ export default function PricingPageClient({
               }
               className="inline-flex shrink-0 items-center justify-center rounded-full bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] px-4 py-2 text-sm font-semibold text-white shadow-md"
             >
-              <Sparkles className="mr-2 h-4 w-4" />
+              <AutoAwesome className="mr-2 h-4 w-4" />
               View plan
             </a>
           </Box>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import Search from "@mui/icons-material/Search";
 import { Input } from "../ui/input";
 import {
   Card,

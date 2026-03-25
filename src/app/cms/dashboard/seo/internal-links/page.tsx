@@ -8,7 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { InternalLinkDto } from "@/models/internal-link.model";
-import { Edit, Trash2, Plus, RefreshCw, Upload } from "lucide-react";
+import Edit from "@mui/icons-material/Edit";
+import Delete from "@mui/icons-material/Delete";
+import Add from "@mui/icons-material/Add";
+import Refresh from "@mui/icons-material/Refresh";
+import CloudUpload from "@mui/icons-material/CloudUpload";
 
 export default function InternalLinksPage() {
   const [links, setLinks] = useState<InternalLinkDto[]>([]);
@@ -100,10 +104,10 @@ export default function InternalLinksPage() {
         <h1 className="text-2xl font-bold">SEO Internal Links</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleMigration} title="Import from file">
-            <Upload className="w-4 h-4 mr-2" /> Import Defaults
+            <CloudUpload className="w-4 h-4 mr-2" /> Import Defaults
           </Button>
           <Button onClick={() => { resetForm(); setIsModalOpen(true); }}>
-            <Plus className="w-4 h-4 mr-2" /> Add Link
+            <Add className="w-4 h-4 mr-2" /> Add Link
           </Button>
         </div>
       </div>
@@ -140,7 +144,7 @@ export default function InternalLinksPage() {
                       <Edit className="w-4 h-4" />
                     </Button>
                     <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDelete(link.id)}>
-                      <Trash2 className="w-4 h-4" />
+                      <Delete className="w-4 h-4" />
                     </Button>
                   </TableCell>
                 </TableRow>

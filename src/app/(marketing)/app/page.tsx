@@ -1,5 +1,6 @@
 import { Metadata } from "next";
-import { Download, Zap } from "lucide-react";
+import Download from "@mui/icons-material/Download";
+import Bolt from "@mui/icons-material/Bolt";
 import { Box } from "@/components/ui/Box";
 import { JsonLd } from "@/components/seo/JsonLd";
 
@@ -148,7 +149,7 @@ export default function AppDownloadPage() {
           </Box>
 
           <Box className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-blue-50 px-4 py-3">
-            <Zap className="h-5 w-5 text-blue-700" />
+            <Bolt className="h-5 w-5 text-blue-700" />
             <Box className="text-sm font-medium text-blue-900">Study faster with mobile practice</Box>
           </Box>
         </Box>

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Search, ChevronRight } from "lucide-react";
+import Search from "@mui/icons-material/Search";
+import ChevronRight from "@mui/icons-material/ChevronRight";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,

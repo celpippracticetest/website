@@ -1,7 +1,8 @@
 import SvgCheckCircle from "@/components/icons/CheckCircle";
 import SvgCircle from "@/components/icons/Circle";
 import { cn } from "@/lib/utils";
-import { Circle, CircleCheck } from "lucide-react";
+import RadioButtonUnchecked from "@mui/icons-material/RadioButtonUnchecked";
+import CheckCircle from "@mui/icons-material/CheckCircle";
 
 interface QuestionOptionProps {
   option: {

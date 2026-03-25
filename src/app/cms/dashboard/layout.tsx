@@ -3,7 +3,7 @@
 import { useState, Suspense } from "react";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { Box } from "@/components/ui/Box";
-import { Menu } from "lucide-react";
+import Menu from "@mui/icons-material/Menu";
 
 function DashboardShell({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

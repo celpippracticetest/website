@@ -3,29 +3,27 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import {
-  LayoutDashboard,
-  Compass,
-  FileText,
-  ImageIcon,
-  Users,
-  Settings,
-  Menu,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  ClipboardList,
-  BookOpen,
-  PenTool,
-  Mic,
-  Headphones,
-  Book,
-  Globe,
-  Trophy,
-  Mail,
-  BarChart2,
-  CheckSquare
-} from "lucide-react";
+import Dashboard from "@mui/icons-material/Dashboard";
+import Explore from "@mui/icons-material/Explore";
+import Description from "@mui/icons-material/Description";
+import Image from "@mui/icons-material/Image";
+import People from "@mui/icons-material/People";
+import Settings from "@mui/icons-material/Settings";
+import Menu from "@mui/icons-material/Menu";
+import ChevronLeft from "@mui/icons-material/ChevronLeft";
+import ChevronRight from "@mui/icons-material/ChevronRight";
+import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
+import Assignment from "@mui/icons-material/Assignment";
+import MenuBook from "@mui/icons-material/MenuBook";
+import BorderColor from "@mui/icons-material/BorderColor";
+import Mic from "@mui/icons-material/Mic";
+import Headphones from "@mui/icons-material/Headphones";
+import Book from "@mui/icons-material/Book";
+import Language from "@mui/icons-material/Language";
+import EmojiEvents from "@mui/icons-material/EmojiEvents";
+import Mail from "@mui/icons-material/Mail";
+import BarChart from "@mui/icons-material/BarChart";
+import CheckBox from "@mui/icons-material/CheckBox";
 import { cn } from "@/lib/utils";
 import { Box } from "@/components/ui/Box";
 
@@ -44,53 +42,53 @@ interface SidebarGroup {
 
 const mainItems: SidebarGroup = {
   items: [
-    { key: "overview", label: "Overview", icon: LayoutDashboard, href: "/cms/dashboard" },
-    { key: "onboarding", label: "Onboarding", icon: Compass, href: "/cms/dashboard/onboarding" },
-    { key: "plans", label: "Plans", icon: ClipboardList, href: "/cms/dashboard/plans" },
-    { key: "withdrawal-requests", label: "Withdrawals", icon: FileText, href: "/cms/dashboard/withdrawal-requests" },
-    { key: "refund-requests", label: "Refund Requests", icon: FileText, href: "/cms/dashboard/refund-requests" },
-    { key: "users", label: "Users", icon: Users, href: "/cms/dashboard/users" },
-    { key: "cancellation-surveys", label: "Cancellation Reasons", icon: FileText, href: "/cms/dashboard/cancellation-surveys" },
+    { key: "overview", label: "Overview", icon: Dashboard, href: "/cms/dashboard" },
+    { key: "onboarding", label: "Onboarding", icon: Explore, href: "/cms/dashboard/onboarding" },
+    { key: "plans", label: "Plans", icon: Assignment, href: "/cms/dashboard/plans" },
+    { key: "withdrawal-requests", label: "Withdrawals", icon: Description, href: "/cms/dashboard/withdrawal-requests" },
+    { key: "refund-requests", label: "Refund Requests", icon: Description, href: "/cms/dashboard/refund-requests" },
+    { key: "users", label: "Users", icon: People, href: "/cms/dashboard/users" },
+    { key: "cancellation-surveys", label: "Cancellation Reasons", icon: Description, href: "/cms/dashboard/cancellation-surveys" },
     { key: "lead-capture", label: "Lead Capture", icon: Mail, href: "/cms/dashboard/lead-capture" },
     { key: "reminder-emails", label: "Reminder Emails", icon: Mail, href: "/cms/dashboard/reminder-emails" },
-    { key: "league", label: "League", icon: Trophy, href: "/cms/dashboard/league" },
+    { key: "league", label: "League", icon: EmojiEvents, href: "/cms/dashboard/league" },
   ],
 };
 
 const examItems: SidebarGroup = {
   label: "Exams",
   items: [
-    { key: "exam-create", label: "Create Exam", icon: ClipboardList, href: "/cms/dashboard/exam/create" },
-    { key: "exam-list", label: "List Exams", icon: ClipboardList, href: "/cms/dashboard/exam" },
+    { key: "exam-create", label: "Create Exam", icon: Assignment, href: "/cms/dashboard/exam/create" },
+    { key: "exam-list", label: "List Exams", icon: Assignment, href: "/cms/dashboard/exam" },
   ],
 };
 
 const practiceItems: SidebarGroup = {
   label: "Practice",
   items: [
-    { key: "practice-list", label: "List Practices", icon: BookOpen, href: "/cms/dashboard/practice" },
+    { key: "practice-list", label: "List Practices", icon: MenuBook, href: "/cms/dashboard/practice" },
   ],
 };
 
 const reportItems: SidebarGroup = {
   label: "Reports",
   items: [
-    { key: "reports-quick", label: "Quick Report", icon: BarChart2, href: "/cms/dashboard/reports/quick" },
-    { key: "reports-analytics", label: "Analytics", icon: BarChart2, href: "/cms/dashboard/reports/analytics" },
-    { key: "reports-google-ads", label: "Google Ads", icon: Globe, href: "/cms/dashboard/reports/google-ads" },
-    { key: "reports-search-console", label: "Search Console", icon: Globe, href: "/cms/dashboard/reports/search-console" },
-    { key: "reports-stripe", label: "Stripe", icon: ClipboardList, href: "/cms/dashboard/reports/stripe" },
+    { key: "reports-quick", label: "Quick Report", icon: BarChart, href: "/cms/dashboard/reports/quick" },
+    { key: "reports-analytics", label: "Analytics", icon: BarChart, href: "/cms/dashboard/reports/analytics" },
+    { key: "reports-google-ads", label: "Google Ads", icon: Language, href: "/cms/dashboard/reports/google-ads" },
+    { key: "reports-search-console", label: "Search Console", icon: Language, href: "/cms/dashboard/reports/search-console" },
+    { key: "reports-stripe", label: "Stripe", icon: Assignment, href: "/cms/dashboard/reports/stripe" },
   ],
 };
 
 const contentItems: SidebarGroup = {
   label: "Content",
   items: [
-    { key: "homepage-hero", label: "Homepage Hero", icon: ImageIcon, href: "/cms/dashboard/homepage-hero" },
-    { key: "tasks", label: "Tasks", icon: CheckSquare, href: "/cms/dashboard/tasks" },
-    { key: "blog", label: "Blog", icon: PenTool, href: "/cms/dashboard/blog" },
+    { key: "homepage-hero", label: "Homepage Hero", icon: Image, href: "/cms/dashboard/homepage-hero" },
+    { key: "tasks", label: "Tasks", icon: CheckBox, href: "/cms/dashboard/tasks" },
+    { key: "blog", label: "Blog", icon: BorderColor, href: "/cms/dashboard/blog" },
     { key: "wiki", label: "Wiki", icon: Book, href: "/cms/dashboard/wiki" },
-    { key: "seo", label: "SEO Links", icon: Globe, href: "/cms/dashboard/seo/internal-links" },
+    { key: "seo", label: "SEO Links", icon: Language, href: "/cms/dashboard/seo/internal-links" },
   ],
 };
 

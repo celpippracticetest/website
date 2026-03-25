@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, Loader2, Upload } from "lucide-react";
+import Check from "@mui/icons-material/Check";
+import Autorenew from "@mui/icons-material/Autorenew";
+import CloudUpload from "@mui/icons-material/CloudUpload";
 import { Box } from "@/components/ui/Box";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -357,9 +359,9 @@ export default function HomepageHeroPageClient() {
                   className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
                 >
                   {isImageUploading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Autorenew className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Upload className="h-4 w-4" />
+                    <CloudUpload className="h-4 w-4" />
                   )}
                   <span>
                     {isImageUploading ? "Uploading..." : "Upload Hero Image"}

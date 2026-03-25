@@ -3,7 +3,11 @@
 import React, { useState } from "react";
 import { Box } from "@/components/ui/Box";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, DollarSign, Users, Activity, Calendar as CalendarIcon } from "lucide-react";
+import Autorenew from "@mui/icons-material/Autorenew";
+import AttachMoney from "@mui/icons-material/AttachMoney";
+import People from "@mui/icons-material/People";
+import Insights from "@mui/icons-material/Insights";
+import CalendarIcon from "@mui/icons-material/CalendarToday";
 import moment from "moment";
 import { Button, Typography } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -220,7 +224,7 @@ export default function StripeReportPage() {
   if (isLoading) {
     return (
       <Box className="flex h-96 w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <Autorenew className="h-8 w-8 animate-spin text-blue-500" />
       </Box>
     );
   }
@@ -391,7 +395,7 @@ export default function StripeReportPage() {
               disabled={syncMutation.isPending || !startDate || !endDate}
             >
               {syncMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Autorenew className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
               Fetch From / To
             </Button>
@@ -401,7 +405,7 @@ export default function StripeReportPage() {
               disabled={syncMutation.isPending}
             >
               {syncMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Autorenew className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
               Fetch Till Now
             </Button>
@@ -419,28 +423,28 @@ export default function StripeReportPage() {
         <SummaryCard
           title="Net Revenue"
           value={formatCurrency(data?.revenue?.netCents || 0, "CAD")}
-          icon={<DollarSign className="h-5 w-5 text-green-600" />}
+          icon={<AttachMoney className="h-5 w-5 text-green-600" />}
           bgColor="bg-green-50"
           subtext="After Stripe fees"
         />
         <SummaryCard
           title="New Subscriptions"
           value={data?.subscribers?.startedInPeriod?.toString() || "0"}
-          icon={<Users className="h-5 w-5 text-indigo-600" />}
+          icon={<People className="h-5 w-5 text-indigo-600" />}
           bgColor="bg-indigo-50"
           subtext="Started in selected range"
         />
         <SummaryCard
           title="Active Subscriptions"
           value={data?.subscribers?.currentActive?.toString() || "0"}
-          icon={<Users className="h-5 w-5 text-blue-600" />}
+          icon={<People className="h-5 w-5 text-blue-600" />}
           bgColor="bg-blue-50"
           subtext="Current active"
         />
         <SummaryCard
           title="Churn Rate"
           value={`${data?.churn?.churnRatePercent?.toFixed?.(2) || "0.00"}%`}
-          icon={<Activity className="h-5 w-5 text-purple-600" />}
+          icon={<Insights className="h-5 w-5 text-purple-600" />}
           bgColor="bg-purple-50"
           subtext={`${data?.churn?.churnedSubscribers || 0} cancelled / ${data?.churn?.startingSubscribers || 0} start`}
         />

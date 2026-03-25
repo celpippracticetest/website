@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import SvgSpeaker from "@/components/icons/Speaker";
 import SvgArrowLeft from "@/components/icons/ArrowLeft";
 import SvgArrowRight from "@/components/icons/ArrowRight";
-import { CheckCircle2, RotateCcw } from "lucide-react";
+import CheckCircle from "@mui/icons-material/CheckCircle";
+import RotateLeft from "@mui/icons-material/RotateLeft";
 import { TUserWordDto } from "@/models/userWords.model";
 
 interface WordDetail {
@@ -244,7 +245,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                         onClick={() => onToggleMastered(word.word, !!word.isLearned)}
                         className="px-4 py-2 rounded-full bg-blue-50 text-blue-600 font-semibold flex items-center gap-2 cursor-pointer"
                     >
-                        <CheckCircle2 size={18} />
+                        <CheckCircle sx={{ fontSize: 18 }} />
                         Mastered
                     </button>
 
@@ -253,7 +254,7 @@ export const WordDetailsCard: React.FC<WordDetailsCardProps> = ({
                         disabled={!hasNext}
                         className="px-4 py-2 rounded-full bg-amber-50 text-amber-700 font-semibold disabled:opacity-40 cursor-pointer flex items-center gap-2"
                     >
-                        <RotateCcw size={16} />
+                        <RotateLeft sx={{ fontSize: 16 }} />
                         Learn Again
                     </button>
 

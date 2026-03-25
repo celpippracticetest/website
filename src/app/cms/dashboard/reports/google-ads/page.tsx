@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Box } from "@/components/ui/Box";
-import { BarChart3 } from "lucide-react";
+import BarChart from "@mui/icons-material/BarChart";
 
 export default function GoogleAdsReportPage() {
   return (
@@ -16,7 +16,7 @@ export default function GoogleAdsReportPage() {
 
         <Box className="flex flex-col gap-4 p-5 rounded-xl bg-white border border-gray-200 shadow-sm overflow-hidden">
           <Box className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-gray-600" />
+            <BarChart className="h-5 w-5 text-gray-600" />
             <span className="font-semibold text-base text-gray-800">
               Report View
             </span>

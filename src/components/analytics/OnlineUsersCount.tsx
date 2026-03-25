@@ -1,7 +1,14 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Users, UserPlus, Activity, TrendingUp, Headphones, BookOpen, PenTool, Mic } from "lucide-react";
+import People from "@mui/icons-material/People";
+import PersonAdd from "@mui/icons-material/PersonAdd";
+import Insights from "@mui/icons-material/Insights";
+import TrendingUp from "@mui/icons-material/TrendingUp";
+import Headphones from "@mui/icons-material/Headphones";
+import MenuBook from "@mui/icons-material/MenuBook";
+import BorderColor from "@mui/icons-material/BorderColor";
+import Mic from "@mui/icons-material/Mic";
 import { Box } from "@/components/ui/Box";
 import { useState, useEffect } from "react";
 
@@ -80,7 +87,7 @@ export default function OnlineUsersCount({
   const messages = [
     {
       text: `Join ${stats.onlineUsers.toLocaleString()}+ learners studying right now!`,
-      icon: Activity,
+      icon: Insights,
       color: "text-orange-600",
     },
     {
@@ -90,7 +97,7 @@ export default function OnlineUsersCount({
     },
     {
       text: `${writingCount.toLocaleString()}+ practicing Writing right now!`,
-      icon: PenTool,
+      icon: BorderColor,
       color: "text-teal-600",
     },
     {
@@ -100,7 +107,7 @@ export default function OnlineUsersCount({
     },
     {
       text: `${readingCount.toLocaleString()}+ practicing Reading right now!`,
-      icon: BookOpen,
+      icon: MenuBook,
       color: "text-purple-600",
     },
   ];
@@ -151,7 +158,7 @@ export default function OnlineUsersCount({
           {/* Online Users */}
           <Box className="flex flex-col items-center flex-1 min-w-[80px] p-3 rounded-[16px] bg-[#F4F7FF]">
             <Box className="relative">
-              <Users className="h-5 w-5 text-text1" />
+              <People className="h-5 w-5 text-text1" />
               <span className="absolute -top-1 -right-1 flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
@@ -165,7 +172,7 @@ export default function OnlineUsersCount({
 
           {/* Recent Signups */}
           <Box className="flex flex-col items-center flex-1 min-w-[80px] p-3 rounded-[16px] bg-[#F4F7FF]">
-            <UserPlus className="h-5 w-5 text-text1" />
+            <PersonAdd className="h-5 w-5 text-text1" />
             <span className="text-[18px] screen1280:!text-[20px] font-bold text-text1 mt-1">
               {stats.recentSignups.toLocaleString()}
             </span>
@@ -175,7 +182,7 @@ export default function OnlineUsersCount({
           {/* Practicing Users */}
           <Box className="flex flex-col items-center flex-1 min-w-[80px] p-3 rounded-[16px] bg-[#F4F7FF]">
             <Box className="relative">
-              <Activity className="h-5 w-5 text-text1" />
+              <Insights className="h-5 w-5 text-text1" />
               <span className="absolute -top-0.5 -right-0.5 flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-purple-500"></span>
@@ -204,7 +211,7 @@ export default function OnlineUsersCount({
       <Box
         className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-sm font-medium ${className}`}
       >
-        {showIcon && <Users className="h-4 w-4" />}
+        {showIcon && <People className="h-4 w-4" />}
         <span className="relative flex items-center gap-1">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -220,7 +227,7 @@ export default function OnlineUsersCount({
   if (variant === "minimal") {
     return (
       <Box className={`inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 ${className}`}>
-        {showIcon && <Users className="h-4 w-4" />}
+        {showIcon && <People className="h-4 w-4" />}
         <span>{stats.onlineUsers.toLocaleString()} online</span>
       </Box>
     );
@@ -233,7 +240,7 @@ export default function OnlineUsersCount({
     >
       {showIcon && (
         <Box className="relative">
-          <Users className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+          <People className="h-5 w-5 text-gray-600 dark:text-gray-400" />
           <span className="absolute -top-1 -right-1 flex h-3 w-3">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>

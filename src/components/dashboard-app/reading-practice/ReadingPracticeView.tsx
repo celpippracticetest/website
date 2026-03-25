@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import NextImage from "next/image";
-import {
-  ArrowLeft,
-} from "lucide-react";
+import ArrowBack from "@mui/icons-material/ArrowBack";
 import { TPracticeDto } from "@/models/practice.model";
 import ListeningSideMenu from "../listening-practice/ListeningSideMenu";
 import ListeningAnswerList from "./components/ListeningAnswers";
@@ -351,7 +349,7 @@ const ReadingPracticeView = ({
                     }}
                     className="cursor-pointer inline-flex border border-[#37465C] shrink-0 items-center h-[40px] w-[40px] rounded-[100%] justify-center min-h-[40px]"
                   >
-                    <ArrowLeft size={18} strokeWidth={1.7}></ArrowLeft>
+                    <ArrowBack sx={{ fontSize: 18 }} />
                   </button>
                   <button
                     onClick={async () => {
@@ -460,7 +458,7 @@ const ReadingPracticeView = ({
                   }}
                   className="cursor-pointer inline-flex border border-[#37465C] shrink-0 items-center h-[40px] w-[40px] rounded-[100%] justify-center min-h-[40px]"
                 >
-                  <ArrowLeft size={18} strokeWidth={1.7}></ArrowLeft>
+                  <ArrowBack sx={{ fontSize: 18 }} />
                 </button>
                 {/* <button
                 onClick={() => {

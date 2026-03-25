@@ -3,7 +3,8 @@
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "nextjs-toploader/app";
-import { ChevronLeft, Loader2 } from "lucide-react";
+import ChevronLeft from "@mui/icons-material/ChevronLeft";
+import Autorenew from "@mui/icons-material/Autorenew";
 import { Box } from "@/components/ui/Box";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
@@ -78,7 +79,7 @@ export default function EditBlogPage({ params }: { params: Promise<{ id: string 
   if (isLoading) {
     return (
       <Box className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+        <Autorenew className="h-8 w-8 animate-spin text-slate-400" />
       </Box>
     );
   }

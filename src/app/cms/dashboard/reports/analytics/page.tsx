@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Box } from "@/components/ui/Box";
-import { PieChart } from "lucide-react";
+import PieChart from "@mui/icons-material/PieChart";
 
 export default function AnalyticsReportPage() {
   return (

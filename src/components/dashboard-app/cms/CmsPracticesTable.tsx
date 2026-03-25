@@ -8,7 +8,9 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import Visibility from "@mui/icons-material/Visibility";
+import Edit from "@mui/icons-material/Edit";
+import Delete from "@mui/icons-material/Delete";
 import {
   Pagination,
   PaginationContent,
@@ -143,7 +145,7 @@ const CmsPracticesTable = ({
                   }}
                   title="View Practice"
                 >
-                  <Eye className="h-4 w-4" />
+                  <Visibility className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -151,7 +153,7 @@ const CmsPracticesTable = ({
                   onClick={() => onEdit(practice.id, practice.type)}
                   title="Edit practice"
                 >
-                  <Pencil className="h-4 w-4" />
+                  <Edit className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -168,7 +170,7 @@ const CmsPracticesTable = ({
                   title="Delete practice"
                   className="text-red-500 hover:text-red-700"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Delete className="h-4 w-4" />
                 </Button>
               </TableCell>
             </TableRow>

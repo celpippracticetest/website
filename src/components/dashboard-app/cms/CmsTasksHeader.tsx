@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import Add from "@mui/icons-material/Add";
 
 interface CmsTasksHeaderProps {
     onCreateTask: () => void;
@@ -19,7 +19,7 @@ const CmsTasksHeader = ({ onCreateTask }: CmsTasksHeaderProps) => {
 
             <div className="mt-4 md:mt-0">
                 <Button onClick={onCreateTask} className="flex items-center">
-                    <Plus className="mr-2 h-4 w-4" />
+                    <Add className="mr-2 h-4 w-4" />
                     Create New Task
                 </Button>
             </div>

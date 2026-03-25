@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import WikiArticlesTable from "@/components/dashboard-app/cms/WikiArticlesTable";
 import type { TWikiArticleSchemaDto } from "@/models/wiki.model";
-import { Download, Loader2 } from "lucide-react";
+import Download from "@mui/icons-material/Download";
+import Autorenew from "@mui/icons-material/Autorenew";
 
 type ApiResult = {
   items: TWikiArticleSchemaDto[];
@@ -98,7 +99,7 @@ export default function CmsWikiPage() {
             >
               {isImporting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Autorenew className="mr-2 h-4 w-4 animate-spin" />
                   Importing...
                 </>
               ) : (

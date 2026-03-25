@@ -18,17 +18,15 @@ import {
     planTemplates,
 } from "@/lib/pricingCatalog";
 import type { SerializedPlan } from "@/types/pricing";
-import {
-    Plus,
-    Edit2,
-    Layers3,
-    Trash2,
-    X,
-    BarChart2,
-    RefreshCw,
-    UserCog,
-    Loader2,
-} from "lucide-react";
+import Add from "@mui/icons-material/Add";
+import Edit from "@mui/icons-material/Edit";
+import Layers from "@mui/icons-material/Layers";
+import Delete from "@mui/icons-material/Delete";
+import Close from "@mui/icons-material/Close";
+import BarChart from "@mui/icons-material/BarChart";
+import Refresh from "@mui/icons-material/Refresh";
+import ManageAccounts from "@mui/icons-material/ManageAccounts";
+import Autorenew from "@mui/icons-material/Autorenew";
 
 type MigratePremiumToPlusResult = {
     ok?: boolean;
@@ -352,7 +350,7 @@ const PlansPage = () => {
                     onClick={() => handleOpenModal()}
                     className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
                 >
-                    <Plus size={20} />
+                    <Add sx={{ fontSize: 20 }} />
                     Add New Plan
                 </button>
             </div>
@@ -375,7 +373,7 @@ const PlansPage = () => {
             <div className="mb-8 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50/90 to-white p-6 shadow-sm">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div className="flex items-start gap-3">
-                        <UserCog className="mt-0.5 h-6 w-6 shrink-0 text-amber-700" />
+                        <ManageAccounts className="mt-0.5 h-6 w-6 shrink-0 text-amber-700" />
                         <div>
                             <p className="text-xs font-semibold uppercase tracking-[0.08em] text-amber-800">
                                 One-time subscriber migration
@@ -422,7 +420,7 @@ const PlansPage = () => {
                             className="inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-medium text-amber-900 shadow-sm transition-colors hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             {migrateLoading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <Autorenew className="h-4 w-4 animate-spin" />
                             ) : null}
                             Dry run (preview)
                         </button>
@@ -447,7 +445,7 @@ const PlansPage = () => {
                             className="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             {migrateLoading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <Autorenew className="h-4 w-4 animate-spin" />
                             ) : null}
                             Run migration
                         </button>
@@ -508,7 +506,7 @@ const PlansPage = () => {
             <div className="mb-8 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 to-white p-6 shadow-sm">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-start gap-3">
-                        <BarChart2 className="mt-0.5 h-6 w-6 text-indigo-600" />
+                        <BarChart className="mt-0.5 h-6 w-6 text-indigo-600" />
                         <div>
                             <p className="text-xs font-semibold uppercase tracking-[0.08em] text-indigo-700">
                                 Public pricing page A/B
@@ -546,7 +544,7 @@ const PlansPage = () => {
                             className="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
                             title="Reload stats"
                         >
-                            <RefreshCw className={`h-4 w-4 ${abStatsLoading ? "animate-spin" : ""}`} />
+                            <Refresh className={`h-4 w-4 ${abStatsLoading ? "animate-spin" : ""}`} />
                             Refresh
                         </button>
                     </div>
@@ -646,13 +644,13 @@ const PlansPage = () => {
                                                     onClick={() => handleOpenModal(plan)}
                                                     className="rounded-full p-2 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600"
                                                 >
-                                                    <Edit2 size={18} />
+                                                    <Edit sx={{ fontSize: 18 }} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(plan._id!.toString())}
                                                     className="rounded-full p-2 text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600"
                                                 >
-                                                    <Trash2 size={18} />
+                                                    <Delete sx={{ fontSize: 18 }} />
                                                 </button>
                                             </div>
 
@@ -745,14 +743,14 @@ const PlansPage = () => {
                                 onClick={handleCloseModal}
                                 className="text-gray-400 hover:text-gray-600"
                             >
-                                <X size={24} />
+                                <Close sx={{ fontSize: 24 }} />
                             </button>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-6 p-6">
                             <div className="rounded-2xl border bg-slate-50 p-4">
                                 <div className="mb-3 flex items-center gap-2">
-                                    <Layers3 size={18} className="text-blue-700" />
+                                    <Layers sx={{ fontSize: 18 }} className="text-blue-700" />
                                     <h3 className="font-semibold text-gray-900">Quick templates</h3>
                                 </div>
                                 <p className="mb-4 text-sm text-gray-600">
@@ -1010,7 +1008,7 @@ const PlansPage = () => {
                                                 onClick={() => removeFeature(index)}
                                                 className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
                                             >
-                                                <Trash2 size={18} />
+                                                <Delete sx={{ fontSize: 18 }} />
                                             </button>
                                         </div>
                                     ))}
@@ -1019,7 +1017,7 @@ const PlansPage = () => {
                                         onClick={addFeature}
                                         className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
                                     >
-                                        <Plus size={16} /> Add Feature
+                                        <Add sx={{ fontSize: 16 }} /> Add Feature
                                     </button>
                                 </div>
                             </div>

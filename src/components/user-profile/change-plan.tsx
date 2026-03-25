@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
-import { LockOpen } from "lucide-react";
+import LockOpen from "@mui/icons-material/LockOpen";
 
 export default function ChangePlan() {
   const { user } = useUser();
@@ -27,7 +27,7 @@ export default function ChangePlan() {
             className="inline-flex items-center justify-center whitespace-nowrap text-[14px] ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 main-btn transition-all rounded-xl h-10 px-4 py-2 font-semibold bg-[#3ebbf3] hover:bg-[#3ebbf3]/70 border-gray-400 text-white hover:text-white cursor-pointer"
           >
             <LockOpen
-              className="lucide-lock-open mr-2 h-4 w-4"
+              className="mr-2 h-4 w-4"
               width="24"
               height="24"
               viewBox="0 0 24 24"

@@ -1,5 +1,10 @@
 "use client";
-import { Headphones, BookOpen, Pen, Mic, BookOpenCheck, Library } from "lucide-react";
+import Headphones from "@mui/icons-material/Headphones";
+import MenuBook from "@mui/icons-material/MenuBook";
+import Draw from "@mui/icons-material/Draw";
+import Mic from "@mui/icons-material/Mic";
+import LibraryAddCheck from "@mui/icons-material/LibraryAddCheck";
+import LocalLibrary from "@mui/icons-material/LocalLibrary";
 import DesktopHeader from "./desktopHeader";
 import MobileHeader from "./mobileHeader";
 import { useState } from "react";
@@ -19,7 +24,7 @@ const Header = ({ viewMode, currentPage }: { viewMode: "practice" | "exams" | nu
       name: "Mock Exams",
       mobileName: 'Exams',
       path: "/exams",
-      icon: <BookOpenCheck className="w-5 h-5 text-orange-500" />,
+      icon: <LibraryAddCheck className="w-5 h-5 text-orange-500" />,
       onClick: () => {
         trackNav("Mock Exams", "/exam-overview", "header");
         setViewMode("exams");
@@ -43,7 +48,7 @@ const Header = ({ viewMode, currentPage }: { viewMode: "practice" | "exams" | nu
       name: "CELPIP Wiki",
       mobileName: 'Wiki',
       path: "/wiki",
-      icon: <Library className="w-5 h-5 text-yellow-500" />,
+      icon: <LocalLibrary className="w-5 h-5 text-yellow-500" />,
       onClick: () => {
         trackNav("CELPIP Wiki", "/wiki", "header");
         router.push("/wiki");

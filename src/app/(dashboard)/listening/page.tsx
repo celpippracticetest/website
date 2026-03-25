@@ -15,13 +15,15 @@ import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
 import { skillPagesContent } from "@/data/skill-pages-content";
 import type { Metadata } from "next";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import { Box, Typography } from "@mui/material";
 
-interface PracticeTask {
-  taskNumber: string;
-  name: string;
-}
 interface PracticeSection {
-  tasks: PracticeTask[];
+  tasks: {
+    id: string;
+    category: string;
+    taskNumber: string;
+    name: string;
+  }[];
   route: string;
 }
 
@@ -113,12 +115,28 @@ const DashboardApp = async ({
   if (!selectedPracticeId && !taskId) {
     return (
       <ShowTaskHeader>
-        <div className="flex mt-[32px]  screen744:!mt-[0] items-center justify-center gap-[8px] max-w-[1200px] w-full !h-[60px] shrink-0 rounded-[12px] bg-[#E3ECFF]">
-          <SvgListeningPart className="text-[#316BFF]" />
-          <h1 className="text-[#37465C] font-semibold text-[20px]">
+        <Box
+          sx={{
+            display: "flex",
+            mt: { xs: 4, sm: 0 },
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 1,
+            maxWidth: 1200,
+            width: 1,
+            height: 60,
+            flexShrink: 0,
+            borderRadius: 1.5,
+            bgcolor: "#E3ECFF",
+          }}
+        >
+          <Box sx={{ color: "#316BFF", display: "flex", alignItems: "center" }}>
+            <SvgListeningPart />
+          </Box>
+          <Typography component="h1" sx={{ color: "#37465C", fontWeight: 600, fontSize: 20 }}>
             Listening Practice
-          </h1>
-        </div>
+          </Typography>
+        </Box>
         <ShowTasks tasks={listeningTasks} />
       </ShowTaskHeader>
     );
@@ -174,10 +192,41 @@ const DashboardApp = async ({
       );
   }
 
+  const strategyBodySx = {
+    mt: 2,
+    fontSize: 15,
+    lineHeight: "24px",
+    color: "#526071",
+  };
+
   return (
-    <main className="bg-[#F2F6FF] min-h-screen flex w-full justify-center">
-      <div className="w-full max-w-[1280px]">
-        <h1 className="sr-only">CELPIP Listening Practice</h1>
+    <Box
+      component="main"
+      sx={{
+        bgcolor: "#F2F6FF",
+        minHeight: "100vh",
+        display: "flex",
+        width: 1,
+        justifyContent: "center",
+      }}
+    >
+      <Box sx={{ width: 1, maxWidth: 1280 }}>
+        <Typography
+          component="h1"
+          sx={{
+            position: "absolute",
+            width: "1px",
+            height: "1px",
+            p: 0,
+            m: "-1px",
+            overflow: "hidden",
+            clip: "rect(0, 0, 0, 0)",
+            whiteSpace: "nowrap",
+            border: 0,
+          }}
+        >
+          CELPIP Listening Practice
+        </Typography>
         <ListeningPractice
           showHeader={true}
           allPractices={practices.items}
@@ -187,40 +236,40 @@ const DashboardApp = async ({
           completedPractice={completedPractice}
         />
         {!user && (
-          <section className="px-4 pb-10">
-          <h2 className="text-[22px] font-semibold text-[#37465C]">
-            CELPIP Listening practice strategy
-          </h2>
-          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
-            Improve Listening by training note-taking, identifying key details, and tracking
-            distractors such as similar numbers, dates, or paraphrased options.
-          </p>
-          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
-            Review every missed item by question type, then repeat a similar task under timed
-            conditions to build accuracy and consistency for the real CELPIP test.
-          </p>
-          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
-            A high-scoring routine uses short, repeatable cycles. First, complete one listening
-            set without pausing. Second, review only your incorrect answers and identify exactly
-            why each distractor looked correct. Third, replay critical moments and practice
-            capturing keywords in fewer words. This improves both speed and attention.
-          </p>
-          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
-            Focus especially on transitions, speaker intent, and paraphrased details. Many losses
-            happen when learners search for exact words instead of meaning. Building this
-            paraphrase recognition skill makes your performance more stable across different topics
-            and accents.
-          </p>
-          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
-            In the final preparation phase, simulate real test pressure by practicing with strict
-            timing and no interruptions. Then compare results across several attempts to confirm
-            that your accuracy stays consistent. Consistency, not one perfect attempt, is the best
-            predictor of exam-day listening success.
-          </p>
-          </section>
+          <Box component="section" sx={{ px: 2, pb: 5 }}>
+            <Typography component="h2" sx={{ fontSize: 22, fontWeight: 600, color: "#37465C" }}>
+              CELPIP Listening practice strategy
+            </Typography>
+            <Typography component="p" sx={strategyBodySx}>
+              Improve Listening by training note-taking, identifying key details, and tracking
+              distractors such as similar numbers, dates, or paraphrased options.
+            </Typography>
+            <Typography component="p" sx={strategyBodySx}>
+              Review every missed item by question type, then repeat a similar task under timed
+              conditions to build accuracy and consistency for the real CELPIP test.
+            </Typography>
+            <Typography component="p" sx={strategyBodySx}>
+              A high-scoring routine uses short, repeatable cycles. First, complete one listening set
+              without pausing. Second, review only your incorrect answers and identify exactly why
+              each distractor looked correct. Third, replay critical moments and practice capturing
+              keywords in fewer words. This improves both speed and attention.
+            </Typography>
+            <Typography component="p" sx={strategyBodySx}>
+              Focus especially on transitions, speaker intent, and paraphrased details. Many losses
+              happen when learners search for exact words instead of meaning. Building this
+              paraphrase recognition skill makes your performance more stable across different
+              topics and accents.
+            </Typography>
+            <Typography component="p" sx={strategyBodySx}>
+              In the final preparation phase, simulate real test pressure by practicing with strict
+              timing and no interruptions. Then compare results across several attempts to confirm
+              that your accuracy stays consistent. Consistency, not one perfect attempt, is the best
+              predictor of exam-day listening success.
+            </Typography>
+          </Box>
         )}
-      </div>
-    </main>
+      </Box>
+    </Box>
   );
 };
 

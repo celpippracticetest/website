@@ -1,6 +1,6 @@
 import React from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Filter } from "lucide-react";
+import FilterList from "@mui/icons-material/FilterList";
 import { TExamSchemaDto } from "@/models/exam.model";
 import { PRACTICE_PARTS } from "@/constants";
 
@@ -20,7 +20,7 @@ export function PracticeTypeFilter({ selectedType, onTypeChange }: PracticeTypeF
 
   return (
     <div className="flex items-center space-x-2 bg-white p-4 rounded-md shadow-sm">
-      <Filter className="h-4 w-4 text-gray-500" />
+      <FilterList className="h-4 w-4 text-gray-500" />
       <span className="font-medium text-gray-700">Filter by Type:</span>
       <Select value={selectedType ? selectedType.toLowerCase() : "all"} onValueChange={handleTypeChange}>
         <SelectTrigger className="w-[180px]">
@@ -57,7 +57,7 @@ export function ExamIdFilter({
 
   return (
     <div className="flex items-center space-x-2 bg-white p-4 rounded-md shadow-sm">
-      <Filter className="h-4 w-4 text-gray-500" />
+      <FilterList className="h-4 w-4 text-gray-500" />
       <span className="font-medium text-gray-700">Filter by Exam:</span>
       <Select value={selectedType ? selectedType.toLowerCase() : "all"} onValueChange={handleTypeChange}>
         <SelectTrigger className="w-[180px]">
@@ -93,7 +93,7 @@ export function ExamPartIdFilter({
 
   return (
     <div className="flex items-center space-x-2 bg-white p-4 rounded-md shadow-sm">
-      <Filter className="h-4 w-4 text-gray-500" />
+      <FilterList className="h-4 w-4 text-gray-500" />
       <span className="font-medium text-gray-700">Filter by part:</span>
       <Select value={selectedType ? selectedType.toLowerCase() : "all"} onValueChange={handleTypeChange}>
         <SelectTrigger className="w-[180px]">

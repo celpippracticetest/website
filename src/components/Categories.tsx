@@ -1,6 +1,10 @@
 
 "use client"
-import { Headphones, BookOpen, Pen, Mic, BookOpenCheck } from "lucide-react";
+import Headphones from "@mui/icons-material/Headphones";
+import MenuBook from "@mui/icons-material/MenuBook";
+import Draw from "@mui/icons-material/Draw";
+import Mic from "@mui/icons-material/Mic";
+import LibraryAddCheck from "@mui/icons-material/LibraryAddCheck";
 import Link from "next/link";
 
 const Categories = () => {
@@ -17,17 +21,17 @@ const Categories = () => {
     },
     {
       name: "Writing",
-      icon: <Pen className="w-10 h-10 text-green-500 group-hover:text-white transition-colors" />,
+      icon: <Draw className="w-10 h-10 text-green-500 group-hover:text-white transition-colors" />,
       path: "/practice-overview"
     },
     {
       name: "Reading",
-      icon: <BookOpen className="w-10 h-10 text-red-500 group-hover:text-white transition-colors" />,
+      icon: <MenuBook className="w-10 h-10 text-red-500 group-hover:text-white transition-colors" />,
       path: "/practice-overview"
     }//,
     // {
     //   name: "Mock Exams",
-    //   icon: <BookOpenCheck className="w-10 h-10 text-orange-500 group-hover:text-white transition-colors" />,
+    //   icon: <LibraryAddCheck className="w-10 h-10 text-orange-500 group-hover:text-white transition-colors" />,
     //   path: "/exams"
     // }
   ];

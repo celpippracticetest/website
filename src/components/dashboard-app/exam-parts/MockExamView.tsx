@@ -13,6 +13,7 @@ import {
   createMockPracticeSections,
   getMockExamPartsForSection,
 } from "./mockExamShared";
+import MockExamGuideTour from "./components/MockExamGuideTour";
 
 interface MockExamViewProps {
   practice: TPracticeDto;
@@ -54,6 +55,7 @@ const MockExamView = ({
 
   return (
     <>
+      <MockExamGuideTour />
       <ExamHeader
         examPractice={practice.type.charAt(0) + practice.type.slice(1).toLowerCase()}
         ref={ref}

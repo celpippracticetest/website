@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { ArrowRight, Search, BookOpen } from "lucide-react";
+import ArrowForward from "@mui/icons-material/ArrowForward";
+import Search from "@mui/icons-material/Search";
+import MenuBook from "@mui/icons-material/MenuBook";
 import {
   Card,
   CardContent,
@@ -152,7 +154,7 @@ export default function WikiArticleContent({
                         </p>
                         <CardTitle className="flex items-center justify-between gap-2 text-lg group-hover:text-blue-700">
                           <span className="line-clamp-2">{nextArticle.title}</span>
-                          <ArrowRight className="h-5 w-5 shrink-0" />
+                          <ArrowForward className="h-5 w-5 shrink-0" />
                         </CardTitle>
                         {nextArticle.summary && (
                           <CardDescription className="line-clamp-2 text-sm">
@@ -172,7 +174,7 @@ export default function WikiArticleContent({
                     <Card className="h-full w-full border-0 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
                       <CardHeader>
                         <p className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
-                          <BookOpen className="h-3 w-3" /> {article.category}
+                          <MenuBook className="h-3 w-3" /> {article.category}
                         </p>
                         <CardTitle className="text-lg group-hover:text-blue-700 line-clamp-2">
                           {article.title}

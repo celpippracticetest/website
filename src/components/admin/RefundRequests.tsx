@@ -1,7 +1,9 @@
 "use client";
 
 import { Box } from "@/components/ui/Box";
-import { RotateCw, ChevronDown, ChevronUp } from "lucide-react";
+import Refresh from "@mui/icons-material/Refresh";
+import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
+import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
 import { useEffect, useState, Fragment } from "react";
 
 type RefundRequestItem = {
@@ -245,7 +247,7 @@ export default function RefundRequests() {
           title="Refresh"
           type="button"
         >
-          <RotateCw className={`h-[18px] w-[18px] ${loading ? "animate-spin" : ""}`} />
+          <Refresh className={`h-[18px] w-[18px] ${loading ? "animate-spin" : ""}`} />
         </button>
       </Box>
 

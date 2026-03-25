@@ -1,6 +1,6 @@
 "use client";
 
-import ArrowLeft from "@/components/icons/ArrowLeft";
+import ArrowBack from "@mui/icons-material/ArrowBack";
 import SvgFailed from "@/components/icons/Failed";
 import LoginModal from "@/components/modal/LoginModal";
 import { useUser } from "@clerk/nextjs";
@@ -44,7 +44,7 @@ export default function Success() {
             className="flex cursor-pointer pl-[16px] pr-[24px] mt-[40px] gap-[8px] justify-center items-center bg-black h-[40px] rounded-[24px]"
           >
             <span>
-              <ArrowLeft className="text-white" />
+              <ArrowBack className="text-white" />
             </span>
             <span className="text-[14px] text-white font-normal">
               Back to dashboard

@@ -1,37 +1,35 @@
 
-import { 
-  House, 
-  ClipboardCheck, 
-  Laptop, 
-  Smile, 
-  Zap, 
-  Shield 
-} from "lucide-react";
+import Home from "@mui/icons-material/Home";
+import AssignmentTurnedIn from "@mui/icons-material/AssignmentTurnedIn";
+import LaptopMac from "@mui/icons-material/LaptopMac";
+import SentimentSatisfiedAlt from "@mui/icons-material/SentimentSatisfiedAlt";
+import Bolt from "@mui/icons-material/Bolt";
+import Shield from "@mui/icons-material/Shield";
 
 const ComparisonSection = () => {
   const features = [
     {
-      icon: <House className="h-6 w-6 text-gray-800 group-hover:text-[#3ebbf3]" />,
+      icon: <Home className="h-6 w-6 text-gray-800 group-hover:text-[#3ebbf3]" />,
       title: "Authentic Day-to-Day Contexts",
       description: "Engage with exam tasks that mirror real-world interactions, ensuring CELPIP aligns closely with daily communication in English-speaking environments."
     },
     {
-      icon: <ClipboardCheck className="h-6 w-6 text-gray-800 group-hover:text-[#3ebbf3]" />,
+      icon: <AssignmentTurnedIn className="h-6 w-6 text-gray-800 group-hover:text-[#3ebbf3]" />,
       title: "Single-Session Exam",
       description: "Finish your assessment all at once, cutting down on scheduling hassles and stress—unlike IELTS, which often requires multiple days."
     },
     {
-      icon: <Laptop className="h-6 w-6 text-gray-800 group-hover:text-[#3ebbf3]" />,
+      icon: <LaptopMac className="h-6 w-6 text-gray-800 group-hover:text-[#3ebbf3]" />,
       title: "Fully Digital Format",
       description: "Benefit from a streamlined, computer-based test that provides uniform clarity and consistency throughout."
     },
     {
-      icon: <Smile className="h-6 w-6 text-gray-800 group-hover:text-[#3ebbf3]" />,
+      icon: <SentimentSatisfiedAlt className="h-6 w-6 text-gray-800 group-hover:text-[#3ebbf3]" />,
       title: "Canada-Focused Assessment",
       description: "Showcase your language abilities in contexts relevant to Canadian culture and daily life—perfect for those planning to live, work, or study in Canada."
     },
     {
-      icon: <Zap className="h-6 w-6 text-gray-800 group-hover:text-[#3ebbf3]" />,
+      icon: <Bolt className="h-6 w-6 text-gray-800 group-hover:text-[#3ebbf3]" />,
       title: "Faster Turnaround",
       description: "Get your scores in just four to five days—quicker than IELTS—so you can move forward with your plans right away."
     },

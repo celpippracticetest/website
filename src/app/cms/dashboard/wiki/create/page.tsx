@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "nextjs-toploader/app";
-import { ChevronLeft } from "lucide-react";
+import ChevronLeft from "@mui/icons-material/ChevronLeft";
 import { Box } from "@/components/ui/Box";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";

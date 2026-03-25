@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import ArrowBack from "@mui/icons-material/ArrowBack";
+import ArrowForward from "@mui/icons-material/ArrowForward";
 import AudioPlayer from "./components/AudioPlayer";
 import ListeningQuestionList from "./components/ListeningQuestionList";
 import { TPracticeDto } from "@/models/practice.model";
@@ -369,7 +370,7 @@ const ListeningPracticeView = ({
                   }}
                   className="cursor-pointer shrink-0 w-[40px] h-[40px] border flex items-center justify-center border-[#37465C] rounded-[100%]"
                 >
-                  <ArrowLeft size={18} strokeWidth={1.7}></ArrowLeft>
+                  <ArrowBack sx={{ fontSize: 18 }} />
                 </button>
                 <button
                   onClick={() => {
@@ -429,7 +430,7 @@ const ListeningPracticeView = ({
                   {page === "answer" && practiceIndex >= allPractices.length - 1
                     ? "Start again"
                     : "Next"}
-                  <ArrowRight size={18} strokeWidth={1.7}></ArrowRight>
+                  <ArrowForward sx={{ fontSize: 18 }} />
                 </button>
               </div>
             ) : (

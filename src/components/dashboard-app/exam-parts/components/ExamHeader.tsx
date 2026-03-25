@@ -7,6 +7,7 @@ import { Box, Button, Paper, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import type { MockExamViewMode } from "./useExamViewMode";
 import ExamLayoutToggle from "./ExamLayoutToggle";
+import { MOCK_EXAM_GUIDE_REPLAY_EVENT } from "./mockExamGuideTourConstants";
 
 interface PracticeSectionItem {
     title: string;
@@ -84,6 +85,12 @@ const ExamHeader = forwardRef<HTMLDivElement, ExamHeaderProps>(
             : ""
             }`;
         const isOfficial = viewMode === "official";
+
+        const openGuideTour = () => {
+            if (typeof window !== "undefined") {
+                window.dispatchEvent(new CustomEvent(MOCK_EXAM_GUIDE_REPLAY_EVENT));
+            }
+        };
 
         return (
             <>
@@ -273,10 +280,42 @@ const ExamHeader = forwardRef<HTMLDivElement, ExamHeaderProps>(
                 >
                     {isOfficial ? (
                         !hideLayoutToggle && (
-                            <ExamLayoutToggle viewMode={viewMode} setViewMode={setViewMode} />
+                            <Box
+                                id="mock-exam-tour-mode-highlight"
+                                sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}
+                            >
+                                <ExamLayoutToggle viewMode={viewMode} setViewMode={setViewMode} />
+                                <Button
+                                    type="button"
+                                    variant="text"
+                                    onClick={openGuideTour}
+                                    sx={{
+                                        textTransform: "none",
+                                        fontSize: "0.8125rem",
+                                        fontWeight: 600,
+                                        color: "#316BFF",
+                                        minWidth: "auto",
+                                        px: 0.75,
+                                    }}
+                                >
+                                    Quick tour
+                                </Button>
+                            </Box>
                         )
                     ) : (
-                        <>
+                        <Box
+                            id="mock-exam-tour-parts-scores-highlight"
+                            sx={{
+                                display: "flex",
+                                flexDirection: { xs: "column", lg: "row" },
+                                alignItems: { xs: "stretch", lg: "center" },
+                                justifyContent: "space-between",
+                                gap: 2.5,
+                                width: "100%",
+                                flex: { lg: 1 },
+                                minWidth: 0,
+                            }}
+                        >
                             <Stack
                                 direction={{ xs: "column", sm: "row" }}
                                 spacing={1.5}
@@ -303,36 +342,63 @@ const ExamHeader = forwardRef<HTMLDivElement, ExamHeaderProps>(
                                     }}
                                 >
                                     {!hideLayoutToggle && (
-                                        <ExamLayoutToggle viewMode={viewMode} setViewMode={setViewMode} />
+                                        <Box
+                                            id="mock-exam-tour-mode-highlight"
+                                            sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}
+                                        >
+                                            <ExamLayoutToggle viewMode={viewMode} setViewMode={setViewMode} />
+                                            <Button
+                                                type="button"
+                                                variant="text"
+                                                onClick={openGuideTour}
+                                                sx={{
+                                                    textTransform: "none",
+                                                    fontSize: "0.8125rem",
+                                                    fontWeight: 600,
+                                                    color: "#316BFF",
+                                                    minWidth: "auto",
+                                                    px: 0.75,
+                                                }}
+                                            >
+                                                Quick tour
+                                            </Button>
+                                        </Box>
                                     )}
-                                    <Button
-                                        component="a"
-                                        href={resultsHref}
-                                        variant="outlined"
-                                        sx={{
-                                            minHeight: "44px",
-                                            px: 2,
-                                            borderRadius: "999px",
-                                            textTransform: "none",
-                                            fontSize: "0.95rem",
-                                            fontWeight: 700,
-                                            color: "#37465C",
-                                            borderColor: "#D5DDE8",
-                                            backgroundColor: "#FFFFFF",
-                                            "&:hover": {
-                                                borderColor: "#BFCDE2",
-                                                backgroundColor: "#F7F9FC",
-                                            },
-                                        }}
+                                    <Box
+                                        id="mock-exam-tour-results-highlight"
+                                        sx={{ display: "inline-flex", alignItems: "center" }}
                                     >
-                                        View Answers &amp; Score
-                                    </Button>
+                                        <Button
+                                            id="mock-exam-tour-results-link"
+                                            component="a"
+                                            href={resultsHref}
+                                            variant="outlined"
+                                            sx={{
+                                                minHeight: "44px",
+                                                px: 2,
+                                                borderRadius: "999px",
+                                                textTransform: "none",
+                                                fontSize: "0.95rem",
+                                                fontWeight: 700,
+                                                color: "#37465C",
+                                                borderColor: "#D5DDE8",
+                                                backgroundColor: "#FFFFFF",
+                                                "&:hover": {
+                                                    borderColor: "#BFCDE2",
+                                                    backgroundColor: "#F7F9FC",
+                                                },
+                                            }}
+                                        >
+                                            View Answers &amp; Score
+                                        </Button>
+                                    </Box>
                                     <AskBeavoButton
                                         className="screen744:block hidden screen744:!right-6 screen744:!left-auto screen744:!translate-x-0 screen744:!fixed screen744:!bottom-6 screen1280:!left-1/2 screen1280:!right-auto screen1280:!-translate-x-1/2"
                                     />
                                 </Box>
                             </Stack>
                             <Button
+                                id="mock-exam-tour-part-picker"
                                 onClick={() => setShowModal(true)}
                                 variant="outlined"
                                 endIcon={<SvgChevronDownExam />}
@@ -347,6 +413,7 @@ const ExamHeader = forwardRef<HTMLDivElement, ExamHeaderProps>(
                                     backgroundColor: "#FFFFFF",
                                     color: "#37465C",
                                     textTransform: "none",
+                                    alignSelf: { xs: "stretch", lg: "auto" },
                                     "&:hover": {
                                         borderColor: "#BFCDE2",
                                         backgroundColor: "#F7F9FC",
@@ -370,7 +437,7 @@ const ExamHeader = forwardRef<HTMLDivElement, ExamHeaderProps>(
                                     </Typography>
                                 </Box>
                             </Button>
-                        </>
+                        </Box>
                     )}
                 </Box>
             </>

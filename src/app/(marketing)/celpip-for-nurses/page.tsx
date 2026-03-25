@@ -24,16 +24,14 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  CheckCircle2,
-  AlertTriangle,
-  Stethoscope,
-  ArrowRight,
-  Star,
-  Heart,
-  Mic,
-  BookOpen,
-} from "lucide-react";
+import CheckCircle from "@mui/icons-material/CheckCircle";
+import Warning from "@mui/icons-material/Warning";
+import MedicalServices from "@mui/icons-material/MedicalServices";
+import ArrowForward from "@mui/icons-material/ArrowForward";
+import Star from "@mui/icons-material/Star";
+import Favorite from "@mui/icons-material/Favorite";
+import Mic from "@mui/icons-material/Mic";
+import MenuBook from "@mui/icons-material/MenuBook";
 
 export const metadata: Metadata = {
   title: "CELPIP for Nurses: Pass Nursing Registration in Canada",
@@ -98,7 +96,7 @@ export default function CelpipForNursesPage() {
       <Box className="bg-white border-b border-slate-200">
         <Box className="max-w-5xl mx-auto px-4 py-16 md:py-24 text-center">
           <Box className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 text-teal-700 text-sm font-medium mb-6">
-            <Heart className="w-4 h-4 fill-teal-700" />
+            <Favorite className="w-4 h-4 fill-teal-700" />
             <span>Trusted by Nurses & Healthcare Professionals</span>
           </Box>
 
@@ -115,7 +113,7 @@ export default function CelpipForNursesPage() {
             <Link href="/exam-overview">
               <Button size="lg" className="h-14 px-8 text-lg rounded-full shadow-lg shadow-teal-600/20 hover:shadow-xl hover:translate-y-[-2px] transition-all bg-teal-600 hover:bg-teal-700">
                 Start Free Practice Test
-                <ArrowRight className="ml-2 w-5 h-5" />
+                <ArrowForward className="ml-2 w-5 h-5" />
               </Button>
             </Link>
             <p className="text-sm text-slate-500 mt-4 sm:mt-0">No credit card required</p>
@@ -150,13 +148,13 @@ export default function CelpipForNursesPage() {
                 <Box className="space-y-3">
                   <Box className="bg-red-50 p-3 rounded-md border border-red-100">
                     <Box className="flex gap-2 text-red-700 text-sm font-semibold mb-1">
-                      <AlertTriangle className="w-4 h-4" /> The Challenge
+                      <Warning className="w-4 h-4" /> The Challenge
                     </Box>
                     <p className="text-red-600 text-xs">Speaking to a computer under timed conditions can cause anxiety and lower scores.</p>
                   </Box>
                   <Box className="bg-green-50 p-3 rounded-md border border-green-100">
                     <Box className="flex gap-2 text-green-700 text-sm font-semibold mb-1">
-                      <CheckCircle2 className="w-4 h-4" /> Our Solution
+                      <CheckCircle className="w-4 h-4" /> Our Solution
                     </Box>
                     <p className="text-green-600 text-xs">AI-powered Speaking practice with instant feedback on fluency and clarity.</p>
                   </Box>
@@ -167,7 +165,7 @@ export default function CelpipForNursesPage() {
             <Card className="flex-1 hover:shadow-md transition-shadow border-t-4 border-t-slate-500">
               <CardHeader>
                 <Box className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mb-4 text-slate-600">
-                  <Stethoscope className="w-6 h-6" />
+                  <MedicalServices className="w-6 h-6" />
                 </Box>
                 <CardTitle>Full CELPIP-General Prep</CardTitle>
                 <CardDescription>All 4 Skills When Required</CardDescription>
@@ -179,13 +177,13 @@ export default function CelpipForNursesPage() {
                 <Box className="space-y-3">
                   <Box className="bg-amber-50 p-3 rounded-md border border-amber-100">
                     <Box className="flex gap-2 text-amber-700 text-sm font-semibold mb-1">
-                      <BookOpen className="w-4 h-4" /> The Requirement
+                      <MenuBook className="w-4 h-4" /> The Requirement
                     </Box>
                     <p className="text-amber-700 text-xs">Reading and Writing matter for many nursing registration and bridging programs.</p>
                   </Box>
                   <Box className="bg-green-50 p-3 rounded-md border border-green-100">
                     <Box className="flex gap-2 text-green-700 text-sm font-semibold mb-1">
-                      <CheckCircle2 className="w-4 h-4" /> Our Solution
+                      <CheckCircle className="w-4 h-4" /> Our Solution
                     </Box>
                     <p className="text-green-600 text-xs">60+ mock exams and 3,000+ practice questions so you can strengthen every section.</p>
                   </Box>
@@ -222,7 +220,7 @@ export default function CelpipForNursesPage() {
                   <TableCell className="font-medium pl-6 py-4">
                     <Box className="flex items-center gap-3">
                       <Box className="p-2 rounded bg-teal-100 text-teal-600">
-                        <CheckCircle2 className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4" />
                       </Box>
                       Speaking & Writing AI Feedback
                     </Box>
@@ -233,7 +231,7 @@ export default function CelpipForNursesPage() {
                   <TableCell className="font-medium pl-6 py-4">
                     <Box className="flex items-center gap-3">
                       <Box className="p-2 rounded bg-teal-100 text-teal-600">
-                        <CheckCircle2 className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4" />
                       </Box>
                       60 Full-Length Mock Exams
                     </Box>
@@ -244,7 +242,7 @@ export default function CelpipForNursesPage() {
                   <TableCell className="font-medium pl-6 py-4">
                     <Box className="flex items-center gap-3">
                       <Box className="p-2 rounded bg-teal-100 text-teal-600">
-                        <CheckCircle2 className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4" />
                       </Box>
                       Task-Specific Practice
                     </Box>
@@ -255,7 +253,7 @@ export default function CelpipForNursesPage() {
                   <TableCell className="font-medium pl-6 py-4">
                     <Box className="flex items-center gap-3">
                       <Box className="p-2 rounded bg-teal-100 text-teal-600">
-                        <CheckCircle2 className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4" />
                       </Box>
                       Study on Your Schedule
                     </Box>

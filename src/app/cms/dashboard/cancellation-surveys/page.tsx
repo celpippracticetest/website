@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { RotateCw } from "lucide-react";
+import Refresh from "@mui/icons-material/Refresh";
 
 interface CancellationSurvey {
   _id: string;
@@ -205,7 +205,7 @@ export default function CancellationSurveysPage() {
           className="p-2 text-gray-600 hover:text-blue-600 border border-gray-300 rounded-lg hover:bg-gray-50"
           title="Refresh"
         >
-          <RotateCw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
+          <Refresh className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
         </button>
       </div>
 

@@ -7,33 +7,31 @@ import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import {
-  CheckCircle2,
-  AlertTriangle,
-  ArrowRight,
-  FileText,
-  BookOpen,
-  Briefcase,
-  Truck,
-  Heart,
-  Wrench,
-  Smile,
-  Rocket,
-  Users,
-  Baby,
-  Cpu,
-} from "lucide-react";
+import CheckCircle from "@mui/icons-material/CheckCircle";
+import Warning from "@mui/icons-material/Warning";
+import ArrowForward from "@mui/icons-material/ArrowForward";
+import Description from "@mui/icons-material/Description";
+import MenuBook from "@mui/icons-material/MenuBook";
+import Work from "@mui/icons-material/Work";
+import LocalShipping from "@mui/icons-material/LocalShipping";
+import Favorite from "@mui/icons-material/Favorite";
+import Build from "@mui/icons-material/Build";
+import SentimentSatisfiedAlt from "@mui/icons-material/SentimentSatisfiedAlt";
+import RocketLaunch from "@mui/icons-material/RocketLaunch";
+import People from "@mui/icons-material/People";
+import ChildCare from "@mui/icons-material/ChildCare";
+import Memory from "@mui/icons-material/Memory";
 
 const iconMap = {
-  Briefcase,
-  Truck,
-  Heart,
-  Wrench,
-  Smile,
-  Rocket,
-  Users,
-  Baby,
-  Cpu,
+  Briefcase: Work,
+  Truck: LocalShipping,
+  Heart: Favorite,
+  Wrench: Build,
+  Smile: SentimentSatisfiedAlt,
+  Rocket: RocketLaunch,
+  Users: People,
+  Baby: ChildCare,
+  Cpu: Memory,
 } as const;
 
 export type ProfessionPageConfig = {
@@ -105,7 +103,7 @@ export function ProfessionPageTemplate({ config }: { config: ProfessionPageConfi
           <Box className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link href="/exam-overview">
               <Button size="lg" className={`h-14 px-8 text-lg rounded-full shadow-lg hover:shadow-xl ${c.btn}`}>
-                Start Free Practice Test <ArrowRight className="ml-2 w-5 h-5" />
+                Start Free Practice Test <ArrowForward className="ml-2 w-5 h-5" />
               </Button>
             </Link>
             <p className="text-sm text-slate-500 mt-4 sm:mt-0">No credit card required</p>
@@ -121,26 +119,26 @@ export function ProfessionPageTemplate({ config }: { config: ProfessionPageConfi
           <Box className="flex flex-col md:flex-row gap-6">
             <Card className={`flex-1 hover:shadow-md transition-shadow border-t-4 ${c.card}`}>
               <CardHeader>
-                <Box className={`w-12 h-12 rounded-lg ${c.icon} flex items-center justify-center mb-4`}><FileText className="w-6 h-6" /></Box>
+                <Box className={`w-12 h-12 rounded-lg ${c.icon} flex items-center justify-center mb-4`}><Description className="w-6 h-6" /></Box>
                 <CardTitle>{config.card1Title}</CardTitle>
                 <CardDescription>{config.card1Desc}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <Box className="space-y-3">
-                  <Box className="bg-red-50 p-3 rounded-md border border-red-100"><Box className="flex gap-2 text-red-700 text-sm font-semibold mb-1"><AlertTriangle className="w-4 h-4" /> The Challenge</Box><p className="text-red-600 text-xs">{config.card1Challenge}</p></Box>
-                  <Box className="bg-green-50 p-3 rounded-md border border-green-100"><Box className="flex gap-2 text-green-700 text-sm font-semibold mb-1"><CheckCircle2 className="w-4 h-4" /> Our Solution</Box><p className="text-green-600 text-xs">{config.card1Solution}</p></Box>
+                  <Box className="bg-red-50 p-3 rounded-md border border-red-100"><Box className="flex gap-2 text-red-700 text-sm font-semibold mb-1"><Warning className="w-4 h-4" /> The Challenge</Box><p className="text-red-600 text-xs">{config.card1Challenge}</p></Box>
+                  <Box className="bg-green-50 p-3 rounded-md border border-green-100"><Box className="flex gap-2 text-green-700 text-sm font-semibold mb-1"><CheckCircle className="w-4 h-4" /> Our Solution</Box><p className="text-green-600 text-xs">{config.card1Solution}</p></Box>
                 </Box>
               </CardContent>
             </Card>
             <Card className="flex-1 hover:shadow-md transition-shadow border-t-4 border-t-slate-500">
               <CardHeader>
-                <Box className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mb-4 text-slate-600"><BookOpen className="w-6 h-6" /></Box>
+                <Box className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mb-4 text-slate-600"><MenuBook className="w-6 h-6" /></Box>
                 <CardTitle>Full CELPIP-General Prep</CardTitle>
                 <CardDescription>All Four Skills</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-slate-700 text-sm">Strong scores in all four components are typically required.</p>
-                <Box className="bg-green-50 p-3 rounded-md border border-green-100"><Box className="flex gap-2 text-green-700 text-sm font-semibold mb-1"><CheckCircle2 className="w-4 h-4" /> Our Solution</Box><p className="text-green-600 text-xs">60+ mock exams and task-specific practice.</p></Box>
+                <Box className="bg-green-50 p-3 rounded-md border border-green-100"><Box className="flex gap-2 text-green-700 text-sm font-semibold mb-1"><CheckCircle className="w-4 h-4" /> Our Solution</Box><p className="text-green-600 text-xs">60+ mock exams and task-specific practice.</p></Box>
               </CardContent>
             </Card>
           </Box>
@@ -151,10 +149,10 @@ export function ProfessionPageTemplate({ config }: { config: ProfessionPageConfi
             <Table>
               <TableHeader><TableRow className="bg-slate-50 hover:bg-slate-50"><TableHead className="w-[35%] py-4 pl-6 font-bold text-slate-900">Feature</TableHead><TableHead className="py-4 font-bold text-slate-900">How It Helps You</TableHead></TableRow></TableHeader>
               <TableBody>
-                <TableRow className="hover:bg-slate-50/50"><TableCell className="font-medium pl-6 py-4"><Box className={`flex items-center gap-3`}><Box className={`p-2 rounded ${c.icon}`}><CheckCircle2 className="w-4 h-4" /></Box>Writing and Speaking AI Feedback</Box></TableCell><TableCell className="py-4 text-slate-600">Instant scores and feedback.</TableCell></TableRow>
-                <TableRow className="hover:bg-slate-50/50"><TableCell className="font-medium pl-6 py-4"><Box className="flex items-center gap-3"><Box className={`p-2 rounded ${c.icon}`}><CheckCircle2 className="w-4 h-4" /></Box>60 Full-Length Mock Exams</Box></TableCell><TableCell className="py-4 text-slate-600">Practice in exam conditions.</TableCell></TableRow>
-                <TableRow className="hover:bg-slate-50/50"><TableCell className="font-medium pl-6 py-4"><Box className="flex items-center gap-3"><Box className={`p-2 rounded ${c.icon}`}><CheckCircle2 className="w-4 h-4" /></Box>Task-Specific Practice</Box></TableCell><TableCell className="py-4 text-slate-600">Focus on weaker sections.</TableCell></TableRow>
-                <TableRow className="hover:bg-slate-50/50"><TableCell className="font-medium pl-6 py-4"><Box className="flex items-center gap-3"><Box className={`p-2 rounded ${c.icon}`}><CheckCircle2 className="w-4 h-4" /></Box>Study on Your Schedule</Box></TableCell><TableCell className="py-4 text-slate-600">Access from any device.</TableCell></TableRow>
+                <TableRow className="hover:bg-slate-50/50"><TableCell className="font-medium pl-6 py-4"><Box className={`flex items-center gap-3`}><Box className={`p-2 rounded ${c.icon}`}><CheckCircle className="w-4 h-4" /></Box>Writing and Speaking AI Feedback</Box></TableCell><TableCell className="py-4 text-slate-600">Instant scores and feedback.</TableCell></TableRow>
+                <TableRow className="hover:bg-slate-50/50"><TableCell className="font-medium pl-6 py-4"><Box className="flex items-center gap-3"><Box className={`p-2 rounded ${c.icon}`}><CheckCircle className="w-4 h-4" /></Box>60 Full-Length Mock Exams</Box></TableCell><TableCell className="py-4 text-slate-600">Practice in exam conditions.</TableCell></TableRow>
+                <TableRow className="hover:bg-slate-50/50"><TableCell className="font-medium pl-6 py-4"><Box className="flex items-center gap-3"><Box className={`p-2 rounded ${c.icon}`}><CheckCircle className="w-4 h-4" /></Box>Task-Specific Practice</Box></TableCell><TableCell className="py-4 text-slate-600">Focus on weaker sections.</TableCell></TableRow>
+                <TableRow className="hover:bg-slate-50/50"><TableCell className="font-medium pl-6 py-4"><Box className="flex items-center gap-3"><Box className={`p-2 rounded ${c.icon}`}><CheckCircle className="w-4 h-4" /></Box>Study on Your Schedule</Box></TableCell><TableCell className="py-4 text-slate-600">Access from any device.</TableCell></TableRow>
               </TableBody>
             </Table>
           </Card>
@@ -169,7 +167,7 @@ export function ProfessionPageTemplate({ config }: { config: ProfessionPageConfi
                 <Card className={`h-full border-t-4 ${c.card} shadow-sm hover:shadow-md transition-shadow`}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <BookOpen className={`w-5 h-5 ${c.icon.split(' ')[1]}`} />
+                      <MenuBook className={`w-5 h-5 ${c.icon.split(' ')[1]}`} />
                       Helpful Guides
                     </CardTitle>
                   </CardHeader>
@@ -178,7 +176,7 @@ export function ProfessionPageTemplate({ config }: { config: ProfessionPageConfi
                       {config.relatedArticles.map((article, i) => (
                         <li key={i}>
                           <Link href={article.url} className="flex items-center text-slate-700 hover:text-slate-900 font-medium transition-colors group">
-                            <ArrowRight className={`w-4 h-4 mr-2 ${c.icon.split(' ')[1]}`} />
+                            <ArrowForward className={`w-4 h-4 mr-2 ${c.icon.split(' ')[1]}`} />
                             {article.title}
                           </Link>
                         </li>
@@ -192,7 +190,7 @@ export function ProfessionPageTemplate({ config }: { config: ProfessionPageConfi
                 <Card className={`h-full border-t-4 ${c.card} shadow-sm hover:shadow-md transition-shadow`}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Briefcase className={`w-5 h-5 ${c.icon.split(' ')[1]}`} />
+                      <Work className={`w-5 h-5 ${c.icon.split(' ')[1]}`} />
                       Related Professions
                     </CardTitle>
                   </CardHeader>
@@ -201,7 +199,7 @@ export function ProfessionPageTemplate({ config }: { config: ProfessionPageConfi
                       {config.relatedProfessions.map((prof, i) => (
                         <li key={i}>
                           <Link href={prof.url} className="flex items-center text-slate-700 hover:text-slate-900 font-medium transition-colors group">
-                            <ArrowRight className={`w-4 h-4 mr-2 ${c.icon.split(' ')[1]}`} />
+                            <ArrowForward className={`w-4 h-4 mr-2 ${c.icon.split(' ')[1]}`} />
                             {prof.title}
                           </Link>
                         </li>

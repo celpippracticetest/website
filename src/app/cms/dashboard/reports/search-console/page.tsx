@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Box } from "@/components/ui/Box";
-import { Search } from "lucide-react";
+import Search from "@mui/icons-material/Search";
 
 export default function SearchConsoleReportPage() {
   return (

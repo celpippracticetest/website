@@ -11,7 +11,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { TWikiArticleSchemaDto } from "@/models/wiki.model";
-import { Pencil, Trash2 } from "lucide-react";
+import Edit from "@mui/icons-material/Edit";
+import Delete from "@mui/icons-material/Delete";
 
 type WikiArticlesTableProps = {
   articles: TWikiArticleSchemaDto[];
@@ -96,7 +97,7 @@ export default function WikiArticlesTable({
                   onClick={() => onEdit(article.id)}
                   title="Edit wiki article"
                 >
-                  <Pencil className="h-4 w-4" />
+                  <Edit className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -113,7 +114,7 @@ export default function WikiArticlesTable({
                   title="Delete wiki article"
                   className="text-red-500 hover:text-red-700"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Delete className="h-4 w-4" />
                 </Button>
               </TableCell>
             </TableRow>

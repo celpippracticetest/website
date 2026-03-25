@@ -17,7 +17,8 @@ import {
   Stack,
 } from "@mui/material";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import { Plus, Minus } from "lucide-react";
+import Add from "@mui/icons-material/Add";
+import Remove from "@mui/icons-material/Remove";
 import Lottie from "lottie-react";
 import { useEffect, useState as useReactState } from "react";
 import { useRouter } from "next/navigation";

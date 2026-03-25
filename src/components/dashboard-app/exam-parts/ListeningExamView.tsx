@@ -12,7 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { ArrowLeft } from "lucide-react";
+import ArrowBack from "@mui/icons-material/ArrowBack";
 import AudioPlayer from "../listening-practice/components/AudioPlayer";
 import ListeningQuestionList from "../listening-practice/components/ListeningQuestionList";
 import { TPracticeDto } from "@/models/practice.model";
@@ -587,7 +587,7 @@ const ListeningExamView = (props: ListeningExamViewProps) => {
                   },
                 }}
               >
-                <ArrowLeft size={18} strokeWidth={1.8} />
+                <ArrowBack sx={{ fontSize: 18 }} />
               </IconButton>
               <Button
                 disabled={page === "answer"}

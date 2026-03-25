@@ -14,12 +14,14 @@ import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
 import { skillPagesContent } from "@/data/skill-pages-content";
 import type { Metadata } from "next";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
-interface PracticeTask {
-  taskNumber: string;
-  name: string;
-}
+import { Box, Typography } from "@mui/material";
 interface PracticeSection {
-  tasks: PracticeTask[];
+  tasks: {
+    id: string;
+    category: string;
+    taskNumber: string;
+    name: string;
+  }[];
   route: string;
 }
 
@@ -116,12 +118,28 @@ const WritingPage = async ({
   if (!selectedPracticeId && !taskId) {
     return (
       <ShowTaskHeader>
-        <div className="flex mt-[32px]  screen744:!mt-[0] items-center justify-center gap-[8px] max-w-[1200px] w-full !h-[60px] shrink-0 rounded-[12px] bg-[#D5F5F0]">
-          <SvgWritingPart className="text-[#0DAA94]" />
-          <h1 className="text-[#37465C] font-semibold text-[20px]">
+        <Box
+          sx={{
+            display: "flex",
+            mt: { xs: 4, sm: 0 },
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 1,
+            maxWidth: 1200,
+            width: 1,
+            height: 60,
+            flexShrink: 0,
+            borderRadius: 1.5,
+            bgcolor: "#D5F5F0",
+          }}
+        >
+          <Box sx={{ color: "#0DAA94", display: "flex", alignItems: "center" }}>
+            <SvgWritingPart />
+          </Box>
+          <Typography component="h1" sx={{ color: "#37465C", fontWeight: 600, fontSize: 20 }}>
             Writing Practice
-          </h1>
-        </div>
+          </Typography>
+        </Box>
         <ShowTasks tasks={writingTasks} />
       </ShowTaskHeader>
     );
@@ -175,10 +193,41 @@ const WritingPage = async ({
       );
   }
 
+  const strategyBodySx = {
+    mt: 2,
+    fontSize: 15,
+    lineHeight: "24px",
+    color: "#526071",
+  };
+
   return (
-    <main className="bg-[#F2F6FF] min-h-screen flex w-full justify-center">
-      <div className="w-full max-w-[1280px]">
-        <h1 className="sr-only">CELPIP Writing Practice</h1>
+    <Box
+      component="main"
+      sx={{
+        bgcolor: "#F2F6FF",
+        minHeight: "100vh",
+        display: "flex",
+        width: 1,
+        justifyContent: "center",
+      }}
+    >
+      <Box sx={{ width: 1, maxWidth: 1280 }}>
+        <Typography
+          component="h1"
+          sx={{
+            position: "absolute",
+            width: "1px",
+            height: "1px",
+            p: 0,
+            m: "-1px",
+            overflow: "hidden",
+            clip: "rect(0, 0, 0, 0)",
+            whiteSpace: "nowrap",
+            border: 0,
+          }}
+        >
+          CELPIP Writing Practice
+        </Typography>
         <WritingPractice
           showHeader={true}
           allPractices={practices.items}
@@ -187,38 +236,38 @@ const WritingPage = async ({
           completedPracticeId={completedPracticeId}
         />
         {!user && (
-          <section className="px-4 pb-10">
-          <h2 className="text-[22px] font-semibold text-[#37465C]">
-            CELPIP Writing practice strategy
-          </h2>
-          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
-            Raise Writing performance by organizing each response with a clear purpose, logical
-            paragraph flow, and accurate grammar under exam timing.
-          </p>
-          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
-            After each task, review coherence, task response, vocabulary variety, and sentence
-            control to identify one priority fix for your next attempt.
-          </p>
-          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
-            A reliable method is to plan before you write. Spend one to two minutes defining your
-            purpose, main points, and tone. This short planning step prevents off-topic responses
-            and improves organization, which is critical for higher band scoring in CELPIP tasks.
-          </p>
-          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
-            During revision, prioritize high-impact edits: sentence clarity, verb tense
-            consistency, and linking phrases that improve flow. You do not need advanced language
-            in every sentence. You need clear, correct, and relevant communication from start to
-            finish.
-          </p>
-          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
-            Build confidence by comparing older and newer responses side by side. When you can see
-            stronger structure and fewer repeated errors over time, your writing process becomes
-            faster and more stable under exam timing.
-          </p>
-          </section>
+          <Box component="section" sx={{ px: 2, pb: 5 }}>
+            <Typography component="h2" sx={{ fontSize: 22, fontWeight: 600, color: "#37465C" }}>
+              CELPIP Writing practice strategy
+            </Typography>
+            <Typography component="p" sx={strategyBodySx}>
+              Raise Writing performance by organizing each response with a clear purpose, logical
+              paragraph flow, and accurate grammar under exam timing.
+            </Typography>
+            <Typography component="p" sx={strategyBodySx}>
+              After each task, review coherence, task response, vocabulary variety, and sentence
+              control to identify one priority fix for your next attempt.
+            </Typography>
+            <Typography component="p" sx={strategyBodySx}>
+              A reliable method is to plan before you write. Spend one to two minutes defining your
+              purpose, main points, and tone. This short planning step prevents off-topic responses
+              and improves organization, which is critical for higher band scoring in CELPIP tasks.
+            </Typography>
+            <Typography component="p" sx={strategyBodySx}>
+              During revision, prioritize high-impact edits: sentence clarity, verb tense
+              consistency, and linking phrases that improve flow. You do not need advanced language
+              in every sentence. You need clear, correct, and relevant communication from start to
+              finish.
+            </Typography>
+            <Typography component="p" sx={strategyBodySx}>
+              Build confidence by comparing older and newer responses side by side. When you can see
+              stronger structure and fewer repeated errors over time, your writing process becomes
+              faster and more stable under exam timing.
+            </Typography>
+          </Box>
         )}
-      </div>
-    </main>
+      </Box>
+    </Box>
   );
 };
 

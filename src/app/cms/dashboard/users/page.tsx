@@ -1,24 +1,21 @@
 "use client";
 
 import { useState, useEffect, Fragment } from "react";
-import {
-  Search,
-  Download,
-  Eye,
-  AlertTriangle,
-  Shield,
-  Clock,
-  RotateCw,
-  X,
-  Users,
-  RefreshCw,
-  ChevronDown,
-  ChevronUp,
-  BookOpen,
-  FileText,
-  Globe,
-  Activity,
-} from "lucide-react";
+import Search from "@mui/icons-material/Search";
+import Download from "@mui/icons-material/Download";
+import Visibility from "@mui/icons-material/Visibility";
+import Warning from "@mui/icons-material/Warning";
+import Shield from "@mui/icons-material/Shield";
+import Schedule from "@mui/icons-material/Schedule";
+import Refresh from "@mui/icons-material/Refresh";
+import Close from "@mui/icons-material/Close";
+import People from "@mui/icons-material/People";
+import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
+import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
+import MenuBook from "@mui/icons-material/MenuBook";
+import Description from "@mui/icons-material/Description";
+import Language from "@mui/icons-material/Language";
+import Insights from "@mui/icons-material/Insights";
 import { Box } from "@/components/ui/Box";
 import {
   Typography,
@@ -152,9 +149,9 @@ export default function UsersPage() {
   };
 
   const getRiskIcon = (riskScore: number) => {
-    if (riskScore >= 70) return <AlertTriangle className="w-4 h-4" />;
+    if (riskScore >= 70) return <Warning className="w-4 h-4" />;
     if (riskScore >= 40) return <Shield className="w-4 h-4" />;
-    return <Clock className="w-4 h-4" />;
+    return <Schedule className="w-4 h-4" />;
   };
 
   const formatDate = (dateString: string) => {
@@ -408,7 +405,7 @@ export default function UsersPage() {
                   disabled={loading}
                   className="border border-gray-300"
                 >
-                  <RotateCw
+                  <Refresh
                     className={`w-5 h-5 text-gray-600 ${loading ? "animate-spin" : ""}`}
                   />
                 </IconButton>
@@ -425,7 +422,7 @@ export default function UsersPage() {
                   disabled={loading || syncing}
                   className="border border-gray-300"
                 >
-                  <RefreshCw
+                  <Refresh
                     className={`w-5 h-5 text-blue-600 ${syncing ? "animate-spin" : ""}`}
                   />
                 </IconButton>
@@ -641,7 +638,7 @@ export default function UsersPage() {
                                 window.open(url, "_blank", "noopener,noreferrer");
                               }}
                             >
-                              <Eye className="w-4 h-4 text-blue-600" />
+                              <Visibility className="w-4 h-4 text-blue-600" />
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Export Data">
@@ -665,7 +662,7 @@ export default function UsersPage() {
                                   }
                                   disabled={canceling}
                                 >
-                                  <X className="w-4 h-4 text-red-600" />
+                                  <Close className="w-4 h-4 text-red-600" />
                                 </IconButton>
                               </Tooltip>
                             )}
@@ -690,7 +687,7 @@ export default function UsersPage() {
                                 sx={{ borderRadius: 2 }}
                               >
                                 <Box className="flex items-center gap-2 mb-3">
-                                  <BookOpen className="w-5 h-5 text-blue-600" />
+                                  <MenuBook className="w-5 h-5 text-blue-600" />
                                   <Typography variant="subtitle2" className="font-semibold">
                                     Practice
                                   </Typography>
@@ -735,7 +732,7 @@ export default function UsersPage() {
                                 sx={{ borderRadius: 2 }}
                               >
                                 <Box className="flex items-center gap-2 mb-3">
-                                  <FileText className="w-5 h-5 text-purple-600" />
+                                  <Description className="w-5 h-5 text-purple-600" />
                                   <Typography variant="subtitle2" className="font-semibold">
                                     Exams
                                   </Typography>
@@ -780,7 +777,7 @@ export default function UsersPage() {
                                 sx={{ borderRadius: 2 }}
                               >
                                 <Box className="flex items-center gap-2 mb-3">
-                                  <Activity className="w-5 h-5 text-green-600" />
+                                  <Insights className="w-5 h-5 text-green-600" />
                                   <Typography variant="subtitle2" className="font-semibold">
                                     Activity Details
                                   </Typography>
@@ -865,7 +862,7 @@ export default function UsersPage() {
                                 sx={{ borderRadius: 2 }}
                               >
                                 <Box className="flex items-center gap-2 mb-3">
-                                  <Globe className="w-5 h-5 text-indigo-600" />
+                                  <Language className="w-5 h-5 text-indigo-600" />
                                   <Typography variant="subtitle2" className="font-semibold">
                                     Network & Devices
                                   </Typography>
@@ -910,7 +907,7 @@ export default function UsersPage() {
                                   sx={{ borderRadius: 2 }}
                                 >
                                   <Box className="flex items-center gap-2 mb-3">
-                                    <Clock className="w-5 h-5 text-teal-600" />
+                                    <Schedule className="w-5 h-5 text-teal-600" />
                                     <Typography variant="subtitle2" className="font-semibold">
                                       Subscription
                                     </Typography>
@@ -1066,7 +1063,7 @@ export default function UsersPage() {
       >
         <DialogTitle id="sync-users-dialog-title">
           <Box className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
+            <People className="w-5 h-5" />
             Sync All Users from Clerk
           </Box>
         </DialogTitle>
@@ -1137,7 +1134,7 @@ export default function UsersPage() {
             disabled={syncing}
             color="primary"
             variant="contained"
-            startIcon={syncing ? <CircularProgress size={16} /> : <RefreshCw />}
+            startIcon={syncing ? <CircularProgress size={16} /> : <Refresh />}
           >
             {syncing ? "Syncing..." : "Start Sync"}
           </Button>

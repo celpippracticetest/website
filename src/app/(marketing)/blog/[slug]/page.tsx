@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronRight } from "lucide-react";
+import ChevronRight from "@mui/icons-material/ChevronRight";
 
 export const dynamic = "force-dynamic";
 

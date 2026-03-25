@@ -15,18 +15,15 @@ import {
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import {
-  CalendarIcon,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  Users,
-  CreditCard,
-  DollarSign,
-  Activity,
-  Clock,
-  LucideIcon,
-} from "lucide-react";
+import CalendarToday from "@mui/icons-material/CalendarToday";
+import TrendingUp from "@mui/icons-material/TrendingUp";
+import TrendingDown from "@mui/icons-material/TrendingDown";
+import Remove from "@mui/icons-material/Remove";
+import People from "@mui/icons-material/People";
+import CreditCard from "@mui/icons-material/CreditCard";
+import AttachMoney from "@mui/icons-material/AttachMoney";
+import Insights from "@mui/icons-material/Insights";
+import Schedule from "@mui/icons-material/Schedule";
 import dayjs from "dayjs";
 import moment from "moment";
 import {
@@ -40,6 +37,10 @@ import {
   Legend,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
+import type { SvgIconProps } from "@mui/material/SvgIcon";
+import type { ComponentType } from "react";
+
+type LucideIcon = ComponentType<SvgIconProps>;
 
 ChartJS.register(
   CategoryScale,
@@ -272,7 +273,7 @@ export default function QuickReportPage() {
                 py: 1,
                 px: 1.5,
               }}
-              startIcon={<CalendarIcon size={16} />}
+              startIcon={<CalendarToday sx={{ fontSize: 16 }} />}
             >
               <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
                 <Typography variant="body2" color="text.primary">
@@ -397,7 +398,7 @@ export default function QuickReportPage() {
               value={data.newUsers.current}
               previousValue={data.newUsers.previous}
               change={data.newUsers.change}
-              icon={Users}
+              icon={People}
               loading={loading}
             />
             <MetricCard
@@ -430,7 +431,7 @@ export default function QuickReportPage() {
               value={data.revenue.current}
               previousValue={data.revenue.previous}
               change={data.revenue.change}
-              icon={DollarSign}
+              icon={AttachMoney}
               prefix="$"
               loading={loading}
             />
@@ -439,7 +440,7 @@ export default function QuickReportPage() {
               value={data.googleAdsCost.current}
               previousValue={data.googleAdsCost.previous}
               change={data.googleAdsCost.change}
-              icon={Activity}
+              icon={Insights}
               prefix="$"
               isCost
               loading={loading}
@@ -449,7 +450,7 @@ export default function QuickReportPage() {
               value={data.customerLifetimeValue.current}
               previousValue={data.customerLifetimeValue.previous}
               change={data.customerLifetimeValue.change}
-              icon={DollarSign}
+              icon={AttachMoney}
               prefix="$"
               loading={loading}
             />
@@ -458,7 +459,7 @@ export default function QuickReportPage() {
               value={data.averageSubscriptionDurationDays.current}
               previousValue={data.averageSubscriptionDurationDays.previous}
               change={data.averageSubscriptionDurationDays.change}
-              icon={Clock}
+              icon={Schedule}
               suffix=" days"
               loading={loading}
             />
@@ -742,7 +743,7 @@ function MetricCard({
 
   if (isNeutral) {
     color = "text.secondary";
-    IconComponent = Minus;
+    IconComponent = Remove;
   } else if (isCost) {
     // Cost logic
     if (isPositive) {

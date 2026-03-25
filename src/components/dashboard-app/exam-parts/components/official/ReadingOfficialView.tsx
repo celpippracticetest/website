@@ -1,7 +1,8 @@
 import React from "react";
 import Image from "next/image";
 import { Popover } from "radix-ui";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
 import { Box, Button as MuiButton, Typography } from "@mui/material";
 import { Button } from "@/components/ui/button";
 import type { TPracticeDto } from "@/models/practice.model";
@@ -246,7 +247,7 @@ const ReadingOfficialView = ({
                       <Popover.Trigger asChild>
                         <MuiButton
                           variant="outlined"
-                          endIcon={<ChevronDown size={16} />}
+                          endIcon={<KeyboardArrowDown sx={{ fontSize: 16 }} />}
                           sx={{
                             mx: 0.5,
                             minWidth: "88px",

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import ArrowForward from "@mui/icons-material/ArrowForward";
 import useStore from "@/store";
 import { useRouter } from "nextjs-toploader/app";
 
@@ -94,7 +94,7 @@ const Hero = () => {
                   router.push("/practice-overview");
                 }}
               >
-                Try for free <ArrowRight className="ml-2" />
+                Try for free <ArrowForward className="ml-2" />
               </Button>
 
               {/* Badge images */}

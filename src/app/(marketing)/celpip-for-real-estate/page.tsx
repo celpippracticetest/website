@@ -8,15 +8,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  CheckCircle2,
-  ShieldCheck,
-  Clock,
-  Target,
-  TrendingUp,
-  ArrowRight,
-  Star
-} from 'lucide-react';
+import CheckCircle from "@mui/icons-material/CheckCircle";
+import VerifiedUser from "@mui/icons-material/VerifiedUser";
+import Schedule from "@mui/icons-material/Schedule";
+import TrackChanges from "@mui/icons-material/TrackChanges";
+import TrendingUp from "@mui/icons-material/TrendingUp";
+import ArrowForward from "@mui/icons-material/ArrowForward";
+import Star from "@mui/icons-material/Star";
 import { JsonLd } from '@/components/seo/JsonLd';
 
 const BASE_URL = process.env.APP_BASE_URL || 'https://celpippracticetest.com';
@@ -92,7 +90,7 @@ export default function CelpipForRealEstatePage() {
       <Box className="bg-white border-b border-slate-200">
         <Box className="max-w-5xl mx-auto px-4 py-16 md:py-24 text-center">
           <Box className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-sm font-medium mb-6">
-            <ShieldCheck className="w-4 h-4 fill-blue-700" />
+            <VerifiedUser className="w-4 h-4 fill-blue-700" />
             <span>Canada-Wide Real Estate Licensing</span>
           </Box>
 
@@ -113,7 +111,7 @@ export default function CelpipForRealEstatePage() {
             <Link href="/exam-overview">
               <Button size="lg" className="h-14 px-8 text-lg rounded-full shadow-lg shadow-blue-600/20 hover:shadow-xl hover:translate-y-[-2px] transition-all">
                 Take a Free Level 7 Diagnostic Test
-                <ArrowRight className="ml-2 w-5 h-5" />
+                <ArrowForward className="ml-2 w-5 h-5" />
               </Button>
             </Link>
             <p className="text-sm text-slate-500 mt-4 sm:mt-0">No credit card required</p>
@@ -138,7 +136,7 @@ export default function CelpipForRealEstatePage() {
             <Card className="flex-1 hover:shadow-md transition-shadow border-t-4 border-t-red-500">
               <CardHeader>
                 <Box className="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center mb-4 text-red-600">
-                  <Clock className="w-6 h-6" />
+                  <Schedule className="w-6 h-6" />
                 </Box>
                 <CardTitle>Avoid the 90-Day Rewrite Penalty</CardTitle>
               </CardHeader>
@@ -174,7 +172,7 @@ export default function CelpipForRealEstatePage() {
             <Card className="flex-1 hover:shadow-md transition-shadow border-t-4 border-t-green-500">
               <CardHeader>
                 <Box className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center mb-4 text-green-600">
-                  <ShieldCheck className="w-6 h-6" />
+                  <VerifiedUser className="w-6 h-6" />
                 </Box>
                 <CardTitle>The "60-Test" Advantage</CardTitle>
               </CardHeader>
@@ -219,13 +217,13 @@ export default function CelpipForRealEstatePage() {
                 step: "Step 1",
                 title: "Diagnostic Exam",
                 desc: "Identify if you are currently hitting the Level 7 benchmark.",
-                icon: <Target className="w-6 h-6" />
+                icon: <TrackChanges className="w-6 h-6" />
               },
               {
                 step: "Step 2",
                 title: "Targeted Practice",
                 desc: "Focus on 'Reading for Viewpoints' or 'Speaking Task 6'—areas where most candidates lose points.",
-                icon: <CheckCircle2 className="w-6 h-6" />
+                icon: <CheckCircle className="w-6 h-6" />
               },
               {
                 step: "Step 3",
@@ -237,7 +235,7 @@ export default function CelpipForRealEstatePage() {
                 step: "Step 4",
                 title: "Official Test Success",
                 desc: "Walk into the CELPIP center with the confidence of someone who has already passed 60 simulations.",
-                icon: <ShieldCheck className="w-6 h-6" />
+                icon: <VerifiedUser className="w-6 h-6" />
               }
             ].map((item, index) => (
               <Box key={index} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-blue-300 transition-colors min-w-[220px] flex-1 max-w-[280px]">

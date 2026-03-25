@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Box } from "@/components/ui/Box";
 import { Button } from "@/components/ui/button";
-import { Share2 } from "lucide-react";
+import Share from "@mui/icons-material/Share";
 
 const REFERRAL_MESSAGE =
   "Know a friend struggling with CELPIP? Share this guide and you both get 15% off our Pro Pack.";
@@ -23,7 +23,7 @@ export function BlogReferralBar() {
             variant="default"
             className="cursor-pointer gap-2 bg-blue-600 hover:bg-blue-700"
           >
-            <Share2 className="h-4 w-4" />
+            <Share className="h-4 w-4" />
             {CTA_LABEL}
           </Button>
         </Link>

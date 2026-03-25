@@ -1,6 +1,7 @@
 import { TQuestion } from "@/models/question.model";
 import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
 import { Box, Button, Menu, MenuItem, Paper, Typography } from "@mui/material";
 import SvgCircle from "@/components/icons/Circle";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
@@ -75,7 +76,7 @@ const ListeningDropDownQuestionList = ({
           <Button
             variant="outlined"
             onClick={(event) => setAnchorEl(isOpen ? null : event.currentTarget)}
-            endIcon={isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            endIcon={isOpen ? <KeyboardArrowUp sx={{ fontSize: 16 }} /> : <KeyboardArrowDown sx={{ fontSize: 16 }} />}
             sx={{
               justifyContent: "space-between",
               minWidth: selectedAnswerLabel ? "320px" : "88px",
@@ -270,7 +271,7 @@ const ListeningDropDownQuestionList = ({
               fullWidth
               variant="outlined"
               onClick={(event) => setAnchorEl(isOpen ? null : event.currentTarget)}
-              endIcon={isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              endIcon={isOpen ? <KeyboardArrowUp sx={{ fontSize: 18 }} /> : <KeyboardArrowDown sx={{ fontSize: 18 }} />}
               sx={{
                 justifyContent: "space-between",
                 minHeight: "48px",

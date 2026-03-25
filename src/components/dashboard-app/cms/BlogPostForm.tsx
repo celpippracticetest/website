@@ -5,7 +5,13 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import type { JSONContent } from "@tiptap/core";
-import { Check, Copy, Loader2, PlusCircle, Sparkles, Trash2, Upload } from "lucide-react";
+import Check from "@mui/icons-material/Check";
+import Copy from "@mui/icons-material/ContentCopy";
+import Autorenew from "@mui/icons-material/Autorenew";
+import AddCircle from "@mui/icons-material/AddCircle";
+import Sparkles from "@mui/icons-material/AutoAwesome";
+import Delete from "@mui/icons-material/Delete";
+import Upload from "@mui/icons-material/CloudUpload";
 import { Button } from "@/components/ui/button";
 import { Box } from "@/components/ui/Box";
 import {
@@ -832,7 +838,7 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
             >
               {isGenerating ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Autorenew className="mr-2 h-4 w-4 animate-spin" />
                   Filling form...
                 </>
               ) : (
@@ -1098,7 +1104,7 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                     onClick={() => removeFaq(index)}
                     className="text-red-600 hover:text-red-700"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Delete className="h-4 w-4" />
                   </Button>
                 </Box>
                 <FormField
@@ -1134,7 +1140,7 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
               </Box>
             ))}
             <Button type="button" variant="outline" size="sm" onClick={() => appendFaq({ question: "", answer: "" })}>
-              <PlusCircle className="mr-2 h-4 w-4" />
+              <AddCircle className="mr-2 h-4 w-4" />
               Add FAQ item
             </Button>
           </Box>
@@ -1263,7 +1269,7 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
             >
               {isApplyingSeoFixes ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Autorenew className="mr-2 h-4 w-4 animate-spin" />
                   Applying...
                 </>
               ) : (
@@ -1280,7 +1286,7 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
           <Button type="submit" disabled={isLoading}>
             {isLoading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Autorenew className="mr-2 h-4 w-4 animate-spin" />
                 Saving...
               </>
             ) : (

@@ -2,7 +2,11 @@
 
 import React from "react";
 import { Box } from "@/components/ui/Box";
-import { BarChart3, ChevronRight, PieChart, Search, CreditCard } from "lucide-react";
+import BarChart from "@mui/icons-material/BarChart";
+import ChevronRight from "@mui/icons-material/ChevronRight";
+import PieChart from "@mui/icons-material/PieChart";
+import Search from "@mui/icons-material/Search";
+import CreditCard from "@mui/icons-material/CreditCard";
 import Link from "next/link";
 
 export default function ReportsPage() {
@@ -21,7 +25,7 @@ export default function ReportsPage() {
               <Box className="flex items-center justify-between">
                 <Box className="flex items-center gap-2">
                   <Box className="p-2 rounded-lg bg-blue-50 text-blue-600">
-                    <BarChart3 className="h-6 w-6" />
+                    <BarChart className="h-6 w-6" />
                   </Box>
                   <span className="font-semibold text-lg text-gray-800">
                     Google Ads Report

@@ -24,15 +24,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  CheckCircle2,
-  AlertTriangle,
-  Stethoscope,
-  Building2,
-  Gavel,
-  ArrowRight,
-  Star
-} from 'lucide-react';
+import CheckCircle from "@mui/icons-material/CheckCircle";
+import Warning from "@mui/icons-material/Warning";
+import MedicalServices from "@mui/icons-material/MedicalServices";
+import Apartment from "@mui/icons-material/Apartment";
+import Policy from "@mui/icons-material/Policy";
+import ArrowForward from "@mui/icons-material/ArrowForward";
+import Star from "@mui/icons-material/Star";
 
 const BASE_URL = process.env.APP_BASE_URL || 'https://celpippracticetest.com';
 
@@ -111,7 +109,7 @@ export default function CelpipForNursesPage() {
             <Link href="/exam-overview">
               <Button size="lg" className="h-14 px-8 text-lg rounded-full shadow-lg shadow-blue-600/20 hover:shadow-xl hover:translate-y-[-2px] transition-all">
                 Start Free Practice Test
-                <ArrowRight className="ml-2 w-5 h-5" />
+                <ArrowForward className="ml-2 w-5 h-5" />
               </Button>
             </Link>
             <p className="text-sm text-slate-500 mt-4 sm:mt-0">No credit card required</p>
@@ -136,7 +134,7 @@ export default function CelpipForNursesPage() {
             <Card className="flex-1 hover:shadow-md transition-shadow border-t-4 border-t-blue-500">
               <CardHeader>
                 <Box className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center mb-4 text-blue-600">
-                  <Building2 className="w-6 h-6" />
+                  <Apartment className="w-6 h-6" />
                 </Box>
                 <CardTitle>Real Estate Professionals</CardTitle>
                 <CardDescription>BC, SK, AB Requirements</CardDescription>
@@ -148,13 +146,13 @@ export default function CelpipForNursesPage() {
                 <Box className="space-y-3">
                   <Box className="bg-red-50 p-3 rounded-md border border-red-100">
                     <Box className="flex gap-2 text-red-700 text-sm font-semibold mb-1">
-                      <AlertTriangle className="w-4 h-4" /> The Risk
+                      <Warning className="w-4 h-4" /> The Risk
                     </Box>
                     <p className="text-red-600 text-xs">Failing twice may force you to retake your entire licensing course.</p>
                   </Box>
                   <Box className="bg-green-50 p-3 rounded-md border border-green-100">
                     <Box className="flex gap-2 text-green-700 text-sm font-semibold mb-1">
-                      <CheckCircle2 className="w-4 h-4" /> Our Solution
+                      <CheckCircle className="w-4 h-4" /> Our Solution
                     </Box>
                     <p className="text-green-600 text-xs">Industry-specific mock exams to clear the "Level 7" hurdle.</p>
                   </Box>
@@ -166,7 +164,7 @@ export default function CelpipForNursesPage() {
             <Card className="flex-1 hover:shadow-md transition-shadow border-t-4 border-t-teal-500">
               <CardHeader>
                 <Box className="w-12 h-12 rounded-lg bg-teal-100 flex items-center justify-center mb-4 text-teal-600">
-                  <Stethoscope className="w-6 h-6" />
+                  <MedicalServices className="w-6 h-6" />
                 </Box>
                 <CardTitle>Healthcare Workers</CardTitle>
                 <CardDescription>BC Care Aides & Nurses</CardDescription>
@@ -178,13 +176,13 @@ export default function CelpipForNursesPage() {
                 <Box className="space-y-3">
                   <Box className="bg-red-50 p-3 rounded-md border border-red-100">
                     <Box className="flex gap-2 text-red-700 text-sm font-semibold mb-1">
-                      <AlertTriangle className="w-4 h-4" /> The Challenge
+                      <Warning className="w-4 h-4" /> The Challenge
                     </Box>
                     <p className="text-red-600 text-xs">"Performance freeze" when speaking to a computer under pressure.</p>
                   </Box>
                   <Box className="bg-green-50 p-3 rounded-md border border-green-100">
                     <Box className="flex gap-2 text-green-700 text-sm font-semibold mb-1">
-                      <CheckCircle2 className="w-4 h-4" /> Our Solution
+                      <CheckCircle className="w-4 h-4" /> Our Solution
                     </Box>
                     <p className="text-green-600 text-xs">AI simulations to perfect your tone, fluency, and timing.</p>
                   </Box>
@@ -196,7 +194,7 @@ export default function CelpipForNursesPage() {
             <Card className="flex-1 hover:shadow-md transition-shadow border-t-4 border-t-purple-500">
               <CardHeader>
                 <Box className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center mb-4 text-purple-600">
-                  <Gavel className="w-6 h-6" />
+                  <Policy className="w-6 h-6" />
                 </Box>
                 <CardTitle>Immigration Consultants</CardTitle>
                 <CardDescription>RCIC & CICC Requirements</CardDescription>
@@ -208,13 +206,13 @@ export default function CelpipForNursesPage() {
                 <Box className="space-y-3">
                   <Box className="bg-red-50 p-3 rounded-md border border-red-100">
                     <Box className="flex gap-2 text-red-700 text-sm font-semibold mb-1">
-                      <AlertTriangle className="w-4 h-4" /> The Goal
+                      <Warning className="w-4 h-4" /> The Goal
                     </Box>
                     <p className="text-red-600 text-xs">Need to maximize score to prove expertise to future clients.</p>
                   </Box>
                   <Box className="bg-green-50 p-3 rounded-md border border-green-100">
                     <Box className="flex gap-2 text-green-700 text-sm font-semibold mb-1">
-                      <CheckCircle2 className="w-4 h-4" /> Our Solution
+                      <CheckCircle className="w-4 h-4" /> Our Solution
                     </Box>
                     <p className="text-green-600 text-xs">Advanced feedback to master the nuances for a CLB 9 score.</p>
                   </Box>
@@ -251,7 +249,7 @@ export default function CelpipForNursesPage() {
                   <TableCell className="font-medium pl-6 py-4">
                     <Box className="flex items-center gap-3">
                       <Box className="p-2 rounded bg-blue-100 text-blue-600">
-                        <CheckCircle2 className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4" />
                       </Box>
                       60 Full-Length Mock Exams
                     </Box>
@@ -262,7 +260,7 @@ export default function CelpipForNursesPage() {
                   <TableCell className="font-medium pl-6 py-4">
                     <Box className="flex items-center gap-3">
                       <Box className="p-2 rounded bg-blue-100 text-blue-600">
-                        <CheckCircle2 className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4" />
                       </Box>
                       Instant AI Scoring
                     </Box>
@@ -273,7 +271,7 @@ export default function CelpipForNursesPage() {
                   <TableCell className="font-medium pl-6 py-4">
                     <Box className="flex items-center gap-3">
                       <Box className="p-2 rounded bg-blue-100 text-blue-600">
-                        <CheckCircle2 className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4" />
                       </Box>
                       Task-Specific Practice
                     </Box>
@@ -284,7 +282,7 @@ export default function CelpipForNursesPage() {
                   <TableCell className="font-medium pl-6 py-4">
                     <Box className="flex items-center gap-3">
                       <Box className="p-2 rounded bg-blue-100 text-blue-600">
-                        <CheckCircle2 className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4" />
                       </Box>
                       Mobile-Optimized
                     </Box>

@@ -20,7 +20,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TBlogSchemaDto } from "@/models/blog.model";
-import { Pencil, Trash2 } from "lucide-react";
+import Edit from "@mui/icons-material/Edit";
+import Delete from "@mui/icons-material/Delete";
 
 type BlogPostsTableProps = {
   posts: TBlogSchemaDto[];
@@ -105,7 +106,7 @@ export default function BlogPostsTable({
                   onClick={() => onEdit(post.id)}
                   title="Edit blog post"
                 >
-                  <Pencil className="h-4 w-4" />
+                  <Edit className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -118,7 +119,7 @@ export default function BlogPostsTable({
                   title="Delete blog post"
                   className="text-red-500 hover:text-red-700"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Delete className="h-4 w-4" />
                 </Button>
               </TableCell>
             </TableRow>

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Loader2 } from "lucide-react";
+import Autorenew from "@mui/icons-material/Autorenew";
 import { Button } from "@/components/ui/button";
 import { Box } from "@/components/ui/Box";
 import {
@@ -294,7 +294,7 @@ export default function WikiArticleForm({
           <Button type="submit" disabled={isLoading}>
             {isLoading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Autorenew className="mr-2 h-4 w-4 animate-spin" />
                 Saving...
               </>
             ) : (

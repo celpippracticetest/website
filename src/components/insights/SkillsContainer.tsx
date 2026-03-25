@@ -1,6 +1,9 @@
 
 import React from "react";
-import { Headphones, Mic, Pen, BookOpen } from "lucide-react";
+import Headphones from "@mui/icons-material/Headphones";
+import Mic from "@mui/icons-material/Mic";
+import Draw from "@mui/icons-material/Draw";
+import MenuBook from "@mui/icons-material/MenuBook";
 import SkillSection from "./SkillSection";
 import { SkillDataMap } from "./skillTypes";
 
@@ -24,8 +27,8 @@ const SkillsContainer = ({
 
   const skillIcons = {
     speaking: <Mic className="h-6 w-6 text-pink-600" />,
-    writing: <Pen className="h-6 w-6 text-blue-600" />,
-    reading: <BookOpen className="h-6 w-6 text-violet-600" />,
+    writing: <Draw className="h-6 w-6 text-blue-600" />,
+    reading: <MenuBook className="h-6 w-6 text-violet-600" />,
     listening: <Headphones className="h-6 w-6 text-sky-600" />,
   };
 

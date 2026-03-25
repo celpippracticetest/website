@@ -1,4 +1,4 @@
-import { ChevronDown } from "lucide-react";
+import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
 import { Box } from "@/components/ui/Box";
 
 export const FAQ_DATA = [

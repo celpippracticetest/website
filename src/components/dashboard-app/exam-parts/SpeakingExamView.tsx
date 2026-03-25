@@ -2,7 +2,9 @@
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
-import { ArrowLeft, CircleAlert, LoaderCircle } from "lucide-react";
+import ArrowBack from "@mui/icons-material/ArrowBack";
+import ErrorOutline from "@mui/icons-material/ErrorOutline";
+import Autorenew from "@mui/icons-material/Autorenew";
 import { TPracticeDto } from "@/models/practice.model";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
@@ -544,7 +546,7 @@ const SpeakingExamView = ({
                   onClick={handleBack}
                   className="cursor-pointer inline-flex items-center justify-center border-[1px] border-[#37465C] rounded-[100%]  w-[40px] h-[40px]"
                 >
-                  <ArrowLeft size={18} strokeWidth={1.7}></ArrowLeft>
+                  <ArrowBack sx={{ fontSize: 18 }} />
                 </button>
                 <button
                   onClick={handleHeaderNext}
@@ -690,12 +692,7 @@ const SpeakingExamView = ({
                               className="relative h-[204px] border border-[#FF8FA7] rounded-[12px]"
                             >
                               <div className="flex px-[16px] items-center gap-2 h-[44px] bg-[#FFE2E8] rounded-tl-[12px] rounded-tr-[12px]">
-                                <CircleAlert
-                                  width={24}
-                                  height={24}
-                                  viewBox="0 0 24 24"
-                                  className="text-[#EE4266] "
-                                />
+                                <ErrorOutline sx={{ fontSize: 24, color: "#EE4266" }} />
                                 <h5 className=" font-semibold text-[14px]">
                                   Can&apos;t Use Microphone!
                                 </h5>
@@ -819,7 +816,7 @@ const SpeakingExamView = ({
                               <div className="text-center text-[14px] font-medium text-gray-800 mb-2 w-full">
                                 Upload recording...
                               </div>
-                              <LoaderCircle className="w-8 h-8 text-gray-800 animate-spin"></LoaderCircle>
+                              <Autorenew className="w-8 h-8 text-gray-800 animate-spin" />
                             </div>
                           )}
                         </div>

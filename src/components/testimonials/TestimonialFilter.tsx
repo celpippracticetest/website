@@ -1,6 +1,10 @@
 
 import { Button } from "@/components/ui/button";
-import { Mic, Pen, BookOpen, Headphones, BookCopy } from "lucide-react";
+import Mic from "@mui/icons-material/Mic";
+import Draw from "@mui/icons-material/Draw";
+import MenuBook from "@mui/icons-material/MenuBook";
+import Headphones from "@mui/icons-material/Headphones";
+import CopyAll from "@mui/icons-material/CopyAll";
 import { testimonialColors } from "./testimonialData";
 
 type TestimonialType = "all" | "mock" | "speaking" | "writing" | "reading" | "listening";
@@ -12,11 +16,11 @@ interface TestimonialFilterProps {
 
 const TestimonialFilter = ({ activeFilter, setActiveFilter }: TestimonialFilterProps) => {
   const filters: { id: TestimonialType; label: string; icon: React.ReactNode }[] = [
-    { id: "all", label: "All", icon: <BookCopy className="h-4 w-4" /> },
-    { id: "mock", label: "Mock Exams", icon: <BookCopy className="h-4 w-4" /> },
+    { id: "all", label: "All", icon: <CopyAll className="h-4 w-4" /> },
+    { id: "mock", label: "Mock Exams", icon: <CopyAll className="h-4 w-4" /> },
     { id: "speaking", label: "Speaking", icon: <Mic className="h-4 w-4" /> },
-    { id: "writing", label: "Writing", icon: <Pen className="h-4 w-4" /> },
-    { id: "reading", label: "Reading", icon: <BookOpen className="h-4 w-4" /> },
+    { id: "writing", label: "Writing", icon: <Draw className="h-4 w-4" /> },
+    { id: "reading", label: "Reading", icon: <MenuBook className="h-4 w-4" /> },
     { id: "listening", label: "Listening", icon: <Headphones className="h-4 w-4" /> }
   ];
 

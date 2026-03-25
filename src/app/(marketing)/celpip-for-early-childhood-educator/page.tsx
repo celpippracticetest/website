@@ -6,7 +6,12 @@ import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { CheckCircle2, AlertTriangle, BookOpen, ArrowRight, GraduationCap, Mic } from "lucide-react";
+import CheckCircle from "@mui/icons-material/CheckCircle";
+import Warning from "@mui/icons-material/Warning";
+import MenuBook from "@mui/icons-material/MenuBook";
+import ArrowForward from "@mui/icons-material/ArrowForward";
+import School from "@mui/icons-material/School";
+import Mic from "@mui/icons-material/Mic";
 
 export const metadata: Metadata = {
   title: "CELPIP for Early Childhood Educator (ECE): Registration in Canada",
@@ -33,7 +38,7 @@ export default function CelpipForEarlyChildhoodEducatorPage() {
       <Box className="bg-white border-b border-slate-200">
         <Box className="max-w-5xl mx-auto px-4 py-16 md:py-24 text-center">
           <Box className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-sm font-medium mb-6">
-            <GraduationCap className="w-4 h-4" />
+            <School className="w-4 h-4" />
             <span>Trusted by Early Childhood Educators</span>
           </Box>
           <h1 className="text-4xl md:text-6xl font-extrabold mb-6 text-slate-900 tracking-tight leading-[1.1]">
@@ -46,7 +51,7 @@ export default function CelpipForEarlyChildhoodEducatorPage() {
           <Box className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link href="/exam-overview">
               <Button size="lg" className="h-14 px-8 text-lg rounded-full shadow-lg shadow-amber-600/20 hover:shadow-xl bg-amber-600 hover:bg-amber-700">
-                Start Free Practice Test <ArrowRight className="ml-2 w-5 h-5" />
+                Start Free Practice Test <ArrowForward className="ml-2 w-5 h-5" />
               </Button>
             </Link>
             <p className="text-sm text-slate-500 mt-4 sm:mt-0">No credit card required</p>
@@ -70,11 +75,11 @@ export default function CelpipForEarlyChildhoodEducatorPage() {
                 <p className="text-slate-700 text-sm">Many ECE colleges require Level 7 in all four skills.</p>
                 <Box className="space-y-3">
                   <Box className="bg-red-50 p-3 rounded-md border border-red-100">
-                    <Box className="flex gap-2 text-red-700 text-sm font-semibold mb-1"><AlertTriangle className="w-4 h-4" /> The Challenge</Box>
+                    <Box className="flex gap-2 text-red-700 text-sm font-semibold mb-1"><Warning className="w-4 h-4" /> The Challenge</Box>
                     <p className="text-red-600 text-xs">Speaking and writing under timed conditions can be stressful.</p>
                   </Box>
                   <Box className="bg-green-50 p-3 rounded-md border border-green-100">
-                    <Box className="flex gap-2 text-green-700 text-sm font-semibold mb-1"><CheckCircle2 className="w-4 h-4" /> Our Solution</Box>
+                    <Box className="flex gap-2 text-green-700 text-sm font-semibold mb-1"><CheckCircle className="w-4 h-4" /> Our Solution</Box>
                     <p className="text-green-600 text-xs">AI feedback so you know when you are ready for the real exam.</p>
                   </Box>
                 </Box>
@@ -82,14 +87,14 @@ export default function CelpipForEarlyChildhoodEducatorPage() {
             </Card>
             <Card className="flex-1 hover:shadow-md transition-shadow border-t-4 border-t-slate-500">
               <CardHeader>
-                <Box className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mb-4 text-slate-600"><BookOpen className="w-6 h-6" /></Box>
+                <Box className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mb-4 text-slate-600"><MenuBook className="w-6 h-6" /></Box>
                 <CardTitle>Full CELPIP-General Prep</CardTitle>
                 <CardDescription>All Four Skills</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-slate-700 text-sm">Strong scores in all four components are typically required.</p>
                 <Box className="bg-green-50 p-3 rounded-md border border-green-100">
-                  <Box className="flex gap-2 text-green-700 text-sm font-semibold mb-1"><CheckCircle2 className="w-4 h-4" /> Our Solution</Box>
+                  <Box className="flex gap-2 text-green-700 text-sm font-semibold mb-1"><CheckCircle className="w-4 h-4" /> Our Solution</Box>
                   <p className="text-green-600 text-xs">60+ mock exams and task-specific practice for every skill.</p>
                 </Box>
               </CardContent>
@@ -110,10 +115,10 @@ export default function CelpipForEarlyChildhoodEducatorPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow className="hover:bg-slate-50/50"><TableCell className="font-medium pl-6 py-4"><Box className="flex items-center gap-3"><Box className="p-2 rounded bg-amber-100 text-amber-600"><CheckCircle2 className="w-4 h-4" /></Box>Writing and Speaking AI Feedback</Box></TableCell><TableCell className="py-4 text-slate-600">Instant scores and feedback.</TableCell></TableRow>
-                <TableRow className="hover:bg-slate-50/50"><TableCell className="font-medium pl-6 py-4"><Box className="flex items-center gap-3"><Box className="p-2 rounded bg-amber-100 text-amber-600"><CheckCircle2 className="w-4 h-4" /></Box>60 Full-Length Mock Exams</Box></TableCell><TableCell className="py-4 text-slate-600">Practice in exam conditions.</TableCell></TableRow>
-                <TableRow className="hover:bg-slate-50/50"><TableCell className="font-medium pl-6 py-4"><Box className="flex items-center gap-3"><Box className="p-2 rounded bg-amber-100 text-amber-600"><CheckCircle2 className="w-4 h-4" /></Box>Task-Specific Practice</Box></TableCell><TableCell className="py-4 text-slate-600">Focus on weaker sections.</TableCell></TableRow>
-                <TableRow className="hover:bg-slate-50/50"><TableCell className="font-medium pl-6 py-4"><Box className="flex items-center gap-3"><Box className="p-2 rounded bg-amber-100 text-amber-600"><CheckCircle2 className="w-4 h-4" /></Box>Study on Your Schedule</Box></TableCell><TableCell className="py-4 text-slate-600">Access from any device.</TableCell></TableRow>
+                <TableRow className="hover:bg-slate-50/50"><TableCell className="font-medium pl-6 py-4"><Box className="flex items-center gap-3"><Box className="p-2 rounded bg-amber-100 text-amber-600"><CheckCircle className="w-4 h-4" /></Box>Writing and Speaking AI Feedback</Box></TableCell><TableCell className="py-4 text-slate-600">Instant scores and feedback.</TableCell></TableRow>
+                <TableRow className="hover:bg-slate-50/50"><TableCell className="font-medium pl-6 py-4"><Box className="flex items-center gap-3"><Box className="p-2 rounded bg-amber-100 text-amber-600"><CheckCircle className="w-4 h-4" /></Box>60 Full-Length Mock Exams</Box></TableCell><TableCell className="py-4 text-slate-600">Practice in exam conditions.</TableCell></TableRow>
+                <TableRow className="hover:bg-slate-50/50"><TableCell className="font-medium pl-6 py-4"><Box className="flex items-center gap-3"><Box className="p-2 rounded bg-amber-100 text-amber-600"><CheckCircle className="w-4 h-4" /></Box>Task-Specific Practice</Box></TableCell><TableCell className="py-4 text-slate-600">Focus on weaker sections.</TableCell></TableRow>
+                <TableRow className="hover:bg-slate-50/50"><TableCell className="font-medium pl-6 py-4"><Box className="flex items-center gap-3"><Box className="p-2 rounded bg-amber-100 text-amber-600"><CheckCircle className="w-4 h-4" /></Box>Study on Your Schedule</Box></TableCell><TableCell className="py-4 text-slate-600">Access from any device.</TableCell></TableRow>
               </TableBody>
             </Table>
           </Card>

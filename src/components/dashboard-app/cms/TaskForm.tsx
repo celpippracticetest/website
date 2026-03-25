@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TTaskSchemaDto } from "@/models/tasks.model";
-import { Loader2 } from "lucide-react";
+import Autorenew from "@mui/icons-material/Autorenew";
 
 const taskFormSchema = z.object({
     name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -236,7 +236,7 @@ const TaskForm = ({ initialData, onSubmit, isLoading }: TaskFormProps) => {
                 <Button type="submit" disabled={isLoading} className="w-full md:w-auto">
                     {isLoading ? (
                         <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <Autorenew className="mr-2 h-4 w-4 animate-spin" />
                             Saving...
                         </>
                     ) : (

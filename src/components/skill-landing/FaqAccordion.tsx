@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
+import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
 
 interface FaqItem {
   question: string;

@@ -4,7 +4,8 @@ import React, { use, useEffect, useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import TaskForm from "@/components/dashboard-app/cms/TaskForm";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Loader2 } from "lucide-react";
+import ChevronLeft from "@mui/icons-material/ChevronLeft";
+import Autorenew from "@mui/icons-material/Autorenew";
 import Link from "next/link";
 import { toast } from "@/components/ui/use-toast";
 import { TTaskSchemaDto } from "@/models/tasks.model";
@@ -78,7 +79,7 @@ const EditTaskPage = ({ params }: { params: Promise<{ id: string }> }) => {
     if (isLoading) {
         return (
             <div className="flex h-screen items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                <Autorenew className="h-8 w-8 animate-spin text-gray-400" />
             </div>
         );
     }

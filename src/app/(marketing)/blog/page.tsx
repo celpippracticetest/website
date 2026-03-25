@@ -5,7 +5,11 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { getPublishedBlogPosts } from "@/lib/blog/public";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, Calendar, User, ArrowRight, ChevronRight } from "lucide-react";
+import Schedule from "@mui/icons-material/Schedule";
+import CalendarToday from "@mui/icons-material/CalendarToday";
+import Person from "@mui/icons-material/Person";
+import ArrowForward from "@mui/icons-material/ArrowForward";
+import ChevronRight from "@mui/icons-material/ChevronRight";
 import { BlogCtaSection } from "@/components/pages/blog/BlogCtaSection";
 import BlogListGtm from "@/components/analytics/BlogListGtm";
 
@@ -148,7 +152,7 @@ export default async function BlogListingPage() {
         {items.length === 0 ? (
           <Box className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
             <Box className="mb-4 rounded-full bg-slate-100 p-4">
-              <Calendar className="h-8 w-8 text-slate-400" />
+              <CalendarToday className="h-8 w-8 text-slate-400" />
             </Box>
             <h3 className="text-lg font-semibold text-slate-900">No posts yet</h3>
             <p className="text-slate-500">Check back soon for new articles.</p>
@@ -187,11 +191,11 @@ export default async function BlogListingPage() {
                       <Box className="flex flex-col justify-center bg-white p-6 md:p-10 md:flex-1">
                         <Box className="mb-4 flex items-center gap-4 text-sm text-slate-500">
                           <Box className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
+                            <CalendarToday className="h-4 w-4" />
                             {formatDate(featuredPost.publishedAt)}
                           </Box>
                           <Box className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
+                            <Schedule className="h-4 w-4" />
                             {estimateReadTime(featuredPost.contentHtml)}
                           </Box>
                         </Box>
@@ -204,12 +208,12 @@ export default async function BlogListingPage() {
                         <Box className="mt-auto flex items-center justify-between">
                           <Box className="flex items-center gap-2">
                             <Box className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 border border-slate-200">
-                              <User className="h-4 w-4 text-slate-600" />
+                              <Person className="h-4 w-4 text-slate-600" />
                             </Box>
                             <span className="text-sm font-medium text-slate-700">{featuredPost.authorName}</span>
                           </Box>
                           <span className="flex items-center text-sm font-bold text-blue-600 group-hover:underline">
-                            Read Article <ArrowRight className="ml-1 h-4 w-4" />
+                            Read Article <ArrowForward className="ml-1 h-4 w-4" />
                           </span>
                         </Box>
                       </Box>
@@ -251,11 +255,11 @@ export default async function BlogListingPage() {
                         <CardContent className="flex flex-1 flex-col p-6 bg-white">
                           <Box className="mb-3 flex items-center justify-between text-xs text-slate-500">
                             <span className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
+                              <CalendarToday className="h-3 w-3" />
                               {formatDate(post.publishedAt)}
                             </span>
                             <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
+                              <Schedule className="h-3 w-3" />
                               {estimateReadTime(post.contentHtml)}
                             </span>
                           </Box>

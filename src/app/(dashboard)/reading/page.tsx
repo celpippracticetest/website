@@ -16,6 +16,7 @@ import { skillPagesContent } from "@/data/skill-pages-content";
 import { JsonLd } from "@/components/seo/JsonLd";
 import type { Metadata } from "next";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import { Box, Typography } from "@mui/material";
 
 const READING_PAGE_URL = "https://celpippracticetest.com/reading";
 const READING_PAGE_TITLE =
@@ -111,12 +112,13 @@ export async function generateMetadata({
   };
 }
 
-interface PracticeTask {
-  taskNumber: string;
-  name: string;
-}
 interface PracticeSection {
-  tasks: PracticeTask[];
+  tasks: {
+    id: string;
+    category: string;
+    taskNumber: string;
+    name: string;
+  }[];
   route: string;
 }
 
@@ -178,12 +180,28 @@ const ReadingPage = async ({
   if (!selectedPracticeId && !taskId) {
     return (
       <ShowTaskHeader>
-        <div className="flex mt-[32px]  screen744:!mt-[0] items-center justify-center gap-[8px] max-w-[1200px] w-full !h-[60px] shrink-0 rounded-[12px] bg-[#FFEBD6]">
-          <SvgReadingPart className="text-[#F27059]" />
-          <h1 className="text-[#37465C] font-semibold text-[20px]">
+        <Box
+          sx={{
+            display: "flex",
+            mt: { xs: 4, sm: 0 },
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 1,
+            maxWidth: 1200,
+            width: 1,
+            height: 60,
+            flexShrink: 0,
+            borderRadius: 1.5,
+            bgcolor: "#FFEBD6",
+          }}
+        >
+          <Box sx={{ color: "#F27059", display: "flex", alignItems: "center" }}>
+            <SvgReadingPart />
+          </Box>
+          <Typography component="h1" sx={{ color: "#37465C", fontWeight: 600, fontSize: 20 }}>
             CELPIP Reading Practice Test
-          </h1>
-        </div>
+          </Typography>
+        </Box>
         <ShowTasks tasks={readingTasks} />
       </ShowTaskHeader>
     );
@@ -242,11 +260,42 @@ const ReadingPage = async ({
       );
   }
 
+  const strategyBodySx = {
+    mt: 2,
+    fontSize: 15,
+    lineHeight: "24px",
+    color: "#526071",
+  };
+
   return (
-    <main className="bg-[#F2F6FF] min-h-screen flex w-full justify-center">
-      <div className="w-full max-w-[1280px]">
+    <Box
+      component="main"
+      sx={{
+        bgcolor: "#F2F6FF",
+        minHeight: "100vh",
+        display: "flex",
+        width: 1,
+        justifyContent: "center",
+      }}
+    >
+      <Box sx={{ width: 1, maxWidth: 1280 }}>
         <JsonLd data={readingStructuredData} />
-        <h1 className="sr-only">CELPIP Practice Exam for Reading</h1>
+        <Typography
+          component="h1"
+          sx={{
+            position: "absolute",
+            width: "1px",
+            height: "1px",
+            p: 0,
+            m: "-1px",
+            overflow: "hidden",
+            clip: "rect(0, 0, 0, 0)",
+            whiteSpace: "nowrap",
+            border: 0,
+          }}
+        >
+          CELPIP Practice Exam for Reading
+        </Typography>
         <ReadingPractice
           showHeader={true}
           allPractices={practices.items}
@@ -256,38 +305,38 @@ const ReadingPage = async ({
           completedPractice={completedPractice}
         />
         {!user && (
-          <section className="px-4 pb-10">
-          <h2 className="text-[22px] font-semibold text-[#37465C]">
-            CELPIP Reading practice strategy
-          </h2>
-          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
-            Build Reading speed by combining skimming for structure with scanning for exact
-            details. Focus on keyword matching, paraphrase recognition, and elimination logic.
-          </p>
-          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
-            To improve scores faster, review wrong answers by task type and repeat targeted drills
-            before attempting another full Reading set.
-          </p>
-          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
-            Begin each passage with a quick structure scan: title, headings, and paragraph roles.
-            This helps you predict where key evidence is located before you answer questions. When
-            time is limited, this structure-first method is more effective than reading every line
-            at the same speed.
-          </p>
-          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
-            For difficult items, avoid guessing based on one familiar word. Compare at least two
-            options and confirm which one is fully supported by the text context. This habit
-            reduces avoidable errors in inference, viewpoint, and detail-matching questions.
-          </p>
-          <p className="mt-2 text-[15px] leading-[24px] text-[#526071]">
-            Weekly score gains usually come from better process control: faster scanning, cleaner
-            elimination, and disciplined timing. Track these three metrics after every session, and
-            you will see clearer improvement trends than only tracking final score.
-          </p>
-          </section>
+          <Box component="section" sx={{ px: 2, pb: 5 }}>
+            <Typography component="h2" sx={{ fontSize: 22, fontWeight: 600, color: "#37465C" }}>
+              CELPIP Reading practice strategy
+            </Typography>
+            <Typography component="p" sx={strategyBodySx}>
+              Build Reading speed by combining skimming for structure with scanning for exact
+              details. Focus on keyword matching, paraphrase recognition, and elimination logic.
+            </Typography>
+            <Typography component="p" sx={strategyBodySx}>
+              To improve scores faster, review wrong answers by task type and repeat targeted drills
+              before attempting another full Reading set.
+            </Typography>
+            <Typography component="p" sx={strategyBodySx}>
+              Begin each passage with a quick structure scan: title, headings, and paragraph roles.
+              This helps you predict where key evidence is located before you answer questions. When
+              time is limited, this structure-first method is more effective than reading every line
+              at the same speed.
+            </Typography>
+            <Typography component="p" sx={strategyBodySx}>
+              For difficult items, avoid guessing based on one familiar word. Compare at least two
+              options and confirm which one is fully supported by the text context. This habit
+              reduces avoidable errors in inference, viewpoint, and detail-matching questions.
+            </Typography>
+            <Typography component="p" sx={strategyBodySx}>
+              Weekly score gains usually come from better process control: faster scanning, cleaner
+              elimination, and disciplined timing. Track these three metrics after every session, and
+              you will see clearer improvement trends than only tracking final score.
+            </Typography>
+          </Box>
         )}
-      </div>
-    </main>
+      </Box>
+    </Box>
   );
 };
 

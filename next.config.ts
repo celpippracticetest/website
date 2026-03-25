@@ -242,7 +242,6 @@ const nextConfig: NextConfig = {
       "@radix-ui/react-toggle",
       "@radix-ui/react-toggle-group",
       "@radix-ui/react-tooltip",
-      "lucide-react",
       "framer-motion",
       "chart.js",
       "react-chartjs-2",
@@ -331,7 +330,7 @@ const nextConfig: NextConfig = {
           },
           // UI libraries
           ui: {
-            test: /[\\/]node_modules[\\/](@radix-ui|lucide-react|framer-motion)[\\/]/,
+            test: /[\\/]node_modules[\\/](@radix-ui|framer-motion)[\\/]/,
             name: "ui",
             chunks: "all",
             priority: 12,

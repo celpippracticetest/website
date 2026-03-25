@@ -2,7 +2,8 @@
 
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, LoaderCircle } from "lucide-react";
+import ArrowBack from "@mui/icons-material/ArrowBack";
+import Autorenew from "@mui/icons-material/Autorenew";
 import { TPracticeDto } from "@/models/practice.model";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
@@ -410,7 +411,7 @@ const ReadingExamView = ({
                   onClick={handleBack}
                   className="cursor-pointer inline-flex items-center justify-center border-[1px] border-[#37465C] rounded-[100%]  w-[40px] h-[40px]"
                 >
-                  <ArrowLeft size={18} strokeWidth={1.7}></ArrowLeft>
+                  <ArrowBack sx={{ fontSize: 18 }} />
                 </button>
                 <button
                   disabled={page == "answer"}
@@ -432,7 +433,7 @@ const ReadingExamView = ({
                   <div className="text-center text-base font-medium text-gray-800 mb-2 w-full">
                     Upload Answers...
                   </div>
-                  <LoaderCircle className="w-8 h-8 text-gray-800 animate-spin"></LoaderCircle>
+                  <Autorenew className="w-8 h-8 text-gray-800 animate-spin" />
                 </div>
               </div>
             )}

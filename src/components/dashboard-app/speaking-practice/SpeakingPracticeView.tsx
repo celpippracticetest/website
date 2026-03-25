@@ -1,7 +1,10 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
-import { ChevronUp, ChevronDown, X, CircleAlert } from "lucide-react";
+import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
+import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
+import Close from "@mui/icons-material/Close";
+import ErrorOutline from "@mui/icons-material/ErrorOutline";
 import { TPracticeDto } from "@/models/practice.model";
 import ListeningSideMenu from "../listening-practice/ListeningSideMenu";
 import ListeningAnswerList from "./components/ListeningAnswers";
@@ -677,12 +680,7 @@ const SpeakingPracticeView = ({
                             className="relative h-[204px] border border-[#FF8FA7] rounded-[12px]"
                           >
                             <div className="flex px-[16px] items-center gap-2 h-[44px] bg-[#FFE2E8] rounded-tl-[12px] rounded-tr-[12px]">
-                              <CircleAlert
-                                width={24}
-                                height={24}
-                                viewBox="0 0 24 24"
-                                className="text-[#EE4266] "
-                              />
+                              <ErrorOutline sx={{ fontSize: 24, color: "#EE4266" }} />
                               <h5 className=" font-semibold text-[14px]">
                                 Can&apos;t Use Microphone!
                               </h5>
@@ -726,14 +724,7 @@ const SpeakingPracticeView = ({
                                   cancelRecording();
                                 }}
                               >
-                                <X
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  className="lucide lucide-x w-8 h-8 text-gray-600"
-                                />
+                                <Close className="h-8 w-8 text-gray-600" />
                               </button>
                             </div>
                           </div>

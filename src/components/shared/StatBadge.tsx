@@ -1,5 +1,5 @@
 import React from "react";
-import { Users } from "lucide-react";
+import People from "@mui/icons-material/People";
 
 export interface StatBadgeProps {
   /**
@@ -45,7 +45,7 @@ const StatBadge: React.FC<StatBadgeProps> = ({
         ${className}
       `}
     >
-      <Users className="w-4 h-4 text-[#212E42] flex-shrink-0" />
+      <People className="w-4 h-4 text-[#212E42] flex-shrink-0" />
       
       <div className="flex items-baseline gap-1">
         <span className="text-[14px] font-semibold text-[#212E42]">{count}</span>

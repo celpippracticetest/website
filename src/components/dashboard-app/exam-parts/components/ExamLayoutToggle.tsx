@@ -52,6 +52,7 @@ const ExamLayoutToggle = ({
 
   return (
     <Box
+      id="mock-exam-tour-layout-toggle"
       component="div"
       role="group"
       aria-labelledby={labelledBy}

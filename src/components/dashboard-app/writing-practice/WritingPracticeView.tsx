@@ -1,12 +1,10 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  ArrowRight,
-  ChevronUp,
-  ChevronDown,
-  Gem,
-  ArrowLeft,
-} from "lucide-react";
+import ArrowForward from "@mui/icons-material/ArrowForward";
+import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
+import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
+import WorkspacePremium from "@mui/icons-material/WorkspacePremium";
+import ArrowBack from "@mui/icons-material/ArrowBack";
 import { TPracticeDto } from "@/models/practice.model";
 import ListeningSideMenu from "../listening-practice/ListeningSideMenu";
 import ListeningAnswerList from "./components/ListeningAnswers";
@@ -404,11 +402,7 @@ const WritingPracticeView = ({
                     className={`cursor-pointer text-[14px] font-normal  inline-flex items-center justify-center rounded-[24px] bg-white  w-[96px] h-[40px]`}
                   >
                     {"Next"}
-                    <ArrowRight
-                      size={18}
-                      strokeWidth={1.7}
-                      className="ml-2"
-                    ></ArrowRight>
+                    <ArrowForward sx={{ fontSize: 18 }} className="ml-2" />
                   </button>
                 )}
             </div>
@@ -645,7 +639,7 @@ const WritingPracticeView = ({
                             router.push("/pricing");
                           }}
                         >
-                          <Gem className="mr-2 h-4 w-4"></Gem>
+                          <WorkspacePremium className="mr-2 h-4 w-4" />
                           Subscribe
                         </button>
                       )}

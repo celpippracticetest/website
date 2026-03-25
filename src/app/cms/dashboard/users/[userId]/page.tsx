@@ -2,22 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import {
-  Download,
-  Calendar,
-  Clock,
-  TrendingUp,
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  Activity,
-  Brain,
-  BookOpen,
-  FileText,
-  Users,
-  Globe,
-  Smartphone,
-} from "lucide-react";
+import Download from "@mui/icons-material/Download";
+import CalendarToday from "@mui/icons-material/CalendarToday";
+import Schedule from "@mui/icons-material/Schedule";
+import TrendingUp from "@mui/icons-material/TrendingUp";
+import Warning from "@mui/icons-material/Warning";
+import CheckCircle from "@mui/icons-material/CheckCircle";
+import HighlightOff from "@mui/icons-material/HighlightOff";
+import Insights from "@mui/icons-material/Insights";
+import Psychology from "@mui/icons-material/Psychology";
+import MenuBook from "@mui/icons-material/MenuBook";
+import Description from "@mui/icons-material/Description";
+import People from "@mui/icons-material/People";
+import Language from "@mui/icons-material/Language";
+import Smartphone from "@mui/icons-material/Smartphone";
 
 interface ActivitySummary {
   practiceAttempted: number;
@@ -249,22 +247,22 @@ export default function UserDetailPage() {
     switch (eventType) {
       case "practice_attempt_started":
       case "practice_attempt_completed":
-        return <BookOpen className="w-4 h-4" />;
+        return <MenuBook className="w-4 h-4" />;
       case "mock_attempt_started":
       case "mock_attempt_completed":
-        return <FileText className="w-4 h-4" />;
+        return <Description className="w-4 h-4" />;
       case "ai_feedback_generated":
-        return <Brain className="w-4 h-4" />;
+        return <Psychology className="w-4 h-4" />;
       case "learning_attempt_started":
-        return <Activity className="w-4 h-4" />;
+        return <Insights className="w-4 h-4" />;
       case "login":
       case "logout":
-        return <Users className="w-4 h-4" />;
+        return <People className="w-4 h-4" />;
       case "payment_successful":
       case "payment_failed":
         return <CheckCircle className="w-4 h-4" />;
       default:
-        return <Activity className="w-4 h-4" />;
+        return <Insights className="w-4 h-4" />;
     }
   };
 
@@ -273,11 +271,11 @@ export default function UserDetailPage() {
       case "completed":
         return <CheckCircle className="w-4 h-4 text-green-500" />;
       case "failed":
-        return <XCircle className="w-4 h-4 text-red-500" />;
+        return <HighlightOff className="w-4 h-4 text-red-500" />;
       case "abandoned":
-        return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
+        return <Warning className="w-4 h-4 text-yellow-500" />;
       default:
-        return <Clock className="w-4 h-4 text-gray-500" />;
+        return <Schedule className="w-4 h-4 text-gray-500" />;
     }
   };
 
@@ -306,7 +304,7 @@ export default function UserDetailPage() {
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg">
-              <BookOpen className="w-6 h-6 text-blue-600" />
+              <MenuBook className="w-6 h-6 text-blue-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Practice</p>
@@ -329,7 +327,7 @@ export default function UserDetailPage() {
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
-              <FileText className="w-6 h-6 text-green-600" />
+              <Description className="w-6 h-6 text-green-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Exams</p>
@@ -351,7 +349,7 @@ export default function UserDetailPage() {
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <div className="flex items-center">
             <div className="p-2 bg-purple-100 rounded-lg">
-              <Brain className="w-6 h-6 text-purple-600" />
+              <Psychology className="w-6 h-6 text-purple-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">LLM Tokens</p>
@@ -373,7 +371,7 @@ export default function UserDetailPage() {
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <div className="flex items-center">
             <div className="p-2 bg-orange-100 rounded-lg">
-              <Clock className="w-6 h-6 text-orange-600" />
+              <Schedule className="w-6 h-6 text-orange-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Last Active</p>
