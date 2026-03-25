@@ -1,4 +1,3 @@
-import { internalLinks as fallbackLinks } from "@/data/internal-links";
 import { getDb } from "@/lib/mongodb";
 import { unstable_cache } from "next/cache";
 import { linkContentCore, LinkerConfig } from "./content-linker-core";
@@ -11,14 +10,6 @@ const getCachedInternalLinks = unstable_cache(
     try {
       const db = await getDb();
       const links = await db.collection("internalLinks").find().toArray();
-      
-      if (links.length === 0) {
-        return fallbackLinks.map(l => ({
-            keyword: l.keyword,
-            url: l.url,
-            exactMatch: l.exactMatch || false
-        }));
-      }
 
       return links.map(link => ({
         keyword: link.keyword,
@@ -26,12 +17,8 @@ const getCachedInternalLinks = unstable_cache(
         exactMatch: link.exactMatch || false
       }));
     } catch (error) {
-      console.error("Failed to fetch internal links, using fallback:", error);
-      return fallbackLinks.map(l => ({
-        keyword: l.keyword,
-        url: l.url,
-        exactMatch: l.exactMatch || false
-      }));
+      console.error("Failed to fetch internal links:", error);
+      return [];
     }
   },
   ["internal-links"],

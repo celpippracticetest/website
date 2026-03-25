@@ -3,7 +3,6 @@ import { auth } from "@clerk/nextjs/server";
 import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/mongodb";
 import { InternalLinkWriteSchema } from "@/models/internal-link.model";
-import { internalLinks } from "@/data/internal-links"; // For migration
 
 export async function GET() {
   const { userId } = await auth();
@@ -27,23 +26,10 @@ export async function POST(req: NextRequest) {
 
     // Check if this is a migration request
     if (body.action === "migrate") {
-      const db = await getDb();
-      const existingCount = await db.collection("internalLinks").countDocuments();
-      
-      if (existingCount > 0) {
-        return NextResponse.json({ message: "Migration skipped: data already exists" });
-      }
-
-      const operations = internalLinks.map(link => ({
-        keyword: link.keyword,
-        url: link.url,
-        exactMatch: link.exactMatch || false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }));
-
-      await db.collection("internalLinks").insertMany(operations);
-      return NextResponse.json({ message: `Imported ${operations.length} links` });
+      return NextResponse.json({
+        message:
+          "Migration skipped: default internal-link rules have been removed. Please create internal links in the admin UI.",
+      });
     }
 
     const validation = InternalLinkWriteSchema.safeParse(body);
