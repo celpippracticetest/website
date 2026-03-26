@@ -1,4 +1,9 @@
 // Google Tag Manager utility functions
+import {
+  GOOGLE_ADS_CONVERSION_ID,
+  GOOGLE_ADS_SIGNUP_LABEL,
+  GOOGLE_ADS_SUBSCRIBE_LABEL,
+} from "@/lib/google-ads-constants";
 import type { GTMEvent, UserContext, UserData } from "@/types/analytics";
 
 // Check if we're in a browser environment
@@ -6,12 +11,9 @@ const isBrowser = typeof window !== "undefined";
 
 // Debug mode - logs events to console in development
 const DEBUG = process.env.NODE_ENV === "development";
-const GOOGLE_ADS_CONVERSION_ID =
-  process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_ID || "";
 const GOOGLE_ADS_PURCHASE_LABEL =
-  process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL || "";
-const GOOGLE_ADS_SIGNUP_LABEL =
-  process.env.NEXT_PUBLIC_GOOGLE_ADS_SIGNUP_LABEL || "";
+  process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL ||
+  GOOGLE_ADS_SUBSCRIBE_LABEL;
 const GOOGLE_ADS_BEGIN_CHECKOUT_LABEL =
   process.env.NEXT_PUBLIC_GOOGLE_ADS_BEGIN_CHECKOUT_LABEL || "";
 const conversionDedupSet = new Set<string>();
@@ -266,6 +268,7 @@ export const trackAuth = {
     if (markDeduplicatedOnce(dedupeKey)) return;
 
     const conversionLabel = GOOGLE_ADS_SIGNUP_LABEL;
+
     pushToDataLayer({
       event: "sign_up_completed",
       user_id: userId,

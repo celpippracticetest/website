@@ -88,13 +88,13 @@
         "accountId": "6292384809",
         "containerId": "218518927",
         "tagId": "5",
-        "name": "Google Tag AW-17024504219",
+        "name": "Google Tag AW-18023374877",
         "type": "googtag",
         "parameter": [
           {
             "type": "TEMPLATE",
             "key": "tagId",
-            "value": "AW-17024504219"
+            "value": "AW-18023374877"
           }
         ],
         "fingerprint": "1771880273931",
@@ -474,7 +474,7 @@
           {
             "type": "TEMPLATE",
             "key": "conversionId",
-            "value": "17024504219"
+            "value": "18023374877"
           },
           {
             "type": "TEMPLATE",
@@ -484,7 +484,7 @@
           {
             "type": "TEMPLATE",
             "key": "conversionLabel",
-            "value": "fdsVCNXy9r4aEJuj9bU_"
+            "value": "MS1TCM2B0I0cEJ3Am5JD"
           },
           {
             "type": "BOOLEAN",
@@ -494,7 +494,7 @@
         ],
         "fingerprint": "1772200000050",
         "firingTriggerId": [
-          "77"
+          "63"
         ],
         "tagFiringOption": "ONCE_PER_EVENT",
         "monitoringMetadata": {
@@ -538,7 +538,7 @@
         "accountId": "6292384809",
         "containerId": "218518927",
         "tagId": "68",
-        "name": "Google Ads - Purchase (New)",
+        "name": "Google Ads - Subscribe (first purchase)",
         "type": "awct",
         "parameter": [
           {
@@ -579,7 +579,7 @@
           {
             "type": "TEMPLATE",
             "key": "conversionId",
-            "value": "17024504219"
+            "value": "18023374877"
           },
           {
             "type": "TEMPLATE",
@@ -589,7 +589,7 @@
           {
             "type": "TEMPLATE",
             "key": "conversionLabel",
-            "value": "OTSDCOvziL4aEJuj9bU_"
+            "value": "J73VCKnZxo0cEJ3Am5JD"
           },
           {
             "type": "BOOLEAN",
@@ -599,7 +599,7 @@
         ],
         "fingerprint": "1772200000030",
         "firingTriggerId": [
-          "76"
+          "88"
         ],
         "tagFiringOption": "ONCE_PER_EVENT",
         "monitoringMetadata": {
@@ -1207,7 +1207,7 @@
           {
             "type": "TEMPLATE",
             "key": "conversionId",
-            "value": "17024504219"
+            "value": "18023374877"
           },
           {
             "type": "TEMPLATE",
@@ -2364,6 +2364,48 @@
           }
         ],
         "fingerprint": "1772500000005"
+      },
+      {
+        "accountId": "6292384809",
+        "containerId": "218518927",
+        "triggerId": "88",
+        "name": "Event - Subscribe (purchase, first_purchase)",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "purchase"
+              }
+            ]
+          }
+        ],
+        "filter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{DLV - purchase_type}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "first_purchase"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1772600000001"
       }
     ],
     "variable": [
