@@ -82,8 +82,19 @@ export default clerkMiddleware(async (auth, req) => {
     const existing = req.cookies.get(PRICING_AB_COOKIE)?.value;
     if (existing !== "two_card" && existing !== "switch_toggle") {
       const layout: PricingAbLayout = Math.random() < 0.5 ? "two_card" : "switch_toggle";
-      const redirectUrl = req.nextUrl.clone();
-      const response = NextResponse.redirect(redirectUrl, 307);
+      
+      const newReqHeaders = new Headers(req.headers);
+      const currentCookies = newReqHeaders.get("cookie") || "";
+      const cookieAddition = `${PRICING_AB_COOKIE}=${layout}`;
+      const newCookies = currentCookies ? `${currentCookies}; ${cookieAddition}` : cookieAddition;
+      newReqHeaders.set("cookie", newCookies);
+
+      const response = NextResponse.next({
+        request: {
+          headers: newReqHeaders,
+        },
+      });
+      
       response.cookies.set(PRICING_AB_COOKIE, layout, {
         path: "/",
         maxAge: 60 * 60 * 24 * 180,
