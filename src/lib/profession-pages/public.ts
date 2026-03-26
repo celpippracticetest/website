@@ -1,7 +1,10 @@
 import type { ProfessionPageConfig } from "@/components/pages/marketing/ProfessionPageTemplate";
 import mongoClient from "@/lib/mongodb";
 import { TProfessionPageContent } from "@/models/profession-page.model";
-import { ProfessionPageRepository } from "@/repositories/profession-page.repo";
+import {
+  ProfessionPageRepository,
+  type ProfessionPageSummary,
+} from "@/repositories/profession-page.repo";
 
 export function professionPageToTemplateConfig(doc: TProfessionPageContent): ProfessionPageConfig {
   return {
@@ -49,6 +52,28 @@ export async function getPublishedProfessionPageSlugs(): Promise<string[]> {
     return await repo.listPublishedSlugs();
   } catch (error) {
     console.error("Failed to list profession page slugs:", error);
+    return [];
+  }
+}
+
+export async function getPublishedProfessionPages(): Promise<TProfessionPageContent[]> {
+  try {
+    if (!mongoClient) return [];
+    const repo = new ProfessionPageRepository(mongoClient);
+    return await repo.listPublished();
+  } catch (error) {
+    console.error("Failed to list profession pages:", error);
+    return [];
+  }
+}
+
+export async function getPublishedProfessionPageSummaries(): Promise<ProfessionPageSummary[]> {
+  try {
+    if (!mongoClient) return [];
+    const repo = new ProfessionPageRepository(mongoClient);
+    return await repo.listPublishedSummaries();
+  } catch (error) {
+    console.error("Failed to list profession page summaries:", error);
     return [];
   }
 }

@@ -3,6 +3,7 @@ import Image from "next/image";
 import SvgLinkedIn from "@/components/icons/LinkedIn";
 import SvgYouTube from "@/components/icons/YouTube";
 import { Box } from "@/components/ui/Box";
+import { getPublishedProfessionPageSummaries } from "@/lib/profession-pages/public";
 import FooterVisibilityObserver from "./FooterVisibilityObserver";
 
 type FooterLink = {
@@ -21,6 +22,12 @@ type FooterBaseProps = {
 
 type FooterProps = {
   isSignedIn?: boolean;
+};
+
+type ProfessionPageLink = {
+  slug: string;
+  title: string;
+  icon?: string;
 };
 
 const FooterBase = ({ sections }: FooterBaseProps) => {
@@ -126,108 +133,35 @@ const userSections: FooterSection[] = [
     title: "Exams",
     links: [
       { href: "/exam-overview", label: "Mock Exams" },
-      { href: "/learning", label: "Ai Learning" },
+      { href: "/learning", label: "AI Learning" },
     ],
   },
 ];
 
-const guestSections: FooterSection[] = [
+const baseGuestSections: FooterSection[] = [
   {
-    title: "Professionals",
+    title: "Study Tools",
     links: [
       {
-        href: "/celpip-for-real-estate",
-        label: "CELPIP for Real Estate Agent",
+        href: "/score-calculator",
+        label: "CELPIP Score Calculator",
       },
       {
-        href: "/celpip-for-nurses",
-        label: "CELPIP for Nursing & Healthcare",
+        href: "/exam-overview",
+        label: "Mock Exams",
       },
       {
-        href: "/celpip-for-immigration-consultant",
-        label: "CELPIP for Immigration Consultant",
+        href: "/practice-overview",
+        label: "Practice Overview",
       },
       {
-        href: "/celpip-for-physicians-surgeons",
-        label: "CELPIP for Physicians & Surgeons",
+        href: "/learning",
+        label: "AI Learning",
       },
       {
-        href: "/celpip-for-early-childhood-educator",
-        label: "CELPIP for Early Childhood Educator (ECE)",
+        href: "/wiki",
+        label: "CELPIP Wiki",
       },
-      {
-        href: "/celpip-for-mortgage-broker",
-        label: "CELPIP for Mortgage Broker",
-      },
-      {
-        href: "/celpip-for-pharmacist",
-        label: "CELPIP for Pharmacist",
-      },
-      {
-        href: "/celpip-for-medical-laboratory-technologist",
-        label: "CELPIP for Medical Laboratory Technologist",
-      },
-      {
-        href: "/celpip-for-teacher-certification",
-        label: "CELPIP for Teacher Certification",
-      },
-      {
-        href: "/celpip-for-health-care-aide",
-        label: "CELPIP for Health Care Aide (HCA)",
-      },
-    ],
-  },
-  {
-    title: "Career Programs",
-    links: [
-      {
-        href: "/celpip-for-physiotherapist",
-        label: "CELPIP for Physiotherapist",
-      },
-      {
-        href: "/celpip-for-commercial-truck-driver",
-        label: "CELPIP for Commercial Truck Driver",
-      },
-      {
-        href: "/celpip-for-caregiver-home-support",
-        label: "CELPIP for Caregiver & Home Support",
-      },
-      {
-        href: "/celpip-for-skilled-trades",
-        label: "CELPIP for Skilled Trades",
-      },
-      {
-        href: "/celpip-for-dentist-dental-hygienist",
-        label: "CELPIP for Dentist & Dental Hygienist",
-      },
-      {
-        href: "/celpip-for-startup-visa-entrepreneur",
-        label: "CELPIP for Start-Up Visa (Entrepreneur)",
-      },
-      {
-        href: "/celpip-for-social-worker",
-        label: "CELPIP for Social Worker",
-      },
-      {
-        href: "/celpip-for-midwife",
-        label: "CELPIP for Midwife",
-      },
-      {
-        href: "/celpip-for-tech-worker",
-        label: "CELPIP for Tech Worker",
-      },
-    ],
-  },
-  {
-    title: "Comparisons",
-    links: [
-      { href: "/celpip-retake", label: "CELPIP Retake" },
-      {
-        href: "/celpip-vs-ielts-express-entry-2026",
-        label: "CELPIP vs IELTS Express Entry 2026",
-      },
-      { href: "/mad-english-tv-alternative", label: "Mad English TV Alternative" },
-      { href: "/celpip-for-professional-licensure", label: "CELPIP for Professional Licensure" },
     ],
   },
   {
@@ -237,8 +171,7 @@ const guestSections: FooterSection[] = [
       { href: "/speaking", label: "Speaking" },
       { href: "/writing", label: "Writing" },
       { href: "/reading", label: "Reading" },
-      { href: "/exam-overview", label: "Mock Exams" },
-      { href: "/learning", label: "Ai Learning" },
+      { href: "/words", label: "Vocabulary Builder" },
     ],
   },
   {
@@ -246,15 +179,14 @@ const guestSections: FooterSection[] = [
     links: [
       { href: "/pricing", label: "Pricing" },
       { href: "/blog", label: "Blog" },
-      { href: "/celpip-vocabulary-pdf", label: "CELPIP Vocabulary PDF" },
-      { href: "/reading-task-4-viewpoints", label: "Reading Task 4 Viewpoints" },
-      { href: "/celpip-general-ls-practice", label: "CELPIP General LS Practice" },
+      { href: "/contact-us", label: "Contact Us" },
+      { href: "/delete-account", label: "Delete Account" },
+      { href: "/app", label: "App" },
     ],
   },
   {
     title: "Legal",
     links: [
-      { href: "/contact-us", label: "Contact Us" },
       { href: "/terms-of-service", label: "Terms of Service" },
       { href: "/privacy-policy", label: "Privacy Policy" },
       { href: "/refund-policy", label: "Refund Policy" },
@@ -262,20 +194,78 @@ const guestSections: FooterSection[] = [
   },
 ];
 
+function categorizeProfessionPage(page: ProfessionPageLink): string {
+  const haystack = `${page.slug} ${page.title} ${page.icon ?? ""}`.toLowerCase();
+
+  if (
+    /(physician|medical|health|dentist|pharmac|midwife|physiotherapist|surgeon)/.test(
+      haystack
+    )
+  ) {
+    return "Healthcare";
+  }
+
+  if (/(teacher|social-worker|social worker|early-childhood|education|baby)/.test(haystack)) {
+    return "Education & Community";
+  }
+
+  if (/(truck|skilled-trades|caregiver|driver|wrench)/.test(haystack)) {
+    return "Trades & Transport";
+  }
+
+  return "Business & Professional";
+}
+
+function buildProfessionSections(items: ProfessionPageLink[]): FooterSection[] {
+  const categoryOrder = [
+    "Healthcare",
+    "Education & Community",
+    "Trades & Transport",
+    "Business & Professional",
+  ];
+
+  const grouped = new Map<string, FooterLink[]>();
+
+  items.forEach((item) => {
+    const category = categorizeProfessionPage(item);
+    const current = grouped.get(category) || [];
+    current.push({
+      href: `/${item.slug}`,
+      label: item.title,
+    });
+    grouped.set(category, current);
+  });
+
+  return categoryOrder
+    .map((title) => ({
+      title,
+      links: (grouped.get(title) || []).sort((left, right) =>
+        left.label.localeCompare(right.label)
+      ),
+    }))
+    .filter((section) => section.links.length > 0);
+}
+
 export const UserFooter = () => {
   return <FooterBase sections={userSections} />;
 };
 
-export const NoUserFooter = () => {
-  return <FooterBase sections={guestSections} />;
-};
+export async function NoUserFooter() {
+  const professionLinks: ProfessionPageLink[] =
+    await getPublishedProfessionPageSummaries();
 
-const Footer = ({ isSignedIn }: FooterProps) => {
+  const sections = [
+    ...buildProfessionSections(professionLinks),
+    ...baseGuestSections,
+  ];
+
+  return <FooterBase sections={sections} />;
+}
+
+export default async function Footer({ isSignedIn }: FooterProps) {
   if (isSignedIn) {
     return <UserFooter />;
   }
 
   return <NoUserFooter />;
-};
-
-export default Footer;
+}

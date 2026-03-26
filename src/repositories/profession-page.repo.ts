@@ -8,6 +8,12 @@ type ProfessionPageDoc = TProfessionPageContent & {
   updatedAt?: Date;
 };
 
+export type ProfessionPageSummary = {
+  slug: string;
+  title: string;
+  icon?: string;
+};
+
 export class ProfessionPageRepository {
   private readonly db: Db;
 
@@ -64,6 +70,46 @@ export class ProfessionPageRepository {
       .sort({ slug: 1 })
       .toArray();
     return rows.map((r) => r.slug).filter(Boolean);
+  }
+
+  async listPublished(): Promise<TProfessionPageContent[]> {
+    const rows = await this.collection()
+      .find({ published: true } satisfies Filter<ProfessionPageDoc>)
+      .sort({ slug: 1 })
+      .toArray();
+
+    const out: TProfessionPageContent[] = [];
+    for (const row of rows) {
+      const parsed = ProfessionPageContentSchema.safeParse(row);
+      if (parsed.success) {
+        out.push(parsed.data);
+      } else {
+        console.error(
+          "Invalid profession_pages document:",
+          row.slug,
+          parsed.error.flatten()
+        );
+      }
+    }
+    return out;
+  }
+
+  async listPublishedSummaries(): Promise<ProfessionPageSummary[]> {
+    const rows = await this.collection()
+      .find(
+        { published: true } satisfies Filter<ProfessionPageDoc>,
+        { projection: { slug: 1, title: 1, icon: 1 } }
+      )
+      .sort({ slug: 1 })
+      .toArray();
+
+    return rows
+      .map((row) => ({
+        slug: typeof row.slug === "string" ? row.slug : "",
+        title: typeof row.title === "string" ? row.title : "",
+        icon: typeof row.icon === "string" ? row.icon : undefined,
+      }))
+      .filter((row) => row.slug && row.title);
   }
 
   async create(data: TProfessionPageContent): Promise<void> {

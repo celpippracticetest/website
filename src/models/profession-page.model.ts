@@ -78,6 +78,22 @@ export function normalizeProfessionPageInput(raw: unknown): unknown {
   delete d.faq2A;
   delete d.faq3Q;
   delete d.faq3A;
+
+  // Keep older CMS entries renderable by trimming known SEO fields to the
+  // same limits enforced by the current form and content generator.
+  if (typeof d.metaTitle === "string") {
+    d.metaTitle = d.metaTitle.trim().slice(0, 70);
+  }
+  if (typeof d.metaDescription === "string") {
+    d.metaDescription = d.metaDescription.trim().slice(0, 160);
+  }
+  if (typeof d.aiSnippetQuestion === "string") {
+    d.aiSnippetQuestion = d.aiSnippetQuestion.trim().slice(0, 200);
+  }
+  if (typeof d.aiSnippet === "string") {
+    d.aiSnippet = d.aiSnippet.trim().slice(0, 400);
+  }
+
   return d;
 }
 

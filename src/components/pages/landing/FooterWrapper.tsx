@@ -2,7 +2,7 @@
 
 import { useAuth } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
-import Footer from "./Footer";
+import type { ReactNode } from "react";
 
 const DASHBOARD_FIRST_SEGMENTS = new Set([
   "earn100",
@@ -18,7 +18,7 @@ const DASHBOARD_FIRST_SEGMENTS = new Set([
   "writing",
 ]);
 
-export default function FooterWrapper() {
+export default function FooterWrapper({ children }: { children: ReactNode }) {
   const { isSignedIn } = useAuth();
   const pathname = usePathname();
   const firstSegment = pathname?.split("/")[1];
@@ -26,5 +26,5 @@ export default function FooterWrapper() {
     firstSegment && DASHBOARD_FIRST_SEGMENTS.has(firstSegment);
 
   if (isSignedIn || isDashboard) return null;
-  return <Footer isSignedIn={isSignedIn} />;
+  return <>{children}</>;
 }

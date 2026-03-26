@@ -10,6 +10,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ActiveUsersTracker from "@/components/analytics/ActiveUsersTracker";
 import AttributionTracker from "@/components/analytics/AttributionTracker";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
+import Footer from "@/components/pages/landing/Footer";
 import FooterWrapper from "@/components/pages/landing/FooterWrapper";
 import MuiAppRouterCacheProvider from "@/components/MuiAppRouterCacheProvider";
 import { getHomepageHeroDisplay } from "@/lib/homepage-hero";
@@ -257,7 +258,9 @@ export default async function RootLayout({
           <NextTopLoaderComponent />
           <ErrorBoundary>
             {children}
-            <FooterWrapper />
+            <FooterWrapper>
+              <Footer isSignedIn={false} />
+            </FooterWrapper>
           </ErrorBoundary>
           <LazyPromotionManager />
           <PerformanceMonitor />
