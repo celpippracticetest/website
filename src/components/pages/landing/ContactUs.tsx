@@ -54,16 +54,19 @@ const ContactUs = () => {
         </Box>
 
         <Box className="flex flex-col mt-[40px]">
-          <h2 className="font-semibold text-[20px]">What to Include</h2>
-          <ul className="pl-[20px] mt-[17px]">
-            <li className="list-disc text-[18px]">
-              Your account email address
+          <h2 className="font-semibold text-[20px]">What to Include in Your Email</h2>
+          <ul className="pl-[20px] mt-[17px] list-disc space-y-2">
+            <li className="text-[18px]">
+              <strong>Your account email address</strong>: We need this to locate your practice history and subscription details.
             </li>
-            <li className="list-disc text-[18px]">
-              A short description of your question or issue
+            <li className="text-[18px]">
+              <strong>A short description of your question or issue</strong>: Please explain what you were trying to do and what happened.
             </li>
-            <li className="list-disc text-[18px]">
-              Screenshots (if applicable) to speed up support
+            <li className="text-[18px]">
+              <strong>Screenshots (if applicable)</strong>: A picture is worth a thousand words. If you see an error message, please attach a screenshot to help us resolve the problem faster.
+            </li>
+            <li className="text-[18px]">
+              <strong>Browser and Device Info</strong>: Knowing whether you are on a Mac, Windows PC, or mobile device, and what browser you are using (Chrome, Safari, etc.) can be very helpful for technical issues.
             </li>
           </ul>
         </Box>

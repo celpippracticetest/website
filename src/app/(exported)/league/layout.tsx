@@ -7,7 +7,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "";
   const isPreview = appBaseUrl.includes("vercel.app");
   return {
-    title: "CELPIP League | Weekly Challenges and Study Progress",
+    title: "CELPIP League: Weekly Challenges & Practice Study Progress Tracker",
     description:
       "Track weekly CELPIP study tasks, earn points, and stay motivated with a league-style progress system built for consistent exam preparation.",
     robots: {

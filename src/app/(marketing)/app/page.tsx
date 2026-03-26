@@ -78,7 +78,12 @@ export default function AppDownloadPage() {
     operatingSystem: ["iOS", "Android"],
     description:
       "CELPIP Practice Test app for mobile mock exams, instant scoring, and AI feedback across Listening, Reading, Writing, and Speaking.",
-    ...(storeUrls.length ? { downloadUrl: storeUrls } : {}),
+    ...(storeUrls.length ? { downloadUrl: storeUrls[0] } : {}),
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD"
+    },
     featureList: [
       "Instant CELPIP scoring",
       "AI-powered feedback and practice drills",

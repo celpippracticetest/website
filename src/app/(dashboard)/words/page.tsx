@@ -22,13 +22,15 @@ function WordsSeoIntro() {
                 Build a stronger CELPIP vocabulary with a focused study workflow.
                 Save useful words, review meanings and examples, track what you
                 have mastered, and return to difficult vocabulary until it feels
-                natural in Reading, Listening, Writing, and Speaking tasks.
+                natural in Reading, Listening, Writing, and Speaking tasks. Developing
+                a rich vocabulary is one of the most effective ways to boost your CLB score.
             </p>
             <p className="text-[#526071] text-[16px] mt-3 leading-7">
                 This page is designed for active exam preparation. Use it to
                 create a personal vocabulary list, review common academic and
                 everyday words, and develop the word choice accuracy you need for
-                higher CLB scores.
+                higher CLB scores. Consistent practice and spaced repetition are the
+                keys to embedding these words into your active memory.
             </p>
         </section>
     );

@@ -42,7 +42,7 @@ function buildBlogTitle(title: string): string {
   }
 
   const withSuffix = `${trimmed}${BLOG_TITLE_SUFFIX}`;
-  return withSuffix.length <= 68 ? withSuffix : trimmed;
+  return withSuffix.length <= 68 ? withSuffix : `${trimmed.substring(0, 68 - BLOG_TITLE_SUFFIX.length - 3)}...${BLOG_TITLE_SUFFIX}`;
 }
 
 function stripHtml(html: string): string {
@@ -214,29 +214,6 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
       }
       : null;
 
-  const hasTable = /<table[\s>]/i.test(post.contentHtml ?? "");
-  const tableSchema = hasTable
-    ? {
-      "@context": "https://schema.org",
-      "@type": "Table",
-      name: post.seo?.metaTitle || `${post.title} – Conversion Chart`,
-      about: {
-        "@type": "Thing",
-        name: "CELPIP score conversion",
-        description:
-          "CELPIP raw score to level conversion chart for Reading and Listening.",
-      },
-      mainEntityOfPage: {
-        "@id": canonicalUrl,
-      },
-      isPartOf: {
-        "@type": "BlogPosting",
-        "@id": canonicalUrl,
-        headline: post.title,
-      },
-    }
-    : null;
-
   const linkedContent = await linkContentServer(post.contentHtml, `/blog/${post.slug}`);
 
   return (
@@ -249,7 +226,6 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
       <JsonLd data={blogPostingSchema} />
       <JsonLd data={breadcrumbSchema} />
       {faqSchema ? <JsonLd data={faqSchema} /> : null}
-      {tableSchema ? <JsonLd data={tableSchema} /> : null}
 
       <Box className="mx-auto max-w-4xl rounded-2xl border border-slate-200 bg-white p-6 md:p-10">
         <Box className="mb-4 flex flex-wrap items-center gap-2 text-xs text-slate-500">

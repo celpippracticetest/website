@@ -25,15 +25,15 @@ function buildWikiTitle(title: string): string {
   const trimmed = title.trim();
   const withSuffix = `${trimmed}${WIKI_TITLE_SUFFIX}`;
 
-  if (withSuffix.length <= 60) {
+  if (withSuffix.length <= 55) {
     return withSuffix;
   }
 
-  if (trimmed.length <= 56) {
+  if (trimmed.length <= 55) {
     return trimmed;
   }
 
-  return `${trimmed.slice(0, 57).trim()}...`;
+  return `${trimmed.slice(0, 52).trim()}...`;
 }
 
 export async function generateMetadata({
@@ -77,9 +77,11 @@ export default async function WikiPage({ params, searchParams }: PageProps) {
     return notFound();
   }
 
-  const [linkedContent, nextArticle, relatedArticles, allArticles] =
+  let linkedContentHtml = await linkContentServer(currentArticle.content, `/wiki/${slug}`);
+  linkedContentHtml = linkedContentHtml.replace(/<h1/g, "<h2").replace(/<\/h1>/g, "</h2>");
+
+  const [nextArticle, relatedArticles, allArticles] =
     await Promise.all([
-      linkContentServer(currentArticle.content, `/wiki/${slug}`),
       getNextWikiArticle(slug),
       getRelatedWikiArticles(currentArticle.id, currentArticle.category, 2),
       getAllWikiArticles(),
@@ -95,7 +97,7 @@ export default async function WikiPage({ params, searchParams }: PageProps) {
     <WikiArticleContent
       currentArticle={currentArticle}
       slug={slug}
-      linkedContent={linkedContent}
+      linkedContent={linkedContentHtml}
       filteredArticles={filteredArticles}
       nextArticle={nextArticle}
       relatedArticles={relatedArticles}
