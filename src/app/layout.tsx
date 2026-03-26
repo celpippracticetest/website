@@ -2,10 +2,8 @@ import "./globals.css";
 import NextTopLoader from "nextjs-toploader";
 import { Analytics } from "@vercel/analytics/react";
 import { ClerkProvider } from "@clerk/nextjs";
-import { auth } from "@clerk/nextjs/server";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
-import ReactQueryProvider from "@/components/ReactQueryProvider";
 import { LazyLeadCapturePopup, LazyPromotionManager } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -159,15 +157,6 @@ export default async function RootLayout({
   const enableGtm =
     process.env.NODE_ENV === "production" && !baseUrl.includes("vercel.app");
   const homepageHero = await getHomepageHeroDisplay();
-  let userId: string | null = null;
-  try {
-    const authResult = await auth();
-    userId = authResult.userId;
-  } catch (error) {
-    // auth() may run on requests that bypass clerkMiddleware (e.g. static asset misses).
-    userId = null;
-  }
-  const isSignedIn = Boolean(userId);
 
   return (
     <html suppressHydrationWarning className={jakarta.variable} lang="en">
@@ -213,45 +202,22 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-title" content="CELPIP Test" />
         <meta name="theme-color" content="#3B82F6" />
 
-        {/* GTM consent defaults — must run before GTM initialises */}
+        {/* Load analytics bootstrapping from static assets to keep SSR HTML leaner. */}
         {enableGtm && (
           <Script
             id="gtm-consent-defaults"
             strategy="beforeInteractive"
-            dangerouslySetInnerHTML={{
-              __html: `
-                window.dataLayer = window.dataLayer || [];
-                window.dataLayer.push({
-                  event: "default_consent",
-                  analytics_storage: "denied",
-                  ad_storage: "denied",
-                  ad_user_data: "denied",
-                  ad_personalization: "denied"
-                });
-              `,
-            }}
+            src="/scripts/gtm-consent-defaults.js"
           />
         )}
 
-        {/* GTM snippet — deferred to after hydration for better INP/LCP */}
         {enableGtm && (
           <Script
             id="gtm-head"
             strategy="afterInteractive"
-            dangerouslySetInnerHTML={{
-              __html: `
-                (function(w,d,s,l,i){
-                  w[l]=w[l]||[];
-                  w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});
-                  var f=d.getElementsByTagName(s)[0],
-                      j=d.createElement(s),
-                      dl=l!='dataLayer'?'&l='+l:'';
-                  j.async=true;
-                  j.src='/gtm/js?id='+i+dl;
-                  f.parentNode.insertBefore(j,f);
-                })(window,document,'script','dataLayer','${GTM_ID}');
-              `,
-            }}
+            src="/scripts/gtm-init.js"
+            data-gtm-id={GTM_ID}
+            data-layer="dataLayer"
           />
         )}
 
@@ -289,12 +255,10 @@ export default async function RootLayout({
           )}
 
           <NextTopLoaderComponent />
-          <ReactQueryProvider>
-            <ErrorBoundary>
-              {children}
-              <FooterWrapper isSignedIn={isSignedIn} />
-            </ErrorBoundary>
-          </ReactQueryProvider>
+          <ErrorBoundary>
+            {children}
+            <FooterWrapper />
+          </ErrorBoundary>
           <LazyPromotionManager />
           <PerformanceMonitor />
           <Analytics />
@@ -309,15 +273,8 @@ export default async function RootLayout({
             <Script
               id="ms-clarity"
               strategy="afterInteractive"
-              dangerouslySetInnerHTML={{
-                __html: `
-                  (function(c,l,a,r,i,t,y){
-                      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-                      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-                  })(window, document, "clarity", "script", "${CLARITY_ID}");
-                `,
-              }}
+              src="/scripts/clarity-init.js"
+              data-clarity-id={CLARITY_ID}
             />
           )}
 

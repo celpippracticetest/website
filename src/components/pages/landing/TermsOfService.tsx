@@ -1,6 +1,5 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import TopHeader from "./TopHeader";
 
 const TermsOfService = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -141,10 +140,7 @@ Service delivery occurs immediately upon successful payment, at which point acce
   ];
 
   return (
-    <>
-      <TopHeader />
-
-      <div className="flex flex-col max-w-[1156px] mx-auto justify-center mt-[120px] px-[16px] mb-[116px]">
+    <div className="flex flex-col max-w-[1156px] mx-auto justify-center mt-[120px] px-[16px] mb-[116px]">
         <h1 className="text-primary1 font-bold text-[28px]">
           Terms of Service
         </h1>
@@ -203,7 +199,6 @@ Service delivery occurs immediately upon successful payment, at which point acce
           sponsored by any official testing organization.
         </p>
       </div>
-    </>
   );
 };
 

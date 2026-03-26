@@ -2,15 +2,11 @@
 
 import React from "react";
 import Link from "next/link";
-import TopHeader from "./TopHeader";
 import { Box } from "@/components/ui/Box";
 
 const DeleteAccount = () => {
   return (
-    <>
-      <TopHeader />
-
-      <Box className="flex flex-col max-w-[1156px] mx-auto justify-center mt-[120px] px-[16px] mb-[116px]">
+    <Box className="flex flex-col max-w-[1156px] mx-auto justify-center mt-[120px] px-[16px] mb-[116px]">
         <h1 className="text-primary1 font-bold text-[28px]">
           Delete Your Account
         </h1>
@@ -123,7 +119,6 @@ const DeleteAccount = () => {
           sponsored by any official testing organization.
         </p>
       </Box>
-    </>
   );
 };
 

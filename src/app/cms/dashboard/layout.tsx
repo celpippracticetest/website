@@ -1,5 +1,6 @@
 "use client";
 
+import ReactQueryProvider from "@/components/ReactQueryProvider";
 import { useState, Suspense } from "react";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { Box } from "@/components/ui/Box";
@@ -37,8 +38,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <Suspense fallback={null}>
-      <DashboardShell>{children}</DashboardShell>
-    </Suspense>
+    <ReactQueryProvider>
+      <Suspense fallback={null}>
+        <DashboardShell>{children}</DashboardShell>
+      </Suspense>
+    </ReactQueryProvider>
   );
 }

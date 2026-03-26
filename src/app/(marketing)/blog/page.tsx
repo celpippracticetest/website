@@ -38,6 +38,7 @@ function normalizeAppBaseUrl(raw: string | undefined): string {
 }
 
 const BASE_URL = normalizeAppBaseUrl(process.env.APP_BASE_URL);
+const BLOG_URL = new URL("/blog", BASE_URL).toString();
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -53,14 +54,14 @@ export async function generateMetadata(): Promise<Metadata> {
       "CELPIP reading tips",
     ],
     alternates: {
-      canonical: `${BASE_URL}/blog`,
+      canonical: BLOG_URL,
     },
     openGraph: {
       title: "CELPIP Blog | Tips, Strategies, and Score Guides",
       description:
         "Expert CELPIP resources covering exam strategy, scoring insights, and practical study plans.",
       type: "website",
-      url: `${BASE_URL}/blog`,
+      url: BLOG_URL,
       images: [
         {
           url: "/images/hero.png",

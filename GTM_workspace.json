@@ -95,6 +95,27 @@
             "type": "TEMPLATE",
             "key": "tagId",
             "value": "AW-18023374877"
+          },
+          {
+            "type": "LIST",
+            "key": "configSettingsTable",
+            "list": [
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "allow_enhanced_conversions"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "true"
+                  }
+                ]
+              }
+            ]
           }
         ],
         "fingerprint": "1771880273931",

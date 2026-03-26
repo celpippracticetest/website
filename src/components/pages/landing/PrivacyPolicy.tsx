@@ -1,6 +1,5 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import TopHeader from "./TopHeader";
 
 const PrivacyPolicy = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -145,10 +144,7 @@ const PrivacyPolicy = () => {
   ];
 
   return (
-    <>
-      <TopHeader />
-
-      <div className="flex flex-col max-w-[1156px] mx-auto justify-center mt-[120px] px-[16px] mb-[116px]">
+    <div className="flex flex-col max-w-[1156px] mx-auto justify-center mt-[120px] px-[16px] mb-[116px]">
         <h1 className="text-primary1 font-bold text-[28px]">Privacy Policy</h1>
         <span className="mt-[16px] font-normal text-[16px] text-text3">
           Last Updated: Apr 17, 2025
@@ -205,7 +201,7 @@ const PrivacyPolicy = () => {
           CELPIPPRACTICETEST.com is not affiliated with, endorsed by, or
           sponsored by any official testing organization.
         </span>
-      </div>    </>
+      </div>
   );
 };
 

@@ -7,6 +7,9 @@ export interface LinkerConfig {
   exactMatch: boolean;
 }
 
+const CANONICAL_HOST = "celpippracticetest.com";
+const INTERNAL_HOSTS = new Set([CANONICAL_HOST, `www.${CANONICAL_HOST}`]);
+
 /**
  * Escapes special characters in string for RegExp
  */
@@ -33,6 +36,78 @@ function normalizeToPath(input: string): string {
   // Relative path (or just a pathname).
   const withLeadingSlash = withoutQueryOrHash.startsWith("/") ? withoutQueryOrHash : `/${withoutQueryOrHash}`;
   return withLeadingSlash.toLowerCase().replace(/\/+$/, "") || "/";
+}
+
+function isInternalHref(input: string): boolean {
+  const raw = (input ?? "").trim();
+  if (!raw) return false;
+  if (raw.startsWith("/") || raw.startsWith("#") || raw.startsWith("?")) return true;
+
+  try {
+    const url = new URL(raw);
+    return INTERNAL_HOSTS.has(url.hostname.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
+function normalizeInternalHref(input: string): string {
+  const raw = (input ?? "").trim();
+  if (!raw || !isInternalHref(raw)) return raw;
+
+  if (raw.startsWith("/") || raw.startsWith("#") || raw.startsWith("?")) {
+    return raw;
+  }
+
+  try {
+    const url = new URL(raw);
+    return `https://${CANONICAL_HOST}${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return raw;
+  }
+}
+
+function sanitizeAnchorTag(tag: string): string {
+  const hrefMatch = tag.match(/href\s*=\s*(["'])([^"']+)\1/i);
+  let nextTag = tag;
+  let normalizedHref = "";
+
+  if (hrefMatch) {
+    normalizedHref = normalizeInternalHref(hrefMatch[2] ?? "");
+    if (normalizedHref && normalizedHref !== hrefMatch[2]) {
+      nextTag = nextTag.replace(hrefMatch[0], `href=${hrefMatch[1]}${normalizedHref}${hrefMatch[1]}`);
+    }
+  }
+
+  if (normalizedHref && isInternalHref(normalizedHref)) {
+    nextTag = nextTag.replace(/\srel\s*=\s*(["'])([^"']*)\1/i, (_match, quote: string, value: string) => {
+      const tokens = value
+        .split(/\s+/)
+        .map((token) => token.trim())
+        .filter(Boolean)
+        .filter((token) => token.toLowerCase() !== "nofollow");
+
+      return tokens.length > 0 ? ` rel=${quote}${tokens.join(" ")}${quote}` : "";
+    });
+  }
+
+  return nextTag;
+}
+
+function sanitizeContentTag(tag: string): string {
+  if (/^<a[\s>]/i.test(tag)) {
+    return sanitizeAnchorTag(tag);
+  }
+
+  if (/^<h1([\s>])/i.test(tag)) {
+    return tag.replace(/^<h1([\s>])/i, "<h2$1");
+  }
+
+  if (/^<\/h1>/i.test(tag)) {
+    return "</h2>";
+  }
+
+  return tag;
 }
 
 /**
@@ -79,27 +154,29 @@ export function linkContentCore(
   for (const part of parts) {
     // If it's a tag
     if (part.startsWith("<")) {
+      const sanitizedTag = sanitizeContentTag(part);
+
       // Track if we are inside an anchor tag to avoid nested links.
       // Additionally, if the anchor points to the current page, strip it
       // (turn into plain text) to prevent self-linking even when the HTML
       // already contains an <a> tag.
-      if (/^<a[\s>]/.test(part)) {
-        const hrefMatch = part.match(/href\s*=\s*["']([^"']+)["']/i);
+      if (/^<a[\s>]/i.test(sanitizedTag)) {
+        const hrefMatch = sanitizedTag.match(/href\s*=\s*["']([^"']+)["']/i);
         const href = hrefMatch?.[1] ?? "";
         const isSelfAnchor =
           !!normalizedCurrentPath && href
             ? normalizeToPath(href) === normalizedCurrentPath
             : false;
 
-        if (!isSelfAnchor) processedHtml += part;
+        if (!isSelfAnchor) processedHtml += sanitizedTag;
         insideLink = true;
         insideSelfAnchor = isSelfAnchor;
-      } else if (part.startsWith("</a>")) {
-        if (!insideSelfAnchor) processedHtml += part;
+      } else if (/^<\/a>/i.test(sanitizedTag)) {
+        if (!insideSelfAnchor) processedHtml += sanitizedTag;
         insideLink = false;
         insideSelfAnchor = false;
       } else {
-        processedHtml += part;
+        processedHtml += sanitizedTag;
       }
       continue;
     }
@@ -123,11 +200,11 @@ export function linkContentCore(
           );
           if (!nonSelf) return match;
           const linkConfig = nonSelf;
-          return `<a href="${linkConfig.url}" class="text-primary hover:underline font-medium" title="Learn more about ${linkConfig.keyword}">${match}</a>`;
+          return `<a href="${normalizeInternalHref(linkConfig.url)}" class="text-primary hover:underline font-medium" title="Learn more about ${linkConfig.keyword}">${match}</a>`;
         }
 
         const linkConfig = candidates[0];
-        return `<a href="${linkConfig.url}" class="text-primary hover:underline font-medium" title="Learn more about ${linkConfig.keyword}">${match}</a>`;
+        return `<a href="${normalizeInternalHref(linkConfig.url)}" class="text-primary hover:underline font-medium" title="Learn more about ${linkConfig.keyword}">${match}</a>`;
       });
       
       processedHtml += text;

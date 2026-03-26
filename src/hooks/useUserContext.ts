@@ -1,5 +1,5 @@
 import { useUser } from "@clerk/nextjs";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
 interface UserContext {
   targetCLB?: string;
@@ -32,33 +32,41 @@ interface UserContext {
 
 export const useUserContext = (): UserContext => {
   const { user } = useUser();
+  const [userData, setUserData] = useState<UserContext>({});
 
-  // Fetch real user data from API
-  const { data: userData } = useQuery({
-    queryKey: ["userContext", user?.id],
-    queryFn: async () => {
-      if (!user) return null;
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadUserContext = async () => {
+      if (!user) {
+        setUserData({});
+        return;
+      }
 
       try {
         const response = await fetch("/api/user-scores");
         if (response.ok) {
           const data = await response.json();
-          return {
+          if (cancelled) return;
+
+          setUserData({
             targetCLB: data.targetCLB,
             onboardingProfile: data.onboardingProfile,
             mockScores: data.scoresToUse,
             weakAreas: data.weakAreas,
             practiceHistory: data.practiceHistory,
-            scoreSource: data.scoreSource, // "answers_collection"
+            scoreSource: data.scoreSource,
             answerCounts: data.answerCounts,
-          };
+          });
+          return;
         }
       } catch (error) {
         console.error("Error fetching user context:", error);
       }
 
-      // Fallback to empty data if API fails
-      return {
+      if (cancelled) return;
+
+      setUserData({
         targetCLB: "Not specified",
         onboardingProfile: {
           testDate: null,
@@ -73,10 +81,15 @@ export const useUserContext = (): UserContext => {
           lastPracticeDate: null,
           averageScore: null,
         },
-      };
-    },
-    enabled: !!user,
-  });
+      });
+    };
+
+    void loadUserContext();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   return userData || {};
 };

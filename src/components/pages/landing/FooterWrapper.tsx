@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
 import Footer from "./Footer";
 
@@ -17,7 +18,8 @@ const DASHBOARD_FIRST_SEGMENTS = new Set([
   "writing",
 ]);
 
-export default function FooterWrapper({ isSignedIn }: { isSignedIn: boolean }) {
+export default function FooterWrapper() {
+  const { isSignedIn } = useAuth();
   const pathname = usePathname();
   const firstSegment = pathname?.split("/")[1];
   const isDashboard =

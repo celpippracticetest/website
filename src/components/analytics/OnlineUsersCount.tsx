@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import People from "@mui/icons-material/People";
 import PersonAdd from "@mui/icons-material/PersonAdd";
 import Insights from "@mui/icons-material/Insights";
@@ -49,23 +48,61 @@ export default function OnlineUsersCount({
   className = "",
   variant = "default",
 }: OnlineUsersCountProps) {
-  // Hooks must be at the top level (Rules of Hooks)
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const [fade, setFade] = useState(true);
+  const [data, setData] = useState<LiveStatsResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
 
-  const { data, isLoading, isError } = useQuery<LiveStatsResponse>({
-    queryKey: ["liveStats"],
-    queryFn: async () => {
-      const response = await fetch("/api/analytics/live-stats");
-      if (!response.ok) {
-        throw new Error("Failed to fetch live stats");
+  useEffect(() => {
+    let cancelled = false;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const loadStats = async () => {
+      try {
+        const response = await fetch("/api/analytics/live-stats");
+        if (!response.ok) {
+          throw new Error("Failed to fetch live stats");
+        }
+
+        const nextData = (await response.json()) as LiveStatsResponse;
+        if (cancelled) return;
+
+        setData(nextData);
+        setIsError(false);
+      } catch (error) {
+        if (cancelled) return;
+        setIsError(true);
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
-      return response.json();
-    },
-    refetchInterval: refreshInterval,
-    refetchOnWindowFocus: true,
-    staleTime: 5000,
-  });
+    };
+
+    void loadStats();
+    intervalId = setInterval(() => {
+      void loadStats();
+    }, refreshInterval);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void loadStats();
+      }
+    };
+
+    window.addEventListener("focus", handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+      window.removeEventListener("focus", handleVisibilityChange);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [refreshInterval]);
 
   const stats = data?.stats ?? {
     onlineUsers: 0,

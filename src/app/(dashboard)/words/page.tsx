@@ -12,6 +12,28 @@ type ComplexityFilter = "all" | "beginner" | "intermediate" | "advanced";
 
 const PAGE_LIMIT = 20;
 
+function WordsSeoIntro() {
+    return (
+        <section className="bg-white rounded-[24px] border border-slate-200 p-6">
+            <h1 className="text-[28px] font-bold text-[#212E42]">
+                CELPIP Vocabulary Tracker and Study Builder
+            </h1>
+            <p className="text-[#526071] text-[16px] mt-3 leading-7">
+                Build a stronger CELPIP vocabulary with a focused study workflow.
+                Save useful words, review meanings and examples, track what you
+                have mastered, and return to difficult vocabulary until it feels
+                natural in Reading, Listening, Writing, and Speaking tasks.
+            </p>
+            <p className="text-[#526071] text-[16px] mt-3 leading-7">
+                This page is designed for active exam preparation. Use it to
+                create a personal vocabulary list, review common academic and
+                everyday words, and develop the word choice accuracy you need for
+                higher CLB scores.
+            </p>
+        </section>
+    );
+}
+
 const WordsPage = () => {
     const { isSignedIn } = useUser();
 
@@ -183,14 +205,34 @@ const WordsPage = () => {
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#0DAA94] border-t-transparent"></div>
+            <div className="w-full max-w-7xl mx-auto px-4 screen1280:px-0 pt-6 pb-28 screen1280:pb-6 flex flex-col gap-6">
+                <WordsSeoIntro />
+                <div className="flex justify-center items-center h-64 bg-white rounded-[24px] border border-slate-200">
+                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#0DAA94] border-t-transparent"></div>
+                </div>
             </div>
         );
     }
 
     if (words.length === 0) {
-        return <WordsLanding />;
+        return (
+            <div className="w-full max-w-7xl mx-auto px-4 screen1280:px-0 pt-6 pb-28 screen1280:pb-6 flex flex-col gap-6">
+                <WordsSeoIntro />
+                <WordsLanding />
+                <section className="bg-white rounded-[24px] border border-slate-200 p-6">
+                    <h2 className="text-[20px] font-bold text-[#212E42]">
+                        Why vocabulary practice matters for CELPIP
+                    </h2>
+                    <p className="text-[#526071] text-[16px] mt-3 leading-7">
+                        Strong vocabulary improves reading speed, listening
+                        comprehension, and the clarity of your writing and speaking
+                        responses. Tracking words in one place helps you revisit
+                        weak areas instead of forgetting them after a single study
+                        session.
+                    </p>
+                </section>
+            </div>
+        );
     }
 
     if (studyMode && selectedWord) {
@@ -216,10 +258,11 @@ const WordsPage = () => {
 
     return (
         <div className="w-full max-w-7xl mx-auto px-4 screen1280:px-0 pt-6 pb-28 screen1280:pb-6 flex flex-col gap-6">
+            <WordsSeoIntro />
             <section className="bg-white rounded-[24px] border border-slate-200 p-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h1 className="text-[24px] font-bold text-[#212E42]">My Words</h1>
+                        <h2 className="text-[24px] font-bold text-[#212E42]">My Words</h2>
                         <p className="text-[#76808F] text-sm mt-1">Track progress by mastery and complexity level.</p>
                     </div>
                     <button

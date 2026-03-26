@@ -2,19 +2,20 @@
 
 import React from "react";
 import Link from "next/link";
-import TopHeader from "./TopHeader";
 import { Box } from "@/components/ui/Box";
 
 const ContactUs = () => {
   return (
-    <>
-      <TopHeader />
-
-      <Box className="flex flex-col max-w-[1156px] mx-auto justify-center mt-[120px] px-[16px] mb-[116px]">
+    <Box className="flex flex-col max-w-[1156px] mx-auto justify-center mt-[120px] px-[16px] mb-[116px]">
         <h1 className="text-primary1 font-bold text-[28px]">Contact Us</h1>
         <p className="mt-[16px] font-normal text-[18px] text-text3">
           Have a question about your CELPIP practice plan, billing, or account?
           Our support team is here to help.
+        </p>
+        <p className="mt-[12px] font-normal text-[18px] text-text3">
+          We can help with subscription questions, login problems, refund-policy
+          clarification, feature access, and general guidance on using the
+          platform effectively for CELPIP preparation.
         </p>
 
         <Box className="flex flex-col mt-[40px]">
@@ -32,6 +33,24 @@ const ContactUs = () => {
           <p className="font-normal text-[18px] mt-[12px]">
             Typical response time: within 24 hours on business days.
           </p>
+        </Box>
+
+        <Box className="flex flex-col mt-[40px]">
+          <h2 className="font-semibold text-[20px]">Common Reasons People Contact Us</h2>
+          <ul className="pl-[20px] mt-[17px]">
+            <li className="list-disc text-[18px]">
+              Billing questions, renewals, cancellations, or refunds
+            </li>
+            <li className="list-disc text-[18px]">
+              Login, account access, or email update requests
+            </li>
+            <li className="list-disc text-[18px]">
+              Questions about mock exams, practice tasks, or score-related tools
+            </li>
+            <li className="list-disc text-[18px]">
+              Technical issues such as missing content, loading errors, or browser problems
+            </li>
+          </ul>
         </Box>
 
         <Box className="flex flex-col mt-[40px]">
@@ -74,7 +93,6 @@ const ContactUs = () => {
           sponsored by any official testing organization.
         </p>
       </Box>
-    </>
   );
 };
 

@@ -19,6 +19,23 @@ const WIKI_META_DESCRIPTION_OVERRIDES: Record<string, string> = {
     "Get high-score CELPIP speaking tips with clear response frameworks, timing strategies, vocabulary ideas, and key mistakes to avoid for confident answers.",
 };
 
+const WIKI_TITLE_SUFFIX = " | CELPIP Wiki";
+
+function buildWikiTitle(title: string): string {
+  const trimmed = title.trim();
+  const withSuffix = `${trimmed}${WIKI_TITLE_SUFFIX}`;
+
+  if (withSuffix.length <= 60) {
+    return withSuffix;
+  }
+
+  if (trimmed.length <= 56) {
+    return trimmed;
+  }
+
+  return `${trimmed.slice(0, 57).trim()}...`;
+}
+
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
@@ -32,17 +49,19 @@ export async function generateMetadata({
     };
   }
 
-  const baseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
+  const baseUrl = new URL(
+    process.env.APP_BASE_URL || "https://celpippracticetest.com"
+  ).toString();
   const description =
     WIKI_META_DESCRIPTION_OVERRIDES[slug] ||
     currentArticle.description ||
     `Learn about ${currentArticle.title} in our comprehensive CELPIP guide.`;
 
   return {
-    title: `${currentArticle.title} | CELPIP Wiki`,
+    title: buildWikiTitle(currentArticle.title),
     description,
     alternates: {
-      canonical: `${baseUrl}/wiki/${slug}`,
+      canonical: new URL(`/wiki/${slug}`, baseUrl).toString(),
     },
   };
 }

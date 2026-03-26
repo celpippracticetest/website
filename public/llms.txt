@@ -1,70 +1,67 @@
-# LLMs.txt for CELPIPPRACTICETEST.com
-# Structured metadata and key resources for AI agents and crawlers
+# CELPIPPRACTICETEST.com
 
-# Site Identity
-site: https://celpippracticetest.com
-brand: CELPIPPRACTICETEST.com
-description: Trusted CELPIP prep resource providing expert-written tips, practice, and mock exams for Canadian English test success.
-language: en-CA
-audience: CELPIP test takers, newcomers to Canada, ESL learners, test prep students
+> CELPIPPRACTICETEST.com is a CELPIP preparation platform with mock exams, skill practice, study guides, and exam strategy resources for test takers preparing for Canadian immigration or professional pathways.
 
-# Editorial & Trust Signals
-author: Certified CELPIP instructors and language professionals
-terms_of_service: https://celpippracticetest.com/terms-of-service
-privacy_policy: https://celpippracticetest.com/privacy-policy
-llm_contact: ai@celpippracticetest.com
+## Site Information
 
-# Core Site Resources
-exam_overview: https://celpippracticetest.com/exam-overview
-practice_overview: https://celpippracticetest.com/practice-overview
-wiki_index: https://celpippracticetest.com/wiki
-pricing: https://celpippracticetest.com/pricing
-score_calculator: https://celpippracticetest.com/score-calculator
-vocabulary_builder: https://celpippracticetest.com/words
-learning_resources: https://celpippracticetest.com/learning
-sitemap: https://celpippracticetest.com/sitemap.xml
+- Canonical site: [https://celpippracticetest.com](https://celpippracticetest.com)
+- Language: `en-CA`
+- Audience: CELPIP test takers, newcomers to Canada, ESL learners, and study-plan users
+- Contact for AI-related questions: <ai@celpippracticetest.com>
 
-# Legal & Policies
-refund_policy: https://celpippracticetest.com/refund-policy
+## Primary Resources
 
-# Skill-Specific Practice Pages
-listening_practice: https://celpippracticetest.com/listening
-reading_practice: https://celpippracticetest.com/reading
-writing_practice: https://celpippracticetest.com/writing
-speaking_practice: https://celpippracticetest.com/speaking
+- [Homepage](https://celpippracticetest.com)
+- [Exam Overview](https://celpippracticetest.com/exam-overview)
+- [Practice Overview](https://celpippracticetest.com/practice-overview)
+- [Blog](https://celpippracticetest.com/blog)
+- [Wiki](https://celpippracticetest.com/wiki)
+- [Pricing](https://celpippracticetest.com/pricing)
+- [Score Calculator](https://celpippracticetest.com/score-calculator)
+- [Vocabulary Builder](https://celpippracticetest.com/words)
+- [AI Learning](https://celpippracticetest.com/learning)
+- [Sitemap](https://celpippracticetest.com/sitemap.xml)
 
-# Blog & Strategy Pages
-blog_index: https://celpippracticetest.com/blog
-listening_tips: https://celpippracticetest.com/listening
-reading_tips: https://celpippracticetest.com/reading
-writing_tips: https://celpippracticetest.com/writing
-speaking_tips: https://celpippracticetest.com/speaking
+## Skill Practice
 
-# Profession-Specific Pages
-nurses: https://celpippracticetest.com/celpip-for-nurses
-immigration_consultants: https://celpippracticetest.com/celpip-for-immigration-consultant
-real_estate: https://celpippracticetest.com/celpip-for-real-estate
-professional_licensure: https://celpippracticetest.com/celpip-for-professional-licensure
-physicians_surgeons: https://celpippracticetest.com/celpip-for-physicians-surgeons
-early_childhood_educators: https://celpippracticetest.com/celpip-for-early-childhood-educator
-mortgage_brokers: https://celpippracticetest.com/celpip-for-mortgage-broker
-pharmacists: https://celpippracticetest.com/celpip-for-pharmacist
-medical_lab_technologists: https://celpippracticetest.com/celpip-for-medical-laboratory-technologist
-teacher_certification: https://celpippracticetest.com/celpip-for-teacher-certification
-health_care_aides: https://celpippracticetest.com/celpip-for-health-care-aide
-physiotherapists: https://celpippracticetest.com/celpip-for-physiotherapist
-commercial_truck_drivers: https://celpippracticetest.com/celpip-for-commercial-truck-driver
-caregivers: https://celpippracticetest.com/celpip-for-caregiver-home-support
-skilled_trades: https://celpippracticetest.com/celpip-for-skilled-trades
-dentists_dental_hygienists: https://celpippracticetest.com/celpip-for-dentist-dental-hygienist
-startup_visa_entrepreneurs: https://celpippracticetest.com/celpip-for-startup-visa-entrepreneur
-social_workers: https://celpippracticetest.com/celpip-for-social-worker
-midwives: https://celpippracticetest.com/celpip-for-midwife
-tech_workers: https://celpippracticetest.com/celpip-for-tech-worker
+- [Listening Practice](https://celpippracticetest.com/listening)
+- [Reading Practice](https://celpippracticetest.com/reading)
+- [Writing Practice](https://celpippracticetest.com/writing)
+- [Speaking Practice](https://celpippracticetest.com/speaking)
 
-# Semantic Cues
-focus: Test preparation, Canadian English, exam strategies, language improvement, wiki study guides, profession-specific CELPIP preparation
-tone: Clear, friendly, educational, Canadian English style
-llm_optimized: true
-content_update: Weekly
+## Key Policy Pages
+
+- [Contact Us](https://celpippracticetest.com/contact-us)
+- [Terms of Service](https://celpippracticetest.com/terms-of-service)
+- [Privacy Policy](https://celpippracticetest.com/privacy-policy)
+- [Refund Policy](https://celpippracticetest.com/refund-policy)
+- [Delete Account](https://celpippracticetest.com/delete-account)
+
+## Profession Pages
+
+- [CELPIP for Nurses](https://celpippracticetest.com/celpip-for-nurses)
+- [CELPIP for Immigration Consultant](https://celpippracticetest.com/celpip-for-immigration-consultant)
+- [CELPIP for Real Estate Agent](https://celpippracticetest.com/celpip-for-real-estate)
+- [CELPIP for Physicians & Surgeons](https://celpippracticetest.com/celpip-for-physicians-surgeons)
+- [CELPIP for Early Childhood Educator](https://celpippracticetest.com/celpip-for-early-childhood-educator)
+- [CELPIP for Mortgage Broker](https://celpippracticetest.com/celpip-for-mortgage-broker)
+- [CELPIP for Pharmacist](https://celpippracticetest.com/celpip-for-pharmacist)
+- [CELPIP for Medical Laboratory Technologist](https://celpippracticetest.com/celpip-for-medical-laboratory-technologist)
+- [CELPIP for Teacher Certification](https://celpippracticetest.com/celpip-for-teacher-certification)
+- [CELPIP for Health Care Aide](https://celpippracticetest.com/celpip-for-health-care-aide)
+- [CELPIP for Physiotherapist](https://celpippracticetest.com/celpip-for-physiotherapist)
+- [CELPIP for Commercial Truck Driver](https://celpippracticetest.com/celpip-for-commercial-truck-driver)
+- [CELPIP for Caregiver & Home Support](https://celpippracticetest.com/celpip-for-caregiver-home-support)
+- [CELPIP for Skilled Trades](https://celpippracticetest.com/celpip-for-skilled-trades)
+- [CELPIP for Dentist & Dental Hygienist](https://celpippracticetest.com/celpip-for-dentist-dental-hygienist)
+- [CELPIP for Start-Up Visa Entrepreneur](https://celpippracticetest.com/celpip-for-startup-visa-entrepreneur)
+- [CELPIP for Social Worker](https://celpippracticetest.com/celpip-for-social-worker)
+- [CELPIP for Midwife](https://celpippracticetest.com/celpip-for-midwife)
+- [CELPIP for Tech Worker](https://celpippracticetest.com/celpip-for-tech-worker)
+
+## Editorial Notes
+
+- Primary focus: CELPIP study strategies, score improvement, mock exams, and practical language development
+- Tone: clear, educational, supportive, and plain-English
+- Update cadence: weekly
 

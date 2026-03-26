@@ -33,6 +33,18 @@ const BLOG_META_DESCRIPTION_OVERRIDES: Record<string, string> = {
     "Master note-taking for CELPIP Listening Parts 4 to 6 using a simple memory system, shorthand techniques, and practice drills that boost accuracy under pressure.",
 };
 
+const BLOG_TITLE_SUFFIX = " | CELPIP Blog";
+
+function buildBlogTitle(title: string): string {
+  const trimmed = title.trim();
+  if (/celpip blog/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  const withSuffix = `${trimmed}${BLOG_TITLE_SUFFIX}`;
+  return withSuffix.length <= 68 ? withSuffix : trimmed;
+}
+
 function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
@@ -63,15 +75,19 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
     };
   }
 
-  const baseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
+  const baseUrl = new URL(
+    process.env.APP_BASE_URL || "https://celpippracticetest.com"
+  ).toString();
   const fallbackDescription =
     post.excerpt || stripHtml(post.contentHtml).slice(0, 155) || "CELPIP preparation article.";
-  const title = post.seo?.metaTitle || `${post.title} | CELPIP Blog`;
+  const title = buildBlogTitle(post.seo?.metaTitle || post.title);
   const description =
     BLOG_META_DESCRIPTION_OVERRIDES[slug] || post.seo?.metaDescription || fallbackDescription;
   const canonicalPath = `/blog/${post.slug}`;
   const path = post.seo?.canonicalUrl?.startsWith("http") ? null : (post.seo?.canonicalUrl || canonicalPath);
-  const canonical = path === null ? (post.seo?.canonicalUrl ?? "") : `${baseUrl}${path.startsWith("/") ? "" : "/"}${path}`;
+  const canonical = path === null
+    ? (post.seo?.canonicalUrl ?? "")
+    : new URL(path.startsWith("/") ? path : `/${path}`, baseUrl).toString();
   const ogImage = post.seo?.ogImageUrl || post.featuredImage?.url;
   const ogImageAlt = post.seo?.ogImageAlt || post.featuredImage?.alt || post.title;
 

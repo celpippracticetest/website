@@ -1,5 +1,6 @@
 import LayoutClient from "@/components/dashboard-new/LayoutClient";
 import Footer from "@/components/pages/landing/Footer";
+import ReactQueryProvider from "@/components/ReactQueryProvider";
 import { daysSince } from "@/lib/utils";
 import { currentUser } from "@clerk/nextjs/server";
 import { Metadata } from "next";
@@ -48,11 +49,13 @@ export default async function RootLayout({
       (onboardingNew.askedLaterAt && daysSince(onboardingNew.askedLaterAt) < 7));
   return (
     <>
-      <LayoutClient
-        showSurvey={showSurvey}
-        showCompletedModal={showCompletedModal}
-        children={children}
-      />
+      <ReactQueryProvider>
+        <LayoutClient
+          showSurvey={showSurvey}
+          showCompletedModal={showCompletedModal}
+          children={children}
+        />
+      </ReactQueryProvider>
       {!user && <Footer isSignedIn={false} />}
     </>
   );

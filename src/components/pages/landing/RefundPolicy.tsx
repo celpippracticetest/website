@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import TopHeader from "./TopHeader";
 
 const RefundPolicy = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -105,10 +104,7 @@ Initiating a chargeback, payment dispute, or bank claim does not override this p
   ];
 
   return (
-    <>
-      <TopHeader />
-
-      <div className="flex flex-col max-w-[1156px] mx-auto justify-center mt-[120px] px-[16px] mb-[116px]">
+    <div className="flex flex-col max-w-[1156px] mx-auto justify-center mt-[120px] px-[16px] mb-[116px]">
         <h1 className="text-primary1 font-bold text-[28px]">
           Refund Policy
         </h1>
@@ -171,7 +167,6 @@ Initiating a chargeback, payment dispute, or bank claim does not override this p
           </div>
         ))}
       </div>
-    </>
   );
 };
 

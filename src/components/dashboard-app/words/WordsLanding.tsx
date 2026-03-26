@@ -13,9 +13,9 @@ const WordsLanding = () => {
         <div className="flex flex-col items-center justify-center px-4 text-center max-w-[1280px] mx-auto animate-in fade-in duration-700 overflow-visible relative">
             {/* Headline Section */}
             <div className="max-w-4xl mb-4 text-center flex flex-col items-center">
-                <h1 className="text-[25px] screen1024:text-[39px] font-bold text-[#212E42] leading-[1.15] mb-2 tracking-tight">
+                <h2 className="text-[25px] screen1024:text-[39px] font-bold text-[#212E42] leading-[1.15] mb-2 tracking-tight">
                     Grow your CELPIP vocabulary for exam success.
-                </h1>
+                </h2>
                 <p className="text-[8px] screen1024:flex hidden screen744:text-[12px] text-[#212E42] opacity-80 leading-relaxed max-w-3xl mx-auto font-medium">
                     Add new words as you practice, study them with smart flashcards, and master them for the CELPIP exam.
                 </p>

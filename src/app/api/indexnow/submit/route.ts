@@ -30,35 +30,34 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Fetch sitemap index and follow all main-domain sitemaps
-    const indexRes = await fetch(`${SITE_URL}/sitemap.xml`);
-    if (!indexRes.ok) {
+    const sitemapRes = await fetch(`${SITE_URL}/sitemap.xml`);
+    if (!sitemapRes.ok) {
       return NextResponse.json(
-        { error: "Failed to fetch sitemap index", status: indexRes.status },
+        { error: "Failed to fetch sitemap", status: sitemapRes.status },
         { status: 502 }
       );
     }
-    const indexXml = await indexRes.text();
-    const sitemapLocMatches = indexXml.matchAll(/<loc>([^<]+)<\/loc>/g);
-    const sitemapUrls = [...sitemapLocMatches].map((m) => m[1].trim());
-
-    // Only follow sitemaps that belong to our main domain (skip blog subdomain, etc.)
-    let mainDomainSitemaps = sitemapUrls.filter((u) =>
-      u.startsWith(SITE_URL + "/")
-    );
-    if (mainDomainSitemaps.length === 0) {
-      mainDomainSitemaps = [`${SITE_URL}/sitemap-0.xml`];
-    }
+    const sitemapXml = await sitemapRes.text();
 
     const allUrls: string[] = [];
-    for (const sitemapUrl of mainDomainSitemaps) {
-      const res = await fetch(sitemapUrl);
-      if (!res.ok) continue;
-      const xml = await res.text();
-      const urlMatches = xml.matchAll(/<loc>([^<]+)<\/loc>/g);
-      const pageUrls = [...urlMatches]
-        .map((m) => m[1].trim())
-        .filter((u) => u.startsWith(SITE_URL));
+    const urlMatches = sitemapXml.matchAll(/<loc>([^<]+)<\/loc>/g);
+    const pageUrls = [...urlMatches]
+      .map((m) => m[1].trim())
+      .filter((u) => u.startsWith(SITE_URL));
+
+    const isSitemapIndex = /<sitemapindex[\s>]/i.test(sitemapXml);
+    if (isSitemapIndex) {
+      for (const sitemapUrl of pageUrls) {
+        const res = await fetch(sitemapUrl);
+        if (!res.ok) continue;
+        const xml = await res.text();
+        const nestedMatches = xml.matchAll(/<loc>([^<]+)<\/loc>/g);
+        const nestedPageUrls = [...nestedMatches]
+          .map((m) => m[1].trim())
+          .filter((u) => u.startsWith(SITE_URL));
+        allUrls.push(...nestedPageUrls);
+      }
+    } else {
       allUrls.push(...pageUrls);
     }
 
