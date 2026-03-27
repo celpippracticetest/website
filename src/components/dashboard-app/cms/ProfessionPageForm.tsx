@@ -576,7 +576,7 @@ export default function ProfessionPageForm({
             disabled={slugReadOnly}
             fullWidth
             size="small"
-            helperText='Must match pattern celpip-for-… (e.g. celpip-for-nurses). Slug cannot be changed after create.'
+            helperText='Lowercase a-z, 0-9, and hyphens (e.g. celpip-for-nurses). Slug cannot be changed after create.'
           />
           <FormControlLabel
             control={

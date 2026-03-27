@@ -102,7 +102,7 @@ const ProfessionPageContentBaseSchema = z.object({
     .string()
     .trim()
     .min(1)
-    .regex(/^celpip-for-[a-z0-9-]+$/, "Slug must start with celpip-for-"),
+    .regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens"),
   published: z.boolean().default(true),
   /** SEO title; primary keyword near the front (blog spec max 70). */
   metaTitle: z.string().trim().min(1).max(70).optional(),

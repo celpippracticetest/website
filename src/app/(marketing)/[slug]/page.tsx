@@ -8,19 +8,12 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const SLUG_PREFIX = "celpip-for-";
-
-function isProfessionPageSlug(slug: string): boolean {
-  return slug.startsWith(SLUG_PREFIX);
-}
-
 const BASE_URL = process.env.APP_BASE_URL || "https://celpippracticetest.com";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  if (!isProfessionPageSlug(slug)) return {};
   const doc = await getPublishedProfessionPageBySlug(slug);
   if (!doc) return {};
   const title = doc.metaTitle ?? `${doc.title} | CELPIP Practice Test`;
@@ -42,7 +35,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function MarketingDynamicSlugPage({ params }: PageProps) {
   const { slug } = await params;
-  if (!isProfessionPageSlug(slug)) notFound();
   const doc = await getPublishedProfessionPageBySlug(slug);
   if (!doc) notFound();
   return (

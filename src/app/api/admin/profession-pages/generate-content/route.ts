@@ -11,26 +11,21 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function normalizeProfessionSlug(raw: string): string {
-  let s = raw
+  return raw
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9-]+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
-  if (!s.startsWith("celpip-for-")) {
-    const rest = s.replace(/^celpip-for-/, "");
-    s = `celpip-for-${rest}`.replace(/-+/g, "-").replace(/^-|-$/g, "");
-  }
-  return s;
 }
 
 const SYSTEM_PROMPT = `You are an expert CELPIP instructor and SEO writer for CELPIP Practice Test (celpippracticetest.com).
-Output a single JSON object that fills the CMS form for a marketing "profession" landing page (slug always starts with celpip-for-).
+Output a single JSON object that fills the CMS form for a marketing "profession" landing page.
 Output ONLY valid JSON. No markdown, no code fences, no explanation.
 
 JSON shape (respect string length limits strictly):
 {
-  "slug": "string, lowercase a-z 0-9 hyphens, MUST start with celpip-for- (e.g. celpip-for-nurses)",
+  "slug": "string, lowercase a-z 0-9 hyphens (e.g. celpip-for-nurses)",
   "metaTitle": "string, max 70 chars, primary keyword near front",
   "metaDescription": "string, max 160 chars, SERP description with CTA",
   "keywords": "string, comma-separated (IRCC, CLB, profession terms)",
@@ -53,7 +48,7 @@ JSON shape (respect string length limits strictly):
   "accent": "one of: blue teal amber emerald rose cyan indigo violet slate",
   "icon": "one of: Briefcase Truck Heart Wrench Smile Rocket Users Baby Cpu MedicalServices Medication Policy Apartment School Science Mic",
   "relatedArticles": [ { "title": "string", "url": "string path starting with /" } ] optional, 0-4 items,
-  "relatedProfessions": [ { "title": "string", "url": "string /celpip-for-..." } ] optional, 0-4 items
+  "relatedProfessions": [ { "title": "string", "url": "string /slug-here" } ] optional, 0-4 items
 }
 
 Rules: ESL-friendly tone (tutor talking to a student). Short sentences. Include semantic terms (IRCC, CLB, Paragon, registration/licensing). Position-zero aiSnippet must directly answer the main query. Include 4–6 FAQ objects (not separate faq1Q keys). FAQ questions should sound like real voice search. Related URLs must be plausible on-site paths.`;
@@ -216,7 +211,7 @@ export async function POST(req: NextRequest) {
           : "";
 
     const payload = {
-      slug: slug || "celpip-for-profession",
+      slug: slug || "profession",
       metaTitle:
         typeof parsed.metaTitle === "string"
           ? parsed.metaTitle.trim().slice(0, 70)

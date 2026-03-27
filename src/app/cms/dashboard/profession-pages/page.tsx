@@ -71,8 +71,7 @@ export default function CmsProfessionPagesListPage() {
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Profession pages</h1>
             <p className="mt-1 text-sm text-slate-600">
-              CELPIP marketing pages (URL prefix <code className="rounded bg-slate-200 px-1">celpip-for-</code>
-              ). Live URLs use the slug directly, e.g. <code className="rounded bg-slate-200 px-1">/celpip-for-nurses</code>.
+              CELPIP marketing pages. Live URLs use the slug directly, e.g. <code className="rounded bg-slate-200 px-1">/celpip-for-nurses</code> or <code className="rounded bg-slate-200 px-1">/pathway-to-licensing</code>.
             </p>
           </div>
           <Button onClick={() => router.push("/cms/dashboard/profession-pages/create")}>
