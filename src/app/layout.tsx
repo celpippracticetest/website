@@ -241,7 +241,7 @@ export default async function RootLayout({
         />
       </head>
 
-      <body className="bg-[#F4F7FF]">
+      <body className="bg-[#F4F7FF]" suppressHydrationWarning>
         <MuiAppRouterCacheProvider>
           <ClerkProvider>
           {enableGtm && (

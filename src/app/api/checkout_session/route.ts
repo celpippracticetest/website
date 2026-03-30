@@ -1,19 +1,42 @@
 import { clerkClient } from "@clerk/express";
 import { NextRequest, NextResponse } from "next/server";
-import { headers } from "next/headers";
 
 import { stripe } from "@/lib/stripe";
 import { currentUser } from "@clerk/nextjs/server";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
 import { getDb } from "@/lib/mongodb";
 import { isPricingAbLayout } from "@/lib/pricingAbTest";
+import {
+  buildCheckoutCancelUrl,
+  safeStripePriceId,
+  safeStripeProductId,
+} from "@/lib/checkoutCancelUrl";
+
+/** GET — same handler as POST (no self-fetch: avoids dev deadlock / invalid response). */
+export async function GET(req: NextRequest) {
+  const price = safeStripePriceId(req.nextUrl.searchParams.get("price"));
+  const product = safeStripeProductId(req.nextUrl.searchParams.get("product"));
+
+  if (!price && !product) {
+    return NextResponse.redirect(new URL("/pricing", req.url), 302);
+  }
+
+  return signedCheckoutResponse(req);
+}
+
 export async function POST(req: NextRequest) {
+  return signedCheckoutResponse(req);
+}
+
+async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
   try {
     const product: string | null = req.nextUrl.searchParams.get("product");
     const price: string | null = req.nextUrl.searchParams.get("price");
-    const formData = await req.formData();
-    const headersList = await headers();
-    const origin = headersList.get("origin");
+    const formData =
+      req.method === "GET" || req.method === "HEAD"
+        ? new FormData()
+        : await req.formData();
+    const origin = req.headers.get("origin") ?? new URL(req.url).origin;
     const user = await currentUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -226,7 +249,7 @@ export async function POST(req: NextRequest) {
       firstTouchDate && !Number.isNaN(firstTouchDate.getTime())
         ? Math.max(0, Math.round((Date.now() - firstTouchDate.getTime()) / 60000))
         : null;
-    const referrer = headersList.get("referer");
+    const referrer = req.headers.get("referer");
     let purchasePage: string | null = null;
     if (referrer) {
       try {
@@ -236,8 +259,8 @@ export async function POST(req: NextRequest) {
       }
     }
     const country =
-      headersList.get("x-vercel-ip-country") ||
-      headersList.get("cf-ipcountry") ||
+      req.headers.get("x-vercel-ip-country") ||
+      req.headers.get("cf-ipcountry") ||
       userDoc?.attribution?.lastTouch?.country ||
       null;
     const readRequestAttribution = (field: string) => {
@@ -310,8 +333,11 @@ export async function POST(req: NextRequest) {
     };
 
     const pricingAbLayoutRaw = readRequestAttribution("pricing_ab_layout");
-    const pricingAbLayout = isPricingAbLayout(pricingAbLayoutRaw) ? pricingAbLayoutRaw : null;
-    const pricingAbMeta =
+    const pricingAbLayoutCandidate = pricingAbLayoutRaw ?? undefined;
+    const pricingAbLayout = isPricingAbLayout(pricingAbLayoutCandidate)
+      ? pricingAbLayoutCandidate
+      : null;
+    const pricingAbMeta: Record<string, string> =
       pricingAbLayout !== null ? { pricing_ab_layout: pricingAbLayout } : {};
 
     if (pricingAbLayout) {
@@ -352,7 +378,10 @@ export async function POST(req: NextRequest) {
       ],
       mode,
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/failed?canceled=true`,
+      cancel_url: buildCheckoutCancelUrl(origin, purchasePage, {
+        priceId,
+      }),
+
       automatic_tax: { enabled: true },
       ...(promotionCode ? {} : { allow_promotion_codes: true }),
       // Correct way to pre-apply a promotion code on Checkout
@@ -424,7 +453,10 @@ export async function POST(req: NextRequest) {
         planCancelled: false,
       },
     });
-    return NextResponse.redirect(session.url, 303);
+    return NextResponse.redirect(session.url!, {
+      status: 303,
+      headers: { "Cache-Control": "no-store" },
+    });
   } catch (err: any) {
     captureException(err, {
       component: "checkout_session_api",

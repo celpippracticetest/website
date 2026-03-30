@@ -12,9 +12,28 @@ import { getAccessTierKey } from "@/lib/pricing";
 import { toSerializedPlan } from "@/lib/planSerialization";
 import type { Plan } from "@/models/plans.model";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
+import { findOrCreateClerkUserByEmail } from "@/lib/clerkGuestCheckout";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+/** Stripe `MetadataParam` allows string | number | null — not `undefined`. */
+function toStripeMetadataParam(
+  record: Record<string, string | number | null | undefined>
+): Stripe.MetadataParam {
+  const out: Stripe.MetadataParam = {};
+  for (const [key, value] of Object.entries(record)) {
+    if (value === undefined) continue;
+    out[key] = value;
+  }
+  return out;
+}
+
+/** Billing period end moved to subscription items in current Stripe API typings. */
+function subscriptionCurrentPeriodEndUnix(sub: Stripe.Subscription): number | null {
+  const end = sub.items?.data?.[0]?.current_period_end;
+  return end != null ? end : null;
+}
 
 async function updateUserPublicMetadata(
   userId: string,
@@ -332,8 +351,48 @@ export async function POST(req: Request) {
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
-      const metadata = session.metadata;
+      let metadata: Record<string, string | undefined> = {
+        ...(session.metadata as Record<string, string | undefined>),
+      };
       let subscriptionMetadata = metadata;
+
+      if (metadata.guest_checkout === "true") {
+        const payEmail =
+          session.customer_details?.email?.trim().toLowerCase() ||
+          (typeof session.customer_email === "string"
+            ? session.customer_email.trim().toLowerCase()
+            : undefined);
+        if (!payEmail) {
+          logger.error("Guest checkout completed without email", {
+            component: "stripe_webhook",
+            action: "guest_checkout_missing_email",
+            metadata: { sessionId: session.id },
+          });
+          return NextResponse.json({ received: true });
+        }
+        try {
+          const userId = await findOrCreateClerkUserByEmail(payEmail);
+          metadata = { ...metadata, user_id: userId };
+          subscriptionMetadata = metadata;
+          if (session.subscription) {
+            const sub = await stripe.subscriptions.retrieve(session.subscription as string);
+            await stripe.subscriptions.update(session.subscription as string, {
+              metadata: {
+                ...sub.metadata,
+                user_id: userId,
+                checkout_id: session.id,
+              },
+            });
+          }
+        } catch (guestErr) {
+          captureException(guestErr, {
+            component: "stripe_webhook",
+            action: "guest_checkout_provision_user",
+            metadata: { sessionId: session.id },
+          });
+          return NextResponse.json({ received: true });
+        }
+      }
 
       logger.info("Processing checkout.session.completed event", {
         component: "stripe_webhook",
@@ -411,7 +470,7 @@ export async function POST(req: Request) {
 
         if (subscription.status !== "canceled") {
           await stripe.subscriptions.update(session.subscription as string, {
-            metadata: subscriptionMetadata,
+            metadata: toStripeMetadataParam(subscriptionMetadata),
           });
         } else {
           console.warn(
@@ -419,9 +478,10 @@ export async function POST(req: Request) {
           );
         }
 
-        if (subscription.current_period_end) {
+        const periodEnd = subscriptionCurrentPeriodEndUnix(subscription);
+        if (periodEnd) {
           await updateUserPublicMetadata(metadata.user_id, {
-            planRenewsAt: new Date(subscription.current_period_end * 1000).toISOString(),
+            planRenewsAt: new Date(periodEnd * 1000).toISOString(),
             planExpiresAt: null,
           });
         }
@@ -435,6 +495,28 @@ export async function POST(req: Request) {
           action: "referral_rewards_error",
           metadata: { sessionId: session.id },
         });
+      }
+
+      if (metadata?.user_id && session.status === "complete") {
+        try {
+          const checkoutRepo = new CheckoutRepository(mongoClient);
+          const existing = await checkoutRepo.findCheckoutBySessionId(session.id);
+          if (!existing) {
+            await checkoutRepo.createCheckout({
+              userId: metadata.user_id,
+              checkoutId: session.id,
+              createdAt: new Date(),
+              status: session.status?.toString() ?? "complete",
+              lineItems: null,
+            });
+          }
+        } catch (checkoutErr) {
+          logger.error("Failed to persist checkout from webhook", {
+            component: "stripe_webhook",
+            action: "checkout_repo_insert",
+            metadata: { sessionId: session.id, error: checkoutErr },
+          });
+        }
       }
 
       // Log payment successful
@@ -535,11 +617,10 @@ export async function POST(req: Request) {
       const metadata = subscription.metadata;
       if (subscription.cancel_at_period_end) {
         if (metadata?.user_id) {
+          const periodEnd = subscriptionCurrentPeriodEndUnix(subscription);
           await updateUserPublicMetadata(metadata.user_id, {
             planCancelled: true,
-            planExpiresAt: subscription.current_period_end
-              ? new Date(subscription.current_period_end * 1000).toISOString()
-              : null,
+            planExpiresAt: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
             planRenewsAt: null,
           });
         }
@@ -602,7 +683,7 @@ export async function POST(req: Request) {
           logger.error("subscription.updated: plan metadata sync failed", {
             component: "stripe_webhook",
             action: "subscription_updated_plan_sync",
-            error: syncErr,
+            metadata: { error: syncErr },
           });
         }
       }

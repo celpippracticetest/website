@@ -11,6 +11,7 @@ import {
   toClientUpgradeOffer,
   type SuccessUpgradeOfferForClient,
 } from "@/lib/successPageUpgrade";
+import { waitForCheckoutRecord } from "@/lib/waitForCheckoutRecord";
 
 export default async function Success({ searchParams }: any) {
   const params = searchParams ? await searchParams : {};
@@ -84,7 +85,10 @@ export default async function Success({ searchParams }: any) {
 
   if (status === "open") redirect("/");
   const userRepo = new CheckoutRepository(mongoClient);
-  const prevCheckout = await userRepo.findCheckoutBySessionId(session_id);
+  let prevCheckout = await userRepo.findCheckoutBySessionId(session_id);
+  if (prevCheckout === null && status === "complete") {
+    prevCheckout = await waitForCheckoutRecord(mongoClient, session_id);
+  }
   if (prevCheckout !== null) {
     return (
       <div className=" bg-[#F4F7FF] min-h-screen flex w-full lg:pt-[108px] pt-[70px]">
@@ -96,7 +100,24 @@ export default async function Success({ searchParams }: any) {
       </div>
     );
   }
-  if (!user) redirect("/");
+
+  if (!user) {
+    const emailNorm = customerEmail?.trim().toLowerCase();
+    if (status === "complete" && emailNorm) {
+      const client = await clerkClient();
+      const users = await client.users.getUserList({ emailAddress: [emailNorm], limit: 1 });
+      if (users.data.length > 0) {
+        const signIn = await client.signInTokens.createSignInToken({
+          userId: users.data[0].id,
+          expiresInSeconds: 900,
+        });
+        if (signIn?.url) {
+          redirect(signIn.url);
+        }
+      }
+    }
+    redirect("/");
+  }
 
   await userRepo.createCheckout({
     userId: user.id,
