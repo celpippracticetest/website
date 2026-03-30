@@ -21,7 +21,8 @@ export function buildCheckoutCancelUrl(
     const prod = safeStripeProductId(stripeLine.productId);
     if (prod) url.searchParams.set("product", prod);
   }
-  return `${url.pathname}${url.search}`;
+  // Stripe requires an absolute URL for cancel_url (path-only strings are rejected).
+  return url.href;
 }
 
 export function safeInternalReturnPath(path: string | null | undefined): string | null {
