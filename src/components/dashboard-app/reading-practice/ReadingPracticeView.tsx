@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import NextImage from "next/image";
 import ArrowBack from "@mui/icons-material/ArrowBack";
 import { TPracticeDto } from "@/models/practice.model";
@@ -15,6 +16,7 @@ import React from "react";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
 import LoginModal from "@/components/modal/LoginModal";
+import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import SvgCircle from "@/components/icons/Circle";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
@@ -109,7 +111,8 @@ const ReadingPracticeView = ({
       if (!user || !selectedPracticeId) return;
       try {
         const response = await fetch(
-          `/api/answers?practiceId=${selectedPracticeId}&userId=${user.id}&type=${practice.type}`
+          `/api/answers?practiceId=${selectedPracticeId}&userId=${user.id}&type=${practice.type}`,
+          { credentials: "include" }
         );
         if (response.ok) {
           const data = await response.json();
@@ -142,6 +145,7 @@ const ReadingPracticeView = ({
         try {
           const response = await fetch("/api/answers", {
             method: "POST",
+            credentials: "include",
             headers: {
               "Content-Type": "application/json",
             },
@@ -202,14 +206,39 @@ const ReadingPracticeView = ({
         user?.publicMetadata.purchaseDate as string | undefined
       ));
   return (
-    <>
-      <div className="w-full transition-all duration-300 flex gap-5 items-center ">
-        {noUser ? (
-          showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />
-        ) : (
-          <></>
-        )}
-
+    <div className="">
+      {noUser ? (
+        showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />
+      ) : (
+        <></>
+      )}
+      <div className="w-full min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1 pl-0 screen744:pl-[40px] text-[#76808F] text-[14px] mt-0 mb-[28px]">
+        <div
+          className="cursor-pointer"
+          onClick={() => {
+            router.push("/practice-overview");
+          }}
+        >
+          Practice
+        </div>
+        <SvgChevronRightForTitle />
+        <div
+          className="cursor-pointer"
+          onClick={() => {
+            router.push("/reading");
+          }}
+        >
+          Reading
+        </div>
+        <SvgChevronRightForTitle />
+        <span className="min-w-0 max-w-full break-words text-[#212E42]">
+          <span className="text-[#76808F]">
+            {task.taskNumber?.replace(" #", "")}
+          </span>
+          .{task.name}
+        </span>
+      </div>
+      <div className="mx-auto w-full flex-col screen1280:!flex-row transition-all duration-300 flex gap-[20px]">
         <ListeningSideMenu
           allPractices={allPractices}
           task={task}
@@ -221,59 +250,70 @@ const ReadingPracticeView = ({
           selectedTaskId={selectedTaskId}
           completedPractice={completedPractice}
         />
-        <div className="bg-white rounded-xl flex flex-col screen1280:!h-[920px] overflow-scroll border border-[#D5D6D8] w-full">
-          <div className="flex justify-between  gap-2 p-[16px] border-b border-[#D5D6D8]  flex-col screen1280:!flex-row w-full  h-auto bg-[#FFEBD6]">
-            <div className="flex flex-col-reverse screen744:!flex-row items-start screen744:!items-center gap-[16px] flex-wrap screen744:!flex-nowrap">
-              <div className="flex flex-col gap-2 w-full items-start">
-                <h1 className="w-full max-w-[330px] text-[18px] font-bold text-[#212E42]">
-                  {practice.passages[passageIndex].title}
-                </h1>
-                <StatBadge
-                  count={practiceCount}
-                  label="answered today"
-                />
-              </div>
+        <Card className="bg-white/90 flex flex-col overflow-auto border border-[#D5D6D8] w-full screen1280:!h-[920px]">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 lg:gap-4 px-6 py-4 border-b border-[#D5D6D8] w-full min-w-0 h-auto bg-[#FFEBD6]">
+            <div className="flex w-full min-w-0 flex-col items-start gap-2 lg:flex-1 lg:w-auto lg:min-w-0">
+              <h1 className="text-[18px] font-bold text-[#212E42] break-words w-full">
+                {practice.passages[passageIndex].title}
+              </h1>
+              <StatBadge
+                count={practiceCount}
+                label="answered today"
+              />
             </div>
+            <div className="flex w-full min-w-0 shrink-0 flex-row flex-nowrap items-center justify-end gap-2 overflow-x-auto pb-[10px] lg:w-auto lg:min-w-fit lg:flex-none lg:gap-2 lg:overflow-visible lg:pb-0">
             {page !== "answer" && shouldShowPractice && (
-              <div className="flex justify-between">
-                {page !== "answer" && shouldShowPractice && (
-                  <>
-                    <button
+                  <button
                       onClick={async () => {
                         if (page == "question" && shouldShowPractice) {
                           setTime(30);
-                          let answersData = null;
-                          try {
-                            const getRes = await fetch(
-                              `/api/answers?practiceId=${practice.id}&userId=${user?.id}&type=${practice.type}`
-                            );
-                            if (getRes.ok) {
-                              const json = await getRes.json();
-                              answersData = json.answers;
-                            } else if (getRes.status === 404) {
-                            }
-                          } catch (err) {
-                            console.error(
-                              "Error checking existing answers:",
-                              err
-                            );
-                          }
-                          if (!answersData) {
+                          let answersData: Record<string, string> | null = null;
+                          if (user?.id) {
                             try {
-                              const postRes = await fetch("/api/answers", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({
-                                  practiceId: practice.id,
-                                  answers: selectedAnswers,
-                                }),
-                              });
-                              const postJson = await postRes.json();
-                              answersData =
-                                postJson.result?.answers || selectedAnswers;
+                              const getRes = await fetch(
+                                `/api/answers?practiceId=${practice.id}&userId=${user.id}&type=${practice.type}`,
+                                { credentials: "include" }
+                              );
+                              if (getRes.ok) {
+                                const json = await getRes.json();
+                                answersData = json.answers ?? null;
+                              }
                             } catch (err) {
-                              console.error("Failed to save answers:", err);
+                              console.error(
+                                "Error checking existing answers:",
+                                err
+                              );
                             }
+                            if (!answersData) {
+                              try {
+                                const postRes = await fetch("/api/answers", {
+                                  method: "POST",
+                                  credentials: "include",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({
+                                    practiceId: practice.id,
+                                    answers: selectedAnswers,
+                                  }),
+                                });
+                                let postJson: {
+                                  result?: { answers?: Record<string, string> };
+                                } = {};
+                                try {
+                                  postJson = await postRes.json();
+                                } catch {
+                                  /* non-JSON body */
+                                }
+                                answersData =
+                                  postJson.result?.answers ??
+                                  (postRes.ok ? selectedAnswers : null);
+                              } catch (err) {
+                                console.error("Failed to save answers:", err);
+                              }
+                            }
+                          } else {
+                            answersData = selectedAnswers;
                           }
                           if (answersData) {
                             setSelectedAnswers(answersData);
@@ -311,133 +351,125 @@ const ReadingPracticeView = ({
                       </span>
                       <span className="flex screen1280:!hidden"> Score</span>{" "}
                     </button>
-                  </>
-                )}
-                <div className="flex items-center gap-2 justify-end ml-[5px] pl-[32px] pb-[10px] screen1280:!pb-[0]">
-                  {shouldShowPractice && page === "question" && (
-                    <div className="flex shrink-0 justify-center items-center screen1280:!flex-row flex-col">
-                      <div className="text-[14px] shrink-0 font-semibold gap-2 text-center text-[#EE4266] flex items-center">
-                        <p>
-                          {time > 0
-                            ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
-                            }`
-                            : "Time's Up!"}
-                        </p>
-                      </div>
+            )}
+            {page !== "answer" && shouldShowPractice && (
+              <>
+                {shouldShowPractice && page === "question" && (
+                  <div className="flex shrink-0 justify-center items-center lg:flex-row flex-col">
+                    <div className="text-[14px] shrink-0 font-semibold gap-2 text-center text-[#EE4266] flex items-center">
+                      <p>
+                        {time > 0
+                          ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
+                          }`
+                          : "Time's Up!"}
+                      </p>
                     </div>
-                  )}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const practiceIndex = allPractices.findIndex(
+                      (p) => p.id == selectedPracticeId
+                    );
+                    if (practiceIndex > 0) {
+                      const taskUrl = selectedTaskId
+                        ? "&taskId=" + selectedTaskId
+                        : "";
+                      setPage("question");
+                      router.push(
+                        "/reading?selectedPracticeId=" +
+                        allPractices[practiceIndex - 1].id +
+                        taskUrl
+                      );
+                    }
+                    setTime(timerTime);
+                  }}
+                  className="cursor-pointer inline-flex border border-[#37465C] shrink-0 items-center h-[40px] w-[40px] rounded-[100%] justify-center min-h-[40px]"
+                >
+                  <ArrowBack sx={{ fontSize: 18 }} />
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setTime(30);
+                    if (Object.keys(selectedAnswers).length > 0 && user) {
+                      try {
+                        await fetch("/api/answers", {
+                          method: "POST",
+                          credentials: "include",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            practiceId: practice.id,
+                            answers: selectedAnswers,
+                          }),
+                        });
 
-                  <button
-                    onClick={() => {
+                        if (!pointsAwarded) {
+                          console.log("Reading practice: Adding league points on Next click...");
+
+                          const attemptId = `practice_${practice.id}_${Date.now()}`;
+                          await ActivityLogger.practiceCompleted(
+                            attemptId,
+                            practice.id,
+                            "Reading",
+                            100,
+                            { overall: 100 },
+                            time
+                          );
+
+                          const pointsResult = await addPoints(
+                            10,
+                            "practiceSessions",
+                            `${Math.floor(time / 60)} minutes`
+                          );
+                          console.log("Reading practice: Points result:", pointsResult);
+                          setPointsAwarded(true);
+
+                          await checkTrophyAchievements(
+                            10,
+                            "practiceSessions",
+                            `${Math.floor(time / 60)}:${time % 60}`
+                          );
+                        }
+                      } catch (err) {
+                        console.error(
+                          "Failed to save answers before navigating:",
+                          err
+                        );
+                      }
+                    }
+                    if (
+                      page === "answer" ||
+                      (page === "question" && !shouldShowPractice) ||
+                      (page === "question" && shouldShowPractice)
+                    ) {
                       const practiceIndex = allPractices.findIndex(
                         (p) => p.id == selectedPracticeId
                       );
-                      if (practiceIndex > 0) {
+                      if (practiceIndex < allPractices.length - 1) {
                         const taskUrl = selectedTaskId
                           ? "&taskId=" + selectedTaskId
                           : "";
                         setPage("question");
                         router.push(
                           "/reading?selectedPracticeId=" +
-                          allPractices[practiceIndex - 1].id +
+                          allPractices[practiceIndex + 1].id +
                           taskUrl
                         );
-                      } else {
-                        // Optionally handle the case where there is no previous practice
                       }
-                      setTime(timerTime);
-                    }}
-                    className="cursor-pointer inline-flex border border-[#37465C] shrink-0 items-center h-[40px] w-[40px] rounded-[100%] justify-center min-h-[40px]"
-                  >
-                    <ArrowBack sx={{ fontSize: 18 }} />
-                  </button>
-                  <button
-                    onClick={async () => {
-                      setTime(30);
-                      if (Object.keys(selectedAnswers).length > 0 && user) {
-                        try {
-                          await fetch("/api/answers", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              practiceId: practice.id,
-                              answers: selectedAnswers,
-                            }),
-                          });
-
-                          // Add league points when practice is completed
-                          if (!pointsAwarded) {
-                            console.log("Reading practice: Adding league points on Next click...");
-
-                            // Log practice completed
-                            const attemptId = `practice_${practice.id}_${Date.now()}`;
-                            await ActivityLogger.practiceCompleted(
-                              attemptId,
-                              practice.id,
-                              "Reading",
-                              100, // Assuming 100% score for now
-                              { overall: 100 },
-                              time
-                            );
-
-                            const pointsResult = await addPoints(
-                              10,
-                              "practiceSessions",
-                              `${Math.floor(time / 60)} minutes`
-                            );
-                            console.log("Reading practice: Points result:", pointsResult);
-                            setPointsAwarded(true);
-
-                            // Check for trophy achievements
-                            await checkTrophyAchievements(
-                              10,
-                              "practiceSessions",
-                              `${Math.floor(time / 60)}:${time % 60}`
-                            );
-                          }
-                        } catch (err) {
-                          console.error(
-                            "Failed to save answers before navigating:",
-                            err
-                          );
-                        }
-                      }
-                      if (
-                        page === "answer" ||
-                        (page === "question" && !shouldShowPractice) ||
-                        (page === "question" && shouldShowPractice)
-                      ) {
-                        const practiceIndex = allPractices.findIndex(
-                          (p) => p.id == selectedPracticeId
-                        );
-                        if (practiceIndex < allPractices.length - 1) {
-                          const taskUrl = selectedTaskId
-                            ? "&taskId=" + selectedTaskId
-                            : "";
-                          setPage("question");
-                          router.push(
-                            "/reading?selectedPracticeId=" +
-                            allPractices[practiceIndex + 1].id +
-                            taskUrl
-                          );
-                        }
-                      }
-                    }}
-                    className={`cursor-pointer shrink-0 border border-[#76808F] px-[24px] text-[14px] font-normal h-[40px] rounded-[24px] ${page !== "answer" && shouldShowPractice
-                      ? "bg-white"
-                      : "bg-white"
-                      }`}
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
+                    }
+                  }}
+                  className="cursor-pointer shrink-0 border border-[#76808F] px-[24px] text-[14px] font-normal h-[40px] rounded-[24px] bg-white"
+                >
+                  Next
+                </button>
+              </>
             )}
-
             {(page === "answer" || !shouldShowPractice) && (
-              <div className="flex items-center pb-[10px] gap-2 justify-between">
+              <>
                 {shouldShowPractice && page === "question" && (
-                  <div className="flex justify-center items-center flex-col">
+                  <div className="flex shrink-0 justify-center items-center lg:flex-row flex-col">
                     <div className="text-[14px] font-semibold gap-2 text-center text-[#EE4266] flex items-center">
                       <p>
                         {time > 0
@@ -449,6 +481,7 @@ const ReadingPracticeView = ({
                   </div>
                 )}
                 <button
+                  type="button"
                   hidden={page !== "answer"}
                   onClick={() => {
                     if (page == "answer") {
@@ -460,48 +493,15 @@ const ReadingPracticeView = ({
                 >
                   <ArrowBack sx={{ fontSize: 18 }} />
                 </button>
-                {/* <button
-                onClick={() => {
-                  if (page == "question" && shouldShowPractice) {
-                    setPage("answer");
-                  } else if (
-                    page === "answer" ||
-                    (page == "question" && !shouldShowPractice)
-                  ) {
-                    const practiceIndex = allPractices.findIndex(
-                      (p) => p.id == selectedPracticeId
-                    );
-                    if (practiceIndex < allPractices.length - 1) {
-                      const taskUrl = selectedTaskId
-                        ? "&taskId=" + selectedTaskId
-                        : "";
-                      setPage("question");
-                      router.push(
-                        "/reading?selectedPracticeId=" +
-                          allPractices[practiceIndex + 1].id +
-                          taskUrl
-                      );
-                    } else {
-                    }
-                  }
-                  setTime(30);
-                }}
-                className={`cursor-pointer border border-[#76808F] px-[24px] text-[14px] font-normal h-[40px] rounded-[24px] ${
-                  page !== "answer" && shouldShowPractice
-                    ? "bg-white"
-                    : "bg-white"
-                }`}
-              >
-                Next question
-              </button> */}
-              </div>
+              </>
             )}
+            </div>
           </div>
           <div className="flex flex-col h-full overflow-hidden w-full">
             {page == "question" && (
               <div className="h-full overflow-hidden ">
-                <div className="grid lg:grid-cols-2 grid-cols-1 h-full w-full">
-                  <div className="p-4 overflow-y-scroll  border-r-0 border-b screen1280:!border-none border-slate-300 [&::-webkit-scrollbar]:w-2  [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full  [&::-webkit-scrollbar-track]:bg-slate-100">
+                <div className="grid screen1280:grid-cols-2 grid-cols-1 h-full w-full">
+                  <div className="p-[16px] screen744:!p-[24px] overflow-y-scroll border-r-0 border-b screen1280:!border-none border-slate-300 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-slate-100">
                     <div className="relative">
                       {practice.passages[0].pictureUrl && (
                         <>
@@ -565,7 +565,7 @@ const ReadingPracticeView = ({
                       )}
                     </div>
                   </div>
-                  <div className="p-4 overflow-y-scroll [&::-webkit-scrollbar]:w-2  [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full  [&::-webkit-scrollbar-track]:bg-slate-100">
+                  <div className="p-[16px] screen744:!p-[24px] overflow-y-scroll [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-slate-100">
                     <div className="flex flex-col gap-4">
                       {practice.passages[0]?.questions?.map((question, index) => (
                         <ReadingQuestionList
@@ -601,7 +601,7 @@ const ReadingPracticeView = ({
                                     {p}
                                     {index !== arr.length - 1 && (
                                       <Popover.Root>
-                                        <Popover.Trigger className="PopoverTrigger bg-[#F7B267] cursor-pointer px-2 rounded font-semibold text-[#212E42] text-[14px] py-1">
+                                        <Popover.Trigger className="PopoverTrigger inline-flex items-center justify-start gap-x-1 min-w-[148px] max-w-full px-4 py-1 rounded bg-[#F7B267] cursor-pointer font-semibold text-[#212E42] text-[14px]">
                                           {parseInt(
                                             practice.passages[1]?.questions?.[0]?.id ?? "0"
                                           ) + index}
@@ -759,7 +759,7 @@ const ReadingPracticeView = ({
               </div>
             )}
             {page == "answer" && (
-              <div className="flex flex-col h-full w-full">
+              <div className="flex flex-col h-full w-full pb-[50px]">
                 <ListeningAnswerList
                   questionIndex={questionIndex}
                   questions={practice.passages.reduce(
@@ -774,7 +774,7 @@ const ReadingPracticeView = ({
               </div>
             )}
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Trophy Modal */}
@@ -785,7 +785,7 @@ const ReadingPracticeView = ({
         userPoints={userPoints}
         timeSpent={timeSpent}
       />
-    </>
+    </div>
   );
 };
 

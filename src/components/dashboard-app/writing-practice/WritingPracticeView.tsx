@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import ArrowForward from "@mui/icons-material/ArrowForward";
 import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
@@ -159,10 +159,8 @@ const WritingPracticeView = ({
   }, [user, practice.taskId, attemptId]);
 
   useEffect(() => {
-    if (isSubmit) {
-      submitAnswer();
-    }
-    fetchUsersAnswer();
+    if (!isSubmit) return;
+    void submitAnswer();
   }, [isSubmit]);
 
   useEffect(() => {
@@ -176,27 +174,39 @@ const WritingPracticeView = ({
     }
   }, [user, answers]);
 
-  const fetchUsersAnswer = async () => {
-    try {
-      const url = new URL("/api/answers/writing", window.location.origin);
-      url.searchParams.append("practiceId", practice.id);
+  const fetchUsersAnswer = useCallback(async () => {
+    if (!practice?.id) return;
+    if (!isSignedIn) {
+      setAnswers([]);
+      return;
+    }
 
-      const response = await fetch(url.toString(), {
+    try {
+      const qs = new URLSearchParams({ practiceId: practice.id });
+      const response = await fetch(`/api/answers/writing?${qs.toString()}`, {
         method: "GET",
+        credentials: "include",
         headers: {
-          "Content-Type": "application/json",
+          Accept: "application/json",
         },
       });
 
-      if (!response.ok) {
-        throw new Error("Network response was not ok.");
+      if (response.status === 401) {
+        setAnswers([]);
+        return;
       }
+
+      if (!response.ok) {
+        console.error("Error fetching answer:", response.status);
+        return;
+      }
+
       const data = await response.json();
-      setAnswers(data.items);
+      setAnswers(Array.isArray(data.items) ? data.items : []);
     } catch (error) {
       console.error("Error fetching answer:", error);
     }
-  };
+  }, [practice?.id, isSignedIn]);
 
   const submitAnswer = async () => {
     try {
@@ -215,6 +225,8 @@ const WritingPracticeView = ({
 
       const response = await fetch(url, {
         method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestData),
       });
 
@@ -291,7 +303,7 @@ const WritingPracticeView = ({
     setProgressBar(0);
     setIsSubmit(false);
 
-    fetchUsersAnswer();
+    void fetchUsersAnswer();
 
     // Log practice started
     if (user && selectedPracticeId) {
@@ -300,7 +312,7 @@ const WritingPracticeView = ({
         console.error("Error logging practice started:", error);
       });
     }
-  }, [selectedPracticeId, user]);
+  }, [selectedPracticeId, user, practice.id, fetchUsersAnswer]);
   // const {
   //   selectedAnswers,
   //   showResults,

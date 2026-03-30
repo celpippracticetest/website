@@ -254,7 +254,7 @@ export default function QuestionPlayer({
   }
 
   return (
-    <div className="custom-player mt-[32px] max-w-[421px] relative flex items-center h-[60px] gap-[8px] p-[24px] bg-[#F3F3F3] border border-[#D5D6D8] rounded-[40px]">
+    <div className="custom-player mt-[32px] w-full max-w-[421px] relative flex flex-wrap items-center gap-x-2 gap-y-2 px-3 py-2.5 sm:h-[60px] sm:flex-nowrap sm:items-center sm:gap-2 sm:px-6 sm:py-0 bg-[#F3F3F3] border border-[#D5D6D8] rounded-2xl sm:rounded-[40px]">
       {showMenu && (
         <div
           ref={menuRef}
@@ -290,10 +290,10 @@ export default function QuestionPlayer({
         </div>
       )}
       <audio ref={audioRef} src={audioUrl} preload="metadata" />
-      <button onClick={togglePlay} className="btn-play shrink-0">
+      <button onClick={togglePlay} className="btn-play order-1 shrink-0">
         {isPlaying ? <SvgPause /> : <SvgTrianglePlay />}
       </button>
-      <div className="times shrink-0">
+      <div className="times order-2 min-w-0 shrink-0 text-[13px] leading-tight sm:text-[14px]">
         {Math.floor(currentTime / 60)}:
         {("0" + Math.floor(currentTime % 60)).slice(-2)} /{" "}
         {Math.floor(duration / 60)}:
@@ -305,9 +305,9 @@ export default function QuestionPlayer({
         max={duration}
         value={currentTime}
         onChange={onSeek}
-        className="slider"
+        className="slider order-4 min-h-[6px] min-w-0 flex-[1_1_100%] sm:order-3 sm:flex-1 sm:basis-auto"
       />
-      <div className="flex items-center">
+      <div className="order-3 flex items-center gap-1 shrink-0 ml-auto sm:ml-0 sm:order-4">
         <div ref={volumeRef} className="btn-volume relative shrink-0">
           <button
             onClick={() => setShowVolume(!showVolume)}

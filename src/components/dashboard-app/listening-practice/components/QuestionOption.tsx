@@ -123,18 +123,29 @@ const QuestionOption = ({
     <Box
       onClick={onClick}
       sx={{
-        px: 1.75,
-        py: 1.5,
-        borderRadius: "18px",
-        border: `1px solid ${borderColor}`,
+        px: { xs: 1.5, sm: 1.75 },
+        py: { xs: 0.5, sm: 1.5 },
+        borderRadius: { xs: 0, sm: "18px" },
+        border: {
+          xs: "none",
+          sm: `1px solid ${borderColor}`,
+        },
+        borderBottom: {
+          xs: isLastItem ? "none" : "1px solid #E2EAF6",
+          sm: "none",
+        },
         backgroundColor,
         cursor: "pointer",
         transition:
           "border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease",
         "&:hover": {
-          transform: "translateY(-1px)",
-          borderColor: isSelected ? "#8BAEFF" : "#C7D6F8",
-          backgroundColor: showResults ? backgroundColor : "#F8FBFF",
+          transform: { xs: "none", sm: "translateY(-1px)" },
+          ...(showResults
+            ? { backgroundColor }
+            : {
+                borderColor: isSelected ? "#8BAEFF" : "#C7D6F8",
+                backgroundColor: "#E7F8F3",
+              }),
         },
       }}
     >
@@ -143,6 +154,7 @@ const QuestionOption = ({
           display: "flex",
           alignItems: "flex-start",
           gap: 1.25,
+          ...(showResults ? { my: 0.5 } : {}),
         }}
       >
         {!showResults && isSelected && <SvgCheckCircle className="shrink-0" />}
@@ -174,7 +186,7 @@ const QuestionOption = ({
         <Typography
           sx={{
             flex: 1,
-            fontSize: { xs: "0.95rem", sm: "1rem" },
+            fontSize: "14px",
             lineHeight: 1.65,
             color: "#243244",
           }}

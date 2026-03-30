@@ -390,23 +390,38 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
 };
 
 export const GET = async function (req: NextRequest) {
-  const practiceId = req.nextUrl.searchParams.get("practiceId");
-  if (!practiceId) {
+  try {
+    const practiceId = req.nextUrl.searchParams.get("practiceId");
+    if (!practiceId) {
+      return NextResponse.json(
+        { message: "Practice ID is required" },
+        { status: 400 }
+      );
+    }
+    const authContext = await getAuthenticatedRequestContext(req);
+    const user = authContext?.user;
+    if (!user) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+    const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
+    const answers = await answerRepo.getAllWritingAnswers(
+      { userId: user.id, practiceId, type: "WRITING" },
+      0,
+      100
+    );
+    return NextResponse.json(answers);
+  } catch (error) {
+    console.error("GET /api/answers/writing failed:", error);
     return NextResponse.json(
-      { message: "Practice ID is required" },
-      { status: 400 }
+      {
+        message: "Failed to load answers",
+        items: [],
+        hasNextPage: false,
+        page: 1,
+        totalPages: 0,
+        totalItems: 0,
+      },
+      { status: 500 }
     );
   }
-  const authContext = await getAuthenticatedRequestContext(req);
-  const user = authContext?.user;
-  if (!user) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
-  const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
-  const answers = await answerRepo.getAllWritingAnswers(
-    { userId: user.id, practiceId, type: "WRITING" },
-    0,
-    100
-  );
-  return NextResponse.json(answers);
 };

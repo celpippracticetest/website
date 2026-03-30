@@ -262,7 +262,7 @@ const ListeningPracticeView = ({
       ) : (
         <></>
       )}
-      <div className="pl-[40px] text-[#76808F] text-[14px] mt-[24px] mb-[28px] items-center flex gap-[8px]">
+      <div className="w-full min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1 pl-0 screen744:pl-[40px] text-[#76808F] text-[14px] mt-[-35px] mb-[28px]">
         <div
           className="cursor-pointer"
           onClick={() => {
@@ -281,7 +281,7 @@ const ListeningPracticeView = ({
           Listening
         </div>
         <SvgChevronRightForTitle />
-        <span className="text-[#212E42]">
+        <span className="min-w-0 max-w-full break-words text-[#212E42]">
           <span className="text-[#76808F]">
             {task.taskNumber?.replace(" #", "")}
           </span>
@@ -300,10 +300,10 @@ const ListeningPracticeView = ({
           selectedTaskId={selectedTaskId}
           completedPractice={completedPractice}
         />
-        <Card className="bg-white/90 flex flex-col overflow-scroll border border-[#D5D6D8] w-full">
-          <div className="flex justify-between lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row  w-full  h-auto bg-[#FFEBD6]">
-            <div className="flex gap-2 w-full items-start justify-between flex-col">
-              <h1 className="text-[18px] font-bold text-[#212E42]">
+        <Card className="bg-white/90 flex flex-col overflow-auto border border-[#D5D6D8] w-full">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 lg:gap-4 px-6 py-4 border-b border-[#D5D6D8] w-full min-w-0 h-auto bg-[#FFEBD6]">
+            <div className="flex w-full min-w-0 flex-col items-start gap-2 lg:flex-1 lg:w-auto lg:min-w-0">
+              <h1 className="text-[18px] font-bold text-[#212E42] break-words">
                 {page === "instructions"
                   ? "Instruction"
                   : practice.passages[passageIndex].title}
@@ -315,22 +315,22 @@ const ListeningPracticeView = ({
             </div>
 
             {page !== "instructions" ? (
-              <div className="flex items-center gap-2 justify-end pb-[10px] ">
-                {page === "question" && (
-                  <div className="flex justify-center items-center lg:flex-row flex-col">
-                    <div className="text-[14px] font-semibold gap-2 text-center text-[#EE4266] flex items-center">
-                      <p>
-                        {time > 0
-                          ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
-                          }`
-                          : "Time's Up!"}
-                      </p>
+              <div className="flex w-full min-w-0 shrink-0 flex-row flex-nowrap items-center justify-end gap-2 overflow-x-auto pb-[10px] lg:w-auto lg:min-w-fit lg:flex-none lg:gap-2 lg:overflow-visible lg:pb-0">
+                  {page === "question" && (
+                    <div className="flex shrink-0 justify-center items-center lg:flex-row flex-col">
+                      <div className="text-[14px] font-semibold gap-2 text-center text-[#EE4266] flex items-center">
+                        <p>
+                          {time > 0
+                            ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
+                            }`
+                            : "Time's Up!"}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
-                <button
-                  hidden={page === "problem" && passageIndex === 0}
-                  onClick={() => {
+                  )}
+                  <button
+                    hidden={page === "problem" && passageIndex === 0}
+                    onClick={() => {
                     if (page == "problem" && passageIndex == 0) {
                       setPage("instructions");
                     } else if (page == "problem" && passageIndex > 0) {
@@ -368,10 +368,10 @@ const ListeningPracticeView = ({
                         : 30
                     );
                   }}
-                  className="cursor-pointer shrink-0 w-[40px] h-[40px] border flex items-center justify-center border-[#37465C] rounded-[100%]"
-                >
-                  <ArrowBack sx={{ fontSize: 18 }} />
-                </button>
+                    className="cursor-pointer shrink-0 w-[40px] h-[40px] border flex items-center justify-center border-[#37465C] rounded-[100%]"
+                  >
+                    <ArrowBack sx={{ fontSize: 18 }} />
+                  </button>
                 <button
                   onClick={() => {
                     if (page == "instructions" && passageIndex == 0) {
@@ -422,10 +422,10 @@ const ListeningPracticeView = ({
                     }
                     setTime(initialTime);
                   }}
-                  className={`cursor-pointer text-[14px] font-normal  inline-flex items-center justify-center rounded-[24px] ${page !== "answer"
-                    ? "bg-white"
-                    : "bg-green-100 text-gray-900 "
-                    } bg-white w-[96px] h-[40px]`}
+                  className={`cursor-pointer shrink-0 text-[14px] font-medium inline-flex items-center justify-center gap-1 rounded-[24px] w-[96px] min-h-[40px] px-2 sm:px-3 ${page !== "answer"
+                    ? "bg-[#4A7DFF] text-white lg:bg-white lg:text-[#212E42] lg:font-normal"
+                    : "bg-green-100 text-gray-900"
+                    }`}
                 >
                   {page === "answer" && practiceIndex >= allPractices.length - 1
                     ? "Start again"
@@ -494,7 +494,7 @@ const ListeningPracticeView = ({
                           setPage("problem");
                         }}
                         variant="outline"
-                        className="cursor-pointer rounded-[24px] text-[14px] bg-[#4A7DFF] inline-flex items-center justify-center  font-normal text-white  h-[40px] w-[96px] mt-[32px]"
+                        className="cursor-pointer rounded-[24px] text-[14px] bg-[#4A7DFF] inline-flex items-center justify-center font-normal text-white h-[40px] w-full max-w-full screen744:w-[96px] mt-[32px]"
                         aria-label="Next testimonial"
                       >
                         Next
@@ -543,10 +543,24 @@ const ListeningPracticeView = ({
                         {isOpen ? "Hide Transcript" : "Show Transcript"}
                       </button>
 
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPage("question");
+                          setQuestionIndexInPractice(questionIndexInPractice + 1);
+                          setTime(initialTime);
+                        }}
+                        className="cursor-pointer text-[14px] font-medium inline-flex items-center justify-center gap-1 rounded-[24px] w-full max-w-[153px] h-[40px] px-4 bg-[#4A7DFF] text-white mt-4"
+                        aria-label="Go to questions"
+                      >
+                        Next
+                        <ArrowForward sx={{ fontSize: 18 }} />
+                      </button>
+
                       {isOpen && (
-                        <div className="w-full mx-auto mt-[16px] border border-[#D5D6D8] rounded-[12px]">
+                        <div className="w-full mx-auto mt-[16px] border-0 sm:border sm:border-[#D5D6D8] rounded-none sm:rounded-[12px]">
                           <div className="">
-                            <div className="max-w-[450px] flex flex-col gap-[16px] p-[16px]">
+                            <div className="max-w-[450px] flex flex-col gap-[16px] p-0 sm:p-[16px]">
                               {practice.passages[
                                 passageIndex
                               ].conversation?.map((con, index) => {
@@ -556,11 +570,11 @@ const ListeningPracticeView = ({
                                       className={`${index % 2 == 0
                                         ? "bg-[#FFEBD6]"
                                         : "bg-[#D1DEFF]"
-                                        }   inline-block leading-[16px] mr-[8px] p-[8px] rounded-[8px]  text-black h-[32px] text-[14px]  font-normal `}
+                                        } inline-block align-top leading-tight mr-[6px] sm:mr-[8px] p-[6px] sm:p-[8px] rounded-[6px] sm:rounded-[8px] text-black min-h-[26px] h-auto sm:h-[32px] sm:leading-[16px] text-[12px] sm:text-[14px] font-normal`}
                                     >
                                       {con.name}:
                                     </span>
-                                    <span className="text-[14px]  font-normal leading-[20px]">
+                                    <span className="text-[12px] font-normal leading-[18px] sm:text-[14px] sm:leading-[20px]">
                                       {" "}
                                       {con.text}
                                     </span>
@@ -605,6 +619,23 @@ const ListeningPracticeView = ({
                     }
                     onAnswerSelect={handleAnswerSelect}
                     selectedAnswers={selectedAnswers}
+                    onNext={() => {
+                      if (
+                        questionIndex <
+                        (practice.passages[passageIndex].questions?.length ?? 0) - 1
+                      ) {
+                        setQuestionIndex(questionIndex + 1);
+                        setQuestionIndexInPractice(questionIndexInPractice + 1);
+                      } else if (passageIndex < practice.passages.length - 1) {
+                        setPage("problem");
+                        setPassageIndex(passageIndex + 1);
+                        setQuestionIndex(0);
+                      } else {
+                        setPage("answer");
+                      }
+
+                      setTime(initialTime);
+                    }}
                   />
                 )}
               </div>

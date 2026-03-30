@@ -13,8 +13,13 @@ export const GlobalInteractiveProvider: React.FC = () => {
     const [activeWord, setActiveWord] = useState<string | null>(null);
     const [activeRect, setActiveRect] = useState<DOMRect | null>(null);
     const { askAboutWord } = useAskBeavoStore();
-    const { isSignedIn } = useUser();
+    const { isSignedIn, user, isLoaded: isUserLoaded } = useUser();
     const { setShowLoginModal } = useAuthModalStore();
+
+    const hoverVocabularyEnabled =
+        isUserLoaded &&
+        isSignedIn === true &&
+        user?.unsafeMetadata?.hoverVocabularyEnabled === true;
 
     const mousePos = useRef({ x: 0, y: 0 });
 
@@ -170,6 +175,21 @@ export const GlobalInteractiveProvider: React.FC = () => {
     }, [isOpen]);
 
     useEffect(() => {
+        if (!hoverVocabularyEnabled) {
+            setHoveredWord(null);
+            setVirtualRect(null);
+            setIsOpen(false);
+            setActiveWord(null);
+            setActiveRect(null);
+            if (hoverTimeoutRef.current) {
+                clearTimeout(hoverTimeoutRef.current);
+                hoverTimeoutRef.current = null;
+            }
+        }
+    }, [hoverVocabularyEnabled]);
+
+    useEffect(() => {
+        if (!hoverVocabularyEnabled) return;
         window.addEventListener("mousemove", handleMouseMove);
         // Use capture phase for click to intercept it before it reaches parent elements
         window.addEventListener("click", handleClick, { capture: true });
@@ -182,7 +202,11 @@ export const GlobalInteractiveProvider: React.FC = () => {
                 clearTimeout(hoverTimeoutRef.current);
             }
         };
-    }, [handleMouseMove, handleClick, handleScroll]);
+    }, [hoverVocabularyEnabled, handleMouseMove, handleClick, handleScroll]);
+
+    if (!hoverVocabularyEnabled) {
+        return null;
+    }
 
     return (
         <>

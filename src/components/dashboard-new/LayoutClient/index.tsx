@@ -800,7 +800,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
           className={cn(
             "flex flex-col w-full h-full screen744:!w-[calc(100%-84px)] bg-[#F4F7FF] items-end screen1280:!pt-0",
             {
-              "screen1280:m-0 mb-[120px] screen744:pt-[96px] pt-0":
+              "screen1280:m-0 mb-[120px] pt-[96px]":
                 !pathname.includes("words") && !hideMainHeaderForOfficialExam,
               "pt-[96px]":
                 pathname.includes("words") && !hideMainHeaderForOfficialExam,

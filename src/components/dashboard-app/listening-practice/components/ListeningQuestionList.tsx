@@ -2,6 +2,7 @@ import QuestionOption from "./QuestionOption";
 import { TQuestion } from "@/models/question.model";
 import QuestionPlayer from "./QuestionPlayer";
 import { useState } from "react";
+import ArrowForward from "@mui/icons-material/ArrowForward";
 import { Box, Button, Collapse, Paper, Stack, Typography } from "@mui/material";
 
 const officialFontFamily =
@@ -13,6 +14,7 @@ interface ListeningQuestionListProps {
   selectedAnswers: Record<string, string>;
   questionIndex: number;
   totalQuestions: number;
+  onNext?: () => void;
   playerVariant?: "default" | "official";
 }
 
@@ -22,10 +24,12 @@ const ListeningQuestionList = ({
   selectedAnswers,
   questionIndex,
   totalQuestions,
+  onNext,
   playerVariant = "default",
 }: ListeningQuestionListProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const isOfficialMode = playerVariant === "official";
+  const hasSelection = Boolean(selectedAnswers[questionIndex - 1]);
 
   return (
     <Box
@@ -66,15 +70,21 @@ const ListeningQuestionList = ({
           component="p"
           sx={{
             fontFamily: isOfficialMode ? officialFontFamily : undefined,
-            fontSize:
-              isOfficialMode
-                ? "16px"
-                : { xs: "1.15rem", md: "1.3rem" },
-            lineHeight: isOfficialMode ? "20px" : undefined,
+            fontSize: isOfficialMode
+              ? "16px"
+              : {
+                  xs: "0.8125rem",
+                  sm: "0.95rem",
+                  md: "1.1rem",
+                  xl: "1.3rem",
+                },
+            lineHeight: isOfficialMode ? "20px" : 1.25,
             fontWeight: isOfficialMode ? 700 : 800,
             color: isOfficialMode ? "#516D91" : "#212E42",
             textAlign:
               isOfficialMode ? "left" : { xs: "center", xl: "left" },
+            whiteSpace: isOfficialMode ? undefined : "nowrap",
+            maxWidth: "100%",
           }}
         >
           {isOfficialMode
@@ -114,9 +124,9 @@ const ListeningQuestionList = ({
                 onClick={() => setIsOpen(!isOpen)}
                 variant="outlined"
                 sx={{
-                  minWidth: "164px",
-                  minHeight: "44px",
-                  px: 2.25,
+                  minWidth: "150px",
+                  minHeight: "40px",
+                  px: 2,
                   borderRadius: "999px",
                   textTransform: "none",
                   fontWeight: 700,
@@ -158,20 +168,20 @@ const ListeningQuestionList = ({
             <Paper
               elevation={0}
               sx={{
-                mt: 4,
+                mt: { xs: 3, sm: 4 },
                 width: "100%",
                 maxWidth: "520px",
-                px: 2,
-                py: 1.5,
-                borderRadius: "16px",
+                px: { xs: 1.25, sm: 2 },
+                py: { xs: 1, sm: 1.5 },
+                borderRadius: { xs: "12px", sm: "16px" },
                 backgroundColor: "#FFF7EE",
                 border: "1px solid #FFE2C4",
               }}
             >
               <Typography
                 sx={{
-                  fontSize: "0.95rem",
-                  lineHeight: 1.7,
+                  fontSize: { xs: "0.8125rem", sm: "0.95rem" },
+                  lineHeight: { xs: 1.5, sm: 1.7 },
                   fontWeight: 600,
                   color: "#F4845F",
                 }}
@@ -191,18 +201,27 @@ const ListeningQuestionList = ({
           flex: isOfficialMode ? "0 0 50%" : 1,
           width: isOfficialMode ? "50%" : undefined,
           minHeight: isOfficialMode ? "559px" : undefined,
-          p: { xs: 3, md: 4 },
+          p: isOfficialMode ? { xs: 3, md: 4 } : { xs: 0, sm: 3, md: 4 },
           backgroundColor: isOfficialMode ? "#EAF2FF" : undefined,
         }}
       >
-        <Stack spacing={2.25} key={question.id}>
+        <Stack
+          spacing={2.25}
+          key={question.id}
+          sx={{
+            "& > :nth-child(3)": {
+              mt: 0,
+            },
+          }}
+        >
           <Typography
             sx={{
               fontFamily: isOfficialMode ? officialFontFamily : undefined,
-              fontSize: isOfficialMode ? "12px" : "0.92rem",
-              lineHeight: isOfficialMode ? "19px" : undefined,
+              fontSize: isOfficialMode ? "12px" : "14px",
+              lineHeight: isOfficialMode ? "19px" : 1.5,
               fontWeight: isOfficialMode ? 400 : 600,
               color: isOfficialMode ? "#5E7088" : "#526071",
+              px: isOfficialMode ? 0 : "4px",
             }}
           >
             Question {questionIndex} of {totalQuestions}
@@ -225,9 +244,11 @@ const ListeningQuestionList = ({
           </Typography>
           <Stack
             component={isOfficialMode ? "ol" : "div"}
-            spacing={isOfficialMode ? 0 : 1.25}
+            spacing={isOfficialMode ? 0 : { xs: 0, sm: 1.25 }}
             sx={{
               m: 0,
+              p: 0,
+              pt: "15px",
               pl: isOfficialMode ? "18px" : 0,
             }}
           >
@@ -245,6 +266,30 @@ const ListeningQuestionList = ({
               />
             ))}
           </Stack>
+          {!isOfficialMode && hasSelection && onNext && (
+            <Button
+              onClick={onNext}
+              endIcon={<ArrowForward sx={{ fontSize: 18 }} />}
+              variant="contained"
+              disableElevation
+              sx={{
+                mt: 0,
+                textTransform: "none",
+                fontWeight: 700,
+                minWidth: "150px",
+                minHeight: "40px",
+                px: 2,
+                  borderRadius: "0px",
+                backgroundColor: "#4A7DFF",
+                color: "#FFFFFF",
+                "&:hover": {
+                  backgroundColor: "#3F6FD8",
+                },
+              }}
+            >
+              Next
+            </Button>
+          )}
         </Stack>
       </Box>
     </Box>

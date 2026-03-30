@@ -32,7 +32,13 @@ export default function TrackedLink({
   };
 
   return (
-    <Link href={href} className={className} onClick={handleClick} {...props}>
+    <Link
+      href={href}
+      className={className}
+      onClick={handleClick}
+      suppressHydrationWarning
+      {...props}
+    >
       {children}
     </Link>
   );

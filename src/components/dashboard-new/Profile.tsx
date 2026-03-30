@@ -24,6 +24,7 @@ import {
   getSubscriptionDisplayName,
   hasPaidPracticeAccess,
 } from "@/lib/subscriptionAccess";
+import { Switch } from "@/components/ui/switch";
 export default function Profile({ prevCheckout, subscriptionData }: any) {
   const { user, isLoaded: isUserLoaded } = useUser();
   const [planNameDisplay, setPlanNameDisplay] = useState<string>("");
@@ -467,6 +468,34 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
   const [sessions, setSessions] = useState<any[]>([]);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error">("success");
+  const [vocabHoverSaving, setVocabHoverSaving] = useState(false);
+
+  const hoverVocabularyEnabled =
+    user?.unsafeMetadata?.hoverVocabularyEnabled === true;
+
+  const handleHoverVocabularyToggle = async (checked: boolean) => {
+    if (!user) return;
+    setVocabHoverSaving(true);
+    try {
+      await user.update({
+        unsafeMetadata: {
+          ...(typeof user.unsafeMetadata === "object" && user.unsafeMetadata !== null
+            ? user.unsafeMetadata
+            : {}),
+          hoverVocabularyEnabled: checked,
+        },
+      });
+      await user.reload();
+    } catch (error) {
+      console.error(error);
+      setToastType("error");
+      setToastMessage("Could not update preference. Please try again.");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } finally {
+      setVocabHoverSaving(false);
+    }
+  };
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -741,6 +770,24 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
                 </span>
               )}
             </div>
+          </div>
+          <div className="h-[1px] mt-[24px] bg-[#D5D6D8]"></div>
+          <div className="mt-[24px] flex flex-wrap items-center justify-between gap-4">
+            <div className="flex min-w-0 max-w-[560px] flex-col gap-[8px]">
+              <span className="text-[#212E42] text-[16px] font-medium">
+                Hover to save vocabulary
+              </span>
+              <span className="text-[14px] font-normal text-[#76808F]">
+                When enabled, hovering a word during practice shows a menu to
+                save it to your vocabulary list or ask the AI.
+              </span>
+            </div>
+            <Switch
+              checked={hoverVocabularyEnabled}
+              onCheckedChange={(v) => void handleHoverVocabularyToggle(v)}
+              disabled={vocabHoverSaving}
+              aria-label="Enable hover to save vocabulary"
+            />
           </div>
         </div>
         <div className="flex flex-col h-auto  mt-[16px] rounded-[8px] bg-white p-[16px]">

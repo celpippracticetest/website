@@ -12,10 +12,22 @@ function flattenPracticeQuestions(practice: TPracticeDto) {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const parseResult = ListeningAndReadingAnswerSchemaRequest.safeParse(body);
+  try {
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ message: "Invalid JSON" }, { status: 400 });
+    }
+    const parseResult = ListeningAndReadingAnswerSchemaRequest.safeParse(body);
 
-  if (parseResult.success) {
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { message: parseResult.error.errors },
+        { status: 400 }
+      );
+    }
+
     const authContext = await getAuthenticatedRequestContext(req);
     const user = authContext?.user;
     if (!user) {
@@ -67,41 +79,50 @@ export async function POST(req: NextRequest) {
       result: createdAnswer,
       overall: overall,
     });
-  } else {
+  } catch (error) {
+    console.error("POST /api/answers failed:", error);
     return NextResponse.json(
-      { message: parseResult.error.errors },
-      { status: 400 }
+      { message: "Failed to save answers", result: null },
+      { status: 500 }
     );
   }
 }
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const practiceId = searchParams.get("practiceId");
-  const type = searchParams.get("type");
+  try {
+    const { searchParams } = new URL(req.url);
+    const practiceId = searchParams.get("practiceId");
+    const type = searchParams.get("type");
 
-  if (!practiceId || !type) {
+    if (!practiceId || !type) {
+      return NextResponse.json(
+        { message: "Missing required query parameters" },
+        { status: 400 }
+      );
+    }
+
+    const authContext = await getAuthenticatedRequestContext(req);
+    const userId = authContext?.userId;
+    if (!userId) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const answerRepo = new ListeningAndReadingAnswerRepository(mongoClient);
+    const answer = await answerRepo.findAnswerByPracticeAndUser(
+      practiceId,
+      userId
+    );
+
+    if (!answer) {
+      return NextResponse.json({ message: "Answer not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ answers: answer.answers });
+  } catch (error) {
+    console.error("GET /api/answers failed:", error);
     return NextResponse.json(
-      { message: "Missing required query parameters" },
-      { status: 400 }
+      { message: "Failed to load answers", answers: {} },
+      { status: 500 }
     );
   }
-
-  const authContext = await getAuthenticatedRequestContext(req);
-  const userId = authContext?.userId;
-  if (!userId) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
-
-  const answerRepo = new ListeningAndReadingAnswerRepository(mongoClient);
-  const answer = await answerRepo.findAnswerByPracticeAndUser(
-    practiceId,
-    userId
-  );
-
-  if (!answer) {
-    return NextResponse.json({ message: "Answer not found" }, { status: 404 });
-  }
-
-  return NextResponse.json({ answers: answer.answers });
 }
