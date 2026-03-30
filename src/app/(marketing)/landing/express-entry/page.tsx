@@ -77,6 +77,9 @@ const Page = () => {
   const [funnelStep, setFunnelStep] = useState<FunnelStep>('input');
   const [email, setEmail] = useState('');
   const [showExitModal, setShowExitModal] = useState(false);
+  const [exitGuideEmail, setExitGuideEmail] = useState('');
+  const [exitGuideSubmitting, setExitGuideSubmitting] = useState(false);
+  const [exitGuideError, setExitGuideError] = useState<string | null>(null);
   const [catalogPlans, setCatalogPlans] = useState<SerializedPlan[]>([]);
   const [plansLoading, setPlansLoading] = useState(true);
   const [plansError, setPlansError] = useState<string | null>(null);
@@ -159,6 +162,42 @@ const Page = () => {
         body: JSON.stringify({ email: trimmed }),
       }).catch(() => {});
       setFunnelStep('result');
+    }
+  };
+
+  const submitExitBlueprint = async () => {
+    if (exitGuideSubmitting) return;
+    const trimmed = exitGuideEmail.trim();
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+    if (!emailOk) {
+      setExitGuideError('Please enter a valid email.');
+      return;
+    }
+    setExitGuideError(null);
+    setExitGuideSubmitting(true);
+    try {
+      const res = await fetch('/api/subscribe/express-entry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: trimmed }),
+        credentials: 'same-origin',
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        message?: string;
+      };
+      if (!res.ok || data.ok === false) {
+        setExitGuideError(
+          typeof data.message === 'string' ? data.message : 'Something went wrong. Try again.',
+        );
+        return;
+      }
+      setShowExitModal(false);
+      setExitGuideEmail('');
+    } catch {
+      setExitGuideError('Something went wrong. Try again.');
+    } finally {
+      setExitGuideSubmitting(false);
     }
   };
 
@@ -514,28 +553,72 @@ const Page = () => {
         </Box>
       </Container>
 
-      <Dialog open={showExitModal} onClose={() => setShowExitModal(false)} maxWidth="xs" fullWidth>
+      <Dialog
+        open={showExitModal}
+        onClose={() => {
+          setShowExitModal(false);
+          setExitGuideError(null);
+        }}
+        maxWidth="xs"
+        fullWidth
+      >
         <DialogContent sx={{ p: 3 }}>
-          <Stack spacing={2}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '16px' }}>
-                Get a free CELPIP blueprint
-              </Typography>
-              <IconButton onClick={() => setShowExitModal(false)} size="small">
-                <CloseRoundedIcon />
-              </IconButton>
+          <Box
+            component="form"
+            noValidate
+            onSubmit={(e) => {
+              e.preventDefault();
+              void submitExitBlueprint();
+            }}
+          >
+            <Stack spacing={2}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '16px' }}>
+                  Get a free CELPIP blueprint
+                </Typography>
+                <IconButton
+                  type="button"
+                  onClick={() => {
+                    setShowExitModal(false);
+                    setExitGuideError(null);
+                  }}
+                  size="small"
+                >
+                  <CloseRoundedIcon />
+                </IconButton>
+              </Stack>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <MailRoundedIcon sx={{ color: '#C62828' }} />
+                <Typography variant="body2" sx={{ color: '#64748B' }}>
+                  Get exam-ready tips and a weekly study checklist.
+                </Typography>
+              </Stack>
+              <TextField
+                fullWidth
+                type="email"
+                name="email"
+                autoComplete="email"
+                label="Email address"
+                placeholder="name@example.com"
+                value={exitGuideEmail}
+                onChange={(e) => {
+                  setExitGuideEmail(e.target.value);
+                  if (exitGuideError) setExitGuideError(null);
+                }}
+                error={Boolean(exitGuideError)}
+                helperText={exitGuideError ?? undefined}
+                disabled={exitGuideSubmitting}
+              />
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={exitGuideSubmitting}
+                sx={{ borderRadius: 2, py: 1.2, bgcolor: '#C62828', '&:hover': { bgcolor: '#B91C1C' } }}
+              >
+                {exitGuideSubmitting ? 'Sending…' : 'Send me the guide'}
+              </Button>
             </Stack>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <MailRoundedIcon sx={{ color: '#C62828' }} />
-              <Typography variant="body2" sx={{ color: '#64748B' }}>
-                Get exam-ready tips and a weekly study checklist.
-              </Typography>
-            </Stack>
-            <TextField fullWidth type="email" label="Email address" placeholder="name@example.com" />
-            <Button variant="contained" sx={{ borderRadius: 2, py: 1.2, bgcolor: '#C62828', '&:hover': { bgcolor: '#B91C1C' } }}>
-              Send me the guide
-            </Button>
-          </Stack>
+          </Box>
         </DialogContent>
       </Dialog>
     </Box>
