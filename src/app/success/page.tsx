@@ -12,6 +12,8 @@ import {
   type SuccessUpgradeOfferForClient,
 } from "@/lib/successPageUpgrade";
 import { waitForCheckoutRecord } from "@/lib/waitForCheckoutRecord";
+import { findOrCreateClerkUserByEmail } from "@/lib/clerkGuestCheckout";
+import { getRequestOriginFromHeaders } from "@/lib/requestOrigin";
 
 export default async function Success({ searchParams }: any) {
   const params = searchParams ? await searchParams : {};
@@ -84,6 +86,59 @@ export default async function Success({ searchParams }: any) {
   };
 
   if (status === "open") redirect("/");
+
+  const guestCheckout =
+    String(checkoutMetadata.guest_checkout ?? "").toLowerCase() === "true";
+
+  // Guest landing checkout: provision Clerk user, then sign-in token before any
+  // prevCheckout shortcut (otherwise DashboardHome renders without a session).
+  if (!user && status === "complete" && guestCheckout && customerEmail?.trim()) {
+    const emailNorm = customerEmail.trim().toLowerCase();
+    const client = await clerkClient();
+    let userId: string | null = null;
+    try {
+      userId = await findOrCreateClerkUserByEmail(emailNorm);
+    } catch (e) {
+      console.error("[success] guest findOrCreateUser", e);
+      const users = await client.users.getUserList({
+        emailAddress: [emailNorm],
+        limit: 1,
+      });
+      if (users.data.length > 0) userId = users.data[0].id;
+    }
+    if (userId) {
+      const signIn = await client.signInTokens.createSignInToken({
+        userId,
+        expiresInSeconds: 900,
+      });
+      if (signIn?.url) {
+        const origin = await getRequestOriginFromHeaders();
+        const url = new URL(signIn.url);
+        url.searchParams.set("redirect_url", `${origin}/welcome/set-password`);
+        redirect(url.toString());
+      }
+    }
+  }
+
+  // Logged-out payer with an existing Clerk account (non-guest): magic link before dashboard.
+  if (!user && status === "complete" && !guestCheckout && customerEmail?.trim()) {
+    const emailNorm = customerEmail.trim().toLowerCase();
+    const client = await clerkClient();
+    const users = await client.users.getUserList({
+      emailAddress: [emailNorm],
+      limit: 1,
+    });
+    if (users.data.length > 0) {
+      const signIn = await client.signInTokens.createSignInToken({
+        userId: users.data[0].id,
+        expiresInSeconds: 900,
+      });
+      if (signIn?.url) {
+        redirect(signIn.url);
+      }
+    }
+  }
+
   const userRepo = new CheckoutRepository(mongoClient);
   let prevCheckout = await userRepo.findCheckoutBySessionId(session_id);
   if (prevCheckout === null && status === "complete") {
@@ -102,20 +157,6 @@ export default async function Success({ searchParams }: any) {
   }
 
   if (!user) {
-    const emailNorm = customerEmail?.trim().toLowerCase();
-    if (status === "complete" && emailNorm) {
-      const client = await clerkClient();
-      const users = await client.users.getUserList({ emailAddress: [emailNorm], limit: 1 });
-      if (users.data.length > 0) {
-        const signIn = await client.signInTokens.createSignInToken({
-          userId: users.data[0].id,
-          expiresInSeconds: 900,
-        });
-        if (signIn?.url) {
-          redirect(signIn.url);
-        }
-      }
-    }
     redirect("/");
   }
 
