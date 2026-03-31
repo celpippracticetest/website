@@ -1,90 +1,20 @@
-"use client";
+import { Suspense } from "react";
+import SignInPageClient from "./SignInPageClient";
 
-import { SignIn, useUser } from "@clerk/nextjs";
-import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect } from "react";
-
-export default function SignInPage() {
-  const { isSignedIn, user } = useUser();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    const gclid = searchParams.get("gclid");
-    const utmSource = searchParams.get("utm_source");
-    const utmMedium = searchParams.get("utm_medium");
-    const utmCampaign = searchParams.get("utm_campaign");
-    const utmContent = searchParams.get("utm_content");
-    const utmTerm = searchParams.get("utm_term");
-
-    if (gclid) localStorage.setItem("pending_gclid", gclid);
-    if (utmSource) localStorage.setItem("pending_utm_source", utmSource);
-    if (utmMedium) localStorage.setItem("pending_utm_medium", utmMedium);
-    if (utmCampaign) localStorage.setItem("pending_utm_campaign", utmCampaign);
-    if (utmContent) localStorage.setItem("pending_utm_content", utmContent);
-    if (utmTerm) localStorage.setItem("pending_utm_term", utmTerm);
-  }, [searchParams]);
-
-  const saveAttribution = async () => {
-    try {
-      const gclid = localStorage.getItem("pending_gclid");
-      const utm_source = localStorage.getItem("pending_utm_source");
-      const utm_medium = localStorage.getItem("pending_utm_medium");
-      const utm_campaign = localStorage.getItem("pending_utm_campaign");
-      const utm_content = localStorage.getItem("pending_utm_content");
-      const utm_term = localStorage.getItem("pending_utm_term");
-
-      if (gclid || utm_source || utm_medium || utm_campaign) {
-        const response = await fetch("/api/users/update-attribution", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            gclid,
-            utm_source,
-            utm_medium,
-            utm_campaign,
-            utm_content,
-            utm_term,
-          }),
-        });
-
-        if (response.ok) {
-          localStorage.removeItem("pending_gclid");
-          localStorage.removeItem("pending_utm_source");
-          localStorage.removeItem("pending_utm_medium");
-          localStorage.removeItem("pending_utm_campaign");
-          localStorage.removeItem("pending_utm_content");
-          localStorage.removeItem("pending_utm_term");
-        }
-      }
-    } catch (error) {
-      console.error("Failed to save attribution:", error);
-    }
-  };
-
-  useEffect(() => {
-    if (isSignedIn && user) {
-      void saveAttribution();
-      router.push("/practice-overview");
-    }
-  }, [isSignedIn, user, router]);
-
+function SignInFallback() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md">
-        <h1 className="sr-only">Sign In</h1>
-        <SignIn
-          appearance={{
-            elements: {
-              formButtonPrimary: "bg-blue-600 hover:bg-blue-700 text-white",
-              card: "shadow-lg",
-            },
-          }}
-          signUpUrl="/sign-up"
-          forceRedirectUrl="/practice-overview"
-          fallbackRedirectUrl="/practice-overview"
-        />
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+        <p className="text-center text-sm text-slate-600">Loading…</p>
       </div>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<SignInFallback />}>
+      <SignInPageClient />
+    </Suspense>
   );
 }

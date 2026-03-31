@@ -161,7 +161,7 @@ export default async function RootLayout({
 
   return (
     <html suppressHydrationWarning className={jakarta.variable} lang="en">
-      <head>
+      <head suppressHydrationWarning>
         {/* Critical preloads */}
         <link
           rel="preload"
