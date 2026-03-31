@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { stripe } from "@/lib/stripe";
 import { getRequestOriginFromHeaders } from "@/lib/requestOrigin";
+import { findOrCreateClerkUserByEmail } from "@/lib/clerkGuestCheckout";
 
 function isGuestCheckoutSessionId(id: string): boolean {
   return typeof id === "string" && id.startsWith("cs_");
@@ -48,21 +49,30 @@ export async function POST(req: NextRequest) {
     }
 
     const clerk = await clerkClient();
-    const users = await clerk.users.getUserList({
+    let users = await clerk.users.getUserList({
       emailAddress: [email],
       limit: 1,
     });
-    if (users.data.length === 0) {
-      return NextResponse.json(
-        {
-          error:
-            "Your account is still being set up. Please wait a few seconds and try again.",
-        },
-        { status: 409 }
-      );
-    }
 
-    const userId = users.data[0].id;
+    let userId: string;
+    if (users.data.length > 0) {
+      userId = users.data[0].id;
+    } else {
+      // Webhook / success-page provisioning can lag behind the UI; create the
+      // same passwordless Clerk user here (idempotent with webhook).
+      try {
+        userId = await findOrCreateClerkUserByEmail(email);
+      } catch (provisionErr) {
+        console.error("[guest-set-password] findOrCreateClerkUserByEmail", provisionErr);
+        return NextResponse.json(
+          {
+            error:
+              "We could not finish creating your account. Please try again in a few seconds.",
+          },
+          { status: 503 }
+        );
+      }
+    }
     const fn = typeof body.firstName === "string" ? body.firstName.trim() : "";
     const ln = typeof body.lastName === "string" ? body.lastName.trim() : "";
 
