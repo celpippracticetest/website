@@ -23,6 +23,8 @@ export async function findOrCreateClerkUserByEmail(rawEmail: string): Promise<st
     const created = await clerkClient.users.createUser({
       emailAddress: [normalized],
       skipPasswordRequirement: true,
+      // Required when legal consent is enabled in Clerk.
+      legalAcceptedAt: new Date(),
     });
     logger.info("Created Clerk user from guest Stripe checkout", {
       component: "clerk_guest_checkout",

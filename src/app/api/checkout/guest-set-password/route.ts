@@ -64,6 +64,8 @@ export async function POST(req: NextRequest) {
         const created = await clerk.users.createUser({
           emailAddress: [email],
           skipPasswordRequirement: true,
+          // Required when legal consent is enabled in Clerk.
+          legalAcceptedAt: new Date(),
         });
         userId = created.id;
       } catch (provisionErr: any) {
@@ -82,6 +84,15 @@ export async function POST(req: NextRequest) {
           Array.isArray((provisionErr as any).errors) &&
           (provisionErr as any).errors[0]?.message
             ? (provisionErr as any).errors[0].message
+            : null;
+
+        const provisionLongMsg =
+          provisionErr &&
+          typeof provisionErr === "object" &&
+          "errors" in provisionErr &&
+          Array.isArray((provisionErr as any).errors) &&
+          (provisionErr as any).errors[0]?.longMessage
+            ? (provisionErr as any).errors[0].longMessage
             : null;
 
         // If another request created it first, fetch again and continue.
@@ -105,8 +116,12 @@ export async function POST(req: NextRequest) {
           return NextResponse.json(
             {
               error:
+                provisionLongMsg ||
                 provisionMsg ||
-                (provisionErr && typeof provisionErr === "object" && "message" in provisionErr
+                code ||
+                (provisionErr &&
+                typeof provisionErr === "object" &&
+                "message" in provisionErr
                   ? (provisionErr as any).message
                   : null) ||
                 "We could not finish creating your account. Please try again in a few seconds.",
