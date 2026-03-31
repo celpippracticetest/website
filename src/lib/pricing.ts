@@ -128,7 +128,8 @@ export function isPremiumPlusPlan(plan: SerializedPlan) {
     planText.includes("best seller") ||
     planText.includes("best value") ||
     planText.includes("premium plus") ||
-    planText.includes("pro")
+    planText.includes("pro") ||
+    /\bplus\b/.test(planText)
   );
 }
 

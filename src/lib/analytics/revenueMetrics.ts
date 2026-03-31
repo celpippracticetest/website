@@ -50,9 +50,10 @@ export async function getRevenueMetrics(
         currency = paymentCurrency;
       }
 
-      if (planId.toLowerCase().includes("premium")) {
+      const planIdLower = planId.toLowerCase();
+      if (planIdLower.includes("premium")) {
         planRevenue.premium += amount;
-      } else if (planId.toLowerCase().includes("pro")) {
+      } else if (planIdLower.includes("pro") || planIdLower.includes("plus")) {
         planRevenue.pro += amount;
       }
     });

@@ -2,6 +2,16 @@ export function normalizePlan(plan: string | null | undefined) {
   return (plan || "").trim().toLowerCase();
 }
 
+/**
+ * Infer Premium Plus tier from Stripe/CMS product display names.
+ * Matches legacy "pro" in the name and explicit "Plus" (e.g. "Premium Plus") — same tier as `publicMetadata.plan` `pro` / `plus`.
+ */
+export function planNameIndicatesPremiumPlus(planName: string | null | undefined) {
+  const lower = (planName || "").trim().toLowerCase();
+  if (!lower) return false;
+  return lower.includes("pro") || /\bplus\b/.test(lower);
+}
+
 const PREMIUM_PLUS_GRANDFATHER_CUTOFF = new Date("2026-03-24T00:00:00.000Z");
 
 function parsePurchaseDate(purchaseDate: unknown) {

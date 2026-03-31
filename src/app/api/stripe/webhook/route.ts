@@ -13,6 +13,7 @@ import { toSerializedPlan } from "@/lib/planSerialization";
 import type { Plan } from "@/models/plans.model";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
 import { findOrCreateClerkUserByEmail } from "@/lib/clerkGuestCheckout";
+import { planNameIndicatesPremiumPlus } from "@/lib/subscriptionAccess";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -458,7 +459,7 @@ export async function POST(req: Request) {
             // Mark that user has made a purchase (no more discounts)
             hasEverPurchased: true,
             purchaseDate: new Date().toISOString(),
-            plan: (metadata.plan_name || "premium").toLowerCase().includes("pro") ? "pro" : "premium",
+            plan: planNameIndicatesPremiumPlus(metadata.plan_name) ? "pro" : "premium",
             planType: metadata.plan_name,
             purchaseAmount: (session.amount_total || 0) / 100,
             purchaseCurrency: (session.currency || "cad").toUpperCase(),
@@ -478,7 +479,7 @@ export async function POST(req: Request) {
             planExpiresAt: null,
             hasEverPurchased: true,
             purchaseDate: new Date().toISOString(),
-            plan: (metadata.plan_name || "premium").toLowerCase().includes("pro") ? "pro" : "premium",
+            plan: planNameIndicatesPremiumPlus(metadata.plan_name) ? "pro" : "premium",
             planType: metadata.plan_name,
             purchaseAmount: (session.amount_total || 0) / 100,
             purchaseCurrency: (session.currency || "cad").toUpperCase(),
@@ -695,8 +696,7 @@ export async function POST(req: Request) {
               metadata.plan_name.trim()
             ) {
               planType = metadata.plan_name;
-              const lower = metadata.plan_name.toLowerCase();
-              plan = /\bplus\b/.test(lower) ? "pro" : "premium";
+              plan = planNameIndicatesPremiumPlus(metadata.plan_name) ? "pro" : "premium";
             }
 
             if (plan) {
