@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 import SignUpPageClient from "./SignUpPageClient";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 
 function SignUpFallback() {
   return (
@@ -11,7 +13,10 @@ function SignUpFallback() {
   );
 }
 
-export default function SignUpPage() {
+export default async function SignUpPage() {
+  const { userId } = await auth();
+  if (userId) redirect("/practice-overview");
+
   return (
     <Suspense fallback={<SignUpFallback />}>
       <SignUpPageClient />

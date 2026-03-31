@@ -2,6 +2,7 @@ import "./globals.css";
 import NextTopLoader from "nextjs-toploader";
 import { Analytics } from "@vercel/analytics/react";
 import { ClerkProvider } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import { LazyLeadCapturePopup, LazyPromotionManager } from "@/components/LazyComponents";
@@ -158,6 +159,8 @@ export default async function RootLayout({
   const enableGtm =
     process.env.NODE_ENV === "production" && !baseUrl.includes("vercel.app");
   const homepageHero = await getHomepageHeroDisplay();
+  const { userId } = await auth();
+  const isSignedIn = !!userId;
 
   return (
     <html suppressHydrationWarning className={jakarta.variable} lang="en">
@@ -259,7 +262,7 @@ export default async function RootLayout({
           <ErrorBoundary>
             {children}
             <FooterWrapper>
-              <Footer isSignedIn={false} />
+              <Footer isSignedIn={isSignedIn} />
             </FooterWrapper>
           </ErrorBoundary>
           <LazyPromotionManager />

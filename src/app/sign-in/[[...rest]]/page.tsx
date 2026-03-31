@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 import SignInPageClient from "./SignInPageClient";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 
 function SignInFallback() {
   return (
@@ -11,7 +13,10 @@ function SignInFallback() {
   );
 }
 
-export default function SignInPage() {
+export default async function SignInPage() {
+  const { userId } = await auth();
+  if (userId) redirect("/practice-overview");
+
   return (
     <Suspense fallback={<SignInFallback />}>
       <SignInPageClient />
