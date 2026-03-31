@@ -69,6 +69,17 @@ const boostByLevel = (clb: number) => {
   return 12;
 };
 
+const siteTheme = {
+  pageBg: '#F4F7FF',
+  primary: '#3B82F6',
+  primaryDark: '#2563EB',
+  primarySoft: '#DBEAFE',
+  primaryText: '#1D4ED8',
+  alertBg: '#EFF6FF',
+  alertBorder: '#BFDBFE',
+  alertText: '#1E40AF',
+};
+
 const Page = () => {
   const { isSignedIn, isLoaded } = useUser();
   /** Avoid SSR vs client mismatch on Clerk + checkout action URLs */
@@ -202,8 +213,8 @@ const Page = () => {
   };
 
   return (
-    <Box sx={{ bgcolor: '#F8FAFC', minHeight: '100vh' }}>
-      <Box sx={{ bgcolor: '#C62828', color: 'white', py: 1.25 }}>
+    <Box sx={{ bgcolor: siteTheme.pageBg, minHeight: '100vh' }}>
+      <Box sx={{ bgcolor: siteTheme.primary, color: 'white', py: 1.25 }}>
         <Container maxWidth="lg">
           <Typography variant="body2" sx={{ textAlign: 'center', fontWeight: 700 }}>
             Next Express Entry draw is approaching. Improve your CELPIP score before the cutoff moves.
@@ -217,7 +228,7 @@ const Page = () => {
             <Box sx={{ width: '100%', flex: { md: 1 }, minWidth: 0 }}>
               <Chip
                 label="AI-Powered CELPIP Roadmap"
-                sx={{ mb: 2.5, bgcolor: '#FEE2E2', color: '#B91C1C', fontWeight: 700 }}
+                sx={{ mb: 2.5, bgcolor: siteTheme.primarySoft, color: siteTheme.primaryText, fontWeight: 700 }}
               />
               <Typography
                 variant="h2"
@@ -231,7 +242,7 @@ const Page = () => {
                 }}
               >
                 You could unlock up to{' '}
-                <Box component="span" sx={{ color: '#C62828' }}>
+                <Box component="span" sx={{ color: siteTheme.primaryDark }}>
                   +{boostByLevel(currentCLB)} CRS points
                 </Box>{' '}
                 with focused CELPIP improvement.
@@ -244,142 +255,6 @@ const Page = () => {
                 <Chip label="Structured AI feedback" sx={{ bgcolor: 'white' }} />
                 <Chip label="Real exam simulation" sx={{ bgcolor: 'white' }} />
               </Stack>
-            </Box>
-
-            <Box sx={{ width: '100%', flex: { md: 1 }, minWidth: 0 }}>
-              <Card elevation={0} sx={{ borderRadius: 4, border: '1px solid #E2E8F0' }}>
-                <LinearProgress
-                  variant="determinate"
-                  value={progress}
-                  sx={{ height: 8, borderTopLeftRadius: 16, borderTopRightRadius: 16, bgcolor: '#E2E8F0' }}
-                />
-                <CardContent sx={{ p: { xs: 3, md: 4 } }}>
-                  {funnelStep === 'input' && (
-                    <Stack spacing={3}>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <InsightsRoundedIcon sx={{ color: '#C62828' }} />
-                        <Typography variant="h5" sx={{ fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
-                          Score Gap Diagnosis
-                        </Typography>
-                      </Stack>
-                      <Typography variant="body2" sx={{ color: '#64748B' }}>
-                        Select your current CELPIP level:
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
-                        {[6, 7, 8, 9].map((level) => (
-                          <Box
-                            key={level}
-                            sx={{
-                              flex: {
-                                xs: '0 0 calc(50% - 6px)',
-                                md: '0 0 calc(25% - 9px)',
-                              },
-                              boxSizing: 'border-box',
-                            }}
-                          >
-                            <Button
-                              fullWidth
-                              variant={currentCLB === level ? 'contained' : 'outlined'}
-                              onClick={() => setCurrentCLB(level)}
-                              sx={{
-                                py: 1.2,
-                                borderRadius: 2.5,
-                                fontWeight: 800,
-                                ...(currentCLB === level
-                                  ? { bgcolor: '#C62828', '&:hover': { bgcolor: '#B91C1C' } }
-                                  : { borderColor: '#CBD5E1', color: '#334155' }),
-                              }}
-                            >
-                              CLB {level}
-                            </Button>
-                          </Box>
-                        ))}
-                      </Box>
-                      <Button
-                        variant="contained"
-                        size="large"
-                        onClick={goNext}
-                        endIcon={<ChevronRightRoundedIcon />}
-                        sx={{
-                          borderRadius: 2.5,
-                          py: 1.4,
-                          fontSize: '10px',
-                          fontWeight: 600,
-                          bgcolor: '#0F172A',
-                          '&:hover': { bgcolor: '#020617' },
-                        }}
-                      >
-                        Check My CRS Potential
-                      </Button>
-                    </Stack>
-                  )}
-
-                  {funnelStep === 'email' && (
-                    <Stack spacing={2.5}>
-                      <Stack spacing={1} alignItems="center" textAlign="center">
-                        <LockRoundedIcon sx={{ color: '#C62828', fontSize: 34 }} />
-                        <Typography variant="h5" sx={{ fontWeight: 800, color: '#0F172A' }}>
-                          View Full Analysis
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: '#64748B', maxWidth: 430 }}>
-                          Enter your email to unlock the complete breakdown and your recommended CLB 9 roadmap.
-                        </Typography>
-                      </Stack>
-                      <TextField
-                        fullWidth
-                        type="email"
-                        label="Email address"
-                        placeholder="name@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                      />
-                      <Button
-                        variant="contained"
-                        size="large"
-                        disabled={!email.includes('@')}
-                        onClick={goNext}
-                        sx={{ borderRadius: 2.5, py: 1.4, bgcolor: '#C62828', '&:hover': { bgcolor: '#B91C1C' } }}
-                      >
-                        Reveal My Results
-                      </Button>
-                    </Stack>
-                  )}
-
-                  {funnelStep === 'result' && (
-                    <Stack spacing={2.5}>
-                      <Alert
-                        severity="error"
-                        sx={{ borderRadius: 3, bgcolor: '#FEF2F2', border: '1px solid #FECACA', color: '#991B1B' }}
-                      >
-                        Estimated score gap: <strong>{boostByLevel(currentCLB)} CRS points</strong>
-                      </Alert>
-                      <Card variant="outlined" sx={{ borderRadius: 3, borderColor: '#E2E8F0' }}>
-                        <CardContent sx={{ p: 2.5 }}>
-                          <Stack spacing={1.5}>
-                            <Stack direction="row" justifyContent="space-between" alignItems="center">
-                              <Typography sx={{ fontWeight: 700, color: '#1E293B' }}>Writing coherence</Typography>
-                              <Chip size="small" icon={<LockRoundedIcon />} label="Locked" />
-                            </Stack>
-                            <Stack direction="row" justifyContent="space-between" alignItems="center">
-                              <Typography sx={{ fontWeight: 700, color: '#1E293B' }}>Fluency and hesitation</Typography>
-                              <Chip size="small" icon={<LockRoundedIcon />} label="Locked" />
-                            </Stack>
-                          </Stack>
-                        </CardContent>
-                      </Card>
-                      <Button
-                        href="#pricing"
-                        variant="contained"
-                        size="large"
-                        startIcon={<ArrowForwardRoundedIcon />}
-                        sx={{ borderRadius: 2.5, py: 1.4, bgcolor: '#C62828', '&:hover': { bgcolor: '#B91C1C' } }}
-                      >
-                        See Plans That Fit My Goal
-                      </Button>
-                    </Stack>
-                  )}
-                </CardContent>
-              </Card>
             </Box>
           </Stack>
         </Container>
@@ -401,7 +276,7 @@ const Page = () => {
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Card variant="outlined" sx={{ borderRadius: 3, borderColor: '#E2E8F0', height: '100%' }}>
                   <CardContent>
-                    <AutoAwesomeRoundedIcon sx={{ color: '#C62828', mb: 1 }} />
+                    <AutoAwesomeRoundedIcon sx={{ color: siteTheme.primaryDark, mb: 1 }} />
                     <Typography variant="h6" sx={{ fontWeight: 800, color: '#0F172A', mb: 1 }}>
                       Vocabulary upgrade guidance
                     </Typography>
@@ -414,7 +289,7 @@ const Page = () => {
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Card variant="outlined" sx={{ borderRadius: 3, borderColor: '#E2E8F0', height: '100%' }}>
                   <CardContent>
-                    <RecordVoiceOverRoundedIcon sx={{ color: '#C62828', mb: 1 }} />
+                    <RecordVoiceOverRoundedIcon sx={{ color: siteTheme.primaryDark, mb: 1 }} />
                     <Typography
                       variant="h6"
                       sx={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', mb: 1 }}
@@ -469,7 +344,7 @@ const Page = () => {
                       elevation={0}
                       sx={{
                         borderRadius: 3,
-                        border: `2px solid ${popular ? '#C62828' : '#E2E8F0'}`,
+                        border: `2px solid ${popular ? siteTheme.primary : '#E2E8F0'}`,
                         position: 'relative',
                         height: '100%',
                       }}
@@ -477,7 +352,7 @@ const Page = () => {
                       {popular && (
                         <Chip
                           label="Most Popular"
-                          color="error"
+                          color="primary"
                           sx={{ position: 'absolute', top: 14, right: 14, fontWeight: 700 }}
                         />
                       )}
@@ -536,7 +411,12 @@ const Page = () => {
                             variant={popular ? 'contained' : 'outlined'}
                             sx={
                               popular
-                                ? { borderRadius: 2.5, py: 1.2, bgcolor: '#C62828', '&:hover': { bgcolor: '#B91C1C' } }
+                                ? {
+                                    borderRadius: 2.5,
+                                    py: 1.2,
+                                    bgcolor: siteTheme.primary,
+                                    '&:hover': { bgcolor: siteTheme.primaryDark },
+                                  }
                                 : { borderRadius: 2.5, py: 1.2, borderColor: '#CBD5E1', color: '#1E293B' }
                             }
                           >
@@ -550,6 +430,157 @@ const Page = () => {
               })}
             </Stack>
           </Suspense>
+        </Box>
+
+        <Box sx={{ mt: 6 }}>
+          <Card elevation={0} sx={{ borderRadius: 4, border: '1px solid #E2E8F0' }}>
+            <LinearProgress
+              variant="determinate"
+              value={progress}
+              sx={{ height: 8, borderTopLeftRadius: 16, borderTopRightRadius: 16, bgcolor: '#E2E8F0' }}
+            />
+            <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+              {funnelStep === 'input' && (
+                <Stack spacing={3}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <InsightsRoundedIcon sx={{ color: siteTheme.primaryDark }} />
+                    <Typography variant="h5" sx={{ fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
+                      Score Gap Diagnosis
+                    </Typography>
+                  </Stack>
+                  <Typography variant="body2" sx={{ color: '#64748B' }}>
+                    Select your current CELPIP level:
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+                    {[6, 7, 8, 9].map((level) => (
+                      <Box
+                        key={level}
+                        sx={{
+                          flex: {
+                            xs: '0 0 calc(50% - 6px)',
+                            md: '0 0 calc(25% - 9px)',
+                          },
+                          boxSizing: 'border-box',
+                        }}
+                      >
+                        <Button
+                          fullWidth
+                          variant={currentCLB === level ? 'contained' : 'outlined'}
+                          onClick={() => setCurrentCLB(level)}
+                          sx={{
+                            py: 1.2,
+                            borderRadius: 2.5,
+                            fontWeight: 800,
+                            ...(currentCLB === level
+                              ? { bgcolor: siteTheme.primary, '&:hover': { bgcolor: siteTheme.primaryDark } }
+                              : { borderColor: '#CBD5E1', color: '#334155' }),
+                          }}
+                        >
+                          CLB {level}
+                        </Button>
+                      </Box>
+                    ))}
+                  </Box>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    onClick={goNext}
+                    endIcon={<ChevronRightRoundedIcon />}
+                    sx={{
+                      borderRadius: 2.5,
+                      py: 1.4,
+                      fontSize: '10px',
+                      fontWeight: 600,
+                      bgcolor: '#0F172A',
+                      '&:hover': { bgcolor: '#020617' },
+                    }}
+                  >
+                    Check My CRS Potential
+                  </Button>
+                </Stack>
+              )}
+
+              {funnelStep === 'email' && (
+                <Stack spacing={2.5}>
+                  <Stack spacing={1} alignItems="center" textAlign="center">
+                    <LockRoundedIcon sx={{ color: siteTheme.primaryDark, fontSize: 34 }} />
+                    <Typography variant="h5" sx={{ fontWeight: 800, color: '#0F172A' }}>
+                      View Full Analysis
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#64748B', maxWidth: 430 }}>
+                      Enter your email to unlock the complete breakdown and your recommended CLB 9 roadmap.
+                    </Typography>
+                  </Stack>
+                  <TextField
+                    fullWidth
+                    type="email"
+                    label="Email address"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                  <Button
+                    variant="contained"
+                    size="large"
+                    disabled={!email.includes('@')}
+                    onClick={goNext}
+                    sx={{
+                      borderRadius: 2.5,
+                      py: 1.4,
+                      bgcolor: siteTheme.primary,
+                      '&:hover': { bgcolor: siteTheme.primaryDark },
+                    }}
+                  >
+                    Reveal My Results
+                  </Button>
+                </Stack>
+              )}
+
+              {funnelStep === 'result' && (
+                <Stack spacing={2.5}>
+                  <Alert
+                    severity="info"
+                    sx={{
+                      borderRadius: 3,
+                      bgcolor: siteTheme.alertBg,
+                      border: `1px solid ${siteTheme.alertBorder}`,
+                      color: siteTheme.alertText,
+                    }}
+                  >
+                    Estimated score gap: <strong>{boostByLevel(currentCLB)} CRS points</strong>
+                  </Alert>
+                  <Card variant="outlined" sx={{ borderRadius: 3, borderColor: '#E2E8F0' }}>
+                    <CardContent sx={{ p: 2.5 }}>
+                      <Stack spacing={1.5}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                          <Typography sx={{ fontWeight: 700, color: '#1E293B' }}>Writing coherence</Typography>
+                          <Chip size="small" icon={<LockRoundedIcon />} label="Locked" />
+                        </Stack>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                          <Typography sx={{ fontWeight: 700, color: '#1E293B' }}>Fluency and hesitation</Typography>
+                          <Chip size="small" icon={<LockRoundedIcon />} label="Locked" />
+                        </Stack>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                  <Button
+                    href="#pricing"
+                    variant="contained"
+                    size="large"
+                    startIcon={<ArrowForwardRoundedIcon />}
+                    sx={{
+                      borderRadius: 2.5,
+                      py: 1.4,
+                      bgcolor: siteTheme.primary,
+                      '&:hover': { bgcolor: siteTheme.primaryDark },
+                    }}
+                  >
+                    See Plans That Fit My Goal
+                  </Button>
+                </Stack>
+              )}
+            </CardContent>
+          </Card>
         </Box>
       </Container>
 
@@ -588,7 +619,7 @@ const Page = () => {
                 </IconButton>
               </Stack>
               <Stack direction="row" spacing={1} alignItems="center">
-                <MailRoundedIcon sx={{ color: '#C62828' }} />
+                <MailRoundedIcon sx={{ color: siteTheme.primaryDark }} />
                 <Typography variant="body2" sx={{ color: '#64748B' }}>
                   Get exam-ready tips and a weekly study checklist.
                 </Typography>
@@ -613,7 +644,12 @@ const Page = () => {
                 type="submit"
                 variant="contained"
                 disabled={exitGuideSubmitting}
-                sx={{ borderRadius: 2, py: 1.2, bgcolor: '#C62828', '&:hover': { bgcolor: '#B91C1C' } }}
+                sx={{
+                  borderRadius: 2,
+                  py: 1.2,
+                  bgcolor: siteTheme.primary,
+                  '&:hover': { bgcolor: siteTheme.primaryDark },
+                }}
               >
                 {exitGuideSubmitting ? 'Sending…' : 'Send me the guide'}
               </Button>
