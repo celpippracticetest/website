@@ -49,6 +49,12 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
   try {
     const product: string | null = req.nextUrl.searchParams.get("product");
     const price: string | null = req.nextUrl.searchParams.get("price");
+    const purchaseType: string | null = req.nextUrl.searchParams.get("purchase_type");
+    const mockExamIdRaw: string | null = req.nextUrl.searchParams.get("mock_exam_id");
+    const mockExamId =
+      typeof mockExamIdRaw === "string" && /^[a-f0-9]{24}$/i.test(mockExamIdRaw)
+        ? mockExamIdRaw
+        : null;
     const formData =
       req.method === "GET" || req.method === "HEAD"
         ? new FormData()
@@ -458,6 +464,8 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       metadata: {
         user_id: user.id,
         plan_name: productDetails.name,
+        purchase_type: purchaseType || null,
+        mock_exam_id: mockExamId,
         referral_code: userMetadata?.referralCode || null,
         final_offer_source: finalOfferSource || null,
         challenge_mode: hasChallengePayload ? "refund_goal" : null,
@@ -477,6 +485,8 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
           metadata: {
             user_id: user.id,
             plan_name: productDetails.name,
+            purchase_type: purchaseType || null,
+            mock_exam_id: mockExamId,
             referral_code: userMetadata?.referralCode || null,
             final_offer_source: finalOfferSource || null,
             challenge_mode: hasChallengePayload ? "refund_goal" : null,

@@ -116,7 +116,8 @@ export const POST = async function (req: Request) {
         user.publicMetadata.plan as string | undefined,
         user.publicMetadata.purchaseDate,
         resolvedExamId,
-        firstReadyExamId
+        firstReadyExamId,
+        user?.publicMetadata?.purchasedMockExamIds
       )
     ) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });

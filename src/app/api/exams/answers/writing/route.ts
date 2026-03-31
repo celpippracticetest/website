@@ -34,7 +34,8 @@ export const POST = async function (req: NextRequest) {
         user.publicMetadata.plan as string | undefined,
         user.publicMetadata.purchaseDate,
         answerBody.examId,
-        firstReadyExamId
+        firstReadyExamId,
+        user?.publicMetadata?.purchasedMockExamIds
       )
     ) {
       return NextResponse.json(

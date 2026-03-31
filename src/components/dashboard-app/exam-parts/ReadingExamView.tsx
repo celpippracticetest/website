@@ -247,7 +247,8 @@ const ReadingExamView = ({
             user?.publicMetadata.plan as string | undefined,
             user?.publicMetadata.purchaseDate,
             resolvedExamId,
-            firstReadyExamId ?? null
+            firstReadyExamId ?? null,
+            user?.publicMetadata?.purchasedMockExamIds
           )
         : hasPremiumPlusAccess(
             user?.publicMetadata.plan as string | undefined,
@@ -262,7 +263,8 @@ const ReadingExamView = ({
             user.publicMetadata.plan as string | undefined,
             user.publicMetadata.purchaseDate,
             resolvedExamId,
-            firstReadyExamId ?? null
+            firstReadyExamId ?? null,
+            user?.publicMetadata?.purchasedMockExamIds
           )
         : hasPremiumPlusAccess(
             user.publicMetadata.plan as string | undefined,

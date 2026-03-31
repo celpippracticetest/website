@@ -35,6 +35,16 @@ function subscriptionCurrentPeriodEndUnix(sub: Stripe.Subscription): number | nu
   return end != null ? end : null;
 }
 
+function appendUniqueString(list: unknown, value: string): string[] {
+  const base = Array.isArray(list)
+    ? list.filter((item): item is string => typeof item === "string")
+    : [];
+  if (base.includes(value)) {
+    return base;
+  }
+  return [...base, value];
+}
+
 async function updateUserPublicMetadata(
   userId: string,
   newFields: Record<string, any>
@@ -407,6 +417,8 @@ export async function POST(req: Request) {
         // Get user metadata to check for any existing discounts
         const user = await clerkClient.users.getUser(metadata.user_id);
         const userMetadata = user.publicMetadata as any;
+        const isMockExamPurchase = metadata.purchase_type === "mock_exam";
+        const purchasedMockExamId = metadata.mock_exam_id;
 
         // Check if user has any discount fields that need to be cleared
         const hasDiscountFields =
@@ -416,7 +428,24 @@ export async function POST(req: Request) {
           userMetadata?.couponId ||
           userMetadata?.couponCode;
 
-        if (hasDiscountFields) {
+        if (isMockExamPurchase && purchasedMockExamId) {
+          await updateUserPublicMetadata(metadata.user_id, {
+            planCancelled: false,
+            hasEverPurchased: true,
+            purchaseDate: new Date().toISOString(),
+            purchaseAmount: (session.amount_total || 0) / 100,
+            purchaseCurrency: (session.currency || "cad").toUpperCase(),
+            totalSpend:
+              ((userMetadata.totalSpend as number) || 0) +
+              ((session.amount_total || 0) / 100),
+            purchasedMockExamIds: appendUniqueString(
+              userMetadata.purchasedMockExamIds,
+              purchasedMockExamId
+            ),
+            lastMockExamPurchaseId: purchasedMockExamId,
+            lastMockExamPurchaseAt: new Date().toISOString(),
+          });
+        } else if (hasDiscountFields) {
           // Clear all discount fields after any successful purchase
           await updateUserPublicMetadata(metadata.user_id, {
             planCancelled: false,

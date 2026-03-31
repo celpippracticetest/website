@@ -52,6 +52,7 @@ const ExamOverview = ({
   const purchaseDate = user?.publicMetadata?.purchaseDate as
     | string
     | undefined;
+  const purchasedMockExamIds = user?.publicMetadata?.purchasedMockExamIds;
   const signedInFreeUser =
     isLoaded &&
     isSignedIn &&
@@ -61,7 +62,13 @@ const ExamOverview = ({
     Boolean(
       isLoaded &&
         isSignedIn &&
-        hasMockExamAccess(plan, purchaseDate, exam.id, firstReadyExamId)
+        hasMockExamAccess(
+          plan,
+          purchaseDate,
+          exam.id,
+          firstReadyExamId,
+          purchasedMockExamIds
+        )
     );
   const needsPremiumPlusUpgrade =
     isLoaded &&
@@ -70,7 +77,12 @@ const ExamOverview = ({
     !hasPremiumPlusAccess(plan, purchaseDate);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [upgradeSubmitting, setUpgradeSubmitting] = useState(false);
+  const [mockBuySubmittingExamId, setMockBuySubmittingExamId] = useState<
+    string | null
+  >(null);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
+  const mockExamPrice = "$4.99";
+  const mockCheckoutPriceId = process.env.NEXT_PUBLIC_STRIPE_MOCK_EXAM_PRICE_ID;
 
   const { setSelectedExam } = useSelectedExam();
 
@@ -129,12 +141,20 @@ const ExamOverview = ({
     if (!isLoaded) {
       return;
     }
-    if (noUser) {
-      setShowLoginModal(true);
-      return;
-    }
-    if (signedInFreeUser) {
-      router.push("/pricing");
+    if (noUser || signedInFreeUser) {
+      if (!mockCheckoutPriceId) {
+        setUpgradeError("Mock checkout is not configured. Please contact support.");
+        return;
+      }
+      const checkoutBase = noUser
+        ? "/api/checkout_session/guest"
+        : "/api/checkout_session";
+      const checkoutUrl = new URL(checkoutBase, window.location.origin);
+      checkoutUrl.searchParams.set("price", mockCheckoutPriceId);
+      checkoutUrl.searchParams.set("purchase_type", "mock_exam");
+      checkoutUrl.searchParams.set("mock_exam_id", exam.id);
+      setMockBuySubmittingExamId(exam.id);
+      window.location.href = checkoutUrl.toString();
       return;
     }
     if (needsPremiumPlusUpgrade) {
@@ -412,6 +432,7 @@ const ExamOverview = ({
                     variant="contained"
                     disabled={
                       !isLoaded ||
+                      mockBuySubmittingExamId === exam.id ||
                       (needsPremiumPlusUpgrade &&
                         exam.id !== firstReadyExamId &&
                         upgradeSubmitting)
@@ -432,7 +453,13 @@ const ExamOverview = ({
                     }}
                   >
                     {signedInFreeUser
-                      ? "Subscribe"
+                      ? mockBuySubmittingExamId === exam.id
+                        ? "Redirecting…"
+                        : `Buy for ${mockExamPrice}`
+                      : noUser
+                        ? mockBuySubmittingExamId === exam.id
+                          ? "Redirecting…"
+                          : `Buy for ${mockExamPrice}`
                       : needsPremiumPlusUpgrade
                         ? exam.id === firstReadyExamId
                           ? "Start Full Test"

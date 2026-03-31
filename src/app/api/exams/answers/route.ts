@@ -27,7 +27,8 @@ export async function POST(req: NextRequest) {
         user.publicMetadata.plan as string | undefined,
         user.publicMetadata.purchaseDate,
         parseResult.data.examId,
-        firstReadyExamId
+        firstReadyExamId,
+        user?.publicMetadata?.purchasedMockExamIds
       )
     ) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });

@@ -190,9 +190,13 @@ export default function SignUpPageClient() {
         localStorage.removeItem("pendingReferralCode");
         localStorage.removeItem("pendingInviterName");
       }
-      router.push("/practice-overview");
+      if (guestCheckout?.sessionId) {
+        router.push("/exam-overview");
+      } else {
+        router.push("/practice-overview");
+      }
     }
-  }, [isSignedIn, user, router]);
+  }, [guestCheckout?.sessionId, isSignedIn, user, router]);
 
   const rawCheckoutSession = searchParams.get("checkout_session")?.trim();
   const verifyingGuestCheckout =

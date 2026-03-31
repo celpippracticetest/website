@@ -236,7 +236,8 @@ const ResultExamView = ({
         user.publicMetadata.plan as string | undefined,
         user.publicMetadata.purchaseDate,
         exams.id,
-        firstReadyExamId
+        firstReadyExamId,
+        user?.publicMetadata?.purchasedMockExamIds
       ))
   ) {
     route.push("exam-overview");

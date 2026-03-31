@@ -60,8 +60,15 @@ export function hasMockExamAccess(
   plan: string | null | undefined,
   purchaseDate: unknown,
   examId: string | null | undefined,
-  firstReadyExamId: string | null | undefined
+  firstReadyExamId: string | null | undefined,
+  purchasedMockExamIds?: unknown
 ) {
+  const purchasedIds = Array.isArray(purchasedMockExamIds)
+    ? purchasedMockExamIds.filter((item): item is string => typeof item === "string")
+    : [];
+  if (examId && purchasedIds.includes(examId)) {
+    return true;
+  }
   if (hasPremiumPlusAccess(plan)) {
     return true;
   }

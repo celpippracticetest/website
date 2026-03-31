@@ -58,7 +58,8 @@ const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
         plan,
         user?.publicMetadata?.purchaseDate as string | undefined,
         examId,
-        firstReadyExamId
+        firstReadyExamId,
+        user?.publicMetadata?.purchasedMockExamIds
       ))
   ) {
     redirect("/exam-overview", RedirectType.push);
