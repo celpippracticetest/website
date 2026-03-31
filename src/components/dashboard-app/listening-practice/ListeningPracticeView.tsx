@@ -17,6 +17,7 @@ import { useUser } from "@clerk/nextjs";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import LoginModal from "@/components/modal/LoginModal";
+import { CustomSignUpForm } from "@/components/auth/CustomSignUpForm";
 import SvgChevronRight from "@/components/icons/ChevronRight";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 import { ActivityLogger } from "@/lib/userActivity";
@@ -64,6 +65,7 @@ const ListeningPracticeView = ({
     : 30;
 
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSignUpModal, setShowSignUpModal] = useState(false);
   const [pointsAwarded, setPointsAwarded] = useState(false);
   const { user, isSignedIn, isLoaded } = useUser();
   const { addPoints } = useLeaguePoints();
@@ -261,6 +263,21 @@ const ListeningPracticeView = ({
         showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />
       ) : (
         <></>
+      )}
+      {showSignUpModal && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 px-4">
+          <div className="relative w-full max-w-md">
+            <button
+              type="button"
+              className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-600 shadow hover:bg-slate-100"
+              onClick={() => setShowSignUpModal(false)}
+              aria-label="Close sign up modal"
+            >
+              ×
+            </button>
+            <CustomSignUpForm className="shadow-xl" />
+          </div>
+        </div>
       )}
       <div className="w-full min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1 pl-0 screen744:pl-[40px] text-[#76808F] text-[14px] mt-[-35px] mb-[28px]">
         <div
@@ -508,7 +525,9 @@ const ListeningPracticeView = ({
                     className="flex mt-[32px] gap-[8px] text-white items-center text-[14px] font-normal justify-center cursor-pointer rounded-[24px] bg-[#4A7DFF]"
                     aria-label="Next testimonial"
                     onClick={() => {
-                      if (freeUser) {
+                      if (noUser) {
+                        setShowSignUpModal(true);
+                      } else if (freeUser) {
                         router.push("/pricing");
                       } else {
                         setShowLoginModal(true);

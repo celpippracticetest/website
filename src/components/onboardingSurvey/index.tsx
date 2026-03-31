@@ -294,6 +294,31 @@ export default function OnboardingSurvey({
     }));
   };
 
+  const handlePrimaryGoalSelect = (option: string) => {
+    setPrimaryGoal(option);
+    setSubGoal("");
+    setCustomPrimaryGoal("");
+    setCustomSubGoal("");
+
+    if (option !== "Other (please specify)") {
+      const selectedHasSubOptions = (PRIMARY_GOAL_SUB_OPTIONS[option] || []).length > 0;
+      setStep(selectedHasSubOptions ? 2 : 3);
+    }
+  };
+
+  const handleSubGoalSelect = (option: string) => {
+    setSubGoal(option);
+    if (option !== "Other (please specify)") {
+      setCustomSubGoal("");
+      setStep(3);
+    }
+  };
+
+  const handleTestDateSelect = (option: string) => {
+    setTestDate(option);
+    setStep(4);
+  };
+
   const handleNext = () => {
     if (step === 1 && primaryGoal) {
       // If primary goal has sub-options, go to step 2 (sub-options)
@@ -329,6 +354,12 @@ export default function OnboardingSurvey({
   const progressValue = (step / 4) * 100;
   const handleFlowStart = (url: string) => {
     onComplete();
+    const userPlan = (user?.publicMetadata as Record<string, unknown> | undefined)?.plan;
+    const isFreeUser = !userPlan || userPlan === "free";
+    if (isFreeUser) {
+      router.push("/final-offer");
+      return;
+    }
     router.push(url || "/practice-overview");
   };
 
@@ -466,12 +497,7 @@ export default function OnboardingSurvey({
                 {PRIMARY_GOAL_OPTIONS.map((option) => (
                   <Box
                     key={option}
-                    onClick={() => {
-                      setPrimaryGoal(option);
-                      setSubGoal("");
-                      setCustomPrimaryGoal("");
-                      setCustomSubGoal("");
-                    }}
+                    onClick={() => handlePrimaryGoalSelect(option)}
                     sx={{
                       display: "flex",
                       alignItems: "center",
@@ -492,12 +518,7 @@ export default function OnboardingSurvey({
                   >
                     <Checkbox
                       checked={primaryGoal === option}
-                      onChange={() => {
-                        setPrimaryGoal(option);
-                        setSubGoal("");
-                        setCustomPrimaryGoal("");
-                        setCustomSubGoal("");
-                      }}
+                      onChange={() => handlePrimaryGoalSelect(option)}
                       onClick={(e) => e.stopPropagation()}
                       sx={{
                         color: primaryGoal === option ? "white" : "#9CA3AF",
@@ -590,12 +611,7 @@ export default function OnboardingSurvey({
                     }}
                   >
                     <Box
-                      onClick={() => {
-                        setSubGoal(option);
-                        if (option !== "Other (please specify)") {
-                          setCustomSubGoal("");
-                        }
-                      }}
+                      onClick={() => handleSubGoalSelect(option)}
                       sx={{
                         display: "flex",
                         alignItems: "center",
@@ -617,12 +633,7 @@ export default function OnboardingSurvey({
                     >
                       <Checkbox
                         checked={subGoal === option}
-                        onChange={() => {
-                          setSubGoal(option);
-                          if (option !== "Other (please specify)") {
-                            setCustomSubGoal("");
-                          }
-                        }}
+                        onChange={() => handleSubGoalSelect(option)}
                         onClick={(e) => e.stopPropagation()}
                         sx={{
                           color: subGoal === option ? "white" : "#9CA3AF",
@@ -844,7 +855,7 @@ export default function OnboardingSurvey({
                 {TEST_DATE_OPTIONS.map((option) => (
                   <Box
                     key={option}
-                    onClick={() => setTestDate(option)}
+                    onClick={() => handleTestDateSelect(option)}
                     sx={{
                       display: "flex",
                       alignItems: "center",
@@ -865,7 +876,7 @@ export default function OnboardingSurvey({
                   >
                     <Checkbox
                       checked={testDate === option}
-                      onChange={() => setTestDate(option)}
+                      onChange={() => handleTestDateSelect(option)}
                       onClick={(e) => e.stopPropagation()}
                       sx={{
                         color: testDate === option ? "white" : "#9CA3AF",

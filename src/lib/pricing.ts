@@ -397,3 +397,99 @@ export function buildMonthlySavingsMap(plans: SerializedPlan[]) {
 
   return savingsById;
 }
+
+/**
+ * Calculates a "regular" price baseline from weekly pricing for each non-weekly plan,
+ * matching access tier (Premium vs Premium Plus).
+ */
+export function buildOriginalPriceFromWeeklyMap(plans: SerializedPlan[]) {
+  const originalPriceById = new Map<string, string>();
+
+  plans.forEach((plan, index) => {
+    if (isWeeklyPlan(plan)) {
+      return;
+    }
+
+    const weeklyPrice = weeklyUnitPriceMatchingTier(plan, plans);
+    if (weeklyPrice <= 0) {
+      return;
+    }
+
+    const planPrice = parsePrice(plan.price);
+    if (planPrice <= 0) {
+      return;
+    }
+
+    let baselineWeeks = 0;
+    if (isMonthlyPlan(plan)) {
+      baselineWeeks = 4;
+    } else if (isThreeMonthPlan(plan)) {
+      baselineWeeks = THREE_MONTH_SAVINGS_BASELINE_WEEKS;
+    } else if (isYearlyPlan(plan)) {
+      baselineWeeks = 52;
+    }
+
+    if (baselineWeeks <= 0) {
+      return;
+    }
+
+    const originalPrice = weeklyPrice * baselineWeeks;
+    if (originalPrice <= planPrice) {
+      return;
+    }
+
+    const stableId = getStablePlanId(plan, index);
+    originalPriceById.set(stableId, String(originalPrice));
+  });
+
+  return originalPriceById;
+}
+
+/**
+ * Creates short labels like "Includes 2 weeks free vs weekly" for monthly plans,
+ * derived from the same weekly baseline used for savings/original-price math.
+ */
+export function buildFreeWeeksLabelFromWeeklyMap(plans: SerializedPlan[]) {
+  const freeWeeksLabelById = new Map<string, string>();
+
+  plans.forEach((plan, index) => {
+    const isMonthly = isMonthlyPlan(plan);
+    const isThreeMonth = isThreeMonthPlan(plan);
+    if (!isMonthly && !isThreeMonth) {
+      return;
+    }
+
+    const weeklyPrice = weeklyUnitPriceMatchingTier(plan, plans);
+    if (weeklyPrice <= 0) {
+      return;
+    }
+
+    const planPrice = parsePrice(plan.price);
+    if (planPrice <= 0) {
+      return;
+    }
+
+    const baselineWeeks = isThreeMonth ? THREE_MONTH_SAVINGS_BASELINE_WEEKS : 4;
+    const includedWeeks = planPrice / weeklyPrice;
+    const freeWeeksRaw = baselineWeeks - includedWeeks;
+    if (freeWeeksRaw < 0.5) {
+      return;
+    }
+
+    const roundedFreeWeeks = Math.round(freeWeeksRaw);
+    const freeWeeks =
+      Math.abs(freeWeeksRaw - roundedFreeWeeks) <= 0.2 ? roundedFreeWeeks : freeWeeksRaw;
+    const freeWeeksText =
+      Number.isInteger(freeWeeks) || Math.abs(freeWeeks - Math.round(freeWeeks)) < 0.001
+        ? `${Math.round(freeWeeks)}`
+        : freeWeeks.toFixed(1).replace(/\.0$/, "");
+
+    const stableId = getStablePlanId(plan, index);
+    freeWeeksLabelById.set(
+      stableId,
+      `Includes ${freeWeeksText} free week${freeWeeksText === "1" ? "" : "s"}`
+    );
+  });
+
+  return freeWeeksLabelById;
+}

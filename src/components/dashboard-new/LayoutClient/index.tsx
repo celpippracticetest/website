@@ -236,6 +236,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
     setHasHydrated(true);
   }, []);
 
+
   useEffect(() => {
     const handleSize = () => {
       setDimensions({

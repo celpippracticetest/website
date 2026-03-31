@@ -28,6 +28,23 @@ export async function POST(req: NextRequest) {
   return signedCheckoutResponse(req);
 }
 
+async function resolveFinalOfferCouponId(): Promise<string> {
+  const configuredCouponId = process.env.STRIPE_FINAL_OFFER_COUPON_ID?.trim();
+  if (configuredCouponId) {
+    return configuredCouponId;
+  }
+
+  const coupon = await stripe.coupons.create({
+    percent_off: 20,
+    duration: "once",
+    name: "Onboarding final chance 20% off first period",
+    metadata: {
+      source: "onboarding_final_chance",
+    },
+  });
+  return coupon.id;
+}
+
 async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
   try {
     const product: string | null = req.nextUrl.searchParams.get("product");
@@ -276,6 +293,50 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
 
       return null;
     };
+    const challengeMode = readRequestAttribution("challenge_mode");
+    const challengeTargetClbRaw = readRequestAttribution("challenge_target_clb");
+    const challengeWindowDaysRaw = readRequestAttribution("challenge_window_days");
+    const challengeTargetClb = challengeTargetClbRaw
+      ? Number.parseFloat(challengeTargetClbRaw)
+      : NaN;
+    const challengeWindowDays = challengeWindowDaysRaw
+      ? Number.parseInt(challengeWindowDaysRaw, 10)
+      : NaN;
+    const hasChallengePayload =
+      challengeMode === "refund_goal" &&
+      Number.isFinite(challengeTargetClb) &&
+      Number.isFinite(challengeWindowDays) &&
+      challengeWindowDays > 0;
+    const challengeDeadlineIso = hasChallengePayload
+      ? new Date(Date.now() + challengeWindowDays * 24 * 60 * 60 * 1000).toISOString()
+      : null;
+
+    if (hasChallengePayload) {
+      await db.collection("users").updateOne(
+        { clerkUserId: user.id },
+        {
+          $set: {
+            challenge: {
+              mode: "refund_goal",
+              targetClb: challengeTargetClb,
+              windowDays: challengeWindowDays,
+              startsAt: new Date(),
+              deadlineAt: challengeDeadlineIso ? new Date(challengeDeadlineIso) : null,
+              status: "active",
+              updatedAt: new Date(),
+            },
+            updatedAt: new Date(),
+          },
+          $setOnInsert: {
+            clerkUserId: user.id,
+            createdAt: new Date(),
+          },
+        },
+        { upsert: true }
+      );
+    }
+    const finalOfferSource = readRequestAttribution("final_offer");
+    const isOnboardingFinalOffer = finalOfferSource === "onboarding_final_chance";
     const attributionMetadata = {
       utm_source:
         readRequestAttribution("utm_source") ||
@@ -365,8 +426,17 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
         priceId,
         hasPromotionCode: !!promotionCode,
         referralDiscountApplied,
+        isOnboardingFinalOffer,
       },
     });
+
+    let checkoutDiscounts: Array<{ promotion_code?: string; coupon?: string }> = [];
+    if (promotionCode) {
+      checkoutDiscounts = [{ promotion_code: promotionCode }];
+    } else if (isOnboardingFinalOffer && mode === "subscription") {
+      const couponId = await resolveFinalOfferCouponId();
+      checkoutDiscounts = [{ coupon: couponId }];
+    }
 
     const session: any = await stripe.checkout.sessions.create({
       customer_email: email,
@@ -383,13 +453,17 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       }),
 
       automatic_tax: { enabled: true },
-      ...(promotionCode ? {} : { allow_promotion_codes: true }),
-      // Correct way to pre-apply a promotion code on Checkout
-      ...(promotionCode && { discounts: [{ promotion_code: promotionCode }] }),
+      ...(checkoutDiscounts.length === 0 ? { allow_promotion_codes: true } : {}),
+      ...(checkoutDiscounts.length > 0 ? { discounts: checkoutDiscounts } : {}),
       metadata: {
         user_id: user.id,
         plan_name: productDetails.name,
         referral_code: userMetadata?.referralCode || null,
+        final_offer_source: finalOfferSource || null,
+        challenge_mode: hasChallengePayload ? "refund_goal" : null,
+        challenge_target_clb: hasChallengePayload ? String(challengeTargetClb) : null,
+        challenge_window_days: hasChallengePayload ? String(challengeWindowDays) : null,
+        challenge_deadline_at: challengeDeadlineIso,
         ...attributionMetadata,
         ...attributionSnapshot,
         ...pricingAbMeta,
@@ -404,6 +478,11 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
             user_id: user.id,
             plan_name: productDetails.name,
             referral_code: userMetadata?.referralCode || null,
+            final_offer_source: finalOfferSource || null,
+            challenge_mode: hasChallengePayload ? "refund_goal" : null,
+            challenge_target_clb: hasChallengePayload ? String(challengeTargetClb) : null,
+            challenge_window_days: hasChallengePayload ? String(challengeWindowDays) : null,
+            challenge_deadline_at: challengeDeadlineIso,
             ...attributionMetadata,
             ...attributionSnapshot,
             ...pricingAbMeta,
@@ -438,6 +517,11 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
           user_id: user.id,
           checkout_id: session.id,
           referral_code: userMetadata?.referralCode || null,
+          final_offer_source: finalOfferSource || null,
+          challenge_mode: hasChallengePayload ? "refund_goal" : null,
+          challenge_target_clb: hasChallengePayload ? String(challengeTargetClb) : null,
+          challenge_window_days: hasChallengePayload ? String(challengeWindowDays) : null,
+          challenge_deadline_at: challengeDeadlineIso,
           ...attributionMetadata,
           ...attributionSnapshot,
           ...pricingAbMeta,

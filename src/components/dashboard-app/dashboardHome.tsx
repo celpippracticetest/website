@@ -83,6 +83,16 @@ const DashboardHome = ({
   const displayEmail =
     session?.customer_email ?? email ?? session?.customer_details?.email ?? "-";
 
+  const goToDashboard = () => {
+    router.push("/practice-overview");
+    // Fallback for edge cases where app-router navigation is blocked/stale on success page.
+    setTimeout(() => {
+      if (window.location.pathname !== "/practice-overview") {
+        window.location.assign("/practice-overview");
+      }
+    }, 150);
+  };
+
   const handleUpgrade = async () => {
     if (!upgradeOffer || upgradeBusy) return;
     setUpgradeError(null);
@@ -100,7 +110,7 @@ const DashboardHome = ({
         setUpgradeError(data.error || "Something went wrong. Please try again.");
         return;
       }
-      router.push("/practice-overview");
+      goToDashboard();
     } catch {
       setUpgradeError("Network error. Please try again.");
     } finally {
@@ -393,7 +403,7 @@ const DashboardHome = ({
             variant="contained"
             fullWidth
             startIcon={<ArrowBack sx={{ fontSize: 16 }} />}
-            onClick={() => router.push("/practice-overview")}
+            onClick={goToDashboard}
             sx={{
               mt: 5,
               borderRadius: "24px",

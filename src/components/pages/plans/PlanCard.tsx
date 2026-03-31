@@ -72,14 +72,22 @@ const PlanCard = ({
   checkoutHiddenFields,
 }: IPlanCard) => {
   const { selectItem, beginCheckout } = useEcommerceTracking();
-  const { user } = useUser();
+  const { user, isSignedIn, isLoaded } = useUser();
   const hasDiscountValue = Number.parseFloat(discount) > 0;
   const shouldShowSavingsBadge = Boolean(savingsText) || hasDiscountValue;
   const visibleFeatures =
     typeof featureLimit === "number" ? features.slice(0, featureLimit) : features;
   const normalizedPrice = parsePrice(price);
   const billingCycle = formatBillingCycle(billingInterval, billingIntervalCount);
-  const checkoutAction = stripePriceId ? `/api/checkout_session?price=${stripePriceId}` : "";
+  const checkoutBase = !isLoaded
+    ? ""
+    : isSignedIn
+      ? "/api/checkout_session"
+      : "/api/checkout_session/guest";
+  const checkoutAction =
+    stripePriceId && checkoutBase
+      ? `${checkoutBase}?price=${encodeURIComponent(stripePriceId)}`
+      : "";
 
   const handlePlanClick = () => {
     const item = {

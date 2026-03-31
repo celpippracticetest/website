@@ -16,6 +16,7 @@ import React from "react";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
 import LoginModal from "@/components/modal/LoginModal";
+import { CustomSignUpForm } from "@/components/auth/CustomSignUpForm";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import SvgCircle from "@/components/icons/Circle";
@@ -51,6 +52,7 @@ const ReadingPracticeView = ({
 }: ReadingPracticeViewProps) => {
   const practiceCount = usePracticeCount(task.id, practice.id, task.taskNumber);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSignUpModal, setShowSignUpModal] = useState(false);
   const { user, isLoaded, isSignedIn } = useUser();
   const { addPoints } = useLeaguePoints();
   const {
@@ -211,6 +213,21 @@ const ReadingPracticeView = ({
         showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />
       ) : (
         <></>
+      )}
+      {showSignUpModal && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 px-4">
+          <div className="relative w-full max-w-md">
+            <button
+              type="button"
+              className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-600 shadow hover:bg-slate-100"
+              onClick={() => setShowSignUpModal(false)}
+              aria-label="Close sign up modal"
+            >
+              ×
+            </button>
+            <CustomSignUpForm className="shadow-xl" />
+          </div>
+        </div>
       )}
       <div className="w-full min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1 pl-0 screen744:pl-[40px] text-[#76808F] text-[14px] mt-0 mb-[28px]">
         <div
@@ -546,21 +563,32 @@ const ReadingPracticeView = ({
 
                       {!shouldShowPractice && (
                         <div className="absolute inset-0 top-20 items-center justify-center flex flex-col gap-2">
-                          <Button
-                            variant="outline"
-                            className="flex mt-[32px] gap-[8px] text-white items-center text-[14px] font-normal justify-center cursor-pointer rounded-[24px] bg-[#4A7DFF]"
-                            aria-label="Next testimonial"
-                            onClick={() => {
-                              if (freeUser) {
-                                router.push("/pricing");
-                              } else {
-                                setShowLoginModal(true);
-                              }
-                            }}
-                          >
-                            Upgrade to Pro
-                            <SvgArrowRight />
-                          </Button>
+                          {noUser ? (
+                            <Button
+                              variant="outline"
+                              className="flex mt-[32px] gap-[8px] text-white items-center text-[14px] font-normal justify-center cursor-pointer rounded-[24px] bg-[#4A7DFF]"
+                              onClick={() => setShowSignUpModal(true)}
+                            >
+                              Sign up to continue
+                              <SvgArrowRight />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              className="flex mt-[32px] gap-[8px] text-white items-center text-[14px] font-normal justify-center cursor-pointer rounded-[24px] bg-[#4A7DFF]"
+                              aria-label="Next testimonial"
+                              onClick={() => {
+                                if (freeUser) {
+                                  router.push("/pricing");
+                                } else {
+                                  setShowLoginModal(true);
+                                }
+                              }}
+                            >
+                              Upgrade to Pro
+                              <SvgArrowRight />
+                            </Button>
+                          )}
                         </div>
                       )}
                     </div>

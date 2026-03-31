@@ -17,6 +17,7 @@ import SvgArrowRight from "@/components/icons/ArrowRight";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { TWritingAnswerDto } from "@/models/answer";
 import LoginModal from "@/components/modal/LoginModal";
+import { CustomSignUpForm } from "@/components/auth/CustomSignUpForm";
 import SvgRecording from "@/components/icons/Recording";
 import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
@@ -25,6 +26,7 @@ import TrophyModal from "@/components/modal/TrophyModal";
 import StatBadge from "@/components/shared/StatBadge";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
+import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
 
 interface SpeakingPracticeViewProps {
   practice: TPracticeDto;
@@ -76,6 +78,8 @@ const SpeakingPracticeView = ({
   };
 
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSignUpModal, setShowSignUpModal] = useState(false);
+  const [quickSubscribeAction, setQuickSubscribeAction] = useState("");
   const [pointsAwarded, setPointsAwarded] = useState(false);
   const [aiFeedbackPointsAwarded, setAiFeedbackPointsAwarded] = useState(false);
   const { user, isLoaded, isSignedIn } = useUser();
@@ -123,6 +127,31 @@ const SpeakingPracticeView = ({
   const [errorAccessingMicrophone, setErrorAccessingMicrophone] =
     useState(false);
   const [needsUserInteraction, setNeedsUserInteraction] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!isLoaded) return;
+
+    (async () => {
+      try {
+        const res = await fetch("/api/plans/express-entry");
+        const data = (await res.json()) as {
+          plans?: Array<{ stripePriceId?: string }>;
+        };
+        if (!res.ok) return;
+        const stripePriceId = data.plans?.find((plan) => plan.stripePriceId)?.stripePriceId;
+        if (!stripePriceId || cancelled) return;
+        const checkoutBase = isSignedIn ? "/api/checkout_session" : "/api/checkout_session/guest";
+        setQuickSubscribeAction(`${checkoutBase}?price=${encodeURIComponent(stripePriceId)}`);
+      } catch {
+        // Fall back to /pricing when quick checkout cannot be prepared.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, isSignedIn]);
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
     let recordingTimer: NodeJS.Timeout | null = null;
@@ -434,6 +463,21 @@ const SpeakingPracticeView = ({
       ) : (
         <></>
       )}
+      {showSignUpModal && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 px-4">
+          <div className="relative w-full max-w-md">
+            <button
+              type="button"
+              className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-600 shadow hover:bg-slate-100"
+              onClick={() => setShowSignUpModal(false)}
+              aria-label="Close sign up modal"
+            >
+              ×
+            </button>
+            <CustomSignUpForm className="shadow-xl" />
+          </div>
+        </div>
+      )}
 
       <ListeningSideMenu
         allPractices={allPractices}
@@ -576,16 +620,32 @@ const SpeakingPracticeView = ({
                           className="flex mt-[32px] gap-[8px] text-white items-center text-[14px] font-normal justify-center cursor-pointer rounded-[24px] bg-[#4A7DFF]"
                           aria-label="Next testimonial"
                           onClick={() => {
-                            if (freeUser) {
+                            if (noUser) {
+                              setShowSignUpModal(true);
+                            } else if (freeUser) {
                               router.push("/pricing");
                             } else {
                               setShowLoginModal(true);
                             }
                           }}
                         >
-                          Upgrade to Pro
+                          Sign up free
                           <SvgArrowRight />
                         </Button>
+                        <form
+                          action={quickSubscribeAction || "/pricing"}
+                          method={quickSubscribeAction ? "POST" : "GET"}
+                        >
+                          <CheckoutAttributionFields />
+                          <Button
+                            type="submit"
+                            variant="outline"
+                            className="flex gap-[8px] text-white border-[#F79D65] items-center text-[14px] font-normal justify-center cursor-pointer rounded-[24px] bg-[#F79D65] hover:bg-[#ea8d53]"
+                          >
+                            Subscribe to continue
+                            <SvgArrowRight />
+                          </Button>
+                        </form>
                       </div>
                     )}
                   </div>
@@ -839,7 +899,9 @@ const SpeakingPracticeView = ({
                           className="flex mt-[32px] gap-[8px] text-white items-center text-[14px] font-normal justify-center cursor-pointer rounded-[24px] bg-[#4A7DFF]"
                           aria-label="Next testimonial"
                           onClick={() => {
-                            if (freeUser) {
+                            if (noUser) {
+                              setShowSignUpModal(true);
+                            } else if (freeUser) {
                               router.push("/pricing");
                             } else {
                               setShowLoginModal(true);
@@ -868,7 +930,22 @@ const SpeakingPracticeView = ({
                         <h3 className="text-[14px] font-semibold text-slate-800 mb-1">
                           Your Submissions:
                         </h3>
-                        {answers.map((answer: TWritingAnswerDto, index) => (
+                        {answers.map((answer: TWritingAnswerDto, index) => {
+                          const overallScore =
+                            typeof answer.overalScore === "number"
+                              ? answer.overalScore
+                              : 0;
+                          const percentage = (overallScore / 12) * 100;
+                          const scoreColor =
+                            percentage >= 66.7
+                              ? "text-green-500"
+                              : percentage >= 50
+                                ? "text-yellow-500"
+                                : percentage >= 33.3
+                                  ? "text-orange-500"
+                                  : "text-red-500";
+
+                          return (
                           <div
                             key={index}
                             className="flex px-3 py-1 justify-between border flex-shrink-0 flex-grow-0 bg-white shadow-sm cursor-pointer items-center transition-all hover:shadow-md rounded-xl h-14"
@@ -880,7 +957,7 @@ const SpeakingPracticeView = ({
                               {index + 1}.{" "}
                               {(() => {
                                 const now = new Date();
-                                const createdAt = new Date(answer.createdAt);
+                                const createdAt = new Date(answer.createdAt ?? Date.now());
                                 const diffInMs =
                                   now.getTime() - createdAt.getTime();
                                 const diffInMinutes = Math.floor(
@@ -937,49 +1014,27 @@ const SpeakingPracticeView = ({
                                   cy="20"
                                   className={cn(
                                     "stroke-current transition-all duration-500 ease-in-out",
-                                    (() => {
-                                      const percentage =
-                                        (answer.overalScore / 12) * 100;
-                                      if (percentage >= 66.7)
-                                        return "text-green-500"; // High score (8+ out of 12)
-                                      if (percentage >= 50)
-                                        return "text-yellow-500"; // Medium score (6-8 out of 12)
-                                      if (percentage >= 33.3)
-                                        return "text-orange-500"; // Low-medium score (4-6 out of 12)
-                                      return "text-red-500"; // Low score (0-4 out of 12)
-                                    })()
+                                    scoreColor
                                   )}
                                   style={{
                                     strokeDasharray: 120,
                                     strokeDashoffset:
-                                      120 - answer.overalScore * 10,
+                                      120 - overallScore * 10,
                                     transition: "stroke-dashoffset 0.5s",
                                   }}
                                 ></circle>
                               </svg>
                               <div className="absolute inset-0 flex items-center justify-center">
                                 <span
-                                  className={cn(
-                                    "font-bold text-[14px]",
-                                    (() => {
-                                      const percentage =
-                                        (answer.overalScore / 12) * 100;
-                                      if (percentage >= 66.7)
-                                        return "text-green-500"; // High score (8+ out of 12)
-                                      if (percentage >= 50)
-                                        return "text-yellow-500"; // Medium score (6-8 out of 12)
-                                      if (percentage >= 33.3)
-                                        return "text-orange-500"; // Low-medium score (4-6 out of 12)
-                                      return "text-red-500"; // Low score (0-4 out of 12)
-                                    })()
-                                  )}
+                                  className={cn("font-bold text-[14px]", scoreColor)}
                                 >
-                                  {answer.overalScore}
+                                  {overallScore}
                                 </span>
                               </div>
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>

@@ -26,6 +26,8 @@ import { useEcommerceTracking, useEngagementTracking } from "@/hooks/useTracking
 import { useUserContext } from "@/hooks/useUserContext";
 import { durationDisplayOrder, durationMeta } from "@/lib/pricingCatalog";
 import {
+  buildFreeWeeksLabelFromWeeklyMap,
+  buildOriginalPriceFromWeeklyMap,
   buildMonthlySavingsMap,
   formatBillingCycle,
   formatPlanCadPrice,
@@ -65,7 +67,7 @@ function PricingStyleOneSubscribeForm({
   pricingCheckoutFields?: Record<string, string>;
   anchorId?: string;
 }) {
-  const { user } = useUser();
+  const { user, isSignedIn, isLoaded } = useUser();
   const { selectItem, beginCheckout } = useEcommerceTracking();
 
   if (!item?.plan.stripePriceId) {
@@ -73,7 +75,18 @@ function PricingStyleOneSubscribeForm({
   }
 
   const p = item.plan;
-  const checkoutAction = `/api/checkout_session?price=${p.stripePriceId}`;
+  const stripePriceId = p.stripePriceId;
+  if (!stripePriceId) {
+    return <span className="text-sm text-slate-400">Unavailable</span>;
+  }
+  const checkoutBase = !isLoaded
+    ? ""
+    : isSignedIn
+      ? "/api/checkout_session"
+      : "/api/checkout_session/guest";
+  const checkoutAction = checkoutBase
+    ? `${checkoutBase}?price=${encodeURIComponent(stripePriceId)}`
+    : "";
   const normalizedPrice = parsePrice(p.price);
   const trackingItem = {
     item_id: p.planTitle,
@@ -118,22 +131,39 @@ function PricingStyleOneSubscribeForm({
   );
 }
 
-function pricingStyleOnePriceCell(plan: SerializedPlan | null | undefined) {
-  if (!plan) {
+function pricingStyleOnePriceCell(
+  item: GroupedPlanItem | null | undefined,
+  originalPriceFromWeeklyById: Map<string, string>,
+  freeWeeksLabelById: Map<string, string>
+) {
+  if (!item?.plan) {
     return <span className="text-slate-400">—</span>;
   }
+  const plan = item.plan;
   const cycle = formatBillingCycle(plan.billingInterval, plan.billingIntervalCount);
-  const oldP = plan.oldPrice && Number.parseFloat(plan.oldPrice) > 0;
+  const weeklyDerivedOldPrice = originalPriceFromWeeklyById.get(item.stableId);
+  const freeWeeksLabel = freeWeeksLabelById.get(item.stableId);
+  const oldP = weeklyDerivedOldPrice || (plan.oldPrice && Number.parseFloat(plan.oldPrice) > 0);
   return (
-    <div className="flex flex-col items-center gap-0.5 py-1">
+    <div className="flex flex-col items-center gap-1 py-1">
       {oldP && (
-        <span className="text-xs font-medium text-slate-400 line-through">
-          CA$ {formatPlanCadPrice(plan.oldPrice)}
-        </span>
+        <div className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-rose-700">
+          <span>Was</span>
+          <span className="relative text-xs font-semibold text-slate-500">
+            CA$ {formatPlanCadPrice(String(oldP))}
+            <span
+              className="pointer-events-none absolute left-0 top-1/2 h-[1.5px] w-full -translate-y-1/2 rounded-full bg-rose-500/90"
+              aria-hidden
+            />
+          </span>
+        </div>
       )}
       <span className="text-lg font-bold text-blue-950">
         CA$ {formatPlanCadPrice(plan.price)}
       </span>
+      {freeWeeksLabel ? (
+        <span className="text-[10px] font-medium text-emerald-700">{freeWeeksLabel}</span>
+      ) : null}
       {cycle ? (
         <span className="text-[11px] font-medium text-slate-500">per {cycle}</span>
       ) : null}
@@ -146,6 +176,8 @@ function PricingStyleOnePlanTable({
   pricingCheckoutFields,
   recommendedPlanId,
   recommendedSectionKey,
+  originalPriceFromWeeklyById,
+  freeWeeksLabelById,
 }: {
   section: {
     key: DurationGroupKey;
@@ -155,6 +187,8 @@ function PricingStyleOnePlanTable({
   pricingCheckoutFields?: Record<string, string>;
   recommendedPlanId: string | null;
   recommendedSectionKey: DurationGroupKey | null | undefined;
+  originalPriceFromWeeklyById: Map<string, string>;
+  freeWeeksLabelById: Map<string, string>;
 }) {
   const prem = section.premium;
   const plus = section.premiumPlus;
@@ -236,10 +270,10 @@ function PricingStyleOnePlanTable({
           <tr className="border-t-2 border-slate-200 bg-slate-50/90">
             <td className="px-2 py-2.5 font-semibold text-slate-800 sm:px-3">Price</td>
             <td className="px-1 py-2 text-center sm:px-3">
-              {pricingStyleOnePriceCell(prem?.plan)}
+              {pricingStyleOnePriceCell(prem, originalPriceFromWeeklyById, freeWeeksLabelById)}
             </td>
             <td className="px-1 py-2 text-center sm:px-3">
-              {pricingStyleOnePriceCell(plus?.plan)}
+              {pricingStyleOnePriceCell(plus, originalPriceFromWeeklyById, freeWeeksLabelById)}
             </td>
           </tr>
           <tr className="border-t border-slate-100 bg-white">
@@ -706,6 +740,14 @@ export default function PricingPageClient({
 
   const recommendedPlanId = recommendedPlanEntry?.stableId || null;
   const monthlySavingsById = useMemo(() => buildMonthlySavingsMap(orderedPlans), [orderedPlans]);
+  const originalPriceFromWeeklyById = useMemo(
+    () => buildOriginalPriceFromWeeklyMap(orderedPlans),
+    [orderedPlans]
+  );
+  const freeWeeksLabelById = useMemo(
+    () => buildFreeWeeksLabelFromWeeklyMap(orderedPlans),
+    [orderedPlans]
+  );
 
   const bestValuePlanEntry = useMemo(() => {
     return (
@@ -935,6 +977,8 @@ export default function PricingPageClient({
                 pricingCheckoutFields={pricingCheckoutFields}
                 recommendedPlanId={recommendedPlanId}
                 recommendedSectionKey={recommendedSection?.key}
+                originalPriceFromWeeklyById={originalPriceFromWeeklyById}
+                freeWeeksLabelById={freeWeeksLabelById}
               />
             </Box>
           </Box>

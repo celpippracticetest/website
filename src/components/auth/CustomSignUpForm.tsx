@@ -297,6 +297,8 @@ export function CustomSignUpForm({
           <p className="text-xs text-slate-500">
             By creating an account you agree to our terms and privacy policy where applicable.
           </p>
+          {/* Required by Clerk custom flows so Smart CAPTCHA can mount. */}
+          <div id="clerk-captcha" className="min-h-[1px]" />
 
           <Button
             type="submit"

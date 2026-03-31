@@ -8,9 +8,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useHasEverPurchased } from "@/hooks/useHasEverPurchased";
 
 const AuthButtons = () => {
+  type ChallengeStatus = {
+    active: boolean;
+    targetClb?: number | null;
+    daysLeft?: number | null;
+  };
   const { isSignedIn, user, isLoaded } = useUser();
   const [mounted, setMounted] = useState(false);
   const [isUserDropDownOpen, setUserDropDownOpen] = useState(false);
+  const [challengeStatus, setChallengeStatus] = useState<ChallengeStatus | null>(
+    null
+  );
   const roles = (user?.publicMetadata as Record<string, unknown> | undefined)?.["roles"] as
     | string[]
     | undefined;
@@ -36,6 +44,32 @@ const AuthButtons = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isSignedIn) {
+      setChallengeStatus(null);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/user/challenge-status", { method: "GET" });
+        const data = (await res.json()) as ChallengeStatus;
+        if (!cancelled) {
+          setChallengeStatus(data?.active ? data : { active: false });
+        }
+      } catch {
+        if (!cancelled) {
+          setChallengeStatus({ active: false });
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isSignedIn]);
 
   if (!mounted || !isLoaded) {
     return <Skeleton className="w-10 h-10 rounded-full" />;
@@ -65,6 +99,22 @@ const AuthButtons = () => {
           {isUserDropDownOpen && (
             <div className="absolute right-0 z-[100] mt-2 w-56 top-[48px] rounded-md bg-white ring-1 shadow-lg ring-black/5">
               <div className="py-1">
+                {challengeStatus?.active && (
+                  <div className="mx-2 mb-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-emerald-700">
+                      Refund Challenge Active
+                    </p>
+                    <p className="mt-1 text-[12px] font-semibold text-slate-800">
+                      Target CLB {challengeStatus.targetClb ?? "—"}{" "}
+                      <span className="font-normal text-slate-500">•</span>{" "}
+                      {typeof challengeStatus.daysLeft === "number"
+                        ? `${challengeStatus.daysLeft} day${
+                            challengeStatus.daysLeft === 1 ? "" : "s"
+                          } left`
+                        : "Deadline in progress"}
+                    </p>
+                  </div>
+                )}
                 {roles?.includes("admin") && (
                   <a
                     href="/cms/dashboard"

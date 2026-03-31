@@ -24,6 +24,7 @@ import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 // planDetails import removed
 
 import LoginModal from "@/components/modal/LoginModal";
+import { CustomSignUpForm } from "@/components/auth/CustomSignUpForm";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 import { ActivityLogger } from "@/lib/userActivity";
@@ -81,6 +82,7 @@ const WritingPracticeView = ({
   const router = useRouter();
 
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSignUpModal, setShowSignUpModal] = useState(false);
   const [pointsAwarded, setPointsAwarded] = useState(false);
   const { user, isLoaded, isSignedIn } = useUser();
   const { addPoints } = useLeaguePoints();
@@ -347,6 +349,21 @@ const WritingPracticeView = ({
       ) : (
         <></>
       )}
+      {showSignUpModal && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 px-4">
+          <div className="relative w-full max-w-md">
+            <button
+              type="button"
+              className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-600 shadow hover:bg-slate-100"
+              onClick={() => setShowSignUpModal(false)}
+              aria-label="Close sign up modal"
+            >
+              ×
+            </button>
+            <CustomSignUpForm className="shadow-xl" />
+          </div>
+        </div>
+      )}
 
       <ListeningSideMenu
         allPractices={allPractices}
@@ -450,7 +467,9 @@ const WritingPracticeView = ({
                           className="flex mt-[32px] gap-[8px] text-white items-center text-[14px] font-normal justify-center cursor-pointer rounded-[24px] bg-[#4A7DFF]"
                           aria-label="Next testimonial"
                           onClick={() => {
-                            if (freeUser) {
+                            if (noUser) {
+                              setShowSignUpModal(true);
+                            } else if (freeUser) {
                               router.push("/pricing");
                             } else {
                               setShowLoginModal(true);
@@ -683,6 +702,9 @@ const WritingPracticeView = ({
                               <p className="text-xs text-slate-800 font-medium text-center">
                                 {index + 1}.{" "}
                                 {(() => {
+                                  if (!answer.createdAt) {
+                                    return "Unknown date";
+                                  }
                                   const now = new Date();
                                   const createdAt = new Date(answer.createdAt);
                                   const diffInMs =
@@ -743,7 +765,7 @@ const WritingPracticeView = ({
                                       "stroke-current transition-all duration-500 ease-in-out",
                                       (() => {
                                         const percentage =
-                                          (answer.overalScore / 12) * 100;
+                                          ((answer.overalScore ?? 0) / 12) * 100;
                                         if (percentage >= 66.7)
                                           return "text-green-500"; // High score (8+ out of 12)
                                         if (percentage >= 50)
@@ -756,7 +778,7 @@ const WritingPracticeView = ({
                                     style={{
                                       strokeDasharray: 120,
                                       strokeDashoffset:
-                                        120 - answer.overalScore * 10,
+                                        120 - (answer.overalScore ?? 0) * 10,
                                       transition: "stroke-dashoffset 0.5s",
                                     }}
                                   ></circle>
@@ -767,7 +789,7 @@ const WritingPracticeView = ({
                                       "font-bold text-[14px]",
                                       (() => {
                                         const percentage =
-                                          (answer.overalScore / 12) * 100;
+                                          ((answer.overalScore ?? 0) / 12) * 100;
                                         if (percentage >= 66.7)
                                           return "text-green-500"; // High score (8+ out of 12)
                                         if (percentage >= 50)
@@ -778,7 +800,7 @@ const WritingPracticeView = ({
                                       })()
                                     )}
                                   >
-                                    {answer.overalScore}
+                                    {answer.overalScore ?? 0}
                                   </span>
                                 </div>
                               </div>
