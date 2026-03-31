@@ -1,14 +1,15 @@
 "use client";
 
-import { useSignUp } from "@clerk/nextjs";
+import { useSignIn, useSignUp } from "@clerk/nextjs";
 import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GoogleGLogo } from "@/components/auth/GoogleGLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { isConsumerGmailEmail } from "@/lib/gmailEmail";
 
 const REDIRECT = "/practice-overview";
 
@@ -23,8 +24,18 @@ function clerkErrMessage(err: unknown): string {
 
 type Step = "details" | "verify";
 
-export function CustomSignUpForm({ className }: { className?: string }) {
+export function CustomSignUpForm({
+  className,
+  lockedCheckoutEmail = null,
+  checkoutSessionId = null,
+}: {
+  className?: string;
+  /** Email from a verified Stripe guest checkout; field stays read-only. */
+  lockedCheckoutEmail?: string | null;
+  checkoutSessionId?: string | null;
+}) {
   const { isLoaded, signUp, setActive } = useSignUp();
+  const { isLoaded: signInLoaded, signIn } = useSignIn();
   const [step, setStep] = useState<Step>("details");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,17 +46,46 @@ export function CustomSignUpForm({ className }: { className?: string }) {
   const [oauthLoading, setOauthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isGuestPostCheckout = Boolean(checkoutSessionId && lockedCheckoutEmail?.trim());
+  const showGoogleOption = isGuestPostCheckout
+    ? isConsumerGmailEmail(lockedCheckoutEmail)
+    : true;
+  const googleReady =
+    isGuestPostCheckout && isConsumerGmailEmail(lockedCheckoutEmail) ? signInLoaded : isLoaded;
+
+  useEffect(() => {
+    if (lockedCheckoutEmail?.trim()) {
+      setEmail(lockedCheckoutEmail.trim());
+    }
+  }, [lockedCheckoutEmail]);
+
   const handleOAuthGoogle = async () => {
-    if (!signUp || oauthLoading) return;
+    if (!googleReady || oauthLoading) return;
     setError(null);
     setOauthLoading(true);
     try {
       const origin = window.location.origin;
-      await signUp.authenticateWithRedirect({
-        strategy: "oauth_google",
-        redirectUrl: `${origin}/sso-callback`,
-        redirectUrlComplete: `${origin}${REDIRECT}`,
-      });
+      if (isGuestPostCheckout && isConsumerGmailEmail(lockedCheckoutEmail)) {
+        if (!signIn) {
+          setOauthLoading(false);
+          return;
+        }
+        await signIn.authenticateWithRedirect({
+          strategy: "oauth_google",
+          redirectUrl: `${origin}/sso-callback`,
+          redirectUrlComplete: `${origin}${REDIRECT}`,
+        });
+      } else {
+        if (!signUp) {
+          setOauthLoading(false);
+          return;
+        }
+        await signUp.authenticateWithRedirect({
+          strategy: "oauth_google",
+          redirectUrl: `${origin}/sso-callback`,
+          redirectUrlComplete: `${origin}${REDIRECT}`,
+        });
+      }
     } catch (err) {
       setError(clerkErrMessage(err));
       setOauthLoading(false);
@@ -54,10 +94,52 @@ export function CustomSignUpForm({ className }: { className?: string }) {
 
   const onSubmitDetails = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isLoaded || !signUp || !setActive || oauthLoading) return;
+    if (!isLoaded || oauthLoading) return;
+    if (!checkoutSessionId && (!signUp || !setActive)) return;
     setError(null);
     setSubmitting(true);
     try {
+      if (
+        checkoutSessionId &&
+        lockedCheckoutEmail?.trim() &&
+        email.trim().toLowerCase() !== lockedCheckoutEmail.trim().toLowerCase()
+      ) {
+        setError("This email must match the one you used at checkout.");
+        setSubmitting(false);
+        return;
+      }
+
+      if (checkoutSessionId && lockedCheckoutEmail?.trim()) {
+        const res = await fetch("/api/checkout/guest-set-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId: checkoutSessionId,
+            password,
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+          }),
+        });
+        const data = (await res.json()) as { error?: string; url?: string };
+        if (!res.ok) {
+          setError(data.error || "Could not create your account. Try again.");
+          setSubmitting(false);
+          return;
+        }
+        if (data.url) {
+          window.location.assign(data.url);
+          return;
+        }
+        setError("Could not finish sign-in. Please try again.");
+        setSubmitting(false);
+        return;
+      }
+
+      if (!signUp || !setActive) {
+        setSubmitting(false);
+        return;
+      }
+
       const created = await signUp.create({
         emailAddress: email.trim(),
         password,
@@ -138,7 +220,9 @@ export function CustomSignUpForm({ className }: { className?: string }) {
         <h2 className="text-xl font-semibold tracking-tight text-slate-900">Create account</h2>
         <p className="mt-1 text-sm text-slate-600">
           {step === "details"
-            ? "Start practicing with full access to your dashboard."
+            ? isGuestPostCheckout
+              ? "Payment received. This email is from your purchase. Add a password to access your account."
+              : "Start practicing with full access to your dashboard."
             : "We emailed you a verification code."}
         </p>
       </div>
@@ -185,10 +269,15 @@ export function CustomSignUpForm({ className }: { className?: string }) {
               type="email"
               autoComplete="email"
               required
-              disabled={oauthLoading}
+              disabled={oauthLoading || !!lockedCheckoutEmail?.trim()}
+              readOnly={!!lockedCheckoutEmail?.trim()}
               value={email}
               onChange={(ev) => setEmail(ev.target.value)}
-              className="border-slate-200"
+              className={cn(
+                "border-slate-200",
+                lockedCheckoutEmail?.trim() && "cursor-not-allowed bg-slate-50 text-slate-700"
+              )}
+              aria-readonly={!!lockedCheckoutEmail?.trim()}
             />
           </div>
           <div className="space-y-2">
@@ -254,7 +343,7 @@ export function CustomSignUpForm({ className }: { className?: string }) {
         </form>
       )}
 
-      {step === "details" ? (
+      {step === "details" && showGoogleOption ? (
         <>
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
@@ -269,7 +358,7 @@ export function CustomSignUpForm({ className }: { className?: string }) {
             type="button"
             variant="outline"
             className="h-11 w-full gap-3 border-[#747775] bg-white text-[14px] font-medium text-[#1f1f1f] shadow-sm hover:bg-[#f8f9fa] hover:text-[#1f1f1f] disabled:opacity-60"
-            disabled={oauthLoading || submitting}
+            disabled={oauthLoading || submitting || !googleReady}
             onClick={handleOAuthGoogle}
             aria-busy={oauthLoading}
           >
@@ -284,18 +373,22 @@ export function CustomSignUpForm({ className }: { className?: string }) {
             ) : (
               <>
                 <GoogleGLogo className="size-[18px]" />
-                Sign up with Google
+                {isGuestPostCheckout && isConsumerGmailEmail(lockedCheckoutEmail)
+                  ? "Continue with Google"
+                  : "Sign up with Google"}
               </>
             )}
           </Button>
-
-          <p className="mt-6 text-center text-sm text-slate-600">
-            Already have an account?{" "}
-            <Link href="/sign-in" className="font-medium text-blue-600 hover:underline">
-              Sign in
-            </Link>
-          </p>
         </>
+      ) : null}
+
+      {step === "details" ? (
+        <p className="mt-6 text-center text-sm text-slate-600">
+          Already have an account?{" "}
+          <Link href="/sign-in" className="font-medium text-blue-600 hover:underline">
+            Sign in
+          </Link>
+        </p>
       ) : null}
     </div>
   );

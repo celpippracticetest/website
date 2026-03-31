@@ -12,6 +12,11 @@ export default function SignUpPageClient() {
   const searchParams = useSearchParams();
   const [referralCode, setReferralCode] = useState<string>("");
   const [inviterName, setInviterName] = useState<string>("");
+  const [guestCheckout, setGuestCheckout] = useState<{
+    sessionId: string;
+    email: string;
+  } | null>(null);
+  const [guestCheckoutError, setGuestCheckoutError] = useState<string | null>(null);
 
   useEffect(() => {
     const getCookie = (name: string) => {
@@ -48,6 +53,39 @@ export default function SignUpPageClient() {
       setInviterName(decodeURIComponent(inviter));
       localStorage.setItem("pendingInviterName", decodeURIComponent(inviter));
     }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const raw = searchParams.get("checkout_session")?.trim();
+    if (!raw?.startsWith("cs_")) {
+      setGuestCheckout(null);
+      setGuestCheckoutError(null);
+      return;
+    }
+    let cancelled = false;
+    setGuestCheckoutError(null);
+    setGuestCheckout(null);
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/checkout/guest-signup-context?session_id=${encodeURIComponent(raw)}`
+        );
+        const data = (await res.json()) as { error?: string; email?: string; sessionId?: string };
+        if (cancelled) return;
+        if (!res.ok || !data.email || !data.sessionId) {
+          setGuestCheckoutError(data.error || "Could not verify your purchase.");
+          return;
+        }
+        setGuestCheckout({ sessionId: data.sessionId, email: data.email });
+      } catch {
+        if (!cancelled) {
+          setGuestCheckoutError("Could not verify your purchase.");
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [searchParams]);
 
   useEffect(() => {
@@ -156,6 +194,10 @@ export default function SignUpPageClient() {
     }
   }, [isSignedIn, user, router]);
 
+  const rawCheckoutSession = searchParams.get("checkout_session")?.trim();
+  const verifyingGuestCheckout =
+    rawCheckoutSession?.startsWith("cs_") && !guestCheckout && !guestCheckoutError;
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="w-full max-w-md">
@@ -176,7 +218,25 @@ export default function SignUpPageClient() {
           </div>
         ) : null}
 
-        <CustomSignUpForm />
+        {guestCheckoutError ? (
+          <div
+            role="alert"
+            className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+          >
+            {guestCheckoutError}
+          </div>
+        ) : null}
+
+        {verifyingGuestCheckout ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-600 shadow-sm">
+            Verifying your purchase…
+          </div>
+        ) : (
+          <CustomSignUpForm
+            checkoutSessionId={guestCheckout?.sessionId ?? null}
+            lockedCheckoutEmail={guestCheckout?.email ?? null}
+          />
+        )}
       </div>
     </div>
   );

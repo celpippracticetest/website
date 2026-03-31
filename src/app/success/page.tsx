@@ -90,34 +90,19 @@ export default async function Success({ searchParams }: any) {
   const guestCheckout =
     String(checkoutMetadata.guest_checkout ?? "").toLowerCase() === "true";
 
-  // Guest landing checkout: provision Clerk user, then sign-in token before any
-  // prevCheckout shortcut (otherwise DashboardHome renders without a session).
+  // Guest checkout: ensure Clerk user exists (webhook may still be running), then
+  // send payer to sign-up with a locked Stripe email + password (or Google for Gmail).
   if (!user && status === "complete" && guestCheckout && customerEmail?.trim()) {
     const emailNorm = customerEmail.trim().toLowerCase();
-    const client = await clerkClient();
-    let userId: string | null = null;
     try {
-      userId = await findOrCreateClerkUserByEmail(emailNorm);
+      await findOrCreateClerkUserByEmail(emailNorm);
     } catch (e) {
       console.error("[success] guest findOrCreateUser", e);
-      const users = await client.users.getUserList({
-        emailAddress: [emailNorm],
-        limit: 1,
-      });
-      if (users.data.length > 0) userId = users.data[0].id;
     }
-    if (userId) {
-      const signIn = await client.signInTokens.createSignInToken({
-        userId,
-        expiresInSeconds: 900,
-      });
-      if (signIn?.url) {
-        const origin = await getRequestOriginFromHeaders();
-        const url = new URL(signIn.url);
-        url.searchParams.set("redirect_url", `${origin}/welcome/set-password`);
-        redirect(url.toString());
-      }
-    }
+    const origin = await getRequestOriginFromHeaders();
+    redirect(
+      `${origin}/sign-up?checkout_session=${encodeURIComponent(session_id)}`
+    );
   }
 
   // Logged-out payer with an existing Clerk account (non-guest): magic link before dashboard.
