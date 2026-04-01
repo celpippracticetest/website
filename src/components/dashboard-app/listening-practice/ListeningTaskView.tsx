@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { TPracticeDto } from "@/models/practice.model";
 import { useSearchParams } from "next/navigation";
 import { TTaskSchemaDto } from "@/models/tasks.model";
@@ -26,9 +26,14 @@ const ListeningTaskView = ({
 }: ListeningTaskViewProps) => {
   const router = useRouter();
   const { user, isLoaded } = useUser();
+  const [hasMounted, setHasMounted] = useState(false);
 
   const searchParams = useSearchParams();
   const selectedTaskId = searchParams.get("taskId");
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!selectedTaskId) {
@@ -36,7 +41,11 @@ const ListeningTaskView = ({
     }
   }, [selectedTaskId, router]);
 
-  if (!isLoaded || (user && user.publicMetadata?.plan === undefined)) {
+  if (
+    !hasMounted ||
+    !isLoaded ||
+    (user && user.publicMetadata?.plan === undefined)
+  ) {
     return <div className="text-center py-10 text-gray-500">Loading...</div>;
   }
   return (

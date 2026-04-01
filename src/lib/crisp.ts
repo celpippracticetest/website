@@ -57,3 +57,34 @@ export function openCrispChat(): void {
   window.$crisp.push(["do", "chat:show"]);
   window.$crisp.push(["do", "chat:open"]);
 }
+
+/** Session data pairs for `$crisp.push(["set", "session:data", ...])` — values: string, number, or boolean. */
+export type CrispSessionPair = [string, string | number | boolean];
+
+/**
+ * Push visitor profile into Crisp ([`set` user email / nickname, `session:data`, `session:segments`](https://docs.crisp.chat/guides/chatbox-sdks/web-sdk/dollar-crisp/)).
+ * Call after {@link ensureCrispScript} (queued safely before load via `$crisp.push`).
+ */
+export function applyCrispVisitorProfile(opts: {
+  email?: string | null;
+  nickname?: string | null;
+  sessionData: CrispSessionPair[];
+  segments?: string[];
+}): void {
+  if (typeof window === "undefined" || !window.$crisp) return;
+
+  const { email, nickname, sessionData, segments } = opts;
+
+  if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    window.$crisp.push(["set", "user:email", [email]]);
+  }
+  if (nickname?.trim()) {
+    window.$crisp.push(["set", "user:nickname", [nickname.trim()]]);
+  }
+  if (sessionData.length > 0) {
+    window.$crisp.push(["set", "session:data", [sessionData]]);
+  }
+  if (segments && segments.length > 0) {
+    window.$crisp.push(["set", "session:segments", [segments, true]]);
+  }
+}

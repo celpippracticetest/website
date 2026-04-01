@@ -7,6 +7,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import AskBeavoModal from "@/components/AskBeavo/AskBeavoModal";
 import CrispChat from "@/components/CrispChat";
+import CrispUserSync from "@/components/CrispUserSync";
 import { LazyLeadCapturePopup, LazyPromotionManager } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -251,6 +252,7 @@ export default async function RootLayout({
           <ClerkProvider>
           <AskBeavoModal />
           <CrispChat />
+          <CrispUserSync />
           {enableGtm && (
             <noscript>
               <iframe
