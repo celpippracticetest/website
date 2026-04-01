@@ -17,7 +17,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const user = await clerkClient.users.getUser(userId);
+    const clerk = await clerkClient();
+    const user = await clerk.users.getUser(userId);
     const customerId = user.privateMetadata?.stripeCustomerId as string;
 
     if (!customerId) {

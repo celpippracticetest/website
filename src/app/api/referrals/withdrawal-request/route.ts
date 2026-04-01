@@ -36,7 +36,6 @@ export async function POST(req: Request) {
 
     const { amount, paypalEmail } = parsed.data;
 
-    // Get user information (clerkClient is an object, not a function)
     const cc = await clerkClient();
     const user = await cc.users.getUser(userId);
     const userEmail =
