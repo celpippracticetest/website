@@ -9,6 +9,7 @@ import {
   safeStripePriceId,
   safeStripeProductId,
 } from "@/lib/checkoutCancelUrl";
+import { resolveCampaignPromoFromRequest } from "@/lib/campaignPromo";
 
 /**
  * GET — browser navigation uses GET. Reuse the same checkout logic as POST
@@ -122,6 +123,10 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       gclid: readRequestAttribution("gclid") ?? "",
     };
 
+    const campaignPromo = await resolveCampaignPromoFromRequest(req);
+    const campaignPromoKey = campaignPromo.campaignKey;
+    const campaignPromotionCode = campaignPromo.promotionCode;
+
     const attributionSnapshot = {
       attribution_source:
         attributionMetadata.utm_source || (attributionMetadata.gclid ? "google_ads" : "direct"),
@@ -136,7 +141,8 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       attribution_currency: priceObject.currency?.toUpperCase() ?? "",
       time_to_purchase_minutes: "",
       coupon_id: "",
-      promotion_code_id: "",
+      promotion_code_id: campaignPromotionCode ?? "",
+      campaign_promo_key: campaignPromoKey ?? "",
     };
 
     const pricingAbLayoutRaw = readRequestAttribution("pricing_ab_layout");
@@ -167,8 +173,13 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
     logger.info("Creating guest checkout session", {
       component: "checkout_session_guest_api",
       action: "create_guest_checkout_session",
-      metadata: { priceId },
+      metadata: { priceId, campaignPromoKey },
     });
+
+    const guestCheckoutDiscounts: Array<{ promotion_code: string }> = [];
+    if (campaignPromotionCode) {
+      guestCheckoutDiscounts.push({ promotion_code: campaignPromotionCode });
+    }
 
     const session = await stripe.checkout.sessions.create({
       line_items: [
@@ -182,13 +193,15 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       cancel_url: buildCheckoutCancelUrl(origin, purchasePage, { priceId }),
 
       automatic_tax: { enabled: true },
-      allow_promotion_codes: true,
+      ...(guestCheckoutDiscounts.length === 0 ? { allow_promotion_codes: true } : {}),
+      ...(guestCheckoutDiscounts.length > 0 ? { discounts: guestCheckoutDiscounts } : {}),
       metadata: {
         guest_checkout: "true",
         plan_name: productDetails.name,
         purchase_type: purchaseType || null,
         mock_exam_id: mockExamId,
         referral_code: "",
+        ...(campaignPromoKey && { campaign_promo: campaignPromoKey }),
         ...attributionMetadata,
         ...attributionSnapshot,
         ...pricingAbMeta,
@@ -201,6 +214,7 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
             purchase_type: purchaseType || null,
             mock_exam_id: mockExamId,
             referral_code: "",
+            ...(campaignPromoKey && { campaign_promo: campaignPromoKey }),
             ...attributionMetadata,
             ...attributionSnapshot,
             ...pricingAbMeta,

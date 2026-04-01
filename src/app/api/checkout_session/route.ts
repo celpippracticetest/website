@@ -10,6 +10,7 @@ import {
   safeStripePriceId,
   safeStripeProductId,
 } from "@/lib/checkoutCancelUrl";
+import { resolveCampaignPromoFromRequest } from "@/lib/campaignPromo";
 
 /** GET — same handler as POST (no self-fetch: avoids dev deadlock / invalid response). */
 export async function GET(req: NextRequest) {
@@ -234,6 +235,21 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
     //   );
     // }
 
+    let campaignPromoKey: string | null = null;
+    if (!promotionCode) {
+      const campaignPromo = await resolveCampaignPromoFromRequest(req);
+      if (campaignPromo.promotionCode) {
+        promotionCode = campaignPromo.promotionCode;
+        campaignPromoKey = campaignPromo.campaignKey;
+        logger.info("Applying campaign promo from cookie", {
+          component: "checkout_session_api",
+          action: "apply_campaign_promo",
+          userId: user.id,
+          metadata: { campaignKey: campaignPromoKey },
+        });
+      }
+    }
+
     // Create checkout session from either a direct Stripe Price ID
     // (CMS-driven plans) or a fallback Product ID (legacy env-driven plans).
     let priceId: string;
@@ -398,6 +414,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       time_to_purchase_minutes: timeToPurchaseMinutes,
       coupon_id: userMetadata?.couponId || null,
       promotion_code_id: promotionCode || null,
+      campaign_promo_key: campaignPromoKey ?? "",
     };
 
     const pricingAbLayoutRaw = readRequestAttribution("pricing_ab_layout");
@@ -433,6 +450,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
         priceId,
         hasPromotionCode: !!promotionCode,
         referralDiscountApplied,
+        campaignPromoKey,
         isOnboardingFinalOffer,
       },
     });
@@ -480,6 +498,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
           referral_discount_applied:
             userMetadata?.referralDiscount || "referral",
         }),
+        ...(campaignPromoKey && { campaign_promo: campaignPromoKey }),
       },
       ...(mode === "subscription" && {
         subscription_data: {
@@ -501,6 +520,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
               referral_discount_applied:
                 userMetadata?.referralDiscount || "referral",
             }),
+            ...(campaignPromoKey && { campaign_promo: campaignPromoKey }),
           },
         },
       }),
@@ -540,6 +560,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
             referral_discount_applied:
               userMetadata?.referralDiscount || "referral",
           }),
+          ...(campaignPromoKey && { campaign_promo: campaignPromoKey }),
         },
       });
     }

@@ -7,6 +7,7 @@ import {
 import { logger, trackUserAction, captureException } from "@/lib/sentry-logger";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { PRICING_AB_COOKIE, type PricingAbLayout } from "@/lib/pricingAbTest";
+import { applyCampaignPromoToResponse } from "@/lib/campaignPromoConfig";
 
 const isAdminRoute = createRouteMatcher(["/cms(.*)"]);
 const isProfileRoute = createRouteMatcher(["/profile(.*)"]);
@@ -100,7 +101,7 @@ export default clerkMiddleware(async (auth, req) => {
         maxAge: 60 * 60 * 24 * 180,
         sameSite: "lax",
       });
-      return response;
+      return applyCampaignPromoToResponse(req, response);
     }
   }
 
@@ -131,27 +132,27 @@ export default clerkMiddleware(async (auth, req) => {
         });
       }
 
-      return response;
+      return applyCampaignPromoToResponse(req, response);
     }
   }
 
   if (isProfileRoute(req)) {
     if (!authenticate.userId) {
       const dashboard = new URL("/practice-overview", req.url);
-      return NextResponse.redirect(dashboard);
+      return applyCampaignPromoToResponse(req, NextResponse.redirect(dashboard));
     }
     // All authenticated users can access their profile regardless of plan
   }
   if (isPlansRoute(req)) {
     if (!authenticate.userId) {
       const dashboard = new URL("/practice-overview", req.url);
-      return NextResponse.redirect(dashboard);
+      return applyCampaignPromoToResponse(req, NextResponse.redirect(dashboard));
     }
     const meta = jwtPracticeMetadata(authenticate.sessionClaims);
     const plan = meta?.plan;
     if (!hasPaidPracticeAccess(plan, meta?.purchaseDate)) {
       const homeUrl = new URL("/", req.url);
-      return NextResponse.redirect(homeUrl);
+      return applyCampaignPromoToResponse(req, NextResponse.redirect(homeUrl));
     }
   }
 
@@ -160,7 +161,7 @@ export default clerkMiddleware(async (auth, req) => {
     // They need to see the referral page to sign up
     if (!authenticate.userId) {
       // Don't redirect, allow access to referral page
-      return NextResponse.next();
+      return applyCampaignPromoToResponse(req, NextResponse.next());
     }
 
     // For authenticated users, check plan
@@ -168,7 +169,7 @@ export default clerkMiddleware(async (auth, req) => {
     const plan = meta?.plan;
     if (!hasPaidPracticeAccess(plan, meta?.purchaseDate)) {
       const homeUrl = new URL("/", req.url);
-      return NextResponse.redirect(homeUrl);
+      return applyCampaignPromoToResponse(req, NextResponse.redirect(homeUrl));
     }
   }
 
@@ -398,7 +399,7 @@ export default clerkMiddleware(async (auth, req) => {
       !authenticate.sessionClaims?.metadata?.roles?.includes("admin"))
   ) {
     const url = new URL("/", req.url);
-    return NextResponse.redirect(url);
+    return applyCampaignPromoToResponse(req, NextResponse.redirect(url));
   }
 
   const protectedPaths = [
@@ -417,6 +418,8 @@ export default clerkMiddleware(async (auth, req) => {
   if (protectedPaths.includes(requestedPath)) {
     await auth.protect();
   }
+
+  return applyCampaignPromoToResponse(req, NextResponse.next());
 });
 
 export const config = {
