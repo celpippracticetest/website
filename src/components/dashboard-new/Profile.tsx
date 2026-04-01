@@ -113,7 +113,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
     Boolean(subscriptionData) &&
     !subscriptionData?.isOneTimePayment &&
     ["active", "trialing", "past_due", "unpaid"].includes(
-      subscriptionData?.status
+      subscriptionData?.status ?? ""
     ) &&
     !subscriptionData?.cancelAtPeriodEnd;
 
@@ -124,15 +124,39 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
     ["active", "trialing", "past_due", "unpaid"].includes(
       subscriptionData?.status ?? ""
     ) &&
-    !subscriptionData?.cancelAtPeriodEnd &&
-    !user?.publicMetadata?.planCancelled;
+    !subscriptionData?.cancelAtPeriodEnd;
 
-  /** Stripe cancel-at-period-end without Clerk planCancelled yet (e.g. canceled in Stripe Dashboard). */
+  /** Active but cancel_at_period_end — access end date comes from Stripe current_period_end. */
   const showAccessEndsUnderPlan =
     Boolean(subscriptionData?.currentPeriodEnd) &&
     !subscriptionData?.isOneTimePayment &&
-    Boolean(subscriptionData?.cancelAtPeriodEnd) &&
-    !user?.publicMetadata?.planCancelled;
+    ["active", "trialing", "past_due", "unpaid"].includes(
+      subscriptionData?.status ?? ""
+    ) &&
+    Boolean(subscriptionData?.cancelAtPeriodEnd);
+
+  /** Fully ended in Stripe (no longer billable). */
+  const stripeSubscriptionTerminated =
+    subscriptionData &&
+    !subscriptionData.isOneTimePayment &&
+    (subscriptionData.status === "canceled" ||
+      subscriptionData.status === "incomplete_expired");
+
+  /** Cancel-at-period-end or ended in Stripe (plan name and dates from subscriptionData). */
+  const stripeCancellationOrEnded =
+    Boolean(subscriptionData) &&
+    !subscriptionData?.isOneTimePayment &&
+    (Boolean(subscriptionData?.cancelAtPeriodEnd) ||
+      Boolean(stripeSubscriptionTerminated));
+
+  /** Resubscribe + end date: Stripe cancellation state, or Clerk when Stripe payload is missing. */
+  const showCancellationActions =
+    Boolean(user?.publicMetadata?.planCancelled) || stripeCancellationOrEnded;
+
+  const endDateLabel =
+    stripeSubscriptionTerminated && subscriptionData?.currentPeriodEnd
+      ? "Ended on"
+      : "Ends on";
 
   const fetchAvailablePlans = async () => {
     try {
@@ -692,7 +716,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
             <div>
               {(hasPaidPracticeAccess(userPlan, userPurchaseDate) || subscriptionData) ? (
                 <div className="flex gap-[8px] screen744:!gap-[16px] items-center flex-row-reverse justify-start flex-wrap">
-                  {user.publicMetadata.planCancelled ? (
+                  {showCancellationActions ? (
                     <div className="flex flex-col items-end gap-1">
                       <button
                         onClick={handleResubscribe}
@@ -703,7 +727,8 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
                       </button>
                       {subscriptionData?.currentPeriodEnd && (
                         <span className="text-[12px] text-[#EF4444] font-medium">
-                          Ends on {new Date(subscriptionData.currentPeriodEnd * 1000).toLocaleDateString()}
+                          {endDateLabel}{" "}
+                          {new Date(subscriptionData.currentPeriodEnd * 1000).toLocaleDateString()}
                         </span>
                       )}
                     </div>
@@ -728,7 +753,12 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
             </div>
           </div>
           {(hasPaidPracticeAccess(userPlan, userPurchaseDate) || subscriptionData) &&
-            !user.publicMetadata.planCancelled && (
+            subscriptionData &&
+            !subscriptionData.isOneTimePayment &&
+            ["active", "trialing", "past_due", "unpaid"].includes(
+              subscriptionData.status ?? ""
+            ) &&
+            !subscriptionData.cancelAtPeriodEnd && (
               <div className="flex justify-end mt-2">
                 {/* Cancel button moved to Change Plan Modal */}
               </div>

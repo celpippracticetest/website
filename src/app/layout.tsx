@@ -5,6 +5,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
+import CrispChat from "@/components/CrispChat";
 import { LazyLeadCapturePopup, LazyPromotionManager } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -247,6 +248,7 @@ export default async function RootLayout({
       <body className="bg-[#F4F7FF]" suppressHydrationWarning>
         <MuiAppRouterCacheProvider>
           <ClerkProvider>
+          <CrispChat />
           {enableGtm && (
             <noscript>
               <iframe

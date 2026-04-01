@@ -49,44 +49,9 @@ async function buildSubscriptionDataFromStripeSub(
   subscription: Stripe.Subscription
 ): Promise<ProfileSubscriptionData> {
   const sub = subscription;
-  let currentPeriodStart: number | undefined;
-  let currentPeriodEnd: number | undefined;
-
-  const terminal =
-    sub.status === "canceled" || sub.status === "incomplete_expired";
-
-  if (terminal && sub.current_period_end) {
-    currentPeriodStart = sub.current_period_start ?? undefined;
-    currentPeriodEnd = sub.current_period_end;
-  } else if (sub.billing_cycle_anchor) {
-    const anchorDate = new Date(sub.billing_cycle_anchor * 1000);
-    const now = new Date();
-    const weeksSinceAnchor = Math.floor(
-      (now.getTime() - anchorDate.getTime()) / (7 * 24 * 60 * 60 * 1000)
-    );
-    currentPeriodStart =
-      sub.billing_cycle_anchor + weeksSinceAnchor * 7 * 24 * 60 * 60;
-    currentPeriodEnd = currentPeriodStart + 7 * 24 * 60 * 60;
-  } else if (sub.latest_invoice) {
-    const invId =
-      typeof sub.latest_invoice === "string"
-        ? sub.latest_invoice
-        : sub.latest_invoice.id;
-    if (invId) {
-      try {
-        const invoice = await stripe.invoices.retrieve(invId);
-        currentPeriodStart = invoice.period_start;
-        currentPeriodEnd = invoice.period_end;
-      } catch (invoiceError) {
-        console.error("Error fetching invoice:", invoiceError);
-      }
-    }
-  }
-
-  if (currentPeriodEnd === undefined && sub.current_period_end) {
-    currentPeriodStart = sub.current_period_start ?? undefined;
-    currentPeriodEnd = sub.current_period_end;
-  }
+  // Always use Stripe's billing period boundaries (product name still comes from price/product).
+  const currentPeriodStart = sub.current_period_start ?? undefined;
+  const currentPeriodEnd = sub.current_period_end ?? undefined;
 
   const price = sub.items.data[0]?.price as Stripe.Price | undefined;
   const planName = await resolveStripePlanDisplayName(price);
@@ -134,9 +99,14 @@ async function resolveSubscriptionDataForCustomer(
   const anySubscription = await stripe.subscriptions.list({
     customer: customerId,
     limit: 1,
+    status: "all",
   });
   if (anySubscription.data.length > 0) {
-    return null;
+    const subscription = await stripe.subscriptions.retrieve(
+      anySubscription.data[0].id,
+      { expand: ["items.data.price.product"] }
+    );
+    return buildSubscriptionDataFromStripeSub(subscription);
   }
 
   const charges = await stripe.charges.list({ customer: customerId, limit: 1 });
