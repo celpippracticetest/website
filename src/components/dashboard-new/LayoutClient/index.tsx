@@ -39,7 +39,7 @@ import SvgReferral from "@/components/icons/Referral";
 import BottomNavigation from "@/components/dashboard-new/BottomNavigation";
 import DesktopNavigation from "@/components/dashboard-new/DesktopNavigation";
 import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
-import AskBeavoModal from "@/components/AskBeavo/AskBeavoModal";
+import FloatingChatIcon from "@/components/AskBeavo/FloatingChatIcon";
 import { GlobalInteractiveProvider } from "@/components/dashboard-app/practice/GlobalInteractiveProvider";
 import {
   MOCK_EXAM_VIEW_MODE_EVENT,
@@ -876,7 +876,7 @@ const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
         {/* bottom menu for mobile */}
         {!hideMainHeaderForOfficialExam && <BottomNavigation />}
       </div >
-      <AskBeavoModal />
+      {isSignedIn && <FloatingChatIcon autoOpen={false} />}
       <GlobalInteractiveProvider />
     </>
   );

@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useAuth } from "@clerk/nextjs";
 import { useUserContext } from "@/hooks/useUserContext";
 import SvgClose from "../icons/Close";
 import SvgChatBotSend from "../icons/ChatBotSend";
 import { useAskBeavoStore } from "@/stores/askBeavoStore";
 import ReactMarkdown from "react-markdown";
+import { CRISP_WEBSITE_ID } from "@/lib/crisp";
 
 interface Message {
     id: string;
@@ -14,25 +16,40 @@ interface Message {
     timestamp: Date;
 }
 
+type SupportTab = "beavo" | "live";
+
+const CRISP_EMBED_SRC = `https://go.crisp.chat/chat/embed/?website_id=${encodeURIComponent(
+    CRISP_WEBSITE_ID
+)}`;
+
 const AskBeavoModal: React.FC = () => {
     const { isOpen, setOpen, initialMessage } = useAskBeavoStore();
+    const { isSignedIn } = useAuth();
+    const [supportTab, setSupportTab] = useState<SupportTab>("beavo");
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputText, setInputText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const userContext = useUserContext();
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    useEffect(() => {
+        if (!isOpen) {
+            setSupportTab("beavo");
+        }
+    }, [isOpen]);
+
     // Auto-scroll to bottom whenever messages or loading state changes
     useEffect(() => {
+        if (supportTab !== "beavo") return;
         if (messagesEndRef.current) {
             const container = messagesEndRef.current;
             container.scrollTop = container.scrollHeight;
         }
-    }, [messages, isLoading, isOpen]);
+    }, [messages, isLoading, isOpen, supportTab]);
 
     // Handle initial message from store
     useEffect(() => {
-        if (isOpen && initialMessage) {
+        if (isOpen && initialMessage && supportTab === "beavo") {
             setInputText(initialMessage);
             // Auto-send after a short delay to feel more natural
             setTimeout(() => {
@@ -41,7 +58,7 @@ const AskBeavoModal: React.FC = () => {
                 }
             }, 100);
         }
-    }, [isOpen, initialMessage]);
+    }, [isOpen, initialMessage, supportTab]);
 
     const handleSendMessage = async (messageOverride?: string) => {
         const messageToSend = messageOverride || inputText.trim();
@@ -139,26 +156,72 @@ const AskBeavoModal: React.FC = () => {
     bg-gradient-to-r from-[#F79D65] via-[#759CFF] to-[#F79D65]
   "
         >
-            <div className="flex h-full w-full flex-col rounded-[18px] bg-white overflow-hidden">
+            <div className="flex h-full min-h-0 w-full flex-col rounded-[18px] bg-white overflow-hidden">
                 {/* Header */}
-                <div className="flex items-center justify-between p-4  text-[#212E42] rounded-t-[16px]">
-                    <div className="flex items-center gap-3">
-                        <div>
-                            <h3 className="font-semibold text-lg">Ask Beavo</h3>
-                        </div>
+                <div className="flex shrink-0 items-center justify-between gap-2 p-4 text-[#212E42] rounded-t-[16px]">
+                    <div className="min-w-0 flex-1">
+                        <h3 className="font-semibold text-lg">
+                            {supportTab === "live" ? "Live support" : "Ask Beavo"}
+                        </h3>
+                        <p className="text-xs text-[#526071] mt-0.5">
+                            {supportTab === "live" ? (
+                                "Chat with our team — same help desk as on the site."
+                            ) : (
+                                <>
+                                    AI help for CELPIP — use{" "}
+                                    <span className="font-medium text-[#37465C]">Live support</span>{" "}
+                                    for our team (Crisp).
+                                </>
+                            )}
+                        </p>
                     </div>
-                    <button
-                        onClick={() => setOpen(false)}
-                        className="cursor-pointer hover:bg-gray-100 rounded-full p-2 transition-colors"
-                    >
-                        <SvgClose />
-                    </button>
+                    <div className="flex shrink-0 items-center gap-2">
+                        {isSignedIn && supportTab === "beavo" && (
+                            <button
+                                type="button"
+                                onClick={() => setSupportTab("live")}
+                                title="Switch to live chat"
+                                className="whitespace-nowrap rounded-full border border-[#D5D6D8] bg-white px-3 py-1.5 text-[13px] font-medium text-[#37465C] transition-colors hover:bg-[#F4F7FF]"
+                            >
+                                Live support
+                            </button>
+                        )}
+                        {isSignedIn && supportTab === "live" && (
+                            <button
+                                type="button"
+                                onClick={() => setSupportTab("beavo")}
+                                title="Back to Ask Beavo"
+                                className="whitespace-nowrap rounded-full border border-[#D5D6D8] bg-white px-3 py-1.5 text-[13px] font-medium text-[#37465C] transition-colors hover:bg-[#F4F7FF]"
+                            >
+                                Ask Beavo
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            onClick={() => setOpen(false)}
+                            className="cursor-pointer hover:bg-gray-100 rounded-full p-2 transition-colors"
+                            aria-label="Close"
+                        >
+                            <SvgClose />
+                        </button>
+                    </div>
                 </div>
 
-                <div className="px-[24px]">
+                <div className="px-[24px] shrink-0">
                     <div className="h-[1px] bg-[#D5D6D8] w-full"></div>
                 </div>
 
+                {isSignedIn && supportTab === "live" ? (
+                    <div className="flex flex-1 min-h-0 flex-col px-2 pb-2 pt-1">
+                        <iframe
+                            title="Crisp live chat"
+                            src={CRISP_EMBED_SRC}
+                            className="h-full min-h-[min(520px,calc(100svh-12rem))] w-full flex-1 rounded-xl border border-[#E8ECF2] bg-[#F8FAFC]"
+                            allow="microphone; camera"
+                        />
+                    </div>
+                ) : (
+                    <div className="flex min-h-0 flex-1 flex-col">
                 {/* Example Questions */}
                 {messages.length === 0 && (
                     <div className="p-4  overflow-auto">
@@ -288,6 +351,8 @@ const AskBeavoModal: React.FC = () => {
                         </button>
                     </div>
                 </div>
+                    </div>
+                )}
             </div>
         </div>
     );
