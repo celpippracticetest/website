@@ -25,6 +25,10 @@ export function CustomSignInForm({ className }: { className?: string }) {
   const { isLoaded, signIn, setActive } = useSignIn();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [resetMode, setResetMode] = useState(false);
+  const [resetCodeSent, setResetCodeSent] = useState(false);
+  const [resetCode, setResetCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [mfaCode, setMfaCode] = useState("");
   const [mfaPrepared, setMfaPrepared] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -36,6 +40,69 @@ export function CustomSignInForm({ className }: { className?: string }) {
   const resetMfa = useCallback(() => {
     window.location.assign("/sign-in");
   }, []);
+
+  const backToSignIn = useCallback(() => {
+    setResetMode(false);
+    setResetCodeSent(false);
+    setResetCode("");
+    setNewPassword("");
+    setError(null);
+    window.location.reload();
+  }, []);
+
+  const handleSendResetCode = async () => {
+    if (!signIn) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      await signIn.create({
+        strategy: "reset_password_email_code",
+        identifier: email.trim(),
+      });
+      setResetCodeSent(true);
+    } catch (err) {
+      setError(clerkErrMessage(err));
+    }
+    setSubmitting(false);
+  };
+
+  const handleSubmitResetPassword = async () => {
+    if (!signIn || !setActive) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      const res = await signIn.attemptFirstFactor({
+        strategy: "reset_password_email_code",
+        code: resetCode.trim(),
+        password: newPassword,
+      });
+      if (res.status === "complete" && res.createdSessionId) {
+        await setActive({ session: res.createdSessionId });
+        setSubmitting(false);
+        return;
+      }
+      if (res.status === "needs_second_factor") {
+        setResetMode(false);
+        setResetCodeSent(false);
+        setResetCode("");
+        setNewPassword("");
+        const phone = res.supportedSecondFactors?.find((f) => f.strategy === "phone_code");
+        if (phone && "phoneNumberId" in phone) {
+          await res.prepareSecondFactor({
+            strategy: "phone_code",
+            phoneNumberId: phone.phoneNumberId,
+          });
+          setMfaPrepared(true);
+        }
+        setSubmitting(false);
+        return;
+      }
+      setError("Could not reset password. Please try again.");
+    } catch (err) {
+      setError(clerkErrMessage(err));
+    }
+    setSubmitting(false);
+  };
 
   const handleOAuthGoogle = async () => {
     if (!signIn || oauthLoading) return;
@@ -56,6 +123,14 @@ export function CustomSignInForm({ className }: { className?: string }) {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (resetMode && !resetCodeSent) {
+      await handleSendResetCode();
+      return;
+    }
+    if (resetMode && resetCodeSent) {
+      await handleSubmitResetPassword();
+      return;
+    }
     if (!isLoaded || !signIn || !setActive || oauthLoading) return;
     setError(null);
     setSubmitting(true);
@@ -122,7 +197,7 @@ export function CustomSignInForm({ className }: { className?: string }) {
         return;
       }
 
-      setError("Could not complete sign-in. Try again or reset your password from Clerk.");
+      setError("Could not complete sign-in. Try again or use Forgot password.");
     } catch (err) {
       setError(clerkErrMessage(err));
     }
@@ -145,9 +220,15 @@ export function CustomSignInForm({ className }: { className?: string }) {
       )}
     >
       <div className="mb-6 text-center">
-        <h2 className="text-xl font-semibold tracking-tight text-slate-900">Sign in</h2>
+        <h2 className="text-xl font-semibold tracking-tight text-slate-900">
+          {resetMode ? "Reset password" : "Sign in"}
+        </h2>
         <p className="mt-1 text-sm text-slate-600">
-          Welcome back. Continue to your practice dashboard.
+          {resetMode
+            ? resetCodeSent
+              ? "Enter the code from your email and choose a new password."
+              : "Enter your email and we’ll send you a reset code."
+            : "Welcome back. Continue to your practice dashboard."}
         </p>
       </div>
 
@@ -181,32 +262,96 @@ export function CustomSignInForm({ className }: { className?: string }) {
       <form onSubmit={onSubmit} className="space-y-4">
         {!needsSecondFactor ? (
           <>
-            <div className="space-y-2">
-              <Label htmlFor="signin-email">Email</Label>
-              <Input
-                id="signin-email"
-                type="email"
-                autoComplete="email"
-                required
-                disabled={oauthLoading}
-                value={email}
-                onChange={(ev) => setEmail(ev.target.value)}
-                className="border-slate-200"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="signin-password">Password</Label>
-              <Input
-                id="signin-password"
-                type="password"
-                autoComplete="current-password"
-                required
-                disabled={oauthLoading}
-                value={password}
-                onChange={(ev) => setPassword(ev.target.value)}
-                className="border-slate-200"
-              />
-            </div>
+            {resetMode && !resetCodeSent ? (
+              <div className="space-y-2">
+                <Label htmlFor="signin-email">Email</Label>
+                <Input
+                  id="signin-email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  disabled={oauthLoading}
+                  value={email}
+                  onChange={(ev) => setEmail(ev.target.value)}
+                  className="border-slate-200"
+                />
+                <p className="text-sm text-slate-600">
+                  We&apos;ll send a verification code to this address.
+                </p>
+              </div>
+            ) : resetMode && resetCodeSent ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="reset-code">Verification code</Label>
+                  <Input
+                    id="reset-code"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    required
+                    disabled={oauthLoading}
+                    value={resetCode}
+                    onChange={(ev) => setResetCode(ev.target.value)}
+                    className="border-slate-200"
+                    placeholder="Code from email"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="reset-new-password">New password</Label>
+                  <Input
+                    id="reset-new-password"
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    disabled={oauthLoading}
+                    value={newPassword}
+                    onChange={(ev) => setNewPassword(ev.target.value)}
+                    className="border-slate-200"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="signin-email">Email</Label>
+                  <Input
+                    id="signin-email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    disabled={oauthLoading}
+                    value={email}
+                    onChange={(ev) => setEmail(ev.target.value)}
+                    className="border-slate-200"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label htmlFor="signin-password">Password</Label>
+                    <button
+                      type="button"
+                      className="shrink-0 text-sm font-medium text-blue-600 hover:underline"
+                      onClick={() => {
+                        setError(null);
+                        setResetMode(true);
+                      }}
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                  <Input
+                    id="signin-password"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    disabled={oauthLoading}
+                    value={password}
+                    onChange={(ev) => setPassword(ev.target.value)}
+                    className="border-slate-200"
+                  />
+                </div>
+              </>
+            )}
           </>
         ) : (
           <div className="space-y-2">
@@ -230,11 +375,29 @@ export function CustomSignInForm({ className }: { className?: string }) {
           disabled={submitting || oauthLoading}
           className="w-full rounded-lg bg-blue-600 text-white hover:bg-blue-700"
         >
-          {submitting ? "Please wait…" : needsSecondFactor ? "Verify" : "Sign in"}
+          {submitting
+            ? "Please wait…"
+            : needsSecondFactor
+              ? "Verify"
+              : resetMode && !resetCodeSent
+                ? "Send reset code"
+                : resetMode && resetCodeSent
+                  ? "Reset password"
+                  : "Sign in"}
         </Button>
+
+        {resetMode && !needsSecondFactor ? (
+          <button
+            type="button"
+            className="w-full text-sm font-medium text-slate-600 hover:text-slate-900 hover:underline"
+            onClick={backToSignIn}
+          >
+            Back to sign in
+          </button>
+        ) : null}
       </form>
 
-      {!needsSecondFactor ? (
+      {!needsSecondFactor && !resetMode ? (
         <>
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
@@ -271,7 +434,7 @@ export function CustomSignInForm({ className }: { className?: string }) {
         </>
       ) : null}
 
-      {!needsSecondFactor ? (
+      {!needsSecondFactor && !resetMode ? (
         <p className="mt-6 text-center text-sm text-slate-600">
           Don&apos;t have an account?{" "}
           <Link href="/sign-up" className="font-medium text-blue-600 hover:underline">

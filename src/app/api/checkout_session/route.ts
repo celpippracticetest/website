@@ -37,7 +37,8 @@ async function resolveFinalOfferCouponId(): Promise<string> {
   const coupon = await stripe.coupons.create({
     percent_off: 20,
     duration: "once",
-    name: "Onboarding final chance 20% off first period",
+    // Stripe coupon `name` max length is 40 characters.
+    name: "Final offer 20% off 1st period",
     metadata: {
       source: "onboarding_final_chance",
     },
