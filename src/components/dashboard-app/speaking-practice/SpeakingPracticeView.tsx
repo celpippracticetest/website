@@ -27,6 +27,7 @@ import StatBadge from "@/components/shared/StatBadge";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
 import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
+import { practicePath } from "@/lib/practiceRoutes";
 
 interface SpeakingPracticeViewProps {
   practice: TPracticeDto;
@@ -535,15 +536,16 @@ const SpeakingPracticeView = ({
                       allPractices[practiceIndex + 1].taskId.toString()
                       ]
                     );
-                    const taskUrl = selectedTaskId
-                      ? "&taskId=" + selectedTaskId
-                      : "";
                     setPage("question");
-                    router.push(
-                      "/speaking?selectedPracticeId=" +
-                      allPractices[practiceIndex + 1].id +
-                      taskUrl
-                    );
+                    if (selectedTaskId) {
+                      router.push(
+                        practicePath(
+                          "speaking",
+                          allPractices[practiceIndex + 1].id,
+                          selectedTaskId
+                        )
+                      );
+                    }
                   } else {
                   }
                 }}

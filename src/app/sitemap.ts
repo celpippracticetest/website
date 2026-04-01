@@ -6,6 +6,7 @@ import {
   getPublishedProfessionPageSlugs,
 } from "@/lib/profession-pages/public";
 
+/** Practice session URLs `/{skill}/{practiceId}/{taskId}` are noindex—omit from sitemap (hubs only). */
 const BASE_URL = process.env.APP_BASE_URL || "https://celpippracticetest.com";
 const NORMALIZED_BASE_URL = new URL(BASE_URL).toString();
 

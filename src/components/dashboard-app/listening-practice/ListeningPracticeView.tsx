@@ -27,6 +27,7 @@ import TrophyModal from "@/components/modal/TrophyModal";
 import StatBadge from "@/components/shared/StatBadge";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import { practicePath } from "@/lib/practiceRoutes";
 
 interface ListeningPracticeViewProps {
   practice: TPracticeDto;
@@ -42,6 +43,7 @@ interface ListeningPracticeViewProps {
   onNextPractice: () => void;
   isFromFirstPage: boolean;
   setIsFromFirstPage: React.Dispatch<React.SetStateAction<boolean>>;
+  hideLegacyBreadcrumb?: boolean;
 }
 
 const ListeningPracticeView = ({
@@ -55,6 +57,10 @@ const ListeningPracticeView = ({
   isFromFirstPage,
   setIsFromFirstPage,
   onBackClick,
+  onComplete,
+  onUpgrade,
+  onNextPractice,
+  hideLegacyBreadcrumb,
 }: ListeningPracticeViewProps) => {
   const practiceCount = usePracticeCount(task.id, practice.id, task.taskNumber);
   const task5or6 = ["67ebeffe187829d27daac3c8", "67ebf003187829d27daac3c9"];
@@ -279,32 +285,34 @@ const ListeningPracticeView = ({
           </div>
         </div>
       )}
-      <div className="w-full min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1 pl-0 screen744:pl-[40px] text-[#76808F] text-[14px] mt-[-35px] mb-[28px]">
-        <div
-          className="cursor-pointer"
-          onClick={() => {
-            router.push("/practice-overview");
-          }}
-        >
-          Practice
-        </div>
-        <SvgChevronRightForTitle />
-        <div
-          className="cursor-pointer"
-          onClick={() => {
-            router.push("/listening");
-          }}
-        >
-          Listening
-        </div>
-        <SvgChevronRightForTitle />
-        <span className="min-w-0 max-w-full break-words text-[#212E42]">
-          <span className="text-[#76808F]">
-            {task.taskNumber?.replace(" #", "")}
+      {!hideLegacyBreadcrumb && (
+        <div className="w-full min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1 pl-0 screen744:pl-[40px] text-[#76808F] text-[14px] mt-[-35px] mb-[28px]">
+          <div
+            className="cursor-pointer"
+            onClick={() => {
+              router.push("/practice-overview");
+            }}
+          >
+            Practice
+          </div>
+          <SvgChevronRightForTitle />
+          <div
+            className="cursor-pointer"
+            onClick={() => {
+              router.push("/listening");
+            }}
+          >
+            Listening
+          </div>
+          <SvgChevronRightForTitle />
+          <span className="min-w-0 max-w-full break-words text-[#212E42]">
+            <span className="text-[#76808F]">
+              {task.taskNumber?.replace(" #", "")}
+            </span>
+            .{task.name}
           </span>
-          .{task.name}
-        </span>
-      </div>
+        </div>
+      )}
       <div className=" mx-auto w-full flex-col screen1280:!flex-row   transition-all duration-300 flex gap-[20px]">
         <ListeningSideMenu
           allPractices={allPractices}
@@ -421,17 +429,16 @@ const ListeningPracticeView = ({
                     } else if (page == "question") {
                       setPage("answer");
                     } else if (page === "answer") {
-                      if (practiceIndex < allPractices.length - 1) {
-                        const taskUrl = selectedTaskId
-                          ? "&taskId=" + selectedTaskId
-                          : "";
+                      if (practiceIndex < allPractices.length - 1 && selectedTaskId) {
                         setPage("instructions");
                         setQuestionIndex(0);
                         setPassageIndex(0);
                         router.push(
-                          "/listening?selectedPracticeId=" +
-                          allPractices[practiceIndex + 1].id +
-                          taskUrl
+                          practicePath(
+                            "listening",
+                            allPractices[practiceIndex + 1].id,
+                            selectedTaskId
+                          )
                         );
                       } else {
                         resetToStart();

@@ -7,6 +7,7 @@ import SvgLock from "@/components/icons/Lock";
 import SvgPlay from "@/components/icons/Play";
 import SvgConfirmCheck from "@/components/icons/ConfirmCheck";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import { categoryToSkillRoute, practicePath } from "@/lib/practiceRoutes";
 
 const ListeningSideMenu = ({
   completedPractice,
@@ -40,11 +41,13 @@ const ListeningSideMenu = ({
                 : "font-normal"
             } `}
             href={
-              "/" +
-              p.type.toLowerCase() +
-              "?selectedPracticeId=" +
-              p.id +
-              `${selectedTaskId ? "&taskId=" + selectedTaskId : ""}`
+              selectedTaskId
+                ? practicePath(
+                    categoryToSkillRoute(p.type.toLowerCase()),
+                    p.id,
+                    selectedTaskId
+                  )
+                : `/${p.type.toLowerCase()}`
             }
           >
             {selectedPracticeId === p.id && <SvgPlay className=" shrink-0 " />}

@@ -28,6 +28,7 @@ import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import StatBadge from "@/components/shared/StatBadge";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
+import { practicePath } from "@/lib/practiceRoutes";
 
 interface ReadingPracticeViewProps {
   practice: TPracticeDto;
@@ -38,6 +39,8 @@ interface ReadingPracticeViewProps {
   previousAnswer: TListeningAndReadingAnswerDto | null;
   completedPractice: string[];
   onBackClick: () => void;
+  /** When using path-based URL; PracticeSubChrome already shows breadcrumbs. */
+  hideLegacyBreadcrumb?: boolean;
 }
 
 const ReadingPracticeView = ({
@@ -49,6 +52,7 @@ const ReadingPracticeView = ({
   previousAnswer,
   completedPractice,
   onBackClick,
+  hideLegacyBreadcrumb,
 }: ReadingPracticeViewProps) => {
   const practiceCount = usePracticeCount(task.id, practice.id, task.taskNumber);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -229,32 +233,34 @@ const ReadingPracticeView = ({
           </div>
         </div>
       )}
-      <div className="w-full min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1 pl-0 screen744:pl-[40px] text-[#76808F] text-[14px] mt-0 mb-[28px]">
-        <div
-          className="cursor-pointer"
-          onClick={() => {
-            router.push("/practice-overview");
-          }}
-        >
-          Practice
-        </div>
-        <SvgChevronRightForTitle />
-        <div
-          className="cursor-pointer"
-          onClick={() => {
-            router.push("/reading");
-          }}
-        >
-          Reading
-        </div>
-        <SvgChevronRightForTitle />
-        <span className="min-w-0 max-w-full break-words text-[#212E42]">
-          <span className="text-[#76808F]">
-            {task.taskNumber?.replace(" #", "")}
+      {!hideLegacyBreadcrumb && (
+        <div className="w-full min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1 pl-0 screen744:pl-[40px] text-[#76808F] text-[14px] mt-0 mb-[28px]">
+          <div
+            className="cursor-pointer"
+            onClick={() => {
+              router.push("/practice-overview");
+            }}
+          >
+            Practice
+          </div>
+          <SvgChevronRightForTitle />
+          <div
+            className="cursor-pointer"
+            onClick={() => {
+              router.push("/reading");
+            }}
+          >
+            Reading
+          </div>
+          <SvgChevronRightForTitle />
+          <span className="min-w-0 max-w-full break-words text-[#212E42]">
+            <span className="text-[#76808F]">
+              {task.taskNumber?.replace(" #", "")}
+            </span>
+            .{task.name}
           </span>
-          .{task.name}
-        </span>
-      </div>
+        </div>
+      )}
       <div className="mx-auto w-full flex-col screen1280:!flex-row transition-all duration-300 flex gap-[20px]">
         <ListeningSideMenu
           allPractices={allPractices}
@@ -343,15 +349,14 @@ const ReadingPracticeView = ({
                           const practiceIndex = allPractices.findIndex(
                             (p) => p.id == selectedPracticeId
                           );
-                          if (practiceIndex < allPractices.length - 1) {
-                            const taskUrl = selectedTaskId
-                              ? "&taskId=" + selectedTaskId
-                              : "";
+                          if (practiceIndex < allPractices.length - 1 && selectedTaskId) {
                             setPage("question");
                             router.push(
-                              "/reading?selectedPracticeId=" +
-                              allPractices[practiceIndex + 1].id +
-                              taskUrl
+                              practicePath(
+                                "reading",
+                                allPractices[practiceIndex + 1].id,
+                                selectedTaskId
+                              )
                             );
                           } else {
                           }
@@ -389,15 +394,14 @@ const ReadingPracticeView = ({
                     const practiceIndex = allPractices.findIndex(
                       (p) => p.id == selectedPracticeId
                     );
-                    if (practiceIndex > 0) {
-                      const taskUrl = selectedTaskId
-                        ? "&taskId=" + selectedTaskId
-                        : "";
+                    if (practiceIndex > 0 && selectedTaskId) {
                       setPage("question");
                       router.push(
-                        "/reading?selectedPracticeId=" +
-                        allPractices[practiceIndex - 1].id +
-                        taskUrl
+                        practicePath(
+                          "reading",
+                          allPractices[practiceIndex - 1].id,
+                          selectedTaskId
+                        )
                       );
                     }
                     setTime(timerTime);
@@ -464,15 +468,14 @@ const ReadingPracticeView = ({
                       const practiceIndex = allPractices.findIndex(
                         (p) => p.id == selectedPracticeId
                       );
-                      if (practiceIndex < allPractices.length - 1) {
-                        const taskUrl = selectedTaskId
-                          ? "&taskId=" + selectedTaskId
-                          : "";
+                      if (practiceIndex < allPractices.length - 1 && selectedTaskId) {
                         setPage("question");
                         router.push(
-                          "/reading?selectedPracticeId=" +
-                          allPractices[practiceIndex + 1].id +
-                          taskUrl
+                          practicePath(
+                            "reading",
+                            allPractices[practiceIndex + 1].id,
+                            selectedTaskId
+                          )
                         );
                       }
                     }

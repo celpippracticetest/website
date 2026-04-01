@@ -17,6 +17,7 @@ import {
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import { categoryToSkillRoute, practicePath } from "@/lib/practiceRoutes";
 
 export type ShowTasksTaskRow = {
   id: string;
@@ -87,11 +88,11 @@ const ShowTasks = ({ tasks }: { tasks: TaskSection[] }) => {
       }
 
       setRedirectUrl(
-        task.category +
-          "?selectedPracticeId=" +
-          data.items[0].id +
-          "&taskId=" +
+        practicePath(
+          categoryToSkillRoute(task.category),
+          data.items[0].id,
           task.id
+        )
       );
     } catch (error) {}
   };

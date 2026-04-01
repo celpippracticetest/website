@@ -10,12 +10,13 @@ import { PracticeRepository } from "@/repositories/practice.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
 import { currentUser } from "@clerk/nextjs/server";
 import { ObjectId } from "mongodb";
-import { redirect, RedirectType } from "next/navigation";
+import { permanentRedirect, redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
 import { skillPagesContent } from "@/data/skill-pages-content";
 import type { Metadata } from "next";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { Box, Typography } from "@mui/material";
+import { skillHubPageMetadata } from "@/lib/skillHubPageMetadata";
 
 interface PracticeSection {
   tasks: {
@@ -56,14 +57,16 @@ export async function generateMetadata({
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }): Promise<Metadata> {
-  await searchParams;
-
+  const { taskId } = await searchParams;
+  const hubMeta = await skillHubPageMetadata(
+    "listening",
+    taskId,
+    listeningMetadataBase.title as string,
+    listeningMetadataBase.description as string
+  );
   return {
-    ...listeningMetadataBase,
-    robots: {
-      index: true,
-      follow: true,
-    },
+    keywords: listeningMetadataBase.keywords,
+    ...hubMeta,
   };
 }
 
@@ -142,16 +145,25 @@ const DashboardApp = async ({
     );
   }
 
-  const task: TTaskSchemaDto | null = await taskRepo.findTaskById(taskId ?? "");
+  if (selectedPracticeId && taskId) {
+    permanentRedirect(`/listening/${selectedPracticeId}/${taskId}`);
+  }
+  if (selectedPracticeId && !taskId) {
+    redirect("/practice-overview", RedirectType.replace);
+  }
+  if (!taskId) {
+    redirect("/practice-overview", RedirectType.replace);
+  }
+
+  const task: TTaskSchemaDto | null = await taskRepo.findTaskById(taskId);
   if (!task) {
-    redirect("practice-overview", RedirectType.replace);
-    return <div></div>;
+    redirect("/practice-overview", RedirectType.replace);
   }
   const practiceRepo = new PracticeRepository(mongoClient);
   const practices = await practiceRepo.getAllPractice(
     {
       type: "LISTENING",
-      taskId: taskId ? (new ObjectId(taskId) as unknown as string) : undefined,
+      taskId: new ObjectId(taskId) as unknown as string,
     },
     0,
     200

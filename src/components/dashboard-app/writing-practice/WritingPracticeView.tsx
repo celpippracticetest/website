@@ -33,6 +33,7 @@ import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import StatBadge from "@/components/shared/StatBadge";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
+import { practicePath } from "@/lib/practiceRoutes";
 const SvgBestValuePlan = dynamic(
   () => import("../../../components/icons/BestValuePlan"),
   {
@@ -409,10 +410,7 @@ const WritingPracticeView = ({
                       const practiceIndex = allPractices.findIndex(
                         (p) => p.id == selectedPracticeId
                       );
-                      if (practiceIndex < allPractices.length - 1) {
-                        const taskUrl = selectedTaskId
-                          ? "&taskId=" + selectedTaskId
-                          : "";
+                      if (practiceIndex < allPractices.length - 1 && selectedTaskId) {
                         setPage("question");
                         setTime(1620);
                         setText("");
@@ -421,9 +419,11 @@ const WritingPracticeView = ({
                         setIsSubmit(false);
                         setTryToSubmit(false);
                         router.push(
-                          "/writing?selectedPracticeId=" +
-                          allPractices[practiceIndex + 1].id +
-                          taskUrl
+                          practicePath(
+                            "writing",
+                            allPractices[practiceIndex + 1].id,
+                            selectedTaskId
+                          )
                         );
                       } else {
                       }

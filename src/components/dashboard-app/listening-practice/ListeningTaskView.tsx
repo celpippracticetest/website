@@ -10,6 +10,7 @@ import SvgCheckSquare from "@/components/icons/CheckSquare";
 import SvgLock from "@/components/icons/Lock";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
 import SvgConfirmCheck from "@/components/icons/ConfirmCheck";
+import { categoryToSkillRoute, practicePath } from "@/lib/practiceRoutes";
 
 interface ListeningTaskViewProps {
   allPractices: TPracticeDto[];
@@ -64,9 +65,11 @@ const ListeningTaskView = ({
             <a
               key={p.id || index}
               className="flex w-full gap-[4px] bg-white h-[48px] items-center justify-start p-[12px] shadow-[0px_4px_10px_0px_#0000000F] rounded-[12px] cursor-pointer relative"
-              href={`/${task.category.toLowerCase()}?selectedPracticeId=${
-                p.id
-              }&taskId=${task.id}`}
+              href={practicePath(
+                categoryToSkillRoute(task.category),
+                p.id,
+                task.id
+              )}
             >
               {completedPractice.includes(p.id) ? (
                 <SvgConfirmCheck />

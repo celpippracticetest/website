@@ -22,6 +22,7 @@ import {
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import { categoryToSkillRoute, practicePath } from "@/lib/practiceRoutes";
 
 interface PracticeSection {
   title: string;
@@ -90,11 +91,11 @@ const PracticeOverview = ({
       started(data.items[0].id, task.category);
 
       setRedirectUrl(
-        task.category +
-          "?selectedPracticeId=" +
-          data.items[0].id +
-          "&taskId=" +
+        practicePath(
+          categoryToSkillRoute(task.category),
+          data.items[0].id,
           task.id
+        )
       );
     } catch (error) {}
   };

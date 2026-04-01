@@ -21,7 +21,8 @@ import {
 } from "@/components/ui/pagination";
 import { Badge } from "@/components/ui/badge";
 import { Practice } from "./types/practiceTypes";
-import { redirect, RedirectType } from "next/navigation";
+import Link from "next/link";
+import { practicePath, categoryToSkillRoute } from "@/lib/practiceRoutes";
 
 interface CmsPracticesTableProps {
   practices: Practice[];
@@ -131,21 +132,16 @@ const CmsPracticesTable = ({
                 </Badge>
               </TableCell>
               <TableCell className="text-right">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    redirect(
-                      `/${practice.type.toLowerCase()}?selectedPracticeId=${
-                        practice.id
-                      }`,
-                      RedirectType.push
-                    );
-                    // onEdit(practice.id, practice.type)
-                  }}
-                  title="View Practice"
-                >
-                  <Visibility className="h-4 w-4" />
+                <Button variant="ghost" size="icon" asChild title="View Practice">
+                  <Link
+                    href={practicePath(
+                      categoryToSkillRoute(practice.type),
+                      practice.id,
+                      practice.taskId
+                    )}
+                  >
+                    <Visibility className="h-4 w-4" />
+                  </Link>
                 </Button>
                 <Button
                   variant="ghost"

@@ -18,6 +18,9 @@ interface SpeakingPracticeProps {
   selectedPractice: TPracticeDto | null;
   task: TTaskSchemaDto;
   completedPracticeId: string[];
+  /** When set (path-based URL), use these instead of search params and hide duplicate crumb row. */
+  routePracticeId?: string;
+  routeTaskId?: string;
 }
 
 const SpeakingPractice = ({
@@ -26,11 +29,14 @@ const SpeakingPractice = ({
   selectedPractice,
   task,
   completedPracticeId,
+  routePracticeId,
+  routeTaskId,
 }: SpeakingPracticeProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const selectedPracticeId = searchParams.get("selectedPracticeId");
-  const selectedTaskId = searchParams.get("taskId");
+  const selectedPracticeId =
+    routePracticeId ?? searchParams.get("selectedPracticeId");
+  const selectedTaskId = routeTaskId ?? searchParams.get("taskId");
 
   useEffect(() => {
     if (!selectedPracticeId && !selectedTaskId) {
@@ -85,32 +91,34 @@ const SpeakingPractice = ({
 
   return selectedPractice ? (
     <div className="flex flex-col w-full max-w-[1280px]">
-      <div className="pl-[40px] text-[#76808F] text-[14px] mt-[24px] mb-[28px] items-center flex gap-[8px]">
-        <div
-          className="cursor-pointer"
-          onClick={() => {
-            router.push("/practice-overview");
-          }}
-        >
-          Practice
-        </div>
-        <SvgChevronRightForTitle />
-        <div
-          className="cursor-pointer"
-          onClick={() => {
-            router.push("/speaking");
-          }}
-        >
-          Speaking
-        </div>
-        <SvgChevronRightForTitle />
-        <span className="text-[#212E42]">
-          <span className="text-[#76808F]">
-            {task.taskNumber?.replace(" #", "")}
+      {!routePracticeId && (
+        <div className="pl-[40px] text-[#76808F] text-[14px] mt-[24px] mb-[28px] items-center flex gap-[8px]">
+          <div
+            className="cursor-pointer"
+            onClick={() => {
+              router.push("/practice-overview");
+            }}
+          >
+            Practice
+          </div>
+          <SvgChevronRightForTitle />
+          <div
+            className="cursor-pointer"
+            onClick={() => {
+              router.push("/speaking");
+            }}
+          >
+            Speaking
+          </div>
+          <SvgChevronRightForTitle />
+          <span className="text-[#212E42]">
+            <span className="text-[#76808F]">
+              {task.taskNumber?.replace(" #", "")}
+            </span>
+            .{task.name}
           </span>
-          .{task.name}
-        </span>
-      </div>
+        </div>
+      )}
 
       <SpeakingPracticeView
         onAnswerButtonClick={onAnswerButtonClick}

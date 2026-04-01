@@ -9,12 +9,13 @@ import { TaskRepository } from "@/repositories/tasks.repo";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { currentUser } from "@clerk/nextjs/server";
 import { ObjectId } from "mongodb";
-import { redirect, RedirectType } from "next/navigation";
+import { permanentRedirect, redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
 import { skillPagesContent } from "@/data/skill-pages-content";
 import type { Metadata } from "next";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { Box, Typography } from "@mui/material";
+import { skillHubPageMetadata } from "@/lib/skillHubPageMetadata";
 interface PracticeSection {
   tasks: {
     id: string;
@@ -52,20 +53,16 @@ export async function generateMetadata({
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }): Promise<Metadata> {
-  const { taskId, selectedPracticeId } = await searchParams;
-  const isTaskVariant = Boolean(taskId || selectedPracticeId);
-
+  const { taskId } = await searchParams;
+  const hubMeta = await skillHubPageMetadata(
+    "writing",
+    taskId,
+    writingMetadataBase.title as string,
+    writingMetadataBase.description as string
+  );
   return {
-    ...writingMetadataBase,
-    robots: isTaskVariant
-      ? {
-          index: false,
-          follow: false,
-        }
-      : {
-          index: true,
-          follow: true,
-        },
+    keywords: writingMetadataBase.keywords,
+    ...hubMeta,
   };
 }
 
@@ -145,16 +142,26 @@ const WritingPage = async ({
     );
   }
 
-  const task: TTaskSchemaDto | null = await taskRepo.findTaskById(taskId ?? "");
+  if (selectedPracticeId && taskId) {
+    permanentRedirect(`/writing/${selectedPracticeId}/${taskId}`);
+  }
+  if (selectedPracticeId && !taskId) {
+    redirect("/practice-overview", RedirectType.replace);
+  }
+  if (!taskId) {
+    redirect("/practice-overview", RedirectType.replace);
+  }
+
+  const task: TTaskSchemaDto | null = await taskRepo.findTaskById(taskId);
   if (!task) {
-    redirect("practice-overview", RedirectType.push);
+    redirect("/practice-overview", RedirectType.push);
   }
 
   const practiceRepo = new PracticeRepository(mongoClient);
   const practices = await practiceRepo.getAllPractice(
     {
       type: "WRITING",
-      taskId: taskId ? (new ObjectId(taskId) as unknown as string) : undefined,
+      taskId: new ObjectId(taskId) as unknown as string,
     },
     0,
     200

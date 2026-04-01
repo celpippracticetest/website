@@ -15,6 +15,8 @@ interface ReadingPracticeProps {
   task: TTaskSchemaDto;
   previousAnswer: TListeningAndReadingAnswerDto | null;
   completedPractice: string[];
+  routePracticeId?: string;
+  routeTaskId?: string;
 }
 
 const ReadingPractice = ({
@@ -24,11 +26,14 @@ const ReadingPractice = ({
   task,
   previousAnswer,
   completedPractice,
+  routePracticeId,
+  routeTaskId,
 }: ReadingPracticeProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const selectedPracticeId = searchParams.get("selectedPracticeId");
-  const selectedTaskId = searchParams.get("taskId");
+  const selectedPracticeId =
+    routePracticeId ?? searchParams.get("selectedPracticeId");
+  const selectedTaskId = routeTaskId ?? searchParams.get("taskId");
 
   useEffect(() => {
     if (!selectedPracticeId && !selectedTaskId) {
@@ -51,6 +56,7 @@ const ReadingPractice = ({
         onBackClick={handleBackToPracticeList}
         previousAnswer={previousAnswer}
         completedPractice={completedPractice}
+        hideLegacyBreadcrumb={Boolean(routePracticeId)}
       />
     </div>
   ) : (

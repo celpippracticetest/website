@@ -65,6 +65,13 @@ const hasValidPreviewCredentials = (req: NextRequest) => {
   }
 };
 
+const PRACTICE_HUB_PATHS = new Set([
+  "/speaking",
+  "/reading",
+  "/writing",
+  "/listening",
+]);
+
 export default clerkMiddleware(async (auth, req) => {
   if (isPreviewEnvironment && requiresPreviewAuth(req)) {
     if (!hasValidPreviewCredentials(req)) {
@@ -74,6 +81,17 @@ export default clerkMiddleware(async (auth, req) => {
           "WWW-Authenticate": 'Basic realm="Preview QA", charset="UTF-8"',
         },
       });
+    }
+  }
+
+  if (PRACTICE_HUB_PATHS.has(req.nextUrl.pathname)) {
+    const practiceId = req.nextUrl.searchParams.get("selectedPracticeId");
+    const taskId = req.nextUrl.searchParams.get("taskId");
+    if (practiceId && taskId) {
+      const url = req.nextUrl.clone();
+      url.pathname = `${req.nextUrl.pathname}/${practiceId}/${taskId}`;
+      url.search = "";
+      return applyCampaignPromoToResponse(req, NextResponse.redirect(url, 301));
     }
   }
 
