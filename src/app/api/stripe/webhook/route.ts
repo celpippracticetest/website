@@ -5,7 +5,7 @@ import { CheckoutRepository } from "@/repositories/checkout.repo";
 import { ReferralRewardRepository } from "@/repositories/referral-reward.repo";
 import { ReferralRepository } from "@/repositories/referral.repo";
 import { ReferralInvitationRepository } from "@/repositories/referral-invitation.repo";
-import { clerkClient } from "@clerk/express";
+import { clerkClient } from "@clerk/nextjs/server";
 import { ActivityLogger } from "@/lib/userActivity";
 import { isPricingAbLayout } from "@/lib/pricingAbTest";
 import { getAccessTierKey } from "@/lib/pricing";
@@ -14,6 +14,7 @@ import type { Plan } from "@/models/plans.model";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
 import { findOrCreateClerkUserByEmail } from "@/lib/clerkGuestCheckout";
 import { planNameIndicatesPremiumPlus } from "@/lib/subscriptionAccess";
+import { persistStripeCustomerIdToMongo } from "@/lib/resolveStripeCustomerId";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -51,11 +52,12 @@ async function updateUserPublicMetadata(
   newFields: Record<string, any>
 ) {
   try {
-    const user = await clerkClient.users.getUser(userId);
+    const clerk = await clerkClient();
+    const user = await clerk.users.getUser(userId);
     const currentMetadata = user.publicMetadata || {};
     const updatedMetadata = { ...currentMetadata, ...newFields };
 
-    await clerkClient.users.updateUserMetadata(userId, {
+    await clerk.users.updateUserMetadata(userId, {
       publicMetadata: updatedMetadata,
     });
     logger.info("Successfully updated metadata for user", {
@@ -109,6 +111,7 @@ async function handleReferralRewards(
   metadata: any
 ) {
   try {
+    const clerk = await clerkClient();
     const metaUserId = metadata?.user_id as string | undefined;
     let userIdToUse: string | undefined = metaUserId;
 
@@ -117,7 +120,7 @@ async function handleReferralRewards(
 
     try {
       if (userIdToUse) {
-        user = await clerkClient.users.getUser(userIdToUse);
+        user = await clerk.users.getUser(userIdToUse);
       } else {
         throw new Error("No user_id in metadata");
       }
@@ -137,7 +140,7 @@ async function handleReferralRewards(
         (session as any)?.customer_email;
       if (inviteeEmail) {
         try {
-          const users = await clerkClient.users.getUserList({
+          const users = await clerk.users.getUserList({
             emailAddress: [String(inviteeEmail).trim().toLowerCase()],
           });
           if (users?.data?.length) {
@@ -207,7 +210,7 @@ async function handleReferralRewards(
       });
 
       // Update referrer's metadata with reward information
-      const referrerUser = await clerkClient.users.getUser(referrer.userId);
+      const referrerUser = await clerk.users.getUser(referrer.userId);
       const currentMetadata = referrerUser.publicMetadata || {};
       const currentTotalRewards = (currentMetadata as any)?.totalRewards || 0;
       const newTotalRewards = currentTotalRewards + rewardAmount;
@@ -236,7 +239,7 @@ async function handleReferralRewards(
       if (totalSuccessfulPurchases >= 10) rewardLevel = 3;
       else if (totalSuccessfulPurchases >= 5) rewardLevel = 2;
 
-      await clerkClient.users.updateUserMetadata(referrer.userId, {
+      await clerk.users.updateUserMetadata(referrer.userId, {
         publicMetadata: {
           ...currentMetadata,
           hasPendingRewards: true,
@@ -254,7 +257,7 @@ async function handleReferralRewards(
     }
 
     try {
-      const freshUser = await clerkClient.users.getUser(userIdToUse as string);
+      const freshUser = await clerk.users.getUser(userIdToUse as string);
       const freshMeta = freshUser.publicMetadata as any;
       const promotionCodeId =
         freshMeta?.referralPromotionId || freshMeta?.promotionCodeId;
@@ -288,7 +291,7 @@ async function handleReferralRewards(
           updateData.newDiscountUsedAt = new Date().toISOString();
         }
 
-        await clerkClient.users.updateUserMetadata(userIdToUse as string, {
+        await clerk.users.updateUserMetadata(userIdToUse as string, {
           publicMetadata: updateData,
         });
       } catch (error) {
@@ -360,6 +363,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
+    const clerk = await clerkClient();
+
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
       let metadata: Record<string, string | undefined> = {
@@ -414,9 +419,17 @@ export async function POST(req: Request) {
         },
       });
 
+      if (
+        metadata?.user_id &&
+        typeof session.customer === "string" &&
+        session.customer
+      ) {
+        await persistStripeCustomerIdToMongo(metadata.user_id, session.customer);
+      }
+
       if (metadata?.user_id) {
         // Get user metadata to check for any existing discounts
-        const user = await clerkClient.users.getUser(metadata.user_id);
+        const user = await clerk.users.getUser(metadata.user_id);
         const userMetadata = user.publicMetadata as any;
         const isMockExamPurchase = metadata.purchase_type === "mock_exam";
         const purchasedMockExamId = metadata.mock_exam_id;
@@ -805,7 +818,7 @@ export async function POST(req: Request) {
         const email = invoice.customer_email?.trim().toLowerCase();
         if (email) {
           try {
-            const users: any = await clerkClient?.users.getUserList({
+            const users: any = await clerk.users.getUserList({
               emailAddress: [email],
             });
             if (users?.data?.length) {
@@ -922,7 +935,7 @@ export async function POST(req: Request) {
           const email = invoice.customer_email;
 
           if (email) {
-            const users = await clerkClient.users.getUserList({
+            const users = await clerk.users.getUserList({
               emailAddress: [email.trim().toLowerCase()],
             });
             if (users.data.length) {
@@ -1091,7 +1104,7 @@ export async function POST(req: Request) {
         }
 
         if (email) {
-          const users = await clerkClient.users.getUserList({
+          const users = await clerk.users.getUserList({
             emailAddress: [email.trim().toLowerCase()],
           });
           if (users.data.length) {
@@ -1153,7 +1166,7 @@ export async function POST(req: Request) {
               await checkoutRepo.updateStatus(checkoutId, "refunded");
             }
             if (userId) {
-              await clerkClient.users.updateUserMetadata(userId, {
+              await clerk.users.updateUserMetadata(userId, {
                 publicMetadata: { plan: "free" },
               });
             }
@@ -1168,7 +1181,7 @@ export async function POST(req: Request) {
             )) as any;
             const customerEmail = invEmail.customer_email;
             if (customerEmail) {
-              const usersByEmail = await clerkClient.users.getUserList({
+              const usersByEmail = await clerk.users.getUserList({
                 emailAddress: [customerEmail.trim().toLowerCase()],
               });
               if (usersByEmail.data.length) {
@@ -1191,7 +1204,7 @@ export async function POST(req: Request) {
           emailForDB = invEmailSearch.customer_email ?? undefined;
         }
         if (emailForDB) {
-          const usersByEmail2 = await clerkClient.users.getUserList({
+          const usersByEmail2 = await clerk.users.getUserList({
             emailAddress: [emailForDB.trim().toLowerCase()],
           });
           if (usersByEmail2.data.length) {

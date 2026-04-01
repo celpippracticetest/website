@@ -2,7 +2,7 @@ import * as XLSX from "xlsx";
 import mongoClient from "@/lib/mongodb";
 import { OnboardingRepository } from "@/repositories/onboarding.repo";
 import { NextResponse } from "next/server";
-import { clerkClient } from "@clerk/express";
+import { clerkClient } from "@clerk/nextjs/server";
 import { getDb } from "@/lib/mongodb";
 
 export const runtime = "nodejs";
@@ -11,6 +11,7 @@ export const maxDuration = 60; // 60 seconds timeout for export
 // GET: Export onboarding data as Excel
 export async function GET(request: Request) {
   try {
+    const clerk = await clerkClient();
     const { searchParams } = new URL(request.url);
     const view = searchParams.get("view");
 
@@ -90,7 +91,7 @@ export async function GET(request: Request) {
         let name = "";
 
         try {
-          const user = await clerkClient.users.getUser(userId);
+          const user = await clerk.users.getUser(userId);
           name = (user.firstName || "") + " " + (user.lastName || "");
         } catch (e) {
           console.warn("⚠️ Clerk user not found for:", userId);
@@ -152,7 +153,7 @@ export async function GET(request: Request) {
       let name = "";
 
       try {
-        const user = await clerkClient.users.getUser(userId);
+        const user = await clerk.users.getUser(userId);
         name = (user.firstName || "") + " " + (user.lastName || "");
       } catch (e) {
         console.warn("⚠️ Clerk user not found for:", userId);

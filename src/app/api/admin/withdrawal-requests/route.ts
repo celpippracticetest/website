@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import { clerkClient } from "@clerk/express";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 
 import mongoClient from "@/lib/mongodb";
 import { WithdrawalRequestRepository } from "@/repositories/withdrawal-request.repo";
@@ -11,7 +10,8 @@ export const dynamic = "force-dynamic";
 
 async function isAdmin(userId: string): Promise<boolean> {
   try {
-    const user = await clerkClient.users.getUser(userId);
+    const clerk = await clerkClient();
+    const user = await clerk.users.getUser(userId);
     const metadata = user.publicMetadata as any;
 
     return metadata?.roles?.includes("admin");

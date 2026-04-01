@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import Stripe from "stripe";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
+import {
+  emailsFromClerkUser,
+  resolveStripeCustomerId,
+} from "@/lib/resolveStripeCustomerId";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -14,15 +18,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get user's Stripe customer ID
     const client = await clerkClient();
     const user = await client.users.getUser(userId);
-    let customerId = user.privateMetadata?.stripeCustomerId as string | undefined;
+    const customerId = await resolveStripeCustomerId(userId, {
+      clerkStripeCustomerId: user.privateMetadata?.stripeCustomerId as
+        | string
+        | undefined,
+      emails: emailsFromClerkUser(user),
+    });
 
     if (!customerId) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         hasSubscription: false,
-        message: "No Stripe customer found" 
+        message: "No Stripe customer found",
       });
     }
 

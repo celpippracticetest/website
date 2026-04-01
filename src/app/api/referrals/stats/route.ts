@@ -12,9 +12,9 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get user metadata from Clerk
-    const { clerkClient } = await import("@clerk/express");
-    const user = await clerkClient.users.getUser(userId);
+    const { clerkClient } = await import("@clerk/nextjs/server");
+    const clerk = await clerkClient();
+    const user = await clerk.users.getUser(userId);
     const userMetadata = user.publicMetadata as any;
 
     // Initialize repositories
@@ -211,7 +211,7 @@ export async function GET() {
 
       for (const ids of idChunks) {
         try {
-          const result: any = await clerkClient.users.getUserList({
+          const result: any = await clerk.users.getUserList({
             userId: ids,
           });
           const list = Array.isArray(result?.data)

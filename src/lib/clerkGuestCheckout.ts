@@ -1,4 +1,4 @@
-import { clerkClient } from "@clerk/express";
+import { clerkClient } from "@clerk/nextjs/server";
 import { logger } from "@/lib/sentry-logger";
 
 /**
@@ -11,7 +11,8 @@ export async function findOrCreateClerkUserByEmail(rawEmail: string): Promise<st
     throw new Error("Email required to provision account");
   }
 
-  const existing = await clerkClient.users.getUserList({
+  const clerk = await clerkClient();
+  const existing = await clerk.users.getUserList({
     emailAddress: [normalized],
     limit: 1,
   });
@@ -20,7 +21,7 @@ export async function findOrCreateClerkUserByEmail(rawEmail: string): Promise<st
   }
 
   try {
-    const created = await clerkClient.users.createUser({
+    const created = await clerk.users.createUser({
       emailAddress: [normalized],
       skipPasswordRequirement: true,
       // Required when legal consent is enabled in Clerk.
@@ -37,7 +38,7 @@ export async function findOrCreateClerkUserByEmail(rawEmail: string): Promise<st
         ? (err as any).errors[0]?.code
         : null;
     if (code === "form_identifier_exists" || code === "identifier_exists") {
-      const retry = await clerkClient.users.getUserList({
+      const retry = await clerk.users.getUserList({
         emailAddress: [normalized],
         limit: 1,
       });

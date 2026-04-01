@@ -2,6 +2,10 @@ import Profile from "@/components/dashboard-new/Profile";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import mongoClient from "@/lib/mongodb";
+import {
+  emailsFromClerkUser,
+  resolveStripeCustomerId,
+} from "@/lib/resolveStripeCustomerId";
 import { normalizePlan } from "@/lib/subscriptionAccess";
 import { redirect } from "next/navigation";
 import Stripe from "stripe";
@@ -170,7 +174,12 @@ export default async function UserProfilePage() {
 
     const client = await clerkClient();
     const user = await client.users.getUser(userId);
-    let customerId = user.privateMetadata?.stripeCustomerId as string | undefined;
+    const customerId = await resolveStripeCustomerId(userId, {
+      clerkStripeCustomerId: user.privateMetadata?.stripeCustomerId as
+        | string
+        | undefined,
+      emails: emailsFromClerkUser(user),
+    });
 
     let subscriptionData: ProfileSubscriptionData | null = null;
 
@@ -179,23 +188,6 @@ export default async function UserProfilePage() {
         subscriptionData = await resolveSubscriptionDataForCustomer(customerId);
       } catch (stripeError) {
         console.error("Error fetching subscription data:", stripeError);
-      }
-    } else {
-      const userEmail = user.emailAddresses?.[0]?.emailAddress;
-      if (userEmail) {
-        try {
-          const customers = await stripe.customers.list({
-            email: userEmail,
-            limit: 1,
-          });
-          if (customers.data.length > 0) {
-            customerId = customers.data[0].id;
-            subscriptionData =
-              await resolveSubscriptionDataForCustomer(customerId);
-          }
-        } catch (emailError) {
-          console.error("Error finding customer by email:", emailError);
-        }
       }
     }
 

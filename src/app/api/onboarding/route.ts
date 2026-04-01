@@ -2,8 +2,7 @@ import * as XLSX from "xlsx";
 import mongoClient from "@/lib/mongodb";
 import { OnboardingRepository } from "@/repositories/onboarding.repo";
 import { NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
-import { clerkClient } from "@clerk/express";
+import { clerkClient, currentUser } from "@clerk/nextjs/server";
 import { getDb } from "@/lib/mongodb";
 
 export const runtime = "nodejs";
@@ -143,7 +142,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   }
 
-  await clerkClient.users.updateUser(user.id, {
+  const clerk = await clerkClient();
+  await clerk.users.updateUser(user.id, {
     privateMetadata: {
       ...user.privateMetadata,
       onboarding: onboardingMeta,
@@ -257,11 +257,12 @@ export async function GET(request: Request) {
             : 0,
       };
 
+      const clerkForView = await clerkClient();
       const processedResults = await Promise.all(
         results.map(async (result) => {
           let name = "";
           try {
-            const user = await clerkClient.users.getUser(result.userId);
+            const user = await clerkForView.users.getUser(result.userId);
             name = (user.firstName || "") + " " + (user.lastName || "");
           } catch (e) {
             console.warn("⚠️ Clerk user not found for:", result.userId);
@@ -313,11 +314,12 @@ export async function GET(request: Request) {
 
     
     // Process results to include user names
+    const clerkForLegacy = await clerkClient();
     const processedResults = await Promise.all(
       results.map(async (result) => {
         let name = "";
         try {
-          const user = await clerkClient.users.getUser(result.userId);
+          const user = await clerkForLegacy.users.getUser(result.userId);
           name = (user.firstName || "") + " " + (user.lastName || "");
         } catch (e) {
           console.warn("⚠️ Clerk user not found for:", result.userId);

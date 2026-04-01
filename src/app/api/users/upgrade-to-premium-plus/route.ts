@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
+import {
+  emailsFromClerkUser,
+  resolveStripeCustomerId,
+} from "@/lib/resolveStripeCustomerId";
 import { stripe } from "@/lib/stripe";
 import { getDb } from "@/lib/mongodb";
 import type { Plan } from "@/models/plans.model";
@@ -42,16 +46,19 @@ export async function POST() {
       );
     }
 
-    const customerId = user.privateMetadata?.stripeCustomerId as
-      | string
-      | undefined;
+    const customerId = await resolveStripeCustomerId(userId, {
+      clerkStripeCustomerId: user.privateMetadata?.stripeCustomerId as
+        | string
+        | undefined,
+      emails: emailsFromClerkUser(user),
+    });
     if (!customerId) {
       return NextResponse.json(
         {
           error:
             "No billing account on file. Please manage your plan from your profile or pricing page.",
         },
-        { status: 404 }
+        { status: 422 }
       );
     }
 

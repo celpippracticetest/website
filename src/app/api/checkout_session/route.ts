@@ -1,8 +1,7 @@
-import { clerkClient } from "@clerk/express";
 import { NextRequest, NextResponse } from "next/server";
 
 import { stripe } from "@/lib/stripe";
-import { currentUser } from "@clerk/nextjs/server";
+import { clerkClient, currentUser } from "@clerk/nextjs/server";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
 import { getDb } from "@/lib/mongodb";
 import { isPricingAbLayout } from "@/lib/pricingAbTest";
@@ -69,6 +68,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
     if (!email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const clerk = await clerkClient();
     if (!product && !price) {
       return NextResponse.json(
         { error: "Product ID or Price ID is required" },
@@ -177,7 +177,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
 
         if (applyDiscountResponse.ok) {
           // Refresh user metadata to get the new promotion ID
-          const updatedUser = await clerkClient.users.getUser(user.id);
+          const updatedUser = await clerk.users.getUser(user.id);
           const updatedMetadata = updatedUser.publicMetadata as any;
           const newReferralPromotionId = updatedMetadata?.referralPromotionId;
 
@@ -543,7 +543,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
         },
       });
     }
-    await clerkClient.users.updateUserMetadata(user.id, {
+    await clerk.users.updateUserMetadata(user.id, {
       publicMetadata: {
         planCancelled: false,
       },

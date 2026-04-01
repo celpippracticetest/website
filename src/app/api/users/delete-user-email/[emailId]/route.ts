@@ -1,5 +1,4 @@
-import { clerkClient } from "@clerk/express";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function DELETE(
@@ -18,14 +17,15 @@ export async function DELETE(
       );
     }
 
-    const user = await clerkClient.users.getUser(userId);
+    const clerk = await clerkClient();
+    const user = await clerk.users.getUser(userId);
 
     const email = user.emailAddresses.find((e) => e.id === emailId);
     if (!email) {
       return NextResponse.json({ error: "Email not found" }, { status: 404 });
     }
 
-    await clerkClient.emailAddresses.deleteEmailAddress(email.id);
+    await clerk.emailAddresses.deleteEmailAddress(email.id);
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

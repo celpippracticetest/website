@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import type Stripe from "stripe";
 import { auth, clerkClient } from "@clerk/nextjs/server";
+import {
+  emailsFromClerkUser,
+  resolveStripeCustomerId,
+} from "@/lib/resolveStripeCustomerId";
 import { stripe } from "@/lib/stripe";
 
 export async function POST(req: NextRequest) {
@@ -19,12 +24,20 @@ export async function POST(req: NextRequest) {
 
     const clerk = await clerkClient();
     const user = await clerk.users.getUser(userId);
-    const customerId = user.privateMetadata?.stripeCustomerId as string;
+    const customerId = await resolveStripeCustomerId(userId, {
+      clerkStripeCustomerId: user.privateMetadata?.stripeCustomerId as
+        | string
+        | undefined,
+      emails: emailsFromClerkUser(user),
+    });
 
     if (!customerId) {
       return NextResponse.json(
-        { error: "Stripe customer not found" },
-        { status: 404 }
+        {
+          error: "Stripe customer not found",
+          code: "stripe_customer_missing",
+        },
+        { status: 422 }
       );
     }
 
@@ -33,14 +46,17 @@ export async function POST(req: NextRequest) {
       limit: 20,
     });
 
-    const subscription = subscriptions.data.find((s) =>
+    const subscription = subscriptions.data.find((s: Stripe.Subscription) =>
       ["active", "trialing", "past_due", "unpaid"].includes(s.status)
     );
 
     if (!subscription) {
       return NextResponse.json(
-        { error: "No active subscription found" },
-        { status: 404 }
+        {
+          error: "No active subscription found",
+          code: "no_active_subscription",
+        },
+        { status: 422 }
       );
     }
     const subscriptionItemId = subscription.items.data[0].id;

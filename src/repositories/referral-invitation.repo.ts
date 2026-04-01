@@ -196,10 +196,11 @@ export class ReferralInvitationRepository {
 
     const emails: string[] = [];
     try {
-      const { clerkClient } = await import("@clerk/express");
+      const { clerkClient } = await import("@clerk/nextjs/server");
+      const clerk = await clerkClient();
       const results = await Promise.all(
         inviteeIds.map((id) =>
-          clerkClient.users
+          clerk.users
             .getUser(id)
             .then((u) => u?.emailAddresses?.[0]?.emailAddress)
             .catch(() => undefined)

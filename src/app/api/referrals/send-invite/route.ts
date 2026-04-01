@@ -20,8 +20,7 @@
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { currentUser } from "@clerk/nextjs/server";
-import { clerkClient } from "@clerk/express";
+import { clerkClient, currentUser } from "@clerk/nextjs/server";
 import { sendEmailWithSender } from "@/lib/email/sender-client";
 
 export const runtime = "nodejs"; // Sender API requests run server-side only
@@ -131,7 +130,8 @@ export async function POST(req: Request) {
 
     // 4) Ensure inviter is eligible (e.g., after purchase)
     //    We check Clerk publicMetadata or privateMetadata flags you may set elsewhere
-    const inviter = await clerkClient.users.getUser(user.id);
+    const clerk = await clerkClient();
+    const inviter = await clerk.users.getUser(user.id);
     const hasReferralAccess = Boolean(
       // set this flag in your purchase webhook logic
       (inviter.publicMetadata as any)?.referralActive ||

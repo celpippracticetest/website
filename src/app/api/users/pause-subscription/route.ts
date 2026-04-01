@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { clerkClient } from "@clerk/express";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
+import {
+  emailsFromClerkUser,
+  resolveStripeCustomerId,
+} from "@/lib/resolveStripeCustomerId";
 import { stripe } from "@/lib/stripe";
 
 export async function POST(req: NextRequest) {
@@ -11,29 +14,21 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const user = await clerkClient.users.getUser(userId);
+    const clerk = await clerkClient();
+    const user = await clerk.users.getUser(userId);
 
-    let customerId = user.privateMetadata?.stripeCustomerId as
-      | string
-      | undefined;
+    const customerId = await resolveStripeCustomerId(userId, {
+      clerkStripeCustomerId: user.privateMetadata?.stripeCustomerId as
+        | string
+        | undefined,
+      emails: emailsFromClerkUser(user),
+    });
 
     if (!customerId) {
-      const email = user.emailAddresses?.[0]?.emailAddress;
-      if (!email) {
-        return NextResponse.json(
-          { error: "User email not found" },
-          { status: 400 }
-        );
-      }
-
-      const customers = await stripe.customers.list({ email });
-      if (customers.data.length === 0) {
-        return NextResponse.json(
-          { error: "Stripe customer not found" },
-          { status: 404 }
-        );
-      }
-      customerId = customers.data[0].id;
+      return NextResponse.json(
+        { error: "Stripe customer not found" },
+        { status: 422 }
+      );
     }
 
     const subscriptions = await stripe.subscriptions.list({

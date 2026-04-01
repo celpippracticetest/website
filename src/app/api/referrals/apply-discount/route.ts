@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import Stripe from "stripe";
-import { clerkClient } from "@clerk/express";
+import { clerkClient } from "@clerk/nextjs/server";
 import mongoClient from "@/lib/mongodb";
 import { ReferralRepository } from "@/repositories/referral.repo";
 
@@ -29,8 +29,9 @@ export async function POST(req: Request) {
 
     const { referralCode, userId, userEmail } = parsed.data;
 
+    const clerk = await clerkClient();
     // Check if user has already used a referral discount
-    const user = await clerkClient.users.getUser(userId);
+    const user = await clerk.users.getUser(userId);
     const userMetadata = user.publicMetadata as any;
 
     // Check if user already has a referral discount or has used one
@@ -67,7 +68,7 @@ export async function POST(req: Request) {
     }
 
     // Get referrer user info
-    const referrerUser = await clerkClient.users.getUser(referrer.userId);
+    const referrerUser = await clerk.users.getUser(referrer.userId);
     const referrerEmail = referrerUser.emailAddresses[0]?.emailAddress;
 
     if (!referrerEmail) {
@@ -119,7 +120,7 @@ export async function POST(req: Request) {
     });
 
     // Store referral relationship in user metadata
-    await clerkClient.users.updateUserMetadata(userId, {
+    await clerk.users.updateUserMetadata(userId, {
       publicMetadata: {
         referredBy: referrer.userId,
         referralCode,

@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import mongoClient from "@/lib/mongodb";
 import { ReferralRepository } from "@/repositories/referral.repo";
 import { ReferralInvitationRepository } from "@/repositories/referral-invitation.repo";
-import { clerkClient } from "@clerk/express";
 export async function POST(req: Request) {
   try {
     const { userId } = await auth();
@@ -21,8 +20,9 @@ export async function POST(req: Request) {
       );
     }
 
+    const clerk = await clerkClient();
     // Get user information
-    const user = await clerkClient.users.getUser(userId);
+    const user = await clerk.users.getUser(userId);
     const userEmail = user.emailAddresses[0]?.emailAddress;
 
     if (!userEmail) {
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     }
 
     // Get referrer user info
-    const referrerUser = await clerkClient.users.getUser(referrer.userId);
+    const referrerUser = await clerk.users.getUser(referrer.userId);
     const referrerEmail = referrerUser.emailAddresses[0]?.emailAddress;
 
     if (!referrerEmail) {
@@ -72,7 +72,7 @@ export async function POST(req: Request) {
     }
 
     // Store referral relationship in user metadata
-    await clerkClient.users.updateUserMetadata(userId, {
+    await clerk.users.updateUserMetadata(userId, {
       publicMetadata: {
         referredBy: referrer.userId,
         referralCode: referralCode,
@@ -114,7 +114,7 @@ export async function POST(req: Request) {
     if (newTotalInvitees >= 10) rewardLevel = 3;
     else if (newTotalInvitees >= 5) rewardLevel = 2;
 
-    await clerkClient.users.updateUserMetadata(referrer.userId, {
+    await clerk.users.updateUserMetadata(referrer.userId, {
       publicMetadata: {
         ...currentMetadata,
         hasSuccessfulReferral: true,
