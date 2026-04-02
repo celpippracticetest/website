@@ -1,6 +1,6 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
+
 
 import { requireAuthenticatedRequest } from "@/lib/auth/request-auth";
 import { stripe } from "@/lib/stripe";
