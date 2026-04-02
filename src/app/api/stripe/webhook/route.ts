@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
+
 import mongoClient from "@/lib/mongodb";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
 import { ReferralRewardRepository } from "@/repositories/referral-reward.repo";
@@ -10,7 +10,7 @@ import { ActivityLogger } from "@/lib/userActivity";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+import { stripe } from "@/lib/stripe";
 
 async function updateUserPublicMetadata(
   userId: string,

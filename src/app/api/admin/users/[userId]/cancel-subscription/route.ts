@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
-import Stripe from "stripe";
+
 import client from "@/lib/mongodb";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+import { stripe } from "@/lib/stripe";
 
 function normalizeDate(value: unknown): Date | null {
   if (!value) return null;

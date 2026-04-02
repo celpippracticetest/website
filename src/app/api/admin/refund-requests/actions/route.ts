@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
-import Stripe from "stripe";
+
 import { z } from "zod";
 import client from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+import { stripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

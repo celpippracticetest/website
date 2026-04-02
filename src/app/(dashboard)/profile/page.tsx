@@ -3,9 +3,9 @@ import { CheckoutRepository } from "@/repositories/checkout.repo";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import mongoClient from "@/lib/mongodb";
 import { redirect } from "next/navigation";
-import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+import { stripe } from "@/lib/stripe";
 
 export default async function UserProfilePage() {
   const { userId } = await auth();

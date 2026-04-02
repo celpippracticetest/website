@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
-import Stripe from "stripe";
+
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+import { stripe } from "@/lib/stripe";
 
 export async function GET(request: NextRequest) {
   try {
