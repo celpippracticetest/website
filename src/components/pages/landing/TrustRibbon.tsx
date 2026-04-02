@@ -5,56 +5,64 @@ import { motion } from "framer-motion";
 
 const TrustRibbon = () => {
   const itemsA = [
-    "Verified CLB 10",
-    "PR Approved",
-    "70,000+ Users",
-    "98.4% Success Rate",
-    "AI-Powered Scoring",
-    "Realistic Mock Exams",
+    { text: "Verified CLB 10", icon: "✓" },
+    { text: "PR Approved", icon: "✓" },
+    { text: "70,000+ Users", icon: "👥" },
+    { text: "98.4% Success Rate", icon: "📈" },
+    { text: "AI-Powered Scoring", icon: "🤖" },
+    { text: "Realistic Mock Exams", icon: "📝" },
   ];
 
   const itemsB = [
-    "Trusted by Candidates",
-    "Updated Weekly",
-    "Instant Feedback",
-    "No Credit Card Required",
-    "Free Mock Test",
-    "Custom Study Plan",
+    { text: "Trusted by Candidates", icon: "⭐" },
+    { text: "Updated Weekly", icon: "🔄" },
+    { text: "Instant Feedback", icon: "⚡" },
+    { text: "No Credit Card Required", icon: "💳" },
+    { text: "Free Mock Test", icon: "🎁" },
+    { text: "Custom Study Plan", icon: "📋" },
   ];
 
   return (
-    <div className="w-full overflow-hidden bg-primary1 py-3 screen744:py-4 flex flex-col gap-2 screen744:gap-3">
-      <div className="flex whitespace-nowrap">
+    <div className="w-full overflow-hidden bg-gradient-to-r from-primary1 via-primary2 to-secondary2 py-4 screen744:py-5 flex flex-col gap-3 screen744:gap-4 relative">
+      {/* Animated Background Gradient */}
+      <div className="absolute inset-0 opacity-20 bg-gradient-to-r from-white/0 via-white/10 to-white/0" />
+      
+      {/* First Row - Forward Motion */}
+      <div className="flex whitespace-nowrap relative z-10">
         <motion.div
           animate={{ x: ["0%", "-50%"] }}
-          transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
-          className="flex gap-8 screen744:gap-16 items-center"
+          transition={{ repeat: Infinity, duration: 25, ease: "linear" }}
+          className="flex gap-6 screen744:gap-12 items-center"
         >
           {[...itemsA, ...itemsA].map((item, index) => (
-            <span
+            <motion.span
               key={index}
-              className="text-white text-xs screen744:text-sm font-bold uppercase tracking-widest flex items-center gap-2"
+              whileHover={{ scale: 1.05 }}
+              className="text-white text-xs screen744:text-sm font-bold uppercase tracking-widest flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all cursor-default"
             >
-              <span className="w-1.5 h-1.5 bg-secondary2 rounded-full" />
-              {item}
-            </span>
+              <span className="text-sm">{item.icon}</span>
+              {item.text}
+            </motion.span>
           ))}
         </motion.div>
       </div>
-      <div className="flex whitespace-nowrap">
+      
+      {/* Second Row - Reverse Motion */}
+      <div className="flex whitespace-nowrap relative z-10">
         <motion.div
           animate={{ x: ["-50%", "0%"] }}
-          transition={{ repeat: Infinity, duration: 25, ease: "linear" }}
-          className="flex gap-8 screen744:gap-16 items-center"
+          transition={{ repeat: Infinity, duration: 30, ease: "linear" }}
+          className="flex gap-6 screen744:gap-12 items-center"
         >
           {[...itemsB, ...itemsB].map((item, index) => (
-            <span
+            <motion.span
               key={index}
-              className="text-white/80 text-[10px] screen744:text-xs font-medium uppercase tracking-widest flex items-center gap-2"
+              whileHover={{ scale: 1.05 }}
+              className="text-white/90 text-[10px] screen744:text-xs font-semibold uppercase tracking-widest flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all cursor-default"
             >
-              <span className="w-1 h-1 bg-white/40 rounded-full" />
-              {item}
-            </span>
+              <span className="text-xs">{item.icon}</span>
+              {item.text}
+            </motion.span>
           ))}
         </motion.div>
       </div>
