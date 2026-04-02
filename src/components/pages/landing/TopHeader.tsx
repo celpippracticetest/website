@@ -129,10 +129,10 @@ const TopHeader = () => {
   return (
     <div className="max-w-[1440px] w-full flex justify-center mx-auto ">
       <div
-        className="z-3 px-[16px] screen744:!px-[24px] screen1280:!px-[40px] max-w-[1156px] w-full screen1280:!h-[80px] h-[72px] flex items-center justify-between text-center border-solid fixed top-0 border-[1.5px] backdrop-blur-[8px] border-primary5 rounded-es-[32px] rounded-ee-[32px]"
+        className="z-3 px-[16px] screen744:!px-[24px] screen1280:!px-[40px] max-w-[1156px] w-full screen1280:!h-[80px] h-[72px] flex items-center justify-between text-center border-solid fixed top-0 border-[1px] backdrop-blur-[12px] border-primary5 rounded-es-[28px] rounded-ee-[28px] shadow-[0_4px_12px_rgba(33,46,66,0.08)]"
         style={{
           background:
-            "linear-gradient(90deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.2) 100%)",
+            "linear-gradient(90deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.3) 100%)",
         }}>
         <div className="flex items-center gap-[12px] screen744:!gap-[24px]">
           <span
@@ -173,9 +173,9 @@ const TopHeader = () => {
             (label, index) => (
               <React.Fragment key={label}>
                 <Link
-                  className="group gap-[10px] h-[36px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
+                  className="group gap-[10px] h-[36px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1 font-medium transition-colors duration-200"
                   href={hrefs[index]}>
-                  <span className=" text-[16px] font-normal">{label}</span>
+                  <span className=" text-[15px]">{label}</span>
                 </Link>
                 {index != 3 && (
                   <div className="bg-outline w-[1px] h-[35px] rounded-[15px]"></div>
@@ -194,8 +194,8 @@ const TopHeader = () => {
         ref={sidebarMenuRef}
         initial={{ x: "100%" }}
         animate={{ x: isMenuOpen ? "0%" : "100%" }}
-        transition={{ duration: 0.5, ease: "easeInOut" }}
-        className={` z-[9999999] fixed right-0 top-0 flex flex-col text-[#3D3B3B] bg-[#f9f9f9] p-[24px] w-full max-w-[720px] h-[100vh]`}>
+        transition={{ duration: 0.4, ease: "easeInOut" }}
+        className={` z-[9999999] fixed right-0 top-0 flex flex-col text-[#3D3B3B] bg-white p-[24px] w-full max-w-[720px] h-[100vh] shadow-[-4px_0_12px_rgba(33,46,66,0.12)]`}>
         <div className="flex justify-between">
           <span
             className={` "text-[#232222] text-[20px]  screen1280:flex !font-lobster`}>
@@ -214,17 +214,17 @@ const TopHeader = () => {
             <SvgClose />
           </span>
         </div>
-        <div className=" mt-[32px] gap-[16px]">
+        <div className=" mt-[32px] gap-[12px] flex flex-col">
           {["Mock Exams", "Practice Overview", "Learning", "Words"].map(
             (label, index) => (
               <React.Fragment key={label}>
                 <Link
                   key={label}
-                  className="h-[36px] group gap-[10px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
+                  className="h-[44px] group gap-[12px] flex items-center px-[16px] rounded-[12px] hover:bg-primary6 text-text2 hover:cursor-pointer hover:!text-primary1 transition-all duration-200"
                   href={hrefs[index]}>
                   {icons[index]}
 
-                  <span className=" text-[16px] font-normal">{label}</span>
+                  <span className=" text-[15px] font-semibold">{label}</span>
                 </Link>
               </React.Fragment>
             ),

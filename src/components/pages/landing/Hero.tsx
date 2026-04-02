@@ -116,7 +116,7 @@ const Hero = ({ heroImage }: HeroProps) => {
           backgroundSize: "300% 300%",
           animation: "gradient 14s ease-in-out infinite",
         }}
-        className="relative pt-[80px] flex flex-col min-h-screen screen1024:min-h-[100dvh] justify-between transition-all duration-300 w-full background-animate shadow-[inset_0px_-80px_96px_-4px_#F4F7FF]">
+        className="relative pt-[80px] pb-[20px] flex flex-col min-h-screen screen1024:min-h-[100dvh] justify-between transition-all duration-300 w-full background-animate shadow-[inset_0px_-80px_96px_-4px_#F4F7FF]">
         <TopHeader />
         <div className="flex max-w-[1440px] w-full justify-center mx-auto ">
           <div className="flex flex-col screen744:!flex-row w-full screen744:!justify-between justify-center px-[16px] screen744:!px-[40px] flex-wrap screen744:!flex-nowrap">
@@ -231,7 +231,7 @@ const Hero = ({ heroImage }: HeroProps) => {
 
         {/* Navigation Cards (Desktop & Mobile Unified) */}
         <div className="flex flex-col w-full overflow-hidden">
-          <div className="flex flex-row flex-wrap screen744:flex-nowrap px-[16px] screen744:!px-[42px] pt-[22px] pb-[60px] screen744:!pb-[40px] screen1280:!mt-[52px] gap-[12px] screen744:!gap-[16px] screen1280:gap-[24px] w-full max-w-[1440px] mx-auto screen1024:justify-center">
+          <div className="flex flex-row flex-wrap screen744:flex-nowrap px-[16px] screen744:!px-[42px] pt-[32px] pb-[60px] screen744:!pb-[40px] screen1280:!mt-[52px] gap-[12px] screen744:!gap-[16px] screen1280:gap-[24px] w-full max-w-[1440px] mx-auto screen1024:justify-center">
             {[
               {
                 title: "Listening",
@@ -285,7 +285,7 @@ const Hero = ({ heroImage }: HeroProps) => {
                   bgColor={exam.bgColor}
                   isLast={isLast}
                   link={exam.link}
-                  className={cn("screen744:!w-auto", {
+                  className={cn("screen744:!w-auto transition-all duration-200 hover:shadow-lg", {
                     "!w-[calc(50%-6px)]": !isLast,
                     "w-full": isLast,
                   })}

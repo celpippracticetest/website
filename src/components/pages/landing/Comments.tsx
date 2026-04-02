@@ -106,41 +106,42 @@ const Comments = () => {
       <JsonLd data={reviewsSchema} />
       <h2
         id="comments-heading"
-        className="text-center text-[24px] screen744:!text-[28px] screen1280:!text-[32px] px-[16px] text-text1 mx-auto font-medium">
-        Join 20,000+ Graduates Who Trust Us
+        className="text-center text-[24px] screen744:!text-[28px] screen1280:!text-[32px] px-[16px] text-text1 mx-auto font-semibold">
+        Join 70k+ Graduates Who Trust Us
       </h2>
 
       {/* Mobile View - Horizontal Scroll */}
-      <div className="flex scrollbar-none screen744:!hidden mt-[40px] px-[20px] overflow-x-auto gap-[16px] w-full flex-nowrap justify-start">
+      <div className="flex scrollbar-none screen744:!hidden mt-[40px] px-[16px] overflow-x-auto gap-[12px] w-full flex-nowrap justify-start pb-[8px]">
         {allPersons.map((person, index) => (
           <div
             key={index}
             role="article"
             style={{ transitionDelay: `${index * 40}ms` }}
-            className={`flex flex-col flex-shrink-0 min-w-[280px] max-w-[316px] h-[230px] bg-white shadow-[2px_2px_8px_0px_#212E4214] hover:!shadow-[0px_10px_35px_0px_#212E421A] p-[16px] rounded-[24px] ${
+            className={`flex flex-col flex-shrink-0 min-w-[280px] max-w-[316px] h-[240px] bg-white shadow-[0_2px_8px_rgba(33,46,66,0.08)] hover:shadow-[0_8px_24px_rgba(33,46,66,0.12)] p-[16px] rounded-[20px] ${
               animate
                 ? "translate-x-0 opacity-100"
                 : "-translate-x-full opacity-0"
             } transition-all duration-300 ease-out transform`}>
-            <div className="flex gap-[10px] h-[56px]">
-              <div>
+            <div className="flex gap-[12px] h-[56px]">
+              <div className="flex-shrink-0">
                 <Image
                   src={`/images/${person.source}`}
                   alt={`Photo of ${person.name}`}
                   width={48}
                   height={48}
+                  className="rounded-full"
                 />
               </div>
-              <div className="flex flex-col gap-[8px]">
-                <h3 className="text-text1 font-medium text-[18px]">
+              <div className="flex flex-col gap-[6px] flex-1">
+                <h3 className="text-text1 font-semibold text-[16px]">
                   {person.name}
                 </h3>
-                <span>
+                <span className="flex">
                   <Svg5Star />
                 </span>
               </div>
             </div>
-            <div className="text-text2 text-[12px] leading-[18px] font-normal mt-[16px]">
+            <div className="text-text2 text-[13px] leading-[19px] font-normal mt-[12px] flex-1 line-clamp-3">
               {person.comment}
             </div>
           </div>
@@ -154,20 +155,21 @@ const Comments = () => {
             key={index}
             role="article"
             style={{ transitionDelay: `${index * 40}ms` }}
-            className={`flex flex-col shadow-[2px_2px_8px_0px_#212E4214] hover:!shadow-[0px_10px_35px_0px_#212E421A] p-[16px] rounded-[24px] w-full max-w-[340px] h-[200px] screen1280:!max-w-[437px] screen1280:!h-[235px] bg-white ${
+            className={`flex flex-col shadow-[0_2px_8px_rgba(33,46,66,0.08)] hover:shadow-[0_8px_24px_rgba(33,46,66,0.12)] p-[16px] rounded-[20px] w-full max-w-[340px] h-[220px] screen1280:!max-w-[437px] screen1280:!h-[240px] bg-white ${
               animate ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
             } transition-all duration-300 ease-out transform`}>
-            <div className="flex gap-[10px] h-[56px]">
-              <div>
+            <div className="flex gap-[12px] h-[56px]">
+              <div className="flex-shrink-0">
                 <Image
                   src={`/images/${person.source}`}
                   alt={`Photo of ${person.name}`}
                   width={48}
                   height={48}
+                  className="rounded-full"
                 />
               </div>
-              <div className="flex flex-col gap-[8px]">
-                <h3 className="text-text1 font-medium text-[18px] screen1280:!text-[20px]">
+              <div className="flex flex-col gap-[6px] flex-1">
+                <h3 className="text-text1 font-semibold text-[16px] screen1280:!text-[18px]">
                   {person.name}
                 </h3>
                 <span>
@@ -175,7 +177,7 @@ const Comments = () => {
                 </span>
               </div>
             </div>
-            <div className="text-text2 text-[12px] leading-[18px] screen1280:!leading-[23px] screen1280:!text-[16px] font-normal mt-[16px]">
+            <div className="text-text2 text-[13px] leading-[19px] screen1280:!leading-[21px] screen1280:!text-[15px] font-normal mt-[12px] flex-1 line-clamp-3">
               {person.comment}
             </div>
           </div>

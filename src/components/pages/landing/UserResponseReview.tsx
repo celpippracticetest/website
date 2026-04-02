@@ -64,7 +64,7 @@ const UserResponseReview = () => {
           title2: "Speaking",
         },
         body: {
-          title: "Train Like It’s the Real CELPIP Exam",
+          title: "Train Like It's the Real CELPIP Exam",
           subtitle:
             "Learn to be a CELPIP test master by practicing with actual exam-pattern questionsA Peaceful Countryside RoadWhat can you see in the picture below? Describe it as best as you can. The person you are talking to can't see the picture.",
           size: 306,
@@ -81,7 +81,7 @@ const UserResponseReview = () => {
           title2: "Speaking",
         },
         body: {
-          title: "Train Like It’s the Real CELPIP Exam",
+          title: "Train Like It's the Real CELPIP Exam",
           subtitle:
             "Practice Like It's the Real CELPIP Test. Excel at the CELPIP test with real exam-style questions to practice.",
           size: 375,
@@ -129,14 +129,14 @@ const UserResponseReview = () => {
   const tabType = tabs[active].type as keyof typeof color;
   return (
     <div className="mt-[40px] screen744:!mt-[125px] screen1280:!mt-[156px] flex-col flex  max-w-[1440px] mx-auto justify-center w-full">
-      <span className="text-center text-text1 font-500 text-[24px] screen744:!text-[28px] screen1280:!text-[32px]">
+      <span className="text-center text-text1 font-semibold text-[24px] screen744:!text-[28px] screen1280:!text-[32px] px-[16px]">
         Get Real-Time Insights on Your Responses
       </span>
 
       <div className="overflow-x-auto scrollbar-none px-[16px]">
-        <div className="relative mt-[40px] flex gap-[10px] w-max flex-nowrap border-[1px] rounded-[32px] mx-auto justify-start border-solid p-[12px] border-primary5 bg-[linear-gradient(90deg,_rgba(255,_255,_255,_0.65)_0%,_rgba(255,_255,_255,_0.25)_100%)]">
+        <div className="relative mt-[32px] flex gap-[8px] w-max flex-nowrap border-[1px] rounded-[28px] mx-auto justify-start border-solid p-[6px] border-primary5 bg-[linear-gradient(90deg,_rgba(255,_255,_255,_0.65)_0%,_rgba(255,_255,_255,_0.25)_100%)]">
           <div
-            className="absolute w-[191px] screen1280:!w-[276px] top-[12px] h-[40px] rounded-[16px] bg-primary2 z-0 transition-all duration-300 pointer-events-none"
+            className="absolute w-[160px] screen1280:!w-[240px] top-[6px] h-[40px] rounded-[20px] bg-primary2 z-0 transition-all duration-300 pointer-events-none"
             style={{
               left: `${indicatorStyle.left}px`,
             }}
@@ -152,7 +152,7 @@ const UserResponseReview = () => {
               <div
                 onClick={() => setActive(index)}
                 className={`${active === index ? "bg-primary2 text-white" : "text-text2"
-                  } flex items-center hover:cursor-pointer justify-center hover:text-white hover:bg-primary2 text-[18px] h-[40px] w-[191px] screen1280:!w-[276px] rounded-[16px] transition-colors duration-300 z-[10] flex-shrink-0`}
+                  } flex items-center hover:cursor-pointer justify-center hover:text-white hover:bg-primary2 text-[16px] screen744:!text-[18px] h-[40px] w-[160px] screen1280:!w-[240px] rounded-[20px] transition-colors duration-300 z-[10] flex-shrink-0 font-medium`}
               >
                 {tab.title}
               </div>
@@ -162,8 +162,8 @@ const UserResponseReview = () => {
       </div>
 
       <div className="flex justify-center px-[16px] ">
-        <div className="mt-[40px] max-w-[1160px]  w-full h-auto pb-[29px] min-h-[557px] pt-[16px] px-[24px] bg-white rounded-[16px]">
-          <div className="flex justify-between">
+        <div className="mt-[32px] max-w-[1160px]  w-full h-auto pb-[24px] min-h-[557px] pt-[16px] px-[20px] screen744:!px-[24px] bg-white rounded-[20px] shadow-[0_2px_8px_rgba(33,46,66,0.08)]">
+          <div className="flex justify-between items-start">
             {active == 0 ? (
               <Image
                 alt="beaver mock test"
@@ -195,22 +195,22 @@ const UserResponseReview = () => {
             ) : (
               <></>
             )}
-            <div className="flex gap-[8px] screen1280:!gap-[16px] items-center">
+            <div className="flex gap-[8px] screen1280:!gap-[12px] items-center">
               <div
-                className={`${color[tabType].bg} ${color[tabType].text}  h-[44px] px-[8px] screen1280:!px-[16px] py-[8px] rounded-[24px] flex items-center justify-center `}
+                className={`${color[tabType].bg} ${color[tabType].text}  h-[40px] px-[12px] screen1280:!px-[16px] py-[6px] rounded-[20px] flex items-center justify-center `}
               >
                 <span
-                  className={`text-[14px] screen1280:!text-[18px] font-normal `}
+                  className={`text-[12px] screen744:!text-[14px] screen1280:!text-[16px] font-semibold `}
                 >
                   {tabs[active].response.header.title2}
                 </span>
               </div>
               <div
                 className={`bg-primary6
-                 px-[8px] screen1280:!px-[16px]  py-[8px] rounded-[24px] h-[44px] text-primary2 flex items-center justify-center`}
+                 px-[12px] screen1280:!px-[16px]  py-[6px] rounded-[20px] h-[40px] text-primary2 flex items-center justify-center`}
               >
                 <span
-                  className={`text-[14px] screen1280:!text-[18px] font-normal `}
+                  className={`text-[12px] screen744:!text-[14px] screen1280:!text-[16px] font-semibold `}
                 >
                   {tabs[active].response.header.title1}
                 </span>
@@ -218,19 +218,19 @@ const UserResponseReview = () => {
             </div>
           </div>
           <div className="flex flex-col">
-            <div className="mt-[12px] screen744:!mt-[16px] h-[28px]  ">
-              <span className="text-text1 font-semibold text-[16px] screen744:!text-[18px] screen1280:!text-[30px]">
+            <div className="mt-[16px] h-auto">
+              <span className="text-text1 font-semibold text-[16px] screen744:!text-[18px] screen1280:!text-[28px]">
                 {tabs[active].response.body.title}
               </span>
             </div>
-            <div className="mt-[12px] screen744:!mt-[16px]">
-              <span className="text-text2 font-normal text-[12px] screen744:!text-[18px]">
+            <div className="mt-[12px] screen744:!mt-[14px]">
+              <span className="text-text2 font-normal text-[13px] screen744:!text-[15px] screen1280:!text-[16px] leading-[20px]">
                 {tabs[active].response.body.subtitle}
               </span>
             </div>
           </div>
 
-          <div className="mt-[12px] screen744:!mt-[16px] ">
+          <div className="mt-[16px] screen744:!mt-[20px]">
             {tabs[active].response.body.component}
           </div>
         </div>

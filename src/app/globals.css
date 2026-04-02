@@ -317,3 +317,46 @@ html:has(#plans) {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+/* Mobile App-like Styling */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Smooth transitions for interactive elements */
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    transition: all 0.2s ease-in-out;
+  }
+
+  /* Improve tap target size on mobile */
+  @media (max-width: 743px) {
+    button,
+    a[role="button"],
+    [role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+}
+
+@layer components {
+  /* Mobile app-like card styling */
+  .app-card {
+    @apply rounded-[20px] bg-white shadow-[0_2px_8px_rgba(33,46,66,0.08)] hover:shadow-[0_8px_24px_rgba(33,46,66,0.12)] transition-shadow duration-300;
+  }
+
+  /* Mobile app-like button styling */
+  .app-button {
+    @apply h-[44px] px-[16px] rounded-[12px] font-semibold text-[15px] transition-all duration-200 active:scale-95;
+  }
+}

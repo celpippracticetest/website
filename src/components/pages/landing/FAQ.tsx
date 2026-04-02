@@ -56,31 +56,31 @@ const FAQ = () => {
     return (
         <section
             aria-labelledby="faq-heading"
-            className="mt-[80px] screen1280:!mt-[104px] mb-[80px] max-w-[1440px] mx-auto px-[20px] screen1280:!px-[40px]"
+            className="mt-[80px] screen1280:!mt-[104px] mb-[80px] max-w-[1440px] mx-auto px-[16px] screen744:!px-[24px] screen1280:!px-[40px]"
         >
             <h2
                 id="faq-heading"
-                className="text-center text-[24px] screen744:!text-[32px] font-medium text-text1 mb-[40px]"
+                className="text-center text-[24px] screen744:!text-[28px] screen1280:!text-[32px] font-semibold text-text1 mb-[40px]"
             >
-                FAQs
+                Frequently Asked Questions
             </h2>
 
-            <div className="flex flex-col gap-[16px]">
+            <div className="flex flex-col gap-[12px] max-w-[900px] mx-auto">
                 {faqs.map((faq, index) => (
                     <div
                         key={index}
-                        className="border border-[#E0E0E0] rounded-[16px] overflow-hidden bg-[#F8F9FC]"
+                        className="border border-[#E0E0E0] rounded-[16px] overflow-hidden bg-white shadow-[0_1px_3px_rgba(33,46,66,0.05)] hover:shadow-[0_4px_12px_rgba(33,46,66,0.08)] transition-shadow duration-300"
                     >
                         <button
                             onClick={() => toggleAccordion(index, faq.question)}
-                            className="w-full flex justify-between items-center p-[24px] text-left bg-[#F8F9FC] hover:bg-[#F1F3F9] transition-colors"
+                            className="w-full flex justify-between items-center p-[20px] screen744:!p-[24px] text-left bg-white hover:bg-[#F9FAFC] transition-colors duration-200"
                             aria-expanded={openIndex === index}
                         >
-                            <span className="text-[16px] screen744:!text-[18px] font-medium text-text1 pr-[16px]">
+                            <span className="text-[15px] screen744:!text-[16px] screen1280:!text-[17px] font-semibold text-text1 pr-[16px] flex-1">
                                 {faq.question}
                             </span>
                             <span
-                                className={`transform transition-transform duration-300 min-w-[20px] ${openIndex === index ? "rotate-180" : ""
+                                className={`transform transition-transform duration-300 min-w-[20px] flex-shrink-0 ${openIndex === index ? "rotate-180" : ""
                                     }`}
                             >
                                 <SvgChevronDown />
@@ -94,7 +94,7 @@ const FAQ = () => {
                         >
                             <div className="overflow-hidden">
                                 <div
-                                    className="p-[24px] pt-0 text-[16px] text-[#5F6D7E] leading-[24px]"
+                                    className="p-[20px] screen744:!p-[24px] pt-0 text-[14px] screen744:!text-[15px] screen1280:!text-[16px] text-text2 leading-[22px] screen1280:!leading-[24px]"
                                     dangerouslySetInnerHTML={{ __html: faq.answer }}
                                 />
                             </div>
