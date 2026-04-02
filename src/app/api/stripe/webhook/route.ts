@@ -1,3 +1,4 @@
+import type Stripe from "stripe";
 import { NextResponse } from "next/server";
 
 import mongoClient from "@/lib/mongodb";

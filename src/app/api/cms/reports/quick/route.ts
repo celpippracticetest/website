@@ -1,3 +1,4 @@
+import type Stripe from "stripe";
 import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { getDb } from "@/lib/mongodb";
