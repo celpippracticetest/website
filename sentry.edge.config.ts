@@ -1,34 +1,40 @@
 import * as Sentry from "@sentry/nextjs";
 
-Sentry.init({
-    dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
-    // Enable logs - required for logger to work
-    enableLogs: true,
+if (dsn) {
+    Sentry.init({
+        dsn: dsn,
 
-    // Set environment
-    environment: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT || process.env.NODE_ENV,
+        // Enable logs - required for logger to work
+        enableLogs: true,
 
-    // Adjust this value in production
-    tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
+        // Set environment
+        environment: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT || process.env.NODE_ENV,
 
-    // Setting this option to true will print useful information to the console
-    debug: false,
+        // Adjust this value in production
+        tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
 
-    // Tag all events from edge
-    initialScope: {
-        tags: {
-            environment: "edge",
-            runtime: "edge",
+        // Setting this option to true will print useful information to the console
+        debug: false,
+
+        // Tag all events from edge
+        initialScope: {
+            tags: {
+                environment: "edge",
+                runtime: "edge",
+            },
         },
-    },
 
-    beforeSend(event, hint) {
-        // Filter out health check endpoints
-        if (event.request?.url?.includes("/api/health")) {
-            return null;
-        }
+        beforeSend(event, hint) {
+            // Filter out health check endpoints
+            if (event.request?.url?.includes("/api/health")) {
+                return null;
+            }
 
-        return event;
-    },
-});
+            return event;
+        },
+    });
+} else {
+    console.warn("Sentry DSN not found. Sentry initialization skipped.");
+}
