@@ -7,6 +7,7 @@ import FAQ from "./FAQ";
 import { ExamModeFeatureSectionLanding } from "@/components/marketing/ExamModeFeatureSection";
 import { useChunkErrorHandler } from "@/hooks/useChunkErrorHandler";
 import OnlineUsersCount from "@/components/analytics/OnlineUsersCount";
+import SuccessRoadmap from "./SuccessRoadmap";
 
 const Hero = dynamic(() => import("./Hero"), { ssr: true });
 const Comments = dynamic(() => import("./Comments"), { ssr: false });
@@ -52,7 +53,6 @@ export default function HomePageClient({ heroImage }: HomePageClientProps) {
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div className="bg-[#F4F7FF]">
         <Hero heroImage={heroImage} />
-        <UserResponseReview />
         <div className="flex flex-col mt-[40px] screen744:!mt-[80px] screen1280:!mt-[104px] max-w-[1440px] mx-auto justify-center w-full">
           <div className="flex justify-center px-[16px]">
             <div className="max-w-[1160px] w-full">
@@ -60,10 +60,11 @@ export default function HomePageClient({ heroImage }: HomePageClientProps) {
             </div>
           </div>
         </div>
+        <UserResponseReview />
+        <SuccessRoadmap />
         <Comments />
         <Practice />
         <ExamModeFeatureSectionLanding />
-        {/* <Blog /> */}
         <FAQ />
         <FloatingChatIcon autoOpen={false} />
       </div>

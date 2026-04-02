@@ -1,40 +1,50 @@
-import React, { useEffect } from "react";
-import dynamic from "next/dynamic";
-import Image from "next/image";
-import ExamSectionCard from "./ExamSectionCard";
+import React from "react";
 import { motion } from "framer-motion";
-import { useButtonVisibleStore } from "@/store/buttonVisible.store";
-import { useInView } from "react-intersection-observer";
-import TopHeader from "./TopHeader";
+import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@/components/v2/Button";
-import SvgMedalLg from "@/components/v2/icons/medal-lg";
-import SvgMedalMd from "@/components/v2/icons/medal-md";
-import { SvgLearning } from "@/components/icons";
-import SvgWord from "@/components/icons/Word";
-import { cn } from "@/lib/utils";
 import { useHomepageCta } from "@/hooks/useHomepageCta";
+import ScoreDiagnostic from "./ScoreDiagnostic";
+import TrustRibbon from "./TrustRibbon";
+import { cn } from "@/lib/utils";
 
-const SvgMockExamLight = dynamic(() => import("../../icons/MockExamsLight"), {
-  ssr: false,
-});
-const SvgSampleTest = dynamic(() => import("../../icons/SampleTest"), {
-  ssr: false,
-});
-const SvgGuide = dynamic(() => import("../../icons/Guide"), { ssr: false });
-const SvgScoring = dynamic(() => import("../../icons/Scoring"), { ssr: false });
-const SvgPlus = dynamic(() => import("../../icons/Plus"), { ssr: false });
-const SvgListening = dynamic(() => import("../../icons/Listening"), {
-  ssr: false,
-});
-const SvgSpeaking = dynamic(() => import("../../icons/Speaking"), {
-  ssr: false,
-});
-const SvgWriting = dynamic(() => import("../../icons/Writing"), { ssr: false });
-const SvgReading = dynamic(() => import("../../icons/Reading"), { ssr: false });
-const SvgMockExamsColorful = dynamic(
-  () => import("../../icons/MockExamsColorful"),
-  { ssr: false },
-);
+// SVGs for the bottom section
+import SvgListening from "../../icons/Listening";
+import SvgSpeaking from "../../icons/Speaking";
+import SvgWriting from "../../icons/Writing";
+import SvgReading from "../../icons/Reading";
+import SvgMockExamsColorful from "../../icons/MockExamsColorful";
+import { SvgLearning } from "../../icons";
+import SvgWord from "../../icons/Word";
+
+const ExamSectionCard = ({
+  title,
+  icon,
+  bgColor,
+  link,
+  className,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  bgColor: string;
+  link: string;
+  className?: string;
+}) => {
+  return (
+    <Link
+      href={link}
+      className={cn(
+        "flex flex-col items-center justify-center p-4 screen744:p-6 rounded-[24px] bg-white border border-primary5 shadow-sm hover:shadow-md transition-all group",
+        className
+      )}
+    >
+      <div className={cn("w-12 h-12 screen744:w-16 screen744:h-16 rounded-2xl flex items-center justify-center mb-3 screen744:mb-4 group-hover:scale-110 transition-transform", bgColor)}>
+        {icon}
+      </div>
+      <span className="text-sm screen744:text-base font-bold text-text1">{title}</span>
+    </Link>
+  );
+};
 
 type HeroProps = {
   heroImage: {
@@ -44,254 +54,130 @@ type HeroProps = {
 };
 
 const Hero = ({ heroImage }: HeroProps) => {
-  const { ref } = useInView();
-  const { setVisible, isVisible, isInFooter } = useButtonVisibleStore(
-    (state) => state,
-  );
-  const { href, label, shortLabel, trackClick } = useHomepageCta();
-
-  const handleCTAClick = (location: string) => {
-    trackClick(location);
-  };
-
-  useEffect(() => {
-    const onScroll = () => {
-      const scrollY = window.scrollY;
-
-      if (scrollY > 100 && !isInFooter) {
-        setVisible(false);
-      } else if (scrollY > 100 && isInFooter) {
-        setVisible(false);
-      } else if (scrollY < 100) {
-        setVisible(false);
-      }
-    };
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [isInFooter]);
-
-  useEffect(() => {
-    if (window.location.hash === "#plans") {
-      const el = document.getElementById("plans");
-
-      if (el) {
-        setTimeout(() => {
-          el.scrollIntoView({ behavior: "smooth" });
-        }, 300);
-      }
-    }
-  }, []);
+  const { href, trackClick } = useHomepageCta();
 
   return (
-    <div ref={ref} className="flex flex-col ">
-      <div
-        className={`w-full  
-    flex bg-[linear-gradient(180deg,_rgba(255,_255,_255,_0.4)_0%,_rgba(255,_255,_255,_0.8)_100%)] 
-    backdrop-blur-[1px] 
-    shadow-[0_0_100px_0px_rgba(255,255,255,0.8)] 
-    ${
-      isVisible
-        ? "opacity-100 translate-y-0"
-        : "opacity-0 translate-y-[12px] pointer-events-none"
-    } 
-    flex justify-center fixed z-[10] h-[128px] items-center 
-    left-1/2 -translate-x-1/2 transition-all duration-500 
-    ease-in-out transform bottom-0`}>
-        <div onClick={() => handleCTAClick("hero_floating_bottom")}>
-          <Button
-            size="lg"
-            href={href}
-            aria-label={label}>
-            <SvgPlus />
-            <span className="hidden sm:!flex">{label}</span>
-            <span className="flex sm:!hidden">{shortLabel}</span>
-          </Button>
-        </div>
-      </div>
+    <div className="flex flex-col w-full bg-[#F4F7FF]">
+      <section className="relative pt-10 screen744:pt-20 screen1280:pt-32 pb-16 overflow-hidden">
+        {/* Background Gradients */}
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-primary5/30 to-transparent pointer-events-none z-0" />
+        <div className="absolute -top-20 -left-20 w-80 h-80 bg-secondary5/20 rounded-full blur-3xl pointer-events-none z-0" />
 
-      <section
-        style={{
-          background:
-            "linear-gradient(-45deg, #CEDCFF70, #DAFFFA70, #FFB78A70, #CEDCFF70)",
-          backgroundSize: "300% 300%",
-          animation: "gradient 14s ease-in-out infinite",
-        }}
-        className="relative pt-[80px] flex flex-col min-h-screen screen1024:min-h-[100dvh] justify-between transition-all duration-300 w-full background-animate shadow-[inset_0px_-80px_96px_-4px_#F4F7FF]">
-        <TopHeader />
-        <div className="flex max-w-[1440px] w-full justify-center mx-auto ">
-          <div className="flex flex-col screen744:!flex-row w-full screen744:!justify-between justify-center px-[16px] screen744:!px-[40px] flex-wrap screen744:!flex-nowrap">
-            <div className="flex flex-col w-full screen744:!justify-between justify-center">
-              <div className="items-center gap-[8px] screen1280:!mt-[35px] mt-[37px] flex flex-row screen744:!justify-start justify-center">
-                <SvgMedalLg className="hidden screen1280:!flex" />
-                <SvgMedalMd className="flex screen1280:!hidden" />
-                <span className="text-text2 font-normal screen1280:!text-[20px] text-[14px]">
-                  <span className="text-primary2 font-extrabold">
-                    #1 Top rated
-                  </span>{" "}
-                  CELPIP Resource 2025{" "}
-                </span>
-              </div>
-              <div className="mt-[21px] flex flex-row justify-between w-full screen1280:!mt-[38px] w-full h-[95px] screen744:!h-[135px] screen1280:!h-[245px] screen744:!justify-between justify-center">
-                <h1 className="font-bold text-[32px] screen1280:!text-[65px] leading-[40px] screen1280:!leading-[70px] text-text1 screen744:!text-left text-center">
-                  Reach Your Target
-                  <br />
-                  <span className="text-primary2">CELPIP</span> Score.{" "}
-                  <br className="screen744:!block hidden" />
-                  <span className="text-secondary2 italic">Faster.</span>
-                </h1>
-                <div className="flex">
-                  <div className="flex flex-col gap-[8px] screen744:!gap-[16px] screen744:!flex hidden w-[262px] h-[186px] screen744:!h-[224px]">
-                    {[
-                      {
-                        title1: "60",
-                        title2: "mock exams",
-                        icon: <SvgMockExamLight />,
-                      },
-                      {
-                        title1: "",
-                        title2: "Guide & Tips",
-                        icon: <SvgGuide />,
-                      },
-                      {
-                        title1: "3,000+",
-                        title2: "sample tests",
-                        icon: <SvgSampleTest />,
-                      },
-                      {
-                        title1: "",
-                        title2: "AI-powered scoring",
-                        icon: <SvgScoring />,
-                      },
-                    ].map((item, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1, duration: 0.1 }}
-                        className="flex gap-[8px] h-[44px] items-center">
-                        <span>{item.icon}</span>
-                        {item.title1 && (
-                          <span className="text-text1 font-bold text-[20px] leading-[28px]">
-                            {item.title1}
-                          </span>
-                        )}
-                        <h3 className="text-text1 font-normal text-[20px] leading-[28px]">
-                          {item.title2}
-                        </h3>
-                      </motion.div>
-                    ))}
-                  </div>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1, duration: 0.1 }}>
-                    <div className="relative hidden h-[491px] w-[327px] screen1280:!flex">
-                      <Image
-                        src={heroImage.imageUrl}
-                        alt={heroImage.altText}
-                        width={327}
-                        height={491}
-                        className="relative top-[-120px] h-full w-full object-contain"
-                        priority
-                      />
-                    </div>
-                  </motion.div>
-                </div>
-              </div>
-              <div className="font-inter font-semibold text-xs leading-5 tracking-normal text-center screen744:!hidden flex justify-center">
-                60 mock exams · 3,000+ questions · Instant AI scoring
-              </div>
-              <div className="flex screen744:!justify-start justify-center">
-                <div onClick={() => handleCTAClick("hero_main")}>
-                  <Button
-                    href={href}
-                    size="lg"
-                    className="mt-[24px]">
-                    <SvgPlus />
-                    <span>{label}</span>
-                  </Button>
-                </div>
-              </div>
-              <div className="flex flex-row screen1280:!mt-[8px] mt-[14px] screen744:!justify-start justify-center items-center gap-2">
-                <Image
-                  src="/images/people.png"
-                  alt="People icon showing 20,000+ CELPIP graduates trusting CELPIPPRACTICETEST.com"
-                  width={65}
-                  height={28}
-                  className="max-h-[25px]"
-                  priority
-                />
-                <h2 className="text-text1 font-medium leading-[28px] screen1280:!text-[14px] text-[10px]">
-                  Trusted by 70k+ test-takers{" "}
-                </h2>
+        <div className="max-w-[1440px] mx-auto px-6 screen1280:px-10 relative z-10">
+          <div className="flex flex-col screen1280:flex-row items-center gap-12 screen1280:gap-20">
+            {/* Left Column: Text & Diagnostic */}
+            <div className="flex-1 flex flex-col items-center screen1280:items-start text-center screen1280:text-left">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary1 text-white text-xs font-bold uppercase tracking-widest mb-6"
+              >
+                <span className="w-2 h-2 bg-secondary2 rounded-full animate-pulse" />
+                #1 Top Rated CELPIP Resource 2026
+              </motion.div>
+
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="text-4xl screen744:text-5xl screen1280:text-6xl font-extrabold text-text1 leading-[1.1] mb-6"
+              >
+                Stop Guessing. <br />
+                <span className="text-primary1">Know Your Score</span> <br />
+                in 3 Minutes.
+              </motion.h1>
+
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="text-lg screen744:text-xl text-text2 max-w-[600px] mb-10"
+              >
+                Our AI diagnostic tool analyzes your current level and builds your custom path to CLB 9+. Join 70,000+ successful candidates.
+              </motion.p>
+
+              <div className="w-full flex justify-center screen1280:justify-start">
+                <ScoreDiagnostic />
               </div>
             </div>
+
+            {/* Right Column: Visuals */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.7, delay: 0.3 }}
+              className="flex-1 relative hidden screen1280:block"
+            >
+              <div className="relative w-full aspect-square max-w-[600px]">
+                {/* Main Hero Image */}
+                <Image
+                  src={heroImage.imageUrl}
+                  alt={heroImage.altText}
+                  fill
+                  className="object-contain drop-shadow-2xl z-20"
+                  priority
+                />
+                {/* Floating Elements */}
+                <motion.div
+                  animate={{ y: [0, -20, 0] }}
+                  transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                  className="absolute top-10 right-0 bg-white p-4 rounded-2xl shadow-xl z-30 border border-primary5"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-success5 text-success rounded-full flex items-center justify-center font-bold">9.0</div>
+                    <div>
+                      <p className="text-[10px] text-text3 font-bold uppercase">Target Score</p>
+                      <p className="text-sm font-bold text-text1">CLB 9+ Reached</p>
+                    </div>
+                  </div>
+                </motion.div>
+                <motion.div
+                  animate={{ y: [0, 20, 0] }}
+                  transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
+                  className="absolute bottom-20 left-0 bg-white p-4 rounded-2xl shadow-xl z-30 border border-primary5"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-primary5 text-primary1 rounded-full flex items-center justify-center font-bold">AI</div>
+                    <div>
+                      <p className="text-[10px] text-text3 font-bold uppercase">AI Coach</p>
+                      <p className="text-sm font-bold text-text1">Feedback Ready</p>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </motion.div>
           </div>
         </div>
+      </section>
 
-        {/* Navigation Cards (Desktop & Mobile Unified) */}
-        <div className="flex flex-col w-full overflow-hidden">
-          <div className="flex flex-row flex-wrap screen744:flex-nowrap px-[16px] screen744:!px-[42px] pt-[22px] pb-[60px] screen744:!pb-[40px] screen1280:!mt-[52px] gap-[12px] screen744:!gap-[16px] screen1280:gap-[24px] w-full max-w-[1440px] mx-auto screen1024:justify-center">
+      {/* Trust Ribbon Section */}
+      <TrustRibbon />
+
+      {/* Navigation Cards Section */}
+      <section className="py-16 screen1280:py-24">
+        <div className="max-w-[1440px] mx-auto px-6 screen1280:px-10">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl screen744:text-3xl font-bold text-text1">Explore Our Prep Ecosystem</h2>
+          </div>
+          <div className="grid grid-cols-2 screen744:grid-cols-4 screen1280:grid-cols-7 gap-4 screen744:gap-6">
             {[
-              {
-                title: "Listening",
-                icon: <SvgListening className="text-[#1D4ED8]" />,
-                bgColor: "bg-primary5",
-                link: "/listening",
-              },
-              {
-                title: "Speaking",
-                icon: <SvgSpeaking className="text-[#BE123C]" />,
-                bgColor: "bg-secondary5",
-                link: "/speaking",
-              },
-              {
-                title: "Writing",
-                icon: <SvgWriting className="text-[#0D9488]" />,
-                bgColor: "bg-success5",
-                link: "/writing",
-              },
-              {
-                title: "Reading",
-                icon: <SvgReading className="text-[#B91C1C]" />,
-                bgColor: "bg-error5",
-                link: "/reading",
-              },
-              {
-                title: "Mock Exams",
-                icon: <SvgMockExamsColorful />,
-                bgColor: "bg-purple5",
-                link: "/exam-overview",
-              },
-              {
-                title: "Learning",
-                icon: <SvgLearning className="text-[#854D0E]" />,
-                bgColor: "bg-[#FEF9C3]",
-                link: "/learning",
-              },
-              {
-                title: "Words",
-                icon: <SvgWord className="text-[#0D8A72] w-[24px]" />,
-                bgColor: "bg-[#CCFBF1]",
-                link: "/words",
-              },
-            ].map((exam, index, array) => {
-              const isLast = index === array.length - 1;
-              return (
-                <ExamSectionCard
-                  key={index}
-                  title={exam.title}
-                  icon={exam.icon}
-                  bgColor={exam.bgColor}
-                  isLast={isLast}
-                  link={exam.link}
-                  className={cn("screen744:!w-auto", {
-                    "!w-[calc(50%-6px)]": !isLast,
-                    "w-full": isLast,
-                  })}
-                />
-              );
-            })}
+              { title: "Listening", icon: <SvgListening className="text-primary1" />, bgColor: "bg-primary5", link: "/listening" },
+              { title: "Speaking", icon: <SvgSpeaking className="text-secondary2" />, bgColor: "bg-secondary5", link: "/speaking" },
+              { title: "Writing", icon: <SvgWriting className="text-success" />, bgColor: "bg-success5", link: "/writing" },
+              { title: "Reading", icon: <SvgReading className="text-error1" />, bgColor: "bg-error5", link: "/reading" },
+              { title: "Mock Exams", icon: <SvgMockExamsColorful />, bgColor: "bg-purple5", link: "/exam-overview" },
+              { title: "Learning", icon: <SvgLearning className="text-[#854D0E]" />, bgColor: "bg-[#FEF9C3]", link: "/learning" },
+              { title: "Words", icon: <SvgWord className="text-[#0D8A72]" />, bgColor: "bg-[#CCFBF1]", link: "/words" },
+            ].map((item, index) => (
+              <ExamSectionCard
+                key={index}
+                title={item.title}
+                icon={item.icon}
+                bgColor={item.bgColor}
+                link={item.link}
+              />
+            ))}
           </div>
         </div>
       </section>
