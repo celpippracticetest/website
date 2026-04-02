@@ -11,18 +11,14 @@ let clientPromise: Promise<MongoClient> | null = null;
 
 if (!uri) {
   // In non-production environments (local dev, tests, CI without DB),
-  // avoid throwing at module import time so that pages and tests can run
-  // without a configured MongoDB instance. Any code that actually tries
-  // to access the database will still fail with a clear error.
-  if (process.env.NODE_ENV === "production") {
-    throw new Error('Invalid/Missing environment variable: "MONGODB_URI"');
-  } else {
-    console.warn(
-      'MongoDB is not configured because "MONGODB_URI" is missing. ' +
-        "This is allowed in non-production environments (e.g. Playwright tests), " +
-        "but any attempt to access the database will fail."
-    );
-  }
+  // or during build time on Vercel, avoid throwing at module import time.
+  // This allows the build to complete even if environment variables are not present.
+  // Any code that actually tries to access the database at runtime will still fail.
+  console.warn(
+    'MongoDB is not configured because "MONGODB_URI" is missing. ' +
+      "This is allowed during build time and in non-production environments, " +
+      "but any attempt to access the database at runtime will fail."
+  );
 } else if (process.env.NODE_ENV === "development") {
   // In development mode, use a global variable so that the value
   // is preserved across module reloads caused by HMR (Hot Module Replacement).
@@ -49,7 +45,7 @@ if (!uri) {
 
   client = globalWithMongo._mongoClient;
   clientPromise = globalWithMongo._mongoClientPromise || client.connect();
-} else if (uri) {
+} else {
   // In production mode (or other non-dev environments with URI),
   // it's best to not use a global variable.
   client = new MongoClient(uri, options);
@@ -58,8 +54,7 @@ if (!uri) {
 
 // Export a module-scoped MongoClient. By doing this in a
 // separate module, the client can be shared across functions.
-// Note: when MONGODB_URI is missing in non-production environments,
-// this client will be null and any direct usage should be guarded.
+// Note: when MONGODB_URI is missing, this client will be null.
 export default client as MongoClient;
 
 // Helper function to get database instance
