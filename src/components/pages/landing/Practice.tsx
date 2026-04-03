@@ -10,9 +10,9 @@ const Practice = () => {
   const { href, label, trackClick } = useHomepageCta();
 
   return (
-    <section aria-labelledby="practice-heading">
+    <section id="practice" className="scroll-mt-24" aria-labelledby="practice-heading">
       <div className="mx-auto max-w-[1440px] ">
-        <div className="relative flex screen744:!block flex-col justify-end items-center mx-[20px] screen1280:!mx-[40px] rounded-[40px] h-[357px] screen744:!h-[209px] screen1280:!h-[256px] p-[24px] screen1280:!p-[40px] screen1280:!pl-[104px] mt-[142px] screen744:!mt-[180px] screen1280:!mt-[256px] bg-[radial-gradient(50%_265.62%_at_50%_50%,_#F26B3E_0%,_#FC8A65_100%)]">
+        <div className="relative flex screen744:!block flex-col justify-end items-center mx-[20px] screen1280:!mx-[40px] rounded-[40px] h-[357px] screen744:!h-[209px] screen1280:!h-[256px] p-[24px] screen1280:!p-[40px] screen1280:!pl-[104px] mt-[184px] screen744:!mt-[180px] screen1280:!mt-[256px] bg-[radial-gradient(50%_265.62%_at_50%_50%,_#F26B3E_0%,_#FC8A65_100%)]">
           <h2
             id="practice-heading"
             className="max-w-[311px] screen1280:!max-w-[480px] font-medium text-[20px] screen1280:!text-[32px]  text-white"
@@ -43,7 +43,7 @@ const Practice = () => {
             height={488}
           />
           <Image
-            className="absolute left-auto right-auto screen744:!right-[21px] -top-[126px] flex screen1280:!hidden"
+            className="absolute left-auto right-auto screen744:!right-[21px] -top-[168px] screen744:-top-[126px] flex screen1280:!hidden"
             src="/images/bear_student_tablet.png"
             alt="Bear student mascot using a tablet for CELPIP preparation"
             width={242}

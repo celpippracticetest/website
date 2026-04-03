@@ -8,6 +8,7 @@ import { ReferralInvitationRepository } from "@/repositories/referral-invitation
 import { clerkClient } from "@clerk/nextjs/server";
 import { ActivityLogger } from "@/lib/userActivity";
 import { isPricingAbLayout } from "@/lib/pricingAbTest";
+import { isHomeAbExperimentVariant } from "@/lib/homeAbTest";
 import { getAccessTierKey } from "@/lib/pricing";
 import { toSerializedPlan } from "@/lib/planSerialization";
 import type { Plan } from "@/models/plans.model";
@@ -601,6 +602,30 @@ export async function POST(req: Request) {
           });
         } catch (abErr) {
           console.error("pricing_ab purchase log failed:", abErr);
+        }
+      }
+
+      const homeAbRaw = metadata?.home_ab_variant;
+      if (
+        typeof homeAbRaw === "string" &&
+        isHomeAbExperimentVariant(homeAbRaw) &&
+        metadata?.user_id
+      ) {
+        try {
+          const db = await mongoClient.db();
+          await db.collection("home_ab_events").insertOne({
+            eventType: "purchase",
+            variant: homeAbRaw,
+            userId: metadata.user_id,
+            sessionId: session.id,
+            amountTotal: session.amount_total ?? null,
+            planName: typeof metadata.plan_name === "string" ? metadata.plan_name : null,
+            purchasePage:
+              typeof metadata.purchase_page === "string" ? metadata.purchase_page : null,
+            createdAt: new Date(),
+          });
+        } catch (abErr) {
+          console.error("home_ab purchase log failed:", abErr);
         }
       }
 

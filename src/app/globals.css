@@ -150,6 +150,10 @@ svg {
   }
 }
 
+.passport-home {
+  --font-body: var(--font-passport-body);
+}
+
 @layer base {
   * {
     @apply border-border;

@@ -71,6 +71,8 @@ interface OnboardingRecord {
   "Target Reading": number;
   "Target Writing": number;
   "Target Speaking": number;
+  "Exam Date": string;
+  "Subscription Duration": string;
   "Answered At": string;
 }
 
@@ -297,7 +299,7 @@ const OnboardingPageClient: React.FC<OnboardingPageClientProps> = ({
         <div className="overflow-x-auto max-w-full">
           <table
             className="w-full divide-y divide-gray-200"
-            style={{ minWidth: "900px" }}
+            style={{ minWidth: "1280px" }}
           >
             <thead className="bg-gray-50">
               <tr>
@@ -316,6 +318,12 @@ const OnboardingPageClient: React.FC<OnboardingPageClientProps> = ({
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
                   Focus Skill
                 </th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-56">
+                  Exam Date
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[14rem]">
+                  Subscription
+                </th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
                   Answered At
                 </th>
@@ -324,7 +332,7 @@ const OnboardingPageClient: React.FC<OnboardingPageClientProps> = ({
             <tbody className="bg-white divide-y divide-gray-200">
               {data.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-3 py-8 text-center text-gray-500">
+                  <td colSpan={8} className="px-3 py-8 text-center text-gray-500">
                     No onboarding data available
                   </td>
                 </tr>
@@ -350,6 +358,12 @@ const OnboardingPageClient: React.FC<OnboardingPageClientProps> = ({
                           ({record["Custom Focus Skill"]})
                         </span>
                       )}
+                    </td>
+                    <td className="px-3 py-4 text-sm text-gray-900 truncate max-w-48">
+                      {record["Exam Date"] || "-"}
+                    </td>
+                    <td className="px-3 py-4 text-sm text-gray-900 whitespace-normal break-words max-w-xs">
+                      {record["Subscription Duration"] || "—"}
                     </td>
                     <td className="px-3 py-4 text-sm text-gray-500 truncate max-w-48">
                       {formatAnsweredAt(record["Answered At"])}

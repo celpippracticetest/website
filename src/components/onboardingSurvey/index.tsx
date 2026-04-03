@@ -23,6 +23,11 @@ import Lottie from "lottie-react";
 import { useEffect, useState as useReactState } from "react";
 import { useRouter } from "next/navigation";
 import MicrolearningLaunch from "@/components/flow/MicrolearningLaunch";
+import {
+  PENDING_HOME_DIAGNOSTIC_KEY,
+  mapExamDateIsoToSurveyTestDate,
+  targetClbStringToSkillScore,
+} from "@/lib/pendingHomeDiagnostic";
 
 type FlowStep = {
   id: string;
@@ -271,6 +276,30 @@ export default function OnboardingSurvey({
       .then((res) => res.json())
       .then((data) => setConstruccionAnimation(data))
       .catch((err) => console.error("Failed to load Lottie animation:", err));
+  }, []);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(PENDING_HOME_DIAGNOSTIC_KEY);
+      if (!raw) return;
+      localStorage.removeItem(PENDING_HOME_DIAGNOSTIC_KEY);
+      const parsed = JSON.parse(raw) as { targetClb?: string; examDateIso?: string };
+      const skill = targetClbStringToSkillScore(parsed.targetClb ?? "");
+      if (skill !== null) {
+        setTargetScores({
+          listening: skill,
+          reading: skill,
+          writing: skill,
+          speaking: skill,
+        });
+      }
+      if (parsed.examDateIso) {
+        const bucket = mapExamDateIsoToSurveyTestDate(parsed.examDateIso);
+        if (bucket) setTestDate(bucket);
+      }
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   // Get sub-options for the selected primary goal

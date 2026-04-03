@@ -55,8 +55,9 @@ const FAQ = () => {
 
     return (
         <section
+            id="faq"
             aria-labelledby="faq-heading"
-            className="mt-[80px] screen1280:!mt-[104px] mb-[80px] max-w-[1440px] mx-auto px-[20px] screen1280:!px-[40px]"
+            className="mt-[80px] screen1280:!mt-[104px] mb-[80px] max-w-[1440px] mx-auto px-[20px] screen1280:!px-[40px] scroll-mt-24"
         >
             <h2
                 id="faq-heading"

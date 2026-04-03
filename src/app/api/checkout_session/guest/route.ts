@@ -4,6 +4,7 @@ import { stripe } from "@/lib/stripe";
 import { captureException, logger, trackAPICall } from "@/lib/sentry-logger";
 import { getDb } from "@/lib/mongodb";
 import { isPricingAbLayout } from "@/lib/pricingAbTest";
+import { isHomeAbExperimentVariant, isHomeAbVariant } from "@/lib/homeAbTest";
 import {
   buildCheckoutCancelUrl,
   safeStripePriceId,
@@ -170,6 +171,28 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       }
     }
 
+    const homeAbRaw = readRequestAttribution("home_ab_variant");
+    const homeAbVariant = isHomeAbVariant(homeAbRaw ?? undefined) ? homeAbRaw : null;
+    const homeAbMeta: Record<string, string> =
+      homeAbVariant !== null ? { home_ab_variant: homeAbVariant } : {};
+
+    if (homeAbVariant && isHomeAbExperimentVariant(homeAbVariant)) {
+      try {
+        const db = await getDb();
+        await db.collection("home_ab_events").insertOne({
+          eventType: "checkout_started",
+          variant: homeAbVariant,
+          userId: null,
+          priceId,
+          planName: productDetails.name,
+          guestCheckout: true,
+          createdAt: new Date(),
+        });
+      } catch (abErr) {
+        console.error("home_ab checkout_started (guest) log failed:", abErr);
+      }
+    }
+
     logger.info("Creating guest checkout session", {
       component: "checkout_session_guest_api",
       action: "create_guest_checkout_session",
@@ -205,6 +228,7 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
         ...attributionMetadata,
         ...attributionSnapshot,
         ...pricingAbMeta,
+        ...homeAbMeta,
       },
       ...(mode === "subscription" && {
         subscription_data: {
@@ -218,6 +242,7 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
             ...attributionMetadata,
             ...attributionSnapshot,
             ...pricingAbMeta,
+            ...homeAbMeta,
           },
         },
       }),

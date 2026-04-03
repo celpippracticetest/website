@@ -5,7 +5,6 @@ interface IExamSectionCard {
   title: string;
   icon: React.ReactNode;
   bgColor?: string;
-  key: number;
   link: string;
   isLast?: boolean;
   className?: string;

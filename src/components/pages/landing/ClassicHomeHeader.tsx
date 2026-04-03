@@ -1,0 +1,124 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { Menu, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+const navLinks = [
+  { label: "Plans", href: "#plans" },
+  { label: "Practice", href: "#practice" },
+  { label: "Exam mode", href: "#exam-mode" },
+  { label: "FAQ", href: "#faq" },
+];
+
+export default function ClassicHomeHeader() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 12);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const handleNavClick = (href: string) => {
+    setIsOpen(false);
+    const el = document.querySelector(href);
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  };
+
+  return (
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-shadow duration-300 ${
+        scrolled ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-200/80" : "bg-[#F4F7FF]/90 backdrop-blur-sm border-b border-transparent"
+      }`}>
+      <div className="max-w-[1440px] mx-auto px-4 screen1280:px-10">
+        <div className="flex items-center justify-between h-16 lg:h-[4.25rem]">
+          <Link href="/" className="flex items-center shrink-0">
+            <Image
+              src="/images/logo.png"
+              alt="CELPIP Practice Test"
+              width={200}
+              height={60}
+              priority
+              sizes="(max-width: 1024px) 180px, 200px"
+              className="h-10 w-auto sm:h-11 object-contain object-left"
+            />
+          </Link>
+
+          <nav className="hidden lg:flex items-center gap-7">
+            {navLinks.map((link) => (
+              <button
+                key={link.href}
+                type="button"
+                onClick={() => handleNavClick(link.href)}
+                className="text-sm font-medium text-text2 hover:text-primary1 transition-colors">
+                {link.label}
+              </button>
+            ))}
+          </nav>
+
+          <div className="hidden lg:flex items-center gap-3">
+            <Link
+              href="/sign-in"
+              className="text-sm font-medium text-text1 hover:text-primary1 px-3 py-2 rounded-full border border-primary5/40 hover:border-primary1/50 transition-colors">
+              Log in
+            </Link>
+            <Link
+              href="/sign-up"
+              className="text-sm font-semibold text-white bg-primary1 hover:bg-primary1/90 px-5 py-2.5 rounded-full shadow-sm transition-colors">
+              Sign up
+            </Link>
+          </div>
+
+          <button
+            type="button"
+            className="lg:hidden p-2 text-text1"
+            onClick={() => setIsOpen(!isOpen)}
+            aria-label="Toggle menu">
+            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="lg:hidden bg-white border-b border-gray-200 overflow-hidden">
+            <div className="max-w-[1440px] mx-auto px-4 py-4 space-y-1">
+              {navLinks.map((link) => (
+                <button
+                  key={link.href}
+                  type="button"
+                  onClick={() => handleNavClick(link.href)}
+                  className="block w-full text-left py-3 px-3 text-base font-medium text-text1 hover:bg-primary5/20 rounded-xl">
+                  {link.label}
+                </button>
+              ))}
+              <div className="pt-3 border-t border-gray-100 space-y-2">
+                <Link
+                  href="/sign-in"
+                  className="block w-full text-center py-3 rounded-xl border border-primary5/40 text-text1 font-medium"
+                  onClick={() => setIsOpen(false)}>
+                  Log in
+                </Link>
+                <Link
+                  href="/sign-up"
+                  className="block w-full text-center py-3 rounded-xl bg-primary1 text-white font-semibold"
+                  onClick={() => setIsOpen(false)}>
+                  Sign up
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </header>
+  );
+}

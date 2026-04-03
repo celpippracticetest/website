@@ -26,7 +26,7 @@ const Plan = () => {
 
   if (isLoading) {
     return (
-      <section id="plans" className="mb-[104px] flex justify-center">
+      <section id="plans" className="mb-[104px] flex justify-center scroll-mt-24">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mt-20"></div>
       </section>
     );
@@ -36,7 +36,7 @@ const Plan = () => {
     <>
       <section
         id="plans"
-        className="mb-[104px]"
+        className="mb-[104px] scroll-mt-24"
         aria-labelledby="plans-heading"
       >
         <h2

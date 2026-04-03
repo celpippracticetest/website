@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { HOME_AB_COOKIE } from "@/lib/homeAbTest";
 
 const STORAGE_KEY_BY_FIELD = {
   gclid: "pending_gclid",
@@ -32,6 +33,7 @@ function readValue(value: string | null): string | null {
 export default function CheckoutAttributionFields() {
   const searchParams = useSearchParams();
   const [fields, setFields] = useState<CheckoutAttributionState>({});
+  const [homeAbVariant, setHomeAbVariant] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -49,6 +51,12 @@ export default function CheckoutAttributionFields() {
     }
 
     setFields(nextFields);
+
+    const escaped = HOME_AB_COOKIE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const m = document.cookie.match(
+      new RegExp(`(?:^|;\\s*)${escaped}=(classic|passport|legacy)`)
+    );
+    setHomeAbVariant(m?.[1] ?? null);
   }, [searchParams]);
 
   return (
@@ -60,6 +68,9 @@ export default function CheckoutAttributionFields() {
           <input key={field} type="hidden" name={field} value={value} />
         ) : null;
       })}
+      {homeAbVariant ? (
+        <input type="hidden" name="home_ab_variant" value={homeAbVariant} />
+      ) : null}
     </>
   );
 }

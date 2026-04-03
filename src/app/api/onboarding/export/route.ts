@@ -4,6 +4,7 @@ import { OnboardingRepository } from "@/repositories/onboarding.repo";
 import { NextResponse } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { getDb } from "@/lib/mongodb";
+import { getStripeSubscriptionDurationForClerkUser } from "@/lib/stripeSubscriptionSummary";
 
 export const runtime = "nodejs";
 export const maxDuration = 60; // 60 seconds timeout for export
@@ -85,14 +86,22 @@ export async function GET(request: Request) {
               nestedAnswers.customFocusSkill,
               (result as any)?.customFocusSkill
             ) || "",
+          testDate:
+            pickFirstNonEmpty(
+              nestedAnswers.testDate,
+              (result as any)?.testDate
+            ) || "",
           targetScores:
             nestedAnswers.targetScores || (result as any)?.targetScores || {},
         };
         let name = "";
+        let subscriptionDuration = "—";
 
         try {
           const user = await clerk.users.getUser(userId);
           name = (user.firstName || "") + " " + (user.lastName || "");
+          subscriptionDuration =
+            await getStripeSubscriptionDurationForClerkUser(userId, user);
         } catch (e) {
           console.warn("⚠️ Clerk user not found for:", userId);
           name = "";
@@ -102,6 +111,7 @@ export async function GET(request: Request) {
         const subGoal = answers.customSubGoal || answers.subGoal || "";
         const focusSkill = answers.focusSkill || "";
         const customFocusSkill = answers.customFocusSkill || "";
+        const testDate = answers.testDate || "";
         const targetScores = answers.targetScores || {};
 
         if (primaryGoal) stats[`Primary Goal: ${primaryGoal}`] = (stats[`Primary Goal: ${primaryGoal}`] || 0) + 1;
@@ -115,6 +125,8 @@ export async function GET(request: Request) {
           "Sub Goal": subGoal,
           "Focus Skill": focusSkill,
           "Custom Focus Skill": customFocusSkill,
+          "Exam Date": testDate,
+          "Subscription Duration": subscriptionDuration,
           "Target Listening": targetScores.listening || 0,
           "Target Reading": targetScores.reading || 0,
           "Target Writing": targetScores.writing || 0,

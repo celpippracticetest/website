@@ -114,29 +114,35 @@ export function ExamModeFeatureSection(props: ExamModeFeatureSectionProps) {
         {bullets.map(({ icon: Icon, title, body }) => (
           <li
             key={title}
-            className="flex flex-col rounded-xl border border-slate-200/80 bg-white/90 p-5 shadow-sm"
+            className="flex flex-col gap-3 rounded-xl border border-slate-200/80 bg-white/90 p-5 shadow-sm"
           >
-            <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-              <Icon className="h-5 w-5" aria-hidden />
-            </span>
-            <span className="font-semibold text-slate-900 mb-1">{title}</span>
+            <div className="flex flex-row items-start gap-3">
+              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                <Icon className="h-5 w-5" aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1 font-semibold text-slate-900 leading-snug pt-0.5">
+                {title}
+              </span>
+            </div>
             <span className="text-sm text-slate-600 leading-relaxed">{body}</span>
           </li>
         ))}
       </ul>
 
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+      <div className="flex flex-col sm:flex-row flex-nowrap items-center justify-center gap-3 sm:gap-4 min-w-0">
         {isLanding ? (
           <>
             <Link
               href={props.ctaHref}
               onClick={props.onCtaClick}
-              className="inline-flex h-12 items-center justify-center rounded-full bg-[#4a6cf7] px-8 text-base font-medium text-white shadow-md transition hover:bg-[#3d5ce6]"
+              className="inline-flex h-12 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[#4a6cf7] px-5 text-sm font-medium text-white shadow-md transition hover:bg-[#3d5ce6] sm:px-8 sm:text-base"
             >
               {props.ctaLabel}
-              <ArrowForward className="ml-2 h-5 w-5" aria-hidden />
+              <ArrowForward className="h-5 w-5 shrink-0" aria-hidden />
             </Link>
-            <span className="text-sm text-slate-500">No credit card required</span>
+            <span className="whitespace-nowrap text-xs text-slate-500 sm:text-sm">
+              No credit card required
+            </span>
           </>
         ) : (
           <Link href="/exam-overview">
@@ -152,7 +158,10 @@ export function ExamModeFeatureSection(props: ExamModeFeatureSectionProps) {
 
   if (isLanding) {
     return (
-      <section className="mt-16 screen744:!mt-24 screen1280:!mt-28" aria-labelledby="exam-mode-feature-heading">
+      <section
+        id="exam-mode"
+        className="mt-16 screen744:!mt-24 screen1280:!mt-28 scroll-mt-24"
+        aria-labelledby="exam-mode-feature-heading">
         <div className="mx-auto max-w-[1440px] px-4 screen1280:!px-10">
           <div className="mx-auto max-w-[1160px] rounded-[32px] border border-[#dce6ff] bg-gradient-to-b from-white to-[#eef3ff] px-5 py-10 md:px-10 md:py-14 shadow-sm">
             {inner}

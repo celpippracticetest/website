@@ -7,7 +7,11 @@ import FAQ from "./FAQ";
 import { ExamModeFeatureSectionLanding } from "@/components/marketing/ExamModeFeatureSection";
 import { useChunkErrorHandler } from "@/hooks/useChunkErrorHandler";
 import OnlineUsersCount from "@/components/analytics/OnlineUsersCount";
+import HomeAbExperimentTracker from "@/components/analytics/HomeAbExperimentTracker";
+import type { HomeAbVariant } from "@/lib/homeAbTest";
 import SuccessRoadmap from "./SuccessRoadmap";
+import ClassicHomeHeader from "./ClassicHomeHeader";
+import { cn } from "@/lib/utils";
 
 const Hero = dynamic(() => import("./Hero"), { ssr: true });
 const Comments = dynamic(() => import("./Comments"), { ssr: false });
@@ -26,6 +30,8 @@ type HomePageClientProps = {
     imageUrl: string;
     altText: string;
   };
+  participatesInExperiment: boolean;
+  variant: HomeAbVariant;
 };
 
 function ErrorFallback() {
@@ -46,13 +52,37 @@ function ErrorFallback() {
   );
 }
 
-export default function HomePageClient({ heroImage }: HomePageClientProps) {
+/**
+ * Three homepage designs (cookie / `?s=`): style 1 classic redesign, style 2 modern,
+ * style 3 legacy. Only style 3 omits the marketing header.
+ */
+export default function HomePageClient({
+  heroImage,
+  participatesInExperiment,
+  variant,
+}: HomePageClientProps) {
   const shouldReload = useChunkErrorHandler();
+  const showMarketingHeader = variant === "classic" || variant === "passport";
   if (shouldReload) return null;
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <div className="bg-[#F4F7FF]">
-        <Hero heroImage={heroImage} />
+      <HomeAbExperimentTracker
+        participatesInExperiment={participatesInExperiment}
+        variant={variant}
+      />
+      {showMarketingHeader ? <ClassicHomeHeader /> : null}
+      <div
+        className={cn(
+          "bg-[#F4F7FF]",
+          showMarketingHeader && "pt-16 lg:pt-[4.25rem]",
+        )}
+      >
+        <Hero
+          heroImage={heroImage}
+          withFixedHeader={showMarketingHeader}
+          variant={variant}
+        />
+        <UserResponseReview />
         <div className="flex flex-col mt-[40px] screen744:!mt-[80px] screen1280:!mt-[104px] max-w-[1440px] mx-auto justify-center w-full">
           <div className="flex justify-center px-[16px]">
             <div className="max-w-[1160px] w-full">
@@ -60,8 +90,7 @@ export default function HomePageClient({ heroImage }: HomePageClientProps) {
             </div>
           </div>
         </div>
-        <UserResponseReview />
-        <SuccessRoadmap />
+        {(variant === "classic" || variant === "passport") && <SuccessRoadmap />}
         <Comments />
         <Practice />
         <ExamModeFeatureSectionLanding />

@@ -70,6 +70,8 @@ export default async function OnboardingPage({
       "Target Reading": answers.targetScores?.reading || 0,
       "Target Writing": answers.targetScores?.writing || 0,
       "Target Speaking": answers.targetScores?.speaking || 0,
+      "Exam Date": answers.testDate || "",
+      "Subscription Duration": item.subscriptionDuration || "—",
       "Answered At": item.answeredAt || "",
       });
     });

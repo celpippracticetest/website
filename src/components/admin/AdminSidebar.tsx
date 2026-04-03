@@ -23,6 +23,7 @@ import Mail from "@mui/icons-material/Mail";
 import BarChart from "@mui/icons-material/BarChart";
 import CheckBox from "@mui/icons-material/CheckBox";
 import Work from "@mui/icons-material/Work";
+import CompareArrows from "@mui/icons-material/CompareArrows";
 import { cn } from "@/lib/utils";
 import { Box } from "@/components/ui/Box";
 
@@ -77,6 +78,7 @@ const reportItems: SidebarGroup = {
     { key: "reports-google-ads", label: "Google Ads", icon: Language, href: "/cms/dashboard/reports/google-ads" },
     { key: "reports-search-console", label: "Search Console", icon: Language, href: "/cms/dashboard/reports/search-console" },
     { key: "reports-stripe", label: "Stripe", icon: Assignment, href: "/cms/dashboard/reports/stripe" },
+    { key: "reports-home-ab", label: "Homepage A/B", icon: CompareArrows, href: "/cms/dashboard/reports/home-ab" },
   ],
 };
 

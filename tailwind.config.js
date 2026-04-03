@@ -23,6 +23,15 @@ module.exports = {
       },
     },
     extend: {
+      fontFamily: {
+        display: [
+          "var(--font-passport-display)",
+          "Georgia",
+          "ui-serif",
+          "serif",
+        ],
+        body: ["var(--font-passport-body)", "system-ui", "sans-serif"],
+      },
       colors: {
         white: "rgba(255, 255, 255, 1) ",
         black: "rgba(17, 17, 17, 1) ",
@@ -99,6 +108,21 @@ module.exports = {
           secondary: "rgba(242, 112, 89, 1)",
           disabled: "rgba(213, 214, 216, 1)",
         },
+        /* Passport landing: align with global marketing theme (text1, primary1, page bg, secondary2) */
+        navy: {
+          DEFAULT: "#212E42",
+          light: "#37465C",
+        },
+        maple: {
+          DEFAULT: "#316BFF",
+          light: "#4A7DFF",
+          dark: "#2554D4",
+        },
+        parchment: {
+          DEFAULT: "#F4F7FF",
+          dark: "#E3EBFF",
+        },
+        "amber-light": "#F4845F",
         celblue: {
           50: "#f0f7ff",
           100: "#e0eefe",

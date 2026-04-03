@@ -7,6 +7,7 @@ import ChevronRight from "@mui/icons-material/ChevronRight";
 import PieChart from "@mui/icons-material/PieChart";
 import Search from "@mui/icons-material/Search";
 import CreditCard from "@mui/icons-material/CreditCard";
+import CompareArrows from "@mui/icons-material/CompareArrows";
 import Link from "next/link";
 
 export default function ReportsPage() {
@@ -92,6 +93,25 @@ export default function ReportsPage() {
               </Box>
               <p className="text-sm text-gray-500">
                 View financial performance, recent transactions, and subscription metrics.
+              </p>
+            </Box>
+          </Link>
+
+          <Link href="/cms/dashboard/reports/home-ab">
+            <Box className="flex flex-col gap-4 p-5 rounded-xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer h-full">
+              <Box className="flex items-center justify-between">
+                <Box className="flex items-center gap-2">
+                  <Box className="p-2 rounded-lg bg-teal-50 text-teal-600">
+                    <CompareArrows className="h-6 w-6" />
+                  </Box>
+                  <span className="font-semibold text-lg text-gray-800">
+                    Homepage A/B
+                  </span>
+                </Box>
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              </Box>
+              <p className="text-sm text-gray-500">
+                Classic vs passport homepage: views, checkouts, and purchase conversion.
               </p>
             </Box>
           </Link>

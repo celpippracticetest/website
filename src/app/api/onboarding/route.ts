@@ -4,9 +4,10 @@ import { OnboardingRepository } from "@/repositories/onboarding.repo";
 import { NextResponse } from "next/server";
 import { clerkClient, currentUser } from "@clerk/nextjs/server";
 import { getDb } from "@/lib/mongodb";
+import { getStripeSubscriptionDurationForClerkUser } from "@/lib/stripeSubscriptionSummary";
 
 export const runtime = "nodejs";
-export const maxDuration = 30; // 30 seconds timeout
+export const maxDuration = 60; // Stripe enrichment per row needs headroom
 
 export async function POST(req: Request) {
   // Get the current authenticated user
@@ -226,6 +227,7 @@ export async function GET(request: Request) {
           customFocusSkill:
             pickFirstNonEmpty(nested.customFocusSkill, top.customFocusSkill) ||
             "",
+          testDate: pickFirstNonEmpty(nested.testDate, top.testDate) || "",
           targetScores: nested.targetScores || top.targetScores || {},
         };
       };
@@ -261,9 +263,15 @@ export async function GET(request: Request) {
       const processedResults = await Promise.all(
         results.map(async (result) => {
           let name = "";
+          let subscriptionDuration = "—";
           try {
             const user = await clerkForView.users.getUser(result.userId);
             name = (user.firstName || "") + " " + (user.lastName || "");
+            subscriptionDuration =
+              await getStripeSubscriptionDurationForClerkUser(
+                result.userId,
+                user
+              );
           } catch (e) {
             console.warn("⚠️ Clerk user not found for:", result.userId);
           }
@@ -272,6 +280,7 @@ export async function GET(request: Request) {
             ...result,
             answers: getAnswers(result),
             name: name.trim(),
+            subscriptionDuration,
           };
         })
       );

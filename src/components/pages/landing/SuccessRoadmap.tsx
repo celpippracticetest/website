@@ -2,6 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
+import { Button } from "@/components/v2/Button";
 
 const SuccessRoadmap = () => {
   const steps = [
@@ -36,7 +37,7 @@ const SuccessRoadmap = () => {
       day: "21", 
       title: "Exam Day", 
       desc: "Final Assessment",
-      detail: "CLB 9+ Achieved",
+      detail: "CLB10+",
       icon: "🏆",
       color: "from-primary2 to-primary1", 
       bgColor: "bg-primary5/20"
@@ -59,7 +60,8 @@ const SuccessRoadmap = () => {
             Your 21-Day Success Path
           </h2>
           <p className="text-lg text-text2 max-w-[600px] mx-auto font-medium">
-            A structured journey from baseline to CLB 9+. Proven by thousands of successful candidates.
+            A structured journey from baseline to CLB 10+. Proven by thousands of successful
+            candidates.
           </p>
         </motion.div>
 
@@ -90,9 +92,14 @@ const SuccessRoadmap = () => {
                   
                   <div className="relative z-10 flex flex-col items-center text-center h-full">
                     <motion.div
-                      className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${step.color} flex items-center justify-center mb-5 shadow-xl group-hover:scale-110 transition-transform duration-300`}
+                      className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${step.color} flex flex-col items-center justify-center gap-0.5 mb-5 shadow-xl group-hover:scale-110 transition-transform duration-300`}
                     >
-                      <span className="text-4xl font-black text-white">{step.day}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-white/90">
+                        Day
+                      </span>
+                      <span className="text-3xl font-black text-white leading-none tabular-nums">
+                        {step.day}
+                      </span>
                     </motion.div>
 
                     <span className="text-4xl mb-3 group-hover:scale-125 transition-transform duration-300">{step.icon}</span>
@@ -118,9 +125,12 @@ const SuccessRoadmap = () => {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mt-16 screen1280:mt-20"
+          className="text-center mt-16 screen1280:mt-20 flex flex-col items-center gap-6"
         >
           <p className="text-text2 font-medium">Ready to start your journey?</p>
+          <Button href="/sign-up" variant="primary" size="lg">
+            Start your plan
+          </Button>
         </motion.div>
       </div>
     </section>

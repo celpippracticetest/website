@@ -5,6 +5,7 @@ import { clerkClient, currentUser } from "@clerk/nextjs/server";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
 import { getDb } from "@/lib/mongodb";
 import { isPricingAbLayout } from "@/lib/pricingAbTest";
+import { isHomeAbExperimentVariant, isHomeAbVariant } from "@/lib/homeAbTest";
 import {
   buildCheckoutCancelUrl,
   safeStripePriceId,
@@ -440,6 +441,26 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       }
     }
 
+    const homeAbRaw = readRequestAttribution("home_ab_variant");
+    const homeAbVariant = isHomeAbVariant(homeAbRaw ?? undefined) ? homeAbRaw : null;
+    const homeAbMeta: Record<string, string> =
+      homeAbVariant !== null ? { home_ab_variant: homeAbVariant } : {};
+
+    if (homeAbVariant && isHomeAbExperimentVariant(homeAbVariant)) {
+      try {
+        await db.collection("home_ab_events").insertOne({
+          eventType: "checkout_started",
+          variant: homeAbVariant,
+          userId: user.id,
+          priceId,
+          planName: productDetails.name,
+          createdAt: new Date(),
+        });
+      } catch (abErr) {
+        console.error("home_ab checkout_started log failed:", abErr);
+      }
+    }
+
     logger.info("Creating checkout session", {
       component: "checkout_session_api",
       action: "create_checkout_session",
@@ -494,6 +515,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
         ...attributionMetadata,
         ...attributionSnapshot,
         ...pricingAbMeta,
+        ...homeAbMeta,
         ...(referralDiscountApplied && {
           referral_discount_applied:
             userMetadata?.referralDiscount || "referral",
@@ -516,6 +538,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
             ...attributionMetadata,
             ...attributionSnapshot,
             ...pricingAbMeta,
+            ...homeAbMeta,
             ...(referralDiscountApplied && {
               referral_discount_applied:
                 userMetadata?.referralDiscount || "referral",
@@ -556,6 +579,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
           ...attributionMetadata,
           ...attributionSnapshot,
           ...pricingAbMeta,
+          ...homeAbMeta,
           ...(referralDiscountApplied && {
             referral_discount_applied:
               userMetadata?.referralDiscount || "referral",
