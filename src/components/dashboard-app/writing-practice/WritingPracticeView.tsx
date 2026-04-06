@@ -377,7 +377,7 @@ const WritingPracticeView = ({
         selectedTaskId={selectedTaskId}
         completedPractice={completedPracticeId}
       />
-      <div className="bg-white rounded-xl  flex flex-col overflow-hidden border border-[#D5D6D8] h-full w-full mb-[120px]">
+      <div className="bg-white rounded-xl flex min-h-0 flex-col overflow-hidden border border-[#D5D6D8] w-full mb-[120px] screen1280:!h-[920px]">
         <div className="flex justify-between pb-[21px]  lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
           <div className="flex gap-2 flex-col screen744:!shrink-0">
             <h1 className="text-[18px] font-bold text-[#212E42]">
@@ -437,7 +437,7 @@ const WritingPracticeView = ({
             </div>
           }
         </div>
-        <div className="flex flex-col h-full overflow-hidden w-full">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden w-full">
           {page == "question" && (
             <div className="flex flex-col h-full overflow-hidden w-full ">
               <div className="grid lg:grid-cols-2 grid-cols-1 h-full w-full">
@@ -815,7 +815,7 @@ const WritingPracticeView = ({
             </div>
           )}
           {page == "answer" && (
-            <div className="flex flex-col h-full  w-full">
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto w-full [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-track]:bg-slate-100">
               <ListeningAnswerList
                 questionIndex={questionIndex}
                 questions={practice.passages.reduce(

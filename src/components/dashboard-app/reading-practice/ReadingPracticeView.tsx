@@ -273,7 +273,7 @@ const ReadingPracticeView = ({
           selectedTaskId={selectedTaskId}
           completedPractice={completedPractice}
         />
-        <Card className="bg-white/90 flex flex-col overflow-auto border border-[#D5D6D8] w-full screen1280:!h-[920px]">
+        <Card className="bg-white/90 flex min-h-0 flex-col overflow-hidden border border-[#D5D6D8] w-full screen1280:!h-[920px]">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 lg:gap-4 px-6 py-4 border-b border-[#D5D6D8] w-full min-w-0 h-auto bg-[#FFEBD6]">
             <div className="flex w-full min-w-0 flex-col items-start gap-2 lg:flex-1 lg:w-auto lg:min-w-0">
               <h1 className="text-[18px] font-bold text-[#212E42] break-words w-full">
@@ -517,7 +517,7 @@ const ReadingPracticeView = ({
             )}
             </div>
           </div>
-          <div className="flex flex-col h-full overflow-hidden w-full">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden w-full">
             {page == "question" && (
               <div className="h-full overflow-hidden ">
                 <div className="grid screen1280:grid-cols-2 grid-cols-1 h-full w-full">
@@ -790,7 +790,7 @@ const ReadingPracticeView = ({
               </div>
             )}
             {page == "answer" && (
-              <div className="flex flex-col h-full w-full pb-[50px]">
+              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto w-full pb-[50px] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-track]:bg-slate-100">
                 <ListeningAnswerList
                   questionIndex={questionIndex}
                   questions={practice.passages.reduce(
