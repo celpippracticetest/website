@@ -7,12 +7,7 @@ import {
 import { logger, trackUserAction, captureException } from "@/lib/sentry-logger";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { PRICING_AB_COOKIE, type PricingAbLayout } from "@/lib/pricingAbTest";
-import {
-  HOME_AB_COOKIE,
-  type HomeAbVariant,
-  isHomeAbVariant,
-  parseHomeStylePreviewQuery,
-} from "@/lib/homeAbTest";
+import { HOME_AB_COOKIE, type HomeAbVariant } from "@/lib/homeAbTest";
 import { applyCampaignPromoToResponse } from "@/lib/campaignPromoConfig";
 
 const isAdminRoute = createRouteMatcher(["/cms(.*)"]);
@@ -105,9 +100,9 @@ export default clerkMiddleware(async (auth, req) => {
 
   if (req.nextUrl.pathname === "/pricing") {
     const existing = req.cookies.get(PRICING_AB_COOKIE)?.value;
-    if (existing !== "two_card" && existing !== "switch_toggle") {
-      const layout: PricingAbLayout = Math.random() < 0.5 ? "two_card" : "switch_toggle";
-      
+    /** Winner: two-card layout; migrate legacy `switch_toggle` assignment cookies. */
+    const layout: PricingAbLayout = "two_card";
+    if (existing !== layout) {
       const newReqHeaders = new Headers(req.headers);
       const currentCookies = newReqHeaders.get("cookie") || "";
       const cookieAddition = `${PRICING_AB_COOKIE}=${layout}`;
@@ -119,7 +114,7 @@ export default clerkMiddleware(async (auth, req) => {
           headers: newReqHeaders,
         },
       });
-      
+
       response.cookies.set(PRICING_AB_COOKIE, layout, {
         path: "/",
         maxAge: 60 * 60 * 24 * 180,
@@ -130,22 +125,7 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   if (req.nextUrl.pathname === "/") {
-    const preview = parseHomeStylePreviewQuery({
-      home: req.nextUrl.searchParams.get("home"),
-      s: req.nextUrl.searchParams.get("s"),
-    });
-    let variant: HomeAbVariant;
-    if (preview !== null) {
-      variant = preview;
-    } else {
-      const existing = req.cookies.get(HOME_AB_COOKIE)?.value;
-      if (isHomeAbVariant(existing)) {
-        variant = existing;
-      } else {
-        /* New visitors: style 2 vs style 3 only (50/50). Style 1: `?s=1` or existing `classic` cookie. */
-        variant = Math.random() < 0.5 ? "passport" : "legacy";
-      }
-    }
+    const variant: HomeAbVariant = "passport";
 
     const newReqHeaders = new Headers(req.headers);
     newReqHeaders.set("x-home-ab-variant", variant);
@@ -156,15 +136,13 @@ export default clerkMiddleware(async (auth, req) => {
       },
     });
 
-    if (preview === null) {
-      const existing = req.cookies.get(HOME_AB_COOKIE)?.value;
-      if (!isHomeAbVariant(existing)) {
-        response.cookies.set(HOME_AB_COOKIE, variant, {
-          path: "/",
-          maxAge: 60 * 60 * 24 * 180,
-          sameSite: "lax",
-        });
-      }
+    const existing = req.cookies.get(HOME_AB_COOKIE)?.value;
+    if (existing !== "passport") {
+      response.cookies.set(HOME_AB_COOKIE, variant, {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 180,
+        sameSite: "lax",
+      });
     }
 
     return applyCampaignPromoToResponse(req, response);

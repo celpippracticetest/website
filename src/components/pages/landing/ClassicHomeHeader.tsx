@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type MouseEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navLinks = [
-  { label: "Plans", href: "#plans" },
-  { label: "Practice", href: "#practice" },
-  { label: "Exam mode", href: "#exam-mode" },
-  { label: "FAQ", href: "#faq" },
-];
+  { label: "Plans", href: "/pricing" },
+  { label: "Practice", href: "/#practice" },
+  { label: "Exam mode", href: "/#exam-mode" },
+  { label: "FAQ", href: "/#faq" },
+] as const;
 
 export default function ClassicHomeHeader() {
   const [isOpen, setIsOpen] = useState(false);
@@ -23,10 +23,20 @@ export default function ClassicHomeHeader() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleNavClick = (href: string) => {
+  const handleInPageSectionClick = (
+    e: MouseEvent<HTMLAnchorElement>,
+    href: string,
+  ) => {
     setIsOpen(false);
-    const el = document.querySelector(href);
-    if (el) el.scrollIntoView({ behavior: "smooth" });
+    if (typeof window === "undefined" || window.location.pathname !== "/") {
+      return;
+    }
+    const hashIndex = href.indexOf("#");
+    if (hashIndex === -1) return;
+    const hash = href.slice(hashIndex);
+    e.preventDefault();
+    window.history.replaceState(null, "", href);
+    document.querySelector(hash)?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
@@ -50,13 +60,13 @@ export default function ClassicHomeHeader() {
 
           <nav className="hidden lg:flex items-center gap-7">
             {navLinks.map((link) => (
-              <button
+              <Link
                 key={link.href}
-                type="button"
-                onClick={() => handleNavClick(link.href)}
+                href={link.href}
+                onClick={(e) => handleInPageSectionClick(e, link.href)}
                 className="text-sm font-medium text-text2 hover:text-primary1 transition-colors">
                 {link.label}
-              </button>
+              </Link>
             ))}
           </nav>
 
@@ -93,13 +103,13 @@ export default function ClassicHomeHeader() {
             className="lg:hidden bg-white border-b border-gray-200 overflow-hidden">
             <div className="max-w-[1440px] mx-auto px-4 py-4 space-y-1">
               {navLinks.map((link) => (
-                <button
+                <Link
                   key={link.href}
-                  type="button"
-                  onClick={() => handleNavClick(link.href)}
+                  href={link.href}
+                  onClick={(e) => handleInPageSectionClick(e, link.href)}
                   className="block w-full text-left py-3 px-3 text-base font-medium text-text1 hover:bg-primary5/20 rounded-xl">
                   {link.label}
-                </button>
+                </Link>
               ))}
               <div className="pt-3 border-t border-gray-100 space-y-2">
                 <Link

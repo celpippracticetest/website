@@ -1,17 +1,15 @@
 export const HOME_AB_COOKIE = "home_ab_variant";
 
 /**
- * Homepage variants (preview `/?s=1|2|3`):
- * - `classic` — style 1: redesign (not in random A/B; use `?s=1` or retain old cookie)
- * - `passport` — style 2: modern diagnostic + prep grid
- * - `legacy` — style 3: original legacy hero
- *
- * Live A/B test on `/` assigns only {@link HOME_AB_EXPERIMENT_VARIANTS} (50/50).
+ * Homepage variants (historical; live site uses `passport` only):
+ * - `classic` — style 1: redesign (legacy cookie / attribution only)
+ * - `passport` — style 2: modern diagnostic + prep grid (current default)
+ * - `legacy` — style 3: original legacy hero (legacy cookie / attribution only)
  */
 export const HOME_AB_VARIANTS = ["classic", "passport", "legacy"] as const;
 export type HomeAbVariant = (typeof HOME_AB_VARIANTS)[number];
 
-/** Variants included in the homepage conversion experiment (style 2 vs 3). */
+/** Historical experiment arms (style 2 vs 3); attribution and CMS reports may still reference these. */
 export const HOME_AB_EXPERIMENT_VARIANTS = ["passport", "legacy"] as const;
 export type HomeAbExperimentVariant =
   (typeof HOME_AB_EXPERIMENT_VARIANTS)[number];
@@ -39,8 +37,8 @@ type HomeStylePreviewParams = {
 };
 
 /**
- * Preview only: `/?s=1|2|3` or `/?home=1|2|3`. Does not change the assignment cookie;
- * exclude from A/B metrics when tracking.
+ * Preview only (no longer wired on `/`; kept for tooling or old links). Does not change the
+ * assignment cookie; exclude from A/B metrics when tracking.
  */
 export function parseHomeStylePreviewQuery(params: HomeStylePreviewParams): HomeAbVariant | null {
   const s = params.s?.trim();

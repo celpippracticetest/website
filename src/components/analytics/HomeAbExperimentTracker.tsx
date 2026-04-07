@@ -15,7 +15,7 @@ type Props = {
 export default function HomeAbExperimentTracker({ participatesInExperiment, variant }: Props) {
   useEffect(() => {
     if (!participatesInExperiment) return;
-    /* Conversion experiment is style 2 vs 3 only (passport / legacy). */
+    /* Historical: style 2 vs 3 (passport / legacy); homepage is passport-only now. */
     if (!isHomeAbExperimentVariant(variant)) return;
     if (typeof window === "undefined") return;
     const key = `home_ab_pv_${variant}`;

@@ -61,24 +61,18 @@ export default function HomeAbReportPage() {
               <BarChart className="mt-0.5 h-6 w-6 text-indigo-600" />
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.08em] text-indigo-700">
-                  A/B: style 2 vs style 3 (50:50)
+                  Historical: style 2 vs style 3 — live site is style 2 only
                 </p>
                 <h2 className="mt-1 text-lg font-bold text-gray-900">
                   Conversion by homepage style
                 </h2>
                 <p className="mt-1 max-w-2xl text-sm text-gray-600">
-                  New visitors to <code className="rounded bg-white/80 px-1">/</code> are assigned{" "}
-                  <code className="rounded bg-white/80 px-1">passport</code> (style 2) or{" "}
-                  <code className="rounded bg-white/80 px-1">legacy</code> (style 3) at random. Style 1 (
-                  <code className="rounded bg-white/80 px-1">classic</code>) is available via preview{" "}
-                  <code className="rounded bg-white/80 px-1">?s=1</code> only and is excluded from this
-                  experiment. Metrics: page views (one per tab session, experiment arms only), checkout
-                  starts, and Stripe purchases when{" "}
-                  <code className="rounded bg-white/80 px-1">home_ab_variant</code> is{" "}
+                  The homepage now serves <code className="rounded bg-white/80 px-1">passport</code>{" "}
+                  (style 2) only. These metrics reflect past assignments when{" "}
+                  <code className="rounded bg-white/80 px-1">home_ab_variant</code> was{" "}
                   <code className="rounded bg-white/80 px-1">passport</code> or{" "}
-                  <code className="rounded bg-white/80 px-1">legacy</code>. Preview{" "}
-                  <code className="rounded bg-white/80 px-1">?s=2|3</code> does not count toward page
-                  views.
+                  <code className="rounded bg-white/80 px-1">legacy</code>: page views (one per tab
+                  session, experiment arms only), checkout starts, and Stripe purchases.
                 </p>
               </div>
             </div>

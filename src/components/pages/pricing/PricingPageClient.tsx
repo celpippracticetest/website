@@ -9,12 +9,8 @@ import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
 import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
 import AutoAwesome from "@mui/icons-material/AutoAwesome";
 import Star from "@mui/icons-material/Star";
-import SvgBestValuePlan from "@/components/icons/BestValuePlan";
 import SvgDiamond from "@/components/icons/Diamond";
-import SvgFreePlan from "@/components/icons/FreePlan";
-import SvgPopularPlan from "@/components/icons/PopularPlan";
 import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
-import PlanCard from "@/components/pages/plans/PlanCard";
 import {
   comparisonRows,
   pricingFaqs,
@@ -35,7 +31,6 @@ import {
   getDurationGroupKey,
   getFooterNote,
   getPlanDescription,
-  getPricingCompactPlanCardFeatures,
   getStablePlanId,
   isPremiumPlusPlan,
   parsePrice,
@@ -301,19 +296,6 @@ function PricingStyleOnePlanTable({
   );
 }
 
-function getIconComponent(iconType?: string) {
-  switch (iconType) {
-    case "BestValuePlan":
-      return <SvgBestValuePlan />;
-    case "PopularPlan":
-      return <SvgPopularPlan />;
-    case "FreePlan":
-      return <SvgFreePlan />;
-    default:
-      return <SvgFreePlan />;
-  }
-}
-
 function formatWeakAreasForSentence(weakAreas: string[]) {
   if (weakAreas.length === 0) return "";
   if (weakAreas.length === 1) return weakAreas[0];
@@ -536,47 +518,6 @@ function AvatarStack() {
   );
 }
 
-type AccessTierChoice = "premium" | "premiumPlus";
-
-function PremiumAccessSegmentedToggle({
-  value,
-  onChange,
-}: {
-  value: AccessTierChoice;
-  onChange: (next: AccessTierChoice) => void;
-}) {
-  return (
-    <Box
-      className="inline-flex w-full max-w-md rounded-full border border-slate-200 bg-slate-100 p-1 sm:w-auto"
-      role="group"
-      aria-label="Choose Premium or Premium Plus"
-    >
-      <button
-        type="button"
-        onClick={() => onChange("premium")}
-        className={`flex-1 rounded-full px-4 py-2 text-sm font-semibold transition-colors sm:flex-none sm:min-w-[120px] ${
-          value === "premium"
-            ? "bg-white text-blue-950 shadow-sm"
-            : "text-slate-600 hover:text-slate-900"
-        }`}
-      >
-        Premium
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange("premiumPlus")}
-        className={`flex-1 rounded-full px-4 py-2 text-sm font-semibold transition-colors sm:flex-none sm:min-w-[140px] ${
-          value === "premiumPlus"
-            ? "bg-white text-amber-900 shadow-sm ring-1 ring-amber-200/80"
-            : "text-slate-600 hover:text-slate-900"
-        }`}
-      >
-        Premium Plus
-      </button>
-    </Box>
-  );
-}
-
 function TestimonialCard({
   name,
   comment,
@@ -624,10 +565,6 @@ export default function PricingPageClient({
 }: PricingPageClientProps) {
   const { isSignedIn } = useUser();
   const userContext = useUserContext();
-  const [tierByDuration, setTierByDuration] = useState<
-    Partial<Record<DurationGroupKey, AccessTierChoice>>
-  >({});
-
   const pricingCheckoutFields = useMemo(
     () =>
       pricingAbParticipatesInExperiment
@@ -870,13 +807,9 @@ export default function PricingPageClient({
                 </p>
               </Box>
               <a
-                href={
-                  pricingAbLayout === "two_card"
-                    ? "#pricing-style-one"
-                    : `#duration-${recommendedSection?.key || "threeMonth"}`
-                }
+                href="#pricing-style-one"
                 onClick={
-                  pricingAbLayout === "two_card" && recommendedSection
+                  recommendedSection
                     ? () => setStyleOneDurationOverride(recommendedSection.key)
                     : undefined
                 }
@@ -900,7 +833,7 @@ export default function PricingPageClient({
           </Box>
         )}
 
-        {pricingAbLayout === "two_card" && activeStyleOneSection ? (
+        {activeStyleOneSection && (
           <Box
             id="pricing-style-one"
             className={`mt-8 rounded-[28px] border bg-white p-5 shadow-sm md:p-8 ${
@@ -982,179 +915,6 @@ export default function PricingPageClient({
               />
             </Box>
           </Box>
-        ) : (
-        <Box className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-flow-col lg:grid-cols-none lg:auto-cols-fr lg:grid-rows-1 lg:items-stretch">
-          {groupedPlans.map((section) => {
-            const visiblePlanItems = [section.premium, section.premiumPlus].filter(Boolean) as GroupedPlanItem[];
-            const sectionSavingsBadge = getSectionSavingsBadge(section, monthlySavingsById);
-
-            return (
-              <Box
-                key={section.key}
-                id={`duration-${section.key}`}
-                className={`flex h-full min-h-0 min-w-0 flex-col rounded-[28px] border bg-white p-5 shadow-sm ${
-                  section.key === "threeMonth"
-                    ? "border-amber-200 shadow-[0_16px_40px_rgba(247,157,101,0.10)]"
-                    : recommendedSection?.key === section.key
-                      ? "border-blue-200 shadow-[0_16px_40px_rgba(117,156,255,0.10)]"
-                      : "border-slate-200"
-                }`}
-              >
-                <Box className="shrink-0">
-                  <Box className="flex flex-col gap-2 sm:gap-3">
-                    <Box className="grid grid-cols-[minmax(min-content,1fr)_auto] items-start gap-x-2 gap-y-2 sm:gap-x-3">
-                      <Box className="min-w-0">
-                        <p
-                          className={`text-[11px] font-semibold uppercase tracking-[0.08em] ${
-                            section.key === "threeMonth" ? "text-amber-700" : "text-slate-500"
-                          }`}
-                        >
-                          {section.eyebrow}
-                        </p>
-                        <h3 className="mt-1 whitespace-nowrap text-2xl font-semibold text-blue-950">
-                          {section.title}
-                        </h3>
-                      </Box>
-                      <Box className="flex w-max max-w-full flex-nowrap items-center justify-end justify-self-end gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] pl-1 [&::-webkit-scrollbar]:hidden">
-                        {recommendedSection?.key === section.key && (
-                          <span className="shrink-0 rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-blue-700 sm:px-3 sm:text-[11px]">
-                            Recommended
-                          </span>
-                        )}
-                        {section.badge && (
-                          <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-700 sm:px-3 sm:text-[11px]">
-                            {section.badge}
-                          </span>
-                        )}
-                        {sectionSavingsBadge && (
-                          <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-emerald-700 sm:px-3 sm:text-[11px]">
-                            {sectionSavingsBadge}
-                          </span>
-                        )}
-                      </Box>
-                    </Box>
-                    <p className="w-full min-w-0 text-sm leading-6 text-slate-600">
-                      {section.summary}
-                    </p>
-                  </Box>
-                </Box>
-
-                {(() => {
-                  const defaultTier: AccessTierChoice = (() => {
-                    if (recommendedSection?.key === section.key && recommendedPlanEntry) {
-                      return isPremiumPlusPlan(recommendedPlanEntry.plan)
-                        ? "premiumPlus"
-                        : "premium";
-                    }
-                    if (section.premium && !section.premiumPlus) return "premium";
-                    if (!section.premium && section.premiumPlus) return "premiumPlus";
-                    return "premium";
-                  })();
-                  const tier = tierByDuration[section.key] ?? defaultTier;
-                  const useSwitchLayout =
-                    pricingAbLayout === "switch_toggle" &&
-                    Boolean(section.premium && section.premiumPlus);
-                  const activeItem = useSwitchLayout
-                    ? tier === "premiumPlus"
-                      ? section.premiumPlus!
-                      : section.premium!
-                    : null;
-
-                  const planCardForItem = (item: GroupedPlanItem) => {
-                    const { features: compactFeatures, leadingBoldFeatureCount } =
-                      getPricingCompactPlanCardFeatures(item.plan);
-                    return (
-                    <PlanCard
-                      id={item.index}
-                      title={item.plan.title}
-                      type={item.plan.type}
-                      oldPrice={item.plan.oldPrice}
-                      price={item.plan.price}
-                      discount={item.plan.discount}
-                      buttonTitle="Subscribe"
-                      features={compactFeatures}
-                      leadingBoldFeatureCount={leadingBoldFeatureCount}
-                      stripePriceId={item.plan.stripePriceId}
-                      billingInterval={item.plan.billingInterval}
-                      billingIntervalCount={item.plan.billingIntervalCount}
-                      icon={getIconComponent(item.plan.iconType)}
-                      iconWrapperColor={item.plan.iconWrapperColor || "bg-purple5"}
-                      currentPlanTitle=""
-                      planTitle={item.plan.planTitle || item.plan.title}
-                      compact
-                      highlight={
-                        recommendedPlanId === item.stableId ||
-                        (section.key === "threeMonth" && isPremiumPlusPlan(item.plan))
-                      }
-                      savingsText={undefined}
-                      highlightLabel={
-                        recommendedPlanId === item.stableId
-                          ? "Recommended"
-                          : (section.key === "threeMonth" || section.key === "yearly") &&
-                              isPremiumPlusPlan(item.plan)
-                            ? "Best value"
-                            : undefined
-                      }
-                      accessLabel={getAccessLabel(item.plan)}
-                      description={getPlanDescription(item.plan)}
-                      footerNote={getFooterNote(item.plan)}
-                      checkoutHiddenFields={pricingCheckoutFields}
-                    />
-                    );
-                  };
-
-                  if (useSwitchLayout && activeItem) {
-                    return (
-                      <Box className="mt-3 flex min-h-0 flex-1 flex-col gap-3">
-                        <Box className="flex shrink-0 justify-center">
-                          <PremiumAccessSegmentedToggle
-                            value={tier}
-                            onChange={(next) =>
-                              setTierByDuration((prev) => ({ ...prev, [section.key]: next }))
-                            }
-                          />
-                        </Box>
-                        <Box className="mx-auto flex min-h-0 w-full max-w-[420px] flex-1 flex-col">
-                          <Box
-                            key={activeItem.stableId}
-                            className="flex h-full min-h-[220px] min-w-0 flex-1 flex-col"
-                            id={
-                              recommendedPlanId === activeItem.stableId
-                                ? "recommended-plan"
-                                : undefined
-                            }
-                          >
-                            {planCardForItem(activeItem)}
-                          </Box>
-                        </Box>
-                      </Box>
-                    );
-                  }
-
-                  return (
-                    <Box className="mt-3 flex min-h-0 w-full min-w-0 flex-1 flex-col gap-3">
-                      <Box className="grid h-full min-h-0 w-full min-w-0 flex-1 auto-rows-fr grid-cols-1 gap-1">
-                        {visiblePlanItems.map((item) => (
-                          <Box
-                            key={item.stableId}
-                            className="flex h-full min-h-[220px] min-w-0 flex-col"
-                            id={
-                              recommendedPlanId === item.stableId
-                                ? "recommended-plan"
-                                : undefined
-                            }
-                          >
-                            {planCardForItem(item)}
-                          </Box>
-                        ))}
-                      </Box>
-                    </Box>
-                  );
-                })()}
-              </Box>
-            );
-          })}
-        </Box>
         )}
 
         <Box
@@ -1309,15 +1069,9 @@ export default function PricingPageClient({
               </p>
             </Box>
             <a
-              href={
-                pricingAbLayout === "two_card"
-                  ? "#pricing-style-one"
-                  : personalizedRecommendation
-                    ? "#recommended-plan"
-                    : `#duration-${recommendedSection?.key || "threeMonth"}`
-              }
+              href="#pricing-style-one"
               onClick={
-                pricingAbLayout === "two_card" && stickyCtaDurationKey
+                stickyCtaDurationKey
                   ? () => setStyleOneDurationOverride(stickyCtaDurationKey)
                   : undefined
               }

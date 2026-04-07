@@ -53,8 +53,7 @@ function ErrorFallback() {
 }
 
 /**
- * Three homepage designs (cookie / `?s=`): style 1 classic redesign, style 2 modern,
- * style 3 legacy. Only style 3 omits the marketing header.
+ * Homepage uses style 2 (`passport`) only. `variant` remains typed for shared Hero plumbing.
  */
 export default function HomePageClient({
   heroImage,

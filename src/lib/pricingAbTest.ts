@@ -8,17 +8,19 @@ export function isPricingAbLayout(value: string | undefined): value is PricingAb
 }
 
 export function parsePricingAbLayout(value: string | undefined): PricingAbLayout {
+  if (value === "switch_toggle") {
+    return "two_card";
+  }
   return isPricingAbLayout(value) ? value : "two_card";
 }
 
 /**
- * One-off preview: `/pricing?s=1` (two cards) or `/pricing?s=2` (toggle).
+ * Optional preview query (same layout for all values; toggle variant retired).
  * Does not change the assignment cookie; do not count in A/B metrics or checkout attribution.
  */
 export function parsePricingStylePreviewQuery(s: string | undefined): PricingAbLayout | null {
   const t = s?.trim();
-  if (t === "1") return "two_card";
-  if (t === "2") return "switch_toggle";
+  if (t === "1" || t === "2") return "two_card";
   return null;
 }
 
