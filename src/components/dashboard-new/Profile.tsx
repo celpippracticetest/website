@@ -8,7 +8,7 @@ import SvgPhone from "@/components/icons/Phone";
 import SvgTrash from "@/components/icons/Trash";
 import SvgTrashCircle from "@/components/icons/TrashCircle";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDeleteUserSessions } from "@/hooks/useDeleteUserSessions";
 import { useGetUserSessions } from "@/hooks/useGetUserSessions";
 import { useRouter } from "next/navigation";
@@ -494,6 +494,128 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
   const [toastType, setToastType] = useState<"success" | "error">("success");
   const [vocabHoverSaving, setVocabHoverSaving] = useState(false);
 
+  type TelegramLinkState =
+    | { loading: true }
+    | {
+        loading: false;
+        botUsername: string;
+        linked: false;
+      }
+    | {
+        loading: false;
+        botUsername: string;
+        linked: true;
+        telegramUsername: string | null;
+        linkedAt: string;
+        planDisplay: string;
+        isPremium: boolean;
+      };
+
+  const [telegramLink, setTelegramLink] = useState<TelegramLinkState>({
+    loading: true,
+  });
+  const [telegramDeepLink, setTelegramDeepLink] = useState<string | null>(null);
+  const [telegramGenerating, setTelegramGenerating] = useState(false);
+  const [telegramUnlinking, setTelegramUnlinking] = useState(false);
+
+  const refreshTelegramLink = useCallback(async () => {
+    try {
+      const res = await fetch("/api/telegram/link");
+      if (!res.ok) {
+        setTelegramLink({
+          loading: false,
+          linked: false,
+          botUsername: "celpippracticetestbot",
+        });
+        return;
+      }
+      const data = (await res.json()) as
+        | { linked: false; botUsername: string }
+        | {
+            linked: true;
+            botUsername: string;
+            telegramUsername: string | null;
+            linkedAt: string;
+            planDisplay: string;
+            isPremium: boolean;
+          };
+      if (!data.linked) {
+        setTelegramLink({
+          loading: false,
+          linked: false,
+          botUsername: data.botUsername,
+        });
+        return;
+      }
+      setTelegramLink({
+        loading: false,
+        linked: true,
+        botUsername: data.botUsername,
+        telegramUsername: data.telegramUsername,
+        linkedAt: data.linkedAt,
+        planDisplay: data.planDisplay,
+        isPremium: data.isPremium,
+      });
+    } catch {
+      setTelegramLink({
+        loading: false,
+        linked: false,
+        botUsername: "celpippracticetestbot",
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshTelegramLink();
+  }, [refreshTelegramLink]);
+
+  const handleGenerateTelegramLink = async () => {
+    setTelegramGenerating(true);
+    try {
+      const res = await fetch("/api/telegram/link-token", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to generate link");
+      }
+      setTelegramDeepLink(data.deepLink as string);
+    } catch (e) {
+      setToastType("error");
+      setToastMessage(
+        e instanceof Error ? e.message : "Could not generate Telegram link"
+      );
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } finally {
+      setTelegramGenerating(false);
+    }
+  };
+
+  const handleTelegramUnlink = async () => {
+    setTelegramUnlinking(true);
+    try {
+      const res = await fetch("/api/telegram/unlink", { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to unlink");
+      }
+      setTelegramDeepLink(null);
+      await refreshTelegramLink();
+      setToastType("success");
+      setToastMessage("Telegram disconnected");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (e) {
+      setToastType("error");
+      setToastMessage(
+        e instanceof Error ? e.message : "Could not unlink Telegram"
+      );
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } finally {
+      setTelegramUnlinking(false);
+    }
+  };
+
   const hoverVocabularyEnabled =
     user?.unsafeMetadata?.hoverVocabularyEnabled === true;
 
@@ -798,6 +920,108 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
                 <span className="text-[14px] font-normal text-[#76808F]">
                   No email found
                 </span>
+              )}
+            </div>
+          </div>
+          <div className="h-[1px] mt-[24px] bg-[#D5D6D8]"></div>
+          <div className="flex justify-between items-start mt-[24px] flex-wrap gap-4">
+            <div className="flex flex-col justify-center gap-[12px] min-w-0 flex-1">
+              <span className="text-[#212E42] text-[16px] font-medium">
+                Telegram
+              </span>
+              <span className="text-[14px] font-normal text-[#76808F]">
+                Connect your Telegram account to get personalized tips and
+                practice guidance from our bot in private chat.
+              </span>
+              {telegramLink.loading ? (
+                <span className="text-[14px] text-[#76808F]">Loading…</span>
+              ) : telegramLink.linked ? (
+                <div className="flex flex-col gap-2 mt-1">
+                  <span className="text-[14px] text-[#212E42]">
+                    Connected
+                    {telegramLink.telegramUsername
+                      ? ` as @${telegramLink.telegramUsername}`
+                      : ""}
+                    <span className="text-[#76808F] ml-2">
+                      · Linked{" "}
+                      {new Date(telegramLink.linkedAt).toLocaleDateString()}
+                    </span>
+                  </span>
+                  <span className="text-[13px]">
+                    <span
+                      className={
+                        telegramLink.isPremium
+                          ? "text-[#F27059] font-medium"
+                          : "text-[#76808F]"
+                      }
+                    >
+                      {telegramLink.isPremium
+                        ? `⭐ ${telegramLink.planDisplay}`
+                        : `🆓 ${telegramLink.planDisplay}`}
+                    </span>
+                  </span>
+                </div>
+              ) : null}
+            </div>
+            <div className="flex flex-col items-end gap-2 shrink-0">
+              {telegramLink.loading ? null : telegramLink.linked ? (
+                <div className="flex flex-wrap gap-2 justify-end">
+                  <a
+                    href={`https://t.me/${telegramLink.botUsername}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center border-[#76808F] text-[#76808F] rounded-[24px] border-[1px] font-normal text-[14px] min-w-[120px] px-3 h-[40px]"
+                  >
+                    Open bot
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => void handleTelegramUnlink()}
+                    disabled={telegramUnlinking}
+                    className="flex items-center justify-center border-[#EE4266] text-[#EE4266] rounded-[24px] border-[1px] font-normal text-[14px] min-w-[120px] px-3 h-[40px] disabled:opacity-60"
+                  >
+                    {telegramUnlinking ? "…" : "Disconnect"}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-end gap-2 max-w-[280px]">
+                  {telegramDeepLink ? (
+                    <>
+                      <a
+                        href={telegramDeepLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center bg-[#4A7DFF] text-white rounded-[24px] font-normal text-[14px] min-w-[160px] px-4 h-[40px] hover:bg-[#3d6fe6] transition-colors"
+                      >
+                        Open Telegram
+                      </a>
+                      <span className="text-[12px] text-[#76808F] text-right">
+                        Link expires in 10 minutes. Generate a new one if
+                        needed.
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTelegramDeepLink(null);
+                          void handleGenerateTelegramLink();
+                        }}
+                        disabled={telegramGenerating}
+                        className="text-[13px] text-[#316BFF] underline-offset-2 hover:underline"
+                      >
+                        {telegramGenerating ? "Generating…" : "New link"}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => void handleGenerateTelegramLink()}
+                      disabled={telegramGenerating}
+                      className="flex items-center justify-center bg-[#4A7DFF] text-white rounded-[24px] font-normal text-[14px] min-w-[180px] px-4 h-[40px] hover:bg-[#3d6fe6] transition-colors disabled:opacity-60"
+                    >
+                      {telegramGenerating ? "Generating…" : "Connect Telegram"}
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           </div>

@@ -144,7 +144,8 @@ const ListeningPracticeView = ({
           const data = await response.json();
           if (data.answers) {
             setSelectedAnswers(data.answers);
-            setPage("answer");
+            // Keep instructions so returning users can retake; "See Result" still uses loaded answers.
+            setPage("instructions");
             return;
           }
         }

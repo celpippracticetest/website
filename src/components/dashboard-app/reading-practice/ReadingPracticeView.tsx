@@ -124,7 +124,8 @@ const ReadingPracticeView = ({
           const data = await response.json();
           if (data.answers) {
             setSelectedAnswers(data.answers);
-            setPage("answer");
+            // Stay on questions so returning users can retake; use "View Answers & Score" for results.
+            setPage("question");
             return;
           }
         }
