@@ -11,6 +11,8 @@ declare global {
       celloToken?: string
       /** ISO string from Clerk publicMetadata (subscription / purchase time). */
       purchaseDate?: string
+      /** Set when the post–sign-up goals survey (`onboardingNew`) is submitted. */
+      onboardingSurveyCompleted?: boolean
     }
   }
 }

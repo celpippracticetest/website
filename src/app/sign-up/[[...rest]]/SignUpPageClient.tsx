@@ -191,9 +191,9 @@ export default function SignUpPageClient() {
         localStorage.removeItem("pendingInviterName");
       }
       if (guestCheckout?.sessionId) {
-        router.push("/exam-overview");
+        router.push("/onboarding-survey?next=/exam-overview");
       } else {
-        router.push("/practice-overview");
+        router.push("/onboarding-survey");
       }
     }
   }, [guestCheckout?.sessionId, isSignedIn, user, router]);

@@ -35,7 +35,6 @@ import { motion } from "framer-motion";
 import SvgClose from "@/components/icons/Close";
 import { useMenuCollapsedStore } from "@/store/menuCollapsed.store";
 import CountdownTimer from "@/components/dashboard-app/CounterDownTimer";
-import OnboardingSurvey from "@/components/onboardingSurvey";
 import SvgReferral from "@/components/icons/Referral";
 import SvgLearning from "@/components/icons/Learning";
 import SvgMockTestNavigation from "@/components/icons/MockTestNavigation";
@@ -191,12 +190,11 @@ const NavItem = ({
   );
 };
 
-const LayoutClient = ({ children, showSurvey }: any) => {
+const LayoutClient = ({ children }: any) => {
   const sidebarMenuRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const couponId = useExtraDiscountStore((state) => state.couponId);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [surveyVisible, setSurveyVisible] = useState(showSurvey);
   const [couponModal, setCouponModal] = useState(false);
   const [hasClosedModal, setHasClosedModal] = useState(false);
   const { user, isLoaded, isSignedIn }: any = useUser();
@@ -866,12 +864,6 @@ const LayoutClient = ({ children, showSurvey }: any) => {
               </div>
             </div>
           </div>
-
-          {surveyVisible && (
-            <div className="fixed inset-0 z-[99] flex screen1280:!pt-[101px] justify-center bg-[#F4F7FF]">
-              <OnboardingSurvey onComplete={() => setSurveyVisible(false)} />
-            </div>
-          )}
 
           {children}
           {copied && (

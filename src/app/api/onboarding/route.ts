@@ -144,13 +144,20 @@ export async function POST(req: Request) {
   }
 
   const clerk = await clerkClient();
+  const publicMetadata: Record<string, unknown> = {
+    ...(user.publicMetadata as Record<string, unknown>),
+  };
+  if (data.action === "submit" && isNewOnboardingPayload) {
+    publicMetadata.onboardingSurveyCompleted = true;
+  }
+
   await clerk.users.updateUser(user.id, {
     privateMetadata: {
       ...user.privateMetadata,
       onboarding: onboardingMeta,
       onboardingNew: onboardingNewMeta,
     },
-    publicMetadata: user.publicMetadata,
+    publicMetadata,
   });
 
   return NextResponse.json({ ok: true });

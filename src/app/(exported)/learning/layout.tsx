@@ -1,7 +1,8 @@
 import LayoutLearningClient from "@/components/dashboard-new/LayoutLearningClient";
-import { daysSince } from "@/lib/utils";
+import { userNeedsOnboardingSurvey } from "@/lib/userNeedsOnboardingSurvey";
 import { currentUser } from "@clerk/nextjs/server";
 import { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "CELPIP AI Learning Assistant | Real-time Practice Feedback",
@@ -10,11 +11,6 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://celpippracticetest.com/learning",
   },
-};
-
-type OnboardingMetadata = {
-  completed?: boolean;
-  askedLaterAt?: string;
 };
 
 export default async function LearningLayout({
@@ -29,32 +25,11 @@ export default async function LearningLayout({
     // ignore
   }
 
-  const publicMetadata = user?.publicMetadata || {};
-  const privateMetadata = user?.privateMetadata || {};
-
-  const onboarding: OnboardingMetadata = privateMetadata.onboarding || {};
-  const onboardingNew: Record<string, unknown> =
-    (privateMetadata.onboardingNew as Record<string, unknown>) || {};
-
-  const showSurvey =
-    publicMetadata.plan === "free" &&
-    onboardingNew.completed !== true &&
-    (!onboardingNew.askedLaterAt ||
-      daysSince(onboardingNew.askedLaterAt as string) >= 7);
-
-  const showCompletedModal =
-    !showSurvey &&
-    publicMetadata.plan === "free" &&
-    (onboardingNew.completed === true ||
-      (onboardingNew.askedLaterAt &&
-        daysSince(onboardingNew.askedLaterAt as string) < 7));
+  if (userNeedsOnboardingSurvey(user ?? undefined)) {
+    redirect("/onboarding-survey");
+  }
 
   return (
-    <LayoutLearningClient
-      showSurvey={showSurvey}
-      showCompletedModal={showCompletedModal}
-    >
-      {children}
-    </LayoutLearningClient>
+    <LayoutLearningClient>{children}</LayoutLearningClient>
   );
 }

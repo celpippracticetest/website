@@ -11,7 +11,12 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { isConsumerGmailEmail } from "@/lib/gmailEmail";
 
-const REDIRECT = "/practice-overview";
+function postSignUpRedirectPath(checkoutSessionId: string | null | undefined): string {
+  if (checkoutSessionId) {
+    return "/onboarding-survey?next=/exam-overview";
+  }
+  return "/onboarding-survey";
+}
 
 function clerkErrMessage(err: unknown): string {
   if (isClerkAPIResponseError(err)) {
@@ -65,6 +70,7 @@ export function CustomSignUpForm({
     setOauthLoading(true);
     try {
       const origin = window.location.origin;
+      const completePath = postSignUpRedirectPath(checkoutSessionId);
       if (isGuestPostCheckout && isConsumerGmailEmail(lockedCheckoutEmail)) {
         if (!signIn) {
           setOauthLoading(false);
@@ -73,7 +79,7 @@ export function CustomSignUpForm({
         await signIn.authenticateWithRedirect({
           strategy: "oauth_google",
           redirectUrl: `${origin}/sso-callback`,
-          redirectUrlComplete: `${origin}${REDIRECT}`,
+          redirectUrlComplete: `${origin}${completePath}`,
         });
       } else {
         if (!signUp) {
@@ -83,7 +89,7 @@ export function CustomSignUpForm({
         await signUp.authenticateWithRedirect({
           strategy: "oauth_google",
           redirectUrl: `${origin}/sso-callback`,
-          redirectUrlComplete: `${origin}${REDIRECT}`,
+          redirectUrlComplete: `${origin}${completePath}`,
         });
       }
     } catch (err) {

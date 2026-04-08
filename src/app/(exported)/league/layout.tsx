@@ -1,7 +1,8 @@
 import LayoutLeagueClient from "@/components/dashboard-new/LayoutLeagueClient";
-import { daysSince } from "@/lib/utils";
+import { userNeedsOnboardingSurvey } from "@/lib/userNeedsOnboardingSurvey";
 import { currentUser } from "@clerk/nextjs/server";
 import { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "";
@@ -16,11 +17,6 @@ export async function generateMetadata(): Promise<Metadata> {
     },
   };
 }
-type OnboardingMetadata = {
-  completed?: boolean;
-  askedLaterAt?: string;
-};
-
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -31,29 +27,13 @@ export default async function RootLayout({
     user = await currentUser();
   } catch (error) {}
 
-  const publicMetadata = user?.publicMetadata || {};
-  const privateMetadata = user?.privateMetadata || {};
+  if (userNeedsOnboardingSurvey(user ?? undefined)) {
+    redirect("/onboarding-survey");
+  }
 
-  const onboarding: OnboardingMetadata = privateMetadata.onboarding || {};
-  const onboardingNew: any = privateMetadata.onboardingNew || {};
-
-  const showSurvey =
-    publicMetadata.plan === "free" &&
-    onboardingNew.completed !== true &&
-    (!onboardingNew.askedLaterAt || daysSince(onboardingNew.askedLaterAt) >= 7);
-
-  const showCompletedModal =
-    !showSurvey &&
-    publicMetadata.plan === "free" &&
-    (onboardingNew.completed === true ||
-      (onboardingNew.askedLaterAt && daysSince(onboardingNew.askedLaterAt) < 7));
   return (
     <>
-      <LayoutLeagueClient
-        showSurvey={showSurvey}
-        showCompletedModal={showCompletedModal}
-        children={children}
-      />
+      <LayoutLeagueClient>{children}</LayoutLeagueClient>
     </>
   );
 }
