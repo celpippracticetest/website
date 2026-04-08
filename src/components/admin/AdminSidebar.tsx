@@ -24,6 +24,7 @@ import BarChart from "@mui/icons-material/BarChart";
 import CheckBox from "@mui/icons-material/CheckBox";
 import Work from "@mui/icons-material/Work";
 import CompareArrows from "@mui/icons-material/CompareArrows";
+import Flag from "@mui/icons-material/Flag";
 import { cn } from "@/lib/utils";
 import { Box } from "@/components/ui/Box";
 
@@ -43,6 +44,12 @@ interface SidebarGroup {
 const mainItems: SidebarGroup = {
   items: [
     { key: "overview", label: "Overview", icon: Dashboard, href: "/cms/dashboard" },
+    {
+      key: "challenge-report",
+      label: "Challenge report",
+      icon: Flag,
+      href: "/cms/dashboard?tab=overview#challenge-report",
+    },
     { key: "onboarding", label: "Onboarding", icon: Explore, href: "/cms/dashboard/onboarding" },
     { key: "plans", label: "Plans", icon: Assignment, href: "/cms/dashboard/plans" },
     { key: "withdrawal-requests", label: "Withdrawals", icon: Description, href: "/cms/dashboard/withdrawal-requests" },
