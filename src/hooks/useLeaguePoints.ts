@@ -19,6 +19,7 @@ export const useLeaguePoints = () => {
     try {
       const response = await fetch('/api/league', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'add_points',
@@ -56,6 +57,7 @@ export const useLeaguePoints = () => {
     try {
       const response = await fetch('/api/league', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'complete_task',

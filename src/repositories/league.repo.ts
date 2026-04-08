@@ -586,7 +586,7 @@ export class LeagueRepository {
             (userRecord as any).totalPoints
           );
         } else {
-          await this.autoAssignUserToLeague(userId);
+          const assigned = await this.autoAssignUserToLeague(userId);
 
           if (assigned) {
             // Refresh record and update leaderboard

@@ -174,6 +174,10 @@ const ListeningPracticeView = ({
   useEffect(() => {
     if (page === "answer" && user) {
       const submitAnswers = async () => {
+        // "See Result" sets isFromFirstPage — only re-displaying saved attempt, do not re-POST or re-award points
+        if (isFromFirstPage) {
+          return;
+        }
         try {
           const response = await fetch("/api/answers", {
             method: "POST",
@@ -233,7 +237,7 @@ const ListeningPracticeView = ({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, user]);
+  }, [page, user, isFromFirstPage]);
 
 
 
@@ -256,6 +260,7 @@ const ListeningPracticeView = ({
     setQuestionIndexInPractice(0);
     setTime(initialTime);
     setIsOpen(false);
+    setIsFromFirstPage(false);
   };
 
   if (!isLoaded || (user && user.publicMetadata?.plan === undefined)) {
@@ -492,6 +497,7 @@ const ListeningPracticeView = ({
                         <div className="flex gap-[10px]">
                           <Button
                             onClick={() => {
+                              setIsFromFirstPage(false);
                               setPage("problem");
                             }}
                             variant="outline"
@@ -516,6 +522,7 @@ const ListeningPracticeView = ({
                     ) : (
                       <Button
                         onClick={() => {
+                          setIsFromFirstPage(false);
                           setPage("problem");
                         }}
                         variant="outline"
