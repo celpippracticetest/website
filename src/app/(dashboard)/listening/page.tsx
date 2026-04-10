@@ -31,7 +31,7 @@ interface PracticeSection {
 const listeningMetadataBase: Metadata = {
   title: "CELPIP Practice Exam: Free CELPIP Listening Practice Test",
   description:
-    "Use this free CELPIP practice exam for Listening: authentic audio, timed tasks, and review. Build note-taking, accuracy, and exam-day confidence.",
+    "Free CELPIP practice test and sample test for Listening: authentic audio, timed tasks, and review. Build note-taking, accuracy, and exam-day confidence.",
   keywords: [
     "celpip practice exam",
     "free celpip practice exam",

@@ -4,6 +4,7 @@ import {
   StripeReportingRepository,
   type StripeBalanceTransactionRecord,
   type StripeCustomerRecord,
+  type StripeInvoiceRecord,
   type StripePriceRecord,
   type StripeSubscriptionRecord,
 } from "@/repositories/stripe-reporting.repo";
@@ -196,6 +197,55 @@ export async function syncStripeReportingData(
 
       if (!page.has_more || page.data.length === 0) break;
       subscriptionCursor = page.data[page.data.length - 1].id;
+    }
+
+    let invoiceCursor: string | undefined;
+    while (true) {
+      const page = await stripe.invoices.list({
+        limit: 100,
+        ...(createdFilter ? { created: createdFilter } : {}),
+        ...(invoiceCursor ? { starting_after: invoiceCursor } : {}),
+      });
+
+      const records: StripeInvoiceRecord[] = page.data.map((inv) => {
+        const subRaw = inv.subscription;
+        const subscriptionId =
+          typeof subRaw === "string"
+            ? subRaw
+            : subRaw && typeof subRaw === "object" && subRaw !== null && "id" in subRaw
+              ? String((subRaw as { id: string }).id)
+              : null;
+        const custRaw = inv.customer;
+        const customerId =
+          typeof custRaw === "string"
+            ? custRaw
+            : custRaw && typeof custRaw === "object" && custRaw !== null && "id" in custRaw
+              ? String((custRaw as { id: string }).id)
+              : null;
+        const discountCents =
+          inv.total_discount_amounts?.reduce((sum, d) => sum + (d.amount ?? 0), 0) ?? 0;
+        return {
+          stripeId: inv.id,
+          customerId,
+          subscriptionId,
+          status: inv.status ?? null,
+          paid: inv.status === "paid",
+          currency: inv.currency ?? null,
+          createdAt: new Date(inv.created * 1000),
+          amountPaidCents: inv.amount_paid ?? 0,
+          subtotalCents: inv.subtotal ?? 0,
+          discountCents,
+          attemptCount: inv.attempt_count ?? 0,
+          hostedInvoiceUrl: inv.hosted_invoice_url ?? null,
+          updatedAt: now,
+        };
+      });
+
+      await repo.upsertInvoices(records);
+      invoicesCount += records.length;
+
+      if (!page.has_more || page.data.length === 0) break;
+      invoiceCursor = page.data[page.data.length - 1].id;
     }
 
     let customerCursor: string | undefined;

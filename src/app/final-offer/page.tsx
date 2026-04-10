@@ -20,6 +20,7 @@ import {
   FINAL_OFFER_CHALLENGE_TIERS,
   type FinalOfferChallengeTierKey,
 } from "@/lib/finalOfferChallenge";
+import { PayPalSubscribeButton } from "@/components/paypal/PayPalSubscribeButton";
 
 type OfferPlan = SubscriptionPlanFromStripe & {
   durationKey: "weekly" | "monthly" | "threeMonth" | "yearly" | null;
@@ -307,81 +308,6 @@ export default function FinalOfferPage() {
     form.submit();
   };
 
-  const startChallengePayPal = async () => {
-    const priceId = recommendedPlan?.priceId?.trim();
-    if (!priceId) return;
-    setChallengePaypalError(null);
-    setChallengePaypalLoading(true);
-    try {
-      const tier = FINAL_OFFER_CHALLENGE_TIERS[selectedChallengeTier];
-      const res = await fetch("/api/paypal/create-subscription", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          stripePriceId: priceId,
-          attribution,
-          ...(targetScoreForChallenge !== null && tier
-            ? {
-                challenge: {
-                  mode: "refund_goal",
-                  targetClb: targetScoreForChallenge,
-                  windowDays: tier.windowDays,
-                  refundPercent: tier.refundPercent,
-                  offerSource: FINAL_OFFER_CHALLENGE_SOURCE,
-                },
-              }
-            : {}),
-        }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        approvalUrl?: string;
-      };
-      if (!res.ok) {
-        throw new Error(data.error || "Could not start PayPal checkout");
-      }
-      if (!data.approvalUrl) {
-        throw new Error("Missing PayPal approval URL");
-      }
-      window.location.href = data.approvalUrl;
-    } catch (e) {
-      setChallengePaypalError(e instanceof Error ? e.message : "PayPal checkout failed");
-      setChallengePaypalLoading(false);
-    }
-  };
-
-  const startPayPalFinalOffer = async () => {
-    const priceId = recommendedPlan?.priceId?.trim();
-    if (!priceId) return;
-    setPaypalError(null);
-    setPaypalLoading(true);
-    try {
-      const res = await fetch("/api/paypal/create-subscription", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          stripePriceId: priceId,
-          attribution,
-          finalOffer: "onboarding_final_chance",
-        }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        approvalUrl?: string;
-      };
-      if (!res.ok) {
-        throw new Error(data.error || "Could not start PayPal checkout");
-      }
-      if (!data.approvalUrl) {
-        throw new Error("Missing PayPal approval URL");
-      }
-      window.location.href = data.approvalUrl;
-    } catch (e) {
-      setPaypalError(e instanceof Error ? e.message : "PayPal checkout failed");
-      setPaypalLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#F6F9FF] px-4 py-8 md:px-6">
       <div className="mx-auto w-full max-w-2xl rounded-3xl border border-orange-200 bg-white p-6 shadow-sm md:p-8">
@@ -548,11 +474,31 @@ export default function FinalOfferPage() {
                         className="h-5 w-auto shrink-0 object-contain object-center"
                       />
                     </button>
-                    <button
-                      type="button"
-                      disabled={challengePaypalLoading}
-                      onClick={() => void startChallengePayPal()}
+                    <PayPalSubscribeButton
                       aria-label="Subscribe with PayPal"
+                      busy={challengePaypalLoading}
+                      onBusyChange={setChallengePaypalLoading}
+                      onError={setChallengePaypalError}
+                      onBegin={() => setChallengePaypalError(null)}
+                      buildSubscriptionBody={() => {
+                        const priceId = recommendedPlan.priceId.trim();
+                        const tier = FINAL_OFFER_CHALLENGE_TIERS[selectedChallengeTier];
+                        return {
+                          stripePriceId: priceId,
+                          attribution,
+                          ...(targetScoreForChallenge !== null && tier
+                            ? {
+                                challenge: {
+                                  mode: "refund_goal",
+                                  targetClb: targetScoreForChallenge,
+                                  windowDays: tier.windowDays,
+                                  refundPercent: tier.refundPercent,
+                                  offerSource: FINAL_OFFER_CHALLENGE_SOURCE,
+                                },
+                              }
+                            : {}),
+                        };
+                      }}
                       className="flex min-h-[48px] w-full items-center justify-center gap-2.5 rounded-md border border-[#2C2E2F] bg-[#FFC439] px-4 py-3 text-sm font-bold tracking-tight text-[#003087] shadow-sm outline-none transition hover:brightness-[0.97] focus-visible:ring-2 focus-visible:ring-[#003087] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[44px]"
                     >
                       <Image
@@ -563,7 +509,7 @@ export default function FinalOfferPage() {
                         className="h-7 w-7 shrink-0 object-contain object-center"
                       />
                       {challengePaypalLoading ? "Redirecting to PayPal…" : "Subscribe with PayPal"}
-                    </button>
+                    </PayPalSubscribeButton>
                     {challengePaypalError ? (
                       <p className="text-center text-sm text-red-600" role="alert">
                         {challengePaypalError}
@@ -656,11 +602,17 @@ export default function FinalOfferPage() {
                   className="h-5 w-auto shrink-0 object-contain object-center"
                 />
               </button>
-              <button
-                type="button"
-                disabled={paypalLoading}
-                onClick={() => void startPayPalFinalOffer()}
+              <PayPalSubscribeButton
                 aria-label="Subscribe with PayPal"
+                busy={paypalLoading}
+                onBusyChange={setPaypalLoading}
+                onError={setPaypalError}
+                onBegin={() => setPaypalError(null)}
+                buildSubscriptionBody={() => ({
+                  stripePriceId: recommendedPlan.priceId.trim(),
+                  attribution,
+                  finalOffer: "onboarding_final_chance",
+                })}
                 className="flex min-h-[48px] w-full flex-1 items-center justify-center gap-2.5 rounded-md border border-[#2C2E2F] bg-[#FFC439] px-4 py-3 text-sm font-bold tracking-tight text-[#003087] shadow-sm outline-none transition hover:brightness-[0.97] focus-visible:ring-2 focus-visible:ring-[#003087] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[44px]"
               >
                 <Image
@@ -671,7 +623,7 @@ export default function FinalOfferPage() {
                   className="h-7 w-7 shrink-0 object-contain object-center"
                 />
                 {paypalLoading ? "Redirecting to PayPal…" : "Subscribe with PayPal"}
-              </button>
+              </PayPalSubscribeButton>
             </div>
             {paypalError ? (
               <p className="mt-3 text-center text-sm text-red-600" role="alert">

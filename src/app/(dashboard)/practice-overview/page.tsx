@@ -111,7 +111,7 @@ const DashboardApp = () => {
           border: 0,
         }}
       >
-        CELPIP Practice Overview
+        CELPIP Practice Test — Skill Overview & Sample Tasks
       </Typography>
       {!isSignedIn && (
         <Box
@@ -126,7 +126,7 @@ const DashboardApp = () => {
               fontSize: { xs: 28, sm: 34 },
             }}
           >
-            CELPIP Practice Overview
+            CELPIP Practice Test — By Skill
           </Typography>
           <Typography component="p" sx={{ ...bodySx, mt: 1.5, fontSize: 16, lineHeight: 1.625 }}>
             Choose focused CELPIP practice by skill and train with realistic task formats for

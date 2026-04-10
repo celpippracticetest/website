@@ -65,7 +65,10 @@ export async function POST(request: NextRequest) {
     const repo = new StripeReportingRepository(db);
     await repo.ensureIndexes();
 
+    const fullSync = body?.fullSync === true;
+
     const result = await syncStripeReportingData(repo, {
+      fullSync,
       fromDate: mode === "range" ? fromDate ?? undefined : undefined,
       toDate: mode === "range" ? toDate : undefined,
     });
@@ -73,6 +76,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       mode,
+      fullSync,
       fromDate: mode === "range" && fromDate ? fromDate.toISOString() : null,
       toDate: mode === "range" ? toDate.toISOString() : null,
       ...result,

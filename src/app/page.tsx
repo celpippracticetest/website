@@ -16,13 +16,13 @@ function homeCanonicalUrl(): string {
   );
 }
 
-/** ~55 chars — primary topic first; avoid stuffing (Google ignores meta keywords). */
+/** Primary topic + high-intent modifiers (title tag / OG). */
 const HOME_TITLE =
   "CELPIP Practice Test — Reading, Listening & Score Calculator";
 
-/** ~155 chars — one clear value prop; terms appear naturally (SERP snippet length). */
+/** Natural coverage for common queries (SERP snippet length). */
 const HOME_DESCRIPTION =
-  "Free CELPIP test prep: timed reading and listening practice, instant scored results, an overall score calculator with CLB mapping, plus Writing Task 2 and speaking.";
+  "Free CELPIP practice test prep: CELPIP reading practice, listening drills, instant scored results, and a CELPIP score calculator with CLB mapping—plus writing and speaking support.";
 
 export async function generateMetadata(): Promise<Metadata> {
   const homepageHero = await getHomepageHeroDisplay();

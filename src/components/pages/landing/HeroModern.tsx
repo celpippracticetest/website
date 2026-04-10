@@ -59,10 +59,11 @@ const HeroModern = ({
                 transition={{ duration: 0.5, delay: 0.1 }}
                 className="text-4xl screen744:text-5xl font-extrabold text-text1 leading-[1.1] mb-6 screen1280:mb-0 screen1280:flex-1 screen1280:min-w-0 screen1280:text-left"
               >
-                Get Your <span className="text-primary1">CELPIP Score</span>
+                CELPIP Practice Test —{" "}
+                <span className="text-primary1">Know Your Score</span>
                 <br className="screen1280:hidden" />
                 <span className="hidden screen1280:inline"> </span>
-                Before You Take the Test.
+                Before Exam Day
               </motion.h1>
 
               <motion.ul

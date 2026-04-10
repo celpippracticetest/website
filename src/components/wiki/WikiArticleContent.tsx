@@ -23,6 +23,8 @@ import type { TWikiArticleSchemaDto } from "@/models/wiki.model";
 interface WikiArticleContentProps {
   currentArticle: TWikiArticleSchemaDto;
   slug: string;
+  /** When set (e.g. SEO alignment), used for the hero H1 and breadcrumb current page. */
+  pageHeading?: string;
   linkedContent: string;
   filteredArticles: TWikiArticleSchemaDto[];
   nextArticle: TWikiArticleSchemaDto | null;
@@ -33,12 +35,14 @@ interface WikiArticleContentProps {
 export default function WikiArticleContent({
   currentArticle,
   slug,
+  pageHeading,
   linkedContent,
   filteredArticles,
   nextArticle,
   relatedArticles,
   sidebarSearchQuery,
 }: WikiArticleContentProps) {
+  const heading = pageHeading?.trim() || currentArticle.title;
   return (
     <Box className="min-h-screen bg-slate-50 pb-20">
       {/* Hero */}
@@ -63,9 +67,7 @@ export default function WikiArticleContent({
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage className="text-slate-900">
-                  {currentArticle.title}
-                </BreadcrumbPage>
+                <BreadcrumbPage className="text-slate-900">{heading}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -78,7 +80,7 @@ export default function WikiArticleContent({
               paddingLeft: "1rem",
             }}
           >
-            {currentArticle.title}
+            {heading}
           </h1>
         </Box>
       </Box>

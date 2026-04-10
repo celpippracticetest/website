@@ -45,6 +45,7 @@ import {
 } from "@/lib/pricing";
 import type { PricingAbLayout } from "@/lib/pricingAbTest";
 import type { DurationGroupKey, PricingFaq, SerializedPlan } from "@/types/pricing";
+import { PayPalSubscribeButton } from "@/components/paypal/PayPalSubscribeButton";
 const avatarSources = ["Carlos.png", "Li.png", "Tatiana.png"];
 
 /** Public paths for checkout CTAs (aligned with final-offer payment modal). */
@@ -195,36 +196,6 @@ function PricingStyleOneSubscribeForm({
     setModalOpen(true);
   };
 
-  const startPayPal = async () => {
-    setPaypalError(null);
-    setPaypalLoading(true);
-    try {
-      const res = await fetch("/api/paypal/create-subscription", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          stripePriceId,
-          attribution,
-          pricingAbLayout: pricingAbLayout ?? undefined,
-        }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        approvalUrl?: string;
-      };
-      if (!res.ok) {
-        throw new Error(data.error || "Could not start PayPal checkout");
-      }
-      if (!data.approvalUrl) {
-        throw new Error("Missing PayPal approval URL");
-      }
-      window.location.href = data.approvalUrl;
-    } catch (e) {
-      setPaypalError(e instanceof Error ? e.message : "PayPal checkout failed");
-      setPaypalLoading(false);
-    }
-  };
-
   const subscribeTriggerClass =
     "flex h-10 w-full cursor-pointer items-center justify-center rounded-full bg-[#635BFF] px-4 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-[#5851DF] focus-visible:ring-2 focus-visible:ring-[#635BFF] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 
@@ -262,11 +233,17 @@ function PricingStyleOneSubscribeForm({
               />
             </button>
             {isSignedIn ? (
-              <button
-                type="button"
-                disabled={paypalLoading}
-                onClick={() => void startPayPal()}
+              <PayPalSubscribeButton
                 aria-label="Pay with PayPal"
+                busy={paypalLoading}
+                onBusyChange={setPaypalLoading}
+                onError={setPaypalError}
+                onBegin={() => setPaypalError(null)}
+                buildSubscriptionBody={() => ({
+                  stripePriceId,
+                  attribution,
+                  pricingAbLayout: pricingAbLayout ?? undefined,
+                })}
                 className="flex min-h-10 w-full cursor-pointer items-center justify-center gap-2.5 rounded-full border border-[#2C2E2F] bg-[#FFC439] px-4 py-2.5 text-sm font-bold tracking-tight text-[#003087] shadow-sm outline-none transition hover:brightness-[0.97] focus-visible:ring-2 focus-visible:ring-[#003087] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Image
@@ -277,7 +254,7 @@ function PricingStyleOneSubscribeForm({
                   className="h-7 w-7 shrink-0 object-contain object-center"
                 />
                 {paypalLoading ? "Redirecting to PayPal…" : "Pay with PayPal"}
-              </button>
+              </PayPalSubscribeButton>
             ) : null}
             {paypalError ? (
               <p className="text-center text-sm text-red-600" role="alert">
@@ -318,9 +295,9 @@ function pricingStyleOnePriceCell(
   return (
     <div className="flex flex-col items-center gap-1 py-1">
       {oldP && (
-        <div className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-rose-700">
+        <div className="inline-flex max-w-full shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full bg-rose-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.05em] text-rose-700 sm:gap-1 sm:px-2 sm:text-[10px] sm:tracking-[0.06em]">
           <span>Was</span>
-          <span className="relative text-xs font-semibold text-slate-500">
+          <span className="relative text-[9px] font-semibold tabular-nums text-slate-500 sm:text-xs">
             CA$ {formatPlanCadPrice(String(oldP))}
             <span
               className="pointer-events-none absolute left-0 top-1/2 h-[1.5px] w-full -translate-y-1/2 rounded-full bg-rose-500/90"

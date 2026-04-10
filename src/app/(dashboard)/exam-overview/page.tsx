@@ -117,10 +117,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "";
   const isPreview = appBaseUrl.includes("vercel.app");
   return {
-    title:
-      "CELPIP Practice Tests – Full Mock Exams Online | CELPIP Practice Test",
+    title: "CELPIP Mock Test Online — Full-Length Practice Exams",
     description:
-      "Prepare for the CELPIP exam with realistic full-length practice tests in the official test format. Start a CELPIP mock exam and prepare with confidence.",
+      "Take a realistic CELPIP mock test online in one sitting—listening, reading, writing, and speaking in official-style timing. Start a full-length CELPIP practise test online and track your readiness.",
     alternates: {
       canonical: "https://celpippracticetest.com/exam-overview",
     },
@@ -264,7 +263,7 @@ const ExamsPage = async () => {
                       color: "#37465C",
                     }}
                   >
-                    CELPIP Practice Tests - Full Mock Exams Online
+                    CELPIP Mock Test Online — Full-Length Practice Exams
                   </Typography>
                   <Typography
                     sx={{

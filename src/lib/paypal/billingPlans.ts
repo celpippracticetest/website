@@ -1,7 +1,7 @@
 import type { Plan, PlanBillingInterval } from "@/models/plans.model";
 import { getPlanRecurringConfig } from "@/lib/planBilling";
 import { getDb } from "@/lib/mongodb";
-import { paypalApiJson } from "./subscriptionsApi";
+import { payPalCatalogProductExistsOnCurrentApi, paypalApiJson } from "./subscriptionsApi";
 
 function parsePriceToCadDecimalString(price: string | undefined): string {
   const numericValue = Number.parseFloat(String(price ?? "").replace(/[^0-9.]/g, ""));
@@ -28,28 +28,39 @@ function buildPlanName(plan: Pick<Plan, "title" | "planTitle">): string {
   return t.slice(0, 127);
 }
 
-async function resolveSharedPayPalProductId(): Promise<string> {
-  const fromEnv = process.env.PAYPAL_SHARED_PRODUCT_ID?.trim();
-  if (fromEnv?.startsWith("PROD-")) {
-    return fromEnv;
-  }
-
+async function resolveSharedPayPalProductIdFromDb(): Promise<string | null> {
   try {
     const db = await getDb();
-    const existing = await db.collection("plans").findOne<{ paypalProductId?: string }>(
-      { paypalProductId: { $exists: true, $type: "string" } },
-      {
-        projection: { paypalProductId: 1 },
-        sort: { updatedAt: -1 },
+    const docs = await db
+      .collection("plans")
+      .find<{ paypalProductId?: string }>(
+        { paypalProductId: { $exists: true, $type: "string" } },
+        { projection: { paypalProductId: 1 }, sort: { updatedAt: -1 }, limit: 80 }
+      )
+      .toArray();
+    const seen = new Set<string>();
+    for (const doc of docs) {
+      const candidate = doc.paypalProductId?.trim();
+      if (!candidate?.startsWith("PROD-") || seen.has(candidate)) continue;
+      seen.add(candidate);
+      if (await payPalCatalogProductExistsOnCurrentApi(candidate)) {
+        return candidate;
       }
-    );
-    const candidate = existing?.paypalProductId?.trim();
-    if (candidate?.startsWith("PROD-")) {
-      return candidate;
     }
   } catch {
     /* ignore DB lookup and create a new shared product below */
   }
+  return null;
+}
+
+async function resolveSharedPayPalProductId(): Promise<string> {
+  const fromEnv = process.env.PAYPAL_SHARED_PRODUCT_ID?.trim();
+  if (fromEnv?.startsWith("PROD-") && (await payPalCatalogProductExistsOnCurrentApi(fromEnv))) {
+    return fromEnv;
+  }
+
+  const fromDb = await resolveSharedPayPalProductIdFromDb();
+  if (fromDb) return fromDb;
 
   const product = await paypalApiJson<{ id: string }>("/v1/catalogs/products", {
     method: "POST",
@@ -68,6 +79,11 @@ async function resolveSharedPayPalProductId(): Promise<string> {
     throw new Error("PayPal did not return a shared product id");
   }
   return product.id;
+}
+
+/** Same shared-product resolution as PayPal billing plan creation (CMS + env + DB + create). */
+export async function resolveOrCreateSharedPayPalCatalogProductId(): Promise<string> {
+  return resolveSharedPayPalProductId();
 }
 
 /**

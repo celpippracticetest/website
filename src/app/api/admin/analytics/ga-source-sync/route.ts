@@ -69,6 +69,33 @@ type GaAttributionRow = {
   campaign: string | null;
 };
 
+function normalizeDim(v: string | null | undefined): string | null {
+  if (v == null || v === "") return null;
+  const t = String(v).trim();
+  if (!t || t === "(not set)") return null;
+  return t;
+}
+
+/** Same shape as checkout_session → subscription metadata (utm_*, attribution_*, gclid). */
+function attributionFromStripeMetadata(meta: Record<string, string>): {
+  source: string | null;
+  medium: string | null;
+  campaign: string | null;
+} {
+  if (normalizeDim(meta.gclid)) {
+    return { source: "google", medium: "cpc", campaign: normalizeDim(meta.utm_campaign) };
+  }
+  return {
+    source:
+      normalizeDim(meta.attribution_source) ||
+      normalizeDim(meta.utm_source),
+    medium:
+      normalizeDim(meta.attribution_medium) ||
+      normalizeDim(meta.utm_medium),
+    campaign: normalizeDim(meta.attribution_campaign) || normalizeDim(meta.utm_campaign),
+  };
+}
+
 async function tryFetchAttributionRows(
   ga4: { propertyId: string; client: BetaAnalyticsDataClient },
   userIds: string[]
@@ -224,6 +251,71 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const stripeRows = await db
+      .collection("stripe_subscriptions")
+      .aggregate<{ _id: string; meta: Record<string, string> }>([
+        { $match: { "metadata.user_id": { $in: userIds } } },
+        { $sort: { createdAt: -1 } },
+        { $group: { _id: "$metadata.user_id", meta: { $first: "$metadata" } } },
+      ])
+      .toArray();
+
+    const stripeByUser = new Map<string, { source: string | null; medium: string | null; campaign: string | null }>();
+    for (const r of stripeRows) {
+      if (!r._id || !r.meta) continue;
+      const m = r.meta as Record<string, string>;
+      const a = attributionFromStripeMetadata(m);
+      stripeByUser.set(r._id, a);
+    }
+
+    const clerkRows = await db
+      .collection("users")
+      .find({ clerkUserId: { $in: userIds } })
+      .project({ clerkUserId: 1, publicMetadata: 1 })
+      .toArray();
+
+    const clerkByUser = new Map<string, { source: string | null; medium: string | null; campaign: string | null }>();
+    for (const u of clerkRows) {
+      const id = u.clerkUserId as string | undefined;
+      if (!id) continue;
+      const pm = (u.publicMetadata || {}) as Record<string, string>;
+      const fromStripe = stripeByUser.get(id);
+      if (fromStripe && (fromStripe.source || fromStripe.medium)) continue;
+      const gclid = normalizeDim(pm.gclid);
+      if (gclid) {
+        clerkByUser.set(id, {
+          source: "google",
+          medium: "cpc",
+          campaign: normalizeDim(pm.utm_campaign),
+        });
+        continue;
+      }
+      clerkByUser.set(id, {
+        source: normalizeDim(pm.utm_source),
+        medium: normalizeDim(pm.utm_medium),
+        campaign: normalizeDim(pm.utm_campaign),
+      });
+    }
+
+    let filledFromStripe = 0;
+    let filledFromClerk = 0;
+    for (const uid of userIds) {
+      const ga = attributionMap.get(uid);
+      const gaEmpty = !ga || (!ga.source && !ga.medium && !ga.campaign);
+      if (!gaEmpty) continue;
+      const st = stripeByUser.get(uid);
+      if (st && (st.source || st.medium || st.campaign)) {
+        attributionMap.set(uid, st);
+        filledFromStripe += 1;
+        continue;
+      }
+      const cl = clerkByUser.get(uid);
+      if (cl && (cl.source || cl.medium || cl.campaign)) {
+        attributionMap.set(uid, cl);
+        filledFromClerk += 1;
+      }
+    }
+
     const now = new Date();
     const gaAttributionCollection = db.collection("ga_user_attribution");
 
@@ -262,8 +354,10 @@ export async function POST(request: NextRequest) {
       success: true,
       scanned: userIds.length,
       updated: operations.length,
-      matchedInGa: attributionMap.size,
-      missingInGa: userIds.length - attributionMap.size,
+      matchedInGa: fetchResult.rows?.length ?? 0,
+      missingInGa: userIds.length - (fetchResult.rows?.length ?? 0),
+      filledFromStripeMetadata: filledFromStripe,
+      filledFromClerkUsers: filledFromClerk,
       schemaUsed: fetchResult.schemaUsed,
       warning:
         !fetchResult.schemaUsed && fetchResult.error

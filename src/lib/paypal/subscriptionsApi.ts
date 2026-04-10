@@ -16,6 +16,39 @@ export type PayPalSubscriptionResource = {
   };
 };
 
+/**
+ * PayPal uses `PROD-…` ids for catalog products in both sandbox and live.
+ * A sandbox `PROD-…` id is not valid on the live API (404). Use this before
+ * reusing env or DB values so production does not pick up sandbox products.
+ */
+export async function payPalCatalogProductExistsOnCurrentApi(
+  productId: string
+): Promise<boolean> {
+  const id = productId.trim();
+  if (!id) return false;
+  const token = await getPayPalAccessToken();
+  const res = await fetch(
+    `${paypalApiBase()}/v1/catalogs/products/${encodeURIComponent(id)}`,
+    {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  if (res.ok) return true;
+  if (res.status === 404) return false;
+  const text = await res.text();
+  let message = res.statusText;
+  if (text) {
+    try {
+      const j = JSON.parse(text) as { message?: string; debug_id?: string };
+      if (j.message) message = j.debug_id ? `${j.message} (debug_id: ${j.debug_id})` : j.message;
+    } catch {
+      if (text.length < 400) message = text;
+    }
+  }
+  throw new Error(`PayPal catalog product lookup failed (${res.status}): ${message}`);
+}
+
 export async function paypalApiJson<T>(
   path: string,
   init: RequestInit & { idempotencyKey?: string }
