@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  SignedIn,
-  SignedOut,
-  SignInButton,
-  UserProfile,
-} from "@clerk/nextjs";
+import { Show, SignInButton, UserProfile } from "@clerk/nextjs";
 import Link from "next/link";
 
 export default function WelcomeSetPasswordPage() {
@@ -19,7 +14,7 @@ export default function WelcomeSetPasswordPage() {
           Create a password so you can sign in to CELPIP Practice anytime. Open
           Security below to add a password.
         </p>
-        <SignedIn>
+        <Show when="signed-in">
           <UserProfile
             routing="hash"
             appearance={{
@@ -37,8 +32,8 @@ export default function WelcomeSetPasswordPage() {
               Continue to dashboard
             </Link>
           </p>
-        </SignedIn>
-        <SignedOut>
+        </Show>
+        <Show when="signed-out">
           <div className="text-center space-y-4">
             <p className="text-gray-600">
               Sign in with the email you used at checkout to set a password.
@@ -60,7 +55,7 @@ export default function WelcomeSetPasswordPage() {
               </Link>
             </p>
           </div>
-        </SignedOut>
+        </Show>
       </div>
     </div>
   );

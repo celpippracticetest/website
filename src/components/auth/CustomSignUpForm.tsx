@@ -1,8 +1,9 @@
 "use client";
 
-import { useSignIn, useSignUp } from "@clerk/nextjs";
+import { useAuth, useSignIn, useSignUp } from "@clerk/nextjs";
 import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GoogleGLogo } from "@/components/auth/GoogleGLogo";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,12 @@ function postSignUpRedirectPath(checkoutSessionId: string | null | undefined): s
   return "/onboarding-survey";
 }
 
-function clerkErrMessage(err: unknown): string {
+function formatFutureError(err: { longMessage?: string; message: string } | null | undefined): string {
+  if (!err) return "Something went wrong. Please try again.";
+  return (err.longMessage?.trim() || err.message || "").trim() || "Something went wrong. Please try again.";
+}
+
+function thrownErrMessage(err: unknown): string {
   if (isClerkAPIResponseError(err)) {
     const e = err.errors?.[0];
     return e?.longMessage ?? e?.message ?? "Something went wrong. Please try again.";
@@ -35,12 +41,13 @@ export function CustomSignUpForm({
   checkoutSessionId = null,
 }: {
   className?: string;
-  /** Email from a verified Stripe guest checkout; field stays read-only. */
   lockedCheckoutEmail?: string | null;
   checkoutSessionId?: string | null;
 }) {
-  const { isLoaded, signUp, setActive } = useSignUp();
-  const { isLoaded: signInLoaded, signIn } = useSignIn();
+  const { isLoaded: authLoaded } = useAuth();
+  const { signUp, fetchStatus } = useSignUp();
+  const { signIn, fetchStatus: signInFetchStatus } = useSignIn();
+  const router = useRouter();
   const [step, setStep] = useState<Step>("details");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -56,13 +63,28 @@ export function CustomSignUpForm({
     ? isConsumerGmailEmail(lockedCheckoutEmail)
     : true;
   const googleReady =
-    isGuestPostCheckout && isConsumerGmailEmail(lockedCheckoutEmail) ? signInLoaded : isLoaded;
+    isGuestPostCheckout && isConsumerGmailEmail(lockedCheckoutEmail)
+      ? authLoaded
+      : authLoaded;
 
   useEffect(() => {
     if (lockedCheckoutEmail?.trim()) {
       setEmail(lockedCheckoutEmail.trim());
     }
   }, [lockedCheckoutEmail]);
+
+  const finalizeSignUp = async () => {
+    const dest = postSignUpRedirectPath(checkoutSessionId);
+    const { error: finErr } = await signUp.finalize({
+      navigate: ({ session, decorateUrl }) => {
+        if (session?.currentTask) return;
+        const url = decorateUrl(dest);
+        if (url.startsWith("http")) window.location.href = url;
+        else router.push(url);
+      },
+    });
+    if (finErr) setError(formatFutureError(finErr));
+  };
 
   const handleOAuthGoogle = async () => {
     if (!googleReady || oauthLoading) return;
@@ -76,32 +98,36 @@ export function CustomSignUpForm({
           setOauthLoading(false);
           return;
         }
-        await signIn.authenticateWithRedirect({
+        const { error: oErr } = await signIn.sso({
           strategy: "oauth_google",
-          redirectUrl: `${origin}/sso-callback`,
-          redirectUrlComplete: `${origin}${completePath}`,
+          redirectUrl: `${origin}${completePath}`,
+          redirectCallbackUrl: `${origin}/sso-callback`,
         });
-      } else {
-        if (!signUp) {
+        if (oErr) {
+          setError(formatFutureError(oErr));
           setOauthLoading(false);
-          return;
         }
-        await signUp.authenticateWithRedirect({
+      } else {
+        const { error: oErr } = await signUp.sso({
           strategy: "oauth_google",
-          redirectUrl: `${origin}/sso-callback`,
-          redirectUrlComplete: `${origin}${completePath}`,
+          redirectUrl: `${origin}${completePath}`,
+          redirectCallbackUrl: `${origin}/sso-callback`,
         });
+        if (oErr) {
+          setError(formatFutureError(oErr));
+          setOauthLoading(false);
+        }
       }
     } catch (err) {
-      setError(clerkErrMessage(err));
+      setError(thrownErrMessage(err));
       setOauthLoading(false);
     }
   };
 
   const onSubmitDetails = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isLoaded || oauthLoading) return;
-    if (!checkoutSessionId && (!signUp || !setActive)) return;
+    if (!authLoaded || oauthLoading) return;
+    if (!checkoutSessionId && !signUp) return;
     setError(null);
     setSubmitting(true);
     try {
@@ -141,79 +167,94 @@ export function CustomSignUpForm({
         return;
       }
 
-      if (!signUp || !setActive) {
-        setSubmitting(false);
-        return;
-      }
-
-      const created = await signUp.create({
+      const { error: pwErr } = await signUp.password({
         emailAddress: email.trim(),
         password,
         firstName: firstName.trim() || undefined,
         lastName: lastName.trim() || undefined,
         legalAccepted: true,
       });
-
-      if (created.status === "complete" && created.createdSessionId) {
-        await setActive({ session: created.createdSessionId });
+      if (pwErr) {
+        setError(formatFutureError(pwErr));
         setSubmitting(false);
         return;
       }
 
-      if (created.unverifiedFields?.includes("email_address")) {
-        await created.prepareEmailAddressVerification({ strategy: "email_code" });
+      if (signUp.status === "complete") {
+        await finalizeSignUp();
+        setSubmitting(false);
+        return;
+      }
+
+      if (
+        signUp.unverifiedFields?.includes("email_address") &&
+        (signUp.missingFields?.length ?? 0) === 0
+      ) {
+        const { error: sendErr } = await signUp.verifications.sendEmailCode();
+        if (sendErr) {
+          setError(formatFutureError(sendErr));
+          setSubmitting(false);
+          return;
+        }
         setStep("verify");
         setSubmitting(false);
         return;
       }
 
-      if (created.missingFields?.length) {
-        setError(`Please complete: ${created.missingFields.join(", ")}`);
+      if (signUp.missingFields?.length) {
+        setError(`Please complete: ${signUp.missingFields.join(", ")}`);
         setSubmitting(false);
         return;
       }
 
       setError("Sign up could not be completed. Please try again.");
     } catch (err) {
-      setError(clerkErrMessage(err));
+      setError(thrownErrMessage(err));
     }
     setSubmitting(false);
   };
 
   const onSubmitVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isLoaded || !signUp || !setActive) return;
+    if (!authLoaded || !signUp) return;
     setError(null);
     setSubmitting(true);
     try {
-      const verified = await signUp.attemptEmailAddressVerification({ code: code.trim() });
-
-      if (verified.status === "complete" && verified.createdSessionId) {
-        await setActive({ session: verified.createdSessionId });
+      const { error: vErr } = await signUp.verifications.verifyEmailCode({ code: code.trim() });
+      if (vErr) {
+        setError(formatFutureError(vErr));
         setSubmitting(false);
         return;
       }
 
-      if (verified.status === "missing_requirements" && verified.missingFields?.length) {
-        setError(`Still required: ${verified.missingFields.join(", ")}`);
+      if (signUp.status === "complete") {
+        await finalizeSignUp();
+        setSubmitting(false);
+        return;
+      }
+
+      if (signUp.status === "missing_requirements" && signUp.missingFields?.length) {
+        setError(`Still required: ${signUp.missingFields.join(", ")}`);
         setSubmitting(false);
         return;
       }
 
       setError("Verification did not complete. Check the code and try again.");
     } catch (err) {
-      setError(clerkErrMessage(err));
+      setError(thrownErrMessage(err));
     }
     setSubmitting(false);
   };
 
-  if (!isLoaded) {
+  if (!authLoaded) {
     return (
       <div className={cn("rounded-2xl border border-slate-200 bg-white p-8 shadow-sm", className)}>
         <p className="text-center text-sm text-slate-600">Loading…</p>
       </div>
     );
   }
+
+  const fetching = fetchStatus === "fetching" || signInFetchStatus === "fetching";
 
   return (
     <div
@@ -303,15 +344,14 @@ export function CustomSignUpForm({
           <p className="text-xs text-slate-500">
             By creating an account you agree to our terms and privacy policy where applicable.
           </p>
-          {/* Required by Clerk custom flows so Smart CAPTCHA can mount. */}
           <div id="clerk-captcha" className="min-h-[1px]" />
 
           <Button
             type="submit"
-            disabled={submitting || oauthLoading}
+            disabled={submitting || oauthLoading || fetching}
             className="w-full rounded-lg bg-blue-600 text-white hover:bg-blue-700"
           >
-            {submitting ? "Please wait…" : "Create account"}
+            {submitting || fetching ? "Please wait…" : "Create account"}
           </Button>
         </form>
       ) : (
@@ -332,14 +372,25 @@ export function CustomSignUpForm({
           </div>
           <Button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || fetching}
             className="w-full rounded-lg bg-blue-600 text-white hover:bg-blue-700"
           >
-            {submitting ? "Please wait…" : "Verify email"}
+            {submitting || fetching ? "Please wait…" : "Verify email"}
           </Button>
           <button
             type="button"
             className="w-full text-sm font-medium text-blue-600 hover:underline"
+            onClick={() => {
+              void signUp.verifications.sendEmailCode().then(({ error: sendErr }) => {
+                if (sendErr) setError(formatFutureError(sendErr));
+              });
+            }}
+          >
+            I need a new code
+          </button>
+          <button
+            type="button"
+            className="w-full text-sm font-medium text-slate-600 hover:underline"
             onClick={() => {
               setStep("details");
               setCode("");
@@ -366,7 +417,7 @@ export function CustomSignUpForm({
             type="button"
             variant="outline"
             className="h-11 w-full gap-3 border-[#747775] bg-white text-[14px] font-medium text-[#1f1f1f] shadow-sm hover:bg-[#f8f9fa] hover:text-[#1f1f1f] disabled:opacity-60"
-            disabled={oauthLoading || submitting || !googleReady}
+            disabled={oauthLoading || submitting || !googleReady || fetching}
             onClick={handleOAuthGoogle}
             aria-busy={oauthLoading}
           >

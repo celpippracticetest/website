@@ -12,8 +12,7 @@ import { useRouter } from "nextjs-toploader/app";
 import { useEventTracker } from "@/hooks/useTracking";
 import { isPaidClerkSubscriptionPlan } from "@/lib/clerkSubscriptionPlan";
 import {
-  SignedIn,
-  SignedOut,
+  Show,
   SignInButton,
   SignUpButton,
   useClerk,
@@ -155,7 +154,7 @@ const DesktopHeader = (props: {
               </div>
             )}
             <div className="flex items-center space-x-1">
-              <SignedOut>
+              <Show when="signed-out">
                 <div onClick={() => auth.loginInitiated("header")}>
                   <SignInButton>
                     <Button
@@ -174,8 +173,8 @@ const DesktopHeader = (props: {
                     </Button>
                   </SignUpButton>
                 </div>
-              </SignedOut>
-              <SignedIn>
+              </Show>
+              <Show when="signed-in">
                 <button
                   id="dropdownDefaultButton"
                   data-dropdown-toggle="dropdown"
@@ -199,7 +198,7 @@ const DesktopHeader = (props: {
                     </div>
                   )}
                 </button>
-              </SignedIn>
+              </Show>
             </div>
 
             {/* Mobile menu button */}

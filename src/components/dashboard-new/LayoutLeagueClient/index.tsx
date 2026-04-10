@@ -3,14 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import clsx from "clsx";
-import {
-  SignedIn,
-  SignedOut,
-  SignInButton,
-  SignUpButton,
-  useClerk,
-  useUser,
-} from "@clerk/nextjs";
+import { SignInButton, SignUpButton, useClerk, useUser } from "@clerk/nextjs";
 import { useHasEverPurchased } from "@/hooks/useHasEverPurchased";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 

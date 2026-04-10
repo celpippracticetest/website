@@ -1,9 +1,10 @@
 "use client";
 
-import { useSignIn } from "@clerk/nextjs";
+import { useAuth, useSignIn } from "@clerk/nextjs";
 import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { GoogleGLogo } from "@/components/auth/GoogleGLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,12 @@ import { cn } from "@/lib/utils";
 
 const REDIRECT = "/practice-overview";
 
-function clerkErrMessage(err: unknown): string {
+function formatFutureError(err: { longMessage?: string; message: string } | null | undefined): string {
+  if (!err) return "Something went wrong. Please try again.";
+  return (err.longMessage?.trim() || err.message || "").trim() || "Something went wrong. Please try again.";
+}
+
+function thrownErrMessage(err: unknown): string {
   if (isClerkAPIResponseError(err)) {
     const e = err.errors?.[0];
     return e?.longMessage ?? e?.message ?? "Something went wrong. Please try again.";
@@ -22,7 +28,9 @@ function clerkErrMessage(err: unknown): string {
 }
 
 export function CustomSignInForm({ className }: { className?: string }) {
-  const { isLoaded, signIn, setActive } = useSignIn();
+  const { isLoaded: authLoaded } = useAuth();
+  const { signIn, fetchStatus } = useSignIn();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [resetMode, setResetMode] = useState(false);
@@ -31,15 +39,31 @@ export function CustomSignInForm({ className }: { className?: string }) {
   const [newPassword, setNewPassword] = useState("");
   const [mfaCode, setMfaCode] = useState("");
   const [mfaPrepared, setMfaPrepared] = useState(false);
+  const clientTrustEmailSentRef = useRef(false);
   const [submitting, setSubmitting] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const needsSecondFactor = signIn?.status === "needs_second_factor";
+  const needsSecondFactor = signIn.status === "needs_second_factor";
+  const needsClientTrust = signIn.status === "needs_client_trust";
+
+  const finalizeSession = useCallback(async () => {
+    if (!signIn) return;
+    const { error: finErr } = await signIn.finalize({
+      navigate: ({ session, decorateUrl }) => {
+        if (session?.currentTask) return;
+        const url = decorateUrl(REDIRECT);
+        if (url.startsWith("http")) window.location.href = url;
+        else router.push(url);
+      },
+    });
+    if (finErr) setError(formatFutureError(finErr));
+  }, [router, signIn]);
 
   const resetMfa = useCallback(() => {
+    void signIn.reset();
     window.location.assign("/sign-in");
-  }, []);
+  }, [signIn]);
 
   const backToSignIn = useCallback(() => {
     setResetMode(false);
@@ -47,59 +71,76 @@ export function CustomSignInForm({ className }: { className?: string }) {
     setResetCode("");
     setNewPassword("");
     setError(null);
+    setMfaPrepared(false);
+    clientTrustEmailSentRef.current = false;
+    void signIn.reset();
     window.location.reload();
-  }, []);
+  }, [signIn]);
 
   const handleSendResetCode = async () => {
     if (!signIn) return;
     setError(null);
     setSubmitting(true);
     try {
-      await signIn.create({
-        strategy: "reset_password_email_code",
-        identifier: email.trim(),
-      });
-      setResetCodeSent(true);
+      const { error: cErr } = await signIn.create({ identifier: email.trim() });
+      if (cErr) {
+        setError(formatFutureError(cErr));
+        setSubmitting(false);
+        return;
+      }
+      const { error: sErr } = await signIn.resetPasswordEmailCode.sendCode();
+      if (sErr) setError(formatFutureError(sErr));
+      else setResetCodeSent(true);
     } catch (err) {
-      setError(clerkErrMessage(err));
+      setError(thrownErrMessage(err));
     }
     setSubmitting(false);
   };
 
   const handleSubmitResetPassword = async () => {
-    if (!signIn || !setActive) return;
+    if (!signIn) return;
     setError(null);
     setSubmitting(true);
     try {
-      const res = await signIn.attemptFirstFactor({
-        strategy: "reset_password_email_code",
+      const { error: vErr } = await signIn.resetPasswordEmailCode.verifyCode({
         code: resetCode.trim(),
-        password: newPassword,
       });
-      if (res.status === "complete" && res.createdSessionId) {
-        await setActive({ session: res.createdSessionId });
+      if (vErr) {
+        setError(formatFutureError(vErr));
         setSubmitting(false);
         return;
       }
-      if (res.status === "needs_second_factor") {
+
+      if (signIn.status === "needs_new_password") {
+        const { error: pErr } = await signIn.resetPasswordEmailCode.submitPassword({
+          password: newPassword,
+        });
+        if (pErr) {
+          setError(formatFutureError(pErr));
+          setSubmitting(false);
+          return;
+        }
+      }
+
+      if (signIn.status === "complete") {
+        await finalizeSession();
+        setSubmitting(false);
+        return;
+      }
+
+      if (signIn.status === "needs_second_factor") {
         setResetMode(false);
         setResetCodeSent(false);
         setResetCode("");
         setNewPassword("");
-        const phone = res.supportedSecondFactors?.find((f) => f.strategy === "phone_code");
-        if (phone && "phoneNumberId" in phone) {
-          await res.prepareSecondFactor({
-            strategy: "phone_code",
-            phoneNumberId: phone.phoneNumberId,
-          });
-          setMfaPrepared(true);
-        }
+        setMfaPrepared(false);
         setSubmitting(false);
         return;
       }
+
       setError("Could not reset password. Please try again.");
     } catch (err) {
-      setError(clerkErrMessage(err));
+      setError(thrownErrMessage(err));
     }
     setSubmitting(false);
   };
@@ -110,16 +151,91 @@ export function CustomSignInForm({ className }: { className?: string }) {
     setOauthLoading(true);
     try {
       const origin = window.location.origin;
-      await signIn.authenticateWithRedirect({
+      const { error: oErr } = await signIn.sso({
         strategy: "oauth_google",
-        redirectUrl: `${origin}/sso-callback`,
-        redirectUrlComplete: `${origin}${REDIRECT}`,
+        redirectUrl: `${origin}${REDIRECT}`,
+        redirectCallbackUrl: `${origin}/sso-callback`,
       });
+      if (oErr) {
+        setError(formatFutureError(oErr));
+        setOauthLoading(false);
+      }
     } catch (err) {
-      setError(clerkErrMessage(err));
+      setError(thrownErrMessage(err));
       setOauthLoading(false);
     }
   };
+
+  const prepareSecondFactor = async (): Promise<boolean> => {
+    if (!signIn) return false;
+    const factors = signIn.supportedSecondFactors ?? [];
+    const phone = factors.find((f) => f.strategy === "phone_code");
+    const emailFactor = factors.find((f) => f.strategy === "email_code");
+
+    if (phone) {
+      const { error: e } = await signIn.mfa.sendPhoneCode();
+      if (e) {
+        setError(formatFutureError(e));
+        return false;
+      }
+      return true;
+    }
+    if (emailFactor) {
+      const { error: e } = await signIn.mfa.sendEmailCode();
+      if (e) {
+        setError(formatFutureError(e));
+        return false;
+      }
+      return true;
+    }
+    return true;
+  };
+
+  const submitSecondFactor = async (): Promise<boolean> => {
+    if (!signIn) return false;
+    const factors = signIn.supportedSecondFactors ?? [];
+    const phone = factors.find((f) => f.strategy === "phone_code");
+    const totp = factors.find((f) => f.strategy === "totp");
+    const emailFactor = factors.find((f) => f.strategy === "email_code");
+
+    if (phone) {
+      const { error: e } = await signIn.mfa.verifyPhoneCode({ code: mfaCode });
+      if (e) {
+        setError(formatFutureError(e));
+        return false;
+      }
+      return true;
+    }
+    if (emailFactor) {
+      const { error: e } = await signIn.mfa.verifyEmailCode({ code: mfaCode });
+      if (e) {
+        setError(formatFutureError(e));
+        return false;
+      }
+      return true;
+    }
+    if (totp) {
+      const { error: e } = await signIn.mfa.verifyTOTP({ code: mfaCode });
+      if (e) {
+        setError(formatFutureError(e));
+        return false;
+      }
+      return true;
+    }
+    setError("This account needs an extra sign-in step we don’t support on this page yet.");
+    return false;
+  };
+
+  useEffect(() => {
+    if (!signIn || signIn.status !== "needs_client_trust" || clientTrustEmailSentRef.current) return;
+    clientTrustEmailSentRef.current = true;
+    void signIn.mfa.sendEmailCode().then(({ error: sendErr }) => {
+      if (sendErr) {
+        setError(formatFutureError(sendErr));
+        clientTrustEmailSentRef.current = false;
+      }
+    });
+  }, [signIn, signIn?.status]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,86 +247,82 @@ export function CustomSignInForm({ className }: { className?: string }) {
       await handleSubmitResetPassword();
       return;
     }
-    if (!isLoaded || !signIn || !setActive || oauthLoading) return;
+    if (!authLoaded || !signIn || oauthLoading) return;
+
     setError(null);
     setSubmitting(true);
     try {
-      if (needsSecondFactor) {
-        const factors = signIn.supportedSecondFactors ?? [];
-        const phone = factors.find((f) => f.strategy === "phone_code");
-        const totp = factors.find((f) => f.strategy === "totp");
-
-        if (phone && "phoneNumberId" in phone) {
-          if (!mfaPrepared) {
-            await signIn.prepareSecondFactor({
-              strategy: "phone_code",
-              phoneNumberId: phone.phoneNumberId,
-            });
-            setMfaPrepared(true);
-            setSubmitting(false);
-            return;
-          }
-          const res = await signIn.attemptSecondFactor({
-            strategy: "phone_code",
-            code: mfaCode,
-          });
-          if (res.status === "complete" && res.createdSessionId) {
-            await setActive({ session: res.createdSessionId });
-          }
-        } else if (totp) {
-          const res = await signIn.attemptSecondFactor({
-            strategy: "totp",
-            code: mfaCode,
-          });
-          if (res.status === "complete" && res.createdSessionId) {
-            await setActive({ session: res.createdSessionId });
-          }
-        } else {
-          setError("This account needs an extra sign-in step we don’t support on this page yet.");
+      if (needsClientTrust) {
+        const { error: verErr } = await signIn.mfa.verifyEmailCode({ code: mfaCode.trim() });
+        if (verErr) {
+          setError(formatFutureError(verErr));
+          setSubmitting(false);
+          return;
         }
+        if (signIn.status === "complete") await finalizeSession();
+        else setError("Verification did not complete. Try again.");
         setSubmitting(false);
         return;
       }
 
-      const res = await signIn.create({
-        strategy: "password",
-        identifier: email.trim(),
+      if (needsSecondFactor) {
+        if (!mfaPrepared) {
+          const ok = await prepareSecondFactor();
+          if (ok) setMfaPrepared(true);
+          setSubmitting(false);
+          return;
+        }
+        const ok = await submitSecondFactor();
+        if (ok && signIn.status === "complete") await finalizeSession();
+        setSubmitting(false);
+        return;
+      }
+
+      const { error: pwErr } = await signIn.password({
+        emailAddress: email.trim(),
         password,
       });
-
-      if (res.status === "complete" && res.createdSessionId) {
-        await setActive({ session: res.createdSessionId });
+      if (pwErr) {
+        setError(formatFutureError(pwErr));
         setSubmitting(false);
         return;
       }
 
-      if (res.status === "needs_second_factor") {
-        const phone = res.supportedSecondFactors?.find((f) => f.strategy === "phone_code");
-        if (phone && "phoneNumberId" in phone) {
-          await res.prepareSecondFactor({
-            strategy: "phone_code",
-            phoneNumberId: phone.phoneNumberId,
-          });
-          setMfaPrepared(true);
-        }
+      if (signIn.status === "complete") {
+        await finalizeSession();
+        setSubmitting(false);
+        return;
+      }
+
+      if (signIn.status === "needs_client_trust") {
+        setSubmitting(false);
+        return;
+      }
+
+      if (signIn.status === "needs_second_factor") {
+        const ok = await prepareSecondFactor();
+        if (ok) setMfaPrepared(true);
         setSubmitting(false);
         return;
       }
 
       setError("Could not complete sign-in. Try again or use Forgot password.");
     } catch (err) {
-      setError(clerkErrMessage(err));
+      setError(thrownErrMessage(err));
     }
     setSubmitting(false);
   };
 
-  if (!isLoaded) {
+  if (!authLoaded) {
     return (
       <div className={cn("rounded-2xl border border-slate-200 bg-white p-8 shadow-sm", className)}>
         <p className="text-center text-sm text-slate-600">Loading…</p>
       </div>
     );
   }
+
+  const showVerificationUi = needsSecondFactor || needsClientTrust;
+  const fetching = fetchStatus === "fetching";
 
   return (
     <div
@@ -228,7 +340,9 @@ export function CustomSignInForm({ className }: { className?: string }) {
             ? resetCodeSent
               ? "Enter the code from your email and choose a new password."
               : "Enter your email and we’ll send you a reset code."
-            : "Welcome back. Continue to your practice dashboard."}
+            : needsClientTrust
+              ? "Enter the verification code we sent to your email."
+              : "Welcome back. Continue to your practice dashboard."}
         </p>
       </div>
 
@@ -247,7 +361,7 @@ export function CustomSignInForm({ className }: { className?: string }) {
           <p className="mt-1 text-slate-600">
             {mfaPrepared || signIn.supportedSecondFactors?.some((f) => f.strategy === "totp")
               ? "Enter the code from your authenticator app or SMS."
-              : "We sent a code to your phone."}
+              : "We’ll send a code to verify it’s you."}
           </p>
           <button
             type="button"
@@ -260,7 +374,7 @@ export function CustomSignInForm({ className }: { className?: string }) {
       ) : null}
 
       <form onSubmit={onSubmit} className="space-y-4">
-        {!needsSecondFactor ? (
+        {!showVerificationUi ? (
           <>
             {resetMode && !resetCodeSent ? (
               <div className="space-y-2">
@@ -367,18 +481,33 @@ export function CustomSignInForm({ className }: { className?: string }) {
               className="border-slate-200"
               placeholder="Enter code"
             />
+            {needsClientTrust ? (
+              <button
+                type="button"
+                className="text-sm font-medium text-blue-600 hover:underline"
+                onClick={() => {
+                  void signIn.mfa.sendEmailCode().then(({ error: sendErr }) => {
+                    if (sendErr) setError(formatFutureError(sendErr));
+                  });
+                }}
+              >
+                I need a new code
+              </button>
+            ) : null}
           </div>
         )}
 
         <Button
           type="submit"
-          disabled={submitting || oauthLoading}
+          disabled={submitting || oauthLoading || fetching}
           className="w-full rounded-lg bg-blue-600 text-white hover:bg-blue-700"
         >
-          {submitting
+          {submitting || fetching
             ? "Please wait…"
-            : needsSecondFactor
-              ? "Verify"
+            : showVerificationUi
+              ? needsSecondFactor && !mfaPrepared
+                ? "Send code"
+                : "Verify"
               : resetMode && !resetCodeSent
                 ? "Send reset code"
                 : resetMode && resetCodeSent
@@ -386,7 +515,7 @@ export function CustomSignInForm({ className }: { className?: string }) {
                   : "Sign in"}
         </Button>
 
-        {resetMode && !needsSecondFactor ? (
+        {resetMode && !needsSecondFactor && !needsClientTrust ? (
           <button
             type="button"
             className="w-full text-sm font-medium text-slate-600 hover:text-slate-900 hover:underline"
@@ -397,7 +526,7 @@ export function CustomSignInForm({ className }: { className?: string }) {
         ) : null}
       </form>
 
-      {!needsSecondFactor && !resetMode ? (
+      {!showVerificationUi && !resetMode ? (
         <>
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
@@ -412,7 +541,7 @@ export function CustomSignInForm({ className }: { className?: string }) {
             type="button"
             variant="outline"
             className="h-11 w-full gap-3 border-[#747775] bg-white text-[14px] font-medium text-[#1f1f1f] shadow-sm hover:bg-[#f8f9fa] hover:text-[#1f1f1f] disabled:opacity-60"
-            disabled={oauthLoading || submitting}
+            disabled={oauthLoading || submitting || fetching}
             onClick={handleOAuthGoogle}
             aria-busy={oauthLoading}
           >
@@ -434,7 +563,7 @@ export function CustomSignInForm({ className }: { className?: string }) {
         </>
       ) : null}
 
-      {!needsSecondFactor && !resetMode ? (
+      {!showVerificationUi && !resetMode ? (
         <p className="mt-6 text-center text-sm text-slate-600">
           Don&apos;t have an account?{" "}
           <Link href="/sign-up" className="font-medium text-blue-600 hover:underline">
