@@ -90,7 +90,7 @@ export class RefundRequestRepository {
       updatePayload.rejectionReason = params.rejectionReason;
       updatePayload.rejectionMessage = params.rejectionMessage;
       updatePayload.resolvedAt = now;
-    } else if (nextStatus === "done") {
+    } else if (nextStatus === "done" || nextStatus === "refunded") {
       updatePayload.rejectionReason = undefined;
       updatePayload.rejectionMessage = undefined;
       updatePayload.resolvedAt = now;

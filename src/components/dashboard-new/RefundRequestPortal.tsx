@@ -1,7 +1,7 @@
 "use client";
 
 import { Box } from "@/components/ui/Box";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useState } from "react";
 import { trackEngagement } from "@/lib/gtm";
 
 type SubmitResponse = {
@@ -81,23 +81,48 @@ export default function RefundRequestPortal({
     null
   );
 
-  const canSubmit = useMemo(() => {
-    return (
-      effectiveFullName.length >= 2 &&
-      effectiveEmail.length > 3 &&
-      form.details.trim().length >= 10
-    );
-  }, [effectiveEmail, effectiveFullName, form.details]);
+  const [instantRefundLoading, setInstantRefundLoading] = useState(false);
+  const [instantRefundInfo, setInstantRefundInfo] = useState<{
+    amountDisplay: string;
+    paidAtIso: string;
+  } | null>(null);
+  const [instantRefundDone, setInstantRefundDone] = useState(false);
+  const [instantRefundError, setInstantRefundError] = useState("");
+  const [instantRefundSubmitting, setInstantRefundSubmitting] = useState(false);
+
+  const detailsLen = form.details.trim().length;
+  const detailsMin = 10;
+  const meetsDetailsMin = detailsLen >= detailsMin;
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!canSubmit || isSubmitting) return;
+    if (isSubmitting) return;
+
+    if (effectiveFullName.length < 2) {
+      setSubmitError("Please enter your full name (at least 2 characters).");
+      return;
+    }
+    if (effectiveEmail.length < 5 || !effectiveEmail.includes("@")) {
+      setSubmitError("Please enter a valid email address.");
+      return;
+    }
+    if (!meetsDetailsMin) {
+      setSubmitError(
+        `Please add a bit more detail in the explanation (at least ${detailsMin} characters; you have ${detailsLen}).`
+      );
+      return;
+    }
 
     setIsSubmitting(true);
     setSubmitError("");
     setSubmittedTrackingCode("");
     setSubmittedStatus("");
+    setInstantRefundInfo(null);
+    setInstantRefundDone(false);
+    setInstantRefundError("");
+    setInstantRefundLoading(false);
 
+    let runInstantEligibilityCheck = false;
     try {
       const res = await fetch("/api/refund-requests", {
         method: "POST",
@@ -121,10 +146,61 @@ export default function RefundRequestPortal({
       setSubmittedStatus(data.request.status);
       trackEngagement.refundRequestSubmitted(form.reason, data.request.trackingCode);
       setForm(initialForm);
+      runInstantEligibilityCheck = true;
     } catch (error) {
       setSubmitError("Failed to submit refund request. Please try again.");
     } finally {
       setIsSubmitting(false);
+    }
+
+    if (runInstantEligibilityCheck) {
+      setInstantRefundInfo(null);
+      setInstantRefundDone(false);
+      setInstantRefundError("");
+      setInstantRefundLoading(true);
+      try {
+        const eligRes = await fetch("/api/users/refund-last-payment-eligibility");
+        const eligData = (await eligRes.json()) as {
+          eligible?: boolean;
+          amountDisplay?: string;
+          paidAtIso?: string;
+        };
+        if (eligRes.ok && eligData.eligible && eligData.amountDisplay && eligData.paidAtIso) {
+          setInstantRefundInfo({
+            amountDisplay: eligData.amountDisplay,
+            paidAtIso: eligData.paidAtIso,
+          });
+        }
+      } catch {
+        // non-blocking
+      } finally {
+        setInstantRefundLoading(false);
+      }
+    }
+  };
+
+  const onInstantRefund = async () => {
+    if (!submittedTrackingCode.trim() || instantRefundSubmitting) return;
+    setInstantRefundSubmitting(true);
+    setInstantRefundError("");
+    try {
+      const res = await fetch("/api/users/refund-last-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trackingCode: submittedTrackingCode.trim() }),
+      });
+      const data = (await res.json()) as { error?: string; message?: string };
+      if (!res.ok) {
+        setInstantRefundError(data.error || "Could not complete automatic refund.");
+        return;
+      }
+      setInstantRefundDone(true);
+      setInstantRefundInfo(null);
+      setSubmittedStatus("refunded");
+    } catch {
+      setInstantRefundError("Could not complete automatic refund. Please try again.");
+    } finally {
+      setInstantRefundSubmitting(false);
     }
   };
 
@@ -214,10 +290,19 @@ export default function RefundRequestPortal({
               <textarea
                 value={form.details}
                 onChange={(e) => setForm((prev) => ({ ...prev, details: e.target.value }))}
-                placeholder="Short Explanation (min 10 chars, max 300 chars)"
+                placeholder="Describe what happened and what you need (required, min 10 characters)"
+                minLength={detailsMin}
+                maxLength={2000}
                 className="min-h-[140px] rounded-[12px] border border-[#D7DFEE] bg-white px-[14px] py-[10px] text-[14px] text-[#1F2A3D] outline-none focus:border-[#316BFF]"
                 required
               />
+              <p
+                className={`text-[12px] leading-[18px] ${
+                  meetsDetailsMin ? "text-[#2F6B40]" : "text-[#657386]"
+                }`}
+              >
+                {detailsLen} / {detailsMin} characters minimum for the explanation
+              </p>
 
               {submitError && (
                 <p className="text-[13px] font-medium text-[#D14343]">{submitError}</p>
@@ -231,12 +316,49 @@ export default function RefundRequestPortal({
                   <p className="mt-[4px] text-[13px] text-[#2F6B40]">
                     Current status: {submittedStatus}
                   </p>
+                  {instantRefundLoading ? (
+                    <p className="mt-[10px] text-[13px] text-[#2F6B40]">
+                      Checking whether your last payment qualifies for an automatic refund…
+                    </p>
+                  ) : null}
+                  {instantRefundDone ? (
+                    <p className="mt-[10px] text-[13px] font-medium text-[#1E4D2B]">
+                      Automatic refund completed. Your last card payment was refunded and any
+                      active subscription was cancelled. It may take a few days for your bank to
+                      show the credit.
+                    </p>
+                  ) : null}
+                  {instantRefundInfo && !instantRefundDone ? (
+                    <Box className="mt-[12px] rounded-[10px] border border-[#B8D4FF] bg-white p-[12px]">
+                      <p className="text-[13px] leading-[20px] text-[#1F2A3D]">
+                        Your most recent card payment ({instantRefundInfo.amountDisplay}, paid{" "}
+                        {new Date(instantRefundInfo.paidAtIso).toLocaleString()}) is within 48
+                        hours. You can refund that payment and cancel your subscription
+                        immediately—no need to wait for manual review.
+                      </p>
+                      {instantRefundError ? (
+                        <p className="mt-[8px] text-[13px] font-medium text-[#D14343]">
+                          {instantRefundError}
+                        </p>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={onInstantRefund}
+                        disabled={instantRefundSubmitting}
+                        className="mt-[10px] inline-flex h-[40px] w-full items-center justify-center rounded-[10px] bg-[#1E4D2B] px-[14px] text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 screen744:w-auto!"
+                      >
+                        {instantRefundSubmitting
+                          ? "Processing…"
+                          : "Refund last payment & cancel subscription"}
+                      </button>
+                    </Box>
+                  ) : null}
                 </Box>
               )}
 
               <button
                 type="submit"
-                disabled={!canSubmit || isSubmitting}
+                disabled={isSubmitting}
                 className="mt-[4px] inline-flex h-[44px] items-center justify-center rounded-[12px] bg-[#316BFF] px-[16px] text-[14px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSubmitting ? "Submitting..." : "Submit Refund Request"}

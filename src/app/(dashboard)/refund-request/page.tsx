@@ -4,8 +4,6 @@ import { redirect } from "next/navigation";
 import RefundRequestPortal from "@/components/dashboard-new/RefundRequestPortal";
 import mongoClient from "@/lib/mongodb";
 import { Box } from "@/components/ui/Box";
-import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
-
 export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
   const isPreview = appBaseUrl.includes("vercel.app");
@@ -39,15 +37,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RefundRequestPage() {
   const { userId, sessionClaims } = await auth();
-  const plan = sessionClaims?.metadata?.plan as string | undefined;
   const REFUND_WINDOW_HOURS = 48;
 
   if (!userId) {
     redirect("/");
-  }
-
-  if (!hasPaidPracticeAccess(plan, sessionClaims?.metadata?.purchaseDate)) {
-    redirect("/plans");
   }
 
   const client = await clerkClient();
@@ -127,18 +120,19 @@ export default async function RefundRequestPage() {
   const prevCheckout = prevCheckoutDefault || prevCheckoutProd;
 
   const purchaseAt = (() => {
+    let fromMetadata: number | null = null;
     if (rawPurchaseDate instanceof Date) {
       const ts = rawPurchaseDate.getTime();
-      return Number.isFinite(ts) ? ts : null;
-    }
-
-    if (typeof rawPurchaseDate === "number") {
-      return Number.isFinite(rawPurchaseDate) ? rawPurchaseDate : null;
-    }
-
-    if (typeof rawPurchaseDate === "string") {
+      if (Number.isFinite(ts)) fromMetadata = ts;
+    } else if (typeof rawPurchaseDate === "number") {
+      if (Number.isFinite(rawPurchaseDate)) fromMetadata = rawPurchaseDate;
+    } else if (typeof rawPurchaseDate === "string" && rawPurchaseDate.trim() !== "") {
       const ts = new Date(rawPurchaseDate).getTime();
-      return Number.isFinite(ts) ? ts : null;
+      if (Number.isFinite(ts)) fromMetadata = ts;
+    }
+
+    if (fromMetadata !== null) {
+      return fromMetadata;
     }
 
     const fallbackTs = prevCheckout?.createdAt
@@ -160,11 +154,54 @@ export default async function RefundRequestPage() {
     <Box className="w-full">
       <Box className="mx-auto w-full max-w-[980px] px-[16px] pt-[16px]">
         {isOutside48HourWindow ? (
-          <Box className="rounded-[12px] border border-[#FFD6D6] bg-[#FFF5F5] p-[12px]">
-            <p className="text-[14px] leading-[22px] text-[#9E2D2D]">
-              The refund time has passed. If you still think there is a problem
-              and need to send a request, it takes up to 10 days to investigate.
-            </p>
+          <Box
+            role="alert"
+            aria-labelledby="refund-window-expired-title"
+            aria-describedby="refund-window-expired-desc"
+            className="mb-[16px] flex gap-[14px] rounded-[16px] border border-[#F5C2C2] border-l-[4px] border-l-[#DC2626] bg-[#FEF2F2] p-[16px] shadow-[0_4px_20px_rgba(220,38,38,0.12)] screen744:mb-[20px]! screen744:gap-[16px] screen744:p-[20px]!"
+          >
+            <Box
+              className="flex h-[44px] w-[44px] flex-shrink-0 items-center justify-center rounded-[12px] bg-[#FEE2E2] screen744:h-[48px] screen744:w-[48px]!"
+              aria-hidden
+            >
+              <svg
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="text-[#B91C1C]"
+              >
+                <path
+                  d="M12 2L2 20h20L12 2z"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M12 9v5M12 17h.01"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </Box>
+            <Box className="min-w-0 flex-1 pt-[2px]">
+              <p
+                id="refund-window-expired-title"
+                className="text-[15px] font-semibold leading-[22px] text-[#7F1D1D] screen744:text-[16px]! screen744:leading-[24px]!"
+              >
+                The 48-hour automatic refund window has closed
+              </p>
+              <p
+                id="refund-window-expired-desc"
+                className="mt-[8px] text-[14px] leading-[22px] text-[#991B1B] screen744:leading-[23px]!"
+              >
+                You can still submit the form below if something went wrong. Our team may take
+                up to <span className="font-semibold">10 business days</span> to review requests
+                outside the standard window.
+              </p>
+            </Box>
           </Box>
         ) : null}
       </Box>

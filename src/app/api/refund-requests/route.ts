@@ -56,24 +56,45 @@ async function generateUniqueTrackingCode(repo: RefundRequestRepository) {
   throw new Error("Unable to generate unique tracking code");
 }
 
-function enforcePremiumAccess(userId: string | null, plan?: string) {
+async function userHasCompletedCheckout(clerkUserId: string): Promise<boolean> {
+  const filter = { userId: clerkUserId, status: "complete" as const };
+  const inDefault = await mongoClient.db().collection("checkouts").findOne(filter);
+  if (inDefault) return true;
+  const inProd = await mongoClient.db("prod").collection("checkouts").findOne(filter);
+  return Boolean(inProd);
+}
+
+/** Active/past subscribers: JWT says paid, or we have a completed checkout on file. */
+async function assertRefundPortalAccess(
+  userId: string | null,
+  plan: string | undefined,
+  purchaseDate: unknown
+): Promise<NextResponse | null> {
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (!hasPaidPracticeAccess(plan, sessionClaims?.metadata?.purchaseDate)) {
-    return NextResponse.json(
-      { error: "Only subscribed users can submit refund requests" },
-      { status: 403 }
-    );
+  if (hasPaidPracticeAccess(plan, purchaseDate)) {
+    return null;
   }
-  return null;
+  if (await userHasCompletedCheckout(userId)) {
+    return null;
+  }
+  return NextResponse.json(
+    {
+      error:
+        "Refund requests are for customers with an active or previous subscription. If you believe this is a mistake, contact support.",
+    },
+    { status: 403 }
+  );
 }
 
 export async function POST(req: NextRequest) {
   try {
     const { userId, sessionClaims } = await auth();
     const plan = sessionClaims?.metadata?.plan as string | undefined;
-    const guard = enforcePremiumAccess(userId, plan);
+    const purchaseDate = (sessionClaims?.metadata as { purchaseDate?: unknown } | undefined)
+      ?.purchaseDate;
+    const guard = await assertRefundPortalAccess(userId, plan, purchaseDate);
     if (guard) return guard;
 
     const body = await req.json();
@@ -136,7 +157,9 @@ export async function GET(req: NextRequest) {
   try {
     const { userId, sessionClaims } = await auth();
     const plan = sessionClaims?.metadata?.plan as string | undefined;
-    const guard = enforcePremiumAccess(userId, plan);
+    const purchaseDate = (sessionClaims?.metadata as { purchaseDate?: unknown } | undefined)
+      ?.purchaseDate;
+    const guard = await assertRefundPortalAccess(userId, plan, purchaseDate);
     if (guard) return guard;
 
     const { searchParams } = new URL(req.url);
