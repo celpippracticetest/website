@@ -8,6 +8,9 @@ export type ChallengeAcceptanceRow = {
   status: string | null;
   targetClb: number | null;
   windowDays: number | null;
+  refundPercent: number | null;
+  offerSource: string | null;
+  tierKey: string | null;
   startsAt: string | null;
   deadlineAt: string | null;
   challengeUpdatedAt: string | null;
@@ -60,6 +63,9 @@ export async function loadChallengeAcceptances(
           status?: string;
           targetClb?: number;
           windowDays?: number;
+          refundPercent?: number;
+          offerSource?: string;
+          tierKey?: string;
           startsAt?: Date | string;
           deadlineAt?: Date | string | null;
           updatedAt?: Date | string;
@@ -73,6 +79,12 @@ export async function loadChallengeAcceptances(
       status: c?.status ?? null,
       targetClb: typeof c?.targetClb === "number" && Number.isFinite(c.targetClb) ? c.targetClb : null,
       windowDays: typeof c?.windowDays === "number" && Number.isFinite(c.windowDays) ? c.windowDays : null,
+      refundPercent:
+        typeof c?.refundPercent === "number" && Number.isFinite(c.refundPercent)
+          ? c.refundPercent
+          : null,
+      offerSource: typeof c?.offerSource === "string" && c.offerSource.trim() ? c.offerSource.trim() : null,
+      tierKey: typeof c?.tierKey === "string" && c.tierKey.trim() ? c.tierKey.trim() : null,
       startsAt: iso(c?.startsAt),
       deadlineAt: iso(c?.deadlineAt),
       challengeUpdatedAt: iso(c?.updatedAt) ?? iso(d.updatedAt),

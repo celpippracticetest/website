@@ -4,31 +4,25 @@ import ScoreCalculatorPageClient from "@/components/pages/marketing/ScoreCalcula
 
 const canonicalUrl = "https://celpippracticetest.com/score-calculator";
 
+const SCORE_CALC_TITLE =
+  "CELPIP Score Calculator | CRS Estimate & CLB Levels (2026)";
+const SCORE_CALC_DESCRIPTION =
+  "Enter CELPIP Listening, Reading, Writing, and Speaking scores to see CLB-style levels and an educational CRS estimate for Express Entry (verify on Canada.ca).";
+
 export const metadata: Metadata = {
-  title: "Free CELPIP Score Calculator | Estimate CRS Points (2025 Criteria)",
-  description:
-    "Use this free CELPIP score calculator to estimate CRS points for Express Entry using current 2025 criteria. Enter Listening, Reading, Writing, and Speaking scores for a fast estimate.",
-  keywords: [
-    "free CELPIP score calculator",
-    "CELPIP CRS calculator",
-    "estimate CRS points",
-    "CELPIP to CRS points",
-    "Express Entry score calculator",
-    "CELPIP CLB calculator",
-    "CRS criteria 2025",
-  ],
+  title: SCORE_CALC_TITLE,
+  description: SCORE_CALC_DESCRIPTION,
   openGraph: {
-    title: "Free CELPIP Score Calculator | Estimate CRS Points (2025 Criteria)",
+    title: SCORE_CALC_TITLE,
     description:
-      "Estimate CRS points from your CELPIP scores in seconds using current Express Entry criteria. Includes language, education, Canadian work, and transferability estimates.",
+      "Educational CRS estimate from CELPIP scores: language, education, Canadian work, and transferability. Not an official IRCC tool.",
     type: "website",
     url: canonicalUrl,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Free CELPIP Score Calculator | Estimate CRS Points (2025 Criteria)",
-    description:
-      "Estimate CRS points from CELPIP scores using current Express Entry criteria.",
+    title: SCORE_CALC_TITLE,
+    description: SCORE_CALC_DESCRIPTION,
   },
   alternates: {
     canonical: canonicalUrl,
@@ -73,9 +67,8 @@ const faqSchema = {
 const webpageSchema = {
   "@context": "https://schema.org",
   "@type": "WebPage",
-  name: "Free CELPIP Score Calculator",
-  description:
-    "Free calculator to estimate CRS points from CELPIP Listening, Reading, Writing, and Speaking scores.",
+  name: "CELPIP Score Calculator",
+  description: SCORE_CALC_DESCRIPTION,
   url: canonicalUrl,
   inLanguage: "en-CA",
   isPartOf: {

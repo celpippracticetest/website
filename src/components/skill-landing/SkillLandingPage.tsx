@@ -17,6 +17,16 @@ interface SkillLandingPageProps {
   availableTasks?: { id: string; taskNumber: string }[];
 }
 
+const SKILL_SECTION_LABEL: Record<
+  SkillLandingPageProps["skillType"],
+  string
+> = {
+  speaking: "Speaking",
+  reading: "Reading",
+  writing: "Writing",
+  listening: "Listening",
+};
+
 const SKILL_NAV_ITEMS = [
   {
     title: "Listening",
@@ -106,7 +116,7 @@ const SkillLandingPage: React.FC<SkillLandingPageProps> = ({
         <div className="flex flex-col lg:flex-row gap-12 items-start mb-16">
           <div className="flex-1">
             <h2 className="text-[24px] font-bold text-[#212E42] mb-4">
-              Start Your CELPIP {content.title.split(" ")[0]} Practice
+              Start Your CELPIP {SKILL_SECTION_LABEL[skillType]} Practice
             </h2>
             <p
               className="text-[#525D6F] mb-8 leading-relaxed"

@@ -1,37 +1,67 @@
 import { useState, useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 
 export const useHasEverPurchased = () => {
-  const { user, isLoaded } = useUser();
+  const { user, isLoaded: userLoaded } = useUser();
+  const { getToken, isLoaded: authLoaded } = useAuth();
   const [hasEverPurchased, setHasEverPurchased] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     const checkPurchaseHistory = async () => {
-      if (!isLoaded || !user) {
-        setHasEverPurchased(false);
-        setIsLoading(false);
+      if (!userLoaded || !authLoaded || !user?.id) {
+        if (!cancelled) {
+          setHasEverPurchased(false);
+          setIsLoading(false);
+        }
         return;
       }
 
       try {
-        const response = await fetch("/api/users/has-ever-purchased");
+        const token = await getToken();
+        const url = new URL(
+          "/api/users/has-ever-purchased",
+          window.location.origin,
+        ).toString();
+
+        const response = await fetch(url, {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+          headers: {
+            Accept: "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        if (cancelled) return;
+
         if (response.ok) {
-          const data = await response.json();
-          setHasEverPurchased(data.hasEverPurchased);
+          const data = (await response.json()) as { hasEverPurchased?: boolean };
+          setHasEverPurchased(Boolean(data.hasEverPurchased));
         } else {
           setHasEverPurchased(false);
         }
       } catch (error) {
-        console.error("Error checking purchase history:", error);
-        setHasEverPurchased(false);
+        if (!cancelled) {
+          console.error("Error checking purchase history:", error);
+          setHasEverPurchased(false);
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     };
 
-    checkPurchaseHistory();
-  }, [user, isLoaded]);
+    void checkPurchaseHistory();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, userLoaded, authLoaded, getToken]);
 
   return { hasEverPurchased, isLoading };
 };

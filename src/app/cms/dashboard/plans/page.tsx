@@ -108,6 +108,11 @@ const PlansPage = () => {
     const [migrateLoading, setMigrateLoading] = useState(false);
     const [migrateResult, setMigrateResult] = useState<MigratePremiumToPlusResult | null>(null);
     const [migrateMaxUpdates, setMigrateMaxUpdates] = useState("");
+    const [paypalCreateLoading, setPaypalCreateLoading] = useState(false);
+    const [paypalCreateError, setPaypalCreateError] = useState<string | null>(null);
+    const [sharedPayPalProductLoading, setSharedPayPalProductLoading] = useState(false);
+    const [sharedPayPalProductId, setSharedPayPalProductId] = useState<string | null>(null);
+    const [sharedPayPalProductError, setSharedPayPalProductError] = useState<string | null>(null);
 
     const runPremiumToPlusMigration = async (dryRun: boolean) => {
         setMigrateLoading(true);
@@ -195,6 +200,7 @@ const PlansPage = () => {
             setEditingPlan(null);
             setFormData(createEmptyPlanForm(plans.length));
         }
+        setPaypalCreateError(null);
         setIsModalOpen(true);
     };
 
@@ -282,6 +288,48 @@ const PlansPage = () => {
         }
     };
 
+    const handleCreatePayPalPlan = async () => {
+        if (!editingPlan?._id) return;
+        if (
+            formData.paypalPlanId?.trim() &&
+            !window.confirm(
+                "This plan already has a PayPal plan ID. Create a new PayPal product + plan and replace it?"
+            )
+        ) {
+            return;
+        }
+        setPaypalCreateLoading(true);
+        setPaypalCreateError(null);
+        try {
+            const response = await fetch("/api/admin/plans/paypal-create", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ planId: editingPlan._id.toString() }),
+            });
+            const data = (await response.json()) as {
+                error?: string;
+                paypalPlanId?: string;
+                paypalProductId?: string;
+            };
+            if (!response.ok) {
+                setPaypalCreateError(data.error || `Request failed (${response.status})`);
+                return;
+            }
+            if (data.paypalPlanId) {
+                setFormData((prev) => ({
+                    ...prev,
+                    paypalPlanId: data.paypalPlanId,
+                    paypalProductId: data.paypalProductId ?? prev.paypalProductId,
+                }));
+            }
+            void fetchPlans();
+        } catch (e) {
+            setPaypalCreateError(e instanceof Error ? e.message : "Request failed");
+        } finally {
+            setPaypalCreateLoading(false);
+        }
+    };
+
     const handleDelete = async (id: string) => {
         if (!confirm("Are you sure you want to delete this plan?")) return;
 
@@ -297,6 +345,32 @@ const PlansPage = () => {
             }
         } catch (error) {
             console.error("Error deleting plan:", error);
+        }
+    };
+
+    const handleCreateSharedPayPalProduct = async () => {
+        setSharedPayPalProductLoading(true);
+        setSharedPayPalProductError(null);
+        try {
+            const response = await fetch("/api/admin/plans/paypal-shared-product", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+            });
+            const data = (await response.json()) as {
+                error?: string;
+                paypalProductId?: string;
+            };
+            if (!response.ok) {
+                setSharedPayPalProductError(data.error || `Request failed (${response.status})`);
+                return;
+            }
+            if (data.paypalProductId) {
+                setSharedPayPalProductId(data.paypalProductId);
+            }
+        } catch (e) {
+            setSharedPayPalProductError(e instanceof Error ? e.message : "Request failed");
+        } finally {
+            setSharedPayPalProductLoading(false);
         }
     };
 
@@ -368,6 +442,58 @@ const PlansPage = () => {
                     <p className="text-sm font-medium text-gray-500">Premium Plus plans</p>
                     <p className="mt-2 text-3xl font-bold text-amber-600">{planStats.premiumPlus}</p>
                 </div>
+            </div>
+
+            <div className="mb-8 rounded-2xl border border-[#0070ba]/30 bg-gradient-to-br from-[#e7f3ff] to-white p-6 shadow-sm">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#005ea6]">
+                            PayPal setup
+                        </p>
+                        <h2 className="mt-1 text-lg font-bold text-gray-900">
+                            Create / reuse shared PayPal product
+                        </h2>
+                        <p className="mt-1 text-sm text-gray-600">
+                            Use one PayPal product for all plans, then set{" "}
+                            <code className="rounded bg-white px-1">PAYPAL_SHARED_PRODUCT_ID</code>{" "}
+                            in <code className="rounded bg-white px-1">.env</code>.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => void handleCreateSharedPayPalProduct()}
+                        disabled={sharedPayPalProductLoading}
+                        className="rounded-lg bg-[#0070ba] px-4 py-2 text-sm font-semibold text-white hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {sharedPayPalProductLoading ? "Preparing product…" : "Create / Reuse product"}
+                    </button>
+                </div>
+                {sharedPayPalProductId ? (
+                    <div className="mt-3 rounded-xl border border-[#0070ba]/30 bg-white p-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#005ea6]">
+                            Shared product id
+                        </p>
+                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                            <code className="rounded bg-slate-100 px-2 py-1 text-sm">
+                                {sharedPayPalProductId}
+                            </code>
+                            <button
+                                type="button"
+                                onClick={() => void navigator.clipboard?.writeText(sharedPayPalProductId)}
+                                className="rounded border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                            >
+                                Copy
+                            </button>
+                        </div>
+                        <p className="mt-2 text-xs text-gray-600">
+                            Add this to <code className="rounded bg-slate-100 px-1">PAYPAL_SHARED_PRODUCT_ID</code>{" "}
+                            and restart the app.
+                        </p>
+                    </div>
+                ) : null}
+                {sharedPayPalProductError ? (
+                    <p className="mt-3 text-sm text-red-600">{sharedPayPalProductError}</p>
+                ) : null}
             </div>
 
             <div className="mb-8 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50/90 to-white p-6 shadow-sm">
@@ -696,6 +822,18 @@ const PlansPage = () => {
                                                     </span>
                                                 </div>
                                                 <div className="mt-2 flex items-center justify-between gap-3">
+                                                    <span>PayPal</span>
+                                                    <span
+                                                        className={
+                                                            plan.paypalPlanId
+                                                                ? "font-medium text-green-700"
+                                                                : "font-medium text-amber-700"
+                                                        }
+                                                    >
+                                                        {plan.paypalPlanId ? "Linked" : "Not linked"}
+                                                    </span>
+                                                </div>
+                                                <div className="mt-2 flex items-center justify-between gap-3">
                                                     <span>Order</span>
                                                     <span>{plan.order}</span>
                                                 </div>
@@ -986,6 +1124,76 @@ const PlansPage = () => {
                                     <p className="mt-1 text-xs text-gray-500">
                                         This is generated automatically when the plan is synced to Stripe.
                                     </p>
+                                </div>
+
+                                <div className="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                    <p className="text-sm font-semibold text-gray-900">PayPal (subscriptions)</p>
+                                    <p className="mt-1 text-xs text-gray-600">
+                                        Map this plan to PayPal for the pricing page “Pay with PayPal” flow. Uses the
+                                        same CAD price and billing interval as this plan. Requires{" "}
+                                        <code className="rounded bg-white px-1">PAYPAL_CLIENT_ID</code> /{" "}
+                                        <code className="rounded bg-white px-1">SECRET</code> and{" "}
+                                        <code className="rounded bg-white px-1">PAYPAL_API_BASE</code> (sandbox or
+                                        live).
+                                    </p>
+                                    <div className="mt-3 grid gap-3 md:grid-cols-2">
+                                        <div>
+                                            <label className="mb-1 block text-sm font-medium text-gray-700">
+                                                PayPal billing plan ID
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="paypalPlanId"
+                                                value={formData.paypalPlanId || ""}
+                                                onChange={handleInputChange}
+                                                placeholder="P-xxxxxxxx (optional if you create below)"
+                                                className="w-full rounded-lg border px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="mb-1 block text-sm font-medium text-gray-700">
+                                                PayPal product ID
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="paypalProductId"
+                                                value={formData.paypalProductId || ""}
+                                                onChange={handleInputChange}
+                                                placeholder="PROD-xxx (filled when created via API)"
+                                                className="w-full rounded-lg border bg-gray-50 px-3 py-2 text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="mt-3 flex flex-wrap items-center gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => void handleCreatePayPalPlan()}
+                                            disabled={
+                                                paypalCreateLoading ||
+                                                !editingPlan?._id ||
+                                                !formData.stripePriceId?.trim()
+                                            }
+                                            className="rounded-lg bg-[#0070ba] px-4 py-2 text-sm font-semibold text-white hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            {paypalCreateLoading
+                                                ? "Creating in PayPal…"
+                                                : "Create in PayPal & link"}
+                                        </button>
+                                        {!editingPlan?._id ? (
+                                            <span className="text-xs text-amber-700">
+                                                Save the plan first so it has a Stripe price ID.
+                                            </span>
+                                        ) : !formData.stripePriceId?.trim() ? (
+                                            <span className="text-xs text-amber-700">
+                                                Stripe price ID required — save the plan to sync Stripe.
+                                            </span>
+                                        ) : null}
+                                    </div>
+                                    {paypalCreateError ? (
+                                        <p className="mt-2 text-sm text-red-600" role="alert">
+                                            {paypalCreateError}
+                                        </p>
+                                    ) : null}
                                 </div>
                             </div>
 

@@ -27,10 +27,12 @@ interface PracticeSection {
 }
 
 const writingMetadataBase: Metadata = {
-  title: "Free CELPIP Writing Practice Tests & Mock Exams | CELPIPPRACTICETEST",
+  title: "CELPIP Practice Exam: Free CELPIP Writing Practice Test",
   description:
-    "Get higher CELPIP Writing marks with practice prompts, instant AI feedback, and model answers. Hone grammar, coherence, task response fast | CELPIPPRACTICETEST.com",
+    "CELPIP practice exam for Writing: realistic email and survey tasks, instant AI feedback, and model answers. Improve grammar, coherence, and task response.",
   keywords: [
+    "celpip practice exam",
+    "free celpip practice exam",
     "celpip writing practice test",
     "celpip sample writing test",
     "celpip writing practice",

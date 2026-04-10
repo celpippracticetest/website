@@ -163,6 +163,14 @@ svg {
     @apply bg-background text-foreground;
   }
 
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
   /* Add prose styles for the wiki content */
   .prose {
     @apply text-foreground;

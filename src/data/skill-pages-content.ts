@@ -21,9 +21,9 @@ export interface SkillPageContent {
 
 export const skillPagesContent: Record<string, SkillPageContent> = {
     writing: {
-        title: "Writing Practice",
+        title: "Free CELPIP Writing Practice Exam",
         description:
-            "Writing is a crucial part of the CELPIP test, since it shows how well you're capable of conveying ideas clearly and properly in written English. With our <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP Writing Practice Test</a>, you'll get to practice real test-type email and survey questions so that you feel confident and ready. We'll provide you with <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP practice test</a> questions and instructions in the following.",
+            "Writing is a crucial part of the CELPIP test, since it shows how well you're capable of conveying ideas clearly and properly in written English. This <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP practice exam for Writing</a> uses real test-style email and survey tasks so you feel confident and ready. We also link to our broader <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP practice test</a> hub for full-section preparation.",
         tasks: [
             {
                 id: "1",
@@ -92,9 +92,9 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
         ],
     },
     listening: {
-        title: "Listening Practice",
+        title: "Free CELPIP Listening Practice Exam",
         description:
-            "Listening is the most important skill in the CELPIP test, since it shows how well you can hear and understand everyday conversations and English news. In the following, we will provide you with practice material to prepare you and to boost your confidence in listening. Using our \u003ca href='/' style='color: inherit; text-decoration: underline;'\u003eCELPIP practice test\u003c/a\u003e, you will get a real feel of the test and practice your listening before appearing for the test.",
+            "Listening is the most important skill in the CELPIP test, since it shows how well you can hear and understand everyday conversations and English news. This <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP practice exam for Listening</a> gives you realistic audio and tasks to build confidence before test day. You can also explore our full <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP practice test</a> resources from the home page.",
         tasks: [
             {
                 id: "1",
@@ -158,7 +158,7 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
         ],
     },
     reading: {
-        title: "CELPIP Reading Practice Test",
+        title: "Free CELPIP Reading Practice Exam",
         description:
             "This <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP practice exam</a> for reading helps you build the exact skills tested on exam day: understanding correspondence, using diagrams, locating key details in information texts, and comparing viewpoints. Use these CELPIP reading practice tests to improve timing, accuracy, vocabulary recognition, and confidence before the real exam.",
         tasks: [
@@ -242,9 +242,9 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
         ],
     },
     speaking: {
-        title: "Speaking Practice",
+        title: "Free CELPIP Speaking Practice Exam",
         description:
-            "Speaking skill is one of the most useful sections of the CELPIP test. This skill will show your natural English speaking ability. Let's improve your speaking fluency through our real exam <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP speaking practice test</a>. Practice material will be provided below to help prepare you step by step.",
+            "Speaking skill is one of the most useful sections of the CELPIP test. This skill will show your natural English speaking ability. Improve fluency with this <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP practice exam for Speaking</a> and timed prompts that mirror the real test. Additional <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP speaking practice test</a> material appears below to prepare you step by step.",
         tasks: [
             {
                 id: "1",

@@ -24,6 +24,9 @@ export async function GET() {
           status?: string;
           targetClb?: number;
           windowDays?: number;
+          refundPercent?: number;
+          offerSource?: string;
+          tierKey?: string;
           deadlineAt?: string | Date | null;
         }
       | undefined;
@@ -41,6 +44,9 @@ export async function GET() {
       active: true,
       targetClb: challenge.targetClb ?? null,
       windowDays: challenge.windowDays ?? null,
+      refundPercent: challenge.refundPercent ?? null,
+      offerSource: challenge.offerSource ?? null,
+      tierKey: challenge.tierKey ?? null,
       deadlineAt: deadline ? deadline.toISOString() : null,
       daysLeft,
     });

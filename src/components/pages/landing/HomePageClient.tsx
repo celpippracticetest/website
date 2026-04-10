@@ -10,6 +10,7 @@ import OnlineUsersCount from "@/components/analytics/OnlineUsersCount";
 import HomeAbExperimentTracker from "@/components/analytics/HomeAbExperimentTracker";
 import type { HomeAbVariant } from "@/lib/homeAbTest";
 import SuccessRoadmap from "./SuccessRoadmap";
+import PracticeExamSkillLinks from "./PracticeExamSkillLinks";
 import ClassicHomeHeader from "./ClassicHomeHeader";
 import { cn } from "@/lib/utils";
 
@@ -92,6 +93,9 @@ export default function HomePageClient({
         {(variant === "classic" || variant === "passport") && <SuccessRoadmap />}
         <Comments />
         <Practice />
+        {(variant === "classic" || variant === "passport") && (
+          <PracticeExamSkillLinks />
+        )}
         <ExamModeFeatureSectionLanding />
         <FAQ />
         <FloatingChatIcon autoOpen={false} />

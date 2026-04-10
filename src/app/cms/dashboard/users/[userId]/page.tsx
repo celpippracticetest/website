@@ -48,9 +48,23 @@ interface Activity {
   timestampUtc: string;
 }
 
+interface ChallengeProfile {
+  mode?: string;
+  status?: string;
+  targetClb?: number;
+  windowDays?: number;
+  refundPercent?: number;
+  offerSource?: string;
+  tierKey?: string;
+  startsAt?: string;
+  deadlineAt?: string | null;
+  updatedAt?: string;
+}
+
 interface UserActivitiesResponse {
   activities: Activity[];
   summary: ActivitySummary;
+  challengeProfile?: ChallengeProfile | null;
   pagination: {
     page: number;
     limit: number;
@@ -92,6 +106,7 @@ export default function UserDetailPage() {
   const [status, setStatus] = useState("");
   const [hasScore, setHasScore] = useState("");
   const [search, setSearch] = useState("");
+  const [challengeProfile, setChallengeProfile] = useState<ChallengeProfile | null>(null);
 
   const fetchActivities = async () => {
     setLoading(true);
@@ -147,6 +162,13 @@ export default function UserDetailPage() {
         setActivities(data.activities);
         setSummary(data.summary);
         setPagination(data.pagination);
+        setChallengeProfile(
+          data.challengeProfile &&
+            typeof data.challengeProfile === "object" &&
+            data.challengeProfile.mode
+            ? data.challengeProfile
+            : null
+        );
       }
     } catch (error) {
       console.error("Error fetching activities:", error);
@@ -298,6 +320,64 @@ export default function UserDetailPage() {
           </button>
         </div>
       </div>
+
+      {challengeProfile ? (
+        <div className="mb-6 rounded-xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-indigo-600" />
+            <h2 className="text-lg font-bold text-indigo-950">Final-offer refund challenge</h2>
+            <span className="rounded-full bg-indigo-600 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-white">
+              {challengeProfile.status ?? "unknown"}
+            </span>
+          </div>
+          <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+            <div>
+              <dt className="font-medium text-slate-500">Target CLB</dt>
+              <dd className="font-semibold text-slate-900">
+                {challengeProfile.targetClb ?? "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium text-slate-500">Window</dt>
+              <dd className="font-semibold text-slate-900">
+                {challengeProfile.windowDays != null ? `${challengeProfile.windowDays} days` : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium text-slate-500">Refund tier</dt>
+              <dd className="font-semibold text-slate-900">
+                {challengeProfile.refundPercent != null
+                  ? `Up to ${challengeProfile.refundPercent}%`
+                  : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium text-slate-500">Offer source</dt>
+              <dd className="font-mono text-xs font-semibold text-slate-900">
+                {challengeProfile.offerSource ?? "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium text-slate-500">Tier key</dt>
+              <dd className="font-mono text-xs font-semibold text-slate-900">
+                {challengeProfile.tierKey ?? "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium text-slate-500">Deadline</dt>
+              <dd className="font-semibold text-slate-900">
+                {challengeProfile.deadlineAt
+                  ? formatDate(
+                      typeof challengeProfile.deadlineAt === "string"
+                        ? challengeProfile.deadlineAt
+                        : String(challengeProfile.deadlineAt)
+                    )
+                  : "—"}
+              </dd>
+            </div>
+          </dl>
+        </div>
+      ) : null}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">

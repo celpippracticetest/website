@@ -30,7 +30,8 @@ function readValue(value: string | null): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-export default function CheckoutAttributionFields() {
+/** Key–value pairs to mirror a checkout POST (Stripe or PayPal create). */
+export function useCheckoutAttributionPayload(): Record<string, string> {
   const searchParams = useSearchParams();
   const [fields, setFields] = useState<CheckoutAttributionState>({});
   const [homeAbVariant, setHomeAbVariant] = useState<string | null>(null);
@@ -59,18 +60,25 @@ export default function CheckoutAttributionFields() {
     setHomeAbVariant(m?.[1] ?? null);
   }, [searchParams]);
 
+  const payload: Record<string, string> = {};
+  for (const field of CHECKOUT_ATTRIBUTION_FIELDS) {
+    const value = readValue(searchParams.get(field)) || fields[field];
+    if (value) payload[field] = value;
+  }
+  if (homeAbVariant) {
+    payload.home_ab_variant = homeAbVariant;
+  }
+  return payload;
+}
+
+export default function CheckoutAttributionFields() {
+  const payload = useCheckoutAttributionPayload();
+
   return (
     <>
-      {CHECKOUT_ATTRIBUTION_FIELDS.map((field) => {
-        const value = readValue(searchParams.get(field)) || fields[field];
-
-        return value ? (
-          <input key={field} type="hidden" name={field} value={value} />
-        ) : null;
-      })}
-      {homeAbVariant ? (
-        <input type="hidden" name="home_ab_variant" value={homeAbVariant} />
-      ) : null}
+      {Object.entries(payload).map(([field, value]) => (
+        <input key={field} type="hidden" name={field} value={value} />
+      ))}
     </>
   );
 }

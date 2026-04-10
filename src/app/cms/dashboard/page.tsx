@@ -208,9 +208,10 @@ export default async function CMSDashboard({
               Post-onboarding refund challenge
             </h2>
             <p className="mt-[4px] text-[14px] text-[#6B7280]">
-              Users who accepted the challenge (<code className="text-[13px]">challenge_mode</code> /
-              refund goal) at checkout. Data lives on MongoDB{" "}
-              <code className="text-[13px]">users.challenge</code>.
+              Users who enrolled from the final-offer challenge flow (<code className="text-[13px]">
+                challenge_offer_source: final_offer
+              </code>
+              ). Data lives on MongoDB <code className="text-[13px]">users.challenge</code>.
             </p>
 
             <Box className="mt-[12px] flex flex-wrap gap-[16px] text-[14px]">
@@ -233,7 +234,7 @@ export default async function CMSDashboard({
                 </Box>
               ) : (
                 <Box className="overflow-x-auto">
-                  <table className="w-full min-w-[900px]">
+                  <table className="w-full min-w-[1100px]">
                     <thead className="border-b bg-[#F9FAFB]">
                       <tr>
                         <th className="px-[12px] py-[10px] text-left text-[12px] font-semibold uppercase text-[#6B7280]">
@@ -253,6 +254,15 @@ export default async function CMSDashboard({
                         </th>
                         <th className="px-[12px] py-[10px] text-left text-[12px] font-semibold uppercase text-[#6B7280]">
                           Window (days)
+                        </th>
+                        <th className="px-[12px] py-[10px] text-left text-[12px] font-semibold uppercase text-[#6B7280]">
+                          Refund %
+                        </th>
+                        <th className="px-[12px] py-[10px] text-left text-[12px] font-semibold uppercase text-[#6B7280]">
+                          Offer
+                        </th>
+                        <th className="px-[12px] py-[10px] text-left text-[12px] font-semibold uppercase text-[#6B7280]">
+                          Tier
                         </th>
                         <th className="px-[12px] py-[10px] text-left text-[12px] font-semibold uppercase text-[#6B7280]">
                           Started
@@ -291,6 +301,15 @@ export default async function CMSDashboard({
                           </td>
                           <td className="px-[12px] py-[10px] text-[13px] text-[#4B5563]">
                             {row.windowDays ?? "—"}
+                          </td>
+                          <td className="px-[12px] py-[10px] text-[13px] text-[#4B5563]">
+                            {row.refundPercent != null ? `${row.refundPercent}%` : "—"}
+                          </td>
+                          <td className="px-[12px] py-[10px] text-[13px] text-[#4B5563]">
+                            {row.offerSource ?? "—"}
+                          </td>
+                          <td className="px-[12px] py-[10px] text-[13px] font-mono text-[12px] text-[#4B5563]">
+                            {row.tierKey ?? "—"}
                           </td>
                           <td className="px-[12px] py-[10px] text-[13px] text-[#4B5563]">
                             {row.startsAt ? new Date(row.startsAt).toLocaleString() : "—"}

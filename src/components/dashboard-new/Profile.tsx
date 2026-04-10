@@ -25,6 +25,18 @@ import {
   hasPaidPracticeAccess,
 } from "@/lib/subscriptionAccess";
 import { Switch } from "@/components/ui/switch";
+
+function parseDateLikeToMs(value: unknown): number | null {
+  if (!value) return null;
+  if (typeof value === "number" && Number.isFinite(value)) {
+    // If backend ever sends unix seconds, convert; otherwise treat as ms.
+    return value < 10_000_000_000 ? value * 1000 : value;
+  }
+  const date = new Date(String(value));
+  const ms = date.getTime();
+  return Number.isFinite(ms) ? ms : null;
+}
+
 export default function Profile({ prevCheckout, subscriptionData }: any) {
   const { user, isLoaded: isUserLoaded } = useUser();
   const [planNameDisplay, setPlanNameDisplay] = useState<string>("");
@@ -157,6 +169,22 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
     stripeSubscriptionTerminated && subscriptionData?.currentPeriodEnd
       ? "Ended on"
       : "Ends on";
+  const metadataPlanCancelled = Boolean(user?.publicMetadata?.planCancelled);
+  const metadataPlanRenewsAtMs = parseDateLikeToMs(user?.publicMetadata?.planRenewsAt);
+  const metadataPlanExpiresAtMs = parseDateLikeToMs(user?.publicMetadata?.planExpiresAt);
+  const stripeCurrentPeriodEndMs = subscriptionData?.currentPeriodEnd
+    ? subscriptionData.currentPeriodEnd * 1000
+    : null;
+  const effectiveAccessEndMs =
+    stripeCurrentPeriodEndMs ?? metadataPlanRenewsAtMs ?? metadataPlanExpiresAtMs;
+  const hasFutureAccessEnd = Boolean(
+    effectiveAccessEndMs && effectiveAccessEndMs > Date.now()
+  );
+  const showCancelledAccessUntil =
+    (metadataPlanCancelled ||
+      Boolean(subscriptionData?.cancelAtPeriodEnd) ||
+      Boolean(stripeSubscriptionTerminated)) &&
+    hasFutureAccessEnd;
 
   const fetchAvailablePlans = async () => {
     try {
@@ -816,6 +844,12 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
                   <span className="text-[14px] font-semibold text-[#F27059]">
                     {isLoaded ? planNameDisplay : "Loading..."}
                   </span>
+                  {showCancelledAccessUntil && effectiveAccessEndMs && (
+                    <span className="text-[12px] text-[#76808F] font-normal">
+                      Cancelled. Access until{" "}
+                      {new Date(effectiveAccessEndMs).toLocaleDateString()}
+                    </span>
+                  )}
                   {showNextPaymentDate && (
                     <span className="text-[12px] text-[#76808F] font-normal">
                       Next payment:{" "}
@@ -824,14 +858,16 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
                       ).toLocaleDateString()}
                     </span>
                   )}
-                  {showAccessEndsUnderPlan && !showNextPaymentDate && (
+                  {showAccessEndsUnderPlan &&
+                    !showNextPaymentDate &&
+                    !showCancelledAccessUntil && (
                     <span className="text-[12px] text-[#76808F] font-normal">
                       Access until{" "}
                       {new Date(
                         subscriptionData!.currentPeriodEnd! * 1000
                       ).toLocaleDateString()}
                     </span>
-                  )}
+                    )}
                 </div>
               )}
             </div>

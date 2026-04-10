@@ -12,6 +12,12 @@ import {
   safeStripeProductId,
 } from "@/lib/checkoutCancelUrl";
 import { resolveCampaignPromoFromRequest } from "@/lib/campaignPromo";
+import {
+  FINAL_OFFER_CHALLENGE_SOURCE,
+  isValidFinalOfferChallengeCombo,
+  tierKeyFromCombo,
+} from "@/lib/finalOfferChallenge";
+import { stripeCheckoutPaymentMethodParams } from "@/lib/stripeCheckoutPaymentMethods";
 
 /** GET — same handler as POST (no self-fetch: avoids dev deadlock / invalid response). */
 export async function GET(req: NextRequest) {
@@ -320,22 +326,38 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
     const challengeMode = readRequestAttribution("challenge_mode");
     const challengeTargetClbRaw = readRequestAttribution("challenge_target_clb");
     const challengeWindowDaysRaw = readRequestAttribution("challenge_window_days");
+    const challengeOfferSourceRaw = readRequestAttribution("challenge_offer_source");
+    const challengeRefundPercentRaw = readRequestAttribution("challenge_refund_percent");
     const challengeTargetClb = challengeTargetClbRaw
       ? Number.parseFloat(challengeTargetClbRaw)
       : NaN;
     const challengeWindowDays = challengeWindowDaysRaw
       ? Number.parseInt(challengeWindowDaysRaw, 10)
       : NaN;
+    const challengeRefundPercent = challengeRefundPercentRaw
+      ? Number.parseInt(challengeRefundPercentRaw, 10)
+      : NaN;
     const hasChallengePayload =
       challengeMode === "refund_goal" &&
+      challengeOfferSourceRaw === FINAL_OFFER_CHALLENGE_SOURCE &&
       Number.isFinite(challengeTargetClb) &&
       Number.isFinite(challengeWindowDays) &&
-      challengeWindowDays > 0;
+      Number.isFinite(challengeRefundPercent) &&
+      isValidFinalOfferChallengeCombo(challengeWindowDays, challengeRefundPercent);
     const challengeDeadlineIso = hasChallengePayload
       ? new Date(Date.now() + challengeWindowDays * 24 * 60 * 60 * 1000).toISOString()
       : null;
 
+    const challengeTierKey = hasChallengePayload
+      ? tierKeyFromCombo(challengeWindowDays, challengeRefundPercent)
+      : null;
+
     if (hasChallengePayload) {
+      /* Refund challenge is manual after score proof by email — full list price at checkout. */
+      promotionCode = null;
+      referralDiscountApplied = false;
+      campaignPromoKey = null;
+
       await db.collection("users").updateOne(
         { clerkUserId: user.id },
         {
@@ -344,6 +366,9 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
               mode: "refund_goal",
               targetClb: challengeTargetClb,
               windowDays: challengeWindowDays,
+              refundPercent: challengeRefundPercent,
+              offerSource: FINAL_OFFER_CHALLENGE_SOURCE,
+              tierKey: challengeTierKey,
               startsAt: new Date(),
               deadlineAt: challengeDeadlineIso ? new Date(challengeDeadlineIso) : null,
               status: "active",
@@ -360,7 +385,9 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       );
     }
     const finalOfferSource = readRequestAttribution("final_offer");
-    const isOnboardingFinalOffer = finalOfferSource === "onboarding_final_chance";
+    const isOnboardingFinalOffer =
+      finalOfferSource === "onboarding_final_chance" && !hasChallengePayload;
+    const finalOfferMetadata = isOnboardingFinalOffer ? finalOfferSource : null;
     const attributionMetadata = {
       utm_source:
         readRequestAttribution("utm_source") ||
@@ -485,6 +512,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
     }
 
     const session: any = await stripe.checkout.sessions.create({
+      ...stripeCheckoutPaymentMethodParams(),
       customer_email: email,
       line_items: [
         {
@@ -499,7 +527,9 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       }),
 
       automatic_tax: { enabled: true },
-      ...(checkoutDiscounts.length === 0 ? { allow_promotion_codes: true } : {}),
+      ...(checkoutDiscounts.length === 0
+        ? { allow_promotion_codes: !hasChallengePayload }
+        : {}),
       ...(checkoutDiscounts.length > 0 ? { discounts: checkoutDiscounts } : {}),
       metadata: {
         user_id: user.id,
@@ -507,10 +537,13 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
         purchase_type: purchaseType || null,
         mock_exam_id: mockExamId,
         referral_code: userMetadata?.referralCode || null,
-        final_offer_source: finalOfferSource || null,
+        final_offer_source: finalOfferMetadata,
         challenge_mode: hasChallengePayload ? "refund_goal" : null,
         challenge_target_clb: hasChallengePayload ? String(challengeTargetClb) : null,
         challenge_window_days: hasChallengePayload ? String(challengeWindowDays) : null,
+        challenge_refund_percent: hasChallengePayload ? String(challengeRefundPercent) : null,
+        challenge_offer_source: hasChallengePayload ? FINAL_OFFER_CHALLENGE_SOURCE : null,
+        challenge_tier_key: challengeTierKey ?? "",
         challenge_deadline_at: challengeDeadlineIso,
         ...attributionMetadata,
         ...attributionSnapshot,
@@ -530,10 +563,13 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
             purchase_type: purchaseType || null,
             mock_exam_id: mockExamId,
             referral_code: userMetadata?.referralCode || null,
-            final_offer_source: finalOfferSource || null,
+            final_offer_source: finalOfferMetadata,
             challenge_mode: hasChallengePayload ? "refund_goal" : null,
             challenge_target_clb: hasChallengePayload ? String(challengeTargetClb) : null,
             challenge_window_days: hasChallengePayload ? String(challengeWindowDays) : null,
+            challenge_refund_percent: hasChallengePayload ? String(challengeRefundPercent) : null,
+            challenge_offer_source: hasChallengePayload ? FINAL_OFFER_CHALLENGE_SOURCE : null,
+            challenge_tier_key: challengeTierKey ?? "",
             challenge_deadline_at: challengeDeadlineIso,
             ...attributionMetadata,
             ...attributionSnapshot,
@@ -571,10 +607,13 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
           user_id: user.id,
           checkout_id: session.id,
           referral_code: userMetadata?.referralCode || null,
-          final_offer_source: finalOfferSource || null,
+          final_offer_source: finalOfferMetadata,
           challenge_mode: hasChallengePayload ? "refund_goal" : null,
           challenge_target_clb: hasChallengePayload ? String(challengeTargetClb) : null,
           challenge_window_days: hasChallengePayload ? String(challengeWindowDays) : null,
+          challenge_refund_percent: hasChallengePayload ? String(challengeRefundPercent) : null,
+          challenge_offer_source: hasChallengePayload ? FINAL_OFFER_CHALLENGE_SOURCE : null,
+          challenge_tier_key: challengeTierKey ?? "",
           challenge_deadline_at: challengeDeadlineIso,
           ...attributionMetadata,
           ...attributionSnapshot,

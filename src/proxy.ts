@@ -72,8 +72,12 @@ const PRACTICE_HUB_PATHS = new Set([
   "/writing",
   "/listening",
 ]);
+const REFERRAL_CREATE_COOLDOWN_COOKIE = "referralCodeCreateCooldown";
+const REFERRAL_CREATE_COOLDOWN_SECONDS = 60;
 
 export default clerkMiddleware(async (auth, req) => {
+  let setReferralCreateCooldown = false;
+
   if (isPreviewEnvironment && requiresPreviewAuth(req)) {
     if (!hasValidPreviewCredentials(req)) {
       return new NextResponse("Authentication required", {
@@ -218,10 +222,11 @@ export default clerkMiddleware(async (auth, req) => {
 
   if (authenticate.userId && !authenticate.sessionClaims?.metadata.roles) {
     const client = await clerkClient();
+    const existingPlan = (authenticate.sessionClaims?.metadata as any)?.plan;
     await client.users.updateUserMetadata(authenticate.userId, {
       publicMetadata: {
         roles: ["user"],
-        plan: "free",
+        plan: existingPlan || "free",
       },
     });
   }
@@ -234,13 +239,22 @@ export default clerkMiddleware(async (auth, req) => {
   ) {
     const hasReferralCode = (authenticate.sessionClaims?.metadata as any)
       ?.referralCode;
+    const onEligiblePage =
+      req.method === "GET" &&
+      (req.nextUrl.pathname === "/practice-overview" ||
+        req.nextUrl.pathname === "/success" ||
+        req.nextUrl.pathname === "/success/paypal");
+    const hasCooldownCookie = Boolean(
+      req.cookies.get(REFERRAL_CREATE_COOLDOWN_COOKIE)?.value,
+    );
 
-    if (!hasReferralCode) {
+    if (!hasReferralCode && onEligiblePage && !hasCooldownCookie) {
       logger.info("User is premium but has no referral code, creating one", {
         component: "middleware",
         action: "create_referral_code",
         userId: authenticate.userId,
       });
+      setReferralCreateCooldown = true;
 
       try {
         const headers: Record<string, string> = {
@@ -268,11 +282,19 @@ export default clerkMiddleware(async (auth, req) => {
             metadata: { code: data.code },
           });
         } else {
+          const body = (await response.json().catch(() => ({}))) as {
+            retryAfter?: number;
+            error?: string;
+          };
           logger.error("Failed to create referral code", {
             component: "middleware",
             action: "referral_code_creation_failed",
             userId: authenticate.userId,
-            metadata: { status: response.status },
+            metadata: {
+              status: response.status,
+              retryAfter: body.retryAfter,
+              error: body.error,
+            },
           });
         }
       } catch (error) {
@@ -455,6 +477,7 @@ export default clerkMiddleware(async (auth, req) => {
     "GET:/api/answers/writing",
     "POST:/api/answers/speaking",
     "POST:/api/checkout_session",
+    "POST:/api/paypal/create-subscription",
   ];
 
   const requestedPath = `${req.method}:${req.nextUrl.pathname}`;
@@ -462,7 +485,16 @@ export default clerkMiddleware(async (auth, req) => {
     await auth.protect();
   }
 
-  return applyCampaignPromoToResponse(req, NextResponse.next());
+  const response = applyCampaignPromoToResponse(req, NextResponse.next());
+  if (setReferralCreateCooldown) {
+    response.cookies.set(REFERRAL_CREATE_COOLDOWN_COOKIE, "1", {
+      path: "/",
+      maxAge: REFERRAL_CREATE_COOLDOWN_SECONDS,
+      sameSite: "lax",
+      httpOnly: true,
+    });
+  }
+  return response;
 });
 
 export const config = {

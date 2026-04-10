@@ -71,7 +71,7 @@ const readingStructuredData = {
     },
     {
       "@type": "Product",
-      name: "CELPIP Reading Practice Tests",
+      name: "CELPIP Reading Practice Exam",
       description: READING_PAGE_DESCRIPTION,
       brand: {
         "@type": "Brand",

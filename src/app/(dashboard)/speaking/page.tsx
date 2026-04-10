@@ -18,11 +18,12 @@ import { Box, Typography } from "@mui/material";
 import { skillHubPageMetadata } from "@/lib/skillHubPageMetadata";
 
 const speakingMetadataBase: Metadata = {
-  title:
-    "Free CELPIP Speaking Practice Tests & Mock Exams | CELPIPPRACTICETEST",
+  title: "CELPIP Practice Exam: Free CELPIP Speaking Practice Test",
   description:
-    "Simulate the real CELPIP Speaking test with timed tasks, AI grading, and expert tips. Track progress, boost fluency, and hit your target score | CELPIPPRACTICETEST.com",
+    "CELPIP practice exam for Speaking: timed prompts, AI scoring, and tips for fluency. Train under realistic conditions before your real test.",
   keywords: [
+    "celpip practice exam",
+    "free celpip practice exam",
     "celpip speaking practice test",
     "celpip speaking test",
     "celpip speaking practice",

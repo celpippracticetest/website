@@ -16,6 +16,22 @@ const FAQ = () => {
 
     const faqs = [
         {
+            question: "Where can I try a CELPIP reading practice test for free?",
+            answer:
+                "Start with our <a href='/reading' style='color: inherit; text-decoration: underline;'>CELPIP reading practice</a> hub: timed passages and question types that mirror the real reading section, with scoring feedback on your attempts.",
+        },
+        {
+            question: "Is there a CELPIP score calculator for my overall score?",
+            answer:
+                "Yes. Use the free <a href='/score-calculator' style='color: inherit; text-decoration: underline;'>CELPIP score calculator</a> to estimate your overall performance and see how section scores relate to CLB-style levels.",
+        },
+        {
+            question:
+                "Where can I find CELPIP Writing Task 2 samples with answers?",
+            answer:
+                "Our <a href='/wiki/celpip-writing-task-2-template' style='color: inherit; text-decoration: underline;'>CELPIP Writing Task 2 template guide</a> walks through survey responses with sample sentences, structure, and vocabulary. Pair it with timed <a href='/writing' style='color: inherit; text-decoration: underline;'>writing practice</a> for full responses and AI feedback.",
+        },
+        {
             question:
                 "Where can one take a full CELPIP practice test free of charge online?",
             answer:

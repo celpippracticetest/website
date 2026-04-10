@@ -10,7 +10,14 @@ import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
 import AutoAwesome from "@mui/icons-material/AutoAwesome";
 import Star from "@mui/icons-material/Star";
 import SvgDiamond from "@/components/icons/Diamond";
-import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
+import { useCheckoutAttributionPayload } from "@/components/analytics/CheckoutAttributionFields";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   comparisonRows,
   pricingFaqs,
@@ -40,6 +47,16 @@ import type { PricingAbLayout } from "@/lib/pricingAbTest";
 import type { DurationGroupKey, PricingFaq, SerializedPlan } from "@/types/pricing";
 const avatarSources = ["Carlos.png", "Li.png", "Tatiana.png"];
 
+/** Public paths for checkout CTAs (aligned with final-offer payment modal). */
+const CHECKOUT_STRIPE_WORDMARK_WHITE_SRC =
+  "/icons/stripe/Stripe%20wordmark%20-%20White%20-%20Small.png";
+const CHECKOUT_PAYPAL_MONOGRAM_SRC = "/icons/paypal/PayPal-Monogram-FullColor-RGB.png";
+
+const PRICING_TABLE_GOOGLE_PAY_SRC = "/icons/payments/googlepay.svg";
+const PRICING_TABLE_APPLE_PAY_SRC = "/icons/payments/applepay.svg";
+const PRICING_TABLE_STRIPE_WORDMARK_SLATE_SRC =
+  "/icons/stripe/Stripe%20wordmark%20-%20Slate.svg";
+
 type PersonalizedRecommendation = {
   planType: DurationGroupKey;
   headline: string;
@@ -53,17 +70,62 @@ type GroupedPlanItem = {
   stableId: string;
 };
 
+function PricingSubscribePaymentMarks() {
+  const markH = 14;
+  return (
+    <div className="mt-1.5 flex max-w-[180px] flex-wrap items-center gap-x-1.5 gap-y-1">
+      <img
+        src={PRICING_TABLE_GOOGLE_PAY_SRC}
+        alt="Google Pay"
+        width={36}
+        height={markH}
+        className="h-3.5 w-auto max-h-3.5 max-w-[36px] shrink-0 object-contain object-left"
+        style={{ width: "auto", height: markH }}
+      />
+      <img
+        src={PRICING_TABLE_APPLE_PAY_SRC}
+        alt="Apple Pay"
+        width={30}
+        height={markH}
+        className="h-3.5 w-auto max-h-3.5 max-w-[30px] shrink-0 object-contain object-left"
+        style={{ width: "auto", height: markH }}
+      />
+      <img
+        src={CHECKOUT_PAYPAL_MONOGRAM_SRC}
+        alt="PayPal"
+        width={markH}
+        height={markH}
+        className="h-3.5 w-3.5 max-h-3.5 max-w-3.5 shrink-0 object-contain object-left"
+      />
+      <img
+        src={PRICING_TABLE_STRIPE_WORDMARK_SLATE_SRC}
+        alt="Stripe"
+        width={52}
+        height={markH}
+        className="h-3.5 w-auto max-h-3.5 max-w-[52px] shrink-0 object-contain object-left"
+        style={{ width: "auto", height: markH }}
+      />
+    </div>
+  );
+}
+
 function PricingStyleOneSubscribeForm({
   item,
   pricingCheckoutFields,
+  pricingAbLayout,
   anchorId,
 }: {
   item: GroupedPlanItem | null;
   pricingCheckoutFields?: Record<string, string>;
+  pricingAbLayout?: PricingAbLayout;
   anchorId?: string;
 }) {
   const { user, isSignedIn, isLoaded } = useUser();
   const { selectItem, beginCheckout } = useEcommerceTracking();
+  const attribution = useCheckoutAttributionPayload();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [paypalLoading, setPaypalLoading] = useState(false);
+  const [paypalError, setPaypalError] = useState<string | null>(null);
 
   if (!item?.plan.stripePriceId) {
     return <span className="text-sm text-slate-400">Unavailable</span>;
@@ -92,7 +154,7 @@ function PricingStyleOneSubscribeForm({
     item_category: "Subscription",
   };
 
-  const handleClick = () => {
+  const trackCheckoutIntent = () => {
     selectItem([trackingItem], "plans_page", "Pricing Plans");
     beginCheckout([trackingItem], "CAD", normalizedPrice, undefined, {
       email: user?.primaryEmailAddress?.emailAddress?.trim().toLowerCase(),
@@ -103,26 +165,140 @@ function PricingStyleOneSubscribeForm({
     });
   };
 
+  const submitStripeCheckout = () => {
+    if (!checkoutAction) return;
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = checkoutAction;
+    const add = (name: string, value: string) => {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = name;
+      input.value = value;
+      form.appendChild(input);
+    };
+    for (const [key, value] of Object.entries(attribution)) {
+      add(key, value);
+    }
+    if (pricingCheckoutFields) {
+      for (const [name, value] of Object.entries(pricingCheckoutFields)) {
+        if (value) add(name, value);
+      }
+    }
+    document.body.appendChild(form);
+    form.submit();
+  };
+
+  const openModal = () => {
+    trackCheckoutIntent();
+    setPaypalError(null);
+    setModalOpen(true);
+  };
+
+  const startPayPal = async () => {
+    setPaypalError(null);
+    setPaypalLoading(true);
+    try {
+      const res = await fetch("/api/paypal/create-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          stripePriceId,
+          attribution,
+          pricingAbLayout: pricingAbLayout ?? undefined,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        approvalUrl?: string;
+      };
+      if (!res.ok) {
+        throw new Error(data.error || "Could not start PayPal checkout");
+      }
+      if (!data.approvalUrl) {
+        throw new Error("Missing PayPal approval URL");
+      }
+      window.location.href = data.approvalUrl;
+    } catch (e) {
+      setPaypalError(e instanceof Error ? e.message : "PayPal checkout failed");
+      setPaypalLoading(false);
+    }
+  };
+
+  const subscribeTriggerClass =
+    "flex h-10 w-full cursor-pointer items-center justify-center rounded-full bg-[#635BFF] px-4 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-[#5851DF] focus-visible:ring-2 focus-visible:ring-[#635BFF] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+
   return (
-    <form
-      id={anchorId}
-      action={checkoutAction}
-      method="POST"
-      className="mx-auto w-full max-w-[220px]"
-    >
-      <CheckoutAttributionFields />
-      {pricingCheckoutFields &&
-        Object.entries(pricingCheckoutFields).map(([name, value]) =>
-          value ? <input key={name} type="hidden" name={name} value={value} /> : null
-        )}
-      <button
-        type="submit"
-        onClick={handleClick}
-        className="flex h-10 w-full cursor-pointer items-center justify-center rounded-full bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] text-sm font-semibold text-white shadow-md hover:opacity-95"
-      >
-        Subscribe
-      </button>
-    </form>
+    <>
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent className="border-slate-200 bg-white sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-blue-950">
+              {isSignedIn ? "Choose payment method" : "Continue to checkout"}
+            </DialogTitle>
+            <DialogDescription className="text-slate-600">
+              {isSignedIn
+                ? "Secure checkout, powered by Stripe and PayPal."
+                : "Secure checkout, powered by Stripe."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                setModalOpen(false);
+                submitStripeCheckout();
+              }}
+              aria-label={isSignedIn ? "Pay with Stripe" : "Continue with Stripe"}
+              className="flex min-h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[#635BFF] px-4 py-2.5 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-[#5851DF] focus-visible:ring-2 focus-visible:ring-[#635BFF] focus-visible:ring-offset-2"
+            >
+              <span>{isSignedIn ? "Pay with" : "Continue with"}</span>
+              <Image
+                src={CHECKOUT_STRIPE_WORDMARK_WHITE_SRC}
+                alt=""
+                width={56}
+                height={20}
+                className="h-5 w-auto shrink-0 object-contain object-center"
+              />
+            </button>
+            {isSignedIn ? (
+              <button
+                type="button"
+                disabled={paypalLoading}
+                onClick={() => void startPayPal()}
+                aria-label="Pay with PayPal"
+                className="flex min-h-10 w-full cursor-pointer items-center justify-center gap-2.5 rounded-full border border-[#2C2E2F] bg-[#FFC439] px-4 py-2.5 text-sm font-bold tracking-tight text-[#003087] shadow-sm outline-none transition hover:brightness-[0.97] focus-visible:ring-2 focus-visible:ring-[#003087] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Image
+                  src={CHECKOUT_PAYPAL_MONOGRAM_SRC}
+                  alt=""
+                  width={28}
+                  height={28}
+                  className="h-7 w-7 shrink-0 object-contain object-center"
+                />
+                {paypalLoading ? "Redirecting to PayPal…" : "Pay with PayPal"}
+              </button>
+            ) : null}
+            {paypalError ? (
+              <p className="text-center text-sm text-red-600" role="alert">
+                {paypalError}
+              </p>
+            ) : null}
+          </div>
+        </DialogContent>
+      </Dialog>
+      <div className="mx-auto w-full max-w-[220px]">
+        <button
+          type="button"
+          id={anchorId}
+          onClick={openModal}
+          disabled={!checkoutAction}
+          className={subscribeTriggerClass}
+        >
+          Subscribe
+        </button>
+      </div>
+    </>
   );
 }
 
@@ -169,6 +345,7 @@ function pricingStyleOnePriceCell(
 function PricingStyleOnePlanTable({
   section,
   pricingCheckoutFields,
+  pricingAbLayout,
   recommendedPlanId,
   recommendedSectionKey,
   originalPriceFromWeeklyById,
@@ -180,6 +357,7 @@ function PricingStyleOnePlanTable({
     premiumPlus: GroupedPlanItem | null;
   };
   pricingCheckoutFields?: Record<string, string>;
+  pricingAbLayout?: PricingAbLayout;
   recommendedPlanId: string | null;
   recommendedSectionKey: DurationGroupKey | null | undefined;
   originalPriceFromWeeklyById: Map<string, string>;
@@ -272,13 +450,18 @@ function PricingStyleOnePlanTable({
             </td>
           </tr>
           <tr className="border-t border-slate-100 bg-white">
-            <td className="px-2 py-3 font-semibold text-slate-800 sm:px-3">
-              Subscribe
+            <td className="px-2 py-3 align-top text-slate-800 sm:px-3">
+              <span className="font-semibold">Subscribe</span>
+              <p className="sr-only">
+                Secure checkout with Google Pay, Apple Pay, PayPal, and Stripe.
+              </p>
+              <PricingSubscribePaymentMarks />
             </td>
             <td className="px-1 py-3 text-center align-top sm:px-3">
               <PricingStyleOneSubscribeForm
                 item={prem}
                 pricingCheckoutFields={pricingCheckoutFields}
+                pricingAbLayout={pricingAbLayout}
                 anchorId={recommendedAnchor(prem)}
               />
             </td>
@@ -286,6 +469,7 @@ function PricingStyleOnePlanTable({
               <PricingStyleOneSubscribeForm
                 item={plus}
                 pricingCheckoutFields={pricingCheckoutFields}
+                pricingAbLayout={pricingAbLayout}
                 anchorId={recommendedAnchor(plus)}
               />
             </td>
@@ -908,6 +1092,9 @@ export default function PricingPageClient({
               <PricingStyleOnePlanTable
                 section={activeStyleOneSection}
                 pricingCheckoutFields={pricingCheckoutFields}
+                pricingAbLayout={
+                  pricingAbParticipatesInExperiment ? pricingAbLayout : undefined
+                }
                 recommendedPlanId={recommendedPlanId}
                 recommendedSectionKey={recommendedSection?.key}
                 originalPriceFromWeeklyById={originalPriceFromWeeklyById}

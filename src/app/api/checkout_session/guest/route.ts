@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { stripe } from "@/lib/stripe";
+import { stripeCheckoutPaymentMethodParams } from "@/lib/stripeCheckoutPaymentMethods";
 import { captureException, logger, trackAPICall } from "@/lib/sentry-logger";
 import { getDb } from "@/lib/mongodb";
 import { isPricingAbLayout } from "@/lib/pricingAbTest";
@@ -205,6 +206,7 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
     }
 
     const session = await stripe.checkout.sessions.create({
+      ...stripeCheckoutPaymentMethodParams(),
       line_items: [
         {
           price: priceId,

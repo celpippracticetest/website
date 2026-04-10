@@ -4,6 +4,7 @@ import Stripe from "stripe";
 
 import { requireAuthenticatedRequest } from "@/lib/auth/request-auth";
 import { stripe } from "@/lib/stripe";
+import { stripeCheckoutPaymentMethodParams } from "@/lib/stripeCheckoutPaymentMethods";
 
 type UserMetadata = Record<string, unknown>;
 
@@ -268,6 +269,7 @@ export async function POST(request: NextRequest) {
     };
 
     const session = await stripe.checkout.sessions.create({
+      ...stripeCheckoutPaymentMethodParams(),
       customer_email: email,
       line_items: [
         {

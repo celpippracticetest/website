@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import mongoClient from "@/lib/mongodb";
 import { ReferralRepository } from "@/repositories/referral.repo";
 import { randomInt } from "crypto";
+
 function generateReferralCode(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let part = "";
@@ -30,6 +31,12 @@ function getBaseUrl(h: { get(name: string): string | null }) {
   return `${proto}://${host}`;
 }
 
+function isClerkTooManyRequests(error: unknown): error is { status: number; retryAfter?: number } {
+  if (!error || typeof error !== "object") return false;
+  const maybe = error as { status?: unknown; retryAfter?: unknown };
+  return maybe.status === 429;
+}
+
 export async function POST() {
   try {
     const { userId } = await auth();
@@ -40,40 +47,17 @@ export async function POST() {
     const h = await headers();
     const baseUrl = getBaseUrl(h);
 
-    // Get user from Clerk
-    const cc = await clerkClient();
-    const user = await cc.users.getUser(userId);
-    const pm = (user.publicMetadata || {}) as Record<string, any>;
-
-    // Check if user already has a referral code
-    if (pm.referralCode && pm.referralLink) {
-      return NextResponse.json({
-        success: true,
-        message: "User already has referral code",
-        code: pm.referralCode,
-        link: pm.referralLink
-      });
-    }
-
     // Check if referral code exists in database
     const referralRepo = new ReferralRepository(mongoClient);
     await referralRepo.ensureIndexes();
 
     const existingCode = await referralRepo.findOneByUserId(userId);
     if (existingCode) {
-      // Update Clerk metadata with existing code
-      const inviterNameOrEmail = 
-        (user.firstName && user.lastName
-          ? `${user.firstName} ${user.lastName}`
-          : user.firstName
-          ? user.firstName
-          : user.emailAddresses?.[0]?.emailAddress) || userId;
-      
-      const link = `${baseUrl}/referral/?ref=${existingCode.code}&inviter=${encodeURIComponent(inviterNameOrEmail)}`;
-      
-      await cc.users.updateUser(userId, {
+      const link = `${baseUrl}/referral/?ref=${existingCode.code}&inviter=${encodeURIComponent(userId)}`;
+
+      const cc = await clerkClient();
+      await cc.users.updateUserMetadata(userId, {
         publicMetadata: {
-          ...pm,
           referralCode: existingCode.code,
           referralActive: true,
         },
@@ -110,19 +94,12 @@ export async function POST() {
     }
 
     // Create referral link
-    const inviterNameOrEmail = 
-      (user.firstName && user.lastName
-        ? `${user.firstName} ${user.lastName}`
-        : user.firstName
-        ? user.firstName
-        : user.emailAddresses?.[0]?.emailAddress) || userId;
-    
-    const link = `${baseUrl}/referral/?ref=${code}&inviter=${encodeURIComponent(inviterNameOrEmail)}`;
+    const link = `${baseUrl}/referral/?ref=${code}&inviter=${encodeURIComponent(userId)}`;
 
     // Update Clerk metadata
-    await cc.users.updateUser(userId, {
+    const cc = await clerkClient();
+    await cc.users.updateUserMetadata(userId, {
       publicMetadata: {
-        ...pm,
         referralCode: code,
         referralActive: true,
       },
@@ -137,6 +114,12 @@ export async function POST() {
 
   } catch (error: any) {
     console.error("Create referral code error:", error);
+    if (isClerkTooManyRequests(error)) {
+      return NextResponse.json(
+        { error: "Clerk rate limit", retryAfter: error.retryAfter ?? 10 },
+        { status: 429 },
+      );
+    }
     return NextResponse.json(
       { error: "Internal server error", details: error.message },
       { status: 500 }

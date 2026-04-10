@@ -16,6 +16,10 @@ export interface Plan {
     billingIntervalCount?: number; // Stripe recurring interval count
     stripeProductId?: string; // Optional: Linked Stripe Product ID
     stripePriceId?: string; // Optional: Link to Stripe Price ID
+    /** PayPal Subscriptions billing plan id (created in CMS or dashboard). */
+    paypalPlanId?: string;
+    /** PayPal catalog product id (optional; set when creating plan via CMS). */
+    paypalProductId?: string;
     iconType?: "BestValuePlan" | "PopularPlan" | "FreePlan"; // To map to icons in frontend
     iconWrapperColor?: string; // e.g., "bg-secondary5"
     isActive: boolean;    // To show/hide plans

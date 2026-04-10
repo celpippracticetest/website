@@ -144,12 +144,24 @@ export async function resolveSuccessUpgradeOffer(
 
   const sourcePrice = priceRaw;
   if (!sourcePrice.recurring) return null;
+  return resolveSuccessUpgradeOfferFromSourcePrice(
+    sourcePrice.id,
+    db,
+    checkoutSessionId
+  );
+}
+
+export async function resolveSuccessUpgradeOfferFromSourcePrice(
+  sourcePriceId: string,
+  db: Db,
+  sourceReferenceId: string
+): Promise<ResolvedSuccessUpgrade | null> {
+  const sourcePrice = await stripe.prices.retrieve(sourcePriceId);
+  if (!sourcePrice?.active || !sourcePrice.recurring) return null;
 
   const sourceUnitCents = sourcePrice.unit_amount;
   const currency = (sourcePrice.currency || "cad").toLowerCase();
   if (sourceUnitCents == null || sourceUnitCents < 0) return null;
-
-  const sourcePriceId = sourcePrice.id;
   const repo = new PlansRepository(db);
   const sourcePlan = await repo.findActivePlanByStripePriceId(sourcePriceId);
   if (!sourcePlan?.stripePriceId) return null;
@@ -199,7 +211,7 @@ export async function resolveSuccessUpgradeOffer(
   );
 
   return {
-    successSessionId: checkoutSessionId,
+    successSessionId: sourceReferenceId,
     sourcePlanTitle,
     targetPlanTitle,
     targetPlanSummary: `${targetTemplate.accessTier === "premiumPlus" ? "Premium Plus" : "Premium"} · ${targetTemplate.planTitle}`,

@@ -38,6 +38,7 @@ export async function GET(
 
     const db = client.db();
     const userActivityCollection = db.collection("useractivities");
+    const usersCollection = db.collection("users");
 
     // Build filter
     const filter: any = { userId: resolvedParams?.userId };
@@ -203,9 +204,21 @@ export async function GET(
       lastActive: null,
     };
 
+    let challengeProfile: unknown = null;
+    try {
+      const userRow = await usersCollection.findOne(
+        { clerkUserId: resolvedParams.userId },
+        { projection: { challenge: 1 } }
+      );
+      challengeProfile = userRow?.challenge ?? null;
+    } catch {
+      challengeProfile = null;
+    }
+
     return NextResponse.json({
       activities,
       summary,
+      challengeProfile,
       pagination: {
         page,
         limit,

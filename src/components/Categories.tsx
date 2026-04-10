@@ -12,22 +12,22 @@ const Categories = () => {
     {
       name: "Listening",
       icon: <Headphones className="w-10 h-10 text-blue-500 group-hover:text-white transition-colors" />,
-      path: "/practice-overview"
+      path: "/listening",
     },
     {
       name: "Speaking",
       icon: <Mic className="w-10 h-10 text-purple-500 group-hover:text-white transition-colors" />,
-      path: "/practice-overview"
+      path: "/speaking",
     },
     {
       name: "Writing",
       icon: <Draw className="w-10 h-10 text-green-500 group-hover:text-white transition-colors" />,
-      path: "/practice-overview"
+      path: "/writing",
     },
     {
       name: "Reading",
       icon: <MenuBook className="w-10 h-10 text-red-500 group-hover:text-white transition-colors" />,
-      path: "/practice-overview"
+      path: "/reading",
     }//,
     // {
     //   name: "Mock Exams",

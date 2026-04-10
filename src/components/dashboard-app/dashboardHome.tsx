@@ -98,16 +98,30 @@ const DashboardHome = ({
     setUpgradeError(null);
     setUpgradeBusy(true);
     try {
-      const res = await fetch("/api/checkout/success-upgrade", {
+      const isPayPalUpgrade = upgradeOffer.successSessionId.startsWith("I-");
+      const endpoint = isPayPalUpgrade
+        ? "/api/paypal/success-upgrade"
+        : "/api/checkout/success-upgrade";
+      const payload = isPayPalUpgrade
+        ? { subscription_id: upgradeOffer.successSessionId }
+        : { session_id: upgradeOffer.successSessionId };
+
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          session_id: upgradeOffer.successSessionId,
-        }),
+        body: JSON.stringify(payload),
       });
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        approvalUrl?: string;
+        requiresApproval?: boolean;
+      };
       if (!res.ok) {
         setUpgradeError(data.error || "Something went wrong. Please try again.");
+        return;
+      }
+      if (data.approvalUrl) {
+        window.location.href = data.approvalUrl;
         return;
       }
       goToDashboard();
