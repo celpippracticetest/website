@@ -21,3 +21,19 @@ export async function getRequestOriginFromHeaders(): Promise<string> {
   const fallback = process.env.APP_BASE_URL?.trim() || "https://celpippracticetest.com";
   return fallback.replace(/\/+$/, "");
 }
+
+/**
+ * Origin for PayPal `return_url` / `cancel_url` (and similar). PayPal validates these URLs; if
+ * your API sees the wrong `Host` or `x-forwarded-proto` (common behind proxies or on previews),
+ * set `PAYPAL_CHECKOUT_PUBLIC_ORIGIN` to the exact HTTPS origin buyers use (no trailing slash),
+ * e.g. `https://celpippracticetest.com`. You can also set `APP_BASE_URL` for the same effect.
+ */
+export async function getPayPalCheckoutPublicOrigin(): Promise<string> {
+  const explicit =
+    process.env.PAYPAL_CHECKOUT_PUBLIC_ORIGIN?.trim() ||
+    process.env.APP_BASE_URL?.trim();
+  if (explicit) {
+    return explicit.replace(/\/+$/, "");
+  }
+  return getRequestOriginFromHeaders();
+}

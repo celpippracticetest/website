@@ -3,15 +3,15 @@ import "server-only";
 import type Stripe from "stripe";
 
 /**
- * Payment methods on Stripe-hosted Checkout (card, PayPal, etc.).
+ * Stripe-hosted Checkout payment methods only. PayPal on this product is a **separate**
+ * flow (`/api/paypal/create-subscription`); do not rely on Stripe’s `paypal` type here
+ * unless you deliberately enable and configure it.
  *
- * **Preferred:** set `STRIPE_CHECKOUT_PAYMENT_METHOD_CONFIGURATION` to your Dashboard
- * Payment Method Configuration id (`cpmt_...`). That reuses the exact methods you
- * configured (e.g. custom PayPal). Mutually exclusive with `payment_method_types` in
- * Stripe’s API.
+ * **Preferred:** set `STRIPE_CHECKOUT_PAYMENT_METHOD_CONFIGURATION` to a Dashboard
+ * Payment Method Configuration id (`cpmt_...`). Mutually exclusive with
+ * `payment_method_types` in Stripe’s API.
  *
- * **Fallback:** if that env is unset, uses `payment_method_types` from
- * `STRIPE_CHECKOUT_PAYMENT_METHOD_TYPES` (comma-separated) or defaults to `card,paypal`.
+ * **Fallback:** `STRIPE_CHECKOUT_PAYMENT_METHOD_TYPES` (comma-separated), or default `card`.
  */
 export function stripeCheckoutPaymentMethodTypes(): Stripe.Checkout.SessionCreateParams.PaymentMethodType[] {
   const raw = process.env.STRIPE_CHECKOUT_PAYMENT_METHOD_TYPES?.trim();
@@ -21,7 +21,7 @@ export function stripeCheckoutPaymentMethodTypes(): Stripe.Checkout.SessionCreat
       .map((s) => s.trim())
       .filter(Boolean) as Stripe.Checkout.SessionCreateParams.PaymentMethodType[];
   }
-  return ["card", "paypal"];
+  return ["card"];
 }
 
 /** Spread into `stripe.checkout.sessions.create({ ... })`. */

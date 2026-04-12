@@ -6,7 +6,7 @@ import { logger } from "@/lib/sentry-logger";
 import { isPricingAbLayout } from "@/lib/pricingAbTest";
 import { isHomeAbExperimentVariant, isHomeAbVariant } from "@/lib/homeAbTest";
 import { safeStripePriceId } from "@/lib/checkoutCancelUrl";
-import { getRequestOriginFromHeaders } from "@/lib/requestOrigin";
+import { getPayPalCheckoutPublicOrigin } from "@/lib/requestOrigin";
 import { paypalSubscriptionsConfigured } from "@/lib/paypal/config";
 import { resolvePayPalPlanIdForStripePrice } from "@/lib/paypal/planMap";
 import { resolveOrCreatePayPalPromoUpgradePlanId } from "@/lib/paypal/billingPlans";
@@ -238,7 +238,7 @@ export async function POST(req: NextRequest) {
     const insert = await db.collection(PENDING_COLL).insertOne(pendingDoc);
     const customId = insert.insertedId.toHexString();
 
-    const origin = await getRequestOriginFromHeaders();
+    const origin = await getPayPalCheckoutPublicOrigin();
     const returnUrl = `${origin}/api/paypal/subscription-return`;
     const cancelUrl =
       isOnboardingFinalOffer || hasChallengePayload
@@ -246,13 +246,16 @@ export async function POST(req: NextRequest) {
         : `${origin}/pricing?paypal=cancel`;
 
     const email = user.primaryEmailAddress?.emailAddress?.trim();
+    const skipSubscriberEmail =
+      process.env.PAYPAL_SKIP_SUBSCRIBER_EMAIL === "true" ||
+      process.env.PAYPAL_SKIP_SUBSCRIBER_EMAIL === "1";
     const brand =
       process.env.PAYPAL_BRAND_NAME?.trim() || "CELPIP Practice Test";
 
     const paypalBody = await createPayPalSubscription({
       plan_id: planIdForPayPal,
       custom_id: customId,
-      ...(email ? { subscriber: { email_address: email } } : {}),
+      ...(email && !skipSubscriberEmail ? { subscriber: { email_address: email } } : {}),
       application_context: {
         brand_name: brand,
         locale: "en-CA",
@@ -316,6 +319,8 @@ export async function POST(req: NextRequest) {
         paypalSubscriptionId: paypalBody.id,
         onboardingFinalOffer: isOnboardingFinalOffer,
         refundChallenge: hasChallengePayload,
+        returnUrl,
+        cancelUrl,
       },
     });
 

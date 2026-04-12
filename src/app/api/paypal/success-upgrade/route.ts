@@ -8,7 +8,7 @@ import {
 import { paypalApiJson } from "@/lib/paypal/subscriptionsApi";
 import { resolvePayPalPlanIdForStripePrice } from "@/lib/paypal/planMap";
 import { resolveOrCreatePayPalPromoUpgradePlanId } from "@/lib/paypal/billingPlans";
-import { getRequestOriginFromHeaders } from "@/lib/requestOrigin";
+import { getPayPalCheckoutPublicOrigin } from "@/lib/requestOrigin";
 import { syncUserPlanPublicMetadata } from "@/lib/syncUserPlanPublicMetadata";
 
 export const runtime = "nodejs";
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const origin = await getRequestOriginFromHeaders();
+  const origin = await getPayPalCheckoutPublicOrigin();
   const returnUrl = `${origin}/success/paypal?subscription_id=${encodeURIComponent(subscriptionId)}`;
   const cancelUrl = `${origin}/practice-overview`;
 
