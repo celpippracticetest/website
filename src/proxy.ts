@@ -9,6 +9,10 @@ import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { PRICING_AB_COOKIE, type PricingAbLayout } from "@/lib/pricingAbTest";
 import { HOME_AB_COOKIE, type HomeAbVariant } from "@/lib/homeAbTest";
 import { applyCampaignPromoToResponse } from "@/lib/campaignPromoConfig";
+import {
+  runAccountSharingMiddlewareCheck,
+  shouldEnforceAccountSharingSignals,
+} from "@/lib/accountSharingMiddleware";
 
 const isAdminRoute = createRouteMatcher(["/cms(.*)"]);
 const isProfileRoute = createRouteMatcher(["/profile(.*)"]);
@@ -18,7 +22,7 @@ const isPreviewEnvironment = process.env.VERCEL_ENV === "preview";
 
 /** Clerk JWT public metadata used for practice gating (see `src/types/globals.d.ts`). */
 type JwtPracticeMetadata = {
-  plan?: "free" | "premium";
+  plan?: string;
   purchaseDate?: string;
 };
 
@@ -101,6 +105,33 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   const authenticate = await auth();
+
+  const practiceMetaForSharing = jwtPracticeMetadata(authenticate.sessionClaims);
+  if (
+    shouldEnforceAccountSharingSignals(
+      req,
+      authenticate.userId,
+      practiceMetaForSharing,
+    )
+  ) {
+    const shareCheck = await runAccountSharingMiddlewareCheck(req);
+    if (!shareCheck.ok) {
+      if (req.nextUrl.pathname.startsWith("/api/")) {
+        return applyCampaignPromoToResponse(
+          req,
+          NextResponse.json(
+            {
+              message: shareCheck.reason,
+              code: "ACCOUNT_SHARING_SUSPECTED",
+            },
+            { status: 403 },
+          ),
+        );
+      }
+      const notice = new URL("/account-sharing-notice", req.url);
+      return applyCampaignPromoToResponse(req, NextResponse.redirect(notice));
+    }
+  }
 
   if (req.nextUrl.pathname === "/pricing") {
     const existing = req.cookies.get(PRICING_AB_COOKIE)?.value;
