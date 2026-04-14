@@ -1,5 +1,5 @@
 import { getDb } from "@/lib/mongodb";
-import { ipToStableNetworkKey } from "@/lib/clientIpGeo";
+import { ipToAccountSharingNetworkKey } from "@/lib/clientIpGeo";
 import type { Collection, ObjectId } from "mongodb";
 
 const COLLECTION = "account_access_signals";
@@ -17,7 +17,15 @@ function countryWindowMs() {
 function maxNetworksPerHour() {
   const raw = process.env.ACCOUNT_SHARING_MAX_NETWORKS_PER_HOUR;
   const n = raw ? Number.parseInt(raw, 10) : NaN;
-  return Number.isFinite(n) && n > 0 ? n : 26;
+  return Number.isFinite(n) && n > 0 ? n : 32;
+}
+
+/** IPv4 prefix length for sharing buckets (8–32). Default 20 reduces false blocks on rotating cloud/CGNAT. */
+function ipv4PrefixForSharing(): number {
+  const raw = process.env.ACCOUNT_SHARING_IPV4_PREFIX;
+  const n = raw ? Number.parseInt(raw, 10) : NaN;
+  if (!Number.isFinite(n) || n < 8 || n > 32) return 20;
+  return n;
 }
 
 export type AccountSharingEvaluation = {
@@ -67,10 +75,19 @@ function mergeCountryLastSeen(docs: AccountAccessDoc[]): Record<string, number> 
   return merged;
 }
 
+function dedupeRecentNetworksByLatestTs(entries: RecentNetwork[]): RecentNetwork[] {
+  const byKey = new Map<string, number>();
+  for (const { t, key } of entries) {
+    byKey.set(key, Math.max(byKey.get(key) ?? 0, t));
+  }
+  return [...byKey.entries()]
+    .map(([key, t]) => ({ key, t }))
+    .sort((a, b) => a.t - b.t);
+}
+
 function mergeRecentNetworks(docs: AccountAccessDoc[]): RecentNetwork[] {
   const merged = docs.flatMap((doc) => doc.recentNetworks ?? []);
-  merged.sort((a, b) => a.t - b.t);
-  return merged;
+  return dedupeRecentNetworksByLatestTs(merged);
 }
 
 /**
@@ -86,7 +103,7 @@ export async function evaluateAccountSharingAccess(
   const col = db.collection<AccountAccessDoc>(COLLECTION);
   await ensureUserIdUniqueIndex(col);
 
-  const networkKey = ipToStableNetworkKey(ip);
+  const networkKey = ipToAccountSharingNetworkKey(ip, ipv4PrefixForSharing());
   const countryKey = country?.trim() ? country.trim().toUpperCase() : "ZZ";
   const now = Date.now();
   const hourAgo = now - HOUR_MS;
@@ -151,7 +168,9 @@ export async function evaluateAccountSharingAccess(
     };
   }
 
-  const recentNetworks = (existing.recentNetworks ?? []).filter((x) => x.t > hourAgo);
+  const recentNetworks = dedupeRecentNetworksByLatestTs(
+    (existing.recentNetworks ?? []).filter((x) => x.t > hourAgo),
+  );
   recentNetworks.push({ t: now, key: networkKey });
   const distinctNetworks = new Set(recentNetworks.map((x) => x.key));
 
@@ -180,12 +199,14 @@ export async function evaluateAccountSharingAccess(
       "Too many different networks were seen on this account in a short period. If you are not sharing your login, contact support.";
   }
 
+  const recentNetworksToStore = dedupeRecentNetworksByLatestTs(recentNetworks);
+
   await col.updateOne(
     primaryDocId ? { _id: primaryDocId } : { userId },
     {
       $set: {
         countryLastSeen,
-        recentNetworks,
+        recentNetworks: recentNetworksToStore,
         updatedAt: new Date(),
       },
     },

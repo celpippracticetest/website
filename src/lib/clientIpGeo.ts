@@ -40,6 +40,53 @@ export function getRequestCountry(req: NextRequest | Request): string | null {
   return null;
 }
 
+function ipv4DottedParts(s: string): number[] | null {
+  const parts = s.split(".").map((p) => Number.parseInt(p, 10));
+  if (parts.length !== 4 || parts.some((n) => !Number.isFinite(n) || n < 0 || n > 255)) {
+    return null;
+  }
+  return parts;
+}
+
+function ipv4ApplyPrefixLen(parts: number[], prefixLen: number): string {
+  const clamped = Math.min(32, Math.max(8, prefixLen));
+  const hostBits = 32 - clamped;
+  const mask =
+    hostBits >= 32 ? 0 : hostBits <= 0 ? 0xffffffff : (~((1 << hostBits) - 1)) >>> 0;
+  const n = ((parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]) >>> 0;
+  const masked = (n & mask) >>> 0;
+  const a = (masked >>> 24) & 255;
+  const b = (masked >>> 16) & 255;
+  const c = (masked >>> 8) & 255;
+  const d = masked & 255;
+  return `${a}.${b}.${c}.${d}/${clamped}`;
+}
+
+/**
+ * Buckets IPv4 more coarsely than /24 for account-sharing heuristics so paid users
+ * behind rotating cloud/CGNAT egress are not blocked as often. IPv6 unchanged (/48).
+ * Use env ACCOUNT_SHARING_IPV4_PREFIX in accountSharingSignals (default 20).
+ */
+export function ipToAccountSharingNetworkKey(ip: string, ipv4PrefixLen: number): string {
+  const s = ip.trim().toLowerCase();
+  if (!s || s === "unknown" || s === "0.0.0.0") return "unk";
+
+  if (s.includes(".")) {
+    const parts = ipv4DottedParts(s);
+    if (parts) {
+      return ipv4ApplyPrefixLen(parts, ipv4PrefixLen);
+    }
+    return s;
+  }
+
+  const noZone = s.split("%")[0] ?? s;
+  const segments = noZone.split(":").filter((x) => x.length > 0);
+  if (segments.length >= 3) {
+    return `${segments.slice(0, 3).join(":")}::/48`;
+  }
+  return noZone || "unk";
+}
+
 export function ipToStableNetworkKey(ip: string): string {
   const s = ip.trim().toLowerCase();
   if (!s || s === "unknown" || s === "0.0.0.0") return "unk";
