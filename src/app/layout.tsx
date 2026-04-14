@@ -14,6 +14,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ActiveUsersTracker from "@/components/analytics/ActiveUsersTracker";
 import AttributionTracker from "@/components/analytics/AttributionTracker";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
+import RedditPixelTracker from "@/components/analytics/RedditPixelTracker";
 import MarketingFooterSection from "@/components/pages/landing/MarketingFooterSection";
 import MuiAppRouterCacheProvider from "@/components/MuiAppRouterCacheProvider";
 import { getHomepageHeroDisplay } from "@/lib/homepage-hero";
@@ -253,6 +254,7 @@ export default async function RootLayout({
           <Suspense fallback={null}>
             <AttributionTracker />
             <PageViewTracker />
+            {process.env.NODE_ENV === "production" && <RedditPixelTracker />}
           </Suspense>
           <LazyLeadCapturePopup />
 
