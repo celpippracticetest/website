@@ -18,6 +18,49 @@ const GOOGLE_ADS_BEGIN_CHECKOUT_LABEL =
   process.env.NEXT_PUBLIC_GOOGLE_ADS_BEGIN_CHECKOUT_LABEL || "";
 const conversionDedupSet = new Set<string>();
 
+type RedditTrackPayload = {
+  transactionId?: string;
+  value?: number;
+  currency?: string;
+};
+
+type RedditTrackFunction = (
+  command: "track",
+  eventName: "SignUp" | "Purchase",
+  payload?: {
+    currency?: string;
+    itemCount?: number;
+    transactionId?: string;
+    value?: number;
+  }
+) => void;
+
+function trackRedditEvent(
+  eventName: "SignUp" | "Purchase",
+  payload?: RedditTrackPayload
+): void {
+  const redditTrack = (window as Window & { rdt?: RedditTrackFunction }).rdt;
+  if (!isBrowser || typeof redditTrack !== "function") return;
+
+  try {
+    if (eventName === "Purchase") {
+      redditTrack("track", eventName, {
+        currency: payload?.currency,
+        itemCount: 1,
+        transactionId: payload?.transactionId,
+        value: payload?.value,
+      });
+      return;
+    }
+
+    redditTrack("track", eventName);
+  } catch (error) {
+    if (DEBUG) {
+      console.warn("[Reddit Pixel] Failed to track event:", eventName, error);
+    }
+  }
+}
+
 /**
  * Initialize or get the dataLayer array
  */
@@ -279,6 +322,7 @@ export const trackAuth = {
       value: 1,
       currency: "CAD",
     });
+    trackRedditEvent("SignUp");
 
     if (userData) {
       pushAdsEnhancedConversion({
@@ -594,6 +638,11 @@ export const trackEcommerce = {
       conversion_label: conversionLabel || undefined,
       google_ads_send_to: getGoogleAdsSendTo(conversionLabel),
       ...attributionData,
+    });
+    trackRedditEvent("Purchase", {
+      transactionId,
+      value,
+      currency,
     });
 
     if (userData) {
