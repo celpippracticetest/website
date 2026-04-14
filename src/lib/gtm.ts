@@ -587,6 +587,9 @@ export const trackEcommerce = {
     clearEcommerce();
     pushToDataLayer({
       event: "begin_checkout",
+      // Top-level value/currency so GTM vars like {{value}} (eventModel.value) match Ads/Meta tags.
+      value,
+      currency,
       ecommerce: {
         currency,
         value,
@@ -627,6 +630,10 @@ export const trackEcommerce = {
     pushToDataLayer({
       event: "purchase",
       purchase_type: purchaseType,
+      // Top-level fields for GTM {{value}} / {{currency}} / {{transaction_id}} on Ads tags.
+      value,
+      currency,
+      transaction_id: transactionId,
       ecommerce: {
         transaction_id: transactionId,
         currency,

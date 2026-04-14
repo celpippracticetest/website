@@ -1,4 +1,5 @@
 import DashboardHome from "@/components/dashboard-app/dashboardHome";
+import SuccessPageTracking from "@/components/analytics/SuccessPageTracking";
 import { clerkClient, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { getDb } from "@/lib/mongodb";
@@ -43,6 +44,7 @@ export default async function PayPalSuccessPage({ searchParams }: any) {
   const purchaseCurrencyRaw = String(publicMetadata.purchaseCurrency || "CAD").trim();
   const purchaseCurrency = purchaseCurrencyRaw || "CAD";
   let upgradeOffer: SuccessUpgradeOfferForClient | null = null;
+  let paypalPlanDisplayName: string | null = null;
 
   if (subscriptionId !== "-") {
     try {
@@ -50,10 +52,14 @@ export default async function PayPalSuccessPage({ searchParams }: any) {
       const pending = await db.collection("paypal_subscription_pending").findOne<{
         stripePriceId?: string;
         clerkUserId?: string;
+        planDisplayName?: string;
       }>({
         clerkUserId: user.id,
         paypalSubscriptionId: subscriptionId,
       });
+      if (typeof pending?.planDisplayName === "string" && pending.planDisplayName.trim()) {
+        paypalPlanDisplayName = pending.planDisplayName.trim();
+      }
       const sourceStripePriceId = pending?.stripePriceId?.trim();
       if (sourceStripePriceId) {
         const plansRepo = new PlansRepository(db);
@@ -90,8 +96,26 @@ export default async function PayPalSuccessPage({ searchParams }: any) {
     invoice: subscriptionId,
   };
 
+  const amountTotalCents = Math.max(0, Math.round(purchaseAmount * 100));
+  const payerEmail = freshUser.primaryEmailAddress?.emailAddress?.trim().toLowerCase();
+
   return (
     <div className="bg-[#F4F7FF] min-h-screen flex w-full lg:pt-[108px] pt-[70px]">
+      {subscriptionId !== "-" ? (
+        <SuccessPageTracking
+          transactionId={subscriptionId}
+          value={purchaseAmount}
+          currency={purchaseCurrency.toUpperCase()}
+          items={[
+            {
+              description: paypalPlanDisplayName || "CELPIP Plan",
+              amount_total: amountTotalCents,
+              quantity: 1,
+            },
+          ]}
+          email={payerEmail || undefined}
+        />
+      ) : null}
       <DashboardHome
         session={sessionData}
         email={user.primaryEmailAddress?.emailAddress ?? null}
