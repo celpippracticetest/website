@@ -134,17 +134,12 @@ export default function PartnersDashboardClient() {
               Signed in as {user?.primaryEmailAddress?.emailAddress}
             </p>
           </div>
-          <div className="flex gap-3">
-            <Link
-              href="/partners"
-              className="text-sm font-medium text-orange-700 hover:underline"
-            >
-              Program info
-            </Link>
-            <Link href="/practice-overview" className="text-sm text-slate-600 hover:underline">
-              Main app
-            </Link>
-          </div>
+          <Link
+            href="/partners"
+            className="text-sm font-medium text-orange-700 hover:underline"
+          >
+            Program info
+          </Link>
         </div>
 
         {loadError ? (
@@ -201,7 +196,7 @@ export default function PartnersDashboardClient() {
             <section className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-slate-900">E-transfer email</h2>
               <p className="mt-1 text-sm text-slate-600">
-                We use this email for manual e-transfer payouts.
+                We use this email for manual e-transfer payouts, sent on a biweekly schedule.
               </p>
               <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
                 <label className="flex-1">
