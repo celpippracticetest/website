@@ -39,10 +39,13 @@ export function CustomSignUpForm({
   className,
   lockedCheckoutEmail = null,
   checkoutSessionId = null,
+  redirectAfterSignUp = null,
 }: {
   className?: string;
   lockedCheckoutEmail?: string | null;
   checkoutSessionId?: string | null;
+  /** When set (e.g. `/partners/dashboard`), used after verify instead of onboarding survey. */
+  redirectAfterSignUp?: string | null;
 }) {
   const { isLoaded: authLoaded } = useAuth();
   const { signUp, fetchStatus } = useSignUp();
@@ -73,8 +76,15 @@ export function CustomSignUpForm({
     }
   }, [lockedCheckoutEmail]);
 
+  const resolvePostSignUpPath = () => {
+    if (redirectAfterSignUp?.trim() && !checkoutSessionId) {
+      return redirectAfterSignUp.trim();
+    }
+    return postSignUpRedirectPath(checkoutSessionId);
+  };
+
   const finalizeSignUp = async () => {
-    const dest = postSignUpRedirectPath(checkoutSessionId);
+    const dest = resolvePostSignUpPath();
     const { error: finErr } = await signUp.finalize({
       navigate: ({ session, decorateUrl }) => {
         if (session?.currentTask) return;
@@ -92,7 +102,7 @@ export function CustomSignUpForm({
     setOauthLoading(true);
     try {
       const origin = window.location.origin;
-      const completePath = postSignUpRedirectPath(checkoutSessionId);
+      const completePath = resolvePostSignUpPath();
       if (isGuestPostCheckout && isConsumerGmailEmail(lockedCheckoutEmail)) {
         if (!signIn) {
           setOauthLoading(false);

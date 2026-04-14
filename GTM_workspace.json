@@ -245,7 +245,7 @@
                   {
                     "type": "TEMPLATE",
                     "key": "parameter",
-                    "value": "source"
+                    "value": "lead_popup_trigger"
                   },
                   {
                     "type": "TEMPLATE",

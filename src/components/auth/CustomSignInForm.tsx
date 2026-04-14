@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-const REDIRECT = "/practice-overview";
+const DEFAULT_POST_AUTH_REDIRECT = "/practice-overview";
 
 function formatFutureError(err: { longMessage?: string; message: string } | null | undefined): string {
   if (!err) return "Something went wrong. Please try again.";
@@ -27,10 +27,18 @@ function thrownErrMessage(err: unknown): string {
   return "Something went wrong. Please try again.";
 }
 
-export function CustomSignInForm({ className }: { className?: string }) {
+export function CustomSignInForm({
+  className,
+  redirectAfterAuth,
+}: {
+  className?: string;
+  /** When set (e.g. `/partners/dashboard`), used instead of practice overview after sign-in. */
+  redirectAfterAuth?: string;
+}) {
   const { isLoaded: authLoaded } = useAuth();
   const { signIn, fetchStatus } = useSignIn();
   const router = useRouter();
+  const postAuthPath = redirectAfterAuth?.trim() || DEFAULT_POST_AUTH_REDIRECT;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [resetMode, setResetMode] = useState(false);
@@ -52,13 +60,13 @@ export function CustomSignInForm({ className }: { className?: string }) {
     const { error: finErr } = await signIn.finalize({
       navigate: ({ session, decorateUrl }) => {
         if (session?.currentTask) return;
-        const url = decorateUrl(REDIRECT);
+        const url = decorateUrl(postAuthPath);
         if (url.startsWith("http")) window.location.href = url;
         else router.push(url);
       },
     });
     if (finErr) setError(formatFutureError(finErr));
-  }, [router, signIn]);
+  }, [router, signIn, postAuthPath]);
 
   const resetMfa = useCallback(() => {
     void signIn.reset();
@@ -153,7 +161,7 @@ export function CustomSignInForm({ className }: { className?: string }) {
       const origin = window.location.origin;
       const { error: oErr } = await signIn.sso({
         strategy: "oauth_google",
-        redirectUrl: `${origin}${REDIRECT}`,
+        redirectUrl: `${origin}${postAuthPath}`,
         redirectCallbackUrl: `${origin}/sso-callback`,
       });
       if (oErr) {

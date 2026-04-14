@@ -8,7 +8,7 @@ import { logger, trackUserAction, captureException } from "@/lib/sentry-logger";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { PRICING_AB_COOKIE, type PricingAbLayout } from "@/lib/pricingAbTest";
 import { HOME_AB_COOKIE, type HomeAbVariant } from "@/lib/homeAbTest";
-import { applyCampaignPromoToResponse } from "@/lib/campaignPromoConfig";
+import { applyMarketingCookiesToResponse } from "@/lib/marketingCookies";
 import {
   runAccountSharingMiddlewareCheck,
   shouldEnforceAccountSharingSignals,
@@ -81,6 +81,7 @@ const REFERRAL_CREATE_COOLDOWN_SECONDS = 60;
 
 export default clerkMiddleware(async (auth, req) => {
   let setReferralCreateCooldown = false;
+  let clearPendingReferralCookie = false;
 
   if (isPreviewEnvironment && requiresPreviewAuth(req)) {
     if (!hasValidPreviewCredentials(req)) {
@@ -100,7 +101,7 @@ export default clerkMiddleware(async (auth, req) => {
       const url = req.nextUrl.clone();
       url.pathname = `${req.nextUrl.pathname}/${practiceId}/${taskId}`;
       url.search = "";
-      return applyCampaignPromoToResponse(req, NextResponse.redirect(url, 301));
+      return applyMarketingCookiesToResponse(req, NextResponse.redirect(url, 301));
     }
   }
 
@@ -117,7 +118,7 @@ export default clerkMiddleware(async (auth, req) => {
     const shareCheck = await runAccountSharingMiddlewareCheck(req);
     if (!shareCheck.ok) {
       if (req.nextUrl.pathname.startsWith("/api/")) {
-        return applyCampaignPromoToResponse(
+        return applyMarketingCookiesToResponse(
           req,
           NextResponse.json(
             {
@@ -129,7 +130,7 @@ export default clerkMiddleware(async (auth, req) => {
         );
       }
       const notice = new URL("/account-sharing-notice", req.url);
-      return applyCampaignPromoToResponse(req, NextResponse.redirect(notice));
+      return applyMarketingCookiesToResponse(req, NextResponse.redirect(notice));
     }
   }
 
@@ -155,7 +156,7 @@ export default clerkMiddleware(async (auth, req) => {
         maxAge: 60 * 60 * 24 * 180,
         sameSite: "lax",
       });
-      return applyCampaignPromoToResponse(req, response);
+      return applyMarketingCookiesToResponse(req, response);
     }
   }
 
@@ -180,7 +181,24 @@ export default clerkMiddleware(async (auth, req) => {
       });
     }
 
-    return applyCampaignPromoToResponse(req, response);
+    const refParam = req.nextUrl.searchParams.get("ref");
+    const inviterParam = req.nextUrl.searchParams.get("inviter");
+    if (refParam) {
+      response.cookies.set("pendingReferralCode", refParam, {
+        maxAge: 60 * 60,
+        httpOnly: false,
+        path: "/",
+      });
+    }
+    if (inviterParam) {
+      response.cookies.set("pendingInviterName", inviterParam, {
+        maxAge: 60 * 60,
+        httpOnly: false,
+        path: "/",
+      });
+    }
+
+    return applyMarketingCookiesToResponse(req, response);
   }
 
   if (
@@ -210,27 +228,27 @@ export default clerkMiddleware(async (auth, req) => {
         });
       }
 
-      return applyCampaignPromoToResponse(req, response);
+      return applyMarketingCookiesToResponse(req, response);
     }
   }
 
   if (isProfileRoute(req)) {
     if (!authenticate.userId) {
       const dashboard = new URL("/practice-overview", req.url);
-      return applyCampaignPromoToResponse(req, NextResponse.redirect(dashboard));
+      return applyMarketingCookiesToResponse(req, NextResponse.redirect(dashboard));
     }
     // All authenticated users can access their profile regardless of plan
   }
   if (isPlansRoute(req)) {
     if (!authenticate.userId) {
       const dashboard = new URL("/practice-overview", req.url);
-      return applyCampaignPromoToResponse(req, NextResponse.redirect(dashboard));
+      return applyMarketingCookiesToResponse(req, NextResponse.redirect(dashboard));
     }
     const meta = jwtPracticeMetadata(authenticate.sessionClaims);
     const plan = meta?.plan;
     if (!hasPaidPracticeAccess(plan, meta?.purchaseDate)) {
       const homeUrl = new URL("/", req.url);
-      return applyCampaignPromoToResponse(req, NextResponse.redirect(homeUrl));
+      return applyMarketingCookiesToResponse(req, NextResponse.redirect(homeUrl));
     }
   }
 
@@ -239,7 +257,7 @@ export default clerkMiddleware(async (auth, req) => {
     // They need to see the referral page to sign up
     if (!authenticate.userId) {
       // Don't redirect, allow access to referral page
-      return applyCampaignPromoToResponse(req, NextResponse.next());
+      return applyMarketingCookiesToResponse(req, NextResponse.next());
     }
 
     // For authenticated users, check plan
@@ -247,7 +265,7 @@ export default clerkMiddleware(async (auth, req) => {
     const plan = meta?.plan;
     if (!hasPaidPracticeAccess(plan, meta?.purchaseDate)) {
       const homeUrl = new URL("/", req.url);
-      return applyCampaignPromoToResponse(req, NextResponse.redirect(homeUrl));
+      return applyMarketingCookiesToResponse(req, NextResponse.redirect(homeUrl));
     }
   }
 
@@ -345,140 +363,184 @@ export default clerkMiddleware(async (auth, req) => {
     if (!hasCompletedOnboarding) {
       const client = await clerkClient();
 
-      // Check if user has referral code in cookies
       const referralCode = req.cookies.get("pendingReferralCode")?.value;
 
       if (referralCode) {
-        // Store referral code in user metadata for later processing
-        logger.info("Referral code found in cookies", {
-          component: "middleware",
-          action: "referral_code_found",
-          userId: authenticate.userId,
-          metadata: { referralCode },
-        });
-        await client.users.updateUserMetadata(authenticate.userId, {
-          publicMetadata: {
-            ...authenticate.sessionClaims?.metadata,
-            onboardingCompleted: true,
-            referralCode: referralCode,
-            referralActive: true,
-          },
-        });
-
-        // Process referral discount directly in middleware
-        logger.info("Processing referral discount", {
-          component: "middleware",
-          action: "process_referral_discount",
-          userId: authenticate.userId,
-          metadata: { referralCode },
-        });
-
-        // Apply referral discount
+        let pendingKind: "partner" | "user_referral" | "none" = "none";
         try {
-          const discountResponse = await fetch(
-            `${req.nextUrl.origin}/api/referrals/apply-discount`,
+          const classifyHeaders: Record<string, string> = {
+            "Content-Type": "application/json",
+          };
+          const incomingCookie = req.headers.get("cookie");
+          if (incomingCookie) classifyHeaders["cookie"] = incomingCookie;
+          const vercelBypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+          if (vercelBypass) {
+            classifyHeaders["x-vercel-protection-bypass"] = vercelBypass;
+          }
+
+          const classifyRes = await fetch(
+            `${req.nextUrl.origin}/api/partners/apply-pending-code`,
             {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                referralCode,
-                userId: authenticate.userId,
-                userEmail: (authenticate.sessionClaims as any)
-                  ?.email_addresses?.[0]?.email_address,
-              }),
+              headers: classifyHeaders,
+              body: JSON.stringify({ code: referralCode }),
             },
           );
+          const classifyData = (await classifyRes.json().catch(() => ({}))) as {
+            kind?: string;
+          };
+          if (
+            classifyData.kind === "partner" ||
+            classifyData.kind === "user_referral" ||
+            classifyData.kind === "none"
+          ) {
+            pendingKind = classifyData.kind;
+          }
+        } catch (error) {
+          captureException(error, {
+            component: "middleware",
+            action: "classify_pending_code_error",
+            userId: authenticate.userId,
+          });
+        }
 
-          if (discountResponse.ok) {
-            logger.info("Referral discount applied successfully", {
+        clearPendingReferralCookie = true;
+
+        if (pendingKind === "partner") {
+          logger.info("Partner attribution applied from pending cookie", {
+            component: "middleware",
+            action: "partner_attribution_from_cookie",
+            userId: authenticate.userId,
+            metadata: { referralCode },
+          });
+        } else if (pendingKind === "user_referral") {
+          logger.info("Referral code found in cookies", {
+            component: "middleware",
+            action: "referral_code_found",
+            userId: authenticate.userId,
+            metadata: { referralCode },
+          });
+          await client.users.updateUserMetadata(authenticate.userId, {
+            publicMetadata: {
+              ...authenticate.sessionClaims?.metadata,
+              onboardingCompleted: true,
+              referralCode: referralCode,
+              referralActive: true,
+            },
+          });
+
+          logger.info("Processing referral discount", {
+            component: "middleware",
+            action: "process_referral_discount",
+            userId: authenticate.userId,
+            metadata: { referralCode },
+          });
+
+          try {
+            const discountResponse = await fetch(
+              `${req.nextUrl.origin}/api/referrals/apply-discount`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  referralCode,
+                  userId: authenticate.userId,
+                  userEmail: (authenticate.sessionClaims as any)
+                    ?.email_addresses?.[0]?.email_address,
+                }),
+              },
+            );
+
+            if (discountResponse.ok) {
+              logger.info("Referral discount applied successfully", {
+                component: "middleware",
+                action: "referral_discount_applied",
+                userId: authenticate.userId,
+                metadata: { referralCode },
+              });
+            } else {
+              const errorData = await discountResponse.json();
+              logger.error("Failed to apply referral discount", {
+                component: "middleware",
+                action: "referral_discount_failed",
+                userId: authenticate.userId,
+                metadata: { referralCode, error: errorData },
+              });
+            }
+          } catch (error) {
+            captureException(error, {
               component: "middleware",
-              action: "referral_discount_applied",
+              action: "referral_discount_error",
               userId: authenticate.userId,
               metadata: { referralCode },
             });
-          } else {
-            const errorData = await discountResponse.json();
-            logger.error("Failed to apply referral discount", {
-              component: "middleware",
-              action: "referral_discount_failed",
-              userId: authenticate.userId,
-              metadata: { referralCode, error: errorData },
-            });
           }
-        } catch (error) {
-          captureException(error, {
-            component: "middleware",
-            action: "referral_discount_error",
-            userId: authenticate.userId,
-            metadata: { referralCode },
-          });
-        }
 
-        // Track the signup for the referrer
-        try {
-          const headers: Record<string, string> = {
-            "Content-Type": "application/json",
-          };
+          try {
+            const headers: Record<string, string> = {
+              "Content-Type": "application/json",
+            };
+            const incomingCookie = req.headers.get("cookie");
+            if (incomingCookie) headers["cookie"] = incomingCookie;
+            const vercelBypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+            if (vercelBypass)
+              headers["x-vercel-protection-bypass"] = vercelBypass as string;
 
-          // Forward cookies (can help when APIs depend on session cookies)
-          const incomingCookie = req.headers.get("cookie");
-          if (incomingCookie) headers["cookie"] = incomingCookie;
-
-          // If Vercel Protection is enabled (Preview/Dev), use bypass token
-          const vercelBypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
-          if (vercelBypass)
-            headers["x-vercel-protection-bypass"] = vercelBypass as string;
-
-          const response = await fetch(
-            `${req.nextUrl.origin}/api/referrals/track-signup`,
-            {
-              method: "POST",
-              headers,
-              body: JSON.stringify({ referralCode }),
-            },
-          );
-
-          if (!response.ok) {
-            // Read response body safely to aid debugging
-            const errorText = await response
-              .text()
-              .catch(() => "No error body");
-            logger.error("Failed to track signup", {
-              component: "middleware",
-              action: "track_signup_failed",
-              userId: authenticate.userId,
-              metadata: {
-                status: response.status,
-                statusText: response.statusText,
-                errorText,
-                referralCode,
+            const response = await fetch(
+              `${req.nextUrl.origin}/api/referrals/track-signup`,
+              {
+                method: "POST",
+                headers,
+                body: JSON.stringify({ referralCode }),
               },
-            });
-          } else {
-            // Try to parse JSON but don't fail if it's empty
-            let data: unknown = null;
-            try {
-              data = await response.json();
-            } catch {}
-            logger.info("Successfully tracked signup for referral code", {
+            );
+
+            if (!response.ok) {
+              const errorText = await response
+                .text()
+                .catch(() => "No error body");
+              logger.error("Failed to track signup", {
+                component: "middleware",
+                action: "track_signup_failed",
+                userId: authenticate.userId,
+                metadata: {
+                  status: response.status,
+                  statusText: response.statusText,
+                  errorText,
+                  referralCode,
+                },
+              });
+            } else {
+              let data: unknown = null;
+              try {
+                data = await response.json();
+              } catch {}
+              logger.info("Successfully tracked signup for referral code", {
+                component: "middleware",
+                action: "signup_tracked",
+                userId: authenticate.userId,
+                metadata: { referralCode, data },
+              });
+            }
+          } catch (error) {
+            captureException(error, {
               component: "middleware",
-              action: "signup_tracked",
+              action: "track_signup_error",
               userId: authenticate.userId,
-              metadata: { referralCode, data },
+              metadata: { referralCode },
             });
           }
-        } catch (error) {
-          captureException(error, {
-            component: "middleware",
-            action: "track_signup_error",
-            userId: authenticate.userId,
-            metadata: { referralCode },
+        } else {
+          await client.users.updateUserMetadata(authenticate.userId, {
+            publicMetadata: {
+              ...authenticate.sessionClaims?.metadata,
+              onboardingCompleted: true,
+            },
           });
         }
       } else {
-        // Just update onboarding status
         await client.users.updateUserMetadata(authenticate.userId, {
           publicMetadata: {
             ...authenticate.sessionClaims?.metadata,
@@ -495,7 +557,7 @@ export default clerkMiddleware(async (auth, req) => {
       !authenticate.sessionClaims?.metadata?.roles?.includes("admin"))
   ) {
     const url = new URL("/", req.url);
-    return applyCampaignPromoToResponse(req, NextResponse.redirect(url));
+    return applyMarketingCookiesToResponse(req, NextResponse.redirect(url));
   }
 
   const protectedPaths = [
@@ -516,13 +578,19 @@ export default clerkMiddleware(async (auth, req) => {
     await auth.protect();
   }
 
-  const response = applyCampaignPromoToResponse(req, NextResponse.next());
+  const response = applyMarketingCookiesToResponse(req, NextResponse.next());
   if (setReferralCreateCooldown) {
     response.cookies.set(REFERRAL_CREATE_COOLDOWN_COOKIE, "1", {
       path: "/",
       maxAge: REFERRAL_CREATE_COOLDOWN_SECONDS,
       sameSite: "lax",
       httpOnly: true,
+    });
+  }
+  if (clearPendingReferralCookie) {
+    response.cookies.set("pendingReferralCode", "", {
+      path: "/",
+      maxAge: 0,
     });
   }
   return response;

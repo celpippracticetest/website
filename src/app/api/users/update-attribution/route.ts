@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { getDb } from "@/lib/mongodb";
+import {
+  ACQUISITION_ATTRIBUTION_COOKIE,
+  mergeAcquisitionCookieIntoAttributionData,
+} from "@/lib/attributionCookie";
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,6 +39,11 @@ export async function POST(req: NextRequest) {
     if (entryPage) attributionData.entryPage = entryPage;
     if (country) attributionData.country = country;
     if (currency) attributionData.currency = currency;
+
+    mergeAcquisitionCookieIntoAttributionData(
+      req.cookies.get(ACQUISITION_ATTRIBUTION_COOKIE)?.value,
+      attributionData
+    );
 
     if (Object.keys(attributionData).length === 0) {
       return NextResponse.json({ message: "No attribution data provided" });

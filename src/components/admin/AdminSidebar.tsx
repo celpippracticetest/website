@@ -55,6 +55,7 @@ const mainItems: SidebarGroup = {
     { key: "withdrawal-requests", label: "Withdrawals", icon: Description, href: "/cms/dashboard/withdrawal-requests" },
     { key: "refund-requests", label: "Refund Requests", icon: Description, href: "/cms/dashboard/refund-requests" },
     { key: "users", label: "Users", icon: People, href: "/cms/dashboard/users" },
+    { key: "partners", label: "Partners", icon: People, href: "/cms/dashboard/partners" },
     { key: "cancellation-surveys", label: "Cancellation Reasons", icon: Description, href: "/cms/dashboard/cancellation-surveys" },
     { key: "lead-capture", label: "Lead Capture", icon: Mail, href: "/cms/dashboard/lead-capture" },
     { key: "reminder-emails", label: "Reminder Emails", icon: Mail, href: "/cms/dashboard/reminder-emails" },

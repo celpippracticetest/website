@@ -18,6 +18,10 @@ import {
   tierKeyFromCombo,
 } from "@/lib/finalOfferChallenge";
 import { stripeCheckoutPaymentMethodParams } from "@/lib/stripeCheckoutPaymentMethods";
+import {
+  ACQUISITION_ATTRIBUTION_COOKIE,
+  flatAcquisitionFromCookie,
+} from "@/lib/attributionCookie";
 
 /** GET — same handler as POST (no self-fetch: avoids dev deadlock / invalid response). */
 export async function GET(req: NextRequest) {
@@ -323,6 +327,9 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
 
       return null;
     };
+    const acqCk = flatAcquisitionFromCookie(
+      req.cookies.get(ACQUISITION_ATTRIBUTION_COOKIE)?.value
+    );
     const challengeMode = readRequestAttribution("challenge_mode");
     const challengeTargetClbRaw = readRequestAttribution("challenge_target_clb");
     const challengeWindowDaysRaw = readRequestAttribution("challenge_window_days");
@@ -391,25 +398,35 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
     const attributionMetadata = {
       utm_source:
         readRequestAttribution("utm_source") ||
+        acqCk.utm_source ||
         userDoc?.attribution?.lastTouch?.source ||
         userMetadata?.utm_source ||
         null,
       utm_medium:
         readRequestAttribution("utm_medium") ||
+        acqCk.utm_medium ||
         userDoc?.attribution?.lastTouch?.medium ||
         userMetadata?.utm_medium ||
         null,
       utm_campaign:
         readRequestAttribution("utm_campaign") ||
+        acqCk.utm_campaign ||
         userDoc?.attribution?.lastTouch?.campaign ||
         userMetadata?.utm_campaign ||
         null,
       utm_content:
-        readRequestAttribution("utm_content") || userMetadata?.utm_content || null,
+        readRequestAttribution("utm_content") ||
+        acqCk.utm_content ||
+        userMetadata?.utm_content ||
+        null,
       utm_term:
-        readRequestAttribution("utm_term") || userMetadata?.utm_term || null,
+        readRequestAttribution("utm_term") ||
+        acqCk.utm_term ||
+        userMetadata?.utm_term ||
+        null,
       gclid:
         readRequestAttribution("gclid") ||
+        acqCk.gclid ||
         userDoc?.attribution?.lastTouch?.gclid ||
         userMetadata?.gclid ||
         null,
@@ -426,6 +443,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
         attributionMetadata.gclid,
       entry_page:
         readRequestAttribution("entry_page") ||
+        acqCk.entry_page ||
         userDoc?.attribution?.firstTouch?.entryPage ||
         userMetadata?.entryPage ||
         null,

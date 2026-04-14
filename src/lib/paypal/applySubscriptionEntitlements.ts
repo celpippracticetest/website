@@ -2,6 +2,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { getDb } from "@/lib/mongodb";
 import { logger, captureException } from "@/lib/sentry-logger";
 import { planNameIndicatesPremiumPlus } from "@/lib/subscriptionAccess";
+import { recordPartnerCommissionFromMongoUser } from "@/lib/partner/recordPartnerCommissionFromMongoUser";
 
 export async function applyPayPalSubscriptionEntitlements(params: {
   userId: string;
@@ -83,12 +84,23 @@ export async function applyPayPalSubscriptionEntitlements(params: {
       updateDoc.purchaseCurrency = newFields.purchaseCurrency;
     }
     if (newFields.totalSpend !== undefined) updateDoc.totalSpend = newFields.totalSpend;
+    if (typeof updatedMetadata.partnerId === "string") {
+      updateDoc.partnerId = updatedMetadata.partnerId;
+    }
+    if (typeof updatedMetadata.partnerReferralCode === "string") {
+      updateDoc.partnerReferralCode = updatedMetadata.partnerReferralCode;
+    }
+    if (typeof updatedMetadata.partnerAttributedAt === "string") {
+      updateDoc.partnerAttributedAt = updatedMetadata.partnerAttributedAt;
+    }
 
     await db.collection("users").updateOne(
       { clerkUserId: params.userId },
       { $set: updateDoc },
       { upsert: true }
     );
+
+    await recordPartnerCommissionFromMongoUser(params.userId);
 
     logger.info("PayPal subscription entitlements applied", {
       component: "paypal_subscriptions",

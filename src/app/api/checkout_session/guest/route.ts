@@ -12,6 +12,10 @@ import {
   safeStripeProductId,
 } from "@/lib/checkoutCancelUrl";
 import { resolveCampaignPromoFromRequest } from "@/lib/campaignPromo";
+import {
+  ACQUISITION_ATTRIBUTION_COOKIE,
+  flatAcquisitionFromCookie,
+} from "@/lib/attributionCookie";
 
 /**
  * GET — browser navigation uses GET. Reuse the same checkout logic as POST
@@ -116,13 +120,17 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       return null;
     };
 
+    const acqCk = flatAcquisitionFromCookie(
+      req.cookies.get(ACQUISITION_ATTRIBUTION_COOKIE)?.value
+    );
+
     const attributionMetadata = {
-      utm_source: readRequestAttribution("utm_source") ?? "",
-      utm_medium: readRequestAttribution("utm_medium") ?? "",
-      utm_campaign: readRequestAttribution("utm_campaign") ?? "",
-      utm_content: readRequestAttribution("utm_content") ?? "",
-      utm_term: readRequestAttribution("utm_term") ?? "",
-      gclid: readRequestAttribution("gclid") ?? "",
+      utm_source: readRequestAttribution("utm_source") || acqCk.utm_source || "",
+      utm_medium: readRequestAttribution("utm_medium") || acqCk.utm_medium || "",
+      utm_campaign: readRequestAttribution("utm_campaign") || acqCk.utm_campaign || "",
+      utm_content: readRequestAttribution("utm_content") || acqCk.utm_content || "",
+      utm_term: readRequestAttribution("utm_term") || acqCk.utm_term || "",
+      gclid: readRequestAttribution("gclid") || acqCk.gclid || "",
     };
 
     const campaignPromo = await resolveCampaignPromoFromRequest(req);
@@ -135,7 +143,8 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       attribution_medium: attributionMetadata.utm_medium ?? "",
       attribution_campaign: attributionMetadata.utm_campaign ?? "",
       attribution_gclid: attributionMetadata.gclid ?? "",
-      entry_page: readRequestAttribution("entry_page") ?? "",
+      entry_page:
+        readRequestAttribution("entry_page") || acqCk.entry_page || "",
       referrer: readRequestAttribution("referrer") ?? "",
       attribution_session_id: readRequestAttribution("attribution_session_id") ?? "",
       purchase_page: purchasePage ?? "",

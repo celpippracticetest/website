@@ -16,6 +16,7 @@ import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
 import { findOrCreateClerkUserByEmail } from "@/lib/clerkGuestCheckout";
 import { planNameIndicatesPremiumPlus } from "@/lib/subscriptionAccess";
 import { persistStripeCustomerIdToMongo } from "@/lib/resolveStripeCustomerId";
+import { recordPartnerCommissionFromMongoUser } from "@/lib/partner/recordPartnerCommissionFromMongoUser";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -83,12 +84,26 @@ async function updateUserPublicMetadata(
       if (newFields.purchaseAmount) updateDoc.purchaseAmount = newFields.purchaseAmount;
       if (newFields.purchaseCurrency) updateDoc.purchaseCurrency = newFields.purchaseCurrency;
       if (newFields.totalSpend) updateDoc.totalSpend = newFields.totalSpend;
+      if (typeof updatedMetadata.partnerId === "string") {
+        updateDoc.partnerId = updatedMetadata.partnerId;
+      }
+      if (typeof updatedMetadata.partnerReferralCode === "string") {
+        updateDoc.partnerReferralCode = updatedMetadata.partnerReferralCode;
+      }
+      if (typeof updatedMetadata.partnerAttributedAt === "string") {
+        updateDoc.partnerAttributedAt = updatedMetadata.partnerAttributedAt;
+      }
+      if (newFields.hasEverPurchased !== undefined) {
+        updateDoc.hasEverPurchased = newFields.hasEverPurchased;
+      }
 
       await usersCollection.updateOne(
         { clerkUserId: userId },
         { $set: updateDoc },
         { upsert: true } // Upsert just in case, though user should exist
       );
+
+      await recordPartnerCommissionFromMongoUser(userId);
     } catch (dbErr) {
       logger.error(" Failed to sync metadata to MongoDB", {
         component: "stripe_webhook",

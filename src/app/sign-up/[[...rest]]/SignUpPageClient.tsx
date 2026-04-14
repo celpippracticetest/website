@@ -105,6 +105,20 @@ export default function SignUpPageClient() {
     localStorage.setItem(dedupeKey, "1");
   }, [isSignedIn, user]);
 
+  const tryApplyPartnerPendingCode = async (code: string): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/partners/apply-pending-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      const data = (await res.json()) as { kind?: string };
+      return data.kind === "partner";
+    } catch {
+      return false;
+    }
+  };
+
   const applyReferralDiscount = async (referralCode: string) => {
     try {
       const processResponse = await fetch("/api/referrals/process-signup", {
@@ -180,13 +194,18 @@ export default function SignUpPageClient() {
   };
 
   useEffect(() => {
-    if (isSignedIn && user) {
-      saveAttribution();
+    if (!isSignedIn || !user) return;
+
+    void (async () => {
+      await saveAttribution();
 
       const pendingReferralCode = localStorage.getItem("pendingReferralCode");
 
       if (pendingReferralCode) {
-        applyReferralDiscount(pendingReferralCode);
+        const isPartner = await tryApplyPartnerPendingCode(pendingReferralCode);
+        if (!isPartner) {
+          await applyReferralDiscount(pendingReferralCode);
+        }
         localStorage.removeItem("pendingReferralCode");
         localStorage.removeItem("pendingInviterName");
       }
@@ -195,7 +214,7 @@ export default function SignUpPageClient() {
       } else {
         router.push("/onboarding-survey");
       }
-    }
+    })();
   }, [guestCheckout?.sessionId, isSignedIn, user, router]);
 
   const rawCheckoutSession = searchParams.get("checkout_session")?.trim();

@@ -5,6 +5,10 @@ import Stripe from "stripe";
 import { requireAuthenticatedRequest } from "@/lib/auth/request-auth";
 import { stripe } from "@/lib/stripe";
 import { stripeCheckoutPaymentMethodParams } from "@/lib/stripeCheckoutPaymentMethods";
+import {
+  ACQUISITION_ATTRIBUTION_COOKIE,
+  flatAcquisitionFromCookie,
+} from "@/lib/attributionCookie";
 
 type UserMetadata = Record<string, unknown>;
 
@@ -215,34 +219,43 @@ export async function POST(request: NextRequest) {
     const { promotionCode, referralDiscountApplied } =
       await resolvePromotionCode(request, userId, email, publicMetadata);
     const baseUrl = getBaseAppUrl(request);
+    const acqCk = flatAcquisitionFromCookie(
+      request.cookies.get(ACQUISITION_ATTRIBUTION_COOKIE)?.value
+    );
     const attributionMetadata = {
       utm_source:
         readStringValue(body?.utm_source) ||
+        readStringValue(acqCk.utm_source) ||
         readStringValue(lastTouch.source) ||
         readStringValue(publicMetadata.utm_source) ||
         "",
       utm_medium:
         readStringValue(body?.utm_medium) ||
+        readStringValue(acqCk.utm_medium) ||
         readStringValue(lastTouch.medium) ||
         readStringValue(publicMetadata.utm_medium) ||
         "",
       utm_campaign:
         readStringValue(body?.utm_campaign) ||
+        readStringValue(acqCk.utm_campaign) ||
         readStringValue(lastTouch.campaign) ||
         readStringValue(publicMetadata.utm_campaign) ||
         "",
       utm_content:
         readStringValue(body?.utm_content) ||
+        readStringValue(acqCk.utm_content) ||
         readStringValue(lastTouch.content) ||
         readStringValue(publicMetadata.utm_content) ||
         "",
       utm_term:
         readStringValue(body?.utm_term) ||
+        readStringValue(acqCk.utm_term) ||
         readStringValue(lastTouch.term) ||
         readStringValue(publicMetadata.utm_term) ||
         "",
       gclid:
         readStringValue(body?.gclid) ||
+        readStringValue(acqCk.gclid) ||
         readStringValue(lastTouch.gclid) ||
         readStringValue(publicMetadata.gclid) ||
         "",
@@ -256,6 +269,7 @@ export async function POST(request: NextRequest) {
       attribution_gclid: attributionMetadata.gclid,
       entry_page:
         readStringValue(body?.entry_page) ||
+        readStringValue(acqCk.entry_page) ||
         readStringValue(firstTouch.entryPage) ||
         readStringValue(publicMetadata.entryPage) ||
         "",
