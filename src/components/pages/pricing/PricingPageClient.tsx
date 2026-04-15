@@ -46,6 +46,8 @@ import {
 import type { PricingAbLayout } from "@/lib/pricingAbTest";
 import type { DurationGroupKey, PricingFaq, SerializedPlan } from "@/types/pricing";
 import { PayPalSubscribeButton } from "@/components/paypal/PayPalSubscribeButton";
+import { StripeCheckoutDiscountBadge } from "@/components/checkout/StripeCheckoutDiscountBadge";
+import { getStripeCheckoutAutoDiscountLabel } from "@/lib/stripeCheckoutDiscountLabel";
 const avatarSources = ["Carlos.png", "Li.png", "Tatiana.png"];
 
 /** Public paths for checkout CTAs (aligned with final-offer payment modal). */
@@ -196,6 +198,14 @@ function PricingStyleOneSubscribeForm({
     setModalOpen(true);
   };
 
+  const stripeDiscountLabel = useMemo(
+    () =>
+      isSignedIn
+        ? getStripeCheckoutAutoDiscountLabel({ userPublicMetadata: user?.publicMetadata })
+        : null,
+    [isSignedIn, user?.publicMetadata]
+  );
+
   const subscribeTriggerClass =
     "flex h-10 w-full cursor-pointer items-center justify-center rounded-full bg-[#635BFF] px-4 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-[#5851DF] focus-visible:ring-2 focus-visible:ring-[#635BFF] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 
@@ -221,8 +231,9 @@ function PricingStyleOneSubscribeForm({
                 submitStripeCheckout();
               }}
               aria-label={isSignedIn ? "Pay with Stripe" : "Continue with Stripe"}
-              className="flex min-h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[#635BFF] px-4 py-2.5 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-[#5851DF] focus-visible:ring-2 focus-visible:ring-[#635BFF] focus-visible:ring-offset-2"
+              className="relative flex min-h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[#635BFF] px-4 py-2.5 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-[#5851DF] focus-visible:ring-2 focus-visible:ring-[#635BFF] focus-visible:ring-offset-2"
             >
+              <StripeCheckoutDiscountBadge label={stripeDiscountLabel} />
               <span>{isSignedIn ? "Pay with" : "Continue with"}</span>
               <Image
                 src={CHECKOUT_STRIPE_WORDMARK_WHITE_SRC}

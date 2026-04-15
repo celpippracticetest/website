@@ -1,9 +1,11 @@
-import React, { useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
 import SvgCheck from "../../icons/Check";
 import { SignInButton, SignUpButton, useUser } from "@clerk/nextjs";
 import LoginModal from "@/components/modal/LoginModal";
 import { useEcommerceTracking } from "@/hooks/useTracking";
+import { StripeCheckoutDiscountBadge } from "@/components/checkout/StripeCheckoutDiscountBadge";
+import { getStripeCheckoutAutoDiscountLabel } from "@/lib/stripeCheckoutDiscountLabel";
 
 interface IPlanCard {
   title: string;
@@ -38,6 +40,13 @@ const PlanCard = ({
   const { user, isLoaded, isSignedIn } = useUser();
   const { beginCheckout, selectItem } = useEcommerceTracking();
   const noUser = isLoaded ? !isSignedIn : false;
+  const stripeCheckoutDiscountLabel = useMemo(
+    () =>
+      isSignedIn && type !== "Free"
+        ? getStripeCheckoutAutoDiscountLabel({ userPublicMetadata: user?.publicMetadata })
+        : null,
+    [isSignedIn, type, user?.publicMetadata]
+  );
   const [showLoginModal, setShowLoginModal] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -167,6 +176,7 @@ const PlanCard = ({
               : "cursor-not-allowed bg-slate-400 opacity-60"
           }`}
         >
+          <StripeCheckoutDiscountBadge label={stripeCheckoutDiscountLabel} />
           <span className="text-white text-[14px] font-normal leading-[16px] flex items-center justify-center">
             {buttonTitle}
           </span>

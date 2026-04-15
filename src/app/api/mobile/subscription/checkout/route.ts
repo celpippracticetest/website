@@ -55,12 +55,25 @@ function hasActiveReferralDiscount(metadata: UserMetadata): boolean {
   );
 }
 
+function hasActivePartnerRefereeDiscount(metadata: UserMetadata): boolean {
+  return (
+    Boolean(metadata.partnerReferralPromotionId) &&
+    metadata.partnerReferralDiscountUsed !== true &&
+    metadata.partnerReferralDiscountActive !== false &&
+    Boolean(metadata.partnerId)
+  );
+}
+
 async function resolvePromotionCode(
   request: NextRequest,
   userId: string,
   email: string,
   metadata: UserMetadata
-): Promise<{ promotionCode: string | null; referralDiscountApplied: boolean }> {
+): Promise<{
+  promotionCode: string | null;
+  referralDiscountApplied: boolean;
+  partnerDiscountApplied: boolean;
+}> {
   const referralPromotionId = getAuthorizedPromotionId(metadata);
   const baseUrl = getBaseAppUrl(request);
 
@@ -100,6 +113,7 @@ async function resolvePromotionCode(
       return {
         promotionCode: referralPromotionId,
         referralDiscountApplied: true,
+        partnerDiscountApplied: false,
       };
     }
   }
@@ -129,6 +143,7 @@ async function resolvePromotionCode(
           return {
             promotionCode: refreshedPromotionId,
             referralDiscountApplied: true,
+            partnerDiscountApplied: false,
           };
         }
       }
@@ -137,9 +152,54 @@ async function resolvePromotionCode(
     }
   }
 
+  const partnerPromoId =
+    typeof metadata.partnerReferralPromotionId === "string"
+      ? metadata.partnerReferralPromotionId.trim()
+      : "";
+  if (partnerPromoId && hasActivePartnerRefereeDiscount(metadata)) {
+    let isExpired = false;
+    const expiryValue = metadata.partnerReferralDiscountExpiry;
+    if (typeof expiryValue === "string" && expiryValue.trim()) {
+      const expiryDate = new Date(expiryValue);
+      if (!Number.isNaN(expiryDate.getTime()) && expiryDate <= new Date()) {
+        isExpired = true;
+      }
+    }
+    if (!isExpired) {
+      try {
+        const promotionCodeDetails =
+          await stripe.promotionCodes.retrieve(partnerPromoId);
+        const couponDetails =
+          typeof promotionCodeDetails.coupon === "string"
+            ? await stripe.coupons.retrieve(promotionCodeDetails.coupon)
+            : promotionCodeDetails.coupon;
+        if (
+          couponDetails.redeem_by &&
+          couponDetails.redeem_by < Math.floor(Date.now() / 1000)
+        ) {
+          isExpired = true;
+        }
+        if (!promotionCodeDetails.active) {
+          isExpired = true;
+        }
+      } catch (error) {
+        console.error("Failed to validate partner referee discount", error);
+        isExpired = true;
+      }
+    }
+    if (!isExpired) {
+      return {
+        promotionCode: partnerPromoId,
+        referralDiscountApplied: false,
+        partnerDiscountApplied: true,
+      };
+    }
+  }
+
   return {
     promotionCode: null,
     referralDiscountApplied: false,
+    partnerDiscountApplied: false,
   };
 }
 
@@ -216,7 +276,7 @@ export async function POST(request: NextRequest) {
       typeof publicMetadata.lastTouch === "object" && publicMetadata.lastTouch
         ? (publicMetadata.lastTouch as UserMetadata)
         : {};
-    const { promotionCode, referralDiscountApplied } =
+    const { promotionCode, referralDiscountApplied, partnerDiscountApplied } =
       await resolvePromotionCode(request, userId, email, publicMetadata);
     const baseUrl = getBaseAppUrl(request);
     const acqCk = flatAcquisitionFromCookie(
@@ -307,6 +367,12 @@ export async function POST(request: NextRequest) {
         referral_discount_applied: referralDiscountApplied
           ? toMetadataValue(publicMetadata.referralDiscount || "referral")
           : "",
+        partner_ref_discount_applied: partnerDiscountApplied
+          ? "partner_referee"
+          : "",
+        partner_referral_code: partnerDiscountApplied
+          ? toMetadataValue(publicMetadata.partnerReferralCode)
+          : "",
         origin: "mobile_app",
         ...attributionMetadata,
         ...attributionSnapshot,
@@ -320,6 +386,12 @@ export async function POST(request: NextRequest) {
                 referral_code: toMetadataValue(publicMetadata.referralCode),
                 referral_discount_applied: referralDiscountApplied
                   ? toMetadataValue(publicMetadata.referralDiscount || "referral")
+                  : "",
+                partner_ref_discount_applied: partnerDiscountApplied
+                  ? "partner_referee"
+                  : "",
+                partner_referral_code: partnerDiscountApplied
+                  ? toMetadataValue(publicMetadata.partnerReferralCode)
                   : "",
                 origin: "mobile_app",
                 ...attributionMetadata,

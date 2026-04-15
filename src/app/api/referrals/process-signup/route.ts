@@ -62,14 +62,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check if referrer is eligible (has made a purchase)
-    const referrerMetadata = referrerUser.publicMetadata as any;
-    if (!referrerMetadata?.referralActive) {
-      return NextResponse.json(
-        { error: "Referrer is not eligible for rewards" },
-        { status: 400 }
-      );
-    }
+    // Do not block on referrer referralActive: invitee discounts are applied via
+    // apply-discount even when that flag is missing or false; reward eligibility is enforced elsewhere.
 
     // Store referral relationship in user metadata
     await clerk.users.updateUserMetadata(userId, {

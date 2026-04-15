@@ -1,7 +1,10 @@
 "use client";
-import React from "react";
+import React, { useMemo } from "react";
 import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
 import { useEcommerceTracking } from "@/hooks/useTracking";
+import { useUser } from "@clerk/nextjs";
+import { StripeCheckoutDiscountBadge } from "@/components/checkout/StripeCheckoutDiscountBadge";
+import { getStripeCheckoutAutoDiscountLabel } from "@/lib/stripeCheckoutDiscountLabel";
 
 interface IPlanCard {
   title: string;
@@ -26,6 +29,14 @@ const PlanCard = ({
   stripePriceId,
 }: IPlanCard) => {
   const { beginCheckout, selectItem } = useEcommerceTracking();
+  const { user } = useUser();
+  const stripeCheckoutDiscountLabel = useMemo(
+    () =>
+      type !== "Free"
+        ? getStripeCheckoutAutoDiscountLabel({ userPublicMetadata: user?.publicMetadata })
+        : null,
+    [type, user?.publicMetadata]
+  );
 
   const handleCheckoutTracking = () => {
     const amount = Number.parseFloat(price);
@@ -123,6 +134,7 @@ const PlanCard = ({
               : "cursor-not-allowed bg-slate-400 opacity-60"
           }`}
         >
+          <StripeCheckoutDiscountBadge label={stripeCheckoutDiscountLabel} />
           <span className="text-white text-[14px] font-normal leading-[16px] flex items-center justify-center">
             {buttonTitle}
           </span>

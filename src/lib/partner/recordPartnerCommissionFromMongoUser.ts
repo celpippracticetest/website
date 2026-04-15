@@ -1,10 +1,9 @@
 import mongoClient, { getDb } from "@/lib/mongodb";
 import { PartnerRepository } from "@/repositories/partner.repo";
+import { PartnerProgramSettingsRepository } from "@/repositories/partner-program-settings.repo";
 import { PartnerCommissionRepository } from "@/repositories/partner-commission.repo";
 import { logger } from "@/lib/sentry-logger";
 import { ObjectId } from "mongodb";
-
-const COMMISSION_RATE = 0.3;
 
 type UsersDoc = {
   clerkUserId?: string;
@@ -14,6 +13,7 @@ type UsersDoc = {
   paymentProvider?: string;
   partnerId?: string;
   partnerReferralCode?: string;
+  partnerCommissionPercent?: number;
   publicMetadata?: Record<string, unknown>;
 };
 
@@ -59,6 +59,26 @@ export async function recordPartnerCommissionFromMongoUser(
       return;
     }
 
+    let commissionPctFromUser =
+      typeof user.partnerCommissionPercent === "number" &&
+      Number.isFinite(user.partnerCommissionPercent)
+        ? user.partnerCommissionPercent
+        : typeof pm.partnerCommissionPercent === "number" &&
+            Number.isFinite(pm.partnerCommissionPercent as number)
+          ? (pm.partnerCommissionPercent as number)
+          : typeof partner.commissionPercent === "number"
+            ? partner.commissionPercent
+            : NaN;
+    if (!Number.isFinite(commissionPctFromUser)) {
+      const settingsRepo = new PartnerProgramSettingsRepository(mongoClient);
+      commissionPctFromUser = (await settingsRepo.getDefaults())
+        .partnerCommissionPercent;
+    }
+    const commissionRate = Math.min(
+      1,
+      Math.max(0, commissionPctFromUser / 100)
+    );
+
     const idempotencyKey = `subscriber:${clerkUserId}:first_purchase`;
     const currency = (
       typeof user.purchaseCurrency === "string"
@@ -81,8 +101,8 @@ export async function recordPartnerCommissionFromMongoUser(
       paymentProvider,
       idempotencyKey,
       grossAmount: gross,
-      commissionRate: COMMISSION_RATE,
-      commissionAmount: Math.round(gross * COMMISSION_RATE * 100) / 100,
+      commissionRate,
+      commissionAmount: Math.round(gross * commissionRate * 100) / 100,
       currency,
       status: "pending",
     });

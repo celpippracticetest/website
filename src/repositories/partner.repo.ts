@@ -109,7 +109,45 @@ export class PartnerRepository {
       { $set: { status, updatedAt: new Date() } },
       { returnDocument: "after" }
     );
-    return r ? partnerToDto(r) : null;
+    return r ? partnerToDto(r as TPartnerSchema) : null;
+  }
+
+  async updateRatesById(
+    id: string,
+    rates: {
+      referredDiscountPercent?: number | null;
+      commissionPercent?: number | null;
+    }
+  ): Promise<TPartnerDto | null> {
+    if (!ObjectId.isValid(id)) return null;
+    const $set: Record<string, unknown> = { updatedAt: new Date() };
+    const $unset: Record<string, ""> = {};
+    if (rates.referredDiscountPercent !== undefined) {
+      if (rates.referredDiscountPercent === null) {
+        $unset.referredDiscountPercent = "";
+      } else {
+        $set.referredDiscountPercent = rates.referredDiscountPercent;
+      }
+    }
+    if (rates.commissionPercent !== undefined) {
+      if (rates.commissionPercent === null) {
+        $unset.commissionPercent = "";
+      } else {
+        $set.commissionPercent = rates.commissionPercent;
+      }
+    }
+    const update: { $set: Record<string, unknown>; $unset?: Record<string, ""> } = {
+      $set,
+    };
+    if (Object.keys($unset).length) {
+      update.$unset = $unset;
+    }
+    const r = await this.col().findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      update,
+      { returnDocument: "after" }
+    );
+    return r ? partnerToDto(r as TPartnerSchema) : null;
   }
 
   async listAll(): Promise<TPartnerDto[]> {

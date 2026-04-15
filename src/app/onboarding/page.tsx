@@ -19,28 +19,28 @@ export default function OnboardingPage() {
         }),
       });
 
-      if (processResponse.ok) {
-        const discountResponse = await fetch("/api/referrals/apply-discount", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            referralCode,
-            userId: user?.id,
-            userEmail: user?.primaryEmailAddress?.emailAddress,
-          }),
-        });
+      if (!processResponse.ok) {
+        const errorData = await processResponse.json().catch(() => ({}));
+        console.warn(
+          "Onboarding - referral process-signup did not complete:",
+          errorData
+        );
+      }
 
-        if (!discountResponse.ok) {
-          const errorData = await discountResponse.json();
-          console.error(
-            "❌ Onboarding - Failed to apply referral discount:",
-            errorData
-          );
-        }
-      } else {
-        const errorData = await processResponse.json();
+      const discountResponse = await fetch("/api/referrals/apply-discount", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          referralCode,
+          userId: user?.id,
+          userEmail: user?.primaryEmailAddress?.emailAddress,
+        }),
+      });
+
+      if (!discountResponse.ok) {
+        const errorData = await discountResponse.json().catch(() => ({}));
         console.error(
-          "❌ Onboarding - Failed to establish referral relationship:",
+          "❌ Onboarding - Failed to apply referral discount:",
           errorData
         );
       }

@@ -42,6 +42,7 @@ import {
 } from '@/lib/pricing';
 import type { DurationGroupKey, SerializedPlan } from '@/types/pricing';
 import { useUser } from '@clerk/nextjs';
+import { getStripeCheckoutAutoDiscountLabel } from '@/lib/stripeCheckoutDiscountLabel';
 
 type FunnelStep = 'input' | 'email' | 'result';
 
@@ -81,7 +82,14 @@ const siteTheme = {
 };
 
 const Page = () => {
-  const { isSignedIn, isLoaded } = useUser();
+  const { isSignedIn, isLoaded, user } = useUser();
+  const stripeCheckoutDiscountLabel = useMemo(
+    () =>
+      isSignedIn
+        ? getStripeCheckoutAutoDiscountLabel({ userPublicMetadata: user?.publicMetadata })
+        : null,
+    [isSignedIn, user?.publicMetadata],
+  );
   /** Avoid SSR vs client mismatch on Clerk + checkout action URLs */
   const [hasMounted, setHasMounted] = useState(false);
   const [currentCLB, setCurrentCLB] = useState(7);
@@ -404,24 +412,44 @@ const Page = () => {
                               </Stack>
                             ))}
                           </Stack>
-                          <Button
-                            type="submit"
-                            fullWidth
-                            disabled={!checkoutAction}
-                            variant={popular ? 'contained' : 'outlined'}
-                            sx={
-                              popular
-                                ? {
-                                    borderRadius: 2.5,
-                                    py: 1.2,
-                                    bgcolor: siteTheme.primary,
-                                    '&:hover': { bgcolor: siteTheme.primaryDark },
-                                  }
-                                : { borderRadius: 2.5, py: 1.2, borderColor: '#CBD5E1', color: '#1E293B' }
-                            }
-                          >
-                            {getPlanButtonLabel(plan)}
-                          </Button>
+                          <Box sx={{ position: 'relative', width: 1 }}>
+                            {stripeCheckoutDiscountLabel ? (
+                              <Chip
+                                label={stripeCheckoutDiscountLabel}
+                                size="small"
+                                sx={{
+                                  position: 'absolute',
+                                  top: -10,
+                                  right: 8,
+                                  zIndex: 1,
+                                  height: 22,
+                                  fontWeight: 800,
+                                  fontSize: '0.65rem',
+                                  bgcolor: '#10B981',
+                                  color: 'white',
+                                  '& .MuiChip-label': { px: 1 },
+                                }}
+                              />
+                            ) : null}
+                            <Button
+                              type="submit"
+                              fullWidth
+                              disabled={!checkoutAction}
+                              variant={popular ? 'contained' : 'outlined'}
+                              sx={
+                                popular
+                                  ? {
+                                      borderRadius: 2.5,
+                                      py: 1.2,
+                                      bgcolor: siteTheme.primary,
+                                      '&:hover': { bgcolor: siteTheme.primaryDark },
+                                    }
+                                  : { borderRadius: 2.5, py: 1.2, borderColor: '#CBD5E1', color: '#1E293B' }
+                              }
+                            >
+                              {getPlanButtonLabel(plan)}
+                            </Button>
+                          </Box>
                         </form>
                       </CardContent>
                     </Card>

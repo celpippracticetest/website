@@ -17,6 +17,23 @@ export async function syncPartnerFieldsToMongoUser(
       ? pm.partnerAttributedAt
       : undefined;
 
+  const pickStr = (k: string) =>
+    typeof pm[k] === "string" ? (pm[k] as string) : undefined;
+  const pickNum = (k: string) =>
+    typeof pm[k] === "number" && Number.isFinite(pm[k] as number)
+      ? (pm[k] as number)
+      : undefined;
+  const pickBool = (k: string) =>
+    typeof pm[k] === "boolean" ? (pm[k] as boolean) : undefined;
+
+  const partnerReferralPromotionId = pickStr("partnerReferralPromotionId");
+  const partnerStripeDiscountCode = pickStr("partnerStripeDiscountCode");
+  const partnerRefereeDiscountPercent = pickNum("partnerRefereeDiscountPercent");
+  const partnerCommissionPercent = pickNum("partnerCommissionPercent");
+  const partnerReferralDiscountActive = pickBool("partnerReferralDiscountActive");
+  const partnerReferralDiscountUsed = pickBool("partnerReferralDiscountUsed");
+  const partnerReferralDiscountExpiry = pickStr("partnerReferralDiscountExpiry");
+
   const $set: Record<string, unknown> = {
     publicMetadata: pm,
     updatedAt: new Date(),
@@ -27,6 +44,27 @@ export async function syncPartnerFieldsToMongoUser(
   }
   if (partnerAttributedAt !== undefined) {
     $set.partnerAttributedAt = partnerAttributedAt;
+  }
+  if (partnerReferralPromotionId !== undefined) {
+    $set.partnerReferralPromotionId = partnerReferralPromotionId;
+  }
+  if (partnerStripeDiscountCode !== undefined) {
+    $set.partnerStripeDiscountCode = partnerStripeDiscountCode;
+  }
+  if (partnerRefereeDiscountPercent !== undefined) {
+    $set.partnerRefereeDiscountPercent = partnerRefereeDiscountPercent;
+  }
+  if (partnerCommissionPercent !== undefined) {
+    $set.partnerCommissionPercent = partnerCommissionPercent;
+  }
+  if (partnerReferralDiscountActive !== undefined) {
+    $set.partnerReferralDiscountActive = partnerReferralDiscountActive;
+  }
+  if (partnerReferralDiscountUsed !== undefined) {
+    $set.partnerReferralDiscountUsed = partnerReferralDiscountUsed;
+  }
+  if (partnerReferralDiscountExpiry !== undefined) {
+    $set.partnerReferralDiscountExpiry = partnerReferralDiscountExpiry;
   }
 
   await db.collection("users").updateOne(

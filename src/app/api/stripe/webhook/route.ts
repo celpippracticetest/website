@@ -93,6 +93,34 @@ async function updateUserPublicMetadata(
       if (typeof updatedMetadata.partnerAttributedAt === "string") {
         updateDoc.partnerAttributedAt = updatedMetadata.partnerAttributedAt;
       }
+      if (typeof updatedMetadata.partnerReferralPromotionId === "string") {
+        updateDoc.partnerReferralPromotionId =
+          updatedMetadata.partnerReferralPromotionId;
+      }
+      if (typeof updatedMetadata.partnerStripeDiscountCode === "string") {
+        updateDoc.partnerStripeDiscountCode =
+          updatedMetadata.partnerStripeDiscountCode;
+      }
+      if (typeof updatedMetadata.partnerRefereeDiscountPercent === "number") {
+        updateDoc.partnerRefereeDiscountPercent =
+          updatedMetadata.partnerRefereeDiscountPercent;
+      }
+      if (typeof updatedMetadata.partnerCommissionPercent === "number") {
+        updateDoc.partnerCommissionPercent =
+          updatedMetadata.partnerCommissionPercent;
+      }
+      if (typeof updatedMetadata.partnerReferralDiscountActive === "boolean") {
+        updateDoc.partnerReferralDiscountActive =
+          updatedMetadata.partnerReferralDiscountActive;
+      }
+      if (typeof updatedMetadata.partnerReferralDiscountUsed === "boolean") {
+        updateDoc.partnerReferralDiscountUsed =
+          updatedMetadata.partnerReferralDiscountUsed;
+      }
+      if (typeof updatedMetadata.partnerReferralDiscountExpiry === "string") {
+        updateDoc.partnerReferralDiscountExpiry =
+          updatedMetadata.partnerReferralDiscountExpiry;
+      }
       if (newFields.hasEverPurchased !== undefined) {
         updateDoc.hasEverPurchased = newFields.hasEverPurchased;
       }
@@ -450,13 +478,19 @@ export async function POST(req: Request) {
         const isMockExamPurchase = metadata.purchase_type === "mock_exam";
         const purchasedMockExamId = metadata.mock_exam_id;
 
-        // Check if user has any discount fields that need to be cleared
+        // Check if user has any discount fields that need to be cleared (subscription path)
         const hasDiscountFields =
           userMetadata?.referralCode ||
           userMetadata?.referralPromotionId ||
           userMetadata?.promotionCodeId ||
           userMetadata?.couponId ||
-          userMetadata?.couponCode;
+          userMetadata?.couponCode ||
+          userMetadata?.partnerReferralPromotionId;
+
+        const partnerPromoToDeactivate =
+          typeof userMetadata?.partnerReferralPromotionId === "string"
+            ? userMetadata.partnerReferralPromotionId
+            : null;
 
         if (isMockExamPurchase && purchasedMockExamId) {
           await updateUserPublicMetadata(metadata.user_id, {
@@ -485,6 +519,10 @@ export async function POST(req: Request) {
             promotionCodeId: null,
             couponId: null,
             couponCode: null,
+            partnerReferralPromotionId: null,
+            partnerStripeDiscountCode: null,
+            partnerReferralDiscountActive: false,
+            partnerReferralDiscountUsed: true,
             // Mark that user has made a purchase (no more discounts)
             hasEverPurchased: true,
             purchaseDate: new Date().toISOString(),
@@ -494,6 +532,19 @@ export async function POST(req: Request) {
             purchaseCurrency: (session.currency || "cad").toUpperCase(),
             totalSpend: ((userMetadata.totalSpend as number) || 0) + ((session.amount_total || 0) / 100)
           });
+          if (partnerPromoToDeactivate) {
+            try {
+              await stripe.promotionCodes.update(partnerPromoToDeactivate, {
+                active: false,
+              });
+            } catch (promoErr) {
+              console.error(
+                "Error deactivating partner referee promotion:",
+                partnerPromoToDeactivate,
+                promoErr
+              );
+            }
+          }
           logger.info(
             "Cleared all discount fields for user after purchase",
             {

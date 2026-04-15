@@ -45,8 +45,8 @@ export default function SignUpPageClient() {
     if (utmTerm) localStorage.setItem("pending_utm_term", utmTerm);
 
     if (ref) {
-      setReferralCode(ref);
-      localStorage.setItem("pendingReferralCode", ref);
+      setReferralCode(ref.trim());
+      localStorage.setItem("pendingReferralCode", ref.trim());
     }
 
     if (inviter) {
@@ -129,27 +129,29 @@ export default function SignUpPageClient() {
         }),
       });
 
-      if (processResponse.ok) {
-        const discountResponse = await fetch("/api/referrals/apply-discount", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            referralCode,
-            userId: user?.id,
-            userEmail: user?.primaryEmailAddress?.emailAddress,
-          }),
-        });
-
-        if (!discountResponse.ok) {
-          const errorData = await discountResponse.json();
-          console.error("❌ Failed to apply referral discount:", errorData);
-        }
-      } else {
-        const errorData = await processResponse.json();
-        console.error(
-          "❌ Failed to establish referral relationship:",
+      if (!processResponse.ok) {
+        const errorData = await processResponse.json().catch(() => ({}));
+        console.warn(
+          "Referral process-signup did not complete (discount may still apply):",
           errorData
         );
+      }
+
+      // Always attempt apply-discount: process-signup can fail (e.g. invitation edge cases)
+      // while the invitee should still receive the Stripe promotion for checkout.
+      const discountResponse = await fetch("/api/referrals/apply-discount", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          referralCode,
+          userId: user?.id,
+          userEmail: user?.primaryEmailAddress?.emailAddress,
+        }),
+      });
+
+      if (!discountResponse.ok) {
+        const errorData = await discountResponse.json().catch(() => ({}));
+        console.error("❌ Failed to apply referral discount:", errorData);
       }
     } catch (error) {
       console.error("❌ Failed to process referral:", error);
@@ -235,9 +237,16 @@ export default function SignUpPageClient() {
                 Referred by: {inviterName}
               </div>
             ) : null}
-            <div className="mt-2 text-xs text-blue-600">
-              You&apos;ll automatically get 20% off your first purchase!
-            </div>
+            {/^REF-[A-Z0-9]{6}$/i.test(referralCode.trim()) ? (
+              <div className="mt-2 text-xs text-blue-600">
+                You&apos;ll automatically get 20% off your first purchase!
+              </div>
+            ) : (
+              <div className="mt-2 text-xs text-blue-600">
+                Partner link: after you sign up, a one-time discount will be saved on
+                your account for your first subscription checkout (see program terms).
+              </div>
+            )}
           </div>
         ) : null}
 

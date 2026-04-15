@@ -37,7 +37,7 @@ export async function POST() {
       code,
       clerkUserId: userId,
       payoutEmail: email,
-      status: "pending",
+      status: "active",
     });
 
     return NextResponse.json({ ok: true, partner });

@@ -21,6 +21,8 @@ import {
   type FinalOfferChallengeTierKey,
 } from "@/lib/finalOfferChallenge";
 import { PayPalSubscribeButton } from "@/components/paypal/PayPalSubscribeButton";
+import { StripeCheckoutDiscountBadge } from "@/components/checkout/StripeCheckoutDiscountBadge";
+import { getStripeCheckoutAutoDiscountLabel } from "@/lib/stripeCheckoutDiscountLabel";
 
 type OfferPlan = SubscriptionPlanFromStripe & {
   durationKey: "weekly" | "monthly" | "threeMonth" | "yearly" | null;
@@ -243,6 +245,15 @@ export default function FinalOfferPage() {
     if (!recommendedPlan) return null;
     return toDiscountedAmount(recommendedPlan.amount, 20);
   }, [recommendedPlan]);
+
+  const finalOfferStripeDiscountLabel = useMemo(
+    () =>
+      getStripeCheckoutAutoDiscountLabel({
+        userPublicMetadata: user?.publicMetadata,
+        finalOfferFirstPeriod: true,
+      }),
+    [user?.publicMetadata]
+  );
 
   const challengeTier = useMemo(() => {
     const score = targetScoreForChallenge;
@@ -591,8 +602,9 @@ export default function FinalOfferPage() {
                 onClick={submitFinalOfferStripe}
                 disabled={paypalLoading}
                 aria-label="Subscribe with Stripe"
-                className="flex min-h-[48px] w-full flex-1 items-center justify-center gap-2.5 rounded-md bg-[#635BFF] px-4 py-3 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-[#5851DF] focus-visible:ring-2 focus-visible:ring-[#635BFF] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[44px]"
+                className="relative flex min-h-[48px] w-full flex-1 items-center justify-center gap-2.5 rounded-md bg-[#635BFF] px-4 py-3 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-[#5851DF] focus-visible:ring-2 focus-visible:ring-[#635BFF] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[44px]"
               >
+                <StripeCheckoutDiscountBadge label={finalOfferStripeDiscountLabel} />
                 <span>Subscribe with</span>
                 <Image
                   src={STRIPE_WORDMARK_WHITE_SRC}

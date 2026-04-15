@@ -15,10 +15,12 @@ import {
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { StripeCheckoutDiscountBadge } from "@/components/checkout/StripeCheckoutDiscountBadge";
+import { getStripeCheckoutAutoDiscountLabel } from "@/lib/stripeCheckoutDiscountLabel";
 
 function FailedPageContent() {
-  const { isLoaded, isSignedIn } = useUser();
+  const { isLoaded, isSignedIn, user } = useUser();
   const [hasMounted, setHasMounted] = useState(false);
   const noUser = isLoaded ? !isSignedIn : false;
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -61,6 +63,14 @@ function FailedPageContent() {
     canStripeRetry && checkoutSessionBase
       ? `${checkoutSessionBase}?${checkoutQuery}`
       : null;
+
+  const stripeCheckoutDiscountLabel = useMemo(
+    () =>
+      isSignedIn && checkoutAction
+        ? getStripeCheckoutAutoDiscountLabel({ userPublicMetadata: user?.publicMetadata })
+        : null,
+    [checkoutAction, isSignedIn, user?.publicMetadata]
+  );
 
   const primaryCtaClassName =
     "inline-flex flex-1 min-h-[44px] items-center justify-center gap-1 rounded-full bg-[#4A7DFF] px-5 text-[15px] font-medium text-white shadow-sm hover:bg-[#3d6ce8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4A7DFF] transition-colors disabled:opacity-60 disabled:pointer-events-none";
@@ -155,7 +165,8 @@ function FailedPageContent() {
                     <CheckoutAttributionFields />
                   </Suspense>
                 </div>
-                <button type="submit" className={primaryCtaClassName}>
+                <button type="submit" className={`${primaryCtaClassName} relative`}>
+                  <StripeCheckoutDiscountBadge label={stripeCheckoutDiscountLabel} />
                   {checkoutCanceled ? "Continue to plans" : "Try again"}
                   <ChevronRightRounded className="text-[20px]" aria-hidden />
                 </button>

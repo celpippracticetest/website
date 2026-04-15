@@ -1,5 +1,6 @@
 "use client";
 import type { ReactNode } from "react";
+import { useMemo } from "react";
 import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
 import { useEcommerceTracking } from "@/hooks/useTracking";
 import {
@@ -9,6 +10,8 @@ import {
 } from "@/lib/pricing";
 import type { PlanBillingInterval } from "@/types/pricing";
 import { useUser } from "@clerk/nextjs";
+import { StripeCheckoutDiscountBadge } from "@/components/checkout/StripeCheckoutDiscountBadge";
+import { getStripeCheckoutAutoDiscountLabel } from "@/lib/stripeCheckoutDiscountLabel";
 
 interface IPlanCard {
   title: string;
@@ -73,6 +76,13 @@ const PlanCard = ({
 }: IPlanCard) => {
   const { selectItem, beginCheckout } = useEcommerceTracking();
   const { user, isSignedIn, isLoaded } = useUser();
+  const stripeCheckoutDiscountLabel = useMemo(
+    () =>
+      isSignedIn && type !== "Free"
+        ? getStripeCheckoutAutoDiscountLabel({ userPublicMetadata: user?.publicMetadata })
+        : null,
+    [isSignedIn, type, user?.publicMetadata]
+  );
   const hasDiscountValue = Number.parseFloat(discount) > 0;
   const shouldShowSavingsBadge = Boolean(savingsText) || hasDiscountValue;
   const visibleFeatures =
@@ -266,6 +276,7 @@ const PlanCard = ({
                       : "bg-primary2 hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]"
                 } ${!checkoutAction ? "cursor-not-allowed opacity-60 hover:opacity-60" : ""}`}
               >
+                <StripeCheckoutDiscountBadge label={stripeCheckoutDiscountLabel} />
                 <span className="flex items-center justify-center text-[13px] font-normal leading-[16px] text-white">
                   {buttonTitle}
                 </span>
@@ -342,6 +353,7 @@ const PlanCard = ({
                     : "bg-primary2 hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]"
               } ${!checkoutAction ? "cursor-not-allowed opacity-60 hover:opacity-60" : ""}`}
             >
+              <StripeCheckoutDiscountBadge label={stripeCheckoutDiscountLabel} />
               <span className="flex items-center justify-center text-[14px] font-normal leading-[16px] text-white">
                 {buttonTitle}
               </span>

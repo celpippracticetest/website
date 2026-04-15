@@ -9,6 +9,10 @@ const PartnerBaseSchema = z.object({
   clerkUserId: z.string(),
   payoutEmail: z.string().email(),
   status: PartnerStatusSchema,
+  /** Percent 0–100 for referee’s first subscription discount; omit/null = program default */
+  referredDiscountPercent: z.number().min(0).max(100).optional().nullable(),
+  /** Percent 0–100 partner earns on referred subscriber’s first payment; omit/null = program default */
+  commissionPercent: z.number().min(0).max(100).optional().nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
@@ -21,6 +25,8 @@ const PartnerDtoSchema = z.object({
   clerkUserId: z.string(),
   payoutEmail: z.string(),
   status: PartnerStatusSchema,
+  referredDiscountPercent: z.number().nullable().optional(),
+  commissionPercent: z.number().nullable().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
@@ -34,6 +40,12 @@ export function partnerToDto(doc: TPartnerSchema): TPartnerDto {
     clerkUserId: doc.clerkUserId,
     payoutEmail: doc.payoutEmail,
     status: doc.status,
+    referredDiscountPercent:
+      typeof doc.referredDiscountPercent === "number"
+        ? doc.referredDiscountPercent
+        : null,
+    commissionPercent:
+      typeof doc.commissionPercent === "number" ? doc.commissionPercent : null,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };

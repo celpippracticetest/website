@@ -88,10 +88,11 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Check if user has referral discount (prioritize referral over NEW discount)
+    // Check if user has referral discount (prioritize referral over partner / campaign)
     const userMetadata = user.publicMetadata as any;
     let promotionCode: string | null = null;
     let referralDiscountApplied = false;
+    let partnerDiscountApplied = false;
 
     // First check for referral discount (referralPromotionId)
     const referralPromotionId = userMetadata?.referralPromotionId;
@@ -203,6 +204,59 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
         }
       } catch (error) {
         console.error("❌ Error applying referral discount:", error);
+      }
+    }
+
+    // Partner referee discount (Stripe promotion created at attribution)
+    if (
+      !promotionCode &&
+      userMetadata?.partnerReferralPromotionId &&
+      typeof userMetadata.partnerReferralPromotionId === "string" &&
+      userMetadata?.partnerReferralDiscountUsed !== true &&
+      userMetadata?.partnerReferralDiscountActive !== false &&
+      userMetadata?.partnerId
+    ) {
+      let partnerExpired = false;
+      if (userMetadata?.partnerReferralDiscountExpiry) {
+        const exp = new Date(userMetadata.partnerReferralDiscountExpiry);
+        if (!Number.isNaN(exp.getTime()) && exp <= new Date()) {
+          partnerExpired = true;
+        }
+      }
+      if (!partnerExpired) {
+        try {
+          const promoDetails = await stripe.promotionCodes.retrieve(
+            userMetadata.partnerReferralPromotionId
+          );
+          const couponDetails =
+            typeof promoDetails.coupon === "string"
+              ? await stripe.coupons.retrieve(promoDetails.coupon)
+              : promoDetails.coupon;
+          if (
+            couponDetails.redeem_by &&
+            couponDetails.redeem_by < Math.floor(Date.now() / 1000)
+          ) {
+            partnerExpired = true;
+          }
+          if (!promoDetails.active) {
+            partnerExpired = true;
+          }
+        } catch {
+          partnerExpired = true;
+        }
+      }
+      if (!partnerExpired) {
+        promotionCode = userMetadata.partnerReferralPromotionId;
+        partnerDiscountApplied = true;
+        logger.info("Applying partner referee promotion", {
+          component: "checkout_session_api",
+          action: "apply_partner_referee_discount",
+          userId: user.id,
+          metadata: {
+            partnerId: userMetadata.partnerId,
+            partnerCode: userMetadata.partnerReferralCode,
+          },
+        });
       }
     }
 
@@ -363,6 +417,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       /* Refund challenge is manual after score proof by email — full list price at checkout. */
       promotionCode = null;
       referralDiscountApplied = false;
+      partnerDiscountApplied = false;
       campaignPromoKey = null;
 
       await db.collection("users").updateOne(
@@ -516,6 +571,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
         priceId,
         hasPromotionCode: !!promotionCode,
         referralDiscountApplied,
+        partnerDiscountApplied,
         campaignPromoKey,
         isOnboardingFinalOffer,
       },
@@ -571,6 +627,13 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
           referral_discount_applied:
             userMetadata?.referralDiscount || "referral",
         }),
+        ...(partnerDiscountApplied && {
+          partner_ref_discount_applied: "partner_referee",
+          partner_referral_code:
+            typeof userMetadata?.partnerReferralCode === "string"
+              ? userMetadata.partnerReferralCode
+              : "",
+        }),
         ...(campaignPromoKey && { campaign_promo: campaignPromoKey }),
       },
       ...(mode === "subscription" && {
@@ -596,6 +659,13 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
             ...(referralDiscountApplied && {
               referral_discount_applied:
                 userMetadata?.referralDiscount || "referral",
+            }),
+            ...(partnerDiscountApplied && {
+              partner_ref_discount_applied: "partner_referee",
+              partner_referral_code:
+                typeof userMetadata?.partnerReferralCode === "string"
+                  ? userMetadata.partnerReferralCode
+                  : "",
             }),
             ...(campaignPromoKey && { campaign_promo: campaignPromoKey }),
           },

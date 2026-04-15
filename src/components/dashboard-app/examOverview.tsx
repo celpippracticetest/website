@@ -14,7 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useRouter } from "nextjs-toploader/app";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import LoginModal from "../modal/LoginModal";
 import {
   hasMockExamAccess,
@@ -22,6 +22,8 @@ import {
   hasPremiumPlusAccess,
   normalizePlan,
 } from "@/lib/subscriptionAccess";
+import { StripeCheckoutDiscountBadge } from "@/components/checkout/StripeCheckoutDiscountBadge";
+import { getStripeCheckoutAutoDiscountLabel } from "@/lib/stripeCheckoutDiscountLabel";
 
 const examSections = [
   { label: "Listening", partId: 1, section: "listening" },
@@ -57,6 +59,13 @@ const ExamOverview = ({
     isLoaded &&
     isSignedIn &&
     (!plan || normalizePlan(plan) === "free");
+  const mockStripeCheckoutDiscountLabel = useMemo(
+    () =>
+      signedInFreeUser
+        ? getStripeCheckoutAutoDiscountLabel({ userPublicMetadata: user?.publicMetadata })
+        : null,
+    [signedInFreeUser, user?.publicMetadata]
+  );
   const firstReadyExamId = exams[0]?.id ?? null;
   const mockExamUnlocked = (exam: TExamSchemaDto) =>
     Boolean(
@@ -428,46 +437,52 @@ const ExamOverview = ({
                     )}
                   </Stack>
 
-                  <Button
-                    variant="contained"
-                    disabled={
-                      !isLoaded ||
-                      mockBuySubmittingExamId === exam.id ||
-                      (needsPremiumPlusUpgrade &&
-                        exam.id !== firstReadyExamId &&
-                        upgradeSubmitting)
-                    }
-                    onClick={() => handlePrimaryAction(exam)}
-                    sx={{
-                      minHeight: 48,
-                      borderRadius: "999px",
-                      textTransform: "none",
-                      fontSize: "0.95rem",
-                      fontWeight: 700,
-                      boxShadow: "none",
-                      backgroundColor: "#4A7DFF",
-                      "&:hover": {
-                        backgroundColor: "#3A6DEB",
+                  <Box sx={{ position: "relative", width: 1 }}>
+                    {mockStripeCheckoutDiscountLabel ? (
+                      <StripeCheckoutDiscountBadge label={mockStripeCheckoutDiscountLabel} />
+                    ) : null}
+                    <Button
+                      variant="contained"
+                      disabled={
+                        !isLoaded ||
+                        mockBuySubmittingExamId === exam.id ||
+                        (needsPremiumPlusUpgrade &&
+                          exam.id !== firstReadyExamId &&
+                          upgradeSubmitting)
+                      }
+                      onClick={() => handlePrimaryAction(exam)}
+                      fullWidth
+                      sx={{
+                        minHeight: 48,
+                        borderRadius: "999px",
+                        textTransform: "none",
+                        fontSize: "0.95rem",
+                        fontWeight: 700,
                         boxShadow: "none",
-                      },
-                    }}
-                  >
-                    {signedInFreeUser
-                      ? mockBuySubmittingExamId === exam.id
-                        ? "Redirecting…"
-                        : `Buy for ${mockExamPrice}`
-                      : noUser
+                        backgroundColor: "#4A7DFF",
+                        "&:hover": {
+                          backgroundColor: "#3A6DEB",
+                          boxShadow: "none",
+                        },
+                      }}
+                    >
+                      {signedInFreeUser
                         ? mockBuySubmittingExamId === exam.id
                           ? "Redirecting…"
                           : `Buy for ${mockExamPrice}`
-                      : needsPremiumPlusUpgrade
-                        ? exam.id === firstReadyExamId
-                          ? "Start Full Test"
-                          : upgradeSubmitting
-                            ? "Upgrading…"
-                            : "Upgrade"
-                        : "Start Full Test"}
-                  </Button>
+                        : noUser
+                          ? mockBuySubmittingExamId === exam.id
+                            ? "Redirecting…"
+                            : `Buy for ${mockExamPrice}`
+                          : needsPremiumPlusUpgrade
+                            ? exam.id === firstReadyExamId
+                              ? "Start Full Test"
+                              : upgradeSubmitting
+                                ? "Upgrading…"
+                                : "Upgrade"
+                            : "Start Full Test"}
+                    </Button>
+                  </Box>
                 </Stack>
               </Paper>
             );

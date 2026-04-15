@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
@@ -27,6 +27,8 @@ import StatBadge from "@/components/shared/StatBadge";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
 import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
+import { StripeCheckoutDiscountBadge } from "@/components/checkout/StripeCheckoutDiscountBadge";
+import { getStripeCheckoutAutoDiscountLabel } from "@/lib/stripeCheckoutDiscountLabel";
 import { practicePath } from "@/lib/practiceRoutes";
 
 interface SpeakingPracticeViewProps {
@@ -84,6 +86,15 @@ const SpeakingPracticeView = ({
   const [pointsAwarded, setPointsAwarded] = useState(false);
   const [aiFeedbackPointsAwarded, setAiFeedbackPointsAwarded] = useState(false);
   const { user, isLoaded, isSignedIn } = useUser();
+  const stripeCheckoutDiscountLabel = useMemo(
+    () =>
+      isSignedIn &&
+      quickSubscribeAction.includes("/api/checkout_session") &&
+      !quickSubscribeAction.includes("/guest")
+        ? getStripeCheckoutAutoDiscountLabel({ userPublicMetadata: user?.publicMetadata })
+        : null,
+    [isSignedIn, quickSubscribeAction, user?.publicMetadata]
+  );
   const { addPoints } = useLeaguePoints();
   const {
     isModalOpen,
@@ -639,14 +650,17 @@ const SpeakingPracticeView = ({
                           method={quickSubscribeAction ? "POST" : "GET"}
                         >
                           <CheckoutAttributionFields />
-                          <Button
-                            type="submit"
-                            variant="outline"
-                            className="flex gap-[8px] text-white border-[#F79D65] items-center text-[14px] font-normal justify-center cursor-pointer rounded-[24px] bg-[#F79D65] hover:bg-[#ea8d53]"
-                          >
-                            Subscribe to continue
-                            <SvgArrowRight />
-                          </Button>
+                          <div className="relative">
+                            <StripeCheckoutDiscountBadge label={stripeCheckoutDiscountLabel} />
+                            <Button
+                              type="submit"
+                              variant="outline"
+                              className="flex w-full gap-[8px] text-white border-[#F79D65] items-center text-[14px] font-normal justify-center cursor-pointer rounded-[24px] bg-[#F79D65] hover:bg-[#ea8d53]"
+                            >
+                              Subscribe to continue
+                              <SvgArrowRight />
+                            </Button>
+                          </div>
                         </form>
                       </div>
                     )}
