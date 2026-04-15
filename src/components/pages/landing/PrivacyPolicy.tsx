@@ -78,6 +78,7 @@ const PrivacyPolicy = () => {
         "Provide & Improve Services: Authenticate you, deliver practice tests, track progress, and enhance features.",
         "Customer Support: Respond to your inquiries and support requests.",
         "Analytics:Analyze usage data (e.g., time spent on pages, IP address, browser type, device type) to improve the Site.",
+        "Access Enforcement: Use account and device usage data to enforce subscription access limits, including the 2-device limit per Subscriber plan.",
         "Legal Compliance: Fulfill legal obligations.",
       ],
     },
@@ -147,7 +148,7 @@ const PrivacyPolicy = () => {
     <div className="flex flex-col max-w-[1156px] mx-auto justify-center mt-[120px] px-[16px] mb-[116px]">
         <h1 className="text-primary1 font-bold text-[28px]">Privacy Policy</h1>
         <span className="mt-[16px] font-normal text-[16px] text-text3">
-          Last Updated: Apr 17, 2025
+          Last Updated: Apr 15, 2026
         </span>
         {data?.map((element, index) => (
           <div key={index} className="mt-[40px]">

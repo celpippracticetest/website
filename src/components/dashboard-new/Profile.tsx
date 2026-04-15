@@ -106,7 +106,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
 
   const getSessions = useGetUserSessions();
 
-  const { mutate } = useDeleteUserSessions();
+  const { mutate, isPending: isDeletingSession } = useDeleteUserSessions();
   const { mutate: handleDeleteUserAccount, isPending: isDeletingAccount } =
     useDeleteUserAccount();
 
@@ -518,6 +518,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
   }, [showToast]);
 
   const [sessions, setSessions] = useState<any[]>([]);
+  const [confirmSessionId, setConfirmSessionId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error">("success");
   const [vocabHoverSaving, setVocabHoverSaving] = useState(false);
@@ -1103,6 +1104,9 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
               <span className="text-[#212E42] text-[16px] font-medium">
                 Active Sessions
               </span>
+              <span className="text-[13px] font-normal text-[#76808F]">
+                Removing a session blocks that device from signing in again for 48 hours.
+              </span>
             </div>
           </div>
           {sessions?.map((session, index) => (
@@ -1129,22 +1133,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
                 <span>IP {session?.latestActivity?.ipAddress || "Unknown"}</span>
                 <button
                   className="cursor-pointer"
-                  onClick={() =>
-                    mutate(session.id, {
-                      onSuccess: () => {
-                        setToastType("success");
-                        setToastMessage("Session deleted successfully");
-                        setShowToast(true);
-                        setTimeout(() => setShowToast(false), 3000);
-                      },
-                      onError: () => {
-                        setToastType("error");
-                        setToastMessage("Failed to delete session");
-                        setShowToast(true);
-                        setTimeout(() => setShowToast(false), 3000);
-                      },
-                    })
-                  }
+                  onClick={() => setConfirmSessionId(session.id)}
                 >
                   <SvgTrash />
                 </button>
@@ -1230,6 +1219,61 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
                 className="w-full cursor-pointer max-w-[186px]  rounded-[24px] h-[40px] bg-[#4A7DFF] text-white"
               >
                 Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {confirmSessionId && (
+        <div
+          className="fixed inset-0 bg-[#17161680] flex justify-center items-center z-50"
+          onClick={(e) => e.target === e.currentTarget && setConfirmSessionId(null)}
+        >
+          <div className="bg-white flex items-center flex-col rounded-[24px] w-full max-w-[429px] min-h-[214px] pt-[24px] pb-[16px] px-[24px] text-center">
+            <SvgTrash />
+            <div className="text-[#EF7300] text-center text-[18px] font-medium pt-[16px]">
+              Remove Active Session
+            </div>
+            <div className="text-[#979EA8] text-[14px] font-normal pt-[16px]">
+              Are you sure you want to remove this session? This device will not
+              be able to sign in again for 48 hours.
+            </div>
+            <div className="flex w-full gap-[8px] justify-around mt-[16px]">
+              <button
+                onClick={() => setConfirmSessionId(null)}
+                disabled={isDeletingSession}
+                className="w-full cursor-pointer max-w-[186px] text-[#76808F] h-[40px] rounded-[24px] border border-[#76808F] disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() =>
+                  mutate(confirmSessionId, {
+                    onSuccess: (data: any) => {
+                      setConfirmSessionId(null);
+                      setToastType("success");
+                      setToastMessage(
+                        data?.restrictionApplied === false
+                          ? "Session removed successfully."
+                          : "Session removed. This device cannot sign in again for 48 hours."
+                      );
+                      setShowToast(true);
+                      setTimeout(() => setShowToast(false), 3000);
+                    },
+                    onError: (error: any) => {
+                      setToastType("error");
+                      setToastMessage(
+                        error?.message || "Failed to delete session"
+                      );
+                      setShowToast(true);
+                      setTimeout(() => setShowToast(false), 3000);
+                    },
+                  })
+                }
+                disabled={isDeletingSession}
+                className="w-full cursor-pointer max-w-[186px] rounded-[24px] h-[40px] bg-[#4A7DFF] text-white disabled:opacity-60"
+              >
+                {isDeletingSession ? "Removing..." : "Remove"}
               </button>
             </div>
           </div>

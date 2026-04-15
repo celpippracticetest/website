@@ -13,6 +13,7 @@ export interface AuthenticatedRequestContext {
   userId: string;
   user: Awaited<ReturnType<typeof currentUser>>;
   source: "web" | "mobile";
+  sessionId?: string | null;
   tokenPayload?: Record<string, unknown>;
   sessionClaims?: unknown;
 }
@@ -71,6 +72,10 @@ async function resolveMobileUserFromBearerToken(
     userId,
     user,
     source: "mobile",
+    sessionId:
+      typeof (verifiedToken as Record<string, unknown>)?.sid === "string"
+        ? ((verifiedToken as Record<string, unknown>).sid as string)
+        : null,
     tokenPayload: verifiedToken as Record<string, unknown>,
   };
 }
@@ -89,6 +94,7 @@ export async function getAuthenticatedRequestContext(
       userId: authResult.userId,
       user,
       source: "web",
+      sessionId: authResult.sessionId,
       sessionClaims: authResult.sessionClaims,
     };
   }

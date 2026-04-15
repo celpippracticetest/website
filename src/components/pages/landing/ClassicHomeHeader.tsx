@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useUser } from "@clerk/nextjs";
 
 const navLinks = [
   { label: "Plans", href: "/pricing" },
@@ -16,6 +17,7 @@ const navLinks = [
 export default function ClassicHomeHeader() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { isLoaded, isSignedIn } = useUser();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 12);
@@ -71,16 +73,28 @@ export default function ClassicHomeHeader() {
           </nav>
 
           <div className="hidden lg:flex items-center gap-3">
-            <Link
-              href="/sign-in"
-              className="text-sm font-medium text-text1 hover:text-primary1 px-3 py-2 rounded-full border border-primary5/40 hover:border-primary1/50 transition-colors">
-              Log in
-            </Link>
-            <Link
-              href="/sign-up"
-              className="text-sm font-semibold text-white bg-primary1 hover:bg-primary1/90 px-5 py-2.5 rounded-full shadow-sm transition-colors">
-              Sign up
-            </Link>
+            {isLoaded ? (
+              isSignedIn ? (
+                <Link
+                  href="/practice-overview"
+                  className="text-sm font-semibold text-white bg-primary1 hover:bg-primary1/90 px-5 py-2.5 rounded-full shadow-sm transition-colors">
+                  Dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href="/sign-in"
+                    className="text-sm font-medium text-text1 hover:text-primary1 px-3 py-2 rounded-full border border-primary5/40 hover:border-primary1/50 transition-colors">
+                    Log in
+                  </Link>
+                  <Link
+                    href="/sign-up"
+                    className="text-sm font-semibold text-white bg-primary1 hover:bg-primary1/90 px-5 py-2.5 rounded-full shadow-sm transition-colors">
+                    Sign up
+                  </Link>
+                </>
+              )
+            ) : null}
           </div>
 
           <button
@@ -112,18 +126,31 @@ export default function ClassicHomeHeader() {
                 </Link>
               ))}
               <div className="pt-3 border-t border-gray-100 space-y-2">
-                <Link
-                  href="/sign-in"
-                  className="block w-full text-center py-3 rounded-xl border border-primary5/40 text-text1 font-medium"
-                  onClick={() => setIsOpen(false)}>
-                  Log in
-                </Link>
-                <Link
-                  href="/sign-up"
-                  className="block w-full text-center py-3 rounded-xl bg-primary1 text-white font-semibold"
-                  onClick={() => setIsOpen(false)}>
-                  Sign up
-                </Link>
+                {isLoaded ? (
+                  isSignedIn ? (
+                    <Link
+                      href="/practice-overview"
+                      className="block w-full text-center py-3 rounded-xl bg-primary1 text-white font-semibold"
+                      onClick={() => setIsOpen(false)}>
+                      Dashboard
+                    </Link>
+                  ) : (
+                    <>
+                      <Link
+                        href="/sign-in"
+                        className="block w-full text-center py-3 rounded-xl border border-primary5/40 text-text1 font-medium"
+                        onClick={() => setIsOpen(false)}>
+                        Log in
+                      </Link>
+                      <Link
+                        href="/sign-up"
+                        className="block w-full text-center py-3 rounded-xl bg-primary1 text-white font-semibold"
+                        onClick={() => setIsOpen(false)}>
+                        Sign up
+                      </Link>
+                    </>
+                  )
+                ) : null}
               </div>
             </div>
           </motion.div>

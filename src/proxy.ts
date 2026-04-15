@@ -123,13 +123,36 @@ export default clerkMiddleware(async (auth, req) => {
           NextResponse.json(
             {
               message: shareCheck.reason,
-              code: "ACCOUNT_SHARING_SUSPECTED",
+              code: shareCheck.code ?? "ACCOUNT_SHARING_SUSPECTED",
+              allowAddDevice: shareCheck.allowAddDevice,
+              needsExtraDevices: shareCheck.needsExtraDevices,
+              currentPlan: shareCheck.currentPlan,
+              allowedDevices: shareCheck.allowedDevices,
+              activeDevices: shareCheck.activeDevices,
             },
             { status: 403 },
           ),
         );
       }
       const notice = new URL("/account-sharing-notice", req.url);
+      if (shareCheck.code) notice.searchParams.set("code", shareCheck.code);
+      if (shareCheck.reason) notice.searchParams.set("message", shareCheck.reason);
+      if (typeof shareCheck.allowAddDevice === "boolean") {
+        notice.searchParams.set(
+          "allowAddDevice",
+          shareCheck.allowAddDevice ? "1" : "0",
+        );
+      }
+      if (typeof shareCheck.needsExtraDevices === "number") {
+        notice.searchParams.set("needsExtraDevices", String(shareCheck.needsExtraDevices));
+      }
+      if (typeof shareCheck.allowedDevices === "number") {
+        notice.searchParams.set("allowedDevices", String(shareCheck.allowedDevices));
+      }
+      if (typeof shareCheck.activeDevices === "number") {
+        notice.searchParams.set("activeDevices", String(shareCheck.activeDevices));
+      }
+      if (shareCheck.currentPlan) notice.searchParams.set("currentPlan", shareCheck.currentPlan);
       return applyMarketingCookiesToResponse(req, NextResponse.redirect(notice));
     }
   }

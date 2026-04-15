@@ -9,6 +9,7 @@ import Shield from "@mui/icons-material/Shield";
 import Schedule from "@mui/icons-material/Schedule";
 import Refresh from "@mui/icons-material/Refresh";
 import Close from "@mui/icons-material/Close";
+import Logout from "@mui/icons-material/Logout";
 import People from "@mui/icons-material/People";
 import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
 import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
@@ -95,6 +96,7 @@ export default function UsersPage() {
   const [sortBy, setSortBy] = useState("lastActivity");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [subscriptionStatus, setSubscriptionStatus] = useState("all");
+  const [deviceFilter, setDeviceFilter] = useState("all");
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
@@ -104,6 +106,9 @@ export default function UsersPage() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [canceling, setCanceling] = useState(false);
+  const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
+  const [selectedRevokeUser, setSelectedRevokeUser] = useState<User | null>(null);
+  const [revoking, setRevoking] = useState(false);
   const [syncDialogOpen, setSyncDialogOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<{
@@ -122,6 +127,7 @@ export default function UsersPage() {
         sortBy,
         sortOrder,
         subscriptionStatus,
+        deviceFilter,
       });
 
       const response = await fetch(`/api/admin/users?${params}`);
@@ -140,7 +146,7 @@ export default function UsersPage() {
   useEffect(() => {
     fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search, sortBy, sortOrder, subscriptionStatus]);
+  }, [page, search, sortBy, sortOrder, subscriptionStatus, deviceFilter]);
 
   const getRiskColor = (riskScore: number) => {
     if (riskScore >= 70) return "text-red-600 bg-red-50";
@@ -235,6 +241,46 @@ export default function UsersPage() {
     if (!canceling) {
       setCancelDialogOpen(false);
       setSelectedUser(null);
+    }
+  };
+
+  const handleRevokeSessionsClick = (user: User) => {
+    setSelectedRevokeUser(user);
+    setRevokeDialogOpen(true);
+  };
+
+  const handleRevokeDialogClose = () => {
+    if (!revoking) {
+      setRevokeDialogOpen(false);
+      setSelectedRevokeUser(null);
+    }
+  };
+
+  const handleRevokeSessionsConfirm = async () => {
+    if (!selectedRevokeUser) return;
+
+    setRevoking(true);
+    try {
+      const response = await fetch(
+        `/api/admin/users/${selectedRevokeUser.userId}/revoke-sessions`,
+        { method: "POST" }
+      );
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to revoke sessions");
+      }
+
+      const data = await response.json();
+      await fetchUsers();
+      setRevokeDialogOpen(false);
+      setSelectedRevokeUser(null);
+      alert(data.message || "All sessions revoked successfully.");
+    } catch (error) {
+      console.error("Error revoking sessions:", error);
+      alert(error instanceof Error ? error.message : "Failed to revoke sessions.");
+    } finally {
+      setRevoking(false);
     }
   };
 
@@ -379,6 +425,21 @@ export default function UsersPage() {
                 <MenuItem value="riskScore">Risk Score</MenuItem>
                 <MenuItem value="plan">Plan (Premium)</MenuItem>
                 <MenuItem value="totalSpend">Total Spend</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" sx={{ minWidth: 170 }}>
+              <InputLabel>Devices</InputLabel>
+              <Select
+                label="Devices"
+                value={deviceFilter}
+                onChange={(e) => {
+                  setPage(1);
+                  setDeviceFilter(e.target.value);
+                }}
+              >
+                <MenuItem value="all">All Device Counts</MenuItem>
+                <MenuItem value="gt3">More than 3 devices</MenuItem>
               </Select>
             </FormControl>
 
@@ -647,6 +708,15 @@ export default function UsersPage() {
                               onClick={() => exportUserData(user.userId)}
                             >
                               <Download className="w-4 h-4 text-green-600" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Revoke all active sessions">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleRevokeSessionsClick(user)}
+                              disabled={revoking}
+                            >
+                              <Logout className="w-4 h-4 text-orange-600" />
                             </IconButton>
                           </Tooltip>
                           {user.subscriptionStatus === "active" &&
@@ -1048,6 +1118,49 @@ export default function UsersPage() {
             variant="contained"
           >
             {canceling ? "Canceling..." : "Confirm Cancel"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Revoke Sessions Confirmation Dialog */}
+      <Dialog
+        open={revokeDialogOpen}
+        onClose={handleRevokeDialogClose}
+        aria-labelledby="revoke-sessions-dialog-title"
+        aria-describedby="revoke-sessions-dialog-description"
+      >
+        <DialogTitle id="revoke-sessions-dialog-title">
+          Revoke All Active Sessions
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="revoke-sessions-dialog-description">
+            Revoke all active sessions for{" "}
+            <strong>{selectedRevokeUser?.email || selectedRevokeUser?.userId}</strong>?
+            <br />
+            <br />
+            This admin action:
+            <ul style={{ marginTop: "8px", paddingLeft: "20px" }}>
+              <li>Revokes all active sessions immediately</li>
+              <li>Does not apply the 48-hour device restriction</li>
+              <li>Clears existing 48-hour device restrictions for this user</li>
+            </ul>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleRevokeDialogClose}
+            disabled={revoking}
+            color="inherit"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleRevokeSessionsConfirm}
+            disabled={revoking}
+            color="warning"
+            variant="contained"
+          >
+            {revoking ? "Revoking..." : "Confirm Revoke"}
           </Button>
         </DialogActions>
       </Dialog>

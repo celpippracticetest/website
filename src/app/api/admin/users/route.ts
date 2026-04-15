@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get("sortBy") || "lastActivity";
     const sortOrder = searchParams.get("sortOrder") || "desc";
     const subscriptionStatus = searchParams.get("subscriptionStatus");
+    const deviceFilter = searchParams.get("deviceFilter") || "all";
 
     const db = client.db();
     const userActivityCollection = db.collection("useractivities");
@@ -75,6 +76,13 @@ export async function GET(request: NextRequest) {
         },
       }
       : { $match: {} };
+
+    const deviceFilterPipeline = [];
+    if (deviceFilter === "gt3") {
+      deviceFilterPipeline.push({
+        $match: { uniqueUserAgentsCount: { $gt: 3 } },
+      });
+    }
 
     // --- Aggregation Pipeline ---
     const pipeline = [
@@ -298,9 +306,16 @@ export async function GET(request: NextRequest) {
           createdAt: { $ifNull: ["$createdAt", "$firstActivity"] }, // Fallback to first activity if no profile
         },
       },
+      {
+        $addFields: {
+          uniqueIpAddressesCount: { $size: { $ifNull: ["$ipAddresses", []] } },
+          uniqueUserAgentsCount: { $size: { $ifNull: ["$userAgents", []] } },
+        },
+      },
       // 5. Apply Search Filter (on the merged result)
       searchMatch,
       ...subscriptionFilter,
+      ...deviceFilterPipeline,
       // 6. Sort
       {
         $sort: {
@@ -402,8 +417,8 @@ export async function GET(request: NextRequest) {
       lastActivity: user.lastActivity || null,
       firstActivity: user.firstActivity || user.createdAt || null,
       totalActivities: user.totalActivities || 0,
-      uniqueIpAddresses: (user.ipAddresses || []).length,
-      uniqueUserAgents: (user.userAgents || []).length,
+      uniqueIpAddresses: user.uniqueIpAddressesCount || 0,
+      uniqueUserAgents: user.uniqueUserAgentsCount || 0,
       totalTokens: user.totalTokens || 0,
       practiceAttempts: user.practiceAttempts || 0,
       practiceCompletions: user.practiceCompletions || 0,

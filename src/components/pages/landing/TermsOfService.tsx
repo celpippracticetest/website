@@ -90,7 +90,9 @@ You are granted a limited, non-exclusive, non-transferable, revocable license to
           title: "6.1 Subscription and Billing",
           description: `Subscription plans, pricing, and features are displayed on the Site and may change from time to time.
 Subscriptions renew automatically unless canceled before the renewal date. Canceling a subscription prevents future charges only and does not reverse, void, or refund any completed or pending charges, including subscription renewals.
-Service delivery occurs immediately upon successful payment, at which point access to digital content and platform features is granted.`,
+Service delivery occurs immediately upon successful payment, at which point access to digital content and platform features is granted.
+Each Subscriber subscription plan includes access on up to two (2) devices.
+If you exceed the two-device limit, you must purchase an additional subscription of the same plan for each extra device.`,
         },
         {
           title: "6.2 Refund Eligibility and Process",
@@ -145,7 +147,7 @@ Service delivery occurs immediately upon successful payment, at which point acce
           Terms of Service
         </h1>
         <span className="mt-[16px] font-normal text-[16px] text-text3">
-          Last Updated: Jan 08, 2026
+          Last Updated: Apr 15, 2026
         </span>
         {data?.map((element, index) => (
           <div key={index} className="mt-[40px]">

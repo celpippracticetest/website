@@ -1,15 +1,12 @@
 export const deleteUserSessions = async (sessionId: string) => {
-  try {
-    const res = await fetch(`/api/sessions/${sessionId}`, {
-      method: "DELETE",
-    });
+  const res = await fetch(`/api/sessions/${sessionId}`, {
+    method: "DELETE",
+  });
 
-    if (!res.ok) {
-      throw new Error("Failed to delete session");
-    }
-
-    return await res.json();
-  } catch (error) {
-    console.error("Failed to delete session:", error);
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(data.error || "Failed to delete session");
   }
+
+  return await res.json();
 };

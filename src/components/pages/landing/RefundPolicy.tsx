@@ -45,7 +45,8 @@ const RefundPolicy = () => {
     {
       title: "Overview",
       description: `This Refund Policy explains when refunds may be granted and how refund requests are handled for CELPIPPRACTICETEST.com.
-The Services are digital, non-tangible services delivered electronically and accessed immediately upon payment. Submitting a refund request does not guarantee approval.`,
+The Services are digital, non-tangible services delivered electronically and accessed immediately upon payment. Submitting a refund request does not guarantee approval.
+Each Subscriber subscription plan includes up to 2 devices. If you exceed 2 devices, you must purchase another subscription of the same plan for each additional device.`,
     },
     {
       title: "Eligibility",
@@ -109,7 +110,7 @@ Initiating a chargeback, payment dispute, or bank claim does not override this p
           Refund Policy
         </h1>
         <span className="mt-[16px] font-normal text-[16px] text-text3">
-          Last Updated: Feb 26, 2026
+          Last Updated: Apr 15, 2026
         </span>
         {data?.map((element, index) => (
           <div key={index} className="mt-[40px]">

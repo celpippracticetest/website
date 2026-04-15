@@ -943,7 +943,10 @@ export default function PricingPageClient({
               <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-600 md:text-base">
                 Start with the study length that fits your exam date, then choose
                 the access level you need. Premium covers daily practice. Premium
-                Plus adds mock exams for full-test preparation.
+                Plus adds mock exams for full-test preparation. Each Subscriber
+                plan includes up to 2 devices. If you need more than 2 devices,
+                get another subscription of the same plan for each additional
+                device.
               </p>
             </Box>
 

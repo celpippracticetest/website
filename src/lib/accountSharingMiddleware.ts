@@ -22,6 +22,7 @@ export function shouldEnforceAccountSharingSignals(
   if (path.startsWith("/sign-in") || path.startsWith("/sign-up")) return false;
   if (path.includes("webhook")) return false;
   if (path.startsWith("/api/account/access-check")) return false;
+  if (path.startsWith("/api/account/devices/add-seat")) return false;
   if (path.startsWith("/api/stripe/") || path.startsWith("/api/paypal/")) return false;
   if (path.startsWith("/api/cms/") || path.startsWith("/api/admin/")) return false;
   if (path.startsWith("/api/blog/")) return false;
@@ -36,16 +37,14 @@ export function shouldEnforceAccountSharingSignals(
   if (path.startsWith("/monitoring")) return false;
   if (path.startsWith("/onboarding-survey")) return false;
 
-  if (path.startsWith("/api/")) return true;
+  // Avoid blocking data APIs from overview pages; enforce only on page routes.
+  if (path.startsWith("/api/")) return false;
 
   const dashboardPrefixes = [
-    "/practice-overview",
-    "/exam-overview",
     "/reading",
     "/writing",
     "/listening",
     "/speaking",
-    "/profile",
     "/plans",
     "/referral",
     "/learning",
@@ -56,14 +55,26 @@ export function shouldEnforceAccountSharingSignals(
   for (const p of dashboardPrefixes) {
     if (path === p || path.startsWith(`${p}/`)) return true;
   }
-  if (path.startsWith("/exams/")) return true;
+  // Do not guard exam list/overview pages; only actual skill routes above.
+  if (path === "/exams") return false;
+  if (path === "/exam-overview") return false;
+  if (path.startsWith("/exams/")) return false;
 
   return false;
 }
 
 export type AccountSharingMiddlewareResult =
   | { ok: true }
-  | { ok: false; reason: string };
+  | {
+      ok: false;
+      reason: string;
+      code?: string;
+      allowAddDevice?: boolean;
+      needsExtraDevices?: number;
+      currentPlan?: string;
+      allowedDevices?: number;
+      activeDevices?: number;
+    };
 
 /**
  * Calls the Node route handler so MongoDB runs outside the proxy bundle.
@@ -115,10 +126,25 @@ export async function runAccountSharingMiddlewareCheck(
     const data = (await res.json()) as {
       allowed?: boolean;
       reason?: string;
+      code?: string;
+      allowAddDevice?: boolean;
+      needsExtraDevices?: number;
+      currentPlan?: string;
+      allowedDevices?: number;
+      activeDevices?: number;
     };
 
     if (data.allowed === false) {
-      return { ok: false, reason: data.reason ?? "Access restricted." };
+      return {
+        ok: false,
+        reason: data.reason ?? "Access restricted.",
+        code: data.code,
+        allowAddDevice: data.allowAddDevice,
+        needsExtraDevices: data.needsExtraDevices,
+        currentPlan: data.currentPlan,
+        allowedDevices: data.allowedDevices,
+        activeDevices: data.activeDevices,
+      };
     }
     return { ok: true };
   } catch (error) {

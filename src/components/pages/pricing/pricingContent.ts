@@ -16,7 +16,8 @@ export const pricingSelectionSteps = [
   },
   {
     title: "Choose your access level",
-    description: "Premium covers daily practice. Premium Plus adds mock exams for full-test prep.",
+    description:
+      "Premium covers daily practice. Premium Plus adds mock exams for full-test prep. Each Subscriber plan includes up to 2 devices. If you need more than 2 devices, purchase another subscription of the same plan for each additional device.",
   },
   {
     title: "Start practicing right away",
@@ -80,6 +81,11 @@ export const pricingFaqs: PricingFaq[] = [
     question: "What is the difference between Premium and Premium Plus?",
     answer:
       "Premium is best for daily practice with questions, feedback, and tracking. Premium Plus includes everything in Premium plus mock exams.",
+  },
+  {
+    question: "How many devices are included in a Subscriber plan?",
+    answer:
+      "Each Subscriber plan includes access on up to 2 devices. If you exceed 2 devices, you must purchase another subscription of the same plan for each additional device.",
   },
   {
     question: "Which plan should I choose if my exam is soon?",

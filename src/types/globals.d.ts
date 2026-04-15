@@ -13,6 +13,14 @@ declare global {
       purchaseDate?: string
       /** Set when the post–sign-up goals survey (`onboardingNew`) is submitted. */
       onboardingSurveyCompleted?: boolean
+      /** Number of paid add-on seats beyond base device allowance. */
+      deviceSeatAddons?: number
+      /** Metadata marker when add-on seats are updated manually in-app. */
+      deviceSeatAddonUpdatedAt?: string
+      /** Snapshot of plan name when add-on was recorded. */
+      deviceSeatAddonPlan?: string
+      /** Internal marker for charge orchestration outside Stripe checkout flow. */
+      deviceSeatChargeMode?: string
     }
   }
 }
