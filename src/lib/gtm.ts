@@ -312,17 +312,18 @@ export const trackAuth = {
     userData?: UserData,
     attributionData?: Record<string, unknown>
   ) => {
-    const dedupeKey = `sign_up_completed_${userId}`;
+    const dedupeKey = `sign_up_${userId}`;
     if (markDeduplicatedOnce(dedupeKey)) return;
 
     const conversionLabel = GOOGLE_ADS_SIGNUP_LABEL;
 
+    // GA4 recommended event name so Explorations / funnels see `sign_up` without a GTM rename step.
     pushToDataLayer({
-      event: "sign_up_completed",
+      event: "sign_up",
       user_id: userId,
       method,
       ...attributionData,
-      conversion_name: "sign_up_completed",
+      conversion_name: "sign_up",
       conversion_label: conversionLabel || undefined,
       google_ads_send_to: getGoogleAdsSendTo(conversionLabel),
       value: 1,
@@ -332,7 +333,7 @@ export const trackAuth = {
 
     if (userData) {
       pushAdsEnhancedConversion({
-        conversionEvent: "sign_up_completed",
+        conversionEvent: "sign_up",
         conversionLabel,
         value: 1,
         currency: "CAD",

@@ -22,8 +22,8 @@ export interface SignUpInitiatedEvent extends GTMEvent {
   source?: string;
 }
 
-export interface SignUpCompletedEvent extends GTMEvent {
-  event: "sign_up_completed";
+export interface SignUpEvent extends GTMEvent {
+  event: "sign_up";
   method?: string;
   user_id: string;
 }
@@ -324,7 +324,7 @@ export interface LeadCaptureSubmittedEvent extends GTMEvent {
   lead_capture_id: string;
 }
 
-/** Optional user payload for GTM (e.g. sign_up_completed, login_completed, purchase) */
+/** Optional user payload for GTM (e.g. sign_up, login_completed, purchase) */
 export interface UserData {
   [key: string]: unknown;
 }

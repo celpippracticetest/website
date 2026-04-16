@@ -100,6 +100,12 @@ function buildStripeGaClientId(args: {
 function buildStripeGaAttributionParams(
   metadata: Record<string, string | undefined> | null | undefined
 ): Record<string, string> {
+  const gclid = readMetadataValue(metadata, "gclid") || "";
+  const gbraid = readMetadataValue(metadata, "gbraid") || "";
+  const wbraid = readMetadataValue(metadata, "wbraid") || "";
+  const fbclid = readMetadataValue(metadata, "fbclid") || "";
+  const msclkid = readMetadataValue(metadata, "msclkid") || "";
+  const ttclid = readMetadataValue(metadata, "ttclid") || "";
   return {
     source: inferAttributionSource(metadata),
     medium: readMetadataValue(metadata, "utm_medium") || "",
@@ -109,12 +115,19 @@ function buildStripeGaAttributionParams(
     utm_campaign: readMetadataValue(metadata, "utm_campaign") || "",
     utm_content: readMetadataValue(metadata, "utm_content") || "",
     utm_term: readMetadataValue(metadata, "utm_term") || "",
-    gclid: readMetadataValue(metadata, "gclid") || "",
-    gbraid: readMetadataValue(metadata, "gbraid") || "",
-    wbraid: readMetadataValue(metadata, "wbraid") || "",
-    fbclid: readMetadataValue(metadata, "fbclid") || "",
-    msclkid: readMetadataValue(metadata, "msclkid") || "",
-    ttclid: readMetadataValue(metadata, "ttclid") || "",
+    // Keep raw IDs for internal parity, but register GA4 custom dimensions on attribution_* aliases.
+    gclid,
+    gbraid,
+    wbraid,
+    fbclid,
+    msclkid,
+    ttclid,
+    attribution_gclid: gclid,
+    attribution_gbraid: gbraid,
+    attribution_wbraid: wbraid,
+    attribution_fbclid: fbclid,
+    attribution_msclkid: msclkid,
+    attribution_ttclid: ttclid,
     attribution_session_id:
       readMetadataValue(metadata, "attribution_session_id") || "",
     purchase_page: readMetadataValue(metadata, "purchase_page") || "",

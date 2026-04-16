@@ -40,6 +40,11 @@ Author majid.
 
 # website
 
+## Tracking Documentation
+
+- Canonical tracking contract: `docs/tracking-spec.md`
+- GTM export snapshot (ops artifact): `GTM_workspace.json`
+
 ## Google Analytics Dashboard Setup (GA4 + GTM)
 
 This project already sends tracking events through Google Tag Manager (GTM) and GA4.
@@ -75,7 +80,7 @@ In Google Analytics:
 2. Ensure a GA4 Configuration tag exists with your Measurement ID.
 3. Ensure event tags map to `dataLayer` events already pushed by the app:
    - `page_view`
-   - `sign_up_completed`
+   - `sign_up`
    - `begin_checkout`
    - `purchase`
    - `practice_started`

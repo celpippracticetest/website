@@ -1,127 +1,75 @@
 {
-  "description": "In-repo reference for Google Tag Manager and dataLayer. This is not a GTM container import/export. For a full workspace backup, use Admin → Export Container in tagmanager.google.com.",
-  "lastUpdated": "2026-04-15",
-  "container": {
-    "publicId": "GTM-54M23756",
-    "loadedBy": "NEXT_PUBLIC_GTM_ID (see src/app/layout.tsx)"
-  },
-  "measurementIds": {
-    "ga4": "Set via NEXT_PUBLIC_GA_MEASUREMENT_ID / GA_MEASUREMENT_ID (Web stream G-...)",
-    "googleAds": "AW-18023374877 (override with NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_ID — src/lib/google-ads-constants.ts)"
-  },
-  "implementationInRepo": [
-    "src/app/layout.tsx — GTM bootstrap, consent scripts",
-    "src/lib/gtm.ts — dataLayer pushes",
-    "src/types/analytics.ts — event shapes",
-    "public/scripts/gtm-init.js, gtm-consent-defaults.js — first-party loader"
-  ],
-  "businessFlows": [
-    {
-      "flow": "Marketing & content",
-      "purpose": "Traffic, engagement, and lead capture before signup.",
-      "dataLayerEvents": [
-        "page_view",
-        "cta_click",
-        "nav_click",
-        "blog_list_viewed",
-        "blog_article_viewed",
-        "faq_click",
-        "video_started",
-        "video_completed",
-        "chatbot_message_sent",
-        "modal_viewed",
-        "modal_closed",
-        "lead_capture_submitted"
-      ]
-    },
-    {
-      "flow": "Authentication",
-      "purpose": "Signup and login funnel; pair with GA4 / Ads conversion tags in GTM.",
-      "dataLayerEvents": [
-        "sign_up_initiated",
-        "sign_up_completed",
-        "login_initiated",
-        "login_completed",
-        "logout"
-      ]
-    },
-    {
-      "flow": "Commerce",
-      "purpose": "Plans, checkout, purchase, refunds, subscription lifecycle.",
-      "dataLayerEvents": [
-        "view_item_list",
-        "select_item",
-        "begin_checkout",
-        "purchase",
-        "refund",
-        "subscription_cancelled"
-      ]
-    },
-    {
-      "flow": "Exam",
-      "purpose": "Full-length exam usage and completion.",
-      "dataLayerEvents": [
-        "exam_overview_viewed",
-        "exam_started",
-        "exam_part_started",
-        "exam_question_answered",
-        "exam_part_completed",
-        "exam_completed",
-        "exam_results_viewed",
-        "exam_abandoned"
-      ]
-    },
-    {
-      "flow": "Practice & learning",
-      "purpose": "Practice modes, AI feedback, vocabulary, audio.",
-      "dataLayerEvents": [
-        "practice_overview_viewed",
-        "practice_started",
-        "practice_completed",
-        "practice_results_viewed",
-        "ai_feedback_viewed",
-        "word_viewed",
-        "word_mastered",
-        "audio_played"
-      ]
-    },
-    {
-      "flow": "Referrals & monetization support",
-      "purpose": "Referral program and refund / withdrawal flows.",
-      "dataLayerEvents": [
-        "referral_page_viewed",
-        "referral_code_copied",
-        "referral_invite_sent",
-        "refund_request_submitted",
-        "refund_request_tracking_searched",
-        "refund_request_status_viewed",
-        "withdrawal_requested"
-      ]
+    "exportFormatVersion": 2,
+    "exportTime": "2026-04-16 00:41:21",
+    "containerVersion": {
+        "path": "accounts/6350091896/containers/249538809/versions/0",
+        "accountId": "6350091896",
+        "containerId": "249538809",
+        "containerVersionId": "0",
+        "container": {
+            "path": "accounts/6350091896/containers/249538809",
+            "accountId": "6350091896",
+            "containerId": "249538809",
+            "name": "CPT Web Container",
+            "publicId": "GTM-54M23756",
+            "usageContext": [
+                "WEB"
+            ],
+            "fingerprint": "1776298827235",
+            "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6350091896/containers/249538809/workspaces?apiLink=container",
+            "features": {
+                "supportUserPermissions": true,
+                "supportEnvironments": true,
+                "supportWorkspaces": true,
+                "supportGtagConfigs": false,
+                "supportBuiltInVariables": true,
+                "supportClients": false,
+                "supportFolders": true,
+                "supportTags": true,
+                "supportTemplates": true,
+                "supportTriggers": true,
+                "supportVariables": true,
+                "supportVersions": true,
+                "supportZones": true,
+                "supportTransformations": false
+            },
+            "tagIds": [
+                "GTM-54M23756"
+            ]
+        },
+        "builtInVariable": [
+            {
+                "accountId": "6350091896",
+                "containerId": "249538809",
+                "type": "PAGE_URL",
+                "name": "Page URL"
+            },
+            {
+                "accountId": "6350091896",
+                "containerId": "249538809",
+                "type": "PAGE_HOSTNAME",
+                "name": "Page Hostname"
+            },
+            {
+                "accountId": "6350091896",
+                "containerId": "249538809",
+                "type": "PAGE_PATH",
+                "name": "Page Path"
+            },
+            {
+                "accountId": "6350091896",
+                "containerId": "249538809",
+                "type": "REFERRER",
+                "name": "Referrer"
+            },
+            {
+                "accountId": "6350091896",
+                "containerId": "249538809",
+                "type": "EVENT",
+                "name": "Event"
+            }
+        ],
+        "fingerprint": "1776300081059",
+        "tagManagerUrl": "https://tagmanager.google.com/#/versions/accounts/6350091896/containers/249538809/versions/0?apiLink=version"
     }
-  ],
-  "gtmOnlySignals": [
-    {
-      "event": "ads_enhanced_conversion",
-      "note": "Fired from the app for Google Ads enhanced conversions; configure GTM tags to listen for this event only (see src/lib/gtm.ts)."
-    },
-    {
-      "event": "consent_update",
-      "note": "Consent mode updates pushed when consent changes."
-    }
-  ],
-  "gtmChecklist": [
-    "GA4 Configuration tag: Measurement ID from env.",
-    "Map GA4 Event tags (or one tag group) to the dataLayer event names listed under businessFlows.",
-    "Google Ads: conversions use GOOGLE_ADS_CONVERSION_ID and labels in google-ads-constants.ts / NEXT_PUBLIC_* overrides.",
-    "Register GA4 custom dimensions for attribution fields: utm_*, gclid, gbraid, wbraid, fbclid, msclkid, ttclid, attribution_source, purchase_type.",
-    "Listen for ads_enhanced_conversion separately from standard ecommerce events.",
-    "Use GTM Preview on staging and verify Network: /gtm/js and /g/collect (first-party rewrites in next.config.ts)."
-  ],
-  "serverSideGa4Events": [
-    "user_active (heartbeat route)",
-    "stripe_checkout_completed (Stripe webhook)",
-    "stripe_invoice_paid (Stripe webhook)",
-    "subscription_renewed (Stripe webhook)",
-    "subscription_cancelled (Stripe webhook)"
-  ]
 }
