@@ -306,7 +306,12 @@ export const trackAuth = {
     });
   },
 
-  signUpCompleted: (userId: string, method?: string, userData?: UserData) => {
+  signUpCompleted: (
+    userId: string,
+    method?: string,
+    userData?: UserData,
+    attributionData?: Record<string, unknown>
+  ) => {
     const dedupeKey = `sign_up_completed_${userId}`;
     if (markDeduplicatedOnce(dedupeKey)) return;
 
@@ -316,6 +321,7 @@ export const trackAuth = {
       event: "sign_up_completed",
       user_id: userId,
       method,
+      ...attributionData,
       conversion_name: "sign_up_completed",
       conversion_label: conversionLabel || undefined,
       google_ads_send_to: getGoogleAdsSendTo(conversionLabel),

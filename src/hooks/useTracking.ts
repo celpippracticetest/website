@@ -66,9 +66,13 @@ export function useEventTracker() {
       }, []),
 
       signUpCompleted: useCallback(
-        (method?: string, userData?: UserData) => {
+        (
+          method?: string,
+          userData?: UserData,
+          attributionData?: Record<string, unknown>
+        ) => {
           if (userId) {
-            trackAuth.signUpCompleted(userId, method, userData);
+            trackAuth.signUpCompleted(userId, method, userData, attributionData);
           }
         },
         [userId]

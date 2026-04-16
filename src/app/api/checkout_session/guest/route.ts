@@ -131,7 +131,22 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       utm_content: readRequestAttribution("utm_content") || acqCk.utm_content || "",
       utm_term: readRequestAttribution("utm_term") || acqCk.utm_term || "",
       gclid: readRequestAttribution("gclid") || acqCk.gclid || "",
+      gbraid: readRequestAttribution("gbraid") || acqCk.gbraid || "",
+      wbraid: readRequestAttribution("wbraid") || acqCk.wbraid || "",
+      fbclid: readRequestAttribution("fbclid") || acqCk.fbclid || "",
+      msclkid: readRequestAttribution("msclkid") || acqCk.msclkid || "",
+      ttclid: readRequestAttribution("ttclid") || acqCk.ttclid || "",
     };
+    const inferredPaidSource =
+      attributionMetadata.gclid || attributionMetadata.gbraid || attributionMetadata.wbraid
+        ? "google_ads"
+        : attributionMetadata.msclkid
+          ? "microsoft_ads"
+          : attributionMetadata.fbclid
+            ? "meta_ads"
+            : attributionMetadata.ttclid
+              ? "tiktok_ads"
+              : "direct";
 
     const campaignPromo = await resolveCampaignPromoFromRequest(req);
     const campaignPromoKey = campaignPromo.campaignKey;
@@ -139,10 +154,15 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
 
     const attributionSnapshot = {
       attribution_source:
-        attributionMetadata.utm_source || (attributionMetadata.gclid ? "google_ads" : "direct"),
+        attributionMetadata.utm_source || inferredPaidSource,
       attribution_medium: attributionMetadata.utm_medium ?? "",
       attribution_campaign: attributionMetadata.utm_campaign ?? "",
       attribution_gclid: attributionMetadata.gclid ?? "",
+      attribution_gbraid: attributionMetadata.gbraid ?? "",
+      attribution_wbraid: attributionMetadata.wbraid ?? "",
+      attribution_fbclid: attributionMetadata.fbclid ?? "",
+      attribution_msclkid: attributionMetadata.msclkid ?? "",
+      attribution_ttclid: attributionMetadata.ttclid ?? "",
       entry_page:
         readRequestAttribution("entry_page") || acqCk.entry_page || "",
       referrer: readRequestAttribution("referrer") ?? "",

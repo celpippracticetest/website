@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import clientPromise from "@/lib/mongodb";
+import { sendGa4Events } from "@/lib/ga4MeasurementProtocol";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -50,35 +51,20 @@ export async function POST(request: NextRequest) {
       { upsert: true },
     );
 
-    // Send event to Google Analytics 4 via Measurement Protocol
-    if (process.env.GA_MEASUREMENT_ID && process.env.GA_API_SECRET) {
-      const measurementId = process.env.GA_MEASUREMENT_ID;
-      const apiSecret = process.env.GA_API_SECRET;
-
-      const ga4Payload = {
-        client_id: userId || sessionId,
-        events: [
-          {
-            name: "user_active",
-            params: {
-              session_id: sessionId,
-              engagement_time_msec: 100,
-              user_logged_in: !!userId,
-            },
-          },
-        ],
-      };
-
-      // Send to GA4 (fire and forget)
-      fetch(
-        `https://www.google-analytics.com/mp/collect?measurement_id=${measurementId}&api_secret=${apiSecret}`,
+    void sendGa4Events({
+      clientId: userId || sessionId,
+      userId: userId || undefined,
+      events: [
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(ga4Payload),
+          name: "user_active",
+          params: {
+            session_id: sessionId,
+            engagement_time_msec: 100,
+            user_logged_in: !!userId,
+          },
         },
-      ).catch((err) => console.error("GA4 tracking error:", err));
-    }
+      ],
+    });
 
     return NextResponse.json({
       success: true,

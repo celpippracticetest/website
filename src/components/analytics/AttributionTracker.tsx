@@ -6,6 +6,11 @@ import { usePathname, useSearchParams } from "next/navigation";
 
 const STORAGE_KEYS = {
   gclid: "pending_gclid",
+  gbraid: "pending_gbraid",
+  wbraid: "pending_wbraid",
+  fbclid: "pending_fbclid",
+  msclkid: "pending_msclkid",
+  ttclid: "pending_ttclid",
   utmSource: "pending_utm_source",
   utmMedium: "pending_utm_medium",
   utmCampaign: "pending_utm_campaign",
@@ -33,6 +38,11 @@ function getOrCreateAttributionSessionId(): string {
 
 function persistAttributionFromUrl(pathname: string, searchParams: URLSearchParams) {
   const gclid = readParam(searchParams.get("gclid"));
+  const gbraid = readParam(searchParams.get("gbraid"));
+  const wbraid = readParam(searchParams.get("wbraid"));
+  const fbclid = readParam(searchParams.get("fbclid"));
+  const msclkid = readParam(searchParams.get("msclkid"));
+  const ttclid = readParam(searchParams.get("ttclid"));
   const utmSource = readParam(searchParams.get("utm_source"));
   const utmMedium = readParam(searchParams.get("utm_medium"));
   const utmCampaign = readParam(searchParams.get("utm_campaign"));
@@ -40,6 +50,11 @@ function persistAttributionFromUrl(pathname: string, searchParams: URLSearchPara
   const utmTerm = readParam(searchParams.get("utm_term"));
 
   if (gclid) localStorage.setItem(STORAGE_KEYS.gclid, gclid);
+  if (gbraid) localStorage.setItem(STORAGE_KEYS.gbraid, gbraid);
+  if (wbraid) localStorage.setItem(STORAGE_KEYS.wbraid, wbraid);
+  if (fbclid) localStorage.setItem(STORAGE_KEYS.fbclid, fbclid);
+  if (msclkid) localStorage.setItem(STORAGE_KEYS.msclkid, msclkid);
+  if (ttclid) localStorage.setItem(STORAGE_KEYS.ttclid, ttclid);
   if (utmSource) localStorage.setItem(STORAGE_KEYS.utmSource, utmSource);
   if (utmMedium) localStorage.setItem(STORAGE_KEYS.utmMedium, utmMedium);
   if (utmCampaign) localStorage.setItem(STORAGE_KEYS.utmCampaign, utmCampaign);
@@ -75,6 +90,11 @@ export default function AttributionTracker() {
 
     const payload = {
       gclid: localStorage.getItem(STORAGE_KEYS.gclid),
+      gbraid: localStorage.getItem(STORAGE_KEYS.gbraid),
+      wbraid: localStorage.getItem(STORAGE_KEYS.wbraid),
+      fbclid: localStorage.getItem(STORAGE_KEYS.fbclid),
+      msclkid: localStorage.getItem(STORAGE_KEYS.msclkid),
+      ttclid: localStorage.getItem(STORAGE_KEYS.ttclid),
       utm_source: localStorage.getItem(STORAGE_KEYS.utmSource),
       utm_medium: localStorage.getItem(STORAGE_KEYS.utmMedium),
       utm_campaign: localStorage.getItem(STORAGE_KEYS.utmCampaign),
@@ -87,6 +107,11 @@ export default function AttributionTracker() {
 
     const hasAttributionData =
       Boolean(payload.gclid) ||
+      Boolean(payload.gbraid) ||
+      Boolean(payload.wbraid) ||
+      Boolean(payload.fbclid) ||
+      Boolean(payload.msclkid) ||
+      Boolean(payload.ttclid) ||
       Boolean(payload.utm_source) ||
       Boolean(payload.utm_medium) ||
       Boolean(payload.utm_campaign) ||

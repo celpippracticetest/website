@@ -10,6 +10,11 @@ const MAX_ENTRY_LEN = 2048;
 export type AcquisitionAttributionV1 = {
   v: 1;
   gclid?: string;
+  gbraid?: string;
+  wbraid?: string;
+  fbclid?: string;
+  msclkid?: string;
+  ttclid?: string;
   utm_source?: string;
   utm_medium?: string;
   utm_campaign?: string;
@@ -30,6 +35,11 @@ function trimParam(value: string | null): string | undefined {
 function hasAcquisitionQuery(params: URLSearchParams): boolean {
   return Boolean(
     trimParam(params.get("gclid")) ||
+      trimParam(params.get("gbraid")) ||
+      trimParam(params.get("wbraid")) ||
+      trimParam(params.get("fbclid")) ||
+      trimParam(params.get("msclkid")) ||
+      trimParam(params.get("ttclid")) ||
       trimParam(params.get("utm_source")) ||
       trimParam(params.get("utm_medium")) ||
       trimParam(params.get("utm_campaign")) ||
@@ -41,6 +51,11 @@ function hasAcquisitionQuery(params: URLSearchParams): boolean {
 function hasStoredAcquisition(p: AcquisitionAttributionV1): boolean {
   return Boolean(
     p.gclid ||
+      p.gbraid ||
+      p.wbraid ||
+      p.fbclid ||
+      p.msclkid ||
+      p.ttclid ||
       p.utm_source ||
       p.utm_medium ||
       p.utm_campaign ||
@@ -85,6 +100,11 @@ export function applyAcquisitionAttributionCookie(
     v: 1,
     captured_at: new Date().toISOString(),
     gclid: trimParam(sp.get("gclid")),
+    gbraid: trimParam(sp.get("gbraid")),
+    wbraid: trimParam(sp.get("wbraid")),
+    fbclid: trimParam(sp.get("fbclid")),
+    msclkid: trimParam(sp.get("msclkid")),
+    ttclid: trimParam(sp.get("ttclid")),
     utm_source: trimParam(sp.get("utm_source")),
     utm_medium: trimParam(sp.get("utm_medium")),
     utm_campaign: trimParam(sp.get("utm_campaign")),
@@ -128,6 +148,11 @@ export function mergeAcquisitionCookieIntoAttributionData(
   };
 
   pick("gclid");
+  pick("gbraid");
+  pick("wbraid");
+  pick("fbclid");
+  pick("msclkid");
+  pick("ttclid");
   pick("utm_source");
   pick("utm_medium");
   pick("utm_campaign");
@@ -145,6 +170,11 @@ export type AcquisitionCookieFlat = {
   utm_content: string | null;
   utm_term: string | null;
   gclid: string | null;
+  gbraid: string | null;
+  wbraid: string | null;
+  fbclid: string | null;
+  msclkid: string | null;
+  ttclid: string | null;
   entry_page: string | null;
 };
 
@@ -160,6 +190,11 @@ export function flatAcquisitionFromCookie(
       utm_content: null,
       utm_term: null,
       gclid: null,
+      gbraid: null,
+      wbraid: null,
+      fbclid: null,
+      msclkid: null,
+      ttclid: null,
       entry_page: null,
     };
   }
@@ -170,6 +205,11 @@ export function flatAcquisitionFromCookie(
     utm_content: c.utm_content?.trim() || null,
     utm_term: c.utm_term?.trim() || null,
     gclid: c.gclid?.trim() || null,
+    gbraid: c.gbraid?.trim() || null,
+    wbraid: c.wbraid?.trim() || null,
+    fbclid: c.fbclid?.trim() || null,
+    msclkid: c.msclkid?.trim() || null,
+    ttclid: c.ttclid?.trim() || null,
     entry_page: c.entry_page?.trim() || null,
   };
 }

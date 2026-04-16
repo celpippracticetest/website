@@ -16,7 +16,9 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ["line_items"],
+    });
     const guest =
       String(session.metadata?.guest_checkout ?? "").toLowerCase() === "true";
     if (!guest || session.status !== "complete") {
@@ -31,7 +33,25 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "No email on checkout" }, { status: 400 });
     }
 
-    return NextResponse.json({ email, sessionId }, { headers: { "Cache-Control": "no-store" } });
+    const amountTotalCents = Math.max(0, Number(session.amount_total || 0));
+    const currency = String(session.currency || "cad").toUpperCase();
+    const items = (session.line_items?.data || []).map((item) => ({
+      id: item.id,
+      description: item.description || "CELPIP Plan",
+      amount_total: Number(item.amount_total || 0),
+      quantity: Number(item.quantity || 1),
+      price: {
+        product:
+          typeof item.price?.product === "string"
+            ? item.price.product
+            : undefined,
+      },
+    }));
+
+    return NextResponse.json(
+      { email, sessionId, amountTotalCents, currency, items },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch (e) {
     console.error("[guest-signup-context]", e);
     return NextResponse.json({ error: "Could not load checkout" }, { status: 500 });

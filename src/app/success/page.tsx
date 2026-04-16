@@ -76,11 +76,21 @@ export default async function Success({ searchParams }: any) {
     attribution_campaign:
       checkoutMetadata.attribution_campaign || checkoutMetadata.utm_campaign || null,
     attribution_gclid: checkoutMetadata.attribution_gclid || checkoutMetadata.gclid || null,
+    attribution_gbraid: checkoutMetadata.attribution_gbraid || checkoutMetadata.gbraid || null,
+    attribution_wbraid: checkoutMetadata.attribution_wbraid || checkoutMetadata.wbraid || null,
+    attribution_fbclid: checkoutMetadata.attribution_fbclid || checkoutMetadata.fbclid || null,
+    attribution_msclkid: checkoutMetadata.attribution_msclkid || checkoutMetadata.msclkid || null,
+    attribution_ttclid: checkoutMetadata.attribution_ttclid || checkoutMetadata.ttclid || null,
     utm_source: checkoutMetadata.utm_source || null,
     utm_medium: checkoutMetadata.utm_medium || null,
     utm_campaign: checkoutMetadata.utm_campaign || null,
     utm_content: checkoutMetadata.utm_content || null,
     utm_term: checkoutMetadata.utm_term || null,
+    gbraid: checkoutMetadata.gbraid || null,
+    wbraid: checkoutMetadata.wbraid || null,
+    fbclid: checkoutMetadata.fbclid || null,
+    msclkid: checkoutMetadata.msclkid || null,
+    ttclid: checkoutMetadata.ttclid || null,
     entry_page: checkoutMetadata.entry_page || checkoutMetadata.entryPage || null,
     purchase_page: checkoutMetadata.purchase_page || null,
   };
@@ -130,8 +140,22 @@ export default async function Success({ searchParams }: any) {
     prevCheckout = await waitForCheckoutRecord(mongoClient, session_id);
   }
   if (prevCheckout !== null) {
+    const transactionId = (session?.invoice as string) || session_id;
+    const normalizedCurrency = currency?.toUpperCase() || "CAD";
+    const normalizedEmail = customerEmail?.trim().toLowerCase();
+
     return (
       <div className=" bg-[#F4F7FF] min-h-screen flex w-full lg:pt-[108px] pt-[70px]">
+        {status === "complete" ? (
+          <SuccessPageTracking
+            transactionId={transactionId}
+            value={(amountTotal ?? 0) / 100}
+            currency={normalizedCurrency}
+            items={lineItems || []}
+            email={normalizedEmail}
+            attributionData={purchaseAttributionData}
+          />
+        ) : null}
         <DashboardHome
           session={sessionData}
           email={customerEmail}

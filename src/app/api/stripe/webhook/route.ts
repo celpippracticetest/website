@@ -17,6 +17,7 @@ import { findOrCreateClerkUserByEmail } from "@/lib/clerkGuestCheckout";
 import { planNameIndicatesPremiumPlus } from "@/lib/subscriptionAccess";
 import { persistStripeCustomerIdToMongo } from "@/lib/resolveStripeCustomerId";
 import { recordPartnerCommissionFromMongoUser } from "@/lib/partner/recordPartnerCommissionFromMongoUser";
+import { sendGa4Events } from "@/lib/ga4MeasurementProtocol";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -47,6 +48,78 @@ function appendUniqueString(list: unknown, value: string): string[] {
     return base;
   }
   return [...base, value];
+}
+
+function readMetadataValue(
+  metadata: Record<string, string | undefined> | null | undefined,
+  key: string
+): string | null {
+  const value = metadata?.[key];
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function inferAttributionSource(
+  metadata: Record<string, string | undefined> | null | undefined
+): string {
+  const utmSource = readMetadataValue(metadata, "utm_source");
+  if (utmSource) return utmSource;
+
+  const gclid = readMetadataValue(metadata, "gclid");
+  const gbraid = readMetadataValue(metadata, "gbraid");
+  const wbraid = readMetadataValue(metadata, "wbraid");
+  if (gclid || gbraid || wbraid) return "google_ads";
+  if (readMetadataValue(metadata, "msclkid")) return "microsoft_ads";
+  if (readMetadataValue(metadata, "fbclid")) return "meta_ads";
+  if (readMetadataValue(metadata, "ttclid")) return "tiktok_ads";
+  return "direct";
+}
+
+function buildStripeGaClientId(args: {
+  metadata?: Record<string, string | undefined> | null;
+  customerId?: string | null;
+  userId?: string | null;
+  sessionId?: string | null;
+  subscriptionId?: string | null;
+}): string {
+  const metadataSessionId = readMetadataValue(
+    args.metadata ?? undefined,
+    "attribution_session_id"
+  );
+  return (
+    metadataSessionId ||
+    args.sessionId ||
+    args.customerId ||
+    args.subscriptionId ||
+    args.userId ||
+    "stripe_unknown_client"
+  );
+}
+
+function buildStripeGaAttributionParams(
+  metadata: Record<string, string | undefined> | null | undefined
+): Record<string, string> {
+  return {
+    source: inferAttributionSource(metadata),
+    medium: readMetadataValue(metadata, "utm_medium") || "",
+    campaign: readMetadataValue(metadata, "utm_campaign") || "",
+    utm_source: readMetadataValue(metadata, "utm_source") || "",
+    utm_medium: readMetadataValue(metadata, "utm_medium") || "",
+    utm_campaign: readMetadataValue(metadata, "utm_campaign") || "",
+    utm_content: readMetadataValue(metadata, "utm_content") || "",
+    utm_term: readMetadataValue(metadata, "utm_term") || "",
+    gclid: readMetadataValue(metadata, "gclid") || "",
+    gbraid: readMetadataValue(metadata, "gbraid") || "",
+    wbraid: readMetadataValue(metadata, "wbraid") || "",
+    fbclid: readMetadataValue(metadata, "fbclid") || "",
+    msclkid: readMetadataValue(metadata, "msclkid") || "",
+    ttclid: readMetadataValue(metadata, "ttclid") || "",
+    attribution_session_id:
+      readMetadataValue(metadata, "attribution_session_id") || "",
+    purchase_page: readMetadataValue(metadata, "purchase_page") || "",
+    entry_page: readMetadataValue(metadata, "entry_page") || "",
+  };
 }
 
 async function updateUserPublicMetadata(
@@ -647,6 +720,36 @@ export async function POST(req: Request) {
 
       }
 
+      void sendGa4Events({
+        clientId: buildStripeGaClientId({
+          metadata,
+          customerId:
+            typeof session.customer === "string" ? session.customer : null,
+          userId: metadata?.user_id || null,
+          sessionId: session.id,
+          subscriptionId:
+            typeof session.subscription === "string"
+              ? session.subscription
+              : null,
+        }),
+        userId: metadata?.user_id || undefined,
+        events: [
+          {
+            name: "stripe_checkout_completed",
+            params: {
+              transaction_id: (session.invoice as string) || session.id,
+              value: (session.amount_total || 0) / 100,
+              currency: (session.currency || "usd").toUpperCase(),
+              plan_name: metadata?.plan_name || "",
+              purchase_type: metadata?.purchase_type || "first_purchase",
+              billing_mode:
+                session.mode === "subscription" ? "subscription" : "one_time",
+              ...buildStripeGaAttributionParams(metadata),
+            },
+          },
+        ],
+      });
+
       const pricingAbRaw = metadata?.pricing_ab_layout;
       if (
         typeof pricingAbRaw === "string" &&
@@ -882,6 +985,25 @@ export async function POST(req: Request) {
       ) {
         subscriptionId = rawSubscription?.id;
       }
+      let subscriptionMetadata: Record<string, string | undefined> | null = null;
+      if (subscriptionId) {
+        try {
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          subscriptionMetadata = subscription.metadata as Record<string, string | undefined>;
+        } catch {
+          subscriptionMetadata = null;
+        }
+      }
+      const billingReason =
+        typeof invoice?.billing_reason === "string" ? invoice.billing_reason : "";
+      const invoicePurchaseType =
+        billingReason === "subscription_cycle"
+          ? "subscription_renewal"
+          : "first_purchase";
+      const invoiceEventName =
+        invoicePurchaseType === "subscription_renewal"
+          ? "subscription_renewed"
+          : "stripe_invoice_paid";
 
       let sessionId: string | null = null;
       const paymentIntentId = invoice?.payment_intent as string | undefined;
@@ -941,6 +1063,33 @@ export async function POST(req: Request) {
                   );
                 }
 
+                void sendGa4Events({
+                  clientId: buildStripeGaClientId({
+                    metadata: subscriptionMetadata,
+                    customerId:
+                      typeof invoice?.customer === "string" ? invoice.customer : null,
+                    userId: user.id,
+                    sessionId: lastCheckout.checkoutId,
+                    subscriptionId,
+                  }),
+                  userId: user.id,
+                  events: [
+                    {
+                      name: invoiceEventName,
+                      params: {
+                        transaction_id: invoiceId || lastCheckout.checkoutId,
+                        invoice_id: invoiceId || "",
+                        subscription_id: subscriptionId || "",
+                        purchase_type: invoicePurchaseType,
+                        value: (invoice?.amount_paid || 0) / 100,
+                        currency: (invoice?.currency || "usd").toUpperCase(),
+                        billing_reason: billingReason,
+                        ...buildStripeGaAttributionParams(subscriptionMetadata),
+                      },
+                    },
+                  ],
+                });
+
                 return NextResponse.json({ received: true });
               }
             }
@@ -951,6 +1100,31 @@ export async function POST(req: Request) {
         console.warn(
           `No checkout session or user found for invoice ${invoiceId}, skipping repository update`
         );
+        void sendGa4Events({
+          clientId: buildStripeGaClientId({
+            metadata: subscriptionMetadata,
+            customerId:
+              typeof invoice?.customer === "string" ? invoice.customer : null,
+            userId: null,
+            sessionId: null,
+            subscriptionId,
+          }),
+          events: [
+            {
+              name: invoiceEventName,
+              params: {
+                transaction_id: invoiceId || "",
+                invoice_id: invoiceId || "",
+                subscription_id: subscriptionId || "",
+                purchase_type: invoicePurchaseType,
+                value: (invoice?.amount_paid || 0) / 100,
+                currency: (invoice?.currency || "usd").toUpperCase(),
+                billing_reason: billingReason,
+                ...buildStripeGaAttributionParams(subscriptionMetadata),
+              },
+            },
+          ],
+        });
         return NextResponse.json({ received: true });
       }
 
@@ -965,6 +1139,45 @@ export async function POST(req: Request) {
         );
         if (session) {
           await handleReferralRewards(session, session.metadata);
+
+          const metadata = session.metadata as Record<string, string | undefined>;
+          const billingReason =
+            typeof invoice?.billing_reason === "string"
+              ? invoice.billing_reason
+              : "";
+          const purchaseType =
+            billingReason === "subscription_cycle"
+              ? "subscription_renewal"
+              : "first_purchase";
+
+          void sendGa4Events({
+            clientId: buildStripeGaClientId({
+              metadata,
+              customerId: typeof invoice?.customer === "string" ? invoice.customer : null,
+              userId: metadata?.user_id || null,
+              sessionId: session.id,
+              subscriptionId,
+            }),
+            userId: metadata?.user_id || undefined,
+            events: [
+              {
+                name:
+                  purchaseType === "subscription_renewal"
+                    ? "subscription_renewed"
+                    : "stripe_invoice_paid",
+                params: {
+                  transaction_id: invoiceId || session.id,
+                  invoice_id: invoiceId || "",
+                  subscription_id: subscriptionId || "",
+                  purchase_type: purchaseType,
+                  value: (invoice?.amount_paid || 0) / 100,
+                  currency: (invoice?.currency || "usd").toUpperCase(),
+                  billing_reason: billingReason,
+                  ...buildStripeGaAttributionParams(metadata),
+                },
+              },
+            ],
+          });
         }
       } catch (err) {
         console.error(
@@ -1077,6 +1290,31 @@ export async function POST(req: Request) {
           logErr
         );
       }
+
+      const subscriptionMetadata =
+        (subscription.metadata as Record<string, string | undefined>) || {};
+      void sendGa4Events({
+        clientId: buildStripeGaClientId({
+          metadata: subscriptionMetadata,
+          customerId:
+            typeof subscription.customer === "string" ? subscription.customer : null,
+          userId: user_id || subscriptionMetadata.user_id || null,
+          sessionId: checkout_id,
+          subscriptionId: subscription.id,
+        }),
+        userId: user_id || subscriptionMetadata.user_id || undefined,
+        events: [
+          {
+            name: "subscription_cancelled",
+            params: {
+              subscription_id: subscription.id,
+              transaction_id: checkout_id,
+              cancellation_reason: "stripe_subscription_deleted",
+              ...buildStripeGaAttributionParams(subscriptionMetadata),
+            },
+          },
+        ],
+      });
 
       return NextResponse.json({ received: true });
     }

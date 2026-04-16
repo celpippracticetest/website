@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
 import client from "@/lib/mongodb";
 
 function toDate(value: unknown): Date | null {
@@ -77,12 +77,6 @@ export async function GET(request: NextRequest) {
       }
       : { $match: {} };
 
-    const deviceFilterPipeline = [];
-    if (deviceFilter === "gt3") {
-      deviceFilterPipeline.push({
-        $match: { uniqueUserAgentsCount: { $gt: 3 } },
-      });
-    }
 
     // --- Aggregation Pipeline ---
     const pipeline = [
@@ -315,7 +309,6 @@ export async function GET(request: NextRequest) {
       // 5. Apply Search Filter (on the merged result)
       searchMatch,
       ...subscriptionFilter,
-      ...deviceFilterPipeline,
       // 6. Sort
       {
         $sort: {
@@ -446,13 +439,46 @@ export async function GET(request: NextRequest) {
       subscriptionEndDate: subscriptionEndDate ? subscriptionEndDate.toISOString() : null,
     }});
 
+    const clerk = await clerkClient();
+    const usersWithClerkDevices = await Promise.all(
+      formattedUsers.map(async (user: any) => {
+        try {
+          const { data: sessions } = await clerk.sessions.getSessionList({
+            userId: user.userId,
+          });
+          const activeSessions = sessions.filter((session) => session.status === "active");
+          return {
+            ...user,
+            clerkDeviceCount: activeSessions.length,
+          };
+        } catch (error) {
+          console.error("Failed to load Clerk sessions for user:", user.userId, error);
+          return {
+            ...user,
+            clerkDeviceCount: 0,
+          };
+        }
+      })
+    );
+
+    const filteredUsers =
+      deviceFilter === "gt3"
+        ? usersWithClerkDevices.filter(
+            (user: { clerkDeviceCount?: number }) =>
+              (user.clerkDeviceCount ?? 0) > 3
+          )
+        : usersWithClerkDevices;
+
     return NextResponse.json({
-      users: formattedUsers,
+      users: filteredUsers,
       pagination: {
         page,
         limit,
-        totalCount,
-        totalPages: Math.ceil(totalCount / limit),
+        totalCount: deviceFilter === "gt3" ? filteredUsers.length : totalCount,
+        totalPages:
+          deviceFilter === "gt3"
+            ? Math.max(1, Math.ceil(filteredUsers.length / limit))
+            : Math.ceil(totalCount / limit),
       },
     });
   } catch (error) {

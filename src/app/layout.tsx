@@ -34,8 +34,9 @@ const jakarta = Plus_Jakarta_Sans({
   fallback: ["system-ui", "arial"],
 });
 
-const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || "GTM-M24FJ7JC";
-const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID || "vqdy02aq70";
+const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID ;
+const LEGACY_GTM_ID = process.env.NEXT_PUBLIC_GTM_LEGACY_ID ;
+const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID ;
 const DEFAULT_APP_BASE_URL = "https://celpippracticetest.com";
 
 function normalizeAppBaseUrl(raw: string | undefined): string {
@@ -139,6 +140,7 @@ export default async function RootLayout({
   const baseUrl = normalizeAppBaseUrl(process.env.APP_BASE_URL);
   const enableGtm =
     process.env.NODE_ENV === "production" && !baseUrl.includes("vercel.app");
+  const enableLegacyGtm = enableGtm && LEGACY_GTM_ID && LEGACY_GTM_ID !== GTM_ID;
   const homepageHero = await getHomepageHeroDisplay();
   const { userId } = await auth();
   const isSignedIn = !!userId;
@@ -205,6 +207,15 @@ export default async function RootLayout({
             data-layer="dataLayer"
           />
         )}
+        {enableLegacyGtm && (
+          <Script
+            id="gtm-head-legacy"
+            strategy="afterInteractive"
+            src="/scripts/gtm-init.js"
+            data-gtm-id={LEGACY_GTM_ID}
+            data-layer="dataLayer"
+          />
+        )}
 
         {/* JSON-LD — inline in initial HTML for SEO bots, no JS execution needed */}
         <script
@@ -235,6 +246,16 @@ export default async function RootLayout({
             <noscript>
               <iframe
                 src={`/gtm/ns.html?id=${GTM_ID}`}
+                height="0"
+                width="0"
+                style={{ display: "none", visibility: "hidden" }}
+              />
+            </noscript>
+          )}
+          {enableLegacyGtm && (
+            <noscript>
+              <iframe
+                src={`/gtm/ns.html?id=${LEGACY_GTM_ID}`}
                 height="0"
                 width="0"
                 style={{ display: "none", visibility: "hidden" }}

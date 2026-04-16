@@ -16,6 +16,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       gclid,
+      gbraid,
+      wbraid,
+      fbclid,
+      msclkid,
+      ttclid,
       utm_source,
       utm_medium,
       utm_campaign,
@@ -31,6 +36,11 @@ export async function POST(req: NextRequest) {
     // Filter out undefined/null values
     const attributionData: Record<string, string> = {};
     if (gclid) attributionData.gclid = gclid;
+    if (gbraid) attributionData.gbraid = gbraid;
+    if (wbraid) attributionData.wbraid = wbraid;
+    if (fbclid) attributionData.fbclid = fbclid;
+    if (msclkid) attributionData.msclkid = msclkid;
+    if (ttclid) attributionData.ttclid = ttclid;
     if (utm_source) attributionData.utm_source = utm_source;
     if (utm_medium) attributionData.utm_medium = utm_medium;
     if (utm_campaign) attributionData.utm_campaign = utm_campaign;
@@ -50,7 +60,30 @@ export async function POST(req: NextRequest) {
     }
 
     const nowIso = new Date().toISOString();
-    const source = attributionData.utm_source || (attributionData.gclid ? "google_ads" : "direct");
+    const inferSourceFromReferrer = (): string => {
+      if (!referrer) return "direct";
+      try {
+        const host = new URL(referrer).hostname.toLowerCase();
+        if (host.includes("google.")) return "google_organic";
+        if (host.includes("bing.")) return "bing_organic";
+        if (host.includes("facebook.") || host.includes("instagram.")) return "meta_organic";
+        if (host.includes("tiktok.")) return "tiktok_organic";
+      } catch {
+        return "referral";
+      }
+      return "referral";
+    };
+    const source =
+      attributionData.utm_source ||
+      (attributionData.gclid || attributionData.gbraid || attributionData.wbraid
+        ? "google_ads"
+        : attributionData.msclkid
+          ? "microsoft_ads"
+          : attributionData.fbclid
+            ? "meta_ads"
+            : attributionData.ttclid
+              ? "tiktok_ads"
+              : inferSourceFromReferrer());
     const medium = attributionData.utm_medium || null;
     const campaign = attributionData.utm_campaign || null;
     const content = attributionData.utm_content || null;
@@ -72,6 +105,13 @@ export async function POST(req: NextRequest) {
         ...(attributionData.utm_content && { utm_content: attributionData.utm_content }),
         ...(attributionData.utm_term && { utm_term: attributionData.utm_term }),
         ...(attributionData.gclid && { gclid: attributionData.gclid }),
+        ...(attributionData.gbraid && { gbraid: attributionData.gbraid }),
+        ...(attributionData.wbraid && { wbraid: attributionData.wbraid }),
+        ...(attributionData.fbclid && { fbclid: attributionData.fbclid }),
+        ...(attributionData.msclkid && { msclkid: attributionData.msclkid }),
+        ...(attributionData.ttclid && { ttclid: attributionData.ttclid }),
+        ...(referrer && { referrer }),
+        ...(resolvedEntryPage && { entryPage: resolvedEntryPage }),
         ...(attributionData.country && { country: attributionData.country }),
       },
     });
@@ -99,6 +139,11 @@ export async function POST(req: NextRequest) {
               content,
               term,
               gclid: attributionData.gclid || null,
+              gbraid: attributionData.gbraid || null,
+              wbraid: attributionData.wbraid || null,
+              fbclid: attributionData.fbclid || null,
+              msclkid: attributionData.msclkid || null,
+              ttclid: attributionData.ttclid || null,
               entryPage: resolvedEntryPage,
               referrer: referrer || null,
               country: resolvedCountry,
@@ -112,6 +157,11 @@ export async function POST(req: NextRequest) {
               content,
               term,
               gclid: attributionData.gclid || null,
+              gbraid: attributionData.gbraid || null,
+              wbraid: attributionData.wbraid || null,
+              fbclid: attributionData.fbclid || null,
+              msclkid: attributionData.msclkid || null,
+              ttclid: attributionData.ttclid || null,
               entryPage: resolvedEntryPage,
               referrer: referrer || null,
               country: resolvedCountry,
@@ -139,6 +189,11 @@ export async function POST(req: NextRequest) {
       content,
       term,
       gclid: attributionData.gclid || null,
+      gbraid: attributionData.gbraid || null,
+      wbraid: attributionData.wbraid || null,
+      fbclid: attributionData.fbclid || null,
+      msclkid: attributionData.msclkid || null,
+      ttclid: attributionData.ttclid || null,
       entryPage: resolvedEntryPage,
       referrer: referrer || null,
       country: resolvedCountry,

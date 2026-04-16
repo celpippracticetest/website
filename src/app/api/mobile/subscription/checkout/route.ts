@@ -319,14 +319,58 @@ export async function POST(request: NextRequest) {
         readStringValue(lastTouch.gclid) ||
         readStringValue(publicMetadata.gclid) ||
         "",
+      gbraid:
+        readStringValue(body?.gbraid) ||
+        readStringValue(acqCk.gbraid) ||
+        readStringValue(lastTouch.gbraid) ||
+        readStringValue(publicMetadata.gbraid) ||
+        "",
+      wbraid:
+        readStringValue(body?.wbraid) ||
+        readStringValue(acqCk.wbraid) ||
+        readStringValue(lastTouch.wbraid) ||
+        readStringValue(publicMetadata.wbraid) ||
+        "",
+      fbclid:
+        readStringValue(body?.fbclid) ||
+        readStringValue(acqCk.fbclid) ||
+        readStringValue(lastTouch.fbclid) ||
+        readStringValue(publicMetadata.fbclid) ||
+        "",
+      msclkid:
+        readStringValue(body?.msclkid) ||
+        readStringValue(acqCk.msclkid) ||
+        readStringValue(lastTouch.msclkid) ||
+        readStringValue(publicMetadata.msclkid) ||
+        "",
+      ttclid:
+        readStringValue(body?.ttclid) ||
+        readStringValue(acqCk.ttclid) ||
+        readStringValue(lastTouch.ttclid) ||
+        readStringValue(publicMetadata.ttclid) ||
+        "",
     };
+    const inferredPaidSource =
+      attributionMetadata.gclid || attributionMetadata.gbraid || attributionMetadata.wbraid
+        ? "google_ads"
+        : attributionMetadata.msclkid
+          ? "microsoft_ads"
+          : attributionMetadata.fbclid
+            ? "meta_ads"
+            : attributionMetadata.ttclid
+              ? "tiktok_ads"
+              : "direct";
     const attributionSnapshot = {
       attribution_source:
-        attributionMetadata.utm_source ||
-        (attributionMetadata.gclid ? "google_ads" : "direct"),
+        attributionMetadata.utm_source || inferredPaidSource,
       attribution_medium: attributionMetadata.utm_medium,
       attribution_campaign: attributionMetadata.utm_campaign,
       attribution_gclid: attributionMetadata.gclid,
+      attribution_gbraid: attributionMetadata.gbraid,
+      attribution_wbraid: attributionMetadata.wbraid,
+      attribution_fbclid: attributionMetadata.fbclid,
+      attribution_msclkid: attributionMetadata.msclkid,
+      attribution_ttclid: attributionMetadata.ttclid,
       entry_page:
         readStringValue(body?.entry_page) ||
         readStringValue(acqCk.entry_page) ||

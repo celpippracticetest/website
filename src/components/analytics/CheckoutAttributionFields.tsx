@@ -6,6 +6,11 @@ import { HOME_AB_COOKIE } from "@/lib/homeAbTest";
 
 const STORAGE_KEY_BY_FIELD = {
   gclid: "pending_gclid",
+  gbraid: "pending_gbraid",
+  wbraid: "pending_wbraid",
+  fbclid: "pending_fbclid",
+  msclkid: "pending_msclkid",
+  ttclid: "pending_ttclid",
   utm_source: "pending_utm_source",
   utm_medium: "pending_utm_medium",
   utm_campaign: "pending_utm_campaign",

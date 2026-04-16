@@ -5,18 +5,50 @@ import { CustomSignUpForm } from "@/components/auth/CustomSignUpForm";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { trackAuth } from "@/lib/gtm";
+import { useEcommerceTracking } from "@/hooks/useTracking";
+
+type GuestCheckoutItem = {
+  id?: string;
+  description?: string;
+  amount_total?: number;
+  quantity?: number;
+  price?: {
+    product?: string;
+  };
+};
 
 export default function SignUpPageClient() {
   const { user, isSignedIn } = useUser();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { purchase } = useEcommerceTracking();
   const [referralCode, setReferralCode] = useState<string>("");
   const [inviterName, setInviterName] = useState<string>("");
   const [guestCheckout, setGuestCheckout] = useState<{
     sessionId: string;
     email: string;
+    amountTotalCents: number;
+    currency: string;
+    items: GuestCheckoutItem[];
   } | null>(null);
   const [guestCheckoutError, setGuestCheckoutError] = useState<string | null>(null);
+
+  const readAttributionFromStorage = () => ({
+    gclid: localStorage.getItem("pending_gclid"),
+    gbraid: localStorage.getItem("pending_gbraid"),
+    wbraid: localStorage.getItem("pending_wbraid"),
+    fbclid: localStorage.getItem("pending_fbclid"),
+    msclkid: localStorage.getItem("pending_msclkid"),
+    ttclid: localStorage.getItem("pending_ttclid"),
+    utm_source: localStorage.getItem("pending_utm_source"),
+    utm_medium: localStorage.getItem("pending_utm_medium"),
+    utm_campaign: localStorage.getItem("pending_utm_campaign"),
+    utm_content: localStorage.getItem("pending_utm_content"),
+    utm_term: localStorage.getItem("pending_utm_term"),
+    entry_page: localStorage.getItem("pending_entry_page"),
+    referrer: localStorage.getItem("pending_referrer"),
+    attribution_session_id: localStorage.getItem("pending_attribution_session_id"),
+  });
 
   useEffect(() => {
     const getCookie = (name: string) => {
@@ -31,6 +63,11 @@ export default function SignUpPageClient() {
       getCookie("pendingInviterName") || searchParams.get("inviter");
 
     const gclid = searchParams.get("gclid");
+    const gbraid = searchParams.get("gbraid");
+    const wbraid = searchParams.get("wbraid");
+    const fbclid = searchParams.get("fbclid");
+    const msclkid = searchParams.get("msclkid");
+    const ttclid = searchParams.get("ttclid");
     const utmSource = searchParams.get("utm_source");
     const utmMedium = searchParams.get("utm_medium");
     const utmCampaign = searchParams.get("utm_campaign");
@@ -38,6 +75,11 @@ export default function SignUpPageClient() {
     const utmTerm = searchParams.get("utm_term");
 
     if (gclid) localStorage.setItem("pending_gclid", gclid);
+    if (gbraid) localStorage.setItem("pending_gbraid", gbraid);
+    if (wbraid) localStorage.setItem("pending_wbraid", wbraid);
+    if (fbclid) localStorage.setItem("pending_fbclid", fbclid);
+    if (msclkid) localStorage.setItem("pending_msclkid", msclkid);
+    if (ttclid) localStorage.setItem("pending_ttclid", ttclid);
     if (utmSource) localStorage.setItem("pending_utm_source", utmSource);
     if (utmMedium) localStorage.setItem("pending_utm_medium", utmMedium);
     if (utmCampaign) localStorage.setItem("pending_utm_campaign", utmCampaign);
@@ -70,13 +112,26 @@ export default function SignUpPageClient() {
         const res = await fetch(
           `/api/checkout/guest-signup-context?session_id=${encodeURIComponent(raw)}`
         );
-        const data = (await res.json()) as { error?: string; email?: string; sessionId?: string };
+        const data = (await res.json()) as {
+          error?: string;
+          email?: string;
+          sessionId?: string;
+          amountTotalCents?: number;
+          currency?: string;
+          items?: GuestCheckoutItem[];
+        };
         if (cancelled) return;
         if (!res.ok || !data.email || !data.sessionId) {
           setGuestCheckoutError(data.error || "Could not verify your purchase.");
           return;
         }
-        setGuestCheckout({ sessionId: data.sessionId, email: data.email });
+        setGuestCheckout({
+          sessionId: data.sessionId,
+          email: data.email,
+          amountTotalCents: Math.max(0, Number(data.amountTotalCents || 0)),
+          currency: String(data.currency || "CAD").toUpperCase(),
+          items: Array.isArray(data.items) ? data.items : [],
+        });
       } catch {
         if (!cancelled) {
           setGuestCheckoutError("Could not verify your purchase.");
@@ -94,13 +149,15 @@ export default function SignUpPageClient() {
     const dedupeKey = `signup_conversion_tracked_${user.id}`;
     if (localStorage.getItem(dedupeKey) === "1") return;
 
+    const signupAttribution = readAttributionFromStorage();
+
     trackAuth.signUpCompleted(user.id, "email", {
       email: user.primaryEmailAddress?.emailAddress?.trim().toLowerCase(),
       address: {
         first_name: user.firstName || "",
         last_name: user.lastName || "",
       },
-    });
+    }, signupAttribution);
 
     localStorage.setItem(dedupeKey, "1");
   }, [isSignedIn, user]);
@@ -161,18 +218,38 @@ export default function SignUpPageClient() {
   const saveAttribution = async () => {
     try {
       const gclid = localStorage.getItem("pending_gclid");
+      const gbraid = localStorage.getItem("pending_gbraid");
+      const wbraid = localStorage.getItem("pending_wbraid");
+      const fbclid = localStorage.getItem("pending_fbclid");
+      const msclkid = localStorage.getItem("pending_msclkid");
+      const ttclid = localStorage.getItem("pending_ttclid");
       const utm_source = localStorage.getItem("pending_utm_source");
       const utm_medium = localStorage.getItem("pending_utm_medium");
       const utm_campaign = localStorage.getItem("pending_utm_campaign");
       const utm_content = localStorage.getItem("pending_utm_content");
       const utm_term = localStorage.getItem("pending_utm_term");
 
-      if (gclid || utm_source || utm_medium || utm_campaign) {
+      if (
+        gclid ||
+        gbraid ||
+        wbraid ||
+        fbclid ||
+        msclkid ||
+        ttclid ||
+        utm_source ||
+        utm_medium ||
+        utm_campaign
+      ) {
         const response = await fetch("/api/users/update-attribution", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             gclid,
+            gbraid,
+            wbraid,
+            fbclid,
+            msclkid,
+            ttclid,
             utm_source,
             utm_medium,
             utm_campaign,
@@ -183,6 +260,11 @@ export default function SignUpPageClient() {
 
         if (response.ok) {
           localStorage.removeItem("pending_gclid");
+          localStorage.removeItem("pending_gbraid");
+          localStorage.removeItem("pending_wbraid");
+          localStorage.removeItem("pending_fbclid");
+          localStorage.removeItem("pending_msclkid");
+          localStorage.removeItem("pending_ttclid");
           localStorage.removeItem("pending_utm_source");
           localStorage.removeItem("pending_utm_medium");
           localStorage.removeItem("pending_utm_campaign");
@@ -199,6 +281,47 @@ export default function SignUpPageClient() {
     if (!isSignedIn || !user) return;
 
     void (async () => {
+      if (guestCheckout?.sessionId) {
+        const dedupeKey = `guest_checkout_purchase_tracked_${guestCheckout.sessionId}`;
+        if (sessionStorage.getItem(dedupeKey) !== "1") {
+          const formattedItems =
+            guestCheckout.items.length > 0
+              ? guestCheckout.items.map((item) => ({
+                  item_id: item.price?.product || item.id || "unknown",
+                  item_name: item.description || "CELPIP Plan",
+                  price: Math.max(0, Number(item.amount_total || 0)) / 100,
+                  quantity: Math.max(1, Number(item.quantity || 1)),
+                  item_brand: "CELPIP Practice Test",
+                  item_category: "Subscription",
+                  item_category2: "Digital Service",
+                }))
+              : [
+                  {
+                    item_id: "guest-checkout",
+                    item_name: "CELPIP Plan",
+                    price: guestCheckout.amountTotalCents / 100,
+                    quantity: 1,
+                    item_brand: "CELPIP Practice Test",
+                    item_category: "Subscription",
+                    item_category2: "Digital Service",
+                  },
+                ];
+
+          purchase(
+            guestCheckout.sessionId,
+            formattedItems,
+            guestCheckout.currency,
+            guestCheckout.amountTotalCents / 100,
+            undefined,
+            user.primaryEmailAddress?.emailAddress
+              ? { email: user.primaryEmailAddress.emailAddress.trim().toLowerCase() }
+              : undefined,
+            readAttributionFromStorage()
+          );
+          sessionStorage.setItem(dedupeKey, "1");
+        }
+      }
+
       await saveAttribution();
 
       const pendingReferralCode = localStorage.getItem("pendingReferralCode");
@@ -217,7 +340,7 @@ export default function SignUpPageClient() {
         router.push("/onboarding-survey");
       }
     })();
-  }, [guestCheckout?.sessionId, isSignedIn, user, router]);
+  }, [guestCheckout, isSignedIn, purchase, user, router]);
 
   const rawCheckoutSession = searchParams.get("checkout_session")?.trim();
   const verifyingGuestCheckout =

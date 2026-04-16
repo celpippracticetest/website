@@ -76,6 +76,7 @@ interface User {
   subscriptionDurationDays?: number;
   subscriptionStartDate?: string;
   subscriptionEndDate?: string;
+  clerkDeviceCount?: number;
 }
 
 interface UsersResponse {
@@ -676,7 +677,7 @@ export default function UsersPage() {
                           {user.uniqueIpAddresses} IPs
                         </Typography>
                         <Typography variant="caption" className="text-gray-500">
-                          {user.uniqueUserAgents} devices
+                          {user.clerkDeviceCount ?? 0} devices (Clerk)
                         </Typography>
                       </TableCell>
 
@@ -951,7 +952,7 @@ export default function UsersPage() {
                                       Unique Devices:
                                     </Typography>
                                     <Typography variant="body2" className="font-medium">
-                                      {user.uniqueUserAgents}
+                                      {user.clerkDeviceCount ?? 0}
                                     </Typography>
                                   </Box>
                                   {user.ipAddresses && user.ipAddresses.length > 0 && (
