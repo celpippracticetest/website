@@ -9,6 +9,11 @@ import { Metadata } from "next";
 import { currentUser } from "@clerk/nextjs/server";
 import ExamFAQ, { FAQ_DATA } from "@/components/dashboard-app/ExamFAQ";
 import { Box, Paper, Stack, Typography } from "@mui/material";
+import {
+  coercePurchasedMockExamIds,
+  normalizeMockExamIdForAccess,
+} from "@/lib/subscriptionAccess";
+import type { TExamSchemaDto } from "@/models/exam.model";
 
 type ExamProgressSummary = {
   completedParts: number;
@@ -135,7 +140,23 @@ const ExamsPage = async () => {
   const result = await exampRepo.getAllExam({ isReady: true }, 0, 1000);
   const user = await currentUser();
   const noUser = !user;
-  const examIds = result.items.map((exam) => exam.id);
+
+  const purchasedIdsRaw = user
+    ? (user.publicMetadata as Record<string, unknown> | undefined)?.purchasedMockExamIds
+    : undefined;
+  const purchasedIdSet = new Set(coercePurchasedMockExamIds(purchasedIdsRaw));
+  const examsForOverview: TExamSchemaDto[] = [...result.items].sort((a, b) => {
+    const aKey = normalizeMockExamIdForAccess(a.id);
+    const bKey = normalizeMockExamIdForAccess(b.id);
+    const aPurchased = Boolean(aKey && purchasedIdSet.has(aKey));
+    const bPurchased = Boolean(bKey && purchasedIdSet.has(bKey));
+    if (aPurchased !== bPurchased) {
+      return aPurchased ? -1 : 1;
+    }
+    return (a.order ?? 0) - (b.order ?? 0);
+  });
+
+  const examIds = examsForOverview.map((exam) => exam.id);
   let examProgressById: Record<string, ExamProgressSummary> = {};
 
   if (user) {
@@ -360,9 +381,18 @@ const ExamsPage = async () => {
 
         <Box id="exam-overview-list">
           <ExamOverview
-            exams={result.items}
+            exams={examsForOverview}
             examProgressById={examProgressById}
             showUserProgress={Boolean(user)}
+            clerkAccessSnapshot={
+              user
+                ? {
+                    purchasedMockExamIds: (
+                      user.publicMetadata as Record<string, unknown> | undefined
+                    )?.purchasedMockExamIds,
+                  }
+                : undefined
+            }
           />
         </Box>
 

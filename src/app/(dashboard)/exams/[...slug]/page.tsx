@@ -47,20 +47,15 @@ const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
   const plan: string | undefined = user?.publicMetadata?.plan as
     | string
     | undefined;
-  const roleValue = user?.publicMetadata?.role as unknown;
-  const isAdmin: boolean = Array.isArray(roleValue)
-    ? roleValue.includes("admin")
-    : roleValue === "admin";
   if (
     !user ||
-    (!isAdmin &&
-      !hasMockExamAccess(
-        plan,
-        user?.publicMetadata?.purchaseDate as string | undefined,
-        examId,
-        firstReadyExamId,
-        user?.publicMetadata?.purchasedMockExamIds
-      ))
+    !hasMockExamAccess(
+      plan,
+      user?.publicMetadata?.purchaseDate as string | undefined,
+      examId,
+      firstReadyExamId,
+      user?.publicMetadata?.purchasedMockExamIds
+    )
   ) {
     redirect("/exam-overview", RedirectType.push);
   }

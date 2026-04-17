@@ -65,6 +65,70 @@ export function hasPremiumPlusAccess(
   );
 }
 
+/**
+ * Canonical Mongo ObjectId string for access checks. URLs use `exam_<id>`; Clerk/Stripe may store either form.
+ */
+export function normalizeMockExamIdForAccess(id: string | null | undefined): string | null {
+  if (id == null) return null;
+  const t = String(id).trim();
+  if (!t) return null;
+  const stripped = /^exam_/i.test(t) ? t.replace(/^exam_/i, "") : t;
+  const core = stripped.trim();
+  if (!core) return null;
+  if (/^[0-9a-f]{24}$/i.test(core)) {
+    return core.toLowerCase();
+  }
+  return core;
+}
+
+/** Normalize Clerk `publicMetadata.purchasedMockExamIds` (array, JSON string, comma-separated, or odd shapes). */
+export function coercePurchasedMockExamIds(raw: unknown): string[] {
+  if (raw == null) return [];
+
+  if (Array.isArray(raw)) {
+    const out: string[] = [];
+    for (const item of raw) {
+      if (typeof item === "string") {
+        const n = normalizeMockExamIdForAccess(item);
+        if (n) out.push(n);
+      }
+    }
+    return out;
+  }
+
+  if (typeof raw === "string") {
+    const t = raw.trim();
+    if (!t) return [];
+    if (t.startsWith("[")) {
+      try {
+        return coercePurchasedMockExamIds(JSON.parse(t) as unknown);
+      } catch {
+        /* fall through */
+      }
+    }
+    return t
+      .split(",")
+      .map((s) => normalizeMockExamIdForAccess(s.trim()))
+      .filter((s): s is string => s != null && s.length > 0);
+  }
+
+  if (typeof raw === "object") {
+    return coercePurchasedMockExamIds(Object.values(raw as Record<string, unknown>));
+  }
+
+  return [];
+}
+
+/** True when this exam is unlocked because its id is in `purchasedMockExamIds` (à la carte), not only via plan tier. */
+export function isMockExamUnlockedViaPurchase(
+  examId: string | null | undefined,
+  purchasedMockExamIds?: unknown
+): boolean {
+  const normalizedExamId = normalizeMockExamIdForAccess(examId ?? undefined);
+  if (!normalizedExamId) return false;
+  return coercePurchasedMockExamIds(purchasedMockExamIds).includes(normalizedExamId);
+}
+
 /** Full mock exam access: Plus/Enterprise for all exams; Premium only for the first ready exam (catalog order). */
 export function hasMockExamAccess(
   plan: string | null | undefined,
@@ -73,16 +137,16 @@ export function hasMockExamAccess(
   firstReadyExamId: string | null | undefined,
   purchasedMockExamIds?: unknown
 ) {
-  const purchasedIds = Array.isArray(purchasedMockExamIds)
-    ? purchasedMockExamIds.filter((item): item is string => typeof item === "string")
-    : [];
-  if (examId && purchasedIds.includes(examId)) {
+  const normalizedExamId = normalizeMockExamIdForAccess(examId ?? undefined);
+  const purchasedIds = coercePurchasedMockExamIds(purchasedMockExamIds);
+  if (normalizedExamId && purchasedIds.includes(normalizedExamId)) {
     return true;
   }
   if (hasPremiumPlusAccess(plan)) {
     return true;
   }
-  if (!examId || !firstReadyExamId || examId !== firstReadyExamId) {
+  const normalizedFirstReady = normalizeMockExamIdForAccess(firstReadyExamId ?? undefined);
+  if (!normalizedExamId || !normalizedFirstReady || normalizedExamId !== normalizedFirstReady) {
     return false;
   }
   return hasPaidPracticeAccess(plan, purchaseDate);

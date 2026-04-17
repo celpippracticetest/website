@@ -1,9 +1,33 @@
+import dns from "node:dns";
 import { MongoClient, MongoClientOptions } from "mongodb";
 
 const uri = process.env.MONGODB_URI;
+
+/** Atlas + Node on Windows often hits TLS "alert 80" when the OS prefers a broken IPv6 path; IPv4 usually works. */
+const preferIpv4ForMongo =
+  process.env.MONGODB_USE_IPV6 !== "1" &&
+  process.env.MONGODB_USE_IPV6 !== "true" &&
+  (process.env.MONGODB_FORCE_IPV4 === "1" ||
+    process.env.MONGODB_FORCE_IPV4 === "true" ||
+    process.platform === "win32");
+
+if (preferIpv4ForMongo && typeof dns.setDefaultResultOrder === "function") {
+  try {
+    dns.setDefaultResultOrder("ipv4first");
+  } catch {
+    // Older Node — ignore
+  }
+}
+
 const options: MongoClientOptions = {
   serverSelectionTimeoutMS: 8000,
   socketTimeoutMS: 45000,
+  ...(preferIpv4ForMongo
+    ? {
+        // Node 18+ / driver: avoid happy-eyeballs IPv6 attempts that fail TLS to Atlas on some Windows networks.
+        autoSelectFamily: false,
+      }
+    : {}),
 };
 
 let client: MongoClient | null = null;
@@ -29,22 +53,30 @@ if (!uri) {
   const globalWithMongo = global as typeof globalThis & {
     _mongoClient?: MongoClient;
     _mongoClientPromise?: Promise<MongoClient>;
+    /** Bump when Mongo defaults change so we do not reuse a bad pool from an older HMR graph. */
+    _mongoDevInitVersion?: number;
   };
 
-  if (!globalWithMongo._mongoClient) {
+  const DEV_CLIENT_INIT_VERSION = 3;
+
+  const topology = globalWithMongo._mongoClient?.topology as
+    | { isDestroyed?: () => boolean; s?: { state?: string } }
+    | undefined;
+  const topologyDead =
+    topology?.isDestroyed?.() === true || topology?.s?.state === "closed";
+
+  const needsNewClient =
+    !globalWithMongo._mongoClient ||
+    globalWithMongo._mongoDevInitVersion !== DEV_CLIENT_INIT_VERSION ||
+    topologyDead;
+
+  if (needsNewClient) {
+    if (globalWithMongo._mongoClient) {
+      void globalWithMongo._mongoClient.close().catch(() => undefined);
+    }
+    globalWithMongo._mongoDevInitVersion = DEV_CLIENT_INIT_VERSION;
     globalWithMongo._mongoClient = new MongoClient(uri, options);
     globalWithMongo._mongoClientPromise = globalWithMongo._mongoClient.connect();
-  } else {
-    // Check if the existing client's topology is closed (happens during HMR)
-    // @ts-ignore - accessing internal topology for connection state check
-    if (
-      globalWithMongo._mongoClient.topology?.isDestroyed() ||
-      // @ts-ignore - accessing internal topology state
-      globalWithMongo._mongoClient.topology?.s?.state === "closed"
-    ) {
-      globalWithMongo._mongoClient = new MongoClient(uri, options);
-      globalWithMongo._mongoClientPromise = globalWithMongo._mongoClient.connect();
-    }
   }
 
   client = globalWithMongo._mongoClient;

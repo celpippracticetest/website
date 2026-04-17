@@ -20,6 +20,7 @@ import {
   hasMockExamAccess,
   hasPaidPracticeAccess,
   hasPremiumPlusAccess,
+  isMockExamUnlockedViaPurchase,
   normalizePlan,
 } from "@/lib/subscriptionAccess";
 import { StripeCheckoutDiscountBadge } from "@/components/checkout/StripeCheckoutDiscountBadge";
@@ -42,10 +43,13 @@ const ExamOverview = ({
   exams,
   examProgressById,
   showUserProgress,
+  clerkAccessSnapshot,
 }: {
   exams: TExamSchemaDto[];
   examProgressById: Record<string, ExamProgressSummary>;
   showUserProgress: boolean;
+  /** From RSC `currentUser()` so purchased mocks work before `useUser()` finishes loading. */
+  clerkAccessSnapshot?: { purchasedMockExamIds?: unknown };
 }) => {
   const router = useRouter();
   const { user, isLoaded, isSignedIn } = useUser();
@@ -54,7 +58,12 @@ const ExamOverview = ({
   const purchaseDate = user?.publicMetadata?.purchaseDate as
     | string
     | undefined;
-  const purchasedMockExamIds = user?.publicMetadata?.purchasedMockExamIds;
+  const fromClient = user?.publicMetadata?.purchasedMockExamIds;
+  const purchasedMockExamIds =
+    fromClient !== undefined && fromClient !== null
+      ? fromClient
+      : clerkAccessSnapshot?.purchasedMockExamIds;
+
   const signedInFreeUser =
     isLoaded &&
     isSignedIn &&
@@ -66,11 +75,25 @@ const ExamOverview = ({
         : null,
     [signedInFreeUser, user?.publicMetadata]
   );
-  const firstReadyExamId = exams[0]?.id ?? null;
+  /** Catalog first ready exam (by `order`), not list position — list may put purchased mocks first. */
+  const firstReadyExamId = useMemo(() => {
+    if (exams.length === 0) return null;
+    let best = exams[0];
+    for (let i = 1; i < exams.length; i++) {
+      const e = exams[i];
+      if ((e.order ?? 0) < (best.order ?? 0)) {
+        best = e;
+      }
+    }
+    return best.id;
+  }, [exams]);
+  /** Before `useUser` is ready, trust RSC snapshot when present (avoids false "Buy" on first paint). */
+  const effectiveSignedIn = !isLoaded
+    ? Boolean(clerkAccessSnapshot && showUserProgress)
+    : isSignedIn;
   const mockExamUnlocked = (exam: TExamSchemaDto) =>
     Boolean(
-      isLoaded &&
-        isSignedIn &&
+      effectiveSignedIn &&
         hasMockExamAccess(
           plan,
           purchaseDate,
@@ -150,6 +173,10 @@ const ExamOverview = ({
     if (!isLoaded) {
       return;
     }
+    if (signedInFreeUser && mockExamUnlocked(exam)) {
+      navigateToExamPart(exam, 1);
+      return;
+    }
     if (noUser || signedInFreeUser) {
       if (!mockCheckoutPriceId) {
         setUpgradeError("Mock checkout is not configured. Please contact support.");
@@ -167,7 +194,7 @@ const ExamOverview = ({
       return;
     }
     if (needsPremiumPlusUpgrade) {
-      if (exam.id === firstReadyExamId) {
+      if (mockExamUnlocked(exam)) {
         navigateToExamPart(exam, 1);
         return;
       }
@@ -257,6 +284,10 @@ const ExamOverview = ({
           {exams.map((exam: TExamSchemaDto, i: number) => {
             const progress = examProgressById[exam.id];
             const unlocked = mockExamUnlocked(exam);
+            const purchasedUnlock = isMockExamUnlockedViaPurchase(
+              exam.id,
+              purchasedMockExamIds
+            );
 
             return (
               <Paper
@@ -438,7 +469,7 @@ const ExamOverview = ({
                   </Stack>
 
                   <Box sx={{ position: "relative", width: 1 }}>
-                    {mockStripeCheckoutDiscountLabel ? (
+                    {mockStripeCheckoutDiscountLabel && !purchasedUnlock ? (
                       <StripeCheckoutDiscountBadge label={mockStripeCheckoutDiscountLabel} />
                     ) : null}
                     <Button
@@ -447,7 +478,7 @@ const ExamOverview = ({
                         !isLoaded ||
                         mockBuySubmittingExamId === exam.id ||
                         (needsPremiumPlusUpgrade &&
-                          exam.id !== firstReadyExamId &&
+                          !mockExamUnlocked(exam) &&
                           upgradeSubmitting)
                       }
                       onClick={() => handlePrimaryAction(exam)}
@@ -459,24 +490,41 @@ const ExamOverview = ({
                         fontSize: "0.95rem",
                         fontWeight: 700,
                         boxShadow: "none",
-                        backgroundColor: "#4A7DFF",
-                        "&:hover": {
-                          backgroundColor: "#3A6DEB",
-                          boxShadow: "none",
-                        },
+                        ...(purchasedUnlock
+                          ? {
+                              backgroundColor: "#EA580C",
+                              color: "#FFFFFF",
+                              "&:hover": {
+                                backgroundColor: "#C2410C",
+                                boxShadow: "none",
+                              },
+                              "&.Mui-disabled": {
+                                backgroundColor: "rgba(234, 88, 12, 0.45)",
+                                color: "#FFFFFF",
+                              },
+                            }
+                          : {
+                              backgroundColor: "#4A7DFF",
+                              "&:hover": {
+                                backgroundColor: "#3A6DEB",
+                                boxShadow: "none",
+                              },
+                            }),
                       }}
                     >
                       {signedInFreeUser
-                        ? mockBuySubmittingExamId === exam.id
-                          ? "Redirecting…"
-                          : `Buy for ${mockExamPrice}`
+                        ? mockExamUnlocked(exam)
+                          ? "Start Practice"
+                          : mockBuySubmittingExamId === exam.id
+                            ? "Redirecting…"
+                            : `Buy for ${mockExamPrice}`
                         : noUser
                           ? mockBuySubmittingExamId === exam.id
                             ? "Redirecting…"
                             : `Buy for ${mockExamPrice}`
                           : needsPremiumPlusUpgrade
-                            ? exam.id === firstReadyExamId
-                              ? "Start Full Test"
+                            ? mockExamUnlocked(exam)
+                              ? "Start Practice"
                               : upgradeSubmitting
                                 ? "Upgrading…"
                                 : "Upgrade"
