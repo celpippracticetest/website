@@ -124,14 +124,17 @@ function buildStripeCheckoutPurchaseItems(
   ];
 }
 
-function buildStripeRenewalPurchaseItems(invoice: {
-  amount_paid?: number | null;
-}): Ga4ItemParam[] {
+function buildStripeRenewalPurchaseItems(
+  invoice: { amount_paid?: number | null },
+  planName: string | null
+): Ga4ItemParam[] {
   const value = (invoice.amount_paid || 0) / 100;
+  const label = planName?.trim() || "Subscription renewal";
+  const itemId = planName?.trim() || "subscription_renewal";
   return [
     {
-      item_id: "subscription_renewal",
-      item_name: "Subscription renewal",
+      item_id: itemId.slice(0, 100),
+      item_name: label.slice(0, 100),
       price: value,
       quantity: 1,
       item_category: "Subscription",
@@ -777,6 +780,7 @@ export async function POST(req: Request) {
 
       // GA4 standard `purchase` (Measurement Protocol) — source of truth when
       // the success page / GTM never runs (ad blockers, tab closed, etc.).
+      const checkoutPlanName = readMetadataValue(metadata, "plan_name");
       void sendGa4Events({
         clientId: buildStripeGaClientId({
           metadata,
@@ -800,6 +804,7 @@ export async function POST(req: Request) {
               purchase_type: metadata?.purchase_type || "first_purchase",
               billing_mode:
                 session.mode === "subscription" ? "subscription" : "one_time",
+              ...(checkoutPlanName ? { plan_name: checkoutPlanName } : {}),
               items: buildStripeCheckoutPurchaseItems(session, metadata),
               ...buildStripeGaAttributionParams(metadata),
             },
@@ -1119,6 +1124,10 @@ export async function POST(req: Request) {
                 // Subscription renewals: `purchase` here only. Initial checkout
                 // is counted from `checkout.session.completed` (avoid duplicate).
                 if (invoicePurchaseType === "subscription_renewal") {
+                  const renewalPlanName = readMetadataValue(
+                    subscriptionMetadata ?? undefined,
+                    "plan_name"
+                  );
                   void sendGa4Events({
                     clientId: buildStripeGaClientId({
                       metadata: subscriptionMetadata,
@@ -1142,7 +1151,11 @@ export async function POST(req: Request) {
                           value: (invoice?.amount_paid || 0) / 100,
                           currency: (invoice?.currency || "usd").toUpperCase(),
                           billing_reason: billingReason,
-                          items: buildStripeRenewalPurchaseItems(invoice),
+                          ...(renewalPlanName ? { plan_name: renewalPlanName } : {}),
+                          items: buildStripeRenewalPurchaseItems(
+                            invoice,
+                            renewalPlanName
+                          ),
                           ...buildStripeGaAttributionParams(subscriptionMetadata),
                         },
                       },
@@ -1161,6 +1174,10 @@ export async function POST(req: Request) {
           `No checkout session or user found for invoice ${invoiceId}, skipping repository update`
         );
         if (invoicePurchaseType === "subscription_renewal") {
+          const renewalPlanName = readMetadataValue(
+            subscriptionMetadata ?? undefined,
+            "plan_name"
+          );
           void sendGa4Events({
             clientId: buildStripeGaClientId({
               metadata: subscriptionMetadata,
@@ -1181,7 +1198,8 @@ export async function POST(req: Request) {
                   value: (invoice?.amount_paid || 0) / 100,
                   currency: (invoice?.currency || "usd").toUpperCase(),
                   billing_reason: billingReason,
-                  items: buildStripeRenewalPurchaseItems(invoice),
+                  ...(renewalPlanName ? { plan_name: renewalPlanName } : {}),
+                  items: buildStripeRenewalPurchaseItems(invoice, renewalPlanName),
                   ...buildStripeGaAttributionParams(subscriptionMetadata),
                 },
               },
@@ -1214,6 +1232,7 @@ export async function POST(req: Request) {
               : "first_purchase";
 
           if (purchaseType === "subscription_renewal") {
+            const renewalPlanName = readMetadataValue(metadata, "plan_name");
             void sendGa4Events({
               clientId: buildStripeGaClientId({
                 metadata,
@@ -1235,7 +1254,8 @@ export async function POST(req: Request) {
                     value: (invoice?.amount_paid || 0) / 100,
                     currency: (invoice?.currency || "usd").toUpperCase(),
                     billing_reason: billingReason,
-                    items: buildStripeRenewalPurchaseItems(invoice),
+                    ...(renewalPlanName ? { plan_name: renewalPlanName } : {}),
+                    items: buildStripeRenewalPurchaseItems(invoice, renewalPlanName),
                     ...buildStripeGaAttributionParams(metadata),
                   },
                 },
