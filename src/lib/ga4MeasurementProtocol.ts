@@ -1,5 +1,8 @@
 type Ga4Primitive = string | number | boolean;
 
+/** GA4 ecommerce line item (Measurement Protocol). */
+export type Ga4ItemParam = Record<string, Ga4Primitive>;
+
 type Ga4Event = {
   name: string;
   params?: Record<string, unknown>;
@@ -31,12 +34,35 @@ function sanitizeValue(value: unknown): Ga4Primitive | undefined {
   return undefined;
 }
 
+function sanitizeItemRow(row: unknown): Ga4ItemParam | undefined {
+  if (!row || typeof row !== "object") return undefined;
+  const out: Ga4ItemParam = {};
+  for (const [k, v] of Object.entries(row as Record<string, unknown>)) {
+    const sanitized = sanitizeValue(v);
+    if (sanitized !== undefined) out[k] = sanitized;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
+function sanitizeItems(value: unknown): Ga4ItemParam[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const rows = value
+    .map((row) => sanitizeItemRow(row))
+    .filter((row): row is Ga4ItemParam => Boolean(row));
+  return rows.length ? rows : undefined;
+}
+
 function sanitizeParams(
   params?: Record<string, unknown>
-): Record<string, Ga4Primitive> | undefined {
+): Record<string, Ga4Primitive | Ga4ItemParam[]> | undefined {
   if (!params) return undefined;
-  const out: Record<string, Ga4Primitive> = {};
+  const out: Record<string, Ga4Primitive | Ga4ItemParam[]> = {};
   for (const [key, value] of Object.entries(params)) {
+    if (key === "items") {
+      const items = sanitizeItems(value);
+      if (items?.length) out.items = items;
+      continue;
+    }
     const sanitized = sanitizeValue(value);
     if (sanitized !== undefined) {
       out[key] = sanitized;

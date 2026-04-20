@@ -4,10 +4,24 @@ import { TrackClient, RegionUS } from "customerio-node";
 import { ensureUserReferral } from "@/app/api/referrals/route";
 import { ActivityLogger } from "@/lib/userActivity";
 import { getDb } from "@/lib/mongodb";
+import { sendGa4Events } from "@/lib/ga4MeasurementProtocol";
 
-const GA_MEASUREMENT_ID = process.env.GA_MEASUREMENT_ID!;
-const GA_API_SECRET = process.env.GA_API_SECRET!;
 const CLERK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
+
+/** GA4 `sign_up` `method` from Clerk `user.created` payload. */
+function inferClerkSignUpMethod(data: Record<string, unknown> | undefined): string {
+  const accounts = data?.external_accounts;
+  if (Array.isArray(accounts) && accounts.length > 0) {
+    const first = accounts[0] as Record<string, unknown> | undefined;
+    const provider = String(first?.provider ?? "").toLowerCase();
+    if (provider.includes("google")) return "google";
+    if (provider.includes("facebook")) return "facebook";
+    if (provider.includes("apple")) return "apple";
+    const trimmed = provider.replace(/^oauth_/, "");
+    return trimmed.length > 0 ? trimmed.slice(0, 32) : "oauth";
+  }
+  return "email";
+}
 
 // Clerk webhook handler
 export async function POST(req: NextRequest) {
@@ -127,6 +141,22 @@ export async function POST(req: NextRequest) {
       } catch (refErr) {
         console.error("Referral signup tracking failed:", refErr);
       }
+
+      // GA4 `sign_up` via Measurement Protocol (matches Clerk counts; no GTM/ad-block dependency).
+      void sendGa4Events({
+        clientId: userId,
+        userId,
+        events: [
+          {
+            name: "sign_up",
+            params: {
+              method: inferClerkSignUpMethod(
+                body.data as Record<string, unknown> | undefined
+              ),
+            },
+          },
+        ],
+      });
     }
     // Handle user.updated event
     else if (eventType === "user.updated" && userId) {

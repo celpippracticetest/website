@@ -17,7 +17,10 @@ import { findOrCreateClerkUserByEmail } from "@/lib/clerkGuestCheckout";
 import { planNameIndicatesPremiumPlus } from "@/lib/subscriptionAccess";
 import { persistStripeCustomerIdToMongo } from "@/lib/resolveStripeCustomerId";
 import { recordPartnerCommissionFromMongoUser } from "@/lib/partner/recordPartnerCommissionFromMongoUser";
-import { sendGa4Events } from "@/lib/ga4MeasurementProtocol";
+import {
+  sendGa4Events,
+  type Ga4ItemParam,
+} from "@/lib/ga4MeasurementProtocol";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -95,6 +98,45 @@ function buildStripeGaClientId(args: {
     args.userId ||
     "stripe_unknown_client"
   );
+}
+
+/** GA4 `purchase.items` from Checkout Session (Measurement Protocol). */
+function buildStripeCheckoutPurchaseItems(
+  session: Stripe.Checkout.Session,
+  metadata: Record<string, string | undefined>
+): Ga4ItemParam[] {
+  const value = (session.amount_total || 0) / 100;
+  const planName =
+    readMetadataValue(metadata, "plan_name") || "CELPIP Plan";
+  const mockId = readMetadataValue(metadata, "mock_exam_id");
+  const itemId =
+    mockId ||
+    readMetadataValue(metadata, "plan_name") ||
+    (session.mode === "subscription" ? "subscription" : "checkout");
+  return [
+    {
+      item_id: itemId,
+      item_name: planName,
+      price: value,
+      quantity: 1,
+      item_category: "Subscription",
+    },
+  ];
+}
+
+function buildStripeRenewalPurchaseItems(invoice: {
+  amount_paid?: number | null;
+}): Ga4ItemParam[] {
+  const value = (invoice.amount_paid || 0) / 100;
+  return [
+    {
+      item_id: "subscription_renewal",
+      item_name: "Subscription renewal",
+      price: value,
+      quantity: 1,
+      item_category: "Subscription",
+    },
+  ];
 }
 
 function buildStripeGaAttributionParams(
@@ -733,6 +775,8 @@ export async function POST(req: Request) {
 
       }
 
+      // GA4 standard `purchase` (Measurement Protocol) — source of truth when
+      // the success page / GTM never runs (ad blockers, tab closed, etc.).
       void sendGa4Events({
         clientId: buildStripeGaClientId({
           metadata,
@@ -748,15 +792,15 @@ export async function POST(req: Request) {
         userId: metadata?.user_id || undefined,
         events: [
           {
-            name: "stripe_checkout_completed",
+            name: "purchase",
             params: {
-              transaction_id: (session.invoice as string) || session.id,
+              transaction_id: session.id,
               value: (session.amount_total || 0) / 100,
               currency: (session.currency || "usd").toUpperCase(),
-              plan_name: metadata?.plan_name || "",
               purchase_type: metadata?.purchase_type || "first_purchase",
               billing_mode:
                 session.mode === "subscription" ? "subscription" : "one_time",
+              items: buildStripeCheckoutPurchaseItems(session, metadata),
               ...buildStripeGaAttributionParams(metadata),
             },
           },
@@ -1013,10 +1057,6 @@ export async function POST(req: Request) {
         billingReason === "subscription_cycle"
           ? "subscription_renewal"
           : "first_purchase";
-      const invoiceEventName =
-        invoicePurchaseType === "subscription_renewal"
-          ? "subscription_renewed"
-          : "stripe_invoice_paid";
 
       let sessionId: string | null = null;
       const paymentIntentId = invoice?.payment_intent as string | undefined;
@@ -1076,32 +1116,39 @@ export async function POST(req: Request) {
                   );
                 }
 
-                void sendGa4Events({
-                  clientId: buildStripeGaClientId({
-                    metadata: subscriptionMetadata,
-                    customerId:
-                      typeof invoice?.customer === "string" ? invoice.customer : null,
+                // Subscription renewals: `purchase` here only. Initial checkout
+                // is counted from `checkout.session.completed` (avoid duplicate).
+                if (invoicePurchaseType === "subscription_renewal") {
+                  void sendGa4Events({
+                    clientId: buildStripeGaClientId({
+                      metadata: subscriptionMetadata,
+                      customerId:
+                        typeof invoice?.customer === "string"
+                          ? invoice.customer
+                          : null,
+                      userId: user.id,
+                      sessionId: lastCheckout.checkoutId,
+                      subscriptionId,
+                    }),
                     userId: user.id,
-                    sessionId: lastCheckout.checkoutId,
-                    subscriptionId,
-                  }),
-                  userId: user.id,
-                  events: [
-                    {
-                      name: invoiceEventName,
-                      params: {
-                        transaction_id: invoiceId || lastCheckout.checkoutId,
-                        invoice_id: invoiceId || "",
-                        subscription_id: subscriptionId || "",
-                        purchase_type: invoicePurchaseType,
-                        value: (invoice?.amount_paid || 0) / 100,
-                        currency: (invoice?.currency || "usd").toUpperCase(),
-                        billing_reason: billingReason,
-                        ...buildStripeGaAttributionParams(subscriptionMetadata),
+                    events: [
+                      {
+                        name: "purchase",
+                        params: {
+                          transaction_id: invoiceId || lastCheckout.checkoutId,
+                          invoice_id: invoiceId || "",
+                          subscription_id: subscriptionId || "",
+                          purchase_type: "subscription_renewal",
+                          value: (invoice?.amount_paid || 0) / 100,
+                          currency: (invoice?.currency || "usd").toUpperCase(),
+                          billing_reason: billingReason,
+                          items: buildStripeRenewalPurchaseItems(invoice),
+                          ...buildStripeGaAttributionParams(subscriptionMetadata),
+                        },
                       },
-                    },
-                  ],
-                });
+                    ],
+                  });
+                }
 
                 return NextResponse.json({ received: true });
               }
@@ -1113,31 +1160,34 @@ export async function POST(req: Request) {
         console.warn(
           `No checkout session or user found for invoice ${invoiceId}, skipping repository update`
         );
-        void sendGa4Events({
-          clientId: buildStripeGaClientId({
-            metadata: subscriptionMetadata,
-            customerId:
-              typeof invoice?.customer === "string" ? invoice.customer : null,
-            userId: null,
-            sessionId: null,
-            subscriptionId,
-          }),
-          events: [
-            {
-              name: invoiceEventName,
-              params: {
-                transaction_id: invoiceId || "",
-                invoice_id: invoiceId || "",
-                subscription_id: subscriptionId || "",
-                purchase_type: invoicePurchaseType,
-                value: (invoice?.amount_paid || 0) / 100,
-                currency: (invoice?.currency || "usd").toUpperCase(),
-                billing_reason: billingReason,
-                ...buildStripeGaAttributionParams(subscriptionMetadata),
+        if (invoicePurchaseType === "subscription_renewal") {
+          void sendGa4Events({
+            clientId: buildStripeGaClientId({
+              metadata: subscriptionMetadata,
+              customerId:
+                typeof invoice?.customer === "string" ? invoice.customer : null,
+              userId: null,
+              sessionId: null,
+              subscriptionId,
+            }),
+            events: [
+              {
+                name: "purchase",
+                params: {
+                  transaction_id: invoiceId || "",
+                  invoice_id: invoiceId || "",
+                  subscription_id: subscriptionId || "",
+                  purchase_type: "subscription_renewal",
+                  value: (invoice?.amount_paid || 0) / 100,
+                  currency: (invoice?.currency || "usd").toUpperCase(),
+                  billing_reason: billingReason,
+                  items: buildStripeRenewalPurchaseItems(invoice),
+                  ...buildStripeGaAttributionParams(subscriptionMetadata),
+                },
               },
-            },
-          ],
-        });
+            ],
+          });
+        }
         return NextResponse.json({ received: true });
       }
 
@@ -1163,34 +1213,35 @@ export async function POST(req: Request) {
               ? "subscription_renewal"
               : "first_purchase";
 
-          void sendGa4Events({
-            clientId: buildStripeGaClientId({
-              metadata,
-              customerId: typeof invoice?.customer === "string" ? invoice.customer : null,
-              userId: metadata?.user_id || null,
-              sessionId: session.id,
-              subscriptionId,
-            }),
-            userId: metadata?.user_id || undefined,
-            events: [
-              {
-                name:
-                  purchaseType === "subscription_renewal"
-                    ? "subscription_renewed"
-                    : "stripe_invoice_paid",
-                params: {
-                  transaction_id: invoiceId || session.id,
-                  invoice_id: invoiceId || "",
-                  subscription_id: subscriptionId || "",
-                  purchase_type: purchaseType,
-                  value: (invoice?.amount_paid || 0) / 100,
-                  currency: (invoice?.currency || "usd").toUpperCase(),
-                  billing_reason: billingReason,
-                  ...buildStripeGaAttributionParams(metadata),
+          if (purchaseType === "subscription_renewal") {
+            void sendGa4Events({
+              clientId: buildStripeGaClientId({
+                metadata,
+                customerId:
+                  typeof invoice?.customer === "string" ? invoice.customer : null,
+                userId: metadata?.user_id || null,
+                sessionId: session.id,
+                subscriptionId,
+              }),
+              userId: metadata?.user_id || undefined,
+              events: [
+                {
+                  name: "purchase",
+                  params: {
+                    transaction_id: invoiceId || session.id,
+                    invoice_id: invoiceId || "",
+                    subscription_id: subscriptionId || "",
+                    purchase_type: "subscription_renewal",
+                    value: (invoice?.amount_paid || 0) / 100,
+                    currency: (invoice?.currency || "usd").toUpperCase(),
+                    billing_reason: billingReason,
+                    items: buildStripeRenewalPurchaseItems(invoice),
+                    ...buildStripeGaAttributionParams(metadata),
+                  },
                 },
-              },
-            ],
-          });
+              ],
+            });
+          }
         }
       } catch (err) {
         console.error(

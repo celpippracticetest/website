@@ -99,11 +99,11 @@ Use these checks after deploy:
 - GTM Preview mode: verify `dataLayer` events fire.
 - Browser DevTools Network: confirm calls to `/gtm/js` and `/g/collect`.
 - Trigger one conversion path (signup or purchase) and verify the event in GA4 DebugView.
-- Verify Stripe webhook server events:
-  - `stripe_checkout_completed`
-  - `stripe_invoice_paid`
-  - `subscription_renewed`
-  - `subscription_cancelled`
+- Verify Stripe webhook → GA4 Measurement Protocol (when `GA_MEASUREMENT_ID` + `GA_API_SECRET` are set):
+  - `purchase` on `checkout.session.completed` (same `transaction_id` as the Stripe Checkout Session id).
+  - `purchase` on `invoice.payment_succeeded` for **subscription renewals** only (`billing_reason` = `subscription_cycle`).
+  - `subscription_cancelled` on subscription deleted (unchanged).
+- Verify Clerk `user.created` webhook → same GA4 MP: **`sign_up`** (aligned with Clerk; no GTM required). Browser `sign_up` in the data layer is **off by default** to avoid duplicates; set **`NEXT_PUBLIC_GA4_CLIENT_SIGNUP=1`** only if you need a client-side `sign_up` (e.g. local dev without MP secrets).
 
 ### 5) Build a useful GA4 dashboard
 
