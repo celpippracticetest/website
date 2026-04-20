@@ -1,5 +1,7 @@
 import "./globals.css";
 import NextTopLoader from "nextjs-toploader";
+import { PostHogProvider } from "@/components/PostHogProvider";
+import { PostHogPageView } from "@/components/PostHogPageView";
 import { Analytics } from "@vercel/analytics/react";
 import { ClerkProvider } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
@@ -238,6 +240,7 @@ export default async function RootLayout({
       </head>
 
       <body className="bg-[#F4F7FF]" suppressHydrationWarning>
+        <PostHogProvider>
         <MuiAppRouterCacheProvider>
           <ClerkProvider>
           <AskBeavoModal />
@@ -277,6 +280,7 @@ export default async function RootLayout({
           <Suspense fallback={null}>
             <AttributionTracker />
             <PageViewTracker />
+            <PostHogPageView />
             {process.env.NODE_ENV === "production" && <RedditPixelTracker />}
           </Suspense>
           <LazyLeadCapturePopup />
@@ -293,6 +297,7 @@ export default async function RootLayout({
           <Script src="/scripts/third-party-loader.js" strategy="lazyOnload" />
           </ClerkProvider>
         </MuiAppRouterCacheProvider>
+        </PostHogProvider>
       </body>
     </html>
   );

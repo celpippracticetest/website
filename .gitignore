@@ -32,6 +32,9 @@
 # production
 /build
 
+# Clerk full-user exports (PII)
+clerk-users-export-*.json
+
 # misc
 .DS_Store
 *.pem
