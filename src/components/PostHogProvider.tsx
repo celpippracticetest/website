@@ -1,17 +1,30 @@
 "use client";
 
-import posthog from "posthog-js";
 import { PostHogProvider as PHProvider } from "posthog-js/react";
-import { useEffect } from "react";
 
+const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+const POSTHOG_HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST;
+
+/**
+ * Uses `apiKey` + `options` so posthog-js initializes inside the library provider.
+ * Passing a `client` prop skips that init path and can race with `PostHogPageView`.
+ */
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
-  useEffect(() => {
-    posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
-      api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
-      person_profiles: "identified_only",
-      capture_pageview: false, // disable automatic pageview capture; handled manually
-    });
-  }, []);
+  if (!POSTHOG_KEY) {
+    return <>{children}</>;
+  }
 
-  return <PHProvider client={posthog}>{children}</PHProvider>;
+  return (
+    <PHProvider
+      apiKey={POSTHOG_KEY}
+      options={{
+        api_host: POSTHOG_HOST?.trim() || undefined,
+        person_profiles: "identified_only",
+        capture_pageview: false,
+        ...(process.env.NODE_ENV === "development" ? { debug: true } : {}),
+      }}
+    >
+      {children}
+    </PHProvider>
+  );
 }
