@@ -1,12 +1,12 @@
 {
   "exportFormatVersion": 2,
-  "exportTime": "2026-04-16 12:00:00",
+  "exportTime": "2026-04-20 12:00:00",
   "containerVersion": {
     "path": "accounts/6350091896/containers/249538809/versions/0",
     "accountId": "6350091896",
     "containerId": "249538809",
     "containerVersionId": "0",
-    "name": "CELPIP web — GA4 dataLayer template (import)",
+    "name": "CELPIP web — GA4 dataLayer + Google Ads EC (import)",
     "container": {
       "path": "accounts/6350091896/containers/249538809",
       "accountId": "6350091896",
@@ -86,6 +86,64 @@
           { "type": "TEMPLATE", "key": "name", "value": "user_id" }
         ],
         "fingerprint": "1776300100003",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6350091896",
+        "containerId": "249538809",
+        "variableId": "4",
+        "name": "CPT - Google Ads Conversion ID",
+        "type": "c",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "value",
+            "value": "AW-18023374877"
+          }
+        ],
+        "fingerprint": "1776300100004",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6350091896",
+        "containerId": "249538809",
+        "variableId": "5",
+        "name": "DLV - user_data",
+        "type": "v",
+        "parameter": [
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
+          { "type": "BOOLEAN", "key": "setDefaultValue", "value": "false" },
+          { "type": "TEMPLATE", "key": "name", "value": "user_data" }
+        ],
+        "fingerprint": "1776300100005",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6350091896",
+        "containerId": "249538809",
+        "variableId": "6",
+        "name": "DLV - user_data.email",
+        "type": "v",
+        "parameter": [
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
+          { "type": "BOOLEAN", "key": "setDefaultValue", "value": "false" },
+          { "type": "TEMPLATE", "key": "name", "value": "user_data.email" }
+        ],
+        "fingerprint": "1776300100006",
+        "formatValue": {}
+      },
+      {
+        "accountId": "6350091896",
+        "containerId": "249538809",
+        "variableId": "7",
+        "name": "DLV - user_data.phone_number",
+        "type": "v",
+        "parameter": [
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
+          { "type": "BOOLEAN", "key": "setDefaultValue", "value": "false" },
+          { "type": "TEMPLATE", "key": "name", "value": "user_data.phone_number" }
+        ],
+        "fingerprint": "1776300100007",
         "formatValue": {}
       }
     ],
@@ -172,6 +230,31 @@
           }
         ],
         "fingerprint": "1776300100104"
+      },
+      {
+        "accountId": "6350091896",
+        "containerId": "249538809",
+        "triggerId": "105",
+        "name": "CPT - CE ads_enhanced_conversion",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "ads_enhanced_conversion"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1776300100105"
       }
     ],
     "tag": [
@@ -302,6 +385,40 @@
         ],
         "fingerprint": "1776300100204",
         "firingTriggerId": ["104"],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": { "type": "MAP" },
+        "consentSettings": { "consentStatus": "NOT_NEEDED" }
+      },
+      {
+        "accountId": "6350091896",
+        "containerId": "249538809",
+        "tagId": "205",
+        "name": "CPT - Google Ads - Conversion Linker",
+        "type": "gclidw",
+        "parameter": [],
+        "fingerprint": "1776300100205",
+        "firingTriggerId": ["101"],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": { "type": "MAP" },
+        "consentSettings": { "consentStatus": "NOT_NEEDED" }
+      },
+      {
+        "accountId": "6350091896",
+        "containerId": "249538809",
+        "tagId": "206",
+        "name": "CPT - Google Ads EC for leads (gtag user_data + form_submit)",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>(function(){var w=window;w.dataLayer=w.dataLayer||[];function gtag(){w.dataLayer.push(arguments);}var o={},e=\"{{DLV - user_data.email}}\",p=\"{{DLV - user_data.phone_number}}\";if(e)o.email=e;if(p)o.phone_number=p;if(!o.email&&!o.phone_number)return;gtag(\"set\",\"user_data\",o);gtag(\"event\",\"form_submit\",{send_to:\"{{CPT - Google Ads Conversion ID}}\"});})();</script>"
+          },
+          { "type": "BOOLEAN", "key": "supportDocumentWrite", "value": "false" },
+          { "type": "BOOLEAN", "key": "useIframe", "value": "false" }
+        ],
+        "fingerprint": "1776300100206",
+        "firingTriggerId": ["105"],
         "tagFiringOption": "ONCE_PER_EVENT",
         "monitoringMetadata": { "type": "MAP" },
         "consentSettings": { "consentStatus": "NOT_NEEDED" }

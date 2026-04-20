@@ -4,6 +4,7 @@ import { useUser } from "@clerk/nextjs";
 import { CustomSignUpForm } from "@/components/auth/CustomSignUpForm";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { CLERK_SUPPRESS_LOGIN_COMPLETED_ONCE_KEY } from "@/components/analytics/ClerkAuthGtmTracker";
 import { trackAuth } from "@/lib/gtm";
 import { useEcommerceTracking } from "@/hooks/useTracking";
 
@@ -160,6 +161,11 @@ export default function SignUpPageClient() {
     }, signupAttribution);
 
     localStorage.setItem(dedupeKey, "1");
+    try {
+      sessionStorage.setItem(CLERK_SUPPRESS_LOGIN_COMPLETED_ONCE_KEY, user.id);
+    } catch {
+      // ignore
+    }
   }, [isSignedIn, user]);
 
   const tryApplyPartnerPendingCode = async (code: string): Promise<boolean> => {

@@ -18,6 +18,7 @@ import {
   hasPremiumPlusAccess,
   normalizePlan,
 } from "@/lib/subscriptionAccess";
+import { syncUserPlanPublicMetadata } from "@/lib/syncUserPlanPublicMetadata";
 
 export async function POST() {
   try {
@@ -179,6 +180,15 @@ export async function POST() {
       ],
       cancel_at_period_end: false,
       proration_behavior: "always_invoice",
+    });
+
+    // Stripe webhooks can lag; exams UI calls `user.reload()` and needs Clerk updated now.
+    // Same mapping as `customer.subscription.updated` in the Stripe webhook (`premiumPlus` → `pro`).
+    await syncUserPlanPublicMetadata(userId, {
+      plan: "pro",
+      planType: target.title,
+      planCancelled: false,
+      planExpiresAt: null,
     });
 
     return NextResponse.json({ success: true });

@@ -8,6 +8,7 @@ import Script from "next/script";
 import AskBeavoModal from "@/components/AskBeavo/AskBeavoModal";
 import CrispChat from "@/components/CrispChat";
 import CrispUserSync from "@/components/CrispUserSync";
+import ClerkAuthGtmTracker from "@/components/analytics/ClerkAuthGtmTracker";
 import { LazyLeadCapturePopup, LazyPromotionManager } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -242,6 +243,7 @@ export default async function RootLayout({
           <AskBeavoModal />
           <CrispChat />
           <CrispUserSync />
+          <ClerkAuthGtmTracker />
           {enableGtm && (
             <noscript>
               <iframe
