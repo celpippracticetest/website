@@ -194,7 +194,7 @@ export async function GET() {
       const skillBreakdownMap: Record<string, number> = {};
       practiceEventsResponse.rows?.forEach((row) => {
         const skill = row.dimensionValues?.[0]?.value;
-        const count = parseInt(row.metricValues?.[0]?.value || "0");
+        const count = parseInt(row.metricValues?.[0]?.value || "0", 10);
         if (skill && skill !== "(not set)") {
           skillBreakdownMap[skill] = count;
         }
@@ -230,7 +230,8 @@ export async function GET() {
         });
         totalPracticingFromGa4 =
           eventOnlyResponse.rows?.reduce(
-            (sum, row) => sum + parseInt(row.metricValues?.[0]?.value || "0"),
+            (sum, row) =>
+              sum + parseInt(row.metricValues?.[0]?.value || "0", 10),
             0,
           ) || 0;
       } catch {
@@ -238,42 +239,35 @@ export async function GET() {
       }
     }
 
-    // Dynamic practicing: 70%–80% of totalUsers24h, varying by time so the number changes over time
-    const now = new Date();
-    const minutesInDay = now.getHours() * 60 + now.getMinutes();
-    const cycle = (minutesInDay / (24 * 60)) * 2 * Math.PI;
-    const timeFactor = (Math.sin(cycle) + 1) / 2; // 0..1
-    const practicingRate = 0.7 + 0.1 * timeFactor;
-    const totalPracticing = Math.round(totalUsers24h * practicingRate);
+    const hasPerSkillBreakdown =
+      speakingCount + writingCount + listeningCount + readingCount > 0;
 
-    // Split totalPracticing among skills with time-varying weights (changes over time)
-    const skillPhases = [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2];
-    const rawWeights = skillPhases.map((phase) =>
-      Math.max(0.1, 0.25 + 0.12 * Math.sin(cycle + phase)),
-    );
-    const sumWeights = rawWeights.reduce((a, b) => a + b, 0);
-    const shares = rawWeights.map((w) => (w / sumWeights) * totalPracticing);
-    const skillBreakdown = {
-      Speaking: Math.round(shares[0]),
-      Writing: Math.round(shares[1]),
-      Listening: Math.round(shares[2]),
-      Reading: Math.round(shares[3]),
-    };
-    // Fix rounding so sum equals totalPracticing
-    const skillSum = Object.values(skillBreakdown).reduce((a, b) => a + b, 0);
-    if (skillSum !== totalPracticing && totalPracticing > 0) {
-      const diff = totalPracticing - skillSum;
-      const keys = ["Speaking", "Writing", "Listening", "Reading"] as const;
-      const idx = Math.abs(diff) % 4;
-      skillBreakdown[keys[idx]] =
-        skillBreakdown[keys[idx]] + (diff > 0 ? 1 : -1);
-    }
+    const skillBreakdown: {
+      Speaking: number;
+      Writing: number;
+      Listening: number;
+      Reading: number;
+    } = hasPerSkillBreakdown ?
+      {
+        Speaking: speakingCount,
+        Writing: writingCount,
+        Listening: listeningCount,
+        Reading: readingCount,
+      }
+    : {
+        Speaking: 0,
+        Writing: 0,
+        Listening: 0,
+        Reading: 0,
+      };
 
-    // Active users should be MORE than practicing (practicing is a subset)
+    const totalPracticing = totalPracticingFromGa4;
+
+    // Headline "online" figure: prefer GA realtime, then 24h users, then at least practice volume
     const calculatedActiveUsers = Math.max(
       activeUsersNow,
       totalUsers24h,
-      Math.floor(totalPracticing * 1.5),
+      totalPracticing,
     );
 
     console.log("[GA4 Live Stats - service_account]", {

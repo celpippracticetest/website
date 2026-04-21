@@ -2,9 +2,23 @@
   var script = document.currentScript;
   var gtmId = script && script.dataset ? script.dataset.gtmId : "";
   var layerName = script && script.dataset ? script.dataset.layer || "dataLayer" : "dataLayer";
+  var allowedHostsRaw = script && script.dataset ? script.dataset.allowedHosts || "" : "";
 
   if (!gtmId) {
     return;
+  }
+
+  var allowedHosts = allowedHostsRaw
+    .split(",")
+    .map(function (h) {
+      return h.trim().toLowerCase();
+    })
+    .filter(Boolean);
+  if (allowedHosts.length > 0) {
+    var currentHost = (window.location && window.location.hostname || "").toLowerCase();
+    if (allowedHosts.indexOf(currentHost) === -1) {
+      return;
+    }
   }
 
   window[layerName] = window[layerName] || [];

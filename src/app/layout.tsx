@@ -37,9 +37,9 @@ const jakarta = Plus_Jakarta_Sans({
   fallback: ["system-ui", "arial"],
 });
 
-const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID ;
-const LEGACY_GTM_ID = process.env.NEXT_PUBLIC_GTM_LEGACY_ID ;
-const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID ;
+const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID?.trim() ?? "";
+const LEGACY_GTM_ID = process.env.NEXT_PUBLIC_GTM_LEGACY_ID?.trim() ?? "";
+const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID?.trim() ?? "";
 const DEFAULT_APP_BASE_URL = "https://celpippracticetest.com";
 
 function normalizeAppBaseUrl(raw: string | undefined): string {
@@ -64,6 +64,19 @@ function normalizeAppBaseUrl(raw: string | undefined): string {
   }
 
   return `https://${input}`;
+}
+
+function buildGtmAllowedHosts(baseUrl: string): string {
+  try {
+    const host = new URL(baseUrl).hostname.toLowerCase();
+    const hosts = new Set<string>([host]);
+    if (!host.startsWith("www.")) {
+      hosts.add(`www.${host}`);
+    }
+    return Array.from(hosts).join(",");
+  } catch {
+    return "celpippracticetest.com,www.celpippracticetest.com";
+  }
 }
 
 export function generateViewport(): Viewport {
@@ -141,9 +154,15 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const baseUrl = normalizeAppBaseUrl(process.env.APP_BASE_URL);
+  const gtmAllowedHosts = buildGtmAllowedHosts(baseUrl);
+  // Production builds: skip only Vercel Preview (pollutes analytics). Production
+  // on a *.vercel.app URL still loads GTM when APP_BASE_URL points there.
+  const isVercelPreview = process.env.VERCEL_ENV === "preview";
   const enableGtm =
-    process.env.NODE_ENV === "production" && !baseUrl.includes("vercel.app");
+    process.env.NODE_ENV === "production" && !isVercelPreview && Boolean(GTM_ID);
   const enableLegacyGtm = enableGtm && LEGACY_GTM_ID && LEGACY_GTM_ID !== GTM_ID;
+  const enableClarity =
+    process.env.NODE_ENV === "production" && Boolean(CLARITY_ID);
   const homepageHero = await getHomepageHeroDisplay();
   const { userId } = await auth();
   const isSignedIn = !!userId;
@@ -208,6 +227,7 @@ export default async function RootLayout({
             src="/scripts/gtm-init.js"
             data-gtm-id={GTM_ID}
             data-layer="dataLayer"
+            data-allowed-hosts={gtmAllowedHosts}
           />
         )}
         {enableLegacyGtm && (
@@ -217,6 +237,7 @@ export default async function RootLayout({
             src="/scripts/gtm-init.js"
             data-gtm-id={LEGACY_GTM_ID}
             data-layer="dataLayer"
+            data-allowed-hosts={gtmAllowedHosts}
           />
         )}
 
@@ -285,7 +306,7 @@ export default async function RootLayout({
           </Suspense>
           <LazyLeadCapturePopup />
 
-          {process.env.NODE_ENV === "production" && (
+          {enableClarity && (
             <Script
               id="ms-clarity"
               strategy="afterInteractive"

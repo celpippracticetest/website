@@ -1,0 +1,32 @@
+{
+  "mcpServers": {
+    "celpip-bigquery": {
+      "type": "stdio",
+      "command": "${workspaceFolder}/.venv-bq-mcp/Scripts/mcp-server-bigquery.exe",
+      "args": [],
+      "env": {
+        "BIGQUERY_PROJECT": "celpip-d8f02",
+        "BIGQUERY_LOCATION": "US",
+        "BIGQUERY_DATASETS": "analytics_celpip",
+        "BIGQUERY_KEY_FILE": "${workspaceFolder}/secrets/gcp-bq-mcp-sa.json"
+      }
+    },
+    "google-analytics-mcp": {
+      "type": "stdio",
+      "command": "${workspaceFolder}/.venv-analytics-mcp/Scripts/python.exe",
+      "args": ["${workspaceFolder}/.cursor/run-analytics-mcp.py"],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "GOOGLE_APPLICATION_CREDENTIALS": "${workspaceFolder}/secrets/gcp-bq-mcp-sa.json",
+        "GOOGLE_PROJECT_ID": "celpip-d8f02",
+        "GOOGLE_CLOUD_PROJECT": "celpip-d8f02"
+      }
+    },
+    "gtm-mcp": {
+      "type": "stdio",
+      "command": "${workspaceFolder}/.venv-gtm-mcp/Scripts/python.exe",
+      "args": ["${workspaceFolder}/.cursor/run-gtm-mcp.py"],
+      "cwd": "${workspaceFolder}"
+    }
+  }
+}
