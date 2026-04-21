@@ -297,6 +297,9 @@ const WritingPracticeView = ({
       setTimeout(() => setProgressBar(0), 1000); // Reset progress bar after a short delay
     }
   };
+  // Reset draft and in-task state only when the user switches practice — not when
+  // Clerk finishes loading (`user` / `isSignedIn`) or `fetchUsersAnswer` identity
+  // changes, which previously re-ran this effect and cleared the textarea mid-write.
   useEffect(() => {
     setQuestionIndexInPractice(0);
     setPassageIndex(0);
@@ -308,14 +311,20 @@ const WritingPracticeView = ({
 
     void fetchUsersAnswer();
 
-    // Log practice started
     if (user && selectedPracticeId) {
       const practiceAttemptId = `practice_${selectedPracticeId}_${Date.now()}`;
-      ActivityLogger.practiceStarted(practiceAttemptId, selectedPracticeId, "Writing").catch(error => {
-        console.error("Error logging practice started:", error);
-      });
+      ActivityLogger.practiceStarted(practiceAttemptId, selectedPracticeId, "Writing").catch(
+        (error) => {
+          console.error("Error logging practice started:", error);
+        }
+      );
     }
-  }, [selectedPracticeId, user, practice.id, fetchUsersAnswer]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally omit user/fetchUsersAnswer to avoid wiping the draft when auth hydrates
+  }, [selectedPracticeId, practice.id]);
+
+  useEffect(() => {
+    void fetchUsersAnswer();
+  }, [fetchUsersAnswer]);
   // const {
   //   selectedAnswers,
   //   showResults,
