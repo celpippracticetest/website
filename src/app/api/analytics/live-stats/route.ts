@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
 import { JWT } from "google-auth-library";
+import { resolveGa4Credentials } from "@/lib/ga4Credentials";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -43,48 +44,12 @@ export async function GET() {
 
     const propertyId = `properties/${ga4PropertyId}`;
 
-    const analyticsClientEmail =
-      process.env.ANALYTICS_CLIENT_EMAIL || process.env.ANALYTICS_CLIENT_ID;
-    const analyticsPrivateKey = process.env.ANALYTICS_PRIVATE_KEY;
-
-    if (!analyticsClientEmail?.trim() || !analyticsPrivateKey?.trim()) {
+    const resolved = resolveGa4Credentials();
+    if ("error" in resolved) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "ANALYTICS_CLIENT_EMAIL (or ANALYTICS_CLIENT_ID) and ANALYTICS_PRIVATE_KEY are required. Set them in Vercel Environment Variables.",
-          stats: {
-            onlineUsers: 0,
-            recentSignups: 0,
-            practicingUsers: 0,
-            recentPractices: 0,
-            skillBreakdown: {
-              Speaking: 0,
-              Writing: 0,
-              Listening: 0,
-              Reading: 0,
-            },
-          },
-        },
-        { status: 503 },
-      );
-    }
-
-    // Normalize PEM: env vars often store newlines as literal \n (or double-escaped \\n)
-    const privateKey = analyticsPrivateKey
-      .replace(/\\n/g, "\n")
-      .replace(/\r\n/g, "\n")
-      .replace(/\r/g, "\n")
-      .trim();
-    if (
-      !privateKey.includes("-----BEGIN") ||
-      !privateKey.includes("-----END")
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "ANALYTICS_PRIVATE_KEY must be a valid PEM key (starts with -----BEGIN PRIVATE KEY-----). In Vercel, paste the key as one line and replace each real newline with backslash-n (\\n).",
+          error: resolved.error,
           stats: {
             onlineUsers: 0,
             recentSignups: 0,
@@ -103,8 +68,8 @@ export async function GET() {
     }
 
     const authClient = new JWT({
-      email: analyticsClientEmail.trim(),
-      key: privateKey,
+      email: resolved.email,
+      key: resolved.privateKey,
       scopes: ["https://www.googleapis.com/auth/analytics.readonly"],
     });
     const analyticsDataClient = new BetaAnalyticsDataClient({ authClient });
@@ -192,9 +157,11 @@ export async function GET() {
       });
 
       const skillBreakdownMap: Record<string, number> = {};
+      let totalPracticeEventsAllSkills = 0;
       practiceEventsResponse.rows?.forEach((row) => {
         const skill = row.dimensionValues?.[0]?.value;
         const count = parseInt(row.metricValues?.[0]?.value || "0", 10);
+        totalPracticeEventsAllSkills += count;
         if (skill && skill !== "(not set)") {
           skillBreakdownMap[skill] = count;
         }
@@ -205,6 +172,10 @@ export async function GET() {
       readingCount = skillBreakdownMap.Reading || 0;
       totalPracticingFromGa4 =
         speakingCount + writingCount + listeningCount + readingCount;
+      // Keep headline totals usable even if all rows are "(not set)" for skill_type.
+      if (totalPracticingFromGa4 === 0 && totalPracticeEventsAllSkills > 0) {
+        totalPracticingFromGa4 = totalPracticeEventsAllSkills;
+      }
     } catch (practiceErr) {
       console.warn(
         "[GA4] Practice-by-skill report failed (create custom dimension 'skill_type' in GA4 Admin → Custom definitions for breakdown). Error:",

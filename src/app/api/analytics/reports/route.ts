@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
 import { JWT } from "google-auth-library";
+import { resolveGa4Credentials } from "@/lib/ga4Credentials";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -58,42 +59,12 @@ export async function GET() {
     }
 
     const propertyId = `properties/${ga4PropertyId}`;
-    const analyticsClientEmail =
-      process.env.ANALYTICS_CLIENT_EMAIL || process.env.ANALYTICS_CLIENT_ID;
-    const analyticsPrivateKey = process.env.ANALYTICS_PRIVATE_KEY;
-
-    if (!analyticsClientEmail?.trim() || !analyticsPrivateKey?.trim()) {
+    const resolved = resolveGa4Credentials();
+    if ("error" in resolved) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "ANALYTICS_CLIENT_EMAIL (or ANALYTICS_CLIENT_ID) and ANALYTICS_PRIVATE_KEY are required.",
-          data: {
-            realtime: emptyStats(),
-            last24h: emptyStats(),
-            last7d: emptyStats(),
-            last30d: emptyStats(),
-            last90d: emptyStats(),
-          },
-        },
-        { status: 503 }
-      );
-    }
-
-    const privateKey = analyticsPrivateKey
-      .replace(/\\n/g, "\n")
-      .replace(/\r\n/g, "\n")
-      .replace(/\r/g, "\n")
-      .trim();
-    if (
-      !privateKey.includes("-----BEGIN") ||
-      !privateKey.includes("-----END")
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "ANALYTICS_PRIVATE_KEY must be a valid PEM key (-----BEGIN PRIVATE KEY----- ... -----END PRIVATE KEY-----).",
+          error: resolved.error,
           data: {
             realtime: emptyStats(),
             last24h: emptyStats(),
@@ -107,8 +78,8 @@ export async function GET() {
     }
 
     const authClient = new JWT({
-      email: analyticsClientEmail.trim(),
-      key: privateKey,
+      email: resolved.email,
+      key: resolved.privateKey,
       scopes: ["https://www.googleapis.com/auth/analytics.readonly"],
     });
     const analyticsDataClient = new BetaAnalyticsDataClient({ authClient });
@@ -206,9 +177,11 @@ export async function GET() {
         });
 
         const skillBreakdownMap: Record<string, number> = {};
+        let totalPracticeEventsAllSkills = 0;
         practiceResponse.rows?.forEach((row) => {
           const skill = row.dimensionValues?.[0]?.value;
           const count = parseInt(row.metricValues?.[0]?.value || "0", 10);
+          totalPracticeEventsAllSkills += count;
           if (skill && skill !== "(not set)") {
             skillBreakdownMap[skill] = count;
           }
@@ -224,8 +197,11 @@ export async function GET() {
           stats.skillBreakdown.Writing +
           stats.skillBreakdown.Listening +
           stats.skillBreakdown.Reading;
-        stats.practicingUsers = totalPracticing;
-        stats.recentPractices = totalPracticing;
+        // Preserve totals if skill_type is not populated and GA returns only "(not set)".
+        const resolvedTotal =
+          totalPracticing > 0 ? totalPracticing : totalPracticeEventsAllSkills;
+        stats.practicingUsers = resolvedTotal;
+        stats.recentPractices = resolvedTotal;
       } catch {
         try {
           const [eventOnlyResponse] = await analyticsDataClient.runReport({

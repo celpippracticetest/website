@@ -17,6 +17,22 @@ const GOOGLE_ADS_PURCHASE_LABEL =
 const GOOGLE_ADS_BEGIN_CHECKOUT_LABEL =
   process.env.NEXT_PUBLIC_GOOGLE_ADS_BEGIN_CHECKOUT_LABEL || "";
 const conversionDedupSet = new Set<string>();
+const ATTRIBUTION_STORAGE_KEYS = {
+  utmSource: "pending_utm_source",
+  utmMedium: "pending_utm_medium",
+  utmCampaign: "pending_utm_campaign",
+  utmContent: "pending_utm_content",
+  utmTerm: "pending_utm_term",
+  gclid: "pending_gclid",
+  gbraid: "pending_gbraid",
+  wbraid: "pending_wbraid",
+  fbclid: "pending_fbclid",
+  msclkid: "pending_msclkid",
+  ttclid: "pending_ttclid",
+  entryPage: "pending_entry_page",
+  referrer: "pending_referrer",
+  sessionId: "pending_attribution_session_id",
+} as const;
 
 type RedditTrackPayload = {
   transactionId?: string;
@@ -120,6 +136,163 @@ function normalizeUserData(userData?: UserData): UserData | undefined {
   }
 
   return normalized;
+}
+
+function normalizeString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function readAttributionFromStorage() {
+  if (!isBrowser) {
+    return {
+      utm_source: null,
+      utm_medium: null,
+      utm_campaign: null,
+      utm_content: null,
+      utm_term: null,
+      gclid: null,
+      gbraid: null,
+      wbraid: null,
+      fbclid: null,
+      msclkid: null,
+      ttclid: null,
+      entry_page: null,
+      referrer: null,
+      attribution_session_id: null,
+    };
+  }
+
+  return {
+    utm_source: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.utmSource)),
+    utm_medium: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.utmMedium)),
+    utm_campaign: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.utmCampaign)),
+    utm_content: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.utmContent)),
+    utm_term: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.utmTerm)),
+    gclid: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.gclid)),
+    gbraid: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.gbraid)),
+    wbraid: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.wbraid)),
+    fbclid: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.fbclid)),
+    msclkid: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.msclkid)),
+    ttclid: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.ttclid)),
+    entry_page: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.entryPage)),
+    referrer: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.referrer)),
+    attribution_session_id: normalizeString(
+      localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.sessionId)
+    ),
+  };
+}
+
+function inferAttributionSource(params: {
+  utmSource?: string | null;
+  gclid?: string | null;
+  gbraid?: string | null;
+  wbraid?: string | null;
+  msclkid?: string | null;
+  fbclid?: string | null;
+  ttclid?: string | null;
+  referrer?: string | null;
+}): string {
+  if (params.utmSource) return params.utmSource;
+  if (params.gclid || params.gbraid || params.wbraid) return "google";
+  if (params.msclkid) return "bing";
+  if (params.fbclid) return "facebook";
+  if (params.ttclid) return "tiktok";
+  if (params.referrer) return "referral";
+  return "(direct)";
+}
+
+function inferAttributionMedium(params: {
+  utmMedium?: string | null;
+  gclid?: string | null;
+  gbraid?: string | null;
+  wbraid?: string | null;
+  msclkid?: string | null;
+  fbclid?: string | null;
+  ttclid?: string | null;
+  referrer?: string | null;
+}): string {
+  if (params.utmMedium) return params.utmMedium;
+  if (params.gclid || params.gbraid || params.wbraid || params.msclkid || params.fbclid || params.ttclid) {
+    return "cpc";
+  }
+  if (params.referrer) return "referral";
+  return "(none)";
+}
+
+function inferSkillTypeFromPath(pathLike: string | null | undefined): string {
+  const path = normalizeString(pathLike)?.toLowerCase() || "";
+  if (!path) return "General";
+  if (path.includes("/speaking")) return "Speaking";
+  if (path.includes("/writing")) return "Writing";
+  if (path.includes("/listening")) return "Listening";
+  if (path.includes("/reading")) return "Reading";
+  return "General";
+}
+
+function buildAttributionEventPayload(attributionData?: Record<string, unknown>) {
+  const storage = readAttributionFromStorage();
+  const data = attributionData ?? {};
+
+  const utm_source = normalizeString(data.utm_source) || storage.utm_source;
+  const utm_medium = normalizeString(data.utm_medium) || storage.utm_medium;
+  const utm_campaign = normalizeString(data.utm_campaign) || storage.utm_campaign || "(not set)";
+  const utm_content = normalizeString(data.utm_content) || storage.utm_content;
+  const utm_term = normalizeString(data.utm_term) || storage.utm_term;
+  const gclid = normalizeString(data.gclid) || normalizeString(data.attribution_gclid) || storage.gclid;
+  const gbraid = normalizeString(data.gbraid) || normalizeString(data.attribution_gbraid) || storage.gbraid;
+  const wbraid = normalizeString(data.wbraid) || normalizeString(data.attribution_wbraid) || storage.wbraid;
+  const fbclid = normalizeString(data.fbclid) || normalizeString(data.attribution_fbclid) || storage.fbclid;
+  const msclkid =
+    normalizeString(data.msclkid) || normalizeString(data.attribution_msclkid) || storage.msclkid;
+  const ttclid = normalizeString(data.ttclid) || normalizeString(data.attribution_ttclid) || storage.ttclid;
+  const referrer = normalizeString(data.referrer) || storage.referrer;
+  const entry_page = normalizeString(data.entry_page) || storage.entry_page;
+  const purchase_page = normalizeString(data.purchase_page);
+
+  const attribution_source =
+    normalizeString(data.attribution_source) ||
+    inferAttributionSource({ utmSource: utm_source, gclid, gbraid, wbraid, msclkid, fbclid, ttclid, referrer });
+  const attribution_medium =
+    normalizeString(data.attribution_medium) ||
+    inferAttributionMedium({ utmMedium: utm_medium, gclid, gbraid, wbraid, msclkid, fbclid, ttclid, referrer });
+  const attribution_campaign = normalizeString(data.attribution_campaign) || utm_campaign;
+  const attribution_session_id =
+    normalizeString(data.attribution_session_id) || storage.attribution_session_id;
+  const purchase_type = normalizeString(data.purchase_type) || "first_purchase";
+  const skill_type =
+    normalizeString(data.skill_type) ||
+    inferSkillTypeFromPath(purchase_page || entry_page || null);
+
+  return {
+    attribution_source,
+    attribution_medium,
+    attribution_campaign,
+    attribution_gclid: gclid,
+    attribution_gbraid: gbraid,
+    attribution_wbraid: wbraid,
+    attribution_fbclid: fbclid,
+    attribution_msclkid: msclkid,
+    attribution_ttclid: ttclid,
+    utm_source: utm_source || attribution_source,
+    utm_medium: utm_medium || attribution_medium,
+    utm_campaign: utm_campaign || "(not set)",
+    utm_content,
+    utm_term,
+    gclid,
+    gbraid,
+    wbraid,
+    fbclid,
+    msclkid,
+    ttclid,
+    entry_page,
+    purchase_page,
+    referrer,
+    attribution_session_id,
+    purchase_type,
+    skill_type,
+  };
 }
 
 /**
@@ -595,6 +768,7 @@ export const trackEcommerce = {
     userData?: UserData
   ) => {
     const conversionLabel = GOOGLE_ADS_BEGIN_CHECKOUT_LABEL;
+    const attributionPayload = buildAttributionEventPayload();
     clearEcommerce();
     pushToDataLayer({
       event: "begin_checkout",
@@ -610,6 +784,7 @@ export const trackEcommerce = {
       conversion_name: "begin_checkout",
       conversion_label: conversionLabel || undefined,
       google_ads_send_to: getGoogleAdsSendTo(conversionLabel),
+      ...attributionPayload,
     });
 
     if (userData) {
@@ -637,10 +812,14 @@ export const trackEcommerce = {
     if (markDeduplicatedOnce(dedupeKey)) return;
 
     const conversionLabel = GOOGLE_ADS_PURCHASE_LABEL;
+    const attributionPayload = buildAttributionEventPayload(attributionData);
+    const resolvedPurchaseType: "first_purchase" | "subscription_renewal" =
+      normalizeString(attributionPayload.purchase_type) === "subscription_renewal"
+        ? "subscription_renewal"
+        : purchaseType;
     clearEcommerce();
     pushToDataLayer({
       event: "purchase",
-      purchase_type: purchaseType,
       // Top-level fields for GTM {{value}} / {{currency}} / {{transaction_id}} on Ads tags.
       value,
       currency,
@@ -655,7 +834,7 @@ export const trackEcommerce = {
       conversion_name: "purchase",
       conversion_label: conversionLabel || undefined,
       google_ads_send_to: getGoogleAdsSendTo(conversionLabel),
-      ...attributionData,
+      ...attributionPayload,
     });
     trackRedditEvent("Purchase", {
       transactionId,
@@ -671,7 +850,7 @@ export const trackEcommerce = {
         currency,
         transactionId,
         userData,
-        purchaseType,
+        purchaseType: resolvedPurchaseType,
       });
     }
   },

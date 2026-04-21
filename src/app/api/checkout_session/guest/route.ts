@@ -139,14 +139,32 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
     };
     const inferredPaidSource =
       attributionMetadata.gclid || attributionMetadata.gbraid || attributionMetadata.wbraid
-        ? "google_ads"
+        ? "google"
         : attributionMetadata.msclkid
-          ? "microsoft_ads"
+          ? "bing"
           : attributionMetadata.fbclid
-            ? "meta_ads"
+            ? "facebook"
             : attributionMetadata.ttclid
-              ? "tiktok_ads"
-              : "direct";
+              ? "tiktok"
+              : "(direct)";
+    const inferredMedium =
+      attributionMetadata.gclid ||
+      attributionMetadata.gbraid ||
+      attributionMetadata.wbraid ||
+      attributionMetadata.msclkid ||
+      attributionMetadata.fbclid ||
+      attributionMetadata.ttclid
+        ? "cpc"
+        : attributionMetadata.utm_source
+          ? "referral"
+          : "(none)";
+    const inferredCampaign = attributionMetadata.utm_campaign || "(not set)";
+    const inferredSkillType =
+      purchasePage?.includes("/speaking") ? "Speaking"
+      : purchasePage?.includes("/writing") ? "Writing"
+      : purchasePage?.includes("/listening") ? "Listening"
+      : purchasePage?.includes("/reading") ? "Reading"
+      : "General";
 
     const campaignPromo = await resolveCampaignPromoFromRequest(req);
     const campaignPromoKey = campaignPromo.campaignKey;
@@ -155,8 +173,8 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
     const attributionSnapshot = {
       attribution_source:
         attributionMetadata.utm_source || inferredPaidSource,
-      attribution_medium: attributionMetadata.utm_medium ?? "",
-      attribution_campaign: attributionMetadata.utm_campaign ?? "",
+      attribution_medium: attributionMetadata.utm_medium || inferredMedium,
+      attribution_campaign: inferredCampaign,
       attribution_gclid: attributionMetadata.gclid ?? "",
       attribution_gbraid: attributionMetadata.gbraid ?? "",
       attribution_wbraid: attributionMetadata.wbraid ?? "",
@@ -168,6 +186,8 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       referrer: readRequestAttribution("referrer") ?? "",
       attribution_session_id: readRequestAttribution("attribution_session_id") ?? "",
       purchase_page: purchasePage ?? "",
+      skill_type: inferredSkillType,
+      purchase_type: purchaseType || "first_purchase",
       attribution_country: country ?? "",
       attribution_currency: priceObject.currency?.toUpperCase() ?? "",
       time_to_purchase_minutes: "",

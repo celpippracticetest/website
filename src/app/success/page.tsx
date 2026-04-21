@@ -15,6 +15,15 @@ import { waitForCheckoutRecord } from "@/lib/waitForCheckoutRecord";
 import { findOrCreateClerkUserByEmail } from "@/lib/clerkGuestCheckout";
 import { getRequestOriginFromHeaders } from "@/lib/requestOrigin";
 
+function inferSkillTypeFromPath(pathLike: unknown): "Speaking" | "Writing" | "Listening" | "Reading" | "General" {
+  const value = typeof pathLike === "string" ? pathLike.toLowerCase() : "";
+  if (value.includes("/speaking")) return "Speaking";
+  if (value.includes("/writing")) return "Writing";
+  if (value.includes("/listening")) return "Listening";
+  if (value.includes("/reading")) return "Reading";
+  return "General";
+}
+
 export default async function Success({ searchParams }: any) {
   const params = searchParams ? await searchParams : {};
   const sessionIdRaw = params?.session_id;
@@ -68,22 +77,35 @@ export default async function Success({ searchParams }: any) {
       console.error("[success] upgrade offer:", err);
     }
   }
+  const purchasePagePath = checkoutMetadata.purchase_page || null;
+  const entryPagePath = checkoutMetadata.entry_page || checkoutMetadata.entryPage || null;
+  const resolvedAttributionSource =
+    checkoutMetadata.attribution_source || checkoutMetadata.utm_source || "(direct)";
+  const resolvedAttributionMedium =
+    checkoutMetadata.attribution_medium || checkoutMetadata.utm_medium || "(none)";
+  const resolvedAttributionCampaign =
+    checkoutMetadata.attribution_campaign || checkoutMetadata.utm_campaign || "(not set)";
+  const resolvedPurchaseType =
+    checkoutMetadata.purchase_type === "subscription_renewal"
+      ? "subscription_renewal"
+      : "first_purchase";
+  const resolvedSkillType =
+    checkoutMetadata.skill_type ||
+    inferSkillTypeFromPath(purchasePagePath || entryPagePath);
+
   const purchaseAttributionData = {
-    attribution_source:
-      checkoutMetadata.attribution_source || checkoutMetadata.utm_source || null,
-    attribution_medium:
-      checkoutMetadata.attribution_medium || checkoutMetadata.utm_medium || null,
-    attribution_campaign:
-      checkoutMetadata.attribution_campaign || checkoutMetadata.utm_campaign || null,
+    attribution_source: resolvedAttributionSource,
+    attribution_medium: resolvedAttributionMedium,
+    attribution_campaign: resolvedAttributionCampaign,
     attribution_gclid: checkoutMetadata.attribution_gclid || checkoutMetadata.gclid || null,
     attribution_gbraid: checkoutMetadata.attribution_gbraid || checkoutMetadata.gbraid || null,
     attribution_wbraid: checkoutMetadata.attribution_wbraid || checkoutMetadata.wbraid || null,
     attribution_fbclid: checkoutMetadata.attribution_fbclid || checkoutMetadata.fbclid || null,
     attribution_msclkid: checkoutMetadata.attribution_msclkid || checkoutMetadata.msclkid || null,
     attribution_ttclid: checkoutMetadata.attribution_ttclid || checkoutMetadata.ttclid || null,
-    utm_source: checkoutMetadata.utm_source || null,
-    utm_medium: checkoutMetadata.utm_medium || null,
-    utm_campaign: checkoutMetadata.utm_campaign || null,
+    utm_source: checkoutMetadata.utm_source || resolvedAttributionSource,
+    utm_medium: checkoutMetadata.utm_medium || resolvedAttributionMedium,
+    utm_campaign: checkoutMetadata.utm_campaign || resolvedAttributionCampaign,
     utm_content: checkoutMetadata.utm_content || null,
     utm_term: checkoutMetadata.utm_term || null,
     gbraid: checkoutMetadata.gbraid || null,
@@ -91,8 +113,10 @@ export default async function Success({ searchParams }: any) {
     fbclid: checkoutMetadata.fbclid || null,
     msclkid: checkoutMetadata.msclkid || null,
     ttclid: checkoutMetadata.ttclid || null,
-    entry_page: checkoutMetadata.entry_page || checkoutMetadata.entryPage || null,
-    purchase_page: checkoutMetadata.purchase_page || null,
+    entry_page: entryPagePath,
+    purchase_page: purchasePagePath,
+    purchase_type: resolvedPurchaseType,
+    skill_type: resolvedSkillType,
   };
 
   if (status === "open") redirect("/");

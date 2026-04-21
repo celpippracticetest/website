@@ -31,7 +31,7 @@ This folder contains a **GTM container JSON** you can **Import** into your web c
 
 - **GA4 Configuration** (`CPT - GA4 Config`) on **All Pages** using `{{CPT - GA4 Measurement ID}}`.
 - **`sign_up`**: dedicated GA4 Event tag on dataLayer **`sign_up`** (GA4 recommended name), with **`method`** and **`user_id`** mapped from the data layer.
-- **Ecommerce-style dataLayer events** (`begin_checkout`, `purchase`, `refund`, `view_item_list`, `select_item`): GA4 Event tags with **Send ecommerce data** from the data layer.
+- **Ecommerce-style dataLayer events** (`begin_checkout`, `purchase`, `refund`, `view_item_list`, `select_item`): GA4 Event tags with **Send ecommerce data** from the data layer, plus explicit custom params (`purchase_type`, `skill_type`, `attribution_source`, `attribution_medium`, `attribution_campaign`, `utm_*`, `entry_page`, `purchase_page`, `attribution_session_id`) mapped from dataLayer variables.
 - **All other app events** from `gtm.ts` (except `ads_enhanced_conversion` and `consent_update`): single **regex** Custom Event trigger + GA4 Event tag mirroring **`{{_event}}`** so event names in GA4 match the dataLayer (e.g. `page_view`, `login_completed`, …).
 
 ## Intentionally not sent to GA4 (by this template)

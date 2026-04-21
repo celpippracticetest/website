@@ -76,16 +76,27 @@ export async function POST(req: NextRequest) {
     const source =
       attributionData.utm_source ||
       (attributionData.gclid || attributionData.gbraid || attributionData.wbraid
-        ? "google_ads"
+        ? "google"
         : attributionData.msclkid
-          ? "microsoft_ads"
+          ? "bing"
           : attributionData.fbclid
-            ? "meta_ads"
+            ? "facebook"
             : attributionData.ttclid
-              ? "tiktok_ads"
+              ? "tiktok"
               : inferSourceFromReferrer());
-    const medium = attributionData.utm_medium || null;
-    const campaign = attributionData.utm_campaign || null;
+    const medium =
+      attributionData.utm_medium ||
+      (attributionData.gclid ||
+      attributionData.gbraid ||
+      attributionData.wbraid ||
+      attributionData.msclkid ||
+      attributionData.fbclid ||
+      attributionData.ttclid
+        ? "cpc"
+        : referrer
+          ? "referral"
+          : "(none)");
+    const campaign = attributionData.utm_campaign || "(not set)";
     const content = attributionData.utm_content || null;
     const term = attributionData.utm_term || null;
     const resolvedEntryPage = attributionData.entryPage || null;
