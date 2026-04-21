@@ -9,8 +9,8 @@ import { useUser } from "@clerk/nextjs";
 
 const navLinks = [
   { label: "Plans", href: "/pricing" },
-  { label: "Practice", href: "/#practice" },
-  { label: "Exam mode", href: "/#exam-mode" },
+  { label: "Practice", href: "/practice-overview" },
+  { label: "Exam mode", href: "/exam-overview" },
   { label: "FAQ", href: "/#faq" },
 ] as const;
 

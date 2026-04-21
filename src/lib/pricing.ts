@@ -176,7 +176,7 @@ export type PricingTierComparisonRow = {
   labelEmphasis?: boolean;
 };
 
-/** Rows for Premium vs Premium Plus matrix (two-card pricing layout). */
+/** Rows for Premium vs Premium Plus matrix (legacy two-column layouts / CMS). */
 export const PRICING_TIER_COMPARISON_ROWS: PricingTierComparisonRow[] = [
   {
     label: "60 full mock exams",
@@ -197,6 +197,11 @@ export const PRICING_TIER_COMPARISON_ROWS: PricingTierComparisonRow[] = [
   })),
 ];
 
+/** Plus tier: ordered labels for single-tier pricing UI (all included). */
+export const PRICING_PLUS_FEATURE_LABELS: readonly string[] = PRICING_TIER_COMPARISON_ROWS.map(
+  (row) => row.label
+);
+
 export function getDurationGroupKey(plan: SerializedPlan): DurationGroupKey | null {
   return getDurationGroupKeyFromName(plan) || getDurationGroupKeyFromBilling(plan);
 }
@@ -207,7 +212,7 @@ export function getStablePlanId(plan: SerializedPlan, index: number) {
 
 export function getAccessLabel(plan: SerializedPlan) {
   if (isPremiumPlusPlan(plan)) {
-    return "Premium Plus";
+    return "Plus";
   }
 
   if (
@@ -224,7 +229,7 @@ export function getAccessLabel(plan: SerializedPlan) {
 
 export function getPlanButtonLabel(plan: SerializedPlan) {
   if (isPremiumPlusPlan(plan)) {
-    return "Get Premium Plus";
+    return "Get Plus";
   }
 
   if (
@@ -258,15 +263,15 @@ export function getAccessTierKey(plan: SerializedPlan): AccessTierKey | null {
 
 export function getPlanDescription(plan: SerializedPlan) {
   if (isPremiumPlusPlan(plan) && isThreeMonthPlan(plan)) {
-    return "Best overall value with mock exams, realistic practice, and enough time to improve.";
+    return "Best overall value: mock exams, realistic practice, and enough time to improve.";
   }
 
   if (isPremiumPlusPlan(plan) && isYearlyPlan(plan)) {
-    return "Long-term full access for students who want the deepest practice library and mock exams.";
+    return "Long-term full access: the deepest practice library and unlimited mock exam prep.";
   }
 
   if (isPremiumPlusPlan(plan)) {
-    return "Everything in Premium, plus mock exams for full-test practice.";
+    return "Full access: mock exams, realistic exam simulation, and every practice feature.";
   }
 
   if (isThreeMonthPlan(plan)) {
@@ -294,7 +299,7 @@ export function getFooterNote(plan: SerializedPlan) {
   }
 
   if (isPremiumPlusPlan(plan)) {
-    return "Includes mock exams, full exam experience, and everything in Premium.";
+    return "Includes mock exams, full exam simulation, and the complete practice library.";
   }
 
   if (

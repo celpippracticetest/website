@@ -386,7 +386,7 @@ export default function OnboardingSurvey({
     const userPlan = (user?.publicMetadata as Record<string, unknown> | undefined)?.plan;
     const isFreeUser = !userPlan || userPlan === "free";
     if (isFreeUser) {
-      router.push("/final-offer");
+      router.push("/pricing#pricing-style-one");
       return;
     }
     router.push(url || "/practice-overview");
@@ -418,7 +418,7 @@ export default function OnboardingSurvey({
         >
           {step === 1 ? (
             <Image
-              alt="plan sale modal"
+              alt=""
               width={288}
               height={432}
               style={{
@@ -432,7 +432,7 @@ export default function OnboardingSurvey({
             />
           ) : (
             <Image
-              alt="plan sale modal"
+              alt=""
               width={324}
               height={290}
               style={{

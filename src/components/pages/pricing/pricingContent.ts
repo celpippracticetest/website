@@ -15,23 +15,14 @@ export const pricingSelectionSteps = [
     description: "Choose the study length that matches your exam date and available prep time.",
   },
   {
-    title: "Choose your access level",
+    title: "Subscribe to Plus",
     description:
-      "Premium covers daily practice. Premium Plus adds mock exams for full-test prep. Each Subscriber plan includes up to 2 devices. If you need more than 2 devices, purchase another subscription of the same plan for each additional device.",
+      "Plus includes mock exams, full exam simulation, AI feedback, and the full question bank. Each Subscriber plan includes up to 2 devices. If you need more than 2 devices, purchase another subscription of the same plan for each additional device.",
   },
   {
     title: "Start practicing right away",
     description: "Get instant access to questions, feedback, and exam-style practice after checkout.",
   },
-];
-
-export const comparisonRows = [
-  { label: "3,000+ sample questions", premium: true, premiumPlus: true },
-  { label: "Study guides and tips", premium: true, premiumPlus: true },
-  { label: "Instant AI feedback", premium: true, premiumPlus: true },
-  { label: "Progress tracking", premium: true, premiumPlus: true },
-  { label: "Full exam experience", premium: true, premiumPlus: true },
-  { label: "Mock exams", premium: false, premiumPlus: true },
 ];
 
 export const pricingTestimonials: PricingTestimonial[] = [
@@ -78,9 +69,9 @@ export const pricingFaqs: PricingFaq[] = [
       "Yes. You get instant AI-powered feedback so you can quickly understand what to improve next.",
   },
   {
-    question: "What is the difference between Premium and Premium Plus?",
+    question: "What is included in Plus?",
     answer:
-      "Premium is best for daily practice with questions, feedback, and tracking. Premium Plus includes everything in Premium plus mock exams.",
+      "Plus includes 60 full mock exams, real exam simulation, 3,000+ practice questions, instant AI feedback, progress tracking, study guides, and every subscriber feature on the platform.",
   },
   {
     question: "How many devices are included in a Subscriber plan?",

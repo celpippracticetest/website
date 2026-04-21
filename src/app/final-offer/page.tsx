@@ -6,13 +6,6 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import type { SubscriptionPlanFromStripe } from "@/lib/loadActivePlansWithStripePrices";
 import { useCheckoutAttributionPayload } from "@/components/analytics/CheckoutAttributionFields";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { useUserContext } from "@/hooks/useUserContext";
 import { formatBillingCycle, getDurationGroupKeyFromStripeRecurring } from "@/lib/pricing";
 import {
@@ -20,16 +13,16 @@ import {
   FINAL_OFFER_CHALLENGE_TIERS,
   type FinalOfferChallengeTierKey,
 } from "@/lib/finalOfferChallenge";
-import { PayPalSubscribeButton } from "@/components/paypal/PayPalSubscribeButton";
 import { StripeCheckoutDiscountBadge } from "@/components/checkout/StripeCheckoutDiscountBadge";
 import { getStripeCheckoutAutoDiscountLabel } from "@/lib/stripeCheckoutDiscountLabel";
 
 type OfferPlan = SubscriptionPlanFromStripe & {
   durationKey: "weekly" | "monthly" | "threeMonth" | "yearly" | null;
-  isPremiumPlus: boolean;
+  /** Matches Stripe catalog naming for the main Plus offering (not a separate “premium” tier). */
+  isPlusCatalogPlan: boolean;
 };
 
-function isPremiumPlusPlanName(planName: string) {
+function isPlusCatalogPlanName(planName: string) {
   const lower = planName.toLowerCase();
   return lower.includes("plus") || lower.includes("pro") || lower.includes("best value");
 }
@@ -60,8 +53,6 @@ function addDaysFromTodayLabel(days: number) {
 /** Public paths (filenames contain spaces — encode for URLs). */
 const STRIPE_WORDMARK_WHITE_SRC =
   "/icons/stripe/Stripe%20wordmark%20-%20White%20-%20Small.png";
-const PAYPAL_MONOGRAM_SRC = "/icons/paypal/PayPal-Monogram-FullColor-RGB.png";
-
 const SUB_GOAL_MIN_CLB: Record<string, number> = {
   "Federal Skilled Worker Program (FSWP)": 7,
   "Canadian Experience Class (CEC) - TEER 0 or 1": 7,
@@ -92,11 +83,6 @@ export default function FinalOfferPage() {
   const [isLoadingPlans, setIsLoadingPlans] = useState(true);
   const [planError, setPlanError] = useState<string | null>(null);
   const [showRefundChallenge, setShowRefundChallenge] = useState(false);
-  const [paypalLoading, setPaypalLoading] = useState(false);
-  const [paypalError, setPaypalError] = useState<string | null>(null);
-  const [challengePaymentModalOpen, setChallengePaymentModalOpen] = useState(false);
-  const [challengePaypalLoading, setChallengePaypalLoading] = useState(false);
-  const [challengePaypalError, setChallengePaypalError] = useState<string | null>(null);
   const [selectedChallengeTier, setSelectedChallengeTier] =
     useState<FinalOfferChallengeTierKey>("30d_100pct");
 
@@ -149,7 +135,7 @@ export default function FinalOfferPage() {
         plan.interval as "week" | "month" | "year" | undefined,
         plan.intervalCount
       ),
-      isPremiumPlus: isPremiumPlusPlanName(plan.name),
+      isPlusCatalogPlan: isPlusCatalogPlanName(plan.name),
     }));
 
     const byDuration = {
@@ -160,17 +146,17 @@ export default function FinalOfferPage() {
     };
 
     const testDate = userContext.onboardingProfile?.testDate || "";
-    const premiumPlusByDuration = {
-      monthly: byDuration.monthly.filter((p) => p.isPremiumPlus),
-      threeMonth: byDuration.threeMonth.filter((p) => p.isPremiumPlus),
-      yearly: byDuration.yearly.filter((p) => p.isPremiumPlus),
-      weekly: byDuration.weekly.filter((p) => p.isPremiumPlus),
+    const plusTierByDuration = {
+      monthly: byDuration.monthly.filter((p) => p.isPlusCatalogPlan),
+      threeMonth: byDuration.threeMonth.filter((p) => p.isPlusCatalogPlan),
+      yearly: byDuration.yearly.filter((p) => p.isPlusCatalogPlan),
+      weekly: byDuration.weekly.filter((p) => p.isPlusCatalogPlan),
     };
 
     // Business rule:
     // - less than / around 1 month -> recommend monthly
     // - more than 1 month -> recommend 3-month
-    // - always recommend Pro (Premium Plus)
+    // - always recommend the Plus catalog price for that duration when available
     const isUnderOrAtOneMonth =
       testDate === "In less than 2 weeks" || testDate === "In 1 month";
     const isMoreThanOneMonth =
@@ -178,32 +164,32 @@ export default function FinalOfferPage() {
 
     if (isUnderOrAtOneMonth) {
       return (
-        premiumPlusByDuration.monthly[0] ||
-        premiumPlusByDuration.threeMonth[0] ||
-        premiumPlusByDuration.yearly[0] ||
-        premiumPlusByDuration.weekly[0] ||
-        normalized.find((p) => p.isPremiumPlus) ||
+        plusTierByDuration.monthly[0] ||
+        plusTierByDuration.threeMonth[0] ||
+        plusTierByDuration.yearly[0] ||
+        plusTierByDuration.weekly[0] ||
+        normalized.find((p) => p.isPlusCatalogPlan) ||
         null
       );
     }
 
     if (isMoreThanOneMonth) {
       return (
-        premiumPlusByDuration.threeMonth[0] ||
-        premiumPlusByDuration.monthly[0] ||
-        premiumPlusByDuration.yearly[0] ||
-        premiumPlusByDuration.weekly[0] ||
-        normalized.find((p) => p.isPremiumPlus) ||
+        plusTierByDuration.threeMonth[0] ||
+        plusTierByDuration.monthly[0] ||
+        plusTierByDuration.yearly[0] ||
+        plusTierByDuration.weekly[0] ||
+        normalized.find((p) => p.isPlusCatalogPlan) ||
         null
       );
     }
 
     return (
-      premiumPlusByDuration.threeMonth[0] ||
-      premiumPlusByDuration.monthly[0] ||
-      premiumPlusByDuration.yearly[0] ||
-      premiumPlusByDuration.weekly[0] ||
-      normalized.find((p) => p.isPremiumPlus) ||
+      plusTierByDuration.threeMonth[0] ||
+      plusTierByDuration.monthly[0] ||
+      plusTierByDuration.yearly[0] ||
+      plusTierByDuration.weekly[0] ||
+      normalized.find((p) => p.isPlusCatalogPlan) ||
       null
     );
   }, [plans, userContext.onboardingProfile?.testDate]);
@@ -269,7 +255,6 @@ export default function FinalOfferPage() {
   const submitFinalOfferStripe = () => {
     const priceId = recommendedPlan?.priceId?.trim();
     if (!priceId) return;
-    setPaypalError(null);
     const checkoutAction = `/api/checkout_session?price=${encodeURIComponent(priceId)}`;
     const form = document.createElement("form");
     form.method = "POST";
@@ -292,7 +277,6 @@ export default function FinalOfferPage() {
   const submitChallengeStripe = () => {
     const priceId = recommendedPlan?.priceId?.trim();
     if (!priceId) return;
-    setChallengePaypalError(null);
     const checkoutAction = `/api/checkout_session?price=${encodeURIComponent(priceId)}`;
     const form = document.createElement("form");
     form.method = "POST";
@@ -333,7 +317,7 @@ export default function FinalOfferPage() {
         <p className="mt-2 text-sm leading-6 text-slate-600">
           {showRefundChallenge
             ? "Two tracks, one goal: hit your CLB in every skill before the deadline."
-            : "Based on your onboarding answers, we picked one recommended plan for you. Your 20% off the first billing period applies whether you subscribe with Stripe or PayPal."}
+            : "Based on your onboarding answers, we picked one recommended plan for you. Your 20% off the first billing period applies when you subscribe with Stripe checkout."}
         </p>
 
         {isLoadingPlans ? (
@@ -437,118 +421,47 @@ export default function FinalOfferPage() {
                 Checkout uses the regular price (no coupons or promotions). Challenge refunds are not
                 automatic; we review emailed proof before any refund.
               </p>
-              <Dialog
-                open={challengePaymentModalOpen}
-                onOpenChange={(open) => {
-                  setChallengePaymentModalOpen(open);
-                  if (!open) setChallengePaypalError(null);
-                }}
-              >
-                <DialogContent className="border-slate-200 bg-white sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle className="text-blue-950">Choose payment method</DialogTitle>
-                    <DialogDescription className="text-slate-600">
-                      Pay with Stripe or PayPal at the regular subscription price (no discounts).
-                      Your selected track:{" "}
-                      <span className="font-semibold text-slate-800">
-                        {FINAL_OFFER_CHALLENGE_TIERS[selectedChallengeTier].shortLabel} (
-                        {FINAL_OFFER_CHALLENGE_TIERS[selectedChallengeTier].refundPercent}% potential,{" "}
-                        {FINAL_OFFER_CHALLENGE_TIERS[selectedChallengeTier].windowDays} days).
-                      </span>{" "}
-                      Refunds, if you qualify, are manual after emailed score proof.
-                      {targetScoreForChallenge === null ? (
-                        <>
-                          {" "}
-                          Without a target CLB we cannot enroll you in the challenge; you can still
-                          subscribe at full price.
-                        </>
-                      ) : null}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="flex flex-col gap-3 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setChallengePaymentModalOpen(false);
-                        submitChallengeStripe();
-                      }}
-                      disabled={challengePaypalLoading}
-                      aria-label="Subscribe with Stripe"
-                      className="flex min-h-[48px] w-full items-center justify-center gap-2.5 rounded-md bg-[#635BFF] px-4 py-3 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-[#5851DF] focus-visible:ring-2 focus-visible:ring-[#635BFF] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[44px]"
-                    >
-                      <span>Subscribe with</span>
-                      <Image
-                        src={STRIPE_WORDMARK_WHITE_SRC}
-                        alt=""
-                        width={56}
-                        height={20}
-                        className="h-5 w-auto shrink-0 object-contain object-center"
-                      />
-                    </button>
-                    <PayPalSubscribeButton
-                      aria-label="Subscribe with PayPal"
-                      busy={challengePaypalLoading}
-                      onBusyChange={setChallengePaypalLoading}
-                      onError={setChallengePaypalError}
-                      onBegin={() => setChallengePaypalError(null)}
-                      buildSubscriptionBody={() => {
-                        const priceId = recommendedPlan.priceId.trim();
-                        const tier = FINAL_OFFER_CHALLENGE_TIERS[selectedChallengeTier];
-                        return {
-                          stripePriceId: priceId,
-                          attribution,
-                          ...(targetScoreForChallenge !== null && tier
-                            ? {
-                                challenge: {
-                                  mode: "refund_goal",
-                                  targetClb: targetScoreForChallenge,
-                                  windowDays: tier.windowDays,
-                                  refundPercent: tier.refundPercent,
-                                  offerSource: FINAL_OFFER_CHALLENGE_SOURCE,
-                                },
-                              }
-                            : {}),
-                        };
-                      }}
-                      className="flex min-h-[48px] w-full items-center justify-center gap-2.5 rounded-md border border-[#2C2E2F] bg-[#FFC439] px-4 py-3 text-sm font-bold tracking-tight text-[#003087] shadow-sm outline-none transition hover:brightness-[0.97] focus-visible:ring-2 focus-visible:ring-[#003087] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[44px]"
-                    >
-                      <Image
-                        src={PAYPAL_MONOGRAM_SRC}
-                        alt=""
-                        width={28}
-                        height={28}
-                        className="h-7 w-7 shrink-0 object-contain object-center"
-                      />
-                      {challengePaypalLoading ? "Redirecting to PayPal…" : "Subscribe with PayPal"}
-                    </PayPalSubscribeButton>
-                    {challengePaypalError ? (
-                      <p className="text-center text-sm text-red-600" role="alert">
-                        {challengePaypalError}
-                      </p>
-                    ) : null}
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <p className="mt-3 text-xs leading-5 text-slate-600">
+                Selected track:{" "}
+                <span className="font-semibold text-slate-800">
+                  {FINAL_OFFER_CHALLENGE_TIERS[selectedChallengeTier].shortLabel} (
+                  {FINAL_OFFER_CHALLENGE_TIERS[selectedChallengeTier].refundPercent}% potential,{" "}
+                  {FINAL_OFFER_CHALLENGE_TIERS[selectedChallengeTier].windowDays} days).
+                </span>{" "}
+                Pay with Stripe at the regular subscription price (no discounts). Refunds, if you
+                qualify, are manual after emailed score proof.
+                {targetScoreForChallenge === null ? (
+                  <>
+                    {" "}
+                    Without a target CLB we cannot enroll you in the challenge; you can still subscribe
+                    at full price.
+                  </>
+                ) : null}
+              </p>
               <button
                 type="button"
-                onClick={() => {
-                  setChallengePaypalError(null);
-                  setChallengePaymentModalOpen(true);
-                }}
+                onClick={submitChallengeStripe}
                 aria-label={
                   selectedChallengeTier === "30d_100pct"
-                    ? "Subscribe with full refund challenge"
-                    : "Subscribe with 50% refund challenge"
+                    ? "Subscribe with full refund challenge using Stripe"
+                    : "Subscribe with 50% refund challenge using Stripe"
                 }
-                className={`mt-4 w-full rounded-full px-4 py-3 text-sm font-semibold text-white outline-none transition focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 ${
-                  selectedChallengeTier === "30d_100pct"
-                    ? "bg-emerald-700 hover:bg-emerald-800 focus-visible:ring-emerald-600"
-                    : "bg-amber-700 hover:bg-amber-800 focus-visible:ring-amber-600"
-                }`}
+                className="mt-4 flex min-h-[48px] w-full items-center justify-center gap-2.5 rounded-md bg-[#635BFF] px-4 py-3 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-[#5851DF] focus-visible:ring-2 focus-visible:ring-[#635BFF] focus-visible:ring-offset-2 sm:min-h-[44px]"
               >
-                {selectedChallengeTier === "30d_100pct"
-                  ? "Subscribe with full refund challenge"
-                  : "Subscribe with 50% refund challenge"}
+                <span>
+                  {selectedChallengeTier === "30d_100pct"
+                    ? "Subscribe with full refund challenge"
+                    : "Subscribe with 50% refund challenge"}
+                </span>
+                <span className="text-white/80">·</span>
+                <span>Checkout with</span>
+                <Image
+                  src={STRIPE_WORDMARK_WHITE_SRC}
+                  alt=""
+                  width={56}
+                  height={20}
+                  className="h-5 w-auto shrink-0 object-contain object-center"
+                />
               </button>
               <button
                 type="button"
@@ -596,13 +509,12 @@ export default function FinalOfferPage() {
             <p className="mt-1 text-xs font-medium text-emerald-700">
               20% off first billing period
             </p>
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-stretch">
+            <div className="mt-5 flex flex-col gap-3">
               <button
                 type="button"
                 onClick={submitFinalOfferStripe}
-                disabled={paypalLoading}
                 aria-label="Subscribe with Stripe"
-                className="relative flex min-h-[48px] w-full flex-1 items-center justify-center gap-2.5 rounded-md bg-[#635BFF] px-4 py-3 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-[#5851DF] focus-visible:ring-2 focus-visible:ring-[#635BFF] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[44px]"
+                className="relative flex min-h-[48px] w-full items-center justify-center gap-2.5 rounded-md bg-[#635BFF] px-4 py-3 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-[#5851DF] focus-visible:ring-2 focus-visible:ring-[#635BFF] focus-visible:ring-offset-2 sm:min-h-[44px]"
               >
                 <StripeCheckoutDiscountBadge label={finalOfferStripeDiscountLabel} />
                 <span>Subscribe with</span>
@@ -614,34 +526,7 @@ export default function FinalOfferPage() {
                   className="h-5 w-auto shrink-0 object-contain object-center"
                 />
               </button>
-              <PayPalSubscribeButton
-                aria-label="Subscribe with PayPal"
-                busy={paypalLoading}
-                onBusyChange={setPaypalLoading}
-                onError={setPaypalError}
-                onBegin={() => setPaypalError(null)}
-                buildSubscriptionBody={() => ({
-                  stripePriceId: recommendedPlan.priceId.trim(),
-                  attribution,
-                  finalOffer: "onboarding_final_chance",
-                })}
-                className="flex min-h-[48px] w-full flex-1 items-center justify-center gap-2.5 rounded-md border border-[#2C2E2F] bg-[#FFC439] px-4 py-3 text-sm font-bold tracking-tight text-[#003087] shadow-sm outline-none transition hover:brightness-[0.97] focus-visible:ring-2 focus-visible:ring-[#003087] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[44px]"
-              >
-                <Image
-                  src={PAYPAL_MONOGRAM_SRC}
-                  alt=""
-                  width={28}
-                  height={28}
-                  className="h-7 w-7 shrink-0 object-contain object-center"
-                />
-                {paypalLoading ? "Redirecting to PayPal…" : "Subscribe with PayPal"}
-              </PayPalSubscribeButton>
             </div>
-            {paypalError ? (
-              <p className="mt-3 text-center text-sm text-red-600" role="alert">
-                {paypalError}
-              </p>
-            ) : null}
             <button
               type="button"
               onClick={() => setShowRefundChallenge(true)}

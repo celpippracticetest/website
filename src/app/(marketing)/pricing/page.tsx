@@ -16,7 +16,7 @@ import type { SerializedPlan } from "@/types/pricing";
 export const metadata: Metadata = {
   title: "CELPIP Practice Test Pricing Plans | Choose Your Plan",
   description:
-    "Compare CELPIP practice test plans. Free tier, weekly, monthly, and yearly options with 60+ mock exams, AI feedback, and 3,000+ sample questions. Trusted by 70k+ test-takers.",
+    "CELPIP Plus plans: weekly, monthly, 3-month, and yearly billing with 60+ mock exams, AI feedback, and 3,000+ sample questions. Trusted by 70k+ test-takers.",
   keywords: [
     "CELPIP pricing",
     "CELPIP practice test cost",
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "CELPIP Practice Test Pricing Plans | Choose Your Plan",
     description:
-      "Compare CELPIP practice test plans. Free tier, weekly, monthly, and yearly options with 60+ mock exams, AI feedback, and 3,000+ sample questions.",
+      "CELPIP Plus plans with weekly, monthly, 3-month, and yearly billing. Includes 60+ mock exams, AI feedback, and 3,000+ sample questions.",
     type: "website",
   },
   alternates: {

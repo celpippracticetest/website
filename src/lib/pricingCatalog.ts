@@ -63,8 +63,8 @@ export const accessTierMeta: Record<AccessTierKey, AccessTierMeta> = {
     summary: "Daily practice with AI feedback, full exam experience, and study support.",
   },
   premiumPlus: {
-    title: "Premium Plus",
-    summary: "Everything in Premium, plus mock exams for full-test preparation.",
+    title: "Plus",
+    summary: "Mock exams, full exam simulation, AI feedback, and the full practice library.",
   },
 };
 
