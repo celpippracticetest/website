@@ -7,7 +7,7 @@
       "env": {
         "BIGQUERY_PROJECT": "celpip-d8f02",
         "BIGQUERY_LOCATION": "US",
-        "BIGQUERY_DATASETS": "analytics_celpip",
+        "BIGQUERY_DATASETS": "analytics_533185817,analytics_celpip",
         "BIGQUERY_KEY_FILE": "${workspaceFolder}/secrets/gcp-bq-mcp-sa.json"
       }
     },

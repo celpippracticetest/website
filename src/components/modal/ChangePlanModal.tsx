@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
+import { formatSubscriptionLabelForDisplay } from "@/lib/subscriptionAccess";
 
 interface Plan {
   id: string;
@@ -158,7 +159,7 @@ function ChangePlanPlanRow({
             isCurrent ? "text-[#76808F]" : "text-[#212E42]"
           }`}
         >
-          {plan.name}
+          {formatSubscriptionLabelForDisplay(plan.name)}
         </h3>
         <div
           className={`text-[14px] ${isCurrent ? "text-[#9CA3AF]" : "text-[#76808F]"}`}
@@ -279,10 +280,10 @@ const ChangePlanModal = ({
 
         <div className="text-center mb-6">
           <h2 className="text-[#212E42] text-[20px] font-semibold mb-2">
-            Change Your Plan
+            Change billing period
           </h2>
           <p className="text-[#76808F] text-[14px]">
-            Choose the plan that best fits your needs.
+            Pick how often you are billed for Plus. Stripe applies the change to your subscription.
           </p>
         </div>
 

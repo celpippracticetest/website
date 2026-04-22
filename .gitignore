@@ -40,6 +40,8 @@ secrets/gtm-client-auth.json
 /test-results
 /.playwright
 
+*.sql
+/sql
 /scripts
 /docs
 # next.js

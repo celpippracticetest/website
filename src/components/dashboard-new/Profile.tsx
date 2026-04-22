@@ -21,6 +21,7 @@ import SubscriptionRetentionModal from "@/components/modal/SubscriptionRetention
 import ChangePlanModal from "@/components/modal/ChangePlanModal";
 import AccountDeletionRetentionModal from "@/components/modal/AccountDeletionRetentionModal";
 import {
+  formatSubscriptionLabelForDisplay,
   getSubscriptionDisplayName,
   hasPaidPracticeAccess,
 } from "@/lib/subscriptionAccess";
@@ -48,7 +49,9 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
     // When we have Stripe-backed subscriptionData, show only Stripe (planName); never Clerk/DB display names.
     if (subscriptionData) {
       const stripeLabel = subscriptionData.planName?.trim();
-      setPlanNameDisplay(stripeLabel || "Subscription");
+      setPlanNameDisplay(
+        formatSubscriptionLabelForDisplay(stripeLabel) || stripeLabel || "Subscription"
+      );
       setIsLoaded(true);
     } else if (prevCheckout && prevCheckout.createdAt) {
       // Fallback to checkout data for one-time purchases
@@ -57,12 +60,12 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
         getSubscriptionDisplayName(
           userPlan,
           userPurchaseDate,
-          description || "Premium Plan"
+          description || "Plus plan"
         )
       );
       setIsLoaded(true);
     } else {
-      // Fallback based on metadata if no data found but user is marked as premium
+      // Fallback based on metadata if no data found but user has a paid plan tag
       if (userPlan) {
         setPlanNameDisplay(getSubscriptionDisplayName(userPlan, userPurchaseDate));
       }
@@ -837,7 +840,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
           <div className="flex justify-between h-auto min-h-[48px] items-center mt-[24px] ">
             <div className="flex flex-col shrink-0 justify-center gap-[12px] h-[48px]">
               <span className="text-[#212E42] text-[16px] font-medium">
-                Premium Account
+                Your plan
               </span>
 
               {(hasPaidPracticeAccess(userPlan, userPurchaseDate) || subscriptionData) && (

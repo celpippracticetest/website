@@ -14,6 +14,7 @@
     "seed:profession-pages": "node ./scripts/seed-profession-pages.js",
     "export:clerk:all": "node ./tooling/export-clerk-all-users.js",
     "ga4:ensure-skill-dimension": "node ./tooling/ga4-ensure-skill-type-dimension.js",
+    "ads:spend-to-bq": "node ./tooling/google-ads-spend-to-bq.js",
     "postbuild": "node ./scripts/postbuild-cleanup.js",
     "svgr": "npx @svgr/cli --typescript --out-dir  src/components/icons/ -- icons/svg",
     "test:e2e": "npx playwright test",

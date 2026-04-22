@@ -152,6 +152,25 @@ export function hasMockExamAccess(
   return hasPaidPracticeAccess(plan, purchaseDate);
 }
 
+/**
+ * Stripe / checkout plan titles shown in profile and change-plan.
+ * When `preserveLegacyPremiumWord` is true, only renames "Premium Plus" / "Pro" style phrases
+ * so grandfathered `plan: "premium"` rows can still read "Premium" if Stripe used that word alone.
+ */
+export function formatSubscriptionLabelForDisplay(
+  raw: string | null | undefined,
+  preserveLegacyPremiumWord = false
+): string {
+  const s = (raw || "").trim();
+  if (!s) return "";
+  let out = s.replace(/\bpremium\s*plus\b/gi, "Plus");
+  out = out.replace(/\bpro\b/gi, "Plus");
+  if (!preserveLegacyPremiumWord) {
+    out = out.replace(/\bpremium\b/gi, "Plus");
+  }
+  return out;
+}
+
 export function getSubscriptionDisplayName(
   plan: string | null | undefined,
   purchaseDate?: unknown,
@@ -163,33 +182,18 @@ export function getSubscriptionDisplayName(
 
   if (trimmedName) {
     if (hasPlusAccess) {
-      if (/premium plus/i.test(trimmedName)) {
-        return trimmedName;
-      }
-      if (/\bpro\b/i.test(trimmedName)) {
-        return trimmedName.replace(/\bpro\b/gi, "Premium Plus");
-      }
-      if (/premium/i.test(trimmedName)) {
-        return trimmedName.replace(/premium/gi, "Premium Plus");
-      }
-      return `Premium Plus - ${trimmedName}`;
+      return formatSubscriptionLabelForDisplay(trimmedName) || "Plus";
     }
 
     if (normalizedPlan === "premium") {
-      if (/premium plus/i.test(trimmedName)) {
-        return trimmedName.replace(/premium plus/gi, "Premium");
-      }
-      if (/\bpro\b/i.test(trimmedName)) {
-        return trimmedName.replace(/\bpro\b/gi, "Premium");
-      }
-      return trimmedName;
+      return formatSubscriptionLabelForDisplay(trimmedName, true) || trimmedName;
     }
 
     return trimmedName;
   }
 
   if (normalizedPlan === "enterprise") return "Enterprise";
-  if (hasPlusAccess) return "Premium Plus";
+  if (hasPlusAccess) return "Plus";
   if (normalizedPlan === "premium") return "Premium";
   if (normalizedPlan === "free") return "Free";
   return "Free";

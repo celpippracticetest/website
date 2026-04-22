@@ -68,27 +68,26 @@ export default function AppDownloadPage() {
   const iosAppUrl = process.env.NEXT_PUBLIC_IOS_APP_URL;
   const androidAppUrl = process.env.NEXT_PUBLIC_ANDROID_APP_URL;
 
-  const storeUrls = [iosAppUrl, androidAppUrl].filter((u): u is string => Boolean(u && u.trim()));
-
-  const appJsonLd = {
+  const baseUrl = normalizeAppBaseUrl(process.env.APP_BASE_URL);
+  const pageUrl = `${baseUrl.replace(/\/$/, "")}/app`;
+  /**
+   * Avoid `SoftwareApplication` + `offers` without real store `aggregateRating`/`review`
+   * (Google Software App rich result requires one of those; see Search Console / SD docs).
+   */
+  const webpageJsonLd = {
     "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    name: "CELPIP Practice Test",
-    applicationCategory: "EducationApplication",
-    operatingSystem: ["iOS", "Android"],
+    "@type": "WebPage",
+    "@id": `${pageUrl}#webpage`,
+    url: pageUrl,
+    name: "Download the CELPIP App for iOS & Android | CELPIP Practice Test",
     description:
-      "CELPIP Practice Test app for mobile mock exams, instant scoring, and AI feedback across Listening, Reading, Writing, and Speaking.",
-    ...(storeUrls.length ? { downloadUrl: storeUrls[0] } : {}),
-    offers: {
-      "@type": "Offer",
-      price: "0",
-      priceCurrency: "USD"
+      "Download the CELPIP Practice Test app to get on-the-go CELPIP mock practice, instant scoring, and AI-powered feedback for Listening, Reading, Writing, and Speaking.",
+    inLanguage: "en",
+    isPartOf: {
+      "@type": "WebSite",
+      name: "CELPIP Practice Test",
+      url: baseUrl.replace(/\/$/, ""),
     },
-    featureList: [
-      "Instant CELPIP scoring",
-      "AI-powered feedback and practice drills",
-      "Study on-the-go with mobile mock tests",
-    ],
   };
 
   const StoreBadge = ({ kind, href }: { kind: "ios" | "android"; href?: string }) => {
@@ -138,7 +137,7 @@ export default function AppDownloadPage() {
 
   return (
     <Box className="cel-container py-10 md:py-14">
-      <JsonLd data={appJsonLd} />
+      <JsonLd data={webpageJsonLd} />
 
       <Box className="flex flex-col gap-6">
         <Box className="flex items-start justify-between gap-6 flex-wrap">

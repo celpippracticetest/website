@@ -147,6 +147,22 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
 
+  async redirects() {
+    /** Legacy / mistaken paths linked from older content; targets verified in prod DB (Apr 2026). */
+    const fixes: { source: string; destination: string }[] = [
+      ["/celpip-for-medical-laboratory-technologist", "/celpip-for-medical-radiological-technologists"],
+      ["/celpip-vs-ielts", "/blog/celpip-vs-ielts-format-fees-scoring"],
+      ["/celpip-speaking-tips-for-healthcare", "/wiki/celpip-speaking-tips-high-score"],
+      ["/how-to-score-clb-7-on-celpip-for-nursing", "/celpip-for-nurses"],
+      ["/ircc-language-requirements-for-nurses", "/blog/celpip-2026-canadian-immigration-updates"],
+      ["/pass-celpip-writing", "/blog/7-key-strategies-to-excel-in-celpip-writing-test"],
+      ["/clb-levels-for-immigration", "/blog/complete-guide-celpip-test-booking-results-clb"],
+      ["/celpip-speaking-tips", "/wiki/celpip-speaking-tips-high-score"],
+      ["/celpip-writing-email-tips", "/blog/celpip-writing-task-1-samples-email-tone-clb-9-2026"],
+    ].map(([source, destination]) => ({ source, destination, permanent: true }));
+    return fixes;
+  },
+
   async rewrites() {
     return [
       // Google Tag Gateway — routes GTM & GA4 through first-party domain

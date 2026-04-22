@@ -15,7 +15,7 @@ export default function ChangePlan() {
           </div>
         ) : (
           <div className="text-xl  text-center lg:text-left font-bold mt-2 text-green-600">
-            PREMIUM
+            PLUS
           </div>
         )}
       </div>
@@ -37,7 +37,7 @@ export default function ChangePlan() {
               strokeLinecap="round"
               strokeLinejoin="round"
             />
-            Upgrade to Pro
+            Upgrade to Plus
           </Link>
         )}
     </div>

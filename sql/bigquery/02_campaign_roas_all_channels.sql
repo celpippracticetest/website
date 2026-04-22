@@ -1,14 +1,23 @@
 -- ROAS by campaign/channel across Google Ads, Meta, Reddit, etc.
 -- Project: celpip-d8f02
--- GA4 export dataset: analytics_celpip
+-- GA4 export dataset: analytics_533185817 (default name = analytics_<PROPERTY_ID> for property 533185817)
+--
+-- GA4 daily tables in this dataset (examples):
+--   events_YYYYMMDD          — purchases, params, traffic_source (used here)
+--   pseudonymous_users_*     — user-level rollups (not used in this view)
+--   users_*                  — user export (not used in this view)
 --
 -- Usage:
--- 1) Set up a unified spend table with columns:
---    date DATE, platform STRING, source STRING, medium STRING, campaign STRING, spend NUMERIC
--- 2) Replace `analytics_celpip.ad_spend_daily` below with your spend table name.
--- 3) Run this file to create/update a Looker Studio-ready view.
+-- 0) If `ad_spend_daily` has no schema or is missing, run FIRST:
+--      sql/bigquery/00_ad_spend_daily_ddl.sql
+-- 1) Load rows into `ad_spend_daily` (columns: spend_date, platform, source, medium, campaign, spend).
+--    Use lowercase source/medium where possible so joins match GA4 revenue keys.
+-- 2) Run this file to create/update the Looker Studio-ready view.
+--
+-- If your GA4 link used a custom dataset id (e.g. analytics_celpip), replace
+-- `analytics_533185817` everywhere below.
 
-CREATE OR REPLACE VIEW `celpip-d8f02.analytics_celpip.v_campaign_roas_daily` AS
+CREATE OR REPLACE VIEW `celpip-d8f02.analytics_533185817.v_campaign_roas_daily` AS
 WITH purchase_events AS (
   SELECT
     PARSE_DATE('%Y%m%d', event_date) AS date,
@@ -26,12 +35,12 @@ WITH purchase_events AS (
       NULLIF(collected_traffic_source.manual_medium, ''),
       '(none)'
     ) AS medium,
-    COALESCE(
+    LOWER(TRIM(COALESCE(
       NULLIF((SELECT ep.value.string_value FROM UNNEST(event_params) ep WHERE ep.key = 'attribution_campaign'), ''),
       NULLIF((SELECT ep.value.string_value FROM UNNEST(event_params) ep WHERE ep.key = 'utm_campaign'), ''),
       NULLIF(collected_traffic_source.manual_campaign_name, ''),
       '(not set)'
-    ) AS campaign,
+    ))) AS campaign,
     COALESCE(
       NULLIF((SELECT ep.value.string_value FROM UNNEST(event_params) ep WHERE ep.key = 'purchase_type'), ''),
       'first_purchase'
@@ -54,34 +63,34 @@ WITH purchase_events AS (
       NULLIF((SELECT ep.value.string_value FROM UNNEST(event_params) ep WHERE ep.key = 'transaction_id'), ''),
       CONCAT(user_pseudo_id, '-', event_timestamp)
     ) AS transaction_id
-  FROM `celpip-d8f02.analytics_celpip.events_*`
+  FROM `celpip-d8f02.analytics_533185817.events_*`
   WHERE event_name = 'purchase'
 ),
 revenue_daily AS (
+  -- Roll up revenue to the same grain as spend (date + source + medium + campaign only).
+  -- Do NOT group by purchase_type / skill_type here: spend has no those dimensions, so extra
+  -- revenue groups would fan out the join and duplicate spend (ROAS looks 0 or nonsensical).
   SELECT
     date,
     LOWER(source) AS source,
     LOWER(medium) AS medium,
     campaign,
-    purchase_type,
-    skill_type,
-    currency,
+    ANY_VALUE(currency) AS currency,
     COUNT(DISTINCT transaction_id) AS purchases,
     SUM(revenue) AS revenue
   FROM purchase_events
-  GROUP BY 1,2,3,4,5,6,7
+  GROUP BY date, LOWER(source), LOWER(medium), campaign
 ),
 spend_daily AS (
-  -- Expected schema:
-  -- date DATE, platform STRING, source STRING, medium STRING, campaign STRING, spend NUMERIC
+  -- Table: ad_spend_daily — see 00_ad_spend_daily_ddl.sql (column spend_date, not reserved `date`)
   SELECT
-    date,
+    spend_date AS date,
     LOWER(source) AS source,
     LOWER(medium) AS medium,
-    campaign,
+    LOWER(TRIM(campaign)) AS campaign,
     platform,
     spend
-  FROM `celpip-d8f02.analytics_celpip.ad_spend_daily`
+  FROM `celpip-d8f02.analytics_533185817.ad_spend_daily`
 ),
 combined AS (
   SELECT
@@ -118,12 +127,12 @@ FROM combined;
 
 -- Optional: if you do not have a unified ad_spend table yet, build one like this:
 --
--- CREATE OR REPLACE TABLE `celpip-d8f02.analytics_celpip.ad_spend_daily` AS
--- SELECT date, 'google_ads' AS platform, LOWER(source) AS source, LOWER(medium) AS medium, campaign, spend
--- FROM `celpip-d8f02.analytics_celpip.google_ads_campaign_spend_daily`
+-- CREATE OR REPLACE TABLE `celpip-d8f02.analytics_533185817.ad_spend_daily` AS
+-- SELECT spend_date, 'google_ads' AS platform, LOWER(source) AS source, LOWER(medium) AS medium, campaign, spend
+-- FROM `celpip-d8f02.analytics_533185817.google_ads_campaign_spend_daily`
 -- UNION ALL
--- SELECT date, 'meta_ads' AS platform, LOWER(source) AS source, LOWER(medium) AS medium, campaign, spend
--- FROM `celpip-d8f02.analytics_celpip.meta_ads_campaign_spend_daily`
+-- SELECT spend_date, 'meta_ads' AS platform, LOWER(source) AS source, LOWER(medium) AS medium, campaign, spend
+-- FROM `celpip-d8f02.analytics_533185817.meta_ads_campaign_spend_daily`
 -- UNION ALL
--- SELECT date, 'reddit_ads' AS platform, LOWER(source) AS source, LOWER(medium) AS medium, campaign, spend
--- FROM `celpip-d8f02.analytics_celpip.reddit_ads_campaign_spend_daily`;
+-- SELECT spend_date, 'reddit_ads' AS platform, LOWER(source) AS source, LOWER(medium) AS medium, campaign, spend
+-- FROM `celpip-d8f02.analytics_533185817.reddit_ads_campaign_spend_daily`;
