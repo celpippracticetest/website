@@ -200,11 +200,11 @@ export function linkContentCore(
           );
           if (!nonSelf) return match;
           const linkConfig = nonSelf;
-          return `<a href="${normalizeInternalHref(linkConfig.url)}" class="text-primary hover:underline font-medium" title="Learn more about ${linkConfig.keyword}">${match}</a>`;
+          return `<a href="${normalizeInternalHref(linkConfig.url)}" class="cel-internal-kw-link text-primary font-medium no-underline hover:no-underline" title="Learn more about ${linkConfig.keyword}">${match}</a>`;
         }
 
         const linkConfig = candidates[0];
-        return `<a href="${normalizeInternalHref(linkConfig.url)}" class="text-primary hover:underline font-medium" title="Learn more about ${linkConfig.keyword}">${match}</a>`;
+        return `<a href="${normalizeInternalHref(linkConfig.url)}" class="cel-internal-kw-link text-primary font-medium no-underline hover:no-underline" title="Learn more about ${linkConfig.keyword}">${match}</a>`;
       });
       
       processedHtml += text;

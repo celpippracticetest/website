@@ -289,6 +289,13 @@ svg {
     @apply text-blue-600 dark:text-blue-400 hover:underline;
   }
 
+  /* Internal auto-links (content linker): color only, no underline on keywords.
+     Blog uses .article-content.prose on one element; wiki nests .article-content inside .prose. */
+  a.cel-internal-kw-link,
+  a.cel-internal-kw-link:hover {
+    text-decoration-line: none;
+  }
+
   /* Utility for schema markup */
   .article-schema {
     @apply hidden;

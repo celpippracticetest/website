@@ -18,6 +18,7 @@ Output requirements:
 - Keep contentHtml as an HTML fragment using only these tags: <p>, <h2>, <h3>, <h4>, <strong>, <em>, <u>, <ul>, <ol>, <li>, <a href="...">.
 - Do NOT use <h1>. (The page H1 is the blog Title field.)
 - Start contentHtml with <p> or <h2>.
+- Headings (H2/H3): prefer clear, reader-first section titles; do not turn every heading into a keyword stack (avoid \"What Is CELPIP [section]?\"-style titles). Keep primary phrases in body paragraphs and meta fields where appropriate.
 - Make edits by weaving keywords naturally; avoid keyword stuffing.
 - Keep the article coherent and consistent with the input.
 

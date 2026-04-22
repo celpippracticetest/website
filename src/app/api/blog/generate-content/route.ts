@@ -12,7 +12,8 @@ conversational blog title targeting long-tail voice search queries",
 "excerpt": "string, max 320 chars, short summary for cards and snippets that hooks the reader",
 "contentHtml": "string, 
 full blog body as HTML. Use only: <p>, <h2>, <h3>, <h4>, <strong>, <em>, <u>, <ul>, <ol>, <li>, <a href="...">. 
-No <h1>. Start with an H2 or a 'Position Zero' <p>.",
+No <h1>. Start with an H2 or a 'Position Zero' <p>.
+Headings (H2/H3): Use natural section titles for readers—do not cram the exam name, skill, and task number into every heading (avoid patterns like \"What Is CELPIP Speaking Task 3?\"). Keep target keywords in paragraphs, metaTitle, and body copy instead of repeating them in each heading.",
 "metaTitle": "string, max 70 chars, SEO title including the primary keyword near the front",
 "metaDescription": "string, max 160 chars, compelling SERP description ending with a call to action",
 "keywords": "string, comma-separated SEO keywords including semantic terms (e.g., IRCC, CLB)",
