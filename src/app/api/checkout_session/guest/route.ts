@@ -243,6 +243,13 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       }
     }
 
+    const ga4ClientId = readRequestAttribution("ga4_client_id");
+    const ga4SessionId = readRequestAttribution("ga4_session_id");
+    const ga4CheckoutMeta: Record<string, string> = {
+      ...(ga4ClientId ? { ga4_client_id: ga4ClientId } : {}),
+      ...(ga4SessionId ? { ga4_session_id: ga4SessionId } : {}),
+    };
+
     logger.info("Creating guest checkout session", {
       component: "checkout_session_guest_api",
       action: "create_guest_checkout_session",
@@ -280,6 +287,7 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
         ...attributionSnapshot,
         ...pricingAbMeta,
         ...homeAbMeta,
+        ...ga4CheckoutMeta,
       },
       ...(mode === "subscription" && {
         subscription_data: {
@@ -290,6 +298,7 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
             mock_exam_id: mockExamId,
             referral_code: "",
             ...(campaignPromoKey && { campaign_promo: campaignPromoKey }),
+            ...ga4CheckoutMeta,
             ...attributionMetadata,
             ...attributionSnapshot,
             ...pricingAbMeta,

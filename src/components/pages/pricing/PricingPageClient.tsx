@@ -10,6 +10,7 @@ import AutoAwesome from "@mui/icons-material/AutoAwesome";
 import Star from "@mui/icons-material/Star";
 import SvgDiamond from "@/components/icons/Diamond";
 import { useCheckoutAttributionPayload } from "@/components/analytics/CheckoutAttributionFields";
+import { mergePendingGa4IntoAttribution } from "@/lib/ga4BrowserIds";
 import {
   pricingFaqs,
   pricingHeroStats,
@@ -224,7 +225,7 @@ function PricingPlanCheckoutTile({
       input.value = value;
       form.appendChild(input);
     };
-    for (const [key, value] of Object.entries(attribution)) {
+    for (const [key, value] of Object.entries(mergePendingGa4IntoAttribution(attribution))) {
       add(key, value);
     }
     if (pricingCheckoutFields) {

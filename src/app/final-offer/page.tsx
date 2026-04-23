@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import type { SubscriptionPlanFromStripe } from "@/lib/loadActivePlansWithStripePrices";
 import { useCheckoutAttributionPayload } from "@/components/analytics/CheckoutAttributionFields";
+import { mergePendingGa4IntoAttribution } from "@/lib/ga4BrowserIds";
 import { useUserContext } from "@/hooks/useUserContext";
 import { formatBillingCycle, getDurationGroupKeyFromStripeRecurring } from "@/lib/pricing";
 import {
@@ -267,7 +268,7 @@ export default function FinalOfferPage() {
       form.appendChild(input);
     };
     add("final_offer", "onboarding_final_chance");
-    for (const [key, value] of Object.entries(attribution)) {
+    for (const [key, value] of Object.entries(mergePendingGa4IntoAttribution(attribution))) {
       if (value) add(key, value);
     }
     document.body.appendChild(form);
@@ -296,7 +297,7 @@ export default function FinalOfferPage() {
       add("challenge_refund_percent", String(tier.refundPercent));
       add("challenge_offer_source", FINAL_OFFER_CHALLENGE_SOURCE);
     }
-    for (const [key, value] of Object.entries(attribution)) {
+    for (const [key, value] of Object.entries(mergePendingGa4IntoAttribution(attribution))) {
       if (value) add(key, value);
     }
     document.body.appendChild(form);

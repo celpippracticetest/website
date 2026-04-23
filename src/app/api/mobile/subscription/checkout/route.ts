@@ -386,6 +386,13 @@ export async function POST(request: NextRequest) {
         readStringValue(body?.attribution_session_id) || "",
     };
 
+    const ga4ClientId = readStringValue(body?.ga4_client_id);
+    const ga4SessionId = readStringValue(body?.ga4_session_id);
+    const ga4CheckoutMeta: Record<string, string> = {
+      ...(ga4ClientId ? { ga4_client_id: ga4ClientId } : {}),
+      ...(ga4SessionId ? { ga4_session_id: ga4SessionId } : {}),
+    };
+
     const session = await stripe.checkout.sessions.create({
       ...stripeCheckoutPaymentMethodParams(),
       customer_email: email,
@@ -418,6 +425,7 @@ export async function POST(request: NextRequest) {
           ? toMetadataValue(publicMetadata.partnerReferralCode)
           : "",
         origin: "mobile_app",
+        ...ga4CheckoutMeta,
         ...attributionMetadata,
         ...attributionSnapshot,
       },
@@ -438,6 +446,7 @@ export async function POST(request: NextRequest) {
                   ? toMetadataValue(publicMetadata.partnerReferralCode)
                   : "",
                 origin: "mobile_app",
+                ...ga4CheckoutMeta,
                 ...attributionMetadata,
                 ...attributionSnapshot,
               },

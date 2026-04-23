@@ -3,6 +3,13 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { HOME_AB_COOKIE } from "@/lib/homeAbTest";
+import {
+  loadPendingGa4IdsFromStorage,
+  persistPendingGa4Ids,
+  resolveGa4BrowserIds,
+} from "@/lib/ga4BrowserIds";
+
+const MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
 
 const STORAGE_KEY_BY_FIELD = {
   gclid: "pending_gclid",
@@ -65,6 +72,20 @@ export function useCheckoutAttributionPayload(): Record<string, string> {
     setHomeAbVariant(m?.[1] ?? null);
   }, [searchParams]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let cancelled = false;
+    void (async () => {
+      const resolved = await resolveGa4BrowserIds(MEASUREMENT_ID);
+      if (cancelled || !resolved.clientId) return;
+      persistPendingGa4Ids(resolved.clientId, resolved.sessionId);
+      setFields((prev) => ({ ...prev }));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams]);
+
   const payload: Record<string, string> = {};
   for (const field of CHECKOUT_ATTRIBUTION_FIELDS) {
     const value = readValue(searchParams.get(field)) || fields[field];
@@ -73,6 +94,13 @@ export function useCheckoutAttributionPayload(): Record<string, string> {
   if (homeAbVariant) {
     payload.home_ab_variant = homeAbVariant;
   }
+
+  if (typeof window !== "undefined") {
+    const { clientId, sessionId } = loadPendingGa4IdsFromStorage();
+    if (clientId) payload.ga4_client_id = clientId;
+    if (sessionId) payload.ga4_session_id = sessionId;
+  }
+
   return payload;
 }
 

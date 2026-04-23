@@ -625,6 +625,13 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       }
     }
 
+    const ga4ClientId = readRequestAttribution("ga4_client_id");
+    const ga4SessionId = readRequestAttribution("ga4_session_id");
+    const ga4CheckoutMeta: Record<string, string> = {
+      ...(ga4ClientId ? { ga4_client_id: ga4ClientId } : {}),
+      ...(ga4SessionId ? { ga4_session_id: ga4SessionId } : {}),
+    };
+
     logger.info("Creating checkout session", {
       component: "checkout_session_api",
       action: "create_checkout_session",
@@ -699,6 +706,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
               : "",
         }),
         ...(campaignPromoKey && { campaign_promo: campaignPromoKey }),
+        ...ga4CheckoutMeta,
       },
       ...(mode === "subscription" && {
         subscription_data: {
@@ -716,6 +724,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
             challenge_offer_source: hasChallengePayload ? FINAL_OFFER_CHALLENGE_SOURCE : null,
             challenge_tier_key: challengeTierKey ?? "",
             challenge_deadline_at: challengeDeadlineIso,
+            ...ga4CheckoutMeta,
             ...attributionMetadata,
             ...attributionSnapshot,
             ...pricingAbMeta,

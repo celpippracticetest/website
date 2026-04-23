@@ -11,6 +11,8 @@ type Ga4Event = {
 type SendGa4EventsInput = {
   clientId: string;
   userId?: string | null;
+  /** GA4 session id (digits); merged into each event for session-scoped attribution. */
+  gaSessionId?: string | null;
   events: Ga4Event[];
 };
 
@@ -78,11 +80,24 @@ export async function sendGa4Events(
   if (!cfg) return false;
   if (!input.clientId || input.events.length === 0) return false;
 
+  const sessionId = input.gaSessionId?.trim();
+
   const events = input.events
-    .map((event) => ({
-      name: event.name,
-      params: sanitizeParams(event.params),
-    }))
+    .map((event) => {
+      const rawParams: Record<string, unknown> = {
+        ...((event.params as Record<string, unknown>) || {}),
+      };
+      if (sessionId) {
+        rawParams.session_id = sessionId;
+        if (rawParams.engagement_time_msec === undefined) {
+          rawParams.engagement_time_msec = 1;
+        }
+      }
+      return {
+        name: event.name,
+        params: sanitizeParams(rawParams),
+      };
+    })
     .filter((event) => event.name.trim().length > 0);
 
   if (events.length === 0) return false;

@@ -63,6 +63,11 @@ function readMetadataValue(
   return trimmed.length > 0 ? trimmed : null;
 }
 
+/**
+ * Match browser-side `inferAttributionSource` in `gtm.ts` so GA4 Default Channel
+ * Group / Primary Channel Group recognize `source` + `medium` on MP hits.
+ * Values like `google_ads` + empty medium stay "Unassigned".
+ */
 function inferAttributionSource(
   metadata: Record<string, string | undefined> | null | undefined
 ): string {
@@ -72,11 +77,29 @@ function inferAttributionSource(
   const gclid = readMetadataValue(metadata, "gclid");
   const gbraid = readMetadataValue(metadata, "gbraid");
   const wbraid = readMetadataValue(metadata, "wbraid");
-  if (gclid || gbraid || wbraid) return "google_ads";
-  if (readMetadataValue(metadata, "msclkid")) return "microsoft_ads";
-  if (readMetadataValue(metadata, "fbclid")) return "meta_ads";
-  if (readMetadataValue(metadata, "ttclid")) return "tiktok_ads";
-  return "direct";
+  if (gclid || gbraid || wbraid) return "google";
+  if (readMetadataValue(metadata, "msclkid")) return "bing";
+  if (readMetadataValue(metadata, "fbclid")) return "facebook";
+  if (readMetadataValue(metadata, "ttclid")) return "tiktok";
+  if (readMetadataValue(metadata, "referrer")) return "referral";
+  return "(direct)";
+}
+
+function inferAttributionMedium(
+  metadata: Record<string, string | undefined> | null | undefined
+): string {
+  const utmMedium = readMetadataValue(metadata, "utm_medium");
+  if (utmMedium) return utmMedium;
+
+  const gclid = readMetadataValue(metadata, "gclid");
+  const gbraid = readMetadataValue(metadata, "gbraid");
+  const wbraid = readMetadataValue(metadata, "wbraid");
+  const msclkid = readMetadataValue(metadata, "msclkid");
+  const fbclid = readMetadataValue(metadata, "fbclid");
+  const ttclid = readMetadataValue(metadata, "ttclid");
+  if (gclid || gbraid || wbraid || msclkid || fbclid || ttclid) return "cpc";
+  if (readMetadataValue(metadata, "referrer")) return "referral";
+  return "(none)";
 }
 
 function buildStripeGaClientId(args: {
@@ -86,6 +109,9 @@ function buildStripeGaClientId(args: {
   sessionId?: string | null;
   subscriptionId?: string | null;
 }): string {
+  const ga4ClientId = readMetadataValue(args.metadata ?? undefined, "ga4_client_id");
+  if (ga4ClientId) return ga4ClientId;
+
   const metadataSessionId = readMetadataValue(
     args.metadata ?? undefined,
     "attribution_session_id"
@@ -98,6 +124,13 @@ function buildStripeGaClientId(args: {
     args.userId ||
     "stripe_unknown_client"
   );
+}
+
+function readGa4SessionIdForMp(
+  metadata: Record<string, string | undefined> | null | undefined
+): string | undefined {
+  const v = readMetadataValue(metadata, "ga4_session_id");
+  return v ?? undefined;
 }
 
 /** GA4 `purchase.items` from Checkout Session (Measurement Protocol). */
@@ -153,7 +186,7 @@ function buildStripeGaAttributionParams(
   const ttclid = readMetadataValue(metadata, "ttclid") || "";
   return {
     source: inferAttributionSource(metadata),
-    medium: readMetadataValue(metadata, "utm_medium") || "",
+    medium: inferAttributionMedium(metadata),
     campaign: readMetadataValue(metadata, "utm_campaign") || "",
     utm_source: readMetadataValue(metadata, "utm_source") || "",
     utm_medium: readMetadataValue(metadata, "utm_medium") || "",
@@ -794,6 +827,7 @@ export async function POST(req: Request) {
               : null,
         }),
         userId: metadata?.user_id || undefined,
+        gaSessionId: readGa4SessionIdForMp(metadata),
         events: [
           {
             name: "purchase",
@@ -1140,6 +1174,7 @@ export async function POST(req: Request) {
                       subscriptionId,
                     }),
                     userId: user.id,
+                    gaSessionId: readGa4SessionIdForMp(subscriptionMetadata),
                     events: [
                       {
                         name: "purchase",
@@ -1187,6 +1222,7 @@ export async function POST(req: Request) {
               sessionId: null,
               subscriptionId,
             }),
+            gaSessionId: readGa4SessionIdForMp(subscriptionMetadata),
             events: [
               {
                 name: "purchase",
@@ -1243,6 +1279,7 @@ export async function POST(req: Request) {
                 subscriptionId,
               }),
               userId: metadata?.user_id || undefined,
+              gaSessionId: readGa4SessionIdForMp(metadata),
               events: [
                 {
                   name: "purchase",
@@ -1387,6 +1424,7 @@ export async function POST(req: Request) {
           subscriptionId: subscription.id,
         }),
         userId: user_id || subscriptionMetadata.user_id || undefined,
+        gaSessionId: readGa4SessionIdForMp(subscriptionMetadata),
         events: [
           {
             name: "subscription_cancelled",
