@@ -324,6 +324,18 @@ export interface LeadCaptureSubmittedEvent extends GTMEvent {
   lead_capture_id: string;
 }
 
+/** GTM mirror of @vercel/analytics `track()`; trigger on event name `vercel_analytics`. */
+export interface VercelAnalyticsGtmEvent extends GTMEvent {
+  event: "vercel_analytics";
+  vercel_event_name: string;
+}
+
+/** Flat custom properties allowed by Vercel Web Analytics custom events. */
+export type VercelAnalyticsCustomProperties = Record<
+  string,
+  string | number | boolean | null | undefined
+>;
+
 /** Optional user payload for GTM (e.g. sign_up, login_completed, purchase) */
 export interface UserData {
   [key: string]: unknown;

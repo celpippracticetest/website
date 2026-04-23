@@ -1,10 +1,16 @@
 // Google Tag Manager utility functions
+import { track as vercelTrack } from "@vercel/analytics";
 import {
   GOOGLE_ADS_CONVERSION_ID,
   GOOGLE_ADS_SIGNUP_LABEL,
   GOOGLE_ADS_SUBSCRIBE_LABEL,
 } from "@/lib/google-ads-constants";
-import type { GTMEvent, UserContext, UserData } from "@/types/analytics";
+import type {
+  GTMEvent,
+  UserContext,
+  UserData,
+  VercelAnalyticsCustomProperties,
+} from "@/types/analytics";
 
 // Check if we're in a browser environment
 const isBrowser = typeof window !== "undefined";
@@ -368,6 +374,73 @@ export function pushToDataLayer(
     dataLayer.push(enrichedEvent);
   } catch (error) {
     console.error("[GTM] Error pushing event to dataLayer:", error);
+  }
+}
+
+const VERCEL_ANALYTICS_MAX_LEN = 255;
+
+function pickVercelPropsForGtm(
+  data?: VercelAnalyticsCustomProperties
+): Record<string, string | number | boolean | null> {
+  if (!data) return {};
+
+  const out: Record<string, string | number | boolean | null> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value === undefined) continue;
+    if (key === "event" || key === "vercel_event_name") continue;
+    if (typeof value === "string") {
+      out[key] =
+        value.length > VERCEL_ANALYTICS_MAX_LEN
+          ? value.slice(0, VERCEL_ANALYTICS_MAX_LEN)
+          : value;
+    } else if (
+      typeof value === "number" ||
+      typeof value === "boolean" ||
+      value === null
+    ) {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
+/**
+ * Vercel Web Analytics custom event, mirrored to GTM (`event`: `vercel_analytics`).
+ * Prefer this over calling `@vercel/analytics` `track()` directly when you need GTM/GA4.
+ * @see https://vercel.com/docs/analytics/custom-events
+ */
+export function trackVercelEvent(
+  name: string,
+  data?: VercelAnalyticsCustomProperties
+): void {
+  if (!isBrowser) return;
+
+  const safeName =
+    name.length > VERCEL_ANALYTICS_MAX_LEN
+      ? name.slice(0, VERCEL_ANALYTICS_MAX_LEN)
+      : name;
+
+  try {
+    vercelTrack(safeName, data);
+  } catch (error) {
+    if (DEBUG) {
+      console.warn("[Vercel Analytics] track() failed:", error);
+    }
+  }
+
+  try {
+    pushToDataLayer(
+      {
+        event: "vercel_analytics",
+        vercel_event_name: safeName,
+        ...pickVercelPropsForGtm(data),
+      } as GTMEvent,
+      true
+    );
+  } catch (error) {
+    if (DEBUG) {
+      console.warn("[GTM] vercel_analytics push failed:", error);
+    }
   }
 }
 
