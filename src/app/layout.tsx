@@ -70,7 +70,13 @@ function buildGtmAllowedHosts(baseUrl: string): string {
   try {
     const host = new URL(baseUrl).hostname.toLowerCase();
     const hosts = new Set<string>([host]);
-    if (!host.startsWith("www.")) {
+    // `gtm-init.js` skips loading unless the live hostname is in this list.
+    // If `APP_BASE_URL` is www-only we must still allow apex (and vice versa),
+    // otherwise one hostname gets zero GTM/GA4 from the browser.
+    if (host.startsWith("www.")) {
+      const apex = host.slice(4);
+      if (apex) hosts.add(apex);
+    } else {
       hosts.add(`www.${host}`);
     }
     return Array.from(hosts).join(",");
