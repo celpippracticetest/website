@@ -1,4 +1,5 @@
 import { unstable_noStore as noStore } from "next/cache";
+import { cache } from "react";
 import mongoClient from "@/lib/mongodb";
 import type { THomepageHeroScheduleSchemaDto } from "@/models/homepage-hero-schedule.model";
 import { HomepageHeroScheduleRepository } from "@/repositories/homepage-hero-schedule.repo";
@@ -37,7 +38,7 @@ export async function getActiveHomepageHeroSchedule(): Promise<THomepageHeroSche
   }
 }
 
-export async function getHomepageHeroDisplay(): Promise<{
+export const getHomepageHeroDisplay = cache(async function getHomepageHeroDisplay(): Promise<{
   imageUrl: string;
   altText: string;
 }> {
@@ -51,4 +52,4 @@ export async function getHomepageHeroDisplay(): Promise<{
     imageUrl: schedule.imageUrl,
     altText: schedule.altText,
   };
-}
+});

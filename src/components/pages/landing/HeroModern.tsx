@@ -70,7 +70,7 @@ const HeroModern = ({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="text-lg screen744:text-xl text-text2 max-w-[600px] mb-10 screen1280:mb-0 space-y-3 text-left mx-auto screen1280:mx-0 w-full screen1280:w-auto screen1280:shrink-0 list-none"
+                className="text-lg screen744:text-xl text-text2 max-w-[600px] mb-6 screen1280:mb-0 space-y-3 text-left mx-auto screen1280:mx-0 w-full screen1280:w-auto screen1280:shrink-0 list-none"
               >
                 {[
                   "60+ mock exams",
@@ -93,15 +93,16 @@ const HeroModern = ({
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.7, delay: 0.3 }}
-                className="relative hidden screen1280:block screen1280:flex-1 screen1280:min-w-0 screen1280:max-w-[min(420px,38vw)]"
+                className="relative mt-2 mb-2 w-full max-w-[min(360px,92vw)] screen1280:mt-0 screen1280:mb-0 screen1280:flex-1 screen1280:min-w-0 screen1280:max-w-[min(420px,38vw)] flex justify-center screen1280:justify-end"
               >
-                <div className="relative w-full aspect-square max-w-[420px] ml-auto">
+                <div className="relative aspect-square w-full max-w-[360px] screen1280:max-w-[420px] screen1280:ml-auto">
                   <Image
                     src={heroImage.imageUrl}
                     alt={heroImage.altText}
                     fill
                     className="object-contain drop-shadow-2xl z-20"
                     priority
+                    sizes="(max-width: 1279px) min(360px, 92vw), min(420px, 38vw)"
                   />
                   <motion.div
                     animate={{ y: [0, -20, 0] }}

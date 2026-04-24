@@ -1,7 +1,5 @@
 import "./globals.css";
 import NextTopLoader from "nextjs-toploader";
-import { PostHogProvider } from "@/components/PostHogProvider";
-import { PostHogPageView } from "@/components/PostHogPageView";
 import { Analytics } from "@vercel/analytics/react";
 import { ClerkProvider } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
@@ -27,12 +25,12 @@ import { Suspense, type ComponentType } from "react";
 const NextTopLoaderComponent =
   NextTopLoader as unknown as ComponentType<Record<string, never>>;
 
+/** Variable font: one CSS/font request vs many static weights (better LCP/FCP). */
 const jakarta = Plus_Jakarta_Sans({
   display: "swap",
   subsets: ["latin"],
   variable: "--font-jakarta",
-  weight: ["300", "400", "500", "600", "700", "800"],
-  style: ["normal"],
+  adjustFontFallback: true,
   preload: true,
   fallback: ["system-ui", "arial"],
 });
@@ -169,20 +167,14 @@ export default async function RootLayout({
   const enableLegacyGtm = enableGtm && LEGACY_GTM_ID && LEGACY_GTM_ID !== GTM_ID;
   const enableClarity =
     process.env.NODE_ENV === "production" && Boolean(CLARITY_ID);
-  const homepageHero = await getHomepageHeroDisplay();
   const { userId } = await auth();
   const isSignedIn = !!userId;
 
   return (
     <html suppressHydrationWarning className={jakarta.variable} lang="en">
       <head suppressHydrationWarning>
-        {/* Critical preloads */}
-        <link
-          rel="preload"
-          as="image"
-          href={homepageHero.imageUrl}
-          fetchPriority="high"
-        />
+        {/* Logo is above-the-fold on every route; homepage hero preload removed (was
+            every page + often unused on mobile where hero art is a smaller layout). */}
         <link
           rel="preload"
           as="image"
@@ -267,7 +259,6 @@ export default async function RootLayout({
       </head>
 
       <body className="bg-[#F4F7FF]" suppressHydrationWarning>
-        <PostHogProvider>
         <MuiAppRouterCacheProvider>
           <ClerkProvider>
           <AskBeavoModal />
@@ -307,7 +298,6 @@ export default async function RootLayout({
           <Suspense fallback={null}>
             <AttributionTracker />
             <PageViewTracker />
-            <PostHogPageView />
             {process.env.NODE_ENV === "production" && <RedditPixelTracker />}
           </Suspense>
           <LazyLeadCapturePopup />
@@ -324,7 +314,6 @@ export default async function RootLayout({
           <Script src="/scripts/third-party-loader.js" strategy="lazyOnload" />
           </ClerkProvider>
         </MuiAppRouterCacheProvider>
-        </PostHogProvider>
       </body>
     </html>
   );

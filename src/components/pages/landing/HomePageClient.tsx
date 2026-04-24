@@ -4,6 +4,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import dynamic from "next/dynamic";
 import Practice from "./Practice";
 import FAQ from "./FAQ";
+import Hero from "./Hero";
 import { ExamModeFeatureSectionLanding } from "@/components/marketing/ExamModeFeatureSection";
 import { useChunkErrorHandler } from "@/hooks/useChunkErrorHandler";
 import OnlineUsersCount from "@/components/analytics/OnlineUsersCount";
@@ -13,8 +14,6 @@ import SuccessRoadmap from "./SuccessRoadmap";
 import PracticeExamSkillLinks from "./PracticeExamSkillLinks";
 import ClassicHomeHeader from "./ClassicHomeHeader";
 import { cn } from "@/lib/utils";
-
-const Hero = dynamic(() => import("./Hero"), { ssr: true });
 const Comments = dynamic(() => import("./Comments"), { ssr: false });
 const UserResponseReview = dynamic(() => import("./UserResponseReview"), {
   ssr: false,
