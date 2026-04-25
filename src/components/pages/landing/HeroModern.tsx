@@ -89,12 +89,8 @@ const HeroModern = ({
                 <HeroLiveStatsRotatingListItem />
               </motion.ul>
 
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.7, delay: 0.3 }}
-                className="relative mt-2 mb-2 w-full max-w-[min(360px,92vw)] screen1280:mt-0 screen1280:mb-0 screen1280:flex-1 screen1280:min-w-0 screen1280:max-w-[min(420px,38vw)] flex justify-center screen1280:justify-end"
-              >
+              {/* Avoid motion wrapper here: initial opacity:0 blocked hero LCP until Framer hydrated. */}
+              <div className="relative mt-2 mb-2 w-full max-w-[min(360px,92vw)] screen1280:mt-0 screen1280:mb-0 screen1280:flex-1 screen1280:min-w-0 screen1280:max-w-[min(420px,38vw)] flex justify-center screen1280:justify-end">
                 <div className="relative aspect-square w-full max-w-[360px] screen1280:max-w-[420px] screen1280:ml-auto">
                   <Image
                     src={heroImage.imageUrl}
@@ -151,7 +147,7 @@ const HeroModern = ({
                     </div>
                   </motion.div>
                 </div>
-              </motion.div>
+              </div>
             </div>
 
             <div className="w-full flex justify-center">
