@@ -1,70 +1,35 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
+
+/** Three scannable trust points (no infinite scroll) — keep claims verifiable. */
+const TRUST_POINTS = [
+  { text: "70,000+ learners", icon: "👥" as const },
+  { text: "AI scoring & instant feedback", icon: "⚡" as const },
+  { text: "No credit card to start", icon: "🔒" as const },
+];
 
 const TrustRibbon = () => {
-  const itemsA = [
-    { text: "Verified CLB 10", icon: "✓" },
-    { text: "PR Approved", icon: "✓" },
-    { text: "70,000+ Users", icon: "👥" },
-    { text: "98.4% Success Rate", icon: "📈" },
-    { text: "AI-Powered Scoring", icon: "🤖" },
-    { text: "Realistic Mock Exams", icon: "📝" },
-  ];
-
-  const itemsB = [
-    { text: "Trusted by Candidates", icon: "⭐" },
-    { text: "Updated Weekly", icon: "🔄" },
-    { text: "Instant Feedback", icon: "⚡" },
-    { text: "No Credit Card Required", icon: "💳" },
-    { text: "Free Mock Test", icon: "🎁" },
-    { text: "Custom Study Plan", icon: "📋" },
-  ];
-
   return (
-    <div className="w-full overflow-hidden bg-gradient-to-r from-primary1 via-primary2 to-secondary2 py-4 screen744:py-5 flex flex-col gap-3 screen744:gap-4 relative">
-      {/* Animated Background Gradient */}
-      <div className="absolute inset-0 opacity-20 bg-gradient-to-r from-white/0 via-white/10 to-white/0" />
-      
-      {/* First Row - Forward Motion */}
-      <div className="flex whitespace-nowrap relative z-10">
-        <motion.div
-          animate={{ x: ["0%", "-50%"] }}
-          transition={{ repeat: Infinity, duration: 25, ease: "linear" }}
-          className="flex gap-6 screen744:gap-12 items-center"
+    <div className="w-full bg-gradient-to-r from-primary1 via-primary2 to-secondary2 py-3.5 screen744:py-4 relative">
+      <div className="absolute inset-0 opacity-20 bg-gradient-to-r from-white/0 via-white/10 to-white/0 pointer-events-none" />
+      <div className="relative z-10 max-w-[1440px] mx-auto px-4 screen1280:px-10">
+        <ul
+          className="flex flex-col screen744:flex-row screen744:flex-wrap items-center justify-center gap-2 screen744:gap-6 screen1280:gap-10 list-none m-0 p-0"
+          role="list"
         >
-          {[...itemsA, ...itemsA].map((item, index) => (
-            <motion.span
-              key={index}
-              whileHover={{ scale: 1.05 }}
-              className="text-white text-xs screen744:text-sm font-bold uppercase tracking-widest flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all cursor-default"
+          {TRUST_POINTS.map((item) => (
+            <li
+              key={item.text}
+              className="text-white text-xs screen744:text-sm font-bold uppercase tracking-widest flex items-center justify-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 w-full screen744:w-auto text-center"
             >
-              <span className="text-sm">{item.icon}</span>
+              <span className="text-sm shrink-0" aria-hidden>
+                {item.icon}
+              </span>
               {item.text}
-            </motion.span>
+            </li>
           ))}
-        </motion.div>
-      </div>
-      
-      {/* Second Row - Reverse Motion */}
-      <div className="flex whitespace-nowrap relative z-10">
-        <motion.div
-          animate={{ x: ["-50%", "0%"] }}
-          transition={{ repeat: Infinity, duration: 30, ease: "linear" }}
-          className="flex gap-6 screen744:gap-12 items-center"
-        >
-          {[...itemsB, ...itemsB].map((item, index) => (
-            <motion.span
-              key={index}
-              whileHover={{ scale: 1.05 }}
-              className="text-white/90 text-[10px] screen744:text-xs font-semibold uppercase tracking-widest flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all cursor-default"
-            >
-              <span className="text-xs">{item.icon}</span>
-              {item.text}
-            </motion.span>
-          ))}
-        </motion.div>
+        </ul>
       </div>
     </div>
   );

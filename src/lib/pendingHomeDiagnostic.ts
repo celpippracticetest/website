@@ -1,4 +1,4 @@
-/** Persists hero `ScoreDiagnostic` choices for the post–sign-up onboarding survey. */
+/** Optional pre-sign-up CLB / exam date for the onboarding survey (e.g. other entry flows). */
 export const PENDING_HOME_DIAGNOSTIC_KEY = "pending_home_diagnostic";
 
 export type PendingHomeDiagnostic = {

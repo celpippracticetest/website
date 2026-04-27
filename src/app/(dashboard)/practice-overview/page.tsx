@@ -1,6 +1,7 @@
 "use client";
 
 import PracticeOverview from "@/components/dashboard-app/PracticeOverview";
+import PendingDiagnosticBanner from "@/components/dashboard-app/PendingDiagnosticBanner";
 import { useEffect, useState } from "react";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { useUser } from "@clerk/nextjs";
@@ -113,6 +114,7 @@ const DashboardApp = () => {
       >
         CELPIP Practice Test — Skill Overview & Sample Tasks
       </Typography>
+      <PendingDiagnosticBanner />
       {!isSignedIn && (
         <Box
           component="section"

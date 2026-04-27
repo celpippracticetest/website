@@ -13,9 +13,9 @@ type HomepageCtaConfig = {
 
 const DEFAULT_CTA: HomepageCtaConfig = {
   href: "/practice-overview",
-  label: "Start Your Free Practice",
-  shortLabel: "Free Practice",
-  trackingLabel: "Start Your Free Practice",
+  label: "Continue to free practice",
+  shortLabel: "Free practice",
+  trackingLabel: "Continue to free practice",
   variantKey: "control",
 };
 

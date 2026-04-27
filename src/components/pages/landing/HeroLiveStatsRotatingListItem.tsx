@@ -8,6 +8,7 @@ import Mic from "@mui/icons-material/Mic";
 import Avatar from "@mui/material/Avatar";
 import AvatarGroup from "@mui/material/AvatarGroup";
 import { useEffect, useMemo, useState } from "react";
+import { cn } from "@/lib/utils";
 
 /** 100 distinct faces via pravatar `u` seed (stable per index). */
 const AVATAR_POOL: readonly string[] = Array.from(
@@ -49,19 +50,29 @@ interface LiveStatsResponse {
   };
 }
 
+type HeroLiveStatsRotatingListItemProps = {
+  /** Hide below `min` to shorten mobile hero; full layout from `min` and up. */
+  className?: string;
+};
+
 /**
  * Hero bullet: same rotating live reports as OnlineUsersCount marketing
  * (learners + Speaking / Writing / Listening / Reading).
  */
-export function HeroLiveStatsRotatingListItem() {
+export function HeroLiveStatsRotatingListItem({
+  className,
+}: HeroLiveStatsRotatingListItemProps) {
   const [data, setData] = useState<LiveStatsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const [fade, setFade] = useState(true);
-  const [avatarPickSeed, setAvatarPickSeed] = useState(
-    () => Math.floor(Math.random() * 2_147_483_647),
-  );
+  /** Stable for SSR + first client paint; randomize after mount to avoid hydration mismatch. */
+  const [avatarPickSeed, setAvatarPickSeed] = useState(0);
+
+  useEffect(() => {
+    setAvatarPickSeed(Math.floor(Math.random() * 2_147_483_647));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -187,7 +198,7 @@ export function HeroLiveStatsRotatingListItem() {
   const CurrentIcon = messages[currentMessageIndex].icon;
 
   return (
-    <li className="list-none">
+    <li className={cn("list-none", className)}>
       <div
         className={`flex flex-col gap-1.5 transition-opacity duration-300 ${
           fade ? "opacity-100" : "opacity-0"
