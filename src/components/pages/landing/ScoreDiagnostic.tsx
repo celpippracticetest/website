@@ -4,12 +4,17 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/v2/Button";
 import { useHomepageCta } from "@/hooks/useHomepageCta";
+import { useEventTracker } from "@/hooks/useTracking";
 
 /**
  * Primary hero CTA: single high-conversion action (no form friction).
  */
+const MOCK_EXAM_HREF = "/exam-overview";
+const MOCK_EXAM_LABEL = "Free mock exam";
+
 const ScoreDiagnostic = () => {
   const { href, label, trackClick } = useHomepageCta();
+  const { trackCTA } = useEventTracker();
 
   return (
     <motion.div
@@ -24,15 +29,26 @@ const ScoreDiagnostic = () => {
         <p className="mb-4 text-center text-sm font-medium leading-snug text-text2 screen744:text-base screen1280:mb-3">
           Full mock exams, AI feedback, and skill practice—ready when you are.
         </p>
-        <Button
-          href={href}
-          onClick={() => trackClick("hero_primary_cta")}
-          variant="primary"
-          size="lg"
-          className="w-full font-bold shadow-lg transition-all hover:shadow-xl"
-        >
-          {label}
-        </Button>
+        <div className="flex w-full flex-col gap-2.5">
+          <Button
+            href={href}
+            onClick={() => trackClick("hero_primary_cta")}
+            variant="primary"
+            size="lg"
+            className="w-full min-w-0 text-center text-base font-bold shadow-lg transition-all hover:shadow-xl screen744:text-[17px]"
+          >
+            {label}
+          </Button>
+          <Button
+            href={MOCK_EXAM_HREF}
+            onClick={() => trackCTA(MOCK_EXAM_LABEL, "hero_mock_exam_cta")}
+            variant="secondary"
+            size="lg"
+            className="w-full min-w-0 text-center text-base font-bold shadow-md transition-all hover:shadow-lg screen744:text-[17px]"
+          >
+            {MOCK_EXAM_LABEL}
+          </Button>
+        </div>
         <p className="mt-3 text-center text-xs font-medium text-text3 screen1280:mt-2">No credit card required</p>
       </div>
     </motion.div>
