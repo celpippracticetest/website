@@ -27,6 +27,16 @@
       "command": "${workspaceFolder}/.venv-gtm-mcp/Scripts/python.exe",
       "args": ["${workspaceFolder}/.cursor/run-gtm-mcp.py"],
       "cwd": "${workspaceFolder}"
+    },
+    "reddit": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "reddit-mcp-server"],
+      "env": {
+        "REDDIT_AUTH_MODE": "authenticated",
+        "REDDIT_CLIENT_ID": "${env:REDDIT_CLIENT_ID}",
+        "REDDIT_CLIENT_SECRET": "${env:REDDIT_CLIENT_SECRET}"
+      }
     }
   }
 }

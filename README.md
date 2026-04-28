@@ -59,7 +59,6 @@ Set these in your deployment environment (and in local `.env.local` if needed):
 - `GA_API_SECRET=xxxxxxxxxxxxxxxx`
 - `NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX` (same value as `GA_MEASUREMENT_ID`; used in the browser so checkout can send GA4 `client_id` / `session_id` into Stripe metadata for Measurement Protocol renewals)
 
-
 - `NEXT_PUBLIC_GTM_ID` loads GTM in `src/app/layout.tsx`.
 - `NEXT_PUBLIC_GTM_LEGACY_ID` can load a second GTM container in parallel during migration.
 - `GA_API_SECRET` is required for server-side GA4 events (heartbeat + Stripe webhook events).
