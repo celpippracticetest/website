@@ -23,6 +23,8 @@ const STORAGE_KEY_BY_FIELD = {
   utm_campaign: "pending_utm_campaign",
   utm_content: "pending_utm_content",
   utm_term: "pending_utm_term",
+  /** Stores `gad_campaignid` for Google Ads campaign-level joins. */
+  google_ads_campaign_id: "pending_google_ads_campaign_id",
   entry_page: "pending_entry_page",
   referrer: "pending_referrer",
   attribution_session_id: "pending_attribution_session_id",
@@ -54,9 +56,13 @@ export function useCheckoutAttributionPayload(): Record<string, string> {
     const nextFields: CheckoutAttributionState = {};
 
     for (const field of CHECKOUT_ATTRIBUTION_FIELDS) {
+      const fromUrl =
+        field === "google_ads_campaign_id"
+          ? readValue(searchParams.get("google_ads_campaign_id")) ||
+            readValue(searchParams.get("gad_campaignid"))
+          : readValue(searchParams.get(field));
       const value =
-        readValue(searchParams.get(field)) ||
-        readValue(localStorage.getItem(STORAGE_KEY_BY_FIELD[field]));
+        fromUrl || readValue(localStorage.getItem(STORAGE_KEY_BY_FIELD[field]));
 
       if (value) {
         nextFields[field] = value;
@@ -88,7 +94,12 @@ export function useCheckoutAttributionPayload(): Record<string, string> {
 
   const payload: Record<string, string> = {};
   for (const field of CHECKOUT_ATTRIBUTION_FIELDS) {
-    const value = readValue(searchParams.get(field)) || fields[field];
+    const fromUrl =
+      field === "google_ads_campaign_id"
+        ? readValue(searchParams.get("google_ads_campaign_id")) ||
+          readValue(searchParams.get("gad_campaignid"))
+        : readValue(searchParams.get(field));
+    const value = fromUrl || fields[field];
     if (value) payload[field] = value;
   }
   if (homeAbVariant) {

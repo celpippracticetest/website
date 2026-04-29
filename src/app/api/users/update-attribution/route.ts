@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
       gclid,
       gbraid,
       wbraid,
+      google_ads_campaign_id,
       fbclid,
       msclkid,
       ttclid,
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
     if (gclid) attributionData.gclid = gclid;
     if (gbraid) attributionData.gbraid = gbraid;
     if (wbraid) attributionData.wbraid = wbraid;
+    if (google_ads_campaign_id) attributionData.google_ads_campaign_id = google_ads_campaign_id;
     if (fbclid) attributionData.fbclid = fbclid;
     if (msclkid) attributionData.msclkid = msclkid;
     if (ttclid) attributionData.ttclid = ttclid;
@@ -96,7 +98,10 @@ export async function POST(req: NextRequest) {
         : referrer
           ? "referral"
           : "(none)");
-    const campaign = attributionData.utm_campaign || "(not set)";
+    const campaign =
+      attributionData.utm_campaign ||
+      attributionData.google_ads_campaign_id ||
+      "(not set)";
     const content = attributionData.utm_content || null;
     const term = attributionData.utm_term || null;
     const resolvedEntryPage = attributionData.entryPage || null;
@@ -118,6 +123,9 @@ export async function POST(req: NextRequest) {
         ...(attributionData.gclid && { gclid: attributionData.gclid }),
         ...(attributionData.gbraid && { gbraid: attributionData.gbraid }),
         ...(attributionData.wbraid && { wbraid: attributionData.wbraid }),
+        ...(attributionData.google_ads_campaign_id && {
+          google_ads_campaign_id: attributionData.google_ads_campaign_id,
+        }),
         ...(attributionData.fbclid && { fbclid: attributionData.fbclid }),
         ...(attributionData.msclkid && { msclkid: attributionData.msclkid }),
         ...(attributionData.ttclid && { ttclid: attributionData.ttclid }),
@@ -152,6 +160,7 @@ export async function POST(req: NextRequest) {
               gclid: attributionData.gclid || null,
               gbraid: attributionData.gbraid || null,
               wbraid: attributionData.wbraid || null,
+              googleAdsCampaignId: attributionData.google_ads_campaign_id || null,
               fbclid: attributionData.fbclid || null,
               msclkid: attributionData.msclkid || null,
               ttclid: attributionData.ttclid || null,
@@ -170,6 +179,7 @@ export async function POST(req: NextRequest) {
               gclid: attributionData.gclid || null,
               gbraid: attributionData.gbraid || null,
               wbraid: attributionData.wbraid || null,
+              googleAdsCampaignId: attributionData.google_ads_campaign_id || null,
               fbclid: attributionData.fbclid || null,
               msclkid: attributionData.msclkid || null,
               ttclid: attributionData.ttclid || null,
@@ -202,6 +212,7 @@ export async function POST(req: NextRequest) {
       gclid: attributionData.gclid || null,
       gbraid: attributionData.gbraid || null,
       wbraid: attributionData.wbraid || null,
+      googleAdsCampaignId: attributionData.google_ads_campaign_id || null,
       fbclid: attributionData.fbclid || null,
       msclkid: attributionData.msclkid || null,
       ttclid: attributionData.ttclid || null,

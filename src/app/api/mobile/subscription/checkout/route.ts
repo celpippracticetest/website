@@ -298,8 +298,14 @@ export async function POST(request: NextRequest) {
       utm_campaign:
         readStringValue(body?.utm_campaign) ||
         readStringValue(acqCk.utm_campaign) ||
+        readStringValue(body?.google_ads_campaign_id) ||
+        readStringValue(acqCk.google_ads_campaign_id) ||
         readStringValue(lastTouch.campaign) ||
         readStringValue(publicMetadata.utm_campaign) ||
+        "",
+      google_ads_campaign_id:
+        readStringValue(body?.google_ads_campaign_id) ||
+        readStringValue(acqCk.google_ads_campaign_id) ||
         "",
       utm_content:
         readStringValue(body?.utm_content) ||
@@ -364,7 +370,8 @@ export async function POST(request: NextRequest) {
       attribution_source:
         attributionMetadata.utm_source || inferredPaidSource,
       attribution_medium: attributionMetadata.utm_medium,
-      attribution_campaign: attributionMetadata.utm_campaign,
+      attribution_campaign:
+        attributionMetadata.utm_campaign || attributionMetadata.google_ads_campaign_id,
       attribution_gclid: attributionMetadata.gclid,
       attribution_gbraid: attributionMetadata.gbraid,
       attribution_wbraid: attributionMetadata.wbraid,

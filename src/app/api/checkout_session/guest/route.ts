@@ -124,15 +124,22 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       req.cookies.get(ACQUISITION_ATTRIBUTION_COOKIE)?.value
     );
 
+    const googleAdsId =
+      readRequestAttribution("google_ads_campaign_id") ||
+      readRequestAttribution("gad_campaignid") ||
+      acqCk.google_ads_campaign_id ||
+      "";
     const attributionMetadata = {
       utm_source: readRequestAttribution("utm_source") || acqCk.utm_source || "",
       utm_medium: readRequestAttribution("utm_medium") || acqCk.utm_medium || "",
-      utm_campaign: readRequestAttribution("utm_campaign") || acqCk.utm_campaign || "",
+      utm_campaign:
+        readRequestAttribution("utm_campaign") || acqCk.utm_campaign || googleAdsId || "",
       utm_content: readRequestAttribution("utm_content") || acqCk.utm_content || "",
       utm_term: readRequestAttribution("utm_term") || acqCk.utm_term || "",
       gclid: readRequestAttribution("gclid") || acqCk.gclid || "",
       gbraid: readRequestAttribution("gbraid") || acqCk.gbraid || "",
       wbraid: readRequestAttribution("wbraid") || acqCk.wbraid || "",
+      google_ads_campaign_id: googleAdsId,
       fbclid: readRequestAttribution("fbclid") || acqCk.fbclid || "",
       msclkid: readRequestAttribution("msclkid") || acqCk.msclkid || "",
       ttclid: readRequestAttribution("ttclid") || acqCk.ttclid || "",
@@ -158,7 +165,8 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
         : attributionMetadata.utm_source
           ? "referral"
           : "(none)";
-    const inferredCampaign = attributionMetadata.utm_campaign || "(not set)";
+    const inferredCampaign =
+      (attributionMetadata.utm_campaign || googleAdsId || "").trim() || "(not set)";
     const inferredSkillType =
       purchasePage?.includes("/speaking") ? "Speaking"
       : purchasePage?.includes("/writing") ? "Writing"

@@ -8,6 +8,7 @@ const STORAGE_KEYS = {
   gclid: "pending_gclid",
   gbraid: "pending_gbraid",
   wbraid: "pending_wbraid",
+  googleAdsCampaignId: "pending_google_ads_campaign_id",
   fbclid: "pending_fbclid",
   msclkid: "pending_msclkid",
   ttclid: "pending_ttclid",
@@ -43,6 +44,9 @@ function persistAttributionFromUrl(pathname: string, searchParams: URLSearchPara
   const fbclid = readParam(searchParams.get("fbclid"));
   const msclkid = readParam(searchParams.get("msclkid"));
   const ttclid = readParam(searchParams.get("ttclid"));
+  const googleAdsCampaignId =
+    readParam(searchParams.get("gad_campaignid")) ||
+    readParam(searchParams.get("google_ads_campaign_id"));
   const utmSource = readParam(searchParams.get("utm_source"));
   const utmMedium = readParam(searchParams.get("utm_medium"));
   const utmCampaign = readParam(searchParams.get("utm_campaign"));
@@ -55,6 +59,9 @@ function persistAttributionFromUrl(pathname: string, searchParams: URLSearchPara
   if (fbclid) localStorage.setItem(STORAGE_KEYS.fbclid, fbclid);
   if (msclkid) localStorage.setItem(STORAGE_KEYS.msclkid, msclkid);
   if (ttclid) localStorage.setItem(STORAGE_KEYS.ttclid, ttclid);
+  if (googleAdsCampaignId) {
+    localStorage.setItem(STORAGE_KEYS.googleAdsCampaignId, googleAdsCampaignId);
+  }
   if (utmSource) localStorage.setItem(STORAGE_KEYS.utmSource, utmSource);
   if (utmMedium) localStorage.setItem(STORAGE_KEYS.utmMedium, utmMedium);
   if (utmCampaign) localStorage.setItem(STORAGE_KEYS.utmCampaign, utmCampaign);
@@ -92,6 +99,7 @@ export default function AttributionTracker() {
       gclid: localStorage.getItem(STORAGE_KEYS.gclid),
       gbraid: localStorage.getItem(STORAGE_KEYS.gbraid),
       wbraid: localStorage.getItem(STORAGE_KEYS.wbraid),
+      google_ads_campaign_id: localStorage.getItem(STORAGE_KEYS.googleAdsCampaignId),
       fbclid: localStorage.getItem(STORAGE_KEYS.fbclid),
       msclkid: localStorage.getItem(STORAGE_KEYS.msclkid),
       ttclid: localStorage.getItem(STORAGE_KEYS.ttclid),
@@ -109,6 +117,7 @@ export default function AttributionTracker() {
       Boolean(payload.gclid) ||
       Boolean(payload.gbraid) ||
       Boolean(payload.wbraid) ||
+      Boolean(payload.google_ads_campaign_id) ||
       Boolean(payload.fbclid) ||
       Boolean(payload.msclkid) ||
       Boolean(payload.ttclid) ||

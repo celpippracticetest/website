@@ -20,6 +20,8 @@ export type AcquisitionAttributionV1 = {
   utm_campaign?: string;
   utm_content?: string;
   utm_term?: string;
+  /** Google Ads campaign ID from `gad_campaignid` (joins to Ads + GA4). */
+  google_ads_campaign_id?: string;
   /** Path + query of the request that set the cookie (first campaign landing). */
   entry_page?: string;
   captured_at: string;
@@ -37,6 +39,7 @@ function hasAcquisitionQuery(params: URLSearchParams): boolean {
     trimParam(params.get("gclid")) ||
       trimParam(params.get("gbraid")) ||
       trimParam(params.get("wbraid")) ||
+      trimParam(params.get("gad_campaignid")) ||
       trimParam(params.get("fbclid")) ||
       trimParam(params.get("msclkid")) ||
       trimParam(params.get("ttclid")) ||
@@ -53,6 +56,7 @@ function hasStoredAcquisition(p: AcquisitionAttributionV1): boolean {
     p.gclid ||
       p.gbraid ||
       p.wbraid ||
+      p.google_ads_campaign_id ||
       p.fbclid ||
       p.msclkid ||
       p.ttclid ||
@@ -102,6 +106,7 @@ export function applyAcquisitionAttributionCookie(
     gclid: trimParam(sp.get("gclid")),
     gbraid: trimParam(sp.get("gbraid")),
     wbraid: trimParam(sp.get("wbraid")),
+    google_ads_campaign_id: trimParam(sp.get("gad_campaignid")),
     fbclid: trimParam(sp.get("fbclid")),
     msclkid: trimParam(sp.get("msclkid")),
     ttclid: trimParam(sp.get("ttclid")),
@@ -158,6 +163,7 @@ export function mergeAcquisitionCookieIntoAttributionData(
   pick("utm_campaign");
   pick("utm_content");
   pick("utm_term");
+  pick("google_ads_campaign_id");
   if (!data.entryPage && c.entry_page?.trim()) {
     data.entryPage = c.entry_page.trim();
   }
@@ -172,6 +178,7 @@ export type AcquisitionCookieFlat = {
   gclid: string | null;
   gbraid: string | null;
   wbraid: string | null;
+  google_ads_campaign_id: string | null;
   fbclid: string | null;
   msclkid: string | null;
   ttclid: string | null;
@@ -192,6 +199,7 @@ export function flatAcquisitionFromCookie(
       gclid: null,
       gbraid: null,
       wbraid: null,
+      google_ads_campaign_id: null,
       fbclid: null,
       msclkid: null,
       ttclid: null,
@@ -207,6 +215,7 @@ export function flatAcquisitionFromCookie(
     gclid: c.gclid?.trim() || null,
     gbraid: c.gbraid?.trim() || null,
     wbraid: c.wbraid?.trim() || null,
+    google_ads_campaign_id: c.google_ads_campaign_id?.trim() || null,
     fbclid: c.fbclid?.trim() || null,
     msclkid: c.msclkid?.trim() || null,
     ttclid: c.ttclid?.trim() || null,

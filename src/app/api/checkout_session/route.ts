@@ -450,6 +450,30 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
     const isOnboardingFinalOffer =
       finalOfferSource === "onboarding_final_chance" && !hasChallengePayload;
     const finalOfferMetadata = isOnboardingFinalOffer ? finalOfferSource : null;
+    const lastTouchCampaign =
+      typeof userDoc?.attribution?.lastTouch?.campaign === "string" &&
+      userDoc.attribution.lastTouch.campaign !== "(not set)"
+        ? userDoc.attribution.lastTouch.campaign
+        : null;
+    const metadataUtmCampaign =
+      typeof userMetadata?.utm_campaign === "string" && userMetadata.utm_campaign !== "(not set)"
+        ? userMetadata.utm_campaign
+        : null;
+    const clerkGoogleAdsId =
+      typeof userMetadata?.google_ads_campaign_id === "string" &&
+      userMetadata.google_ads_campaign_id.trim()
+        ? userMetadata.google_ads_campaign_id.trim()
+        : null;
+    const googleAdsCampaignIdFromRequest =
+      readRequestAttribution("google_ads_campaign_id") ||
+      readRequestAttribution("gad_campaignid") ||
+      acqCk.google_ads_campaign_id ||
+      (typeof userDoc?.attribution?.lastTouch?.googleAdsCampaignId === "string" &&
+      userDoc.attribution.lastTouch.googleAdsCampaignId.trim()
+        ? userDoc.attribution.lastTouch.googleAdsCampaignId.trim()
+        : null) ||
+      clerkGoogleAdsId ||
+      null;
     const attributionMetadata = {
       utm_source:
         readRequestAttribution("utm_source") ||
@@ -466,9 +490,11 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       utm_campaign:
         readRequestAttribution("utm_campaign") ||
         acqCk.utm_campaign ||
-        userDoc?.attribution?.lastTouch?.campaign ||
-        userMetadata?.utm_campaign ||
+        metadataUtmCampaign ||
+        googleAdsCampaignIdFromRequest ||
+        lastTouchCampaign ||
         null,
+      google_ads_campaign_id: googleAdsCampaignIdFromRequest,
       utm_content:
         readRequestAttribution("utm_content") ||
         acqCk.utm_content ||
@@ -537,7 +563,8 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
         : attributionMetadata.utm_source
           ? "referral"
           : "(none)";
-    const inferredCampaign = attributionMetadata.utm_campaign || "(not set)";
+    const inferredCampaign =
+      attributionMetadata.utm_campaign || googleAdsCampaignIdFromRequest || "(not set)";
     const inferredSkillType =
       purchasePage?.includes("/speaking") ? "Speaking"
       : purchasePage?.includes("/writing") ? "Writing"

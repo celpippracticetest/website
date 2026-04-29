@@ -184,13 +184,22 @@ function buildStripeGaAttributionParams(
   const fbclid = readMetadataValue(metadata, "fbclid") || "";
   const msclkid = readMetadataValue(metadata, "msclkid") || "";
   const ttclid = readMetadataValue(metadata, "ttclid") || "";
+  const utmCampaignRaw = readMetadataValue(metadata, "utm_campaign");
+  const googleAdsCampaignId = readMetadataValue(metadata, "google_ads_campaign_id");
+  const attributionCampaign = readMetadataValue(metadata, "attribution_campaign");
+  const effectiveCampaign =
+    (utmCampaignRaw && utmCampaignRaw !== "(not set)" ? utmCampaignRaw : null) ||
+    (attributionCampaign && attributionCampaign !== "(not set)" ? attributionCampaign : null) ||
+    googleAdsCampaignId ||
+    utmCampaignRaw ||
+    "";
   return {
     source: inferAttributionSource(metadata),
     medium: inferAttributionMedium(metadata),
-    campaign: readMetadataValue(metadata, "utm_campaign") || "",
+    campaign: effectiveCampaign,
     utm_source: readMetadataValue(metadata, "utm_source") || "",
     utm_medium: readMetadataValue(metadata, "utm_medium") || "",
-    utm_campaign: readMetadataValue(metadata, "utm_campaign") || "",
+    utm_campaign: effectiveCampaign,
     utm_content: readMetadataValue(metadata, "utm_content") || "",
     utm_term: readMetadataValue(metadata, "utm_term") || "",
     // Keep raw IDs for internal parity, but register GA4 custom dimensions on attribution_* aliases.

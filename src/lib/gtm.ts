@@ -35,6 +35,7 @@ const ATTRIBUTION_STORAGE_KEYS = {
   fbclid: "pending_fbclid",
   msclkid: "pending_msclkid",
   ttclid: "pending_ttclid",
+  googleAdsCampaignId: "pending_google_ads_campaign_id",
   entryPage: "pending_entry_page",
   referrer: "pending_referrer",
   sessionId: "pending_attribution_session_id",
@@ -164,6 +165,7 @@ function readAttributionFromStorage() {
       fbclid: null,
       msclkid: null,
       ttclid: null,
+      google_ads_campaign_id: null,
       entry_page: null,
       referrer: null,
       attribution_session_id: null,
@@ -182,6 +184,9 @@ function readAttributionFromStorage() {
     fbclid: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.fbclid)),
     msclkid: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.msclkid)),
     ttclid: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.ttclid)),
+    google_ads_campaign_id: normalizeString(
+      localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.googleAdsCampaignId)
+    ),
     entry_page: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.entryPage)),
     referrer: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.referrer)),
     attribution_session_id: normalizeString(
@@ -243,7 +248,13 @@ function buildAttributionEventPayload(attributionData?: Record<string, unknown>)
 
   const utm_source = normalizeString(data.utm_source) || storage.utm_source;
   const utm_medium = normalizeString(data.utm_medium) || storage.utm_medium;
-  const utm_campaign = normalizeString(data.utm_campaign) || storage.utm_campaign || "(not set)";
+  const google_ads_campaign_id =
+    normalizeString(data.google_ads_campaign_id) || storage.google_ads_campaign_id;
+  const utm_campaign =
+    normalizeString(data.utm_campaign) ||
+    storage.utm_campaign ||
+    google_ads_campaign_id ||
+    "(not set)";
   const utm_content = normalizeString(data.utm_content) || storage.utm_content;
   const utm_term = normalizeString(data.utm_term) || storage.utm_term;
   const gclid = normalizeString(data.gclid) || normalizeString(data.attribution_gclid) || storage.gclid;
@@ -281,6 +292,7 @@ function buildAttributionEventPayload(attributionData?: Record<string, unknown>)
     attribution_fbclid: fbclid,
     attribution_msclkid: msclkid,
     attribution_ttclid: ttclid,
+    google_ads_campaign_id: google_ads_campaign_id || undefined,
     utm_source: utm_source || attribution_source,
     utm_medium: utm_medium || attribution_medium,
     utm_campaign: utm_campaign || "(not set)",

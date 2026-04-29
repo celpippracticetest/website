@@ -74,6 +74,8 @@ export default function SignUpPageClient() {
     const utmCampaign = searchParams.get("utm_campaign");
     const utmContent = searchParams.get("utm_content");
     const utmTerm = searchParams.get("utm_term");
+    const googleAdsCampaignId =
+      searchParams.get("gad_campaignid") || searchParams.get("google_ads_campaign_id");
 
     if (gclid) localStorage.setItem("pending_gclid", gclid);
     if (gbraid) localStorage.setItem("pending_gbraid", gbraid);
@@ -86,6 +88,9 @@ export default function SignUpPageClient() {
     if (utmCampaign) localStorage.setItem("pending_utm_campaign", utmCampaign);
     if (utmContent) localStorage.setItem("pending_utm_content", utmContent);
     if (utmTerm) localStorage.setItem("pending_utm_term", utmTerm);
+    if (googleAdsCampaignId) {
+      localStorage.setItem("pending_google_ads_campaign_id", googleAdsCampaignId);
+    }
 
     if (ref) {
       setReferralCode(ref.trim());
