@@ -1,14 +1,39 @@
--- Run in BigQuery (celpip-d8f02) after GA4 export is linked.
--- Default GA4 export dataset for property 533185817: analytics_533185817
--- (If you linked with a custom name, e.g. analytics_celpip, swap the dataset id below.)
+-- Bootstrap: verify GA4 export + ad spend are queryable.
+-- Update dataset if your BigQuery link uses a custom name (e.g. analytics_celpip).
 
--- 1) Tables present (expect events_YYYYMMDD, users_*, pseudonymous_users_*)
-SELECT table_name, creation_time
-FROM `celpip-d8f02.analytics_533185817.INFORMATION_SCHEMA.TABLES`
-WHERE table_type = 'BASE TABLE'
-ORDER BY creation_time DESC
-LIMIT 50;
+-- 1) Last 3 days of events (any event)
+-- SELECT
+--   _TABLE_SUFFIX AS table_suffix,
+--   COUNT(1) AS n
+-- FROM `celpip-d8f02.analytics_533185817.events_*`
+-- WHERE _TABLE_SUFFIX >= FORMAT_DATE('%Y%m%d', DATE_SUB(CURRENT_DATE(), INTERVAL 3 DAY))
+-- GROUP BY 1
+-- ORDER BY 1 DESC;
 
--- 2) Row count for latest daily shard (adjust suffix after tables exist)
--- SELECT COUNT(*) AS n FROM `celpip-d8f02.analytics_533185817.events_*`
--- WHERE _TABLE_SUFFIX = FORMAT_DATE('%Y%m%d', DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY));
+-- 2) purchase events: revenue and campaign fields (last 7d)
+-- SELECT
+--   DATE(TIMESTAMP_MICROS(event_timestamp), 'America/Vancouver') AS day,
+--   event_name,
+--   COUNT(1) AS n,
+--   SUM(
+--     COALESCE(
+--       (SELECT value.double_value FROM UNNEST(event_params) e WHERE e.key = 'value' LIMIT 1),
+--       0
+--     )
+--   ) AS value_sum
+-- FROM `celpip-d8f02.analytics_533185817.events_*`
+-- WHERE _TABLE_SUFFIX >= FORMAT_DATE('%Y%m%d', DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY))
+--   AND event_name = 'purchase'
+-- GROUP BY 1, 2
+-- ORDER BY 1 DESC;
+
+-- 3) ad_spend_daily row counts by platform
+-- SELECT
+--   platform,
+--   MIN(spend_date) AS min_d,
+--   MAX(spend_date) AS max_d,
+--   COUNT(1) AS n,
+--   SUM(spend) AS total_spend
+-- FROM `celpip-d8f02.analytics_533185817.ad_spend_daily`
+-- GROUP BY 1
+-- ORDER BY 1;

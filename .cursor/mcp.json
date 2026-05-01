@@ -28,6 +28,17 @@
       "args": ["${workspaceFolder}/.cursor/run-gtm-mcp.py"],
       "cwd": "${workspaceFolder}"
     },
+    "google-ads-mcp": {
+      "type": "stdio",
+      "command": "${workspaceFolder}/.venv-google-ads-mcp/Scripts/google-ads-mcp.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "GOOGLE_APPLICATION_CREDENTIALS": "${workspaceFolder}/secrets/google-ads-mcp-credentials.json",
+        "GOOGLE_PROJECT_ID": "celpip-d8f02",
+        "GOOGLE_ADS_DEVELOPER_TOKEN": "${env:GOOGLE_ADS_DEVELOPER_TOKEN}"
+      }
+    },
     "reddit": {
       "type": "stdio",
       "command": "npx",

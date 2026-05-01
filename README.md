@@ -123,7 +123,9 @@ To warehouse **GA4 event-level** data for custom KPIs, SQL funnels, and joins to
 1. Follow **`docs/bigquery-setup-and-kpis.md`** — link the GA4 property to a GCP project, IAM, and starter queries (DAU, commerce funnel, sign-ups, practice/exam).
 2. After the first tables land (~24–48h), use **`docs/bigquery-ga4-flow-after-24h.md`** to verify export, purchases, and campaign attribution.
 
-Production GA4 export tables live under **`celpip-d8f02.analytics_533185817`** (default dataset for property `533185817`) or **`celpip-d8f02.analytics_celpip`** if the BigQuery link used a custom dataset name. Bootstrap SQL: [`sql/bigquery/01_bootstrap_checks.sql`](sql/bigquery/01_bootstrap_checks.sql). ROAS view SQL: [`sql/bigquery/02_campaign_roas_all_channels.sql`](sql/bigquery/02_campaign_roas_all_channels.sql).
+Production GA4 export tables live under **`celpip-d8f02.analytics_533185817`** (default dataset for property `533185817`) or **`celpip-d8f02.analytics_celpip`** if the BigQuery link used a custom dataset name. Bootstrap SQL: [`sql/bigquery/01_bootstrap_checks.sql`](sql/bigquery/01_bootstrap_checks.sql). Table DDL: [`sql/bigquery/00_ad_spend_daily_ddl.sql`](sql/bigquery/00_ad_spend_daily_ddl.sql) (add `campaign_id` via [`00b_migrate_add_campaign_id.sql`](sql/bigquery/00b_migrate_add_campaign_id.sql) if upgrading). ROAS and daily views: [`sql/bigquery/02_campaign_roas_all_channels.sql`](sql/bigquery/02_campaign_roas_all_channels.sql); rollups: [`sql/bigquery/03_campaign_roas_by_campaign.sql`](sql/bigquery/03_campaign_roas_by_campaign.sql). **Meta / Bing / Reddit spend:** [`docs/multichannel-ad-spend.md`](docs/multichannel-ad-spend.md) and `yarn ads:meta-to-bq` / `yarn ads:csv-to-bq`.
+
+**Revenue / finance / growth** (UTMs, consent, Looker-style dashboard, paid social tests, churn experiments, Semrush when API units are available): see [`docs/finance-growth-bq-dashboard.md`](docs/finance-growth-bq-dashboard.md) and the linked playbooks in that doc.
 
 BigQuery receives **analytics events** (including `user_id` when set), not a full export of Clerk/Mongo/Stripe; join other sources in your warehouse when you need complete user records.
 

@@ -242,17 +242,21 @@ async function main() {
   const adsToken = await refreshAdsAccessToken(ads);
   const rows = await searchStreamAds(ads, adsToken, query);
 
-  /** @type {Map<string, { spend_date: string, campaign: string, spend: number }>} */
+  /** @type {Map<string, { spend_date: string, campaign: string, campaign_id: string, spend: number }>} */
   const byKey = new Map();
   for (const row of rows) {
     const date = row?.segments?.date || "";
-    const name = row?.campaign?.name || `id_${row?.campaign?.id || "unknown"}`;
+    const id = String(row?.campaign?.id || "");
+    const name = row?.campaign?.name || `id_${id || "unknown"}`;
     const micros = costMicros(row);
     const spend = micros / 1_000_000;
-    const key = `${date}\t${name}`;
+    const key = `${date}\t${id}`;
     const prev = byKey.get(key);
-    if (prev) prev.spend += spend;
-    else byKey.set(key, { spend_date: date, campaign: name, spend });
+    if (prev) {
+      prev.spend += spend;
+    } else {
+      byKey.set(key, { spend_date: date, campaign: name, campaign_id: id, spend });
+    }
   }
 
   const list = Array.from(byKey.values());
@@ -266,7 +270,9 @@ async function main() {
   const valueRows = list
     .map(
       (r) =>
-        `(DATE ${sqlStringLiteral(r.spend_date)}, 'google_ads', 'google', 'cpc', ${sqlStringLiteral(r.campaign)}, CAST(${r.spend} AS NUMERIC))`,
+        `(DATE ${sqlStringLiteral(r.spend_date)}, 'google_ads', 'google', 'cpc', ${sqlStringLiteral(
+          r.campaign,
+        )}, ${r.campaign_id ? sqlStringLiteral(r.campaign_id) : "CAST(NULL AS STRING)"}, CAST(${r.spend} AS NUMERIC))`,
     )
     .join(",\n    ");
 
@@ -275,7 +281,7 @@ BEGIN
   DELETE FROM ${tableFqn}
   WHERE platform = 'google_ads'
     AND spend_date BETWEEN DATE('${start}') AND DATE('${end}');
-  INSERT INTO ${tableFqn} (spend_date, platform, source, medium, campaign, spend)
+  INSERT INTO ${tableFqn} (spend_date, platform, source, medium, campaign, campaign_id, spend)
   VALUES
     ${valueRows};
 END;

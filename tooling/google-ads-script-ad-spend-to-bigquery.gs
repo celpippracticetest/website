@@ -13,7 +13,7 @@
  *
  * OUTPUT ROWS (aligned with sql/bigquery/00_ad_spend_daily_ddl.sql):
  *   spend_date, platform='google_ads', source='google', medium='cpc',
- *   campaign=<campaign name>, spend=<cost from metrics.cost_micros>
+ *   campaign=<campaign name>, campaign_id=<campaign id string>, spend=<cost from metrics.cost_micros>
  *
  * BEHAVIOR: Rewrites the table with one CREATE OR REPLACE TABLE … AS SELECT (no DELETE).
  * That avoids BigQuery's streaming-buffer rule (DELETE cannot touch rows loaded via
@@ -161,12 +161,15 @@ function bqSqlString_(s) {
 
 function newGoogleAdsRowSelect_(r) {
   var spendLit = String(Number(r.spend.toFixed(6)));
+  var idLit = bqSqlString_(r.campaign_id != null ? String(r.campaign_id) : "");
   return (
     "SELECT DATE '" +
     r.spend_date +
     "' AS spend_date, 'google_ads' AS platform, 'google' AS source, 'cpc' AS medium, " +
     bqSqlString_(r.campaign || "") +
-    " AS campaign, CAST(" +
+    " AS campaign, " +
+    idLit +
+    " AS campaign_id, CAST(" +
     spendLit +
     " AS NUMERIC) AS spend"
   );
@@ -187,7 +190,7 @@ function rewriteAdSpendDailyGoogleAdsWindow_(
 ) {
   var tableFqn = "`" + projectId + "." + datasetId + "." + tableId + "`";
   var keepSql =
-    "SELECT spend_date, platform, source, medium, campaign, spend FROM " +
+    "SELECT spend_date, platform, source, medium, campaign, campaign_id, spend FROM " +
     tableFqn +
     " WHERE NOT (platform = 'google_ads' AND spend_date BETWEEN DATE('" +
     start +
