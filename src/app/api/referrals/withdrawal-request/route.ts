@@ -7,7 +7,7 @@ import { ReferralRewardRepository } from "@/repositories/referral-reward.repo";
 import { WithdrawalRequestRepository } from "@/repositories/withdrawal-request.repo";
 import { ReferralInvitationRepository } from "@/repositories/referral-invitation.repo";
 import { clerkClient } from "@clerk/nextjs/server";
-import { sendEmailWithSender } from "@/lib/email/sender-client";
+import { getResendClient, sendResendHtmlEmail } from "@/lib/email/resend-client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -150,9 +150,8 @@ async function sendWithdrawalNotificationEmail({
   user: any;
   referralStats: any;
 }) {
-  const { SENDER_API_TOKEN } = process.env as Record<string, string | undefined>;
-  if (!SENDER_API_TOKEN) {
-    throw new Error("Missing required env: SENDER_API_TOKEN");
+  if (!getResendClient()) {
+    throw new Error("RESEND_API_KEY is not configured");
   }
   try {
     const adminEmail =
@@ -230,20 +229,16 @@ async function sendWithdrawalNotificationEmail({
       </div>
     `;
 
-    console.log("[withdrawal-request] sending email", {
-      from: process.env.FROM_EMAIL || process.env.SMTP_USER,
+    console.log("[withdrawal-request] sending email via Resend", {
       to: adminEmail,
-      provider: "sender.net",
     });
 
-    await sendEmailWithSender({
-      from:
-        process.env.FROM_EMAIL || `Celpip Practice <${process.env.SMTP_USER}>`,
+    await sendResendHtmlEmail({
       to: [adminEmail, "tejareh.amir@gmail.com"],
       subject: `Withdrawal Request - $${withdrawalRequest.amount} - ${user.emailAddresses[0]?.emailAddress}`,
       html: emailHtml,
     });
-    console.log("[withdrawal-request] Sender API email sent successfully");
+    console.log("[withdrawal-request] Resend email sent successfully");
   } catch (error) {
     console.error("Failed to send withdrawal notification email:", error);
     throw error;

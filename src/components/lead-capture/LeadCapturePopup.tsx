@@ -145,31 +145,48 @@ export default function LeadCapturePopup() {
 
   useEffect(() => {
     let cancelled = false;
+    const ac = new AbortController();
+    const retryDelaysMs = [0, 400, 1200];
 
     async function loadConfig() {
-      try {
-        const response = await fetch("/api/lead-capture/config", {
-          method: "GET",
-          cache: "no-store",
-        });
-        if (!response.ok) return;
-        const payload = await response.json();
-        if (!cancelled && Array.isArray(payload?.data) && payload.data.length > 0) {
-          setConfigs(payload.data);
-          setActiveConfig(selectCandidate(payload.data));
+      let lastError: unknown;
+      for (let attempt = 0; attempt < retryDelaysMs.length; attempt++) {
+        if (cancelled) return;
+        if (retryDelaysMs[attempt] > 0) {
+          await new Promise((r) => setTimeout(r, retryDelaysMs[attempt]));
         }
-      } catch (error) {
-        console.error("[lead-capture-popup] failed to load config:", error);
-      } finally {
-        if (!cancelled) {
-          setConfigLoaded(true);
+        if (cancelled) return;
+        try {
+          const response = await fetch("/api/lead-capture/config", {
+            method: "GET",
+            cache: "no-store",
+            signal: ac.signal,
+          });
+          if (!response.ok) return;
+          const payload = await response.json();
+          if (!cancelled && Array.isArray(payload?.data) && payload.data.length > 0) {
+            setConfigs(payload.data);
+            setActiveConfig(selectCandidate(payload.data));
+          }
+          return;
+        } catch (error) {
+          if (cancelled || ac.signal.aborted) return;
+          if (error instanceof DOMException && error.name === "AbortError") return;
+          lastError = error;
         }
+      }
+      if (!cancelled && lastError != null) {
+        console.error("[lead-capture-popup] failed to load config:", lastError);
       }
     }
 
-    loadConfig();
+    void loadConfig().finally(() => {
+      if (!cancelled) setConfigLoaded(true);
+    });
+
     return () => {
       cancelled = true;
+      ac.abort();
     };
   }, [selectCandidate]);
 

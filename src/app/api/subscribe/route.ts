@@ -3,7 +3,7 @@ import {
   LeadCaptureLeadWriteSchema,
   LeadTriggerSourceEnumSchema,
 } from "@/models/lead-capture.model";
-import { upsertSenderSubscriber } from "@/lib/email/sender-client";
+import { addContactToResendAudience, getResendClient } from "@/lib/email/resend-client";
 import { LeadCaptureConfigRepository } from "@/repositories/lead-capture-config.repo";
 import { LeadCaptureLeadRepository } from "@/repositories/lead-capture-lead.repo";
 import { NextRequest, NextResponse } from "next/server";
@@ -130,21 +130,39 @@ export async function POST(request: NextRequest) {
 
     const savedLead = await leadRepo.createLead(leadWriteInput);
 
-    try {
-      await upsertSenderSubscriber({
-        email: savedLead.email,
-        firstName: savedLead.firstName,
-        listId: savedLead.senderGroupId || undefined,
-        source: savedLead.sourceUrl,
-      });
-      await leadRepo.updateSenderSyncStatus(savedLead.id, "synced");
-    } catch (senderError) {
-      console.error("[subscribe] Sender sync failed:", senderError);
+    const audienceId =
+      (savedLead.senderGroupId && savedLead.senderGroupId.trim()) ||
+      process.env.RESEND_DEFAULT_LEADS_AUDIENCE_ID?.trim() ||
+      "";
+
+    if (!getResendClient()) {
       await leadRepo.updateSenderSyncStatus(
         savedLead.id,
         "failed",
-        senderError instanceof Error ? senderError.message : "Unknown sender sync error"
+        "RESEND_API_KEY is not configured"
       );
+    } else if (!audienceId) {
+      await leadRepo.updateSenderSyncStatus(
+        savedLead.id,
+        "failed",
+        "No Resend audience: set campaign audience in admin or RESEND_DEFAULT_LEADS_AUDIENCE_ID"
+      );
+    } else {
+      try {
+        await addContactToResendAudience({
+          audienceId,
+          email: savedLead.email,
+          firstName: savedLead.firstName,
+        });
+        await leadRepo.updateSenderSyncStatus(savedLead.id, "synced");
+      } catch (resendError) {
+        console.error("[subscribe] Resend audience sync failed:", resendError);
+        await leadRepo.updateSenderSyncStatus(
+          savedLead.id,
+          "failed",
+          resendError instanceof Error ? resendError.message : "Resend audience sync error"
+        );
+      }
     }
 
     return NextResponse.json(

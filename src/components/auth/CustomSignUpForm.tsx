@@ -14,9 +14,9 @@ import { isConsumerGmailEmail } from "@/lib/gmailEmail";
 
 function postSignUpRedirectPath(checkoutSessionId: string | null | undefined): string {
   if (checkoutSessionId) {
-    return "/onboarding-survey?next=/exam-overview";
+    return "/exam-overview";
   }
-  return "/onboarding-survey";
+  return "/practice-overview";
 }
 
 function formatFutureError(err: { longMessage?: string; message: string } | null | undefined): string {

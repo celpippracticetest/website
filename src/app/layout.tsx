@@ -209,6 +209,22 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-title" content="CELPIP Test" />
         <meta name="theme-color" content="#3B82F6" />
 
+        {/* Fix Stripe/Payment Attribution: Hide stripe.com (and other payment gateways) from GTM/GA4/Pixels to prevent session break */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (typeof document !== 'undefined' && document.referrer && (document.referrer.includes('stripe.com') || document.referrer.includes('paypal.com'))) {
+                try {
+                  var originalReferrer = localStorage.getItem('pending_referrer') || window.location.origin;
+                  Object.defineProperty(document, 'referrer', {
+                    get: function() { return originalReferrer; }
+                  });
+                } catch (e) {}
+              }
+            `,
+          }}
+        />
+
         {/* Load analytics bootstrapping from static assets to keep SSR HTML leaner. */}
         {enableGtm && (
           <Script

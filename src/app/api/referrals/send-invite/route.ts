@@ -3,16 +3,13 @@
   - Auth required (Clerk)
   - Validates input with Zod
   - Builds invite link from referralCode if inviteLink not provided
-  - Sender.net API integration with token validation
+  - Resend for transactional email
   - Optional Upstash Redis rate limiting (if envs provided)
-  - Returns structured JSON errors
 
   Required envs for email:
-    SENDER_API_TOKEN
-    FROM_EMAIL (e.g. "Celpip Practice <no-reply@domain>")
-  Fallback env used by FROM_EMAIL default:
-    SMTP_USER
-  Optional envs:
+    RESEND_API_KEY
+    RESEND_FROM_EMAIL or FROM_EMAIL (verified domain in Resend)
+  Optional:
     APP_BASE_URL (e.g. https://celpippracticetest.com)
     UPSTASH_REDIS_REST_URL
     UPSTASH_REDIS_REST_TOKEN
@@ -21,9 +18,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { clerkClient, currentUser } from "@clerk/nextjs/server";
-import { sendEmailWithSender } from "@/lib/email/sender-client";
+import { getResendClient, sendResendHtmlEmail } from "@/lib/email/resend-client";
 
-export const runtime = "nodejs"; // Sender API requests run server-side only
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic"; // ensure server execution
 
 // ---------- Schemas ----------
@@ -46,13 +43,6 @@ function jsonError(
   details?: Record<string, unknown>
 ) {
   return NextResponse.json({ ok: false, code, message, details }, { status });
-}
-
-function assertEnv(name: string, allowEmpty = false) {
-  const v = process.env[name];
-
-  if (!v && !allowEmpty) throw new Error(`Missing required env: ${name}`);
-  return v ?? "";
 }
 
 function buildInviteLink({
@@ -153,14 +143,11 @@ export async function POST(req: Request) {
       inviterId: user.id,
     });
 
-    // 6) Prepare email
-    const from =
-      process.env.FROM_EMAIL || `Celpip Practice <${process.env.SMTP_USER}>`;
-    assertEnv("SENDER_API_TOKEN");
+    if (!getResendClient()) {
+      return jsonError(500, "EMAIL_NOT_CONFIGURED", "RESEND_API_KEY is not configured.");
+    }
 
-    // 7) Send
-    await sendEmailWithSender({
-      from,
+    await sendResendHtmlEmail({
       to: email,
       subject: "You're invited to CELPIP Practice Test",
       html: emailHtml({

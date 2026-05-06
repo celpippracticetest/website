@@ -35,7 +35,7 @@ type LeadCaptureConfig = {
   isEnabled: boolean;
 };
 
-type SenderGroup = { id: string; name: string };
+type ResendAudience = { id: string; name: string };
 
 type LeadItem = {
   id: string;
@@ -76,7 +76,7 @@ export default function LeadCaptureDashboardPage() {
   const [configs, setConfigs] = useState<LeadCaptureConfig[]>([]);
   const [selectedConfigId, setSelectedConfigId] = useState<string>("");
   const [config, setConfig] = useState<LeadCaptureConfig>(DEFAULT_CONFIG);
-  const [senderGroups, setSenderGroups] = useState<SenderGroup[]>([]);
+  const [resendAudiences, setResendAudiences] = useState<ResendAudience[]>([]);
   const [isConfigLoading, setIsConfigLoading] = useState(true);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
   const [configMessage, setConfigMessage] = useState<string | null>(null);
@@ -136,19 +136,19 @@ export default function LeadCaptureDashboardPage() {
     }
   };
 
-  const loadSenderGroups = async () => {
+  const loadResendAudiences = async () => {
     try {
-      const response = await fetch("/api/admin/lead-capture/sender-groups", {
+      const response = await fetch("/api/admin/lead-capture/resend-audiences", {
         method: "GET",
         cache: "no-store",
       });
       if (!response.ok) return;
       const payload = await response.json();
       if (Array.isArray(payload?.data)) {
-        setSenderGroups(payload.data);
+        setResendAudiences(payload.data);
       }
     } catch (error) {
-      console.error("[lead-capture-admin] loadSenderGroups failed:", error);
+      console.error("[lead-capture-admin] loadResendAudiences failed:", error);
     }
   };
 
@@ -185,7 +185,7 @@ export default function LeadCaptureDashboardPage() {
 
   useEffect(() => {
     loadConfig();
-    loadSenderGroups();
+    loadResendAudiences();
   }, []);
 
   useEffect(() => {
@@ -434,13 +434,13 @@ export default function LeadCaptureDashboardPage() {
 
             <label className="flex flex-col gap-1">
               <span className="text-sm font-medium text-gray-700">
-                Sender Group (subscribers list)
+                Resend audience (new leads added as contacts)
               </span>
               <select
                 value={config.senderGroupId || ""}
                 onChange={(event) => {
                   const nextId = event.target.value;
-                  const selected = senderGroups.find((item) => item.id === nextId);
+                  const selected = resendAudiences.find((item) => item.id === nextId);
                   setConfig((prev) => ({
                     ...prev,
                     senderGroupId: nextId,
@@ -449,8 +449,8 @@ export default function LeadCaptureDashboardPage() {
                 }}
                 className="h-10 rounded-lg border border-gray-300 px-3 text-sm"
               >
-                <option value="">No specific group</option>
-                {senderGroups.map((group) => (
+                <option value="">None (or use RESEND_DEFAULT_LEADS_AUDIENCE_ID on server)</option>
+                {resendAudiences.map((group) => (
                   <option key={group.id} value={group.id}>
                     {group.name}
                   </option>

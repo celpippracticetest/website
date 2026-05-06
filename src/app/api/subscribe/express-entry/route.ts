@@ -1,12 +1,9 @@
-import { upsertSenderSubscriber } from "@/lib/email/sender-client";
+import { addContactToResendAudience, getResendClient } from "@/lib/email/resend-client";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-/** Sender.net group: express-entry-campaign */
-const EXPRESS_ENTRY_SENDER_GROUP_ID = "eZgOYQ";
 
 const BodySchema = z.object({
   email: z.string().trim().email(),
@@ -34,7 +31,7 @@ function isRateLimited(key: string): boolean {
   return false;
 }
 
-/** Derive a short first name for Sender (required field) from the email local part */
+/** Derive a short first name from the email local part */
 function firstNameFromEmail(email: string): string {
   const local = email.split("@")[0]?.trim() || "";
   if (!local) return "Express Entry";
@@ -45,7 +42,7 @@ function firstNameFromEmail(email: string): string {
   return word.slice(0, 1).toUpperCase() + word.slice(1, 80).toLowerCase();
 }
 
-/** Subscribe express-entry funnel emails to Sender.net (express-entry-campaign group). */
+/** Add express-entry signups to a Resend Audience (set RESEND_EXPRESS_ENTRY_AUDIENCE_ID). */
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
@@ -53,7 +50,7 @@ export async function POST(request: NextRequest) {
     if (isRateLimited(`express-entry:${ip}:${userAgent.slice(0, 80)}`)) {
       return NextResponse.json(
         { ok: false, message: "Too many requests. Please try again later." },
-        { status: 429 },
+        { status: 429 }
       );
     }
 
@@ -62,16 +59,25 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         { ok: false, message: "Invalid email.", issues: parsed.error.issues },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
+    const audienceId = process.env.RESEND_EXPRESS_ENTRY_AUDIENCE_ID?.trim();
+    if (!getResendClient() || !audienceId) {
+      return NextResponse.json({
+        ok: true,
+        synced: false,
+        message:
+          "Resend not configured (RESEND_API_KEY and RESEND_EXPRESS_ENTRY_AUDIENCE_ID required for list sync).",
+      });
+    }
+
     const email = parsed.data.email.toLowerCase();
-    await upsertSenderSubscriber({
+    await addContactToResendAudience({
+      audienceId,
       email,
       firstName: firstNameFromEmail(email),
-      listId: EXPRESS_ENTRY_SENDER_GROUP_ID,
-      source: "express-entry landing / express-entry-campaign",
     });
 
     return NextResponse.json({ ok: true, synced: true });
@@ -81,9 +87,9 @@ export async function POST(request: NextRequest) {
       {
         ok: true,
         synced: false,
-        message: err instanceof Error ? err.message : "Sender sync failed",
+        message: err instanceof Error ? err.message : "Resend sync failed",
       },
-      { status: 200 },
+      { status: 200 }
     );
   }
 }

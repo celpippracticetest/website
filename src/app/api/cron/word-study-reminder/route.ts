@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { getDb } from "@/lib/mongodb";
-import { sendTransactionalEmail } from "@/lib/email/sender-client";
+import { applyMergeTags, getResendClient, sendResendHtmlEmail } from "@/lib/email/resend-client";
 import {
   buildReminderEmailConfigWithDefaults,
   REMINDER_EMAIL_CONFIG_COLLECTION,
@@ -32,7 +32,8 @@ type ResolvedReminder = {
   flow: ReminderFlow;
   stageId: string;
   stageLabel: string;
-  senderCode: string;
+  subject: string;
+  htmlBody: string;
   variant: ABVariant;
   reminderWindowStartedAt?: Date;
   remindersInWindow: number;
@@ -313,7 +314,8 @@ export async function GET(request: NextRequest) {
         flow,
         stageId: nextStage.id,
         stageLabel: nextStage.label,
-        senderCode: nextStage.senderCode,
+        subject: nextStage.subject,
+        htmlBody: nextStage.htmlBody,
         variant,
         reminderWindowStartedAt: candidate.reminderWindowStartedAt,
         remindersInWindow: candidate.remindersInWindow ?? 0,
@@ -348,18 +350,33 @@ export async function GET(request: NextRequest) {
           continue;
         }
 
-        if (!reminder.senderCode || reminder.senderCode.trim().length === 0) {
+        if (!reminder.subject?.trim() || !reminder.htmlBody?.trim()) {
           console.error(
-            `[reminder-email] Missing senderCode for stage: ${reminder.stageId}, user: ${reminder.userId}`
+            `[reminder-email] Missing subject/htmlBody for stage: ${reminder.stageId}, user: ${reminder.userId}`
           );
           skipped += 1;
           continue;
         }
 
-        // Send via Sender.net transactional email template
-        await sendTransactionalEmail({
+        if (!getResendClient()) {
+          console.error("[reminder-email] RESEND_API_KEY is not configured; skipping send.");
+          skipped += 1;
+          continue;
+        }
+
+        const firstName =
+          user.firstName?.trim() ||
+          user.username?.trim() ||
+          primaryEmail.split("@")[0] ||
+          "there";
+        const mergeFields = { first_name: firstName };
+        const subject = applyMergeTags(reminder.subject, mergeFields);
+        const html = applyMergeTags(reminder.htmlBody, mergeFields);
+
+        await sendResendHtmlEmail({
           to: primaryEmail,
-          senderCode: reminder.senderCode,
+          subject,
+          html,
         });
 
         const reminderWindowStartedAt = toDate(reminder.reminderWindowStartedAt);
@@ -394,7 +411,8 @@ export async function GET(request: NextRequest) {
           stageId: reminder.stageId,
           stageLabel: reminder.stageLabel,
           variant: reminder.variant,
-          senderCode: reminder.senderCode,
+          emailProvider: "resend",
+          subject: reminder.subject,
           sentAt: now,
           createdAt: now,
         });

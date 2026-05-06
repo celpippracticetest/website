@@ -38,6 +38,9 @@ export async function POST(req: Request) {
     } else {
       onboardingMeta.askedLaterAt = askedLaterAt;
     }
+  } else if (data.action === "skip") {
+    onboardingNewMeta.completed = true;
+    onboardingNewMeta.skippedAt = new Date().toISOString();
   } else if (data.action === "submit") {
     const payloadWithAnsweredAt = {
       ...data.answers,

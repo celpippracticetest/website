@@ -4,7 +4,7 @@ import { z } from "zod";
 import mongoClient from "@/lib/mongodb";
 import { RefundRequestWriteSchema } from "@/models/refund-request.model";
 import { RefundRequestRepository } from "@/repositories/refund-request.repo";
-import { sendEmailWithSender } from "@/lib/email/sender-client";
+import { getResendClient, sendResendHtmlEmail } from "@/lib/email/resend-client";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
 export const runtime = "nodejs";
@@ -117,19 +117,23 @@ export async function POST(req: NextRequest) {
     });
 
     try {
-      await sendEmailWithSender({
-        to: "accounts@celpippracticetest.com",
-        subject: `New Refund Request - ${created.trackingCode}`,
-        html: buildRefundRequestEmailHtml({
-          trackingCode: created.trackingCode,
-          status: created.status,
-          fullName: created.fullName,
-          email: created.email,
-          reason: created.reason,
-          details: created.details,
-          createdAt: created.createdAt,
-        }),
-      });
+      if (!getResendClient()) {
+        console.warn("[refund-requests] RESEND_API_KEY not set; skipping admin email.");
+      } else {
+        await sendResendHtmlEmail({
+          to: "accounts@celpippracticetest.com",
+          subject: `New Refund Request - ${created.trackingCode}`,
+          html: buildRefundRequestEmailHtml({
+            trackingCode: created.trackingCode,
+            status: created.status,
+            fullName: created.fullName,
+            email: created.email,
+            reason: created.reason,
+            details: created.details,
+            createdAt: created.createdAt,
+          }),
+        });
+      }
     } catch (emailError) {
       console.error("Refund request created, but email notification failed:", emailError);
     }

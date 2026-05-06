@@ -346,9 +346,9 @@ export default function SignUpPageClient() {
         localStorage.removeItem("pendingInviterName");
       }
       if (guestCheckout?.sessionId) {
-        router.push("/onboarding-survey?next=/exam-overview");
+        router.push("/exam-overview");
       } else {
-        router.push("/onboarding-survey");
+        router.push("/practice-overview");
       }
     })();
   }, [guestCheckout, isSignedIn, purchase, user, router]);

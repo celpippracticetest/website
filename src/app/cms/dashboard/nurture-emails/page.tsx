@@ -2,48 +2,52 @@
 
 import { useEffect, useState } from "react";
 import { Box } from "@/components/ui/Box";
+import TiptapBlogEditor from "@/components/dashboard-app/cms/TiptapBlogEditor";
 import {
-  buildReminderEmailConfigWithDefaults,
-  REMINDER_EMAIL_DEFAULT_CONFIG,
-  type ReminderEmailConfigInput,
-  type ReminderEmailStage,
+  buildNurtureEmailConfigWithDefaults,
+  NURTURE_EMAIL_DEFAULT_CONFIG,
+  type NurtureEmailConfigInput,
+  type NurtureEmailStage,
   type TriggerType,
   type TimeUnit,
   TRIGGER_TYPES,
   TIME_UNITS,
-} from "@/lib/reminder-email/config";
+} from "@/lib/nurture-email/config";
 
 const TRIGGER_LABELS: Record<TriggerType, string> = {
-  signup_no_activity: "After Signup (No Activity)",
-  inactive: "After User Becomes Inactive",
+  signup: "After Signup",
+  free_user_active: "Active Free User",
+  premium_user: "Premium User",
 };
 
-export default function ReminderEmailConfigPage() {
-  const [config, setConfig] = useState<ReminderEmailConfigInput>(REMINDER_EMAIL_DEFAULT_CONFIG);
+export default function NurtureEmailConfigPage() {
+  const [config, setConfig] = useState<NurtureEmailConfigInput>(NURTURE_EMAIL_DEFAULT_CONFIG);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [editingStageId, setEditingStageId] = useState<string | null>(null);
+  const [testEmail, setTestEmail] = useState("");
+  const [sendingTestStageId, setSendingTestStageId] = useState<string | null>(null);
 
   const loadConfig = async () => {
     setIsLoading(true);
     setMessage(null);
     try {
-      const response = await fetch("/api/admin/reminder-emails/config", {
+      const response = await fetch("/api/admin/nurture-emails/config", {
         method: "GET",
         cache: "no-store",
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
-        setMessage(payload?.error || "Could not load reminder email config.");
+        setMessage(payload?.error || "Could not load nurture email config.");
         return;
       }
 
-      const resolved = buildReminderEmailConfigWithDefaults(payload?.data || null);
+      const resolved = buildNurtureEmailConfigWithDefaults(payload?.data || null);
       setConfig(resolved);
     } catch (error) {
-      console.error("[reminder-email-cms] loadConfig failed:", error);
-      setMessage("Could not load reminder email config.");
+      console.error("[nurture-email-cms] loadConfig failed:", error);
+      setMessage("Could not load nurture email config.");
     } finally {
       setIsLoading(false);
     }
@@ -57,7 +61,7 @@ export default function ReminderEmailConfigPage() {
     setIsSaving(true);
     setMessage(null);
     try {
-      const response = await fetch("/api/admin/reminder-emails/config", {
+      const response = await fetch("/api/admin/nurture-emails/config", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(config),
@@ -67,27 +71,26 @@ export default function ReminderEmailConfigPage() {
         setMessage(payload?.error || "Could not save config.");
         return;
       }
-      setMessage("Reminder email config saved successfully.");
-      setConfig(buildReminderEmailConfigWithDefaults(payload?.data || config));
+      setMessage("Nurture email config saved successfully.");
+      setConfig(buildNurtureEmailConfigWithDefaults(payload?.data || config));
       setEditingStageId(null);
     } catch (error) {
-      console.error("[reminder-email-cms] saveConfig failed:", error);
-      setMessage("Could not save reminder email config.");
+      console.error("[nurture-email-cms] saveConfig failed:", error);
+      setMessage("Could not save nurture email config.");
     } finally {
       setIsSaving(false);
     }
   };
 
   const addNewStage = () => {
-    const newStage: ReminderEmailStage = {
+    const newStage: NurtureEmailStage = {
       id: `stage_${Date.now()}`,
-      label: "New Reminder Stage",
-      triggerType: "signup_no_activity",
+      label: "New Nurture Stage",
+      triggerType: "signup",
       delayAmount: 1,
       delayUnit: "days",
-      subject: "Reminder from CELPIP Practice Test",
-      htmlBody:
-        '<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif"><p>Hi {{first_name}},</p><p></p></body></html>',
+      subject: "New Email",
+      bodyHtml: "<p>Write your email here...</p>",
       enabled: true,
       sortOrder: config.stages.length,
     };
@@ -99,7 +102,7 @@ export default function ReminderEmailConfigPage() {
     setMessage("New stage added. Remember to click 'Save Configuration' to persist changes.");
   };
 
-  const updateStage = (stageId: string, updates: Partial<ReminderEmailStage>) => {
+  const updateStage = (stageId: string, updates: Partial<NurtureEmailStage>) => {
     setConfig((prev) => ({
       ...prev,
       stages: prev.stages.map((stage) =>
@@ -109,7 +112,7 @@ export default function ReminderEmailConfigPage() {
   };
 
   const deleteStage = (stageId: string) => {
-    if (!confirm("Are you sure you want to delete this reminder stage?")) return;
+    if (!confirm("Are you sure you want to delete this nurture stage?")) return;
     setConfig((prev) => ({
       ...prev,
       stages: prev.stages.filter((stage) => stage.id !== stageId),
@@ -139,16 +142,67 @@ export default function ReminderEmailConfigPage() {
     setMessage("Stage reordered. Click 'Save Configuration' to persist changes.");
   };
 
+  const sendTestForStage = async (stage: NurtureEmailStage) => {
+    const to = testEmail.trim();
+    if (!to) {
+      setMessage("Enter a test recipient email above.");
+      return;
+    }
+    const subject = stage.subject?.trim();
+    const bodyHtml = stage.bodyHtml?.trim();
+    if (!subject || !bodyHtml) {
+      setMessage("Subject and email body are required before sending a test.");
+      return;
+    }
+    setSendingTestStageId(stage.id);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/admin/nurture-emails/test-send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to, subject, bodyHtml }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessage(payload?.error || "Test send failed.");
+        return;
+      }
+      setMessage(`Test email sent for "${stage.label}" (Resend id: ${payload.resendId ?? "n/a"}).`);
+    } catch (error) {
+      console.error("[nurture-email-cms] sendTest failed:", error);
+      setMessage("Test send failed.");
+    } finally {
+      setSendingTestStageId(null);
+    }
+  };
+
   return (
     <Box className="flex w-full flex-col gap-6 p-6">
       <Box className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold text-gray-900">Reminder Email Config</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Nurture Sequence Config</h1>
         <p className="text-sm text-gray-600">
-          Create and manage reminder email stages. Messages are sent with{" "}
-          <a className="text-primary underline" href="https://resend.com" target="_blank" rel="noreferrer">
-            Resend
-          </a>{" "}
-          (configure <code className="text-xs">RESEND_API_KEY</code> and a verified sender).
+          Create and manage automated nurture email sequences to engage your users over time.
+        </p>
+      </Box>
+
+      <Box className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-4">
+        <h2 className="mb-2 text-sm font-semibold text-gray-900">Send test emails (Resend)</h2>
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-gray-600">Test recipient</span>
+          <input
+            type="email"
+            placeholder="you@example.com"
+            value={testEmail}
+            onChange={(e) => setTestEmail(e.target.value)}
+            className="h-10 max-w-md rounded-lg border border-gray-300 px-3 text-sm"
+            autoComplete="email"
+          />
+        </label>
+        <p className="mt-2 text-xs text-gray-600">
+          Subject is prefixed with <code className="rounded bg-white px-1">[TEST]</code>. Uses the current subject and
+          body for each stage (including unsaved edits). Requires <code className="rounded bg-white px-1">RESEND_API_KEY</code>{" "}
+          and a verified sender (<code className="rounded bg-white px-1">RESEND_FROM_EMAIL</code> or{" "}
+          <code className="rounded bg-white px-1">FROM_EMAIL</code>).
         </p>
       </Box>
 
@@ -175,7 +229,7 @@ export default function ReminderEmailConfigPage() {
                           value={stage.label}
                           onChange={(e) => updateStage(stage.id, { label: e.target.value })}
                           className="h-10 rounded-lg border border-gray-300 px-3 text-sm"
-                          placeholder="e.g., Welcome Email - 20min"
+                          placeholder="e.g., Day 1 - Welcome & Tips"
                         />
                       </label>
 
@@ -238,29 +292,27 @@ export default function ReminderEmailConfigPage() {
 
                       <label className="flex w-full flex-col gap-1">
                         <span className="text-sm font-medium text-gray-700">
-                          Email subject <span className="text-red-500">*</span>
+                          Subject <span className="text-red-500">*</span>
                         </span>
                         <input
                           type="text"
                           value={stage.subject}
                           onChange={(e) => updateStage(stage.id, { subject: e.target.value })}
                           className="h-10 rounded-lg border border-gray-300 px-3 text-sm"
-                          placeholder="e.g., Welcome back to CELPIP prep"
+                          placeholder="e.g., Welcome to CELPIP Practice!"
                         />
                       </label>
 
-                      <label className="flex w-full flex-col gap-1">
+                      <Box className="flex w-full flex-col gap-1 z-10">
                         <span className="text-sm font-medium text-gray-700">
-                          HTML body <span className="text-red-500">*</span>
+                          Email Body (HTML) <span className="text-red-500">*</span>
                         </span>
-                        <textarea
-                          value={stage.htmlBody}
-                          onChange={(e) => updateStage(stage.id, { htmlBody: e.target.value })}
-                          rows={12}
-                          className="w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-xs"
-                          spellCheck={false}
+                        <TiptapBlogEditor
+                          initialContent={stage.bodyHtml}
+                          placeholder="Write your email body here..."
+                          onChange={({ html }) => updateStage(stage.id, { bodyHtml: html })}
                         />
-                      </label>
+                      </Box>
 
                       <label className="flex items-center gap-2">
                         <input
@@ -273,7 +325,7 @@ export default function ReminderEmailConfigPage() {
                       </label>
                     </Box>
 
-                    <Box className="flex gap-2">
+                    <Box className="flex flex-wrap gap-2">
                       <button
                         type="button"
                         onClick={() => {
@@ -283,6 +335,14 @@ export default function ReminderEmailConfigPage() {
                         className="h-9 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white"
                       >
                         Done Editing
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => sendTestForStage(stage)}
+                        disabled={sendingTestStageId === stage.id}
+                        className="h-9 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                      >
+                        {sendingTestStageId === stage.id ? "Sending…" : "Send test email"}
                       </button>
                       <button
                         type="button"
@@ -310,8 +370,8 @@ export default function ReminderEmailConfigPage() {
                     <p className="text-sm text-gray-600">
                       <span className="font-medium">Delay:</span> {stage.delayAmount} {stage.delayUnit}
                     </p>
-                    <p className="text-sm text-gray-600">
-                      <span className="font-medium">Subject:</span> {stage.subject || "(not set)"}
+                    <p className="text-sm text-gray-600 truncate max-w-full">
+                      <span className="font-medium">Subject:</span> {stage.subject}
                     </p>
                   </Box>
                 )}
@@ -325,6 +385,14 @@ export default function ReminderEmailConfigPage() {
                     className="h-9 rounded-lg border border-gray-300 bg-white px-3 text-sm font-semibold text-gray-800"
                   >
                     Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => sendTestForStage(stage)}
+                    disabled={sendingTestStageId === stage.id}
+                    className="h-9 rounded-lg bg-emerald-600 px-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                  >
+                    {sendingTestStageId === stage.id ? "Sending…" : "Test send"}
                   </button>
                   <Box className="flex gap-1">
                     <button
@@ -354,7 +422,7 @@ export default function ReminderEmailConfigPage() {
 
         {config.stages.length === 0 && (
           <Box className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
-            <p className="text-sm text-gray-600">No reminder stages configured yet.</p>
+            <p className="text-sm text-gray-600">No nurture stages configured yet.</p>
           </Box>
         )}
 
@@ -363,7 +431,7 @@ export default function ReminderEmailConfigPage() {
           onClick={addNewStage}
           className="h-10 rounded-lg border-2 border-dashed border-gray-300 bg-white px-4 text-sm font-semibold text-gray-700 hover:border-gray-400"
         >
-          + Add New Reminder Stage
+          + Add New Sequence Stage
         </button>
       </Box>
 
@@ -388,13 +456,11 @@ export default function ReminderEmailConfigPage() {
       <Box className="rounded-lg border border-blue-200 bg-blue-50 p-4">
         <h3 className="mb-2 text-sm font-semibold text-blue-900">💡 How it works</h3>
         <ul className="space-y-2 text-xs text-blue-800">
-          <li>• Create custom reminder stages with your own timing</li>
-          <li>• Set trigger type: after signup (no activity) or after user becomes inactive</li>
-          <li>• Configure delay: X minutes, hours, or days</li>
-          <li>• Use <code className="rounded bg-white px-1">{"{{first_name}}"}</code> in subject and HTML</li>
-          <li>• Each stage sends as its own HTML email via Resend</li>
-          <li>• Enable/disable stages without deleting them</li>
-          <li>• Reorder stages to control the sequence</li>
+          <li>• Setup a timed sequence of emails to nurture new leads or users</li>
+          <li>• Set the delay from the trigger event (e.g., 1 day after Signup)</li>
+          <li>• Compose the email directly using the rich text editor (emails are sent via Resend)</li>
+          <li>• Use the Send test email button with a recipient address to preview the current subject and body in your inbox</li>
+          <li>• Users will automatically receive these emails according to your timeline</li>
         </ul>
       </Box>
     </Box>

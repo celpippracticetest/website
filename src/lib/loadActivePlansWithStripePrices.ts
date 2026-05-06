@@ -10,9 +10,12 @@ import type { PlanBillingInterval, SerializedPlan } from "@/types/pricing";
  * `stripePriceId` — same source as checkout (`stripe.prices.retrieve`).
  */
 export type SubscriptionPlanFromStripe = {
+  /** Stripe Price id (`price_…`) — mobile `plan.id` for catalog / checkout. */
   id: string;
   name: string;
   priceId: string;
+  /** Stripe Product id (`prod_…`) when resolvable — for mobile IAP env maps. */
+  stripeProductId?: string;
   amount: number;
   currency: string;
   interval: string;
@@ -48,16 +51,30 @@ export async function loadActivePlansWithStripePrices(
     await Promise.all(
       withStripePrice.map(async (plan) => {
         try {
-          const price = await stripe.prices.retrieve(plan.stripePriceId.trim());
+          const price = await stripe.prices.retrieve(plan.stripePriceId.trim(), {
+            expand: ["product"],
+          });
 
           if (!price.active || !price.recurring) {
             return null;
+          }
+
+          let stripeProductId: string | undefined =
+            typeof plan.stripeProductId === "string" && plan.stripeProductId.trim()
+              ? plan.stripeProductId.trim()
+              : undefined;
+          if (!stripeProductId && price.product) {
+            const prod = price.product;
+            if (typeof prod !== "string" && prod && !("deleted" in prod && prod.deleted === true)) {
+              stripeProductId = prod.id;
+            }
           }
 
           return {
             id: price.id,
             name: displayNameForPlan(plan),
             priceId: price.id,
+            ...(stripeProductId ? { stripeProductId } : {}),
             amount: price.unit_amount != null ? price.unit_amount / 100 : 0,
             currency: price.currency,
             interval: price.recurring.interval,

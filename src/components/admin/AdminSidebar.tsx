@@ -20,6 +20,7 @@ import Book from "@mui/icons-material/Book";
 import Language from "@mui/icons-material/Language";
 import EmojiEvents from "@mui/icons-material/EmojiEvents";
 import Mail from "@mui/icons-material/Mail";
+import ShoppingCart from "@mui/icons-material/ShoppingCart";
 import BarChart from "@mui/icons-material/BarChart";
 import CheckBox from "@mui/icons-material/CheckBox";
 import Work from "@mui/icons-material/Work";
@@ -58,7 +59,14 @@ const mainItems: SidebarGroup = {
     { key: "partners", label: "Partners", icon: People, href: "/cms/dashboard/partners" },
     { key: "cancellation-surveys", label: "Cancellation Reasons", icon: Description, href: "/cms/dashboard/cancellation-surveys" },
     { key: "lead-capture", label: "Lead Capture", icon: Mail, href: "/cms/dashboard/lead-capture" },
+    { key: "nurture-emails", label: "Nurture Sequence", icon: Mail, href: "/cms/dashboard/nurture-emails" },
     { key: "reminder-emails", label: "Reminder Emails", icon: Mail, href: "/cms/dashboard/reminder-emails" },
+    {
+      key: "abandoned-cart-emails",
+      label: "Abandoned cart emails",
+      icon: ShoppingCart,
+      href: "/cms/dashboard/abandoned-cart-emails",
+    },
     { key: "league", label: "League", icon: EmojiEvents, href: "/cms/dashboard/league" },
   ],
 };
@@ -143,7 +151,9 @@ export function AdminSidebar({
     if (key === "users" && pathname.startsWith("/cms/dashboard/users")) return true;
     if (key === "reports" && pathname.startsWith("/cms/dashboard/reports")) return true;
     if (key === "lead-capture" && pathname.startsWith("/cms/dashboard/lead-capture")) return true;
+    if (key === "nurture-emails" && pathname.startsWith("/cms/dashboard/nurture-emails")) return true;
     if (key === "reminder-emails" && pathname.startsWith("/cms/dashboard/reminder-emails")) return true;
+    if (key === "abandoned-cart-emails" && pathname.startsWith("/cms/dashboard/abandoned-cart-emails")) return true;
     if (key === "league" && pathname.startsWith("/cms/dashboard/league")) return true;
     if (key === "homepage-hero" && pathname.startsWith("/cms/dashboard/homepage-hero")) return true;
     if (key === "tasks" && pathname.startsWith("/cms/dashboard/tasks")) return true;

@@ -3,7 +3,7 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 
 import mongoClient from "@/lib/mongodb";
 import { WithdrawalRequestRepository } from "@/repositories/withdrawal-request.repo";
-import { sendEmailWithSender } from "@/lib/email/sender-client";
+import { getResendClient, sendResendHtmlEmail } from "@/lib/email/resend-client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -137,8 +137,8 @@ export async function PATCH(req: Request) {
 
 async function sendPaymentConfirmationEmail(withdrawalRequest: any) {
   try {
-    if (!process.env.SENDER_API_TOKEN) {
-      throw new Error("Missing required env: SENDER_API_TOKEN");
+    if (!getResendClient()) {
+      throw new Error("RESEND_API_KEY is not configured");
     }
 
     const emailHtml = `
@@ -164,14 +164,12 @@ async function sendPaymentConfirmationEmail(withdrawalRequest: any) {
       "[withdrawal-email] sending payment confirmation to",
       withdrawalRequest.userEmail
     );
-    await sendEmailWithSender({
-      from:
-        process.env.FROM_EMAIL || `Celpip Practice <${process.env.SMTP_USER}>`,
+    await sendResendHtmlEmail({
       to: withdrawalRequest.userEmail,
       subject: `Payment Confirmed - $${withdrawalRequest.amount}`,
       html: emailHtml,
     });
-    console.log("[withdrawal-email] Sender API email sent successfully");
+    console.log("[withdrawal-email] Resend email sent successfully");
   } catch (error) {
     console.error("Failed to send payment confirmation email:", error);
   }
@@ -179,8 +177,8 @@ async function sendPaymentConfirmationEmail(withdrawalRequest: any) {
 
 async function sendRejectionEmail(withdrawalRequest: any, adminNotes: string) {
   try {
-    if (!process.env.SENDER_API_TOKEN) {
-      throw new Error("Missing required env: SENDER_API_TOKEN");
+    if (!getResendClient()) {
+      throw new Error("RESEND_API_KEY is not configured");
     }
 
     const emailHtml = `
@@ -206,14 +204,12 @@ async function sendRejectionEmail(withdrawalRequest: any, adminNotes: string) {
       "[withdrawal-email] sending rejection to",
       withdrawalRequest.userEmail
     );
-    await sendEmailWithSender({
-      from:
-        process.env.FROM_EMAIL || `Celpip Practice <${process.env.SMTP_USER}>`,
+    await sendResendHtmlEmail({
       to: withdrawalRequest.userEmail,
       subject: `Withdrawal Request Update - $${withdrawalRequest.amount}`,
       html: emailHtml,
     });
-    console.log("[withdrawal-email] Sender API email sent successfully");
+    console.log("[withdrawal-email] Resend email sent successfully");
   } catch (error) {
     console.error("Failed to send rejection email:", error);
   }

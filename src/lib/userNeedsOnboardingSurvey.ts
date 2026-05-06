@@ -1,6 +1,6 @@
 import type { User } from "@clerk/nextjs/server";
 
-/** All signed-in users must complete `onboardingNew` once (`/onboarding-survey`). */
+/** True until `onboardingNew.completed` (survey submitted or skipped). Used only by `/onboarding-survey`. */
 export function userNeedsOnboardingSurvey(
   user: User | null | undefined,
 ): boolean {

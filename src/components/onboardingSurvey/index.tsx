@@ -21,7 +21,7 @@ import Add from "@mui/icons-material/Add";
 import Remove from "@mui/icons-material/Remove";
 import Lottie from "lottie-react";
 import { useEffect, useState as useReactState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import MicrolearningLaunch from "@/components/flow/MicrolearningLaunch";
 import {
   PENDING_HOME_DIAGNOSTIC_KEY,
@@ -244,12 +244,20 @@ const theme = createTheme({
   },
 });
 
+function safeInternalNextPath(raw: string | undefined): string | null {
+  if (typeof raw !== "string" || !raw.startsWith("/") || raw.startsWith("//")) {
+    return null;
+  }
+  return raw;
+}
+
 export default function OnboardingSurvey({
   onComplete,
 }: {
   onComplete: () => void;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
   const [primaryGoal, setPrimaryGoal] = useState("");
   const [customPrimaryGoal, setCustomPrimaryGoal] = useState("");
@@ -266,6 +274,7 @@ export default function OnboardingSurvey({
   });
   const { user } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSkipping, setIsSkipping] = useState(false);
   const [isPersonalizing, setIsPersonalizing] = useState(false);
   const [construccionAnimation, setConstruccionAnimation] = useReactState<any>(null);
   const [flowPayload, setFlowPayload] = useState<FlowPayload | null>(null);
@@ -381,6 +390,29 @@ export default function OnboardingSurvey({
   };
 
   const progressValue = (step / 4) * 100;
+
+  const postSkipDestination = () =>
+    safeInternalNextPath(searchParams.get("next")?.trim() ?? undefined) ?? "/practice-overview";
+
+  const handleSkipSurvey = async () => {
+    if (isSkipping || isPersonalizing || isSubmitting || flowPayload) return;
+    setIsSkipping(true);
+    try {
+      const res = await fetch("/api/onboarding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "skip" }),
+      });
+      if (!res.ok) throw new Error("Failed to skip onboarding");
+      await user?.reload();
+      onComplete();
+      router.push(postSkipDestination());
+    } catch (e) {
+      console.error(e);
+      setIsSkipping(false);
+    }
+  };
+
   const handleFlowStart = (url: string) => {
     onComplete();
     const userPlan = (user?.publicMetadata as Record<string, unknown> | undefined)?.plan;
@@ -397,15 +429,48 @@ export default function OnboardingSurvey({
       <Box
         sx={{
           display: "flex",
-          px: { xs: 2, sm: 3, md: 10 },
-          flexWrap: { xs: "wrap", md: "nowrap" },
-          pb: { xs: "111px", md: 0 },
+          flexDirection: "column",
+          alignItems: "stretch",
           width: "100%",
-          overflow: "auto",
-          gap: { xs: 3, md: 11.5 },
-          justifyContent: "center",
+          minHeight: "100%",
         }}
       >
+        {!flowPayload && (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "flex-end",
+              px: { xs: 2, sm: 3, md: 10 },
+              pt: { xs: 2, md: 3 },
+            }}
+          >
+            <Button
+              variant="text"
+              onClick={() => void handleSkipSurvey()}
+              disabled={isSkipping || isPersonalizing || isSubmitting}
+              sx={{
+                color: "#76808F",
+                textTransform: "none",
+                fontWeight: 500,
+                "&:hover": { color: "#212E42", backgroundColor: "rgba(0,0,0,0.04)" },
+              }}
+            >
+              {isSkipping ? "Skipping…" : "Skip for now"}
+            </Button>
+          </Box>
+        )}
+        <Box
+          sx={{
+            display: "flex",
+            px: { xs: 2, sm: 3, md: 10 },
+            flexWrap: { xs: "wrap", md: "nowrap" },
+            pb: { xs: "111px", md: 0 },
+            width: "100%",
+            overflow: "auto",
+            gap: { xs: 3, md: 11.5 },
+            justifyContent: "center",
+          }}
+        >
         <Box
           sx={{
             display: "flex",
@@ -1225,6 +1290,7 @@ export default function OnboardingSurvey({
             />
           )}
         </Paper>
+      </Box>
       </Box>
     </ThemeProvider>
   );

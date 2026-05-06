@@ -42,9 +42,9 @@ export async function GET() {
       "Email",
       "Date Subscribed",
       "Source/Page URL",
-      "Sender Group ID",
+      "Resend Audience ID",
       "Trigger Source",
-      "Sender Sync Status",
+      "Audience sync status",
     ];
 
     const rows = leads.map((lead) => [
