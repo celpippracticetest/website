@@ -24,6 +24,8 @@ export default function SignSupabasePageClient() {
     [searchParams]
   );
 
+  const showLegacyClerkAccountHint = searchParams.get("legacy") === "1";
+
   useEffect(() => {
     const gclid = searchParams.get("gclid");
     const utmSource = searchParams.get("utm_source");
@@ -108,7 +110,10 @@ export default function SignSupabasePageClient() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="w-full max-w-md">
         <h1 className="sr-only">Sign In</h1>
-        <CustomSupabaseSignInForm redirectAfterAuth={redirectAfterAuth} />
+        <CustomSupabaseSignInForm
+          redirectAfterAuth={redirectAfterAuth}
+          showLegacyClerkAccountHint={showLegacyClerkAccountHint}
+        />
       </div>
     </div>
   );

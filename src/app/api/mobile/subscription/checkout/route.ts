@@ -227,7 +227,8 @@ function readStringValue(value: unknown): string | null {
 
 export async function POST(request: NextRequest) {
   try {
-    const { user, userId, mobileAuthKind } = await requireAuthenticatedRequest(request);
+    const { user, userId, mobileAuthKind, supabaseAuthUserId } =
+      await requireAuthenticatedRequest(request);
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -476,9 +477,10 @@ export async function POST(request: NextRequest) {
     if (mobileAuthKind === "supabase") {
       const admin = getSupabaseAdmin();
       if (admin) {
-        const { data: existing } = await admin.auth.admin.getUserById(userId);
+        const supabaseTarget = supabaseAuthUserId ?? userId;
+        const { data: existing } = await admin.auth.admin.getUserById(supabaseTarget);
         const app = (existing.user?.app_metadata ?? {}) as Record<string, unknown>;
-        await admin.auth.admin.updateUserById(userId, {
+        await admin.auth.admin.updateUserById(supabaseTarget, {
           app_metadata: {
             ...app,
             planCancelled: false,

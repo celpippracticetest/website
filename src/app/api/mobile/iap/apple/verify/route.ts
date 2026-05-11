@@ -99,6 +99,7 @@ export async function POST(request: NextRequest) {
 
     await applyVerifiedMobileSubscriptionPlan({
       userId: ctx.userId,
+      supabaseAuthUserId: ctx.supabaseAuthUserId,
       productId,
       platform: "apple",
     });

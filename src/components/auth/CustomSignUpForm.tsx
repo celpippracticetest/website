@@ -454,8 +454,8 @@ export function CustomSignUpForm({
       {step === "details" ? (
         <p className="mt-6 text-center text-sm text-slate-600">
           Already have an account?{" "}
-          <Link href="/sign-in/clerk" className="font-medium text-blue-600 hover:underline">
-            Sign in (Clerk)
+          <Link href="/sign-in?legacy=1" className="font-medium text-blue-600 hover:underline">
+            Sign in (existing account)
           </Link>
         </p>
       ) : null}

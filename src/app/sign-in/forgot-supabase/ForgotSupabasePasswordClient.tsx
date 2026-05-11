@@ -46,8 +46,8 @@ export default function ForgotSupabasePasswordClient() {
         </h1>
         <p className="mt-2 text-center text-sm text-slate-600">
           For accounts created with email and password on this site. If you use our{" "}
-          <Link href="/sign-in/clerk" className="font-medium text-blue-600 hover:underline">
-            legacy Clerk sign-in
+          <Link href="/sign-in?legacy=1" className="font-medium text-blue-600 hover:underline">
+            sign-in help for older accounts
           </Link>
           , reset your password there instead.
         </p>

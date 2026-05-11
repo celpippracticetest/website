@@ -79,26 +79,32 @@ async function updateMongoUserPlan(args: {
  */
 export async function applyVerifiedMobileSubscriptionPlan(args: {
   userId: string;
+  /** When the stable `userId` is a Clerk id, pass the real Supabase Auth UUID for Admin API calls. */
+  supabaseAuthUserId?: string | null;
   productId: string;
   platform: "google_play" | "apple";
 }): Promise<{ plan: string }> {
   const plan = resolvePlanFromMobileProductId(args.productId);
 
-  if (isLikelySupabaseAuthUserId(args.userId)) {
+  const supabaseAdminTarget =
+    args.supabaseAuthUserId?.trim() ||
+    (isLikelySupabaseAuthUserId(args.userId) ? args.userId : null);
+
+  if (supabaseAdminTarget) {
     const admin = getSupabaseAdmin();
     if (!admin) {
       throw new Error("Supabase admin client is not configured.");
     }
 
     const { data: existing, error: getErr } = await admin.auth.admin.getUserById(
-      args.userId
+      supabaseAdminTarget
     );
     if (getErr || !existing.user) {
       throw new Error(getErr?.message || "Supabase user not found.");
     }
 
     const currentApp = (existing.user.app_metadata ?? {}) as Record<string, unknown>;
-    await admin.auth.admin.updateUserById(args.userId, {
+    await admin.auth.admin.updateUserById(supabaseAdminTarget, {
       app_metadata: {
         ...currentApp,
         plan,

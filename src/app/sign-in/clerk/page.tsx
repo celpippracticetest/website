@@ -1,24 +1,31 @@
-import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import SignInClerkPageClient from "./SignInClerkPageClient";
 import { hasAnyWebSession } from "@/lib/auth/web-session-server";
 
-function SignInFallback() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <p className="text-center text-sm text-slate-600">Loading…</p>
-      </div>
-    </div>
-  );
-}
+const PASSTHROUGH_KEYS = [
+  "redirect_url",
+  "ref",
+  "inviter",
+  "gclid",
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+] as const;
 
-export default async function ClerkLegacySignInPage() {
+export default async function ClerkLegacySignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   if (await hasAnyWebSession()) redirect("/practice-overview");
 
-  return (
-    <Suspense fallback={<SignInFallback />}>
-      <SignInClerkPageClient />
-    </Suspense>
-  );
+  const sp = await searchParams;
+  const qs = new URLSearchParams();
+  qs.set("legacy", "1");
+  for (const key of PASSTHROUGH_KEYS) {
+    const v = sp[key];
+    if (typeof v === "string" && v.trim()) qs.set(key, v.trim());
+  }
+  redirect(`/sign-in?${qs.toString()}`);
 }

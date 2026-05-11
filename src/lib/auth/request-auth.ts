@@ -19,12 +19,18 @@ type RequestLike = Request & {
 type ClerkUserNonNull = NonNullable<Awaited<ReturnType<typeof currentUser>>>;
 
 export interface AuthenticatedRequestContext {
+  /**
+   * Stable account id for MongoDB and business logic: Clerk id for Clerk sessions or for
+   * Supabase sessions created from Clerk migration (`user_metadata.clerk_user_id`), else Supabase UUID.
+   */
   userId: string;
   /** Clerk user, or Clerk-shaped bridge for Supabase Auth (mobile bearer, web cookies). */
   user: ClerkUserNonNull | MobileUserBridge;
   source: "web" | "mobile";
   /** Present for bearer-token mobile requests: Clerk JWT vs Supabase access token. */
   mobileAuthKind: "clerk" | "supabase" | null;
+  /** Real Supabase Auth user UUID when `user` is a Supabase bridge; null for Clerk-only sessions. */
+  supabaseAuthUserId: string | null;
   sessionId?: string | null;
   tokenPayload?: Record<string, unknown>;
   sessionClaims?: unknown;
@@ -98,6 +104,7 @@ async function resolveMobileUserFromSupabaseBearer(
     user,
     source: "mobile",
     mobileAuthKind: "supabase",
+    supabaseAuthUserId: user.supabaseAuthUserId ?? null,
     sessionId: null,
     tokenPayload: undefined,
   };
@@ -127,6 +134,7 @@ async function resolveMobileUserFromClerkBearer(
       user,
       source: "mobile",
       mobileAuthKind: "clerk",
+      supabaseAuthUserId: null,
       sessionId:
         typeof (verifiedToken as Record<string, unknown>)?.sid === "string"
           ? ((verifiedToken as Record<string, unknown>).sid as string)
@@ -170,6 +178,7 @@ async function resolveWebUserFromSupabaseCookies(
     user,
     source: "web",
     mobileAuthKind: null,
+    supabaseAuthUserId: user.supabaseAuthUserId ?? null,
     sessionId: null,
     tokenPayload: undefined,
   };
@@ -179,7 +188,7 @@ async function resolveWebUserFromSupabaseCookies(
  * Auth resolution order:
  * 1. `Authorization: Bearer` — mobile (Supabase token first, then Clerk JWT)
  * 2. Supabase session cookies — primary web sign-in
- * 3. Clerk session — legacy web (`/sign-in/clerk`)
+ * 3. Clerk session — remaining Clerk-only web sessions (Clerk sign-in UI redirects to `/sign-in?legacy=1`)
  */
 export async function getAuthenticatedRequestContext(
   request: RequestLike
@@ -211,6 +220,7 @@ export async function getAuthenticatedRequestContext(
       user,
       source: "web",
       mobileAuthKind: null,
+      supabaseAuthUserId: null,
       sessionId: authResult.sessionId,
       sessionClaims: authResult.sessionClaims,
     };

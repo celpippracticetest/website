@@ -117,8 +117,8 @@ export default function UpdatePasswordClient() {
             forgot password
           </Link>{" "}
           or sign in with{" "}
-          <Link href="/sign-in/clerk" className="font-medium text-blue-600 hover:underline">
-            legacy Clerk
+          <Link href="/sign-in?legacy=1" className="font-medium text-blue-600 hover:underline">
+            sign-in help
           </Link>
           .
         </p>

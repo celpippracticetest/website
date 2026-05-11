@@ -1,12 +1,19 @@
 import "server-only";
 
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
+import { readClerkLegacyUserIdFromSupabaseUser } from "@/lib/auth/supabase-user-plan";
 
 /**
  * Minimal Clerk-shaped user for mobile API routes that were built around Clerk.
  */
 export type MobileUserBridge = {
+  /**
+   * Stable id for MongoDB and legacy rows: Clerk user id when this account was migrated
+   * from Clerk (`user_metadata.clerk_user_id`), otherwise the Supabase Auth UUID.
+   */
   id: string;
+  /** Present only for Supabase-backed sessions: real Auth user id for Admin API calls. */
+  supabaseAuthUserId?: string;
   firstName: string | null;
   lastName: string | null;
   imageUrl: string | null;
@@ -34,6 +41,8 @@ export function mobileUserBridgeFromSupabaseUser(
   const app = (user.app_metadata ?? {}) as Record<string, unknown>;
   const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
   const email = user.email?.trim() ?? "";
+  const legacyClerkId = readClerkLegacyUserIdFromSupabaseUser(user);
+  const stableId = legacyClerkId ?? user.id;
 
   const given =
     readString(meta, "given_name") ||
@@ -69,7 +78,8 @@ export function mobileUserBridgeFromSupabaseUser(
   };
 
   return {
-    id: user.id,
+    id: stableId,
+    supabaseAuthUserId: user.id,
     firstName: firstName ?? null,
     lastName: lastName ?? null,
     imageUrl: imageUrl ?? null,

@@ -3,7 +3,10 @@
 import { useUser } from "@clerk/nextjs";
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 import { useEffect, useMemo, useState } from "react";
-import { readPracticePlanFromSupabaseUser } from "@/lib/auth/supabase-user-plan";
+import {
+  readClerkLegacyUserIdFromSupabaseUser,
+  readPracticePlanFromSupabaseUser,
+} from "@/lib/auth/supabase-user-plan";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 
 /**
@@ -43,9 +46,11 @@ function clerkLikeUserFromSupabase(u: SupabaseAuthUser) {
     null;
 
   const email = u.email?.trim() ?? "";
+  const legacyClerkId = readClerkLegacyUserIdFromSupabaseUser(u);
+  const stableId = legacyClerkId ?? u.id;
 
   return {
-    id: u.id,
+    id: stableId,
     primaryEmailAddress: email ? { emailAddress: email } : null,
     emailAddresses: email ? [{ emailAddress: email }] : [],
     firstName,

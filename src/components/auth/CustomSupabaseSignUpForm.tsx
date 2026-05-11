@@ -14,7 +14,14 @@ function formatSupabaseAuthError(message: string | undefined): string {
   return t || "Something went wrong. Please try again.";
 }
 
-export function CustomSupabaseSignUpForm({ className }: { className?: string }) {
+export function CustomSupabaseSignUpForm({
+  className,
+  showLegacyClerkSignupHint = false,
+}: {
+  className?: string;
+  /** From `/sign-up?legacy=1` (old Clerk sign-up URL). */
+  showLegacyClerkSignupHint?: boolean;
+}) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -76,13 +83,27 @@ export function CustomSupabaseSignUpForm({ className }: { className?: string }) 
       <h2 className="text-center text-xl font-semibold text-slate-900">
         Create account
       </h2>
-      <p className="mt-2 text-center text-sm text-slate-600">
-        Need to create another account with Google or Clerk? Use{" "}
-        <Link href="/sign-up/clerk" className="font-medium text-blue-600 hover:underline">
-          legacy sign-up
-        </Link>
-        .
-      </p>
+      {showLegacyClerkSignupHint ? (
+        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+          <p className="font-medium">New accounts use this page</p>
+          <p className="mt-1 text-amber-900/90">
+            The old sign-up link now points here. Create your account with email and password, or if
+            you already had an account, go to{" "}
+            <Link href="/sign-in?legacy=1" className="font-medium text-blue-700 underline">
+              sign in
+            </Link>{" "}
+            and use forgot password if needed.
+          </p>
+        </div>
+      ) : (
+        <p className="mt-2 text-center text-sm text-slate-600">
+          Create your account with email and password. Already registered?{" "}
+          <Link href="/sign-in" className="font-medium text-blue-600 hover:underline">
+            Sign in
+          </Link>
+          .
+        </p>
+      )}
 
       <form className="mt-6 space-y-4" onSubmit={onSubmit}>
         {error ? (
@@ -142,7 +163,10 @@ export function CustomSupabaseSignUpForm({ className }: { className?: string }) 
 
       <p className="mt-6 text-center text-sm text-slate-600">
         Already have an account?{" "}
-        <Link href="/sign-in" className="font-medium text-blue-600 hover:underline">
+        <Link
+          href={showLegacyClerkSignupHint ? "/sign-in?legacy=1" : "/sign-in"}
+          className="font-medium text-blue-600 hover:underline"
+        >
           Sign in
         </Link>
       </p>
