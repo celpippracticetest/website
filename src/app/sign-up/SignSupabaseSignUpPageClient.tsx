@@ -3,15 +3,24 @@
 import { CustomSupabaseSignUpForm } from "@/components/auth/CustomSupabaseSignUpForm";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function SignSupabaseSignUpPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const showLegacyClerkSignupHint = searchParams.get("legacy") === "1";
+  const forceShowForm = useMemo(() => {
+    const f = searchParams.get("force");
+    return f === "1" || f?.toLowerCase() === "true";
+  }, [searchParams]);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    if (forceShowForm) {
+      setReady(true);
+      return;
+    }
+
     let cancelled = false;
     const supabase = createBrowserSupabaseClient();
     if (!supabase) {
@@ -43,7 +52,7 @@ export default function SignSupabaseSignUpPageClient() {
       cancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [router]);
+  }, [forceShowForm, router]);
 
   if (!ready) {
     return (

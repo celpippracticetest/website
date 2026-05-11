@@ -37,6 +37,21 @@ export async function hasAnyWebSession(): Promise<boolean> {
   }
 }
 
+/**
+ * True when the visitor has Supabase Auth cookies (this site’s email/password session).
+ * Ignores Clerk-only sessions so `/sign-in` stays usable during Clerk → Supabase overlap.
+ */
+export async function hasSupabaseWebSession(): Promise<boolean> {
+  try {
+    const supabaseUser = await getSupabaseAuthUserFromServerCookies();
+    return Boolean(supabaseUser);
+  } catch (err) {
+    if (isDynamicServerUsage(err)) throw err;
+    console.error("[hasSupabaseWebSession] Supabase session read failed:", err);
+    return false;
+  }
+}
+
 /** Unified auth for dashboard server layout (Clerk session or Supabase cookies). */
 export async function getDashboardLayoutAuthContext() {
   const h = await headers();

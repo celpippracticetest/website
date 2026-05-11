@@ -25,6 +25,10 @@ export default function SignSupabasePageClient() {
   );
 
   const showLegacyClerkAccountHint = searchParams.get("legacy") === "1";
+  const forceShowForm = useMemo(() => {
+    const f = searchParams.get("force");
+    return f === "1" || f?.toLowerCase() === "true";
+  }, [searchParams]);
 
   useEffect(() => {
     const gclid = searchParams.get("gclid");
@@ -80,6 +84,11 @@ export default function SignSupabasePageClient() {
   };
 
   useEffect(() => {
+    if (forceShowForm) {
+      setReady(true);
+      return;
+    }
+
     let cancelled = false;
     const supabase = createBrowserSupabaseClient();
     if (!supabase) {
@@ -114,7 +123,7 @@ export default function SignSupabasePageClient() {
       cancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [redirectAfterAuth, router]);
+  }, [forceShowForm, redirectAfterAuth, router]);
 
   if (!ready) {
     return (

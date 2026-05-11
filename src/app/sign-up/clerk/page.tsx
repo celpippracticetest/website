@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { hasAnyWebSession } from "@/lib/auth/web-session-server";
 
 const PASSTHROUGH_KEYS = [
+  "force",
   "ref",
   "inviter",
   "gclid",
