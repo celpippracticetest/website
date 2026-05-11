@@ -3,7 +3,7 @@
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { Check, Crown, Gem, Zap, type LucideIcon } from "lucide-react";
 import { useCheckoutAttributionPayload } from "@/components/analytics/CheckoutAttributionFields";
 import { mergePendingGa4IntoAttribution } from "@/lib/ga4BrowserIds";
@@ -111,7 +111,7 @@ export type HomePricingPlansModalProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-export function HomePricingPlansModal({ open, onOpenChange }: HomePricingPlansModalProps) {
+function HomePricingPlansModalInner({ open, onOpenChange }: HomePricingPlansModalProps) {
   const router = useRouter();
   const { isSignedIn, isLoaded: authLoaded } = useHybridWebUser();
   const attribution = useCheckoutAttributionPayload();
@@ -458,5 +458,13 @@ export function HomePricingPlansModal({ open, onOpenChange }: HomePricingPlansMo
         </div>
       </DialogDrawerContent>
     </Dialog>
+  );
+}
+
+export function HomePricingPlansModal(props: HomePricingPlansModalProps) {
+  return (
+    <Suspense fallback={null}>
+      <HomePricingPlansModalInner {...props} />
+    </Suspense>
   );
 }
