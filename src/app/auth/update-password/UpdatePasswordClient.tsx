@@ -10,6 +10,27 @@ import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 
 type Gate = "checking" | "ready" | "error";
 
+async function consumeRecoveryHashIfPresent(
+  supabase: NonNullable<ReturnType<typeof createBrowserSupabaseClient>>
+): Promise<void> {
+  if (typeof window === "undefined") return;
+  const raw = window.location.hash?.replace(/^#/, "") ?? "";
+  if (!raw.includes("access_token")) return;
+  const p = new URLSearchParams(raw);
+  if (p.get("type") !== "recovery") return;
+  const access_token = p.get("access_token")?.trim();
+  const refresh_token = p.get("refresh_token")?.trim();
+  if (!access_token || !refresh_token) return;
+  const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+  if (!error) {
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}`
+    );
+  }
+}
+
 export default function UpdatePasswordClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -36,6 +57,8 @@ export default function UpdatePasswordClient() {
     };
 
     async function run() {
+      await consumeRecoveryHashIfPresent(supabase);
+
       if (oauthCode) {
         const { error: exErr } = await supabase.auth.exchangeCodeForSession(oauthCode);
         if (cancelled) return;
