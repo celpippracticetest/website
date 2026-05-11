@@ -16,6 +16,31 @@ const FAQ = () => {
 
     const faqs = [
         {
+            question: "Can I try the platform before I pay?",
+            answer:
+                "Yes. Create a free account to explore practice across Listening, Reading, Writing, and Speaking. When you are ready for the full mock library, the complete question bank, and unlimited AI feedback, you can upgrade to Plus from <a href='/pricing' style='color: inherit; text-decoration: underline;'>Pricing</a>—no credit card is required to get started.",
+        },
+        {
+            question: "Do you offer native mobile apps?",
+            answer:
+                "Yes. Practice on the go with our iOS and Android apps. Download links and details are on the <a href='/app' style='color: inherit; text-decoration: underline;'>mobile app</a> page; your progress stays in sync with the web experience when you use the same account.",
+        },
+        {
+            question: "What CLB score do I need for Canadian immigration?",
+            answer:
+                "Requirements depend on your program (Express Entry, PNPs, citizenship, etc.). Use our free <a href='/score-calculator' style='color: inherit; text-decoration: underline;'>CELPIP score calculator</a> to relate section scores to CLB-style levels, then confirm targets with your immigration pathway or consultant.",
+        },
+        {
+            question: "What is your refund policy?",
+            answer:
+                "Refunds are limited to your <strong>first</strong> subscription purchase and must be requested within <strong>48 hours</strong> of payment, with usage caps (for example, at most one completed mock exam and limited practice activity per skill). Renewals and late requests are not eligible. Full terms are in our <a href='/refund-policy' style='color: inherit; text-decoration: underline;'>Refund Policy</a>; submit a request only through the <a href='/refund-request' style='color: inherit; text-decoration: underline;'>refund request</a> page so we can track it.",
+        },
+        {
+            question: "What makes CELPIPPracticeTest.com different from other prep sites?",
+            answer:
+                "We focus on realistic, timed CELPIP-style practice, instant AI feedback on Writing and Speaking, detailed explanations on Listening and Reading, and a large bank of mocks and questions—so you can diagnose weaknesses quickly and study with a clear plan.",
+        },
+        {
             question: "Where can I try a CELPIP reading practice test for free?",
             answer:
                 "Start with our <a href='/reading' style='color: inherit; text-decoration: underline;'>CELPIP reading practice</a> hub: timed passages and question types that mirror the real reading section, with scoring feedback on your attempts.",

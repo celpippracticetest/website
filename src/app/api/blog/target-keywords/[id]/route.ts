@@ -1,7 +1,7 @@
 import mongoClient from "@/lib/mongodb";
 import { BlogTargetKeywordWriteSchema } from "@/models/blog-target-keyword.model";
 import { BlogTargetKeywordRepository } from "@/repositories/blog-target-keyword.repo";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 import { NextRequest, NextResponse } from "next/server";
 
 const partialWrite = BlogTargetKeywordWriteSchema.partial();

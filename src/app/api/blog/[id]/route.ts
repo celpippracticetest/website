@@ -1,7 +1,7 @@
 import mongoClient from "@/lib/mongodb";
 import { BlogWriteSchema } from "@/models/blog.model";
 import { BlogRepository } from "@/repositories/blog.repo";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 import { NextRequest, NextResponse } from "next/server";
 
 const updateSchema = BlogWriteSchema.partial();

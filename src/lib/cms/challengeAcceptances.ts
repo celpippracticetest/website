@@ -1,4 +1,4 @@
-import type { Db } from "mongodb";
+import type { CompatDb as Db } from "@/lib/pg/types";
 
 /** Users who completed checkout with `challenge_mode` (stored as `users.challenge`). */
 export type ChallengeAcceptanceRow = {

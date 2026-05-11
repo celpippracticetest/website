@@ -1,4 +1,4 @@
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 import { z } from "zod";
 
 export const PartnerStatusSchema = z.enum(["pending", "active", "suspended"]);

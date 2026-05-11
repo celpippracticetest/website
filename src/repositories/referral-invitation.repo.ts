@@ -1,4 +1,5 @@
-import { MongoClient, ObjectId } from "mongodb";
+import { ObjectId } from "bson";
+import type { CompatMongoClient as MongoClient } from "@/lib/pg/types";
 
 export interface ReferralInvitation {
   _id?: ObjectId;

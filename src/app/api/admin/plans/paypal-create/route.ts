@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 import { auth } from "@clerk/nextjs/server";
 import { getDb } from "@/lib/mongodb";
 import type { Plan } from "@/models/plans.model";

@@ -22,7 +22,7 @@ const ResultExamView = dynamic(() => import("@/components/dashboard-app/exam-par
     </Typography>
   ),
 });
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { currentUser } from "@clerk/nextjs/server";

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 const PracticeAndSubmit = dynamic(() => import("./segment/PracticeAndSubmit"), {
   ssr: false,
@@ -133,8 +134,13 @@ const UserResponseReview = () => {
         Get Real-Time Insights on Your Responses
       </span>
 
-      <div className="overflow-x-auto scrollbar-none px-[16px]">
-        <div className="relative mt-[40px] flex gap-[10px] w-max flex-nowrap border-[1px] rounded-[32px] mx-auto justify-start border-solid p-[12px] border-primary5 bg-[linear-gradient(90deg,_rgba(255,_255,_255,_0.65)_0%,_rgba(255,_255,_255,_0.25)_100%)]">
+      <div
+        className={cn(
+          "w-full min-w-0 max-w-full px-[16px]",
+          "overflow-x-auto overscroll-x-contain scroll-smooth scrollbar-none touch-pan-x [-webkit-overflow-scrolling:touch]"
+        )}
+      >
+        <div className="relative mx-0 mt-[40px] flex w-max min-w-min flex-nowrap justify-start gap-[10px] border-[1px] border-solid border-primary5 bg-[linear-gradient(90deg,_rgba(255,_255,_255,_0.65)_0%,_rgba(255,_255,_255,_0.25)_100%)] p-[12px] screen744:mx-auto rounded-[32px]">
           <div
             className="absolute w-[191px] screen1280:!w-[276px] top-[12px] h-[40px] rounded-[16px] bg-primary2 z-0 transition-all duration-300 pointer-events-none"
             style={{

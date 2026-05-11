@@ -3,7 +3,7 @@ import { PartnerRepository } from "@/repositories/partner.repo";
 import { PartnerProgramSettingsRepository } from "@/repositories/partner-program-settings.repo";
 import { PartnerCommissionRepository } from "@/repositories/partner-commission.repo";
 import { logger } from "@/lib/sentry-logger";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 
 type UsersDoc = {
   clerkUserId?: string;

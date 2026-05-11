@@ -1,9 +1,9 @@
 import { Suspense } from "react";
-import SignUpPageClient from "./SignUpPageClient";
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import SignInClerkPageClient from "./SignInClerkPageClient";
+import { hasAnyWebSession } from "@/lib/auth/web-session-server";
 
-function SignUpFallback() {
+function SignInFallback() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
@@ -13,13 +13,12 @@ function SignUpFallback() {
   );
 }
 
-export default async function SignUpPage() {
-  const { userId } = await auth();
-  if (userId) redirect("/practice-overview");
+export default async function ClerkLegacySignInPage() {
+  if (await hasAnyWebSession()) redirect("/practice-overview");
 
   return (
-    <Suspense fallback={<SignUpFallback />}>
-      <SignUpPageClient />
+    <Suspense fallback={<SignInFallback />}>
+      <SignInClerkPageClient />
     </Suspense>
   );
 }

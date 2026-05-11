@@ -1,4 +1,4 @@
-import { Db, MongoClient } from "mongodb";
+import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
 
 type TOnboardingResult = {
   userId: string;

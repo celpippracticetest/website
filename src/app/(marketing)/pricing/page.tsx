@@ -3,15 +3,12 @@ import { cookies } from "next/headers";
 import { JsonLd } from "@/components/seo/JsonLd";
 import PricingPageClient from "@/components/pages/pricing/PricingPageClient";
 import { pricingFaqs } from "@/components/pages/pricing/pricingContent";
-import mongoClient from "@/lib/mongodb";
 import {
   PRICING_AB_COOKIE,
   parsePricingAbLayout,
   parsePricingStylePreviewQuery,
 } from "@/lib/pricingAbTest";
-import { attachStripePricingToSerializedPlans } from "@/lib/loadActivePlansWithStripePrices";
-import { PlansRepository } from "@/repositories/plans.repo";
-import type { SerializedPlan } from "@/types/pricing";
+import { getActivePlansCatalog } from "@/lib/plansCatalog";
 
 export const metadata: Metadata = {
   title: "CELPIP Practice Test Pricing Plans | Choose Your Plan",
@@ -48,45 +45,6 @@ const faqSchema = {
   })),
 };
 
-function serializePlan(plan: {
-  _id?: unknown;
-  title: string;
-  type: string;
-  planTitle: string;
-  oldPrice: string;
-  price: string;
-  discount: string;
-  buttonTitle: string;
-  features: string[];
-  billingInterval?: "day" | "week" | "month" | "year";
-  billingIntervalCount?: number;
-  stripePriceId?: string;
-  iconType?: string;
-  iconWrapperColor?: string;
-  order?: number;
-}): SerializedPlan {
-  const id = plan._id;
-  const idStr =
-    typeof id === "string" ? id : (id as { toString?: () => string })?.toString?.();
-  return {
-    _id: idStr ?? undefined,
-    title: plan.title,
-    type: plan.type,
-    planTitle: plan.planTitle,
-    oldPrice: plan.oldPrice,
-    price: plan.price,
-    discount: plan.discount,
-    buttonTitle: plan.buttonTitle,
-    features: plan.features,
-    billingInterval: plan.billingInterval,
-    billingIntervalCount: plan.billingIntervalCount,
-    stripePriceId: plan.stripePriceId,
-    iconType: plan.iconType as SerializedPlan["iconType"],
-    iconWrapperColor: plan.iconWrapperColor,
-    order: plan.order,
-  };
-}
-
 type PricingPageProps = {
   searchParams: Promise<{ s?: string }>;
 };
@@ -101,11 +59,7 @@ export default async function PricingPage({ searchParams }: PricingPageProps) {
   const pricingAbParticipatesInExperiment = previewLayout === null;
   const pricingAbLayout = previewLayout ?? assignedLayout;
 
-  const db = await mongoClient.db();
-  const plansRepo = new PlansRepository(db);
-  const plans = await plansRepo.getActivePlans();
-  const serializedPlans = plans.map(serializePlan);
-  const plansWithStripePricing = await attachStripePricingToSerializedPlans(serializedPlans);
+  const plansWithStripePricing = await getActivePlansCatalog({ plusOnly: false });
 
   const itemListSchema = {
     "@context": "https://schema.org",

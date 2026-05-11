@@ -4,7 +4,8 @@ import {
   WithdrawalRequestSchema,
   WithdrawalRequestSchemaDto,
 } from "@/models/withdrawal-request.model";
-import { MongoClient, Db, ObjectId } from "mongodb";
+import { ObjectId } from "bson";
+import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
 
 export class WithdrawalRequestRepository {
   private readonly db: Db;

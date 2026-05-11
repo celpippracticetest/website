@@ -1,4 +1,5 @@
-import { Db, ObjectId } from "mongodb";
+import { ObjectId } from "bson";
+import type { CompatDb as Db } from "@/lib/pg/types";
 import {
   TLeague,
   TLeagueGroup,
@@ -515,97 +516,95 @@ export class LeagueRepository {
     points: number
   ): Promise<boolean> {
     try {
-      // Check if user has a league record for this season
-      const existingRecord = await this.db
-        .collection(this.userLeaguePointsCollection)
-        .findOne({
-          userId,
-          seasonId,
-        });
-
-      // Ensure base document exists before increment
-      if (!existingRecord) {
-        await this.createUserLeaguePoints({
-          userId,
-          leagueId: new ObjectId(), // placeholder, will be updated on assignment
-          groupId: new ObjectId(), // placeholder, will be updated on assignment
-          seasonId,
-          totalPoints: 0,
-          overallPoints: 0,
-          pointsBreakdown: {
-            mockExams: 0,
-            practiceSessions: 0,
-            aiFeedback: 0,
-            skillsTried: 0,
-            timeSpent: 0,
-          },
-          tasksCompleted: [],
-          lastActivityAt: new Date(),
-        });
-      }
-
-      // Now add points
+      const now = new Date();
+      // Single upsert: avoids race between insert + update, and relies on fixed PG upsert
+      // ordering ($setOnInsert before $inc in `pgCollection.updateManyInternal`).
       const result = await this.db
         .collection(this.userLeaguePointsCollection)
         .updateOne(
           { userId, seasonId },
           {
+            $setOnInsert: {
+              leagueId: new ObjectId(),
+              groupId: new ObjectId(),
+              totalPoints: 0,
+              overallPoints: 0,
+              pointsBreakdown: {
+                mockExams: 0,
+                practiceSessions: 0,
+                aiFeedback: 0,
+                skillsTried: 0,
+                timeSpent: 0,
+              },
+              tasksCompleted: [],
+              createdAt: now,
+            },
             $inc: {
-              totalPoints: points, // Season points
-              overallPoints: points, // Overall points (never reset)
+              totalPoints: points,
+              overallPoints: points,
               [`pointsBreakdown.${pointsType}`]: points,
             },
             $set: {
-              lastActivityAt: new Date(),
-              updatedAt: new Date(),
+              lastActivityAt: now,
+              updatedAt: now,
             },
-          }
+          },
+          { upsert: true }
         );
 
-      const upsertedId = (result as any).upsertedId;
+      const upsertedCount = (result as { upsertedCount?: number }).upsertedCount ?? 0;
+      const didWrite =
+        result.modifiedCount > 0 || upsertedCount > 0 || result.matchedCount > 0;
 
-      if (result.modifiedCount > 0 || upsertedId) {
-        // Check if user is already in a group
-        const userRecord = await this.db
-          .collection(this.userLeaguePointsCollection)
-          .findOne({ userId, seasonId });
+      if (!didWrite) {
+        return false;
+      }
 
-        // Validate that the stored groupId actually exists
-        let groupIsValid = false;
-        if (userRecord && (userRecord as any).groupId) {
-          const existingGroup = await this.db
-            .collection(this.leagueGroupsCollection)
-            .findOne({ _id: typeof (userRecord as any).groupId === 'string' ? new ObjectId((userRecord as any).groupId) : (userRecord as any).groupId });
-          groupIsValid = !!existingGroup;
-        }
+      const userRecord = await this.db
+        .collection(this.userLeaguePointsCollection)
+        .findOne({ userId, seasonId });
 
-        if (userRecord && (userRecord as any).groupId && groupIsValid) {
-          await this.updateUserPointsInGroup(
-            userId,
-            (userRecord as any).groupId.toString(),
-            (userRecord as any).totalPoints
-          );
-        } else {
-          const assigned = await this.autoAssignUserToLeague(userId);
+      if (!userRecord) {
+        return false;
+      }
 
-          if (assigned) {
-            // Refresh record and update leaderboard
-            const refreshed = await this.db
-              .collection(this.userLeaguePointsCollection)
-              .findOne({ userId, seasonId });
-            if (refreshed && (refreshed as any).groupId) {
-              await this.updateUserPointsInGroup(
-                userId,
-                (refreshed as any).groupId.toString(),
-                (refreshed as any).totalPoints || 0
-              );
-            }
+      let groupIsValid = false;
+      if ((userRecord as any).groupId) {
+        const existingGroup = await this.db
+          .collection(this.leagueGroupsCollection)
+          .findOne({
+            _id:
+              typeof (userRecord as any).groupId === "string"
+                ? new ObjectId((userRecord as any).groupId)
+                : (userRecord as any).groupId,
+          });
+        groupIsValid = !!existingGroup;
+      }
+
+      if ((userRecord as any).groupId && groupIsValid) {
+        await this.updateUserPointsInGroup(
+          userId,
+          (userRecord as any).groupId.toString(),
+          (userRecord as any).totalPoints
+        );
+      } else {
+        const assigned = await this.autoAssignUserToLeague(userId);
+
+        if (assigned) {
+          const refreshed = await this.db
+            .collection(this.userLeaguePointsCollection)
+            .findOne({ userId, seasonId });
+          if (refreshed && (refreshed as any).groupId) {
+            await this.updateUserPointsInGroup(
+              userId,
+              (refreshed as any).groupId.toString(),
+              (refreshed as any).totalPoints || 0
+            );
           }
         }
       }
 
-      const successUpdate = result.acknowledged === true;
-      return !!successUpdate;
+      return true;
     } catch (error) {
       console.error("Error adding points to user:", error);
       return false;

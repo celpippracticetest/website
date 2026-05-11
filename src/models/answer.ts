@@ -1,4 +1,4 @@
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 import { text } from "stream/consumers";
 import { z } from "zod";
 import { ExamType } from "./enums";

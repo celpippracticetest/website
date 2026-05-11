@@ -3,7 +3,7 @@ import { PracticeRepository } from "@/repositories/practice.repo";
 import mongoClient from "@/lib/mongodb";
 import { TExamType } from "@/models/enums";
 import { NextRequest, NextResponse } from "next/server";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 import { logger, captureException, trackAPICall, PerformanceTracker } from "@/lib/sentry-logger";
 export async function POST(req: NextRequest) {
   const tracker = new PerformanceTracker("Create Practice Session", "practices_api");

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 
 /**
  * Base Zod Schema for Internal Link data (without DB metadata)

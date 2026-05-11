@@ -3,7 +3,8 @@ import type {
   TPartnerCommissionSchema,
 } from "@/models/partner-commission.model";
 import { partnerCommissionToDto } from "@/models/partner-commission.model";
-import { MongoClient, Db, ObjectId } from "mongodb";
+import { ObjectId } from "bson";
+import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
 
 const COLL = "partnerCommissions";
 

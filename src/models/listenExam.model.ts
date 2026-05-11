@@ -1,7 +1,7 @@
 import z from "zod";
 import { QuestionSchema } from "./question.model";
 import { DifficultyEnumSchema, ExamType } from "./enums";
-import { ObjectId, UUID } from "mongodb";
+import { ObjectId, UUID } from "bson";
 const SampleResponseSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -9,7 +9,7 @@ const SampleResponseSchema = z.object({
   body: z.string(),
 });
 const PassageSchema = z.object({
-  id: z.string().default(UUID.generate().toString()),
+  id: z.string().default(() => new UUID().toString()),
   title: z.string(),
   audioUrl: z.string().optional(),
   pictureUrl: z.string().optional(),

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
 import mongoClient from "@/lib/mongodb";
 import { stripe } from "@/lib/stripe";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
@@ -21,18 +22,30 @@ function normalizeEmails(emails: readonly string[]): string[] {
   return [...out];
 }
 
-/** Writes `stripeCustomerId` on MongoDB `users` (by `clerkUserId`). */
+function userIdMongoFilter(userId: string): Record<string, unknown> {
+  if (isLikelySupabaseAuthUserId(userId)) {
+    return { supabaseUserId: userId };
+  }
+  return { clerkUserId: userId };
+}
+
+/** Writes `stripeCustomerId` on MongoDB `users` (by Clerk or Supabase id). */
 export async function persistStripeCustomerIdToMongo(
   userId: string,
   stripeCustomerId: string
 ): Promise<void> {
   if (!mongoClient) return;
   try {
+    const filter = userIdMongoFilter(userId);
+    const insertKey =
+      "supabaseUserId" in filter
+        ? { supabaseUserId: userId }
+        : { clerkUserId: userId };
     await mongoClient.db().collection("users").updateOne(
-      { clerkUserId: userId },
+      filter,
       {
         $set: { stripeCustomerId, updatedAt: new Date() },
-        $setOnInsert: { clerkUserId: userId, createdAt: new Date() },
+        $setOnInsert: { ...insertKey, createdAt: new Date() },
       },
       { upsert: true }
     );
@@ -59,7 +72,12 @@ export async function resolveStripeCustomerId(
       const doc = await mongoClient
         .db()
         .collection("users")
-        .findOne({ clerkUserId: userId }, { projection: { stripeCustomerId: 1 } });
+        .findOne(
+          {
+            $or: [{ clerkUserId: userId }, { supabaseUserId: userId }],
+          },
+          { projection: { stripeCustomerId: 1 } }
+        );
       const fromDb = doc?.stripeCustomerId;
       if (typeof fromDb === "string" && fromDb.length > 0) {
         return fromDb;

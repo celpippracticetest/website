@@ -4,7 +4,46 @@ import {
   TListeningAndReadingAnswer,
   TListeningAndReadingAnswerDto,
 } from "@/models/answer";
-import { MongoClient, Db, ObjectId } from "mongodb";
+import { ObjectId } from "bson";
+import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
+
+const HEX24 = /^[a-f0-9]{24}$/i;
+
+/** Stringify ObjectId-like values for DTOs (PG layer may revive `taskId` as `ObjectId` via `rowToDocument`). */
+function mongoIdLikeToHex(value: unknown): string | null {
+  if (value == null) return null;
+  if (typeof value === "string") {
+    return HEX24.test(value) ? value.toLowerCase() : null;
+  }
+  if (value instanceof ObjectId) return value.toHexString().toLowerCase();
+  if (typeof value === "object" && !Array.isArray(value)) {
+    const obj = value as Record<string, unknown>;
+    if (typeof obj.$oid === "string" && HEX24.test(obj.$oid)) {
+      return obj.$oid.toLowerCase();
+    }
+    if (typeof (obj as { toHexString?: unknown }).toHexString === "function") {
+      try {
+        const hex = (obj as { toHexString: () => string }).toHexString();
+        if (typeof hex === "string" && HEX24.test(hex)) return hex.toLowerCase();
+      } catch {
+        // fall through
+      }
+    }
+    if (obj._bsontype === "ObjectId" && obj.id) {
+      const id = obj.id as Uint8Array | Buffer;
+      const buf = id instanceof Uint8Array ? Buffer.from(id) : Buffer.isBuffer(id) ? id : null;
+      if (buf && buf.length === 12) return buf.toString("hex").toLowerCase();
+    }
+  }
+  return null;
+}
+
+function optionalIdString(value: unknown): string | undefined {
+  const hex = mongoIdLikeToHex(value);
+  if (hex) return hex;
+  if (typeof value === "string" && value.length > 0) return value;
+  return undefined;
+}
 
 export class ListeningAndReadingAnswerRepository {
   private readonly db: Db;
@@ -23,6 +62,9 @@ export class ListeningAndReadingAnswerRepository {
     const answer: TListeningAndReadingAnswerDto = {
       id: answerEntity._id.toHexString(),
       ...answerEntity,
+      taskId: optionalIdString(answerEntity.taskId as unknown),
+      examId: optionalIdString(answerEntity.examId as unknown),
+      practiceId: optionalIdString(answerEntity.practiceId as unknown),
     };
     return ListeningAndReadingAnswerDto.parse(answer);
   }
@@ -49,11 +91,17 @@ export class ListeningAndReadingAnswerRepository {
     taskId: string,
     userId: string
   ): Promise<string[]> {
+    const wantHex = mongoIdLikeToHex(taskId);
     const answers = await this.getAnswerCollection()
-      .find({ taskId, userId })
-      .project({ practiceId: 1 })
+      .find({ userId })
+      .project({ practiceId: 1, taskId: 1 })
       .toArray();
-    return answers.map((a) => a.practiceId);
+    return answers
+      .filter((a) => {
+        if (!wantHex) return false;
+        return mongoIdLikeToHex(a.taskId as unknown) === wantHex;
+      })
+      .map((a) => String(a.practiceId));
   }
 
   async createOrUpdateAnswer(

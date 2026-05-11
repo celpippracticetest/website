@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import mongoClient from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 
 const SYSTEM_PROMPT = `You are a professional dictionary assistant helping students prepare for the CELPIP English proficiency exam. 
 For a given English word, provide its phonetic transcription (IPA), and detailed definitions categorized by parts of speech. Include practical, everyday Canadian English examples for each definition. 

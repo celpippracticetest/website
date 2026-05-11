@@ -4,35 +4,23 @@ import { ErrorBoundary } from "react-error-boundary";
 import dynamic from "next/dynamic";
 import Practice from "./Practice";
 import FAQ from "./FAQ";
-import Hero from "./Hero";
-import { ExamModeFeatureSectionLanding } from "@/components/marketing/ExamModeFeatureSection";
+import {
+  HomeCelpipVsIeltsBand,
+  HomeHowItWorks,
+  HomeStatsTrustStrip,
+  HomeThreePillars,
+} from "./HomeConversionSections";
 import { useChunkErrorHandler } from "@/hooks/useChunkErrorHandler";
 import OnlineUsersCount from "@/components/analytics/OnlineUsersCount";
-import HomeAbExperimentTracker from "@/components/analytics/HomeAbExperimentTracker";
-import type { HomeAbVariant } from "@/lib/homeAbTest";
-import SuccessRoadmap from "./SuccessRoadmap";
-import PracticeExamSkillLinks from "./PracticeExamSkillLinks";
-import ClassicHomeHeader from "./ClassicHomeHeader";
-import { cn } from "@/lib/utils";
+
+const Hero = dynamic(() => import("./Hero"), { ssr: true });
 const Comments = dynamic(() => import("./Comments"), { ssr: false });
 const UserResponseReview = dynamic(() => import("./UserResponseReview"), {
   ssr: false,
 });
-const FloatingChatIcon = dynamic(
-  () => import("../../AskBeavo/FloatingChatIcon"),
-  {
-    ssr: false,
-  },
-);
-
-type HomePageClientProps = {
-  heroImage: {
-    imageUrl: string;
-    altText: string;
-  };
-  participatesInExperiment: boolean;
-  variant: HomeAbVariant;
-};
+const FloatingChatIcon = dynamic(() => import("../../AskBeavo/FloatingChatIcon"), {
+  ssr: false,
+});
 
 function ErrorFallback() {
   return (
@@ -45,42 +33,23 @@ function ErrorFallback() {
       </p>
       <button
         onClick={() => window.location.reload()}
-        className="px-4 py-2 bg-blue-500 text-white rounded">
+        className="px-4 py-2 bg-blue-500 text-white rounded"
+      >
         Retry
       </button>
     </div>
   );
 }
 
-/**
- * Homepage uses style 2 (`passport`) only. `variant` remains typed for shared Hero plumbing.
- */
-export default function HomePageClient({
-  heroImage,
-  participatesInExperiment,
-  variant,
-}: HomePageClientProps) {
+export default function HomePageClient() {
   const shouldReload = useChunkErrorHandler();
-  const showMarketingHeader = variant === "classic" || variant === "passport";
   if (shouldReload) return null;
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <HomeAbExperimentTracker
-        participatesInExperiment={participatesInExperiment}
-        variant={variant}
-      />
-      {showMarketingHeader ? <ClassicHomeHeader /> : null}
-      <div
-        className={cn(
-          "bg-[#F4F7FF]",
-          showMarketingHeader && "pt-16 lg:pt-[4.25rem]",
-        )}
-      >
-        <Hero
-          heroImage={heroImage}
-          withFixedHeader={showMarketingHeader}
-          variant={variant}
-        />
+      <div className="bg-[#F4F7FF]">
+        <Hero />
+        <HomeStatsTrustStrip />
+        <HomeThreePillars />
         <UserResponseReview />
         <div className="flex flex-col mt-[40px] screen744:!mt-[80px] screen1280:!mt-[104px] max-w-[1440px] mx-auto justify-center w-full">
           <div className="flex justify-center px-[16px]">
@@ -89,13 +58,11 @@ export default function HomePageClient({
             </div>
           </div>
         </div>
-        {(variant === "classic" || variant === "passport") && <SuccessRoadmap />}
+        <HomeHowItWorks />
         <Comments />
+        <HomeCelpipVsIeltsBand />
         <Practice />
-        {(variant === "classic" || variant === "passport") && (
-          <PracticeExamSkillLinks />
-        )}
-        <ExamModeFeatureSectionLanding />
+        {/* <Blog /> */}
         <FAQ />
         <FloatingChatIcon autoOpen={false} />
       </div>

@@ -2,11 +2,13 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import { AnimatePresence, motion } from "framer-motion";
 import { useUser } from "@clerk/nextjs";
 import Check from "@mui/icons-material/Check";
 import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
 import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
 import AutoAwesome from "@mui/icons-material/AutoAwesome";
+import Close from "@mui/icons-material/Close";
 import Star from "@mui/icons-material/Star";
 import SvgDiamond from "@/components/icons/Diamond";
 import { useCheckoutAttributionPayload } from "@/components/analytics/CheckoutAttributionFields";
@@ -21,8 +23,6 @@ import { useEcommerceTracking, useEngagementTracking } from "@/hooks/useTracking
 import { useUserContext } from "@/hooks/useUserContext";
 import { durationDisplayOrder, durationMeta } from "@/lib/pricingCatalog";
 import {
-  buildFreeWeeksLabelFromWeeklyMap,
-  buildOriginalPriceFromWeeklyMap,
   buildMonthlySavingsMap,
   formatBillingCycle,
   formatPlanCadPrice,
@@ -35,6 +35,14 @@ import {
 import type { PricingAbLayout } from "@/lib/pricingAbTest";
 import type { DurationGroupKey, PricingFaq, SerializedPlan } from "@/types/pricing";
 const avatarSources = ["Carlos.png", "Li.png", "Tatiana.png"];
+
+const PRICING_TILE_UNLOCK_FEATURES = [
+  "All Mock Exams",
+  "All Sample Questions",
+  "Unlimited AI scoring",
+  "CELPIP Courses",
+  "CELPIP Vocabulary Bundles",
+] as const;
 
 type PersonalizedRecommendation = {
   planType: DurationGroupKey;
@@ -51,8 +59,6 @@ type GroupedPlanItem = {
 
 function pricingStyleOnePriceCell(
   item: GroupedPlanItem | null | undefined,
-  originalPriceFromWeeklyById: Map<string, string>,
-  freeWeeksLabelById: Map<string, string>,
   align: "center" | "start" = "center"
 ) {
   if (!item?.plan) {
@@ -60,77 +66,19 @@ function pricingStyleOnePriceCell(
   }
   const plan = item.plan;
   const cycle = formatBillingCycle(plan.billingInterval, plan.billingIntervalCount);
-  const weeklyDerivedOldPrice = originalPriceFromWeeklyById.get(item.stableId);
-  const freeWeeksLabel = freeWeeksLabelById.get(item.stableId);
-  const oldP = weeklyDerivedOldPrice || (plan.oldPrice && Number.parseFloat(plan.oldPrice) > 0);
   return (
     <div
-      className={`flex flex-col gap-1 py-1 ${align === "center" ? "items-center" : "items-start"}`}
+      className={`flex min-w-0 flex-col gap-1 py-1 ${align === "center" ? "items-center" : "items-start"}`}
     >
-      {oldP && (
-        <div className="inline-flex max-w-full shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full bg-rose-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.05em] text-rose-700 sm:gap-1 sm:px-2 sm:text-[10px] sm:tracking-[0.06em]">
-          <span>Was</span>
-          <span className="relative text-[9px] font-semibold tabular-nums text-slate-500 sm:text-xs">
-            CA$ {formatPlanCadPrice(String(oldP))}
-            <span
-              className="pointer-events-none absolute left-0 top-1/2 h-[1.5px] w-full -translate-y-1/2 rounded-full bg-rose-500/90"
-              aria-hidden
-            />
-          </span>
-        </div>
-      )}
-      <span className="text-lg font-bold text-blue-950">
+      <span className="whitespace-nowrap text-lg font-bold text-blue-950">
         CA$ {formatPlanCadPrice(plan.price)}
       </span>
-      {freeWeeksLabel ? (
-        <span className="text-[10px] font-medium text-emerald-700">{freeWeeksLabel}</span>
-      ) : null}
       {cycle ? (
-        <span className="text-[11px] font-medium text-slate-500">per {cycle}</span>
+        <span className="whitespace-nowrap text-[11px] font-medium text-slate-500">
+          per {cycle}
+        </span>
       ) : null}
     </div>
-  );
-}
-
-function PricingStyleOnePlanTable() {
-  return (
-    <Box className="w-full min-w-0 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-      <table className="w-full min-w-[280px] border-collapse text-left text-[11px] leading-snug sm:text-[12px]">
-        <thead>
-          <tr className="border-b border-slate-200 bg-slate-50">
-            <th
-              scope="col"
-              className="px-2 py-2.5 font-semibold text-slate-700 sm:px-3"
-            >
-              Feature
-            </th>
-            <th
-              scope="col"
-              className="w-[34%] px-1 py-2.5 text-center font-semibold text-blue-950 sm:px-3"
-            >
-              Plus
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {PRICING_PLUS_FEATURE_LABELS.map((label) => (
-            <tr
-              key={label}
-              className="border-b border-slate-100 odd:bg-white even:bg-slate-50/60"
-            >
-              <td className="px-2 py-1.5 text-slate-700 sm:px-3 sm:py-2">{label}</td>
-              <td className="px-1 py-1.5 text-center sm:px-3 sm:py-2">
-                <Check
-                  className="mx-auto size-3.5 text-emerald-600 sm:size-4"
-                  strokeWidth={2.5}
-                  aria-label={`Included in Plus: ${label}`}
-                />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </Box>
   );
 }
 
@@ -147,8 +95,6 @@ function PricingPlanCheckoutTile({
   pricingCheckoutFields,
   pricingAbLayout,
   monthlySavingsById,
-  originalPriceFromWeeklyById,
-  freeWeeksLabelById,
   recommendedPlanId,
   recommendedSectionKey,
 }: {
@@ -156,8 +102,6 @@ function PricingPlanCheckoutTile({
   pricingCheckoutFields?: Record<string, string>;
   pricingAbLayout?: PricingAbLayout;
   monthlySavingsById: Map<string, string>;
-  originalPriceFromWeeklyById: Map<string, string>;
-  freeWeeksLabelById: Map<string, string>;
   recommendedPlanId: string | null;
   recommendedSectionKey: DurationGroupKey | null | undefined;
 }) {
@@ -255,7 +199,7 @@ function PricingPlanCheckoutTile({
       id={isRecommended ? "recommended-plan" : undefined}
       onClick={onCheckout}
       disabled={!checkoutAction}
-      aria-label={`Subscribe to Plus ${section.title}`}
+      aria-label={`upgrade to pro, ${section.title}`}
       className={`relative flex h-full min-h-0 w-full min-w-0 flex-col gap-4 rounded-xl border px-3 py-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#635BFF] focus-visible:ring-offset-2 sm:px-4 sm:py-4 ${
         isRecommended ? "scroll-mt-24 md:scroll-mt-28" : ""
       } ${
@@ -280,12 +224,26 @@ function PricingPlanCheckoutTile({
           {section.eyebrow}
         </span>
         <div className="mt-3 border-t border-slate-200/80 pt-3">
-          {pricingStyleOnePriceCell(item, originalPriceFromWeeklyById, freeWeeksLabelById, "start")}
+          {pricingStyleOnePriceCell(item, "start")}
         </div>
-        <p className="mt-2 line-clamp-2 text-xs leading-snug text-slate-600">{section.summary}</p>
+        <div className="mt-2 min-w-0 text-xs leading-snug text-slate-600">
+          <p className="whitespace-nowrap font-semibold text-slate-700">Unlock access to:</p>
+          <ul className="mt-1 space-y-0.5">
+            {PRICING_TILE_UNLOCK_FEATURES.map((feature) => (
+              <li key={feature} className="flex min-w-0 items-center gap-1.5">
+                <Check
+                  className="size-3 shrink-0 text-emerald-600"
+                  strokeWidth={2.5}
+                  aria-hidden
+                />
+                <span className="min-w-0 whitespace-nowrap">{feature}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
       <span className="flex h-10 w-full shrink-0 items-center justify-center rounded-full bg-[#635BFF] text-sm font-semibold text-white shadow-sm">
-        Subscribe
+        upgrade to pro
       </span>
     </button>
   );
@@ -557,6 +515,7 @@ export default function PricingPageClient({
   pricingAbLayout,
   pricingAbParticipatesInExperiment,
 }: PricingPageClientProps) {
+  const [mobilePlansSheetOpen, setMobilePlansSheetOpen] = useState(false);
   const { isSignedIn } = useUser();
   const userContext = useUserContext();
   const pricingCheckoutFields = useMemo(
@@ -579,6 +538,20 @@ export default function PricingPageClient({
       body: JSON.stringify({ eventType: "page_view", layout: pricingAbLayout }),
     });
   }, [pricingAbLayout, pricingAbParticipatesInExperiment]);
+
+  useEffect(() => {
+    if (!mobilePlansSheetOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeydown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobilePlansSheetOpen(false);
+    };
+    window.addEventListener("keydown", onKeydown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeydown);
+    };
+  }, [mobilePlansSheetOpen]);
 
   const orderedPlans = useMemo(() => {
     return [...plans].sort((left, right) => {
@@ -609,7 +582,10 @@ export default function PricingPageClient({
     return durationDisplayOrder
       .map((key) => {
         const items = groupedEntries.get(key) || [];
-        const plus = items.find((item) => isPremiumPlusPlan(item.plan)) || null;
+        // Prefer a plan that matches Plus heuristics; otherwise show any plan in this
+        // bucket so /pricing does not go blank when copy/features omit "Plus"/mock exams.
+        const plus =
+          items.find((item) => isPremiumPlusPlan(item.plan)) ?? items[0] ?? null;
 
         return {
           key,
@@ -662,14 +638,6 @@ export default function PricingPageClient({
 
   const recommendedPlanId = recommendedPlanEntry?.stableId || null;
   const monthlySavingsById = useMemo(() => buildMonthlySavingsMap(orderedPlans), [orderedPlans]);
-  const originalPriceFromWeeklyById = useMemo(
-    () => buildOriginalPriceFromWeeklyMap(orderedPlans),
-    [orderedPlans]
-  );
-  const freeWeeksLabelById = useMemo(
-    () => buildFreeWeeksLabelFromWeeklyMap(orderedPlans),
-    [orderedPlans]
-  );
 
   const bestValuePlanEntry = useMemo(() => {
     return (
@@ -695,8 +663,42 @@ export default function PricingPageClient({
     return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
   }, [styleOneVisibleDurationKeys]);
 
+  const durationCheckoutTiles = useMemo(
+    () =>
+      styleOneVisibleDurationKeys.map((key) => {
+        const sec = groupedPlans.find((s) => s.key === key)!;
+        return (
+          <PricingPlanCheckoutTile
+            key={key}
+            section={sec}
+            pricingCheckoutFields={pricingCheckoutFields}
+            pricingAbLayout={
+              pricingAbParticipatesInExperiment ? pricingAbLayout : undefined
+            }
+            monthlySavingsById={monthlySavingsById}
+            recommendedPlanId={recommendedPlanId}
+            recommendedSectionKey={recommendedSection?.key}
+          />
+        );
+      }),
+    [
+      styleOneVisibleDurationKeys,
+      groupedPlans,
+      pricingCheckoutFields,
+      pricingAbParticipatesInExperiment,
+      pricingAbLayout,
+      monthlySavingsById,
+      recommendedPlanId,
+      recommendedSection?.key,
+    ]
+  );
+
   return (
-    <Box className="flex-1 overflow-y-auto bg-[linear-gradient(180deg,_#F6F9FF_0%,_#FFFFFF_35%,_#F9FBFF_100%)] px-4 py-0 md:px-8 lg:px-10">
+    <Box
+      className={`flex-1 overflow-y-auto bg-[linear-gradient(180deg,_#F6F9FF_0%,_#FFFFFF_35%,_#F9FBFF_100%)] px-4 py-0 md:px-8 lg:px-10${
+        stickyCtaEntry ? " pb-24 md:pb-0" : ""
+      }`}
+    >
       <Box className="mx-auto w-full max-w-6xl">
         {!isSignedIn && (
           <Box className="rounded-[32px] border border-blue-100 bg-white px-5 py-6 shadow-[0_20px_60px_rgba(74,125,255,0.08)] md:px-8 md:py-8">
@@ -719,15 +721,15 @@ export default function PricingPageClient({
               </p>
             </Box>
 
-            <Box className="mt-6 flex flex-nowrap items-stretch justify-center gap-3">
-              <Box className="flex min-h-[42px] items-center justify-center gap-3 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-center text-sm font-medium text-slate-700 whitespace-nowrap">
+            <Box className="mt-6 flex flex-col gap-2.5 sm:flex-row sm:flex-nowrap sm:items-stretch sm:justify-center sm:gap-3">
+              <Box className="flex min-h-[44px] w-full flex-row items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-center text-sm font-medium leading-snug text-slate-700 sm:w-auto sm:min-h-[48px] sm:rounded-full sm:py-2 sm:whitespace-nowrap">
                 <AvatarStack />
-                <span className="whitespace-nowrap">Trusted by 70k+ test-takers</span>
+                <span className="text-pretty sm:whitespace-nowrap">Trusted by 70k+ test-takers</span>
               </Box>
               {pricingHeroStats.slice(1).map((stat) => (
                 <Box
                   key={stat}
-                  className="flex min-h-[52px] items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-center text-sm font-medium text-slate-700 whitespace-nowrap"
+                  className="flex min-h-[44px] w-full items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-center text-sm font-medium leading-snug text-slate-700 sm:w-auto sm:min-h-[52px] sm:rounded-full sm:py-2 sm:whitespace-nowrap"
                 >
                   {stat}
                 </Box>
@@ -772,6 +774,31 @@ export default function PricingPageClient({
           </Box>
         )}
 
+        {orderedPlans.length === 0 && (
+          <Box className="mt-8 rounded-[28px] border border-amber-200 bg-amber-50/80 p-6 text-center text-sm text-slate-800 md:p-8 md:text-base">
+            <p className="font-semibold text-amber-950">No plans are available right now</p>
+            <p className="mt-2 text-slate-700">
+              We could not load subscription options. Please try again later or contact support.
+            </p>
+            <p className="mt-3 text-xs leading-relaxed text-slate-600">
+              Admins: sync the <span className="font-mono">plans</span> collection into Postgres{" "}
+              <span className="font-mono">app_documents</span> (Mongo→Postgres ETL), align{" "}
+              <span className="font-mono">APP_DOCUMENTS_DB</span> with how rows are keyed, and
+              ensure plans are marked active in the CMS.
+            </p>
+          </Box>
+        )}
+
+        {orderedPlans.length > 0 && groupedPlans.length === 0 && (
+          <Box className="mt-8 rounded-[28px] border border-amber-200 bg-amber-50/80 p-6 text-center text-sm text-slate-800 md:p-8 md:text-base">
+            <p className="font-semibold text-amber-950">We could not match plans to checkout</p>
+            <p className="mt-2 text-slate-700">
+              Active plans exist but billing periods could not be detected. Check Stripe
+              price intervals and plan titles in the CMS, or contact support.
+            </p>
+          </Box>
+        )}
+
         {groupedPlans.length > 0 && (
           <Box
             id="pricing-style-one"
@@ -781,18 +808,7 @@ export default function PricingPageClient({
                 : "border-slate-200"
             }`}
           >
-            <p className="text-sm leading-6 text-slate-600 md:text-[15px] md:leading-7">
-              Every billing period includes the same Plus features. Choose your timeline
-              below—each option shows the price and takes you straight to Stripe checkout.
-            </p>
-            <Box className="mt-6">
-              <PricingStyleOnePlanTable />
-            </Box>
-            <p className="mt-4 text-xs leading-5 text-slate-500">
-              Secure checkout with Stripe. Apple Pay and Google Pay are available where
-              supported.
-            </p>
-            <Box className="mt-6 flex min-w-0 flex-col border-t border-slate-100 pt-6">
+            <Box className="flex min-w-0 flex-col">
               <p
                 id="pricing-style-one-duration-label"
                 className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500"
@@ -804,24 +820,7 @@ export default function PricingPageClient({
                 role="group"
                 aria-labelledby="pricing-style-one-duration-label"
               >
-                {styleOneVisibleDurationKeys.map((key) => {
-                  const sec = groupedPlans.find((s) => s.key === key)!;
-                  return (
-                    <PricingPlanCheckoutTile
-                      key={key}
-                      section={sec}
-                      pricingCheckoutFields={pricingCheckoutFields}
-                      pricingAbLayout={
-                        pricingAbParticipatesInExperiment ? pricingAbLayout : undefined
-                      }
-                      monthlySavingsById={monthlySavingsById}
-                      originalPriceFromWeeklyById={originalPriceFromWeeklyById}
-                      freeWeeksLabelById={freeWeeksLabelById}
-                      recommendedPlanId={recommendedPlanId}
-                      recommendedSectionKey={recommendedSection?.key}
-                    />
-                  );
-                })}
+                {durationCheckoutTiles}
               </Box>
             </Box>
           </Box>
@@ -845,18 +844,15 @@ export default function PricingPageClient({
             </p>
           </Box>
 
-          <Box className="mx-auto mt-8 max-w-4xl rounded-[24px] border border-amber-200/80 bg-[linear-gradient(180deg,_rgba(255,248,235,0.95)_0%,_#FFFFFF_55%)] p-6 md:p-8">
-            <p className="text-center text-sm font-semibold uppercase tracking-[0.08em] text-amber-800">
+          <Box className="mx-auto mt-6 max-w-3xl rounded-2xl border border-amber-200/70 bg-[linear-gradient(180deg,_rgba(255,248,235,0.85)_0%,_#FFFFFF_50%)] px-4 py-4 md:mt-8 md:px-5 md:py-5">
+            <p className="text-center text-xs font-semibold uppercase tracking-[0.08em] text-amber-800 md:text-sm">
               Plus includes
             </p>
-            <ul className="mt-6 grid gap-3 sm:grid-cols-2 md:gap-4">
+            <ul className="mt-4 grid gap-x-6 gap-y-2 sm:grid-cols-2 sm:gap-y-2.5 md:mt-5">
               {PRICING_PLUS_FEATURE_LABELS.map((label) => (
-                <li
-                  key={label}
-                  className="flex gap-3 rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm"
-                >
+                <li key={label} className="flex items-start gap-2.5">
                   <Check
-                    className="mt-0.5 size-5 shrink-0 text-emerald-600"
+                    className="mt-0.5 size-4 shrink-0 text-emerald-600 sm:size-[1.125rem]"
                     strokeWidth={2.5}
                     aria-hidden
                   />
@@ -904,30 +900,115 @@ export default function PricingPageClient({
         </Box>
       </Box>
 
-      {stickyCtaEntry && (
-        <Box className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-10px_30px_rgba(15,23,42,0.12)] backdrop-blur md:hidden">
-          <Box className="mx-auto flex max-w-6xl items-center justify-between gap-3">
-            <Box className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-700">
-                {personalizedRecommendation ? "Recommended" : "Best value"}
-              </p>
-              <p className="truncate text-sm font-semibold text-blue-950">
-                {stickyCtaEntry.plan.title}
-              </p>
-              <p className="text-xs text-slate-600">
-                {personalizedRecommendation?.headline || "See the strongest-value option"}
-              </p>
+      <AnimatePresence>
+        {stickyCtaEntry && (
+          <motion.div
+            key="pricing-mobile-sticky"
+            role="region"
+            aria-label="Plan quick actions"
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 34, stiffness: 420 }}
+            className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-4 pt-3 shadow-[0_-10px_30px_rgba(15,23,42,0.12)] backdrop-blur md:hidden"
+            style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+          >
+            <Box className="mx-auto flex max-w-6xl items-center justify-between gap-3">
+              <Box className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-700">
+                  {personalizedRecommendation ? "Recommended" : "Best value"}
+                </p>
+                <p className="truncate text-sm font-semibold text-blue-950">
+                  {stickyCtaEntry.plan.planTitle || stickyCtaEntry.plan.title}
+                </p>
+                <p className="text-xs text-slate-600">
+                  {(() => {
+                    const cycle = formatBillingCycle(
+                      stickyCtaEntry.plan.billingInterval,
+                      stickyCtaEntry.plan.billingIntervalCount
+                    );
+                    return (
+                      <>
+                        CA$ {formatPlanCadPrice(stickyCtaEntry.plan.price)}
+                        {cycle ? ` · per ${cycle}` : null}
+                      </>
+                    );
+                  })()}
+                </p>
+              </Box>
+              <button
+                type="button"
+                disabled={groupedPlans.length === 0}
+                onClick={() => setMobilePlansSheetOpen(true)}
+                className="inline-flex shrink-0 items-center justify-center rounded-full bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] px-4 py-2 text-sm font-semibold text-white shadow-md disabled:pointer-events-none disabled:opacity-40"
+              >
+                <AutoAwesome className="mr-2 h-4 w-4" />
+                View plans
+              </button>
             </Box>
-            <a
-              href={personalizedRecommendation ? "#recommended-plan" : "#pricing-style-one"}
-              className="inline-flex shrink-0 items-center justify-center rounded-full bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] px-4 py-2 text-sm font-semibold text-white shadow-md"
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {mobilePlansSheetOpen && groupedPlans.length > 0 && (
+          <motion.div
+            key="pricing-plans-sheet"
+            className="fixed inset-0 z-50 flex flex-col justify-end md:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+          >
+            <motion.button
+              type="button"
+              aria-label="Close plan options"
+              className="absolute inset-0 border-0 bg-slate-900/45 p-0"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobilePlansSheetOpen(false)}
+            />
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="pricing-sheet-title"
+              className="relative mx-auto flex w-full max-w-lg flex-col rounded-t-2xl bg-white shadow-2xl"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 36, stiffness: 400 }}
+              style={{
+                maxHeight: "min(85vh, 100dvh - 1.5rem)",
+                paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
+              }}
+              onClick={(e) => e.stopPropagation()}
             >
-              <AutoAwesome className="mr-2 h-4 w-4" />
-              View plan
-            </a>
-          </Box>
-        </Box>
-      )}
+              <Box className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3">
+                <Box className="min-w-0 pr-2">
+                  <p id="pricing-sheet-title" className="text-base font-semibold text-blue-950">
+                    Choose a plan
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Live catalog from our database — secure checkout on Stripe
+                  </p>
+                </Box>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  onClick={() => setMobilePlansSheetOpen(false)}
+                  className="shrink-0 rounded-full p-2 text-slate-600 hover:bg-slate-100"
+                >
+                  <Close className="h-5 w-5" />
+                </button>
+              </Box>
+              <Box className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-4 py-4">
+                {durationCheckoutTiles}
+              </Box>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </Box>
   );
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 import { Plan } from "@/models/plans.model";
 import { auth } from "@clerk/nextjs/server";
 import { stripe } from "@/lib/stripe";

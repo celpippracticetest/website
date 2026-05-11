@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ListeningExamEntitySchema } from "./listenExam.model";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 
 const ExamPartSchema = z.object({
     _id: z.instanceof(ObjectId),

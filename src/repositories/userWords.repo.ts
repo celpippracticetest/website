@@ -1,4 +1,5 @@
-import { MongoClient, Db, ObjectId } from "mongodb";
+import { ObjectId } from "bson";
+import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
 import { TUserWord, TUserWordDto, UserWordSchemaDto } from "@/models/userWords.model";
 
 export class UserWordsRepository {

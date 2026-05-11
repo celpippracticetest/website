@@ -1,5 +1,6 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
+import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
 import { NextRequest, NextResponse } from "next/server";
 
 function hasBearerAttempt(request: NextRequest): boolean {
@@ -9,6 +10,7 @@ function hasBearerAttempt(request: NextRequest): boolean {
 
 /**
  * Lists Clerk sessions for the signed-in user (browser cookie session or mobile Bearer JWT).
+ * Supabase Auth sessions are not listed here (no Clerk session list).
  */
 export async function GET(request: NextRequest) {
   const authContext = await getAuthenticatedRequestContext(request);
@@ -17,6 +19,10 @@ export async function GET(request: NextRequest) {
     if (hasBearerAttempt(request)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    return NextResponse.json([]);
+  }
+
+  if (isLikelySupabaseAuthUserId(authContext.userId)) {
     return NextResponse.json([]);
   }
 

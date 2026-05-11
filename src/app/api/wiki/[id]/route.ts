@@ -1,7 +1,7 @@
 import mongoClient from "@/lib/mongodb";
 import { WikiArticleWriteSchema } from "@/models/wiki.model";
 import { WikiRepository } from "@/repositories/wiki.repo";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 import { NextRequest, NextResponse } from "next/server";
 
 function isValidObjectId(id: string): boolean {

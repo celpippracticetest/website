@@ -1,4 +1,4 @@
-import { MongoServerError, ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 import { getDb } from "@/lib/mongodb";
 import { logger, captureException } from "@/lib/sentry-logger";
 import { isPricingAbLayout } from "@/lib/pricingAbTest";
@@ -68,6 +68,15 @@ async function resolveAmountAndCurrency(
   return fromPayPal;
 }
 
+function isPgUniqueViolation(e: unknown): boolean {
+  return Boolean(
+    e &&
+      typeof e === "object" &&
+      "code" in e &&
+      (e as { code: string }).code === "23505"
+  );
+}
+
 function isActivePayPalStatus(status: string | undefined): boolean {
   const s = (status || "").toUpperCase();
   return s === "ACTIVE" || s === "APPROVED";
@@ -95,7 +104,7 @@ export async function finalizePayPalSubscriptionReturn(params: {
     });
     grantInserted = true;
   } catch (e) {
-    if (e instanceof MongoServerError && e.code === 11000) {
+    if (isPgUniqueViolation(e)) {
       // Already processed once; continue so we can self-heal metadata if needed.
       grantInserted = false;
     } else {

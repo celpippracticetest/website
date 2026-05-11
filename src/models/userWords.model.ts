@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 
 export const UserWordSchema = z.object({
     _id: z.instanceof(ObjectId),

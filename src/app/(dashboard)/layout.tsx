@@ -1,7 +1,7 @@
 import LayoutClient from "@/components/dashboard-new/LayoutClient";
 import Footer from "@/components/pages/landing/Footer";
 import ReactQueryProvider from "@/components/ReactQueryProvider";
-import { currentUser } from "@clerk/nextjs/server";
+import { getDashboardLayoutAuthContext } from "@/lib/auth/web-session-server";
 import { Metadata } from "next";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -20,17 +20,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  let user = null;
-  try {
-    user = await currentUser();
-  } catch (error) {}
+  const ctx = await getDashboardLayoutAuthContext();
 
   return (
     <>
       <ReactQueryProvider>
         <LayoutClient>{children}</LayoutClient>
       </ReactQueryProvider>
-      {!user && <Footer isSignedIn={false} />}
+      {!ctx && <Footer isSignedIn={false} />}
     </>
   );
 }

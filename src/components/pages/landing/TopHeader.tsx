@@ -14,21 +14,22 @@ import {
 } from "@/components/icons";
 import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
 import SvgWord from "@/components/icons/Word";
-import SvgReferral from "@/components/icons/Referral";
+import { CircleDollarSign } from "lucide-react";
 
 const SvgClose = dynamic(() => import("../../icons/Close"), { ssr: false });
 const SvgHamburger = dynamic(() => import("../../icons/Hamburger"), {
   ssr: true,
 });
+const mainNav = [
+  { label: "Mock Exams", href: "/exam-overview" },
+  { label: "Practice Overview", href: "/practice-overview" },
+  { label: "Learning", href: "/learning" },
+  { label: "Words", href: "/words" },
+  { label: "Pricing", href: "/pricing" },
+] as const;
+
 const TopHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const hrefs = [
-    "/exam-overview",
-    "/practice-overview",
-    "/learning",
-    "/words",
-    "/earn100",
-  ];
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const sidebarMenuRef = useRef<HTMLDivElement>(null);
 
@@ -91,38 +92,24 @@ const TopHeader = () => {
         <SvgPracticeBlueHover className="text-[#316BFF]   duration-200 group-hover:opacity-100" />
       </div>
     </div>,
-    <div
-      key="learn-icon"
-      className="relative  flex items-center justify-center">
-      <div className="flex group-hover:hidden w-[24px] h-[24px]  items-center justify-center">
-        <SvgLearning
-          stroke="#76808F"
-          fill="#76808F"
-          className="text-[#76808F] group-hover:text-[#316BFF]"
-        />
+    <div key="learn-icon" className="relative flex items-center justify-center">
+      <div className="flex group-hover:hidden w-[24px] h-[24px] items-center justify-center">
+        <SvgLearning stroke="#76808F" fill="#76808F" className="text-[#76808F]" />
       </div>
-
-      <div className="hidden group-hover:flex w-[24px] h-[24px]  items-center justify-center">
-        <SvgWord stroke="#76808F" fill="#76808F" className="text-[#316BFF]" />
+      <div className="hidden group-hover:flex w-[24px] h-[24px] items-center justify-center">
+        <SvgLearning stroke="#316BFF" fill="#316BFF" className="text-[#316BFF]" />
       </div>
     </div>,
-    <div
-      key="mock-exam-icon"
-      className="relative  flex items-center justify-center">
-      <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
-        <SvgMockTest className="  text-[#76808F]  duration-200 " />
+    <div key="words-icon" className="relative flex items-center justify-center">
+      <div className="flex group-hover:hidden w-[24px] h-[24px] items-center justify-center">
+        <SvgWord className="text-[#76808F]" />
       </div>
-      <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
-        <SvgMockTestTopNavigationHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
+      <div className="hidden group-hover:flex w-[24px] h-[24px] items-center justify-center">
+        <SvgWord className="text-[#316BFF]" />
       </div>
     </div>,
-    <div key="earn-icon" className="relative  flex items-center justify-center">
-      <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
-        <SvgReferral className="  text-[#76808F]  duration-200 " />
-      </div>
-      <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
-        <SvgReferral className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
-      </div>
+    <div key="pricing-icon" className="relative flex items-center justify-center w-[24px] h-[24px]">
+      <CircleDollarSign className="w-[22px] h-[22px] text-[#76808F] group-hover:text-[#316BFF] duration-200" aria-hidden />
     </div>,
   ];
 
@@ -169,20 +156,18 @@ const TopHeader = () => {
           </Link>
         </div>
         <nav className="gap-[24px] hidden screen1280:!flex">
-          {["Mock Exams", "Practice Overview", "Learning", "Words"].map(
-            (label, index) => (
-              <React.Fragment key={label}>
-                <Link
-                  className="group gap-[10px] h-[36px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
-                  href={hrefs[index]}>
-                  <span className=" text-[16px] font-normal">{label}</span>
-                </Link>
-                {index != 3 && (
-                  <div className="bg-outline w-[1px] h-[35px] rounded-[15px]"></div>
-                )}
-              </React.Fragment>
-            ),
-          )}
+          {mainNav.map(({ label, href }, index) => (
+            <React.Fragment key={label}>
+              <Link
+                className="group gap-[10px] h-[36px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
+                href={href}>
+                <span className="text-[16px] font-normal">{label}</span>
+              </Link>
+              {index < mainNav.length - 1 && (
+                <div className="bg-outline w-[1px] h-[35px] rounded-[15px]" />
+              )}
+            </React.Fragment>
+          ))}
         </nav>
         <TopHeaderRightSide />
       </div>
@@ -214,21 +199,16 @@ const TopHeader = () => {
             <SvgClose />
           </span>
         </div>
-        <div className=" mt-[32px] gap-[16px]">
-          {["Mock Exams", "Practice Overview", "Learning", "Words"].map(
-            (label, index) => (
-              <React.Fragment key={label}>
-                <Link
-                  key={label}
-                  className="h-[36px] group gap-[10px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
-                  href={hrefs[index]}>
-                  {icons[index]}
-
-                  <span className=" text-[16px] font-normal">{label}</span>
-                </Link>
-              </React.Fragment>
-            ),
-          )}
+        <div className="mt-[32px] gap-[16px] flex flex-col">
+          {mainNav.map(({ label, href }, index) => (
+            <Link
+              key={label}
+              className="h-[36px] group gap-[10px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
+              href={href}>
+              {icons[index]}
+              <span className="text-[16px] font-normal">{label}</span>
+            </Link>
+          ))}
         </div>
       </motion.div>
     </div>

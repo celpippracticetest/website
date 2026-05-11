@@ -1,7 +1,7 @@
 import { Suspense } from "react";
-import SignInPageClient from "./SignInPageClient";
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import SignSupabasePageClient from "./SignSupabasePageClient";
+import { hasAnyWebSession } from "@/lib/auth/web-session-server";
 
 function SignInFallback() {
   return (
@@ -14,12 +14,11 @@ function SignInFallback() {
 }
 
 export default async function SignInPage() {
-  const { userId } = await auth();
-  if (userId) redirect("/practice-overview");
+  if (await hasAnyWebSession()) redirect("/practice-overview");
 
   return (
     <Suspense fallback={<SignInFallback />}>
-      <SignInPageClient />
+      <SignSupabasePageClient />
     </Suspense>
   );
 }

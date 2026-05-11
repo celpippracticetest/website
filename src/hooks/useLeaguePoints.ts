@@ -40,9 +40,16 @@ export const useLeaguePoints = () => {
           success: true
         };
       } else {
-        // Log the error response
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('League API error:', response.status, errorData);
+        const text = await response.text();
+        let errorData: Record<string, unknown> = { error: "Unknown error" };
+        if (text) {
+          try {
+            errorData = JSON.parse(text) as Record<string, unknown>;
+          } catch {
+            errorData = { error: "Non-JSON error body", raw: text.slice(0, 300) };
+          }
+        }
+        console.error("League API error:", response.status, errorData);
       }
     } catch (error) {
       console.error('Error adding points:', error);

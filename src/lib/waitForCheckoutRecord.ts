@@ -1,4 +1,4 @@
-import type { MongoClient } from "mongodb";
+import type { CompatMongoClient as MongoClient } from "@/lib/pg/types";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
 
 /** Brief wait for Stripe webhook to persist checkout (guest flow). */

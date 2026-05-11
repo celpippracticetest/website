@@ -1,4 +1,6 @@
-import { MongoClient, Db, ObjectId, Filter } from "mongodb";
+import { ObjectId } from "bson";
+import type { MongoFilter } from "@/lib/pg/types";
+import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
 import {
   BlogTargetKeywordSchema,
   BlogTargetKeywordSchemaDto,
@@ -43,7 +45,7 @@ export class BlogTargetKeywordRepository {
     excludeId?: string
   ): Promise<TBlogTargetKeywordSchemaDto | null> {
     const key = this.normalizePhraseKey(phrase);
-    const filter: Filter<TBlogTargetKeywordSchema> = {
+    const filter: MongoFilter<TBlogTargetKeywordSchema> = {
       phraseKey: key,
     };
     if (excludeId && ObjectId.isValid(excludeId)) {

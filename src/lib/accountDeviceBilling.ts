@@ -1,4 +1,6 @@
 import type { User } from "@clerk/nextjs/server";
+
+import type { MobileUserBridge } from "@/lib/auth/supabase-mobile-user-bridge";
 import { stripe } from "@/lib/stripe";
 import {
   emailsFromClerkUser,
@@ -7,7 +9,7 @@ import {
 
 export async function canUseStripeDeviceSeatBilling(params: {
   userId: string;
-  user: User;
+  user: User | MobileUserBridge;
 }): Promise<boolean> {
   const customerId = await resolveStripeCustomerId(params.userId, {
     clerkStripeCustomerId: params.user.privateMetadata?.stripeCustomerId as

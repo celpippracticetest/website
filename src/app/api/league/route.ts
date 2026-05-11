@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
 import { LeagueRepository } from "@/repositories/league.repo";
 import { auth } from "@clerk/nextjs/server";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 
 // Helper function to get league level for comparison
 function getLeagueLevel(leagueType: string): number {
@@ -440,7 +440,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { action, leagueType, points, pointsType } = body;
+    const { action, leagueType, points: rawPoints, pointsType } = body;
+    const points =
+      typeof rawPoints === "number"
+        ? rawPoints
+        : typeof rawPoints === "string"
+          ? Number(rawPoints)
+          : rawPoints;
     console.log("Extracted parameters:", { action, leagueType, points, pointsType });
 
     let db;
@@ -525,7 +531,11 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (typeof points !== 'number' || points <= 0) {
+      if (
+        typeof points !== "number" ||
+        !Number.isFinite(points) ||
+        points <= 0
+      ) {
         console.error("Invalid points value:", points, "type:", typeof points);
         return NextResponse.json(
           { error: "Invalid points value - must be a positive number" },
@@ -606,10 +616,13 @@ export async function POST(request: NextRequest) {
           {
             error: "Failed to add points",
             details: {
-              hasLeagueRecord: !!userPoints,
-              overallPoints,
-              seasonId: currentSeason.seasonId
-            }
+              hasLeagueRecord: Boolean(userPoints),
+              overallPoints:
+                typeof overallPoints === "number" && Number.isFinite(overallPoints)
+                  ? overallPoints
+                  : Number(overallPoints) || 0,
+              seasonId: String(currentSeason.seasonId),
+            },
           },
           { status: 400 }
         );

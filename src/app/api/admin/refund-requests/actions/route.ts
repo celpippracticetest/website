@@ -3,7 +3,7 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import Stripe from "stripe";
 import { z } from "zod";
 import client from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 

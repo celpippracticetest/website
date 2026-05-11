@@ -62,6 +62,7 @@ export function CustomSignInForm({
         if (session?.currentTask) return;
         const url = decorateUrl(postAuthPath);
         if (url.startsWith("http")) window.location.href = url;
+        else if (url.startsWith("/api/")) window.location.assign(url);
         else router.push(url);
       },
     });
@@ -576,6 +577,13 @@ export function CustomSignInForm({
           Don&apos;t have an account?{" "}
           <Link href="/sign-up" className="font-medium text-blue-600 hover:underline">
             Sign up
+          </Link>
+        </p>
+      ) : null}
+      {!showVerificationUi && !resetMode ? (
+        <p className="mt-3 text-center text-sm text-slate-500">
+          <Link href="/sign-in" className="font-medium text-blue-600 hover:underline">
+            Email/password sign-in (Supabase)
           </Link>
         </p>
       ) : null}

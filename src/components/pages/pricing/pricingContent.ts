@@ -9,6 +9,19 @@ export const pricingHeroStats = [
   "Instant AI feedback",
 ];
 
+/** Same three facts as the pricing page stat pills — use for upgrade modals and drawers. */
+export const pricingUpgradeOfferTrustLine = pricingHeroStats.join(" · ");
+
+/** Public upgrade surfaces: aligns with “Plus” / CELPIP Practice Test naming sitewide. */
+export const pricingUpgradeOfferTitle = "Join CELPIP Practice Plus";
+
+/** Short intro — themes from `pricingSelectionSteps` and the signed-out pricing hero. */
+export const pricingUpgradeOfferBody =
+  "Pick the billing period that fits your exam date. Plus includes mock exams, full exam simulation, AI feedback, and the full question bank — the same live catalog as our pricing page. Try free practice first — no credit card required.";
+
+/** Matches checkout tiles / pricing page “Unlock access to” list heading. */
+export const pricingUpgradeUnlockHeading = "Unlock access to:";
+
 export const pricingSelectionSteps = [
   {
     title: "Pick your timeline",

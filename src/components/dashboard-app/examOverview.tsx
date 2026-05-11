@@ -23,8 +23,6 @@ import {
   isMockExamUnlockedViaPurchase,
   normalizePlan,
 } from "@/lib/subscriptionAccess";
-import { StripeCheckoutDiscountBadge } from "@/components/checkout/StripeCheckoutDiscountBadge";
-import { getStripeCheckoutAutoDiscountLabel } from "@/lib/stripeCheckoutDiscountLabel";
 
 const examSections = [
   { label: "Listening", partId: 1, section: "listening" },
@@ -68,13 +66,6 @@ const ExamOverview = ({
     isLoaded &&
     isSignedIn &&
     (!plan || normalizePlan(plan) === "free");
-  const mockStripeCheckoutDiscountLabel = useMemo(
-    () =>
-      signedInFreeUser
-        ? getStripeCheckoutAutoDiscountLabel({ userPublicMetadata: user?.publicMetadata })
-        : null,
-    [signedInFreeUser, user?.publicMetadata]
-  );
   /** Catalog first ready exam (by `order`), not list position — list may put purchased mocks first. */
   const firstReadyExamId = useMemo(() => {
     if (exams.length === 0) return null;
@@ -109,12 +100,7 @@ const ExamOverview = ({
     !hasPremiumPlusAccess(plan, purchaseDate);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [upgradeSubmitting, setUpgradeSubmitting] = useState(false);
-  const [mockBuySubmittingExamId, setMockBuySubmittingExamId] = useState<
-    string | null
-  >(null);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
-  const mockExamPrice = "$4.99";
-  const mockCheckoutPriceId = process.env.NEXT_PUBLIC_STRIPE_MOCK_EXAM_PRICE_ID;
 
   const { setSelectedExam } = useSelectedExam();
 
@@ -177,20 +163,12 @@ const ExamOverview = ({
       navigateToExamPart(exam, 1);
       return;
     }
-    if (noUser || signedInFreeUser) {
-      if (!mockCheckoutPriceId) {
-        setUpgradeError("Mock checkout is not configured. Please contact support.");
-        return;
-      }
-      const checkoutBase = noUser
-        ? "/api/checkout_session/guest"
-        : "/api/checkout_session";
-      const checkoutUrl = new URL(checkoutBase, window.location.origin);
-      checkoutUrl.searchParams.set("price", mockCheckoutPriceId);
-      checkoutUrl.searchParams.set("purchase_type", "mock_exam");
-      checkoutUrl.searchParams.set("mock_exam_id", exam.id);
-      setMockBuySubmittingExamId(exam.id);
-      window.location.href = checkoutUrl.toString();
+    if (noUser) {
+      setShowLoginModal(true);
+      return;
+    }
+    if (signedInFreeUser) {
+      router.push("/pricing");
       return;
     }
     if (needsPremiumPlusUpgrade) {
@@ -469,14 +447,10 @@ const ExamOverview = ({
                   </Stack>
 
                   <Box sx={{ position: "relative", width: 1 }}>
-                    {mockStripeCheckoutDiscountLabel && !purchasedUnlock ? (
-                      <StripeCheckoutDiscountBadge label={mockStripeCheckoutDiscountLabel} />
-                    ) : null}
                     <Button
                       variant="contained"
                       disabled={
                         !isLoaded ||
-                        mockBuySubmittingExamId === exam.id ||
                         (needsPremiumPlusUpgrade &&
                           !mockExamUnlocked(exam) &&
                           upgradeSubmitting)
@@ -515,13 +489,9 @@ const ExamOverview = ({
                       {signedInFreeUser
                         ? mockExamUnlocked(exam)
                           ? "Start Practice"
-                          : mockBuySubmittingExamId === exam.id
-                            ? "Redirecting…"
-                            : `Buy for ${mockExamPrice}`
+                          : "View plans"
                         : noUser
-                          ? mockBuySubmittingExamId === exam.id
-                            ? "Redirecting…"
-                            : `Buy for ${mockExamPrice}`
+                          ? "Sign in"
                           : needsPremiumPlusUpgrade
                             ? mockExamUnlocked(exam)
                               ? "Start Practice"

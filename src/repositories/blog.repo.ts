@@ -1,4 +1,6 @@
-import { MongoClient, Db, ObjectId, Filter } from "mongodb";
+import { ObjectId } from "bson";
+import type { MongoFilter } from "@/lib/pg/types";
+import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
 import {
   BlogSchema,
   BlogSchemaDto,
@@ -57,7 +59,7 @@ export class BlogRepository {
     let sequence = 2;
 
     while (true) {
-      const filter: Filter<TBlogSchema> = excludeId
+      const filter: MongoFilter<TBlogSchema> = excludeId
         ? {
             slug: candidate,
             _id: { $ne: new ObjectId(excludeId) },
@@ -72,8 +74,8 @@ export class BlogRepository {
     }
   }
 
-  private buildListFilter(filters: BlogListFilters): Filter<TBlogSchema> {
-    const query: Filter<TBlogSchema> = {};
+  private buildListFilter(filters: BlogListFilters): MongoFilter<TBlogSchema> {
+    const query: MongoFilter<TBlogSchema> = {};
 
     if (filters.status) {
       query.status = filters.status;
@@ -97,7 +99,7 @@ export class BlogRepository {
     return query;
   }
 
-  private buildPublishedFilter(extraFilter: Filter<TBlogSchema> = {}): Filter<TBlogSchema> {
+  private buildPublishedFilter(extraFilter: MongoFilter<TBlogSchema> = {}): MongoFilter<TBlogSchema> {
     return {
       status: "published",
       publishedAt: { $ne: null, $lte: new Date() },
@@ -203,7 +205,7 @@ export class BlogRepository {
     tags: string[],
     limit: number = 3
   ): Promise<TBlogSchemaDto[]> {
-    const relatedFilter: Filter<TBlogSchema> = {
+    const relatedFilter: MongoFilter<TBlogSchema> = {
       _id: { $ne: new ObjectId(currentId) },
     };
 

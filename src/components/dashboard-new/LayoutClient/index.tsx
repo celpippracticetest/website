@@ -7,8 +7,8 @@ import {
   SignInButton,
   SignUpButton,
   useClerk,
-  useUser,
 } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { useHasEverPurchased } from "@/hooks/useHasEverPurchased";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
@@ -198,7 +198,7 @@ const LayoutClient = ({ children }: any) => {
   const setVisibleHorizontalCoupon = useExtraDiscountStore(
     (state) => state.setVisibleHorizontalCoupon
   );
-  const { user, isLoaded, isSignedIn }: any = useUser();
+  const { user, isLoaded, isSignedIn }: any = useHybridWebUser();
   const { hasEverPurchased } = useHasEverPurchased();
   const [hasHydrated, setHasHydrated] = useState(false);
   const displayUser = hasHydrated ? user : null;

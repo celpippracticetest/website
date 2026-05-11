@@ -1,4 +1,5 @@
-import { MongoClient, Db, Filter } from "mongodb";
+import type { MongoFilter } from "@/lib/pg/types";
+import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
 import {
   ProfessionPageContentSchema,
   TProfessionPageContent,
@@ -33,7 +34,7 @@ export class ProfessionPageRepository {
     const doc = await this.collection().findOne({
       slug,
       published: true,
-    } satisfies Filter<ProfessionPageDoc>);
+    } satisfies MongoFilter<ProfessionPageDoc>);
     if (!doc) return null;
     const parsed = ProfessionPageContentSchema.safeParse(doc);
     if (!parsed.success) {
@@ -66,7 +67,7 @@ export class ProfessionPageRepository {
 
   async listPublishedSlugs(): Promise<string[]> {
     const rows = await this.collection()
-      .find({ published: true } satisfies Filter<ProfessionPageDoc>, { projection: { slug: 1 } })
+      .find({ published: true } satisfies MongoFilter<ProfessionPageDoc>, { projection: { slug: 1 } })
       .sort({ slug: 1 })
       .toArray();
     return rows.map((r) => r.slug).filter(Boolean);
@@ -74,7 +75,7 @@ export class ProfessionPageRepository {
 
   async listPublished(): Promise<TProfessionPageContent[]> {
     const rows = await this.collection()
-      .find({ published: true } satisfies Filter<ProfessionPageDoc>)
+      .find({ published: true } satisfies MongoFilter<ProfessionPageDoc>)
       .sort({ slug: 1 })
       .toArray();
 
@@ -97,7 +98,7 @@ export class ProfessionPageRepository {
   async listPublishedSummaries(): Promise<ProfessionPageSummary[]> {
     const rows = await this.collection()
       .find(
-        { published: true } satisfies Filter<ProfessionPageDoc>,
+        { published: true } satisfies MongoFilter<ProfessionPageDoc>,
         { projection: { slug: 1, title: 1, icon: 1 } }
       )
       .sort({ slug: 1 })

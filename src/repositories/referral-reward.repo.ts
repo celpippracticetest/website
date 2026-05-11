@@ -4,7 +4,8 @@ import {
   ReferralRewardSchema,
   ReferralRewardSchemaDto,
 } from "@/models/referral-reward.model";
-import { MongoClient, Db, ObjectId } from "mongodb";
+import { ObjectId } from "bson";
+import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
 
 export class ReferralRewardRepository {
   private readonly db: Db;

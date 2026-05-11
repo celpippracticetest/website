@@ -52,6 +52,37 @@ const DialogContent = React.forwardRef<
 ))
 DialogContent.displayName = DialogPrimitive.Content.displayName
 
+/**
+ * Bottom sheet / drawer: no centered dialog transforms — uses `translate-y` only so
+ * open/close animates reliably from the bottom edge.
+ */
+const DialogDrawerContent = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
+>(({ className, children, ...props }, ref) => (
+  <DialogPortal>
+    <DialogOverlay className="bg-black/50" />
+    <DialogPrimitive.Content
+      ref={ref}
+      className={cn(
+        "fixed bottom-0 left-1/2 z-50 flex max-h-[min(92dvh,920px)] w-[calc(100%-0.75rem)] max-w-[1100px] flex-col overflow-hidden rounded-t-2xl border border-slate-200 bg-background p-0 shadow-[0_-12px_48px_rgba(15,23,42,0.22)] outline-none sm:rounded-t-3xl",
+        "pb-[env(safe-area-inset-bottom,0px)]",
+        "-translate-x-1/2 translate-y-full transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform",
+        "data-[state=open]:translate-y-0",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <DialogPrimitive.Close className="absolute right-3 top-3 z-10 rounded-full p-2 opacity-80 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 sm:right-4 sm:top-4">
+        <Close className="h-4 w-4" />
+        <span className="sr-only">Close</span>
+      </DialogPrimitive.Close>
+    </DialogPrimitive.Content>
+  </DialogPortal>
+));
+DialogDrawerContent.displayName = "DialogDrawerContent";
+
 const DialogHeader = ({
   className,
   ...props
@@ -114,6 +145,7 @@ export {
   DialogClose,
   DialogTrigger,
   DialogContent,
+  DialogDrawerContent,
   DialogHeader,
   DialogFooter,
   DialogTitle,

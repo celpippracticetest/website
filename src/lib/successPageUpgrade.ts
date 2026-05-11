@@ -1,4 +1,4 @@
-import type { Db } from "mongodb";
+import type { CompatDb as Db } from "@/lib/pg/types";
 import type { Plan } from "@/models/plans.model";
 import { getPlanRecurringConfig } from "@/lib/planBilling";
 import {

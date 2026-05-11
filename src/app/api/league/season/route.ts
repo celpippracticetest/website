@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
 import { LeagueRepository } from "@/repositories/league.repo";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 
 export async function POST(request: NextRequest) {
   try {

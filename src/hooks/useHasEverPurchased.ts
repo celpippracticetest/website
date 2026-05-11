@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { useAuth, useUser } from "@clerk/nextjs";
+import { useAuth } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 
 export const useHasEverPurchased = () => {
-  const { user, isLoaded: userLoaded } = useUser();
+  const { user, isLoaded: userLoaded } = useHybridWebUser();
   const { getToken, isLoaded: authLoaded } = useAuth();
   const [hasEverPurchased, setHasEverPurchased] = useState(false);
   const [isLoading, setIsLoading] = useState(true);

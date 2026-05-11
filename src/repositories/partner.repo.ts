@@ -1,7 +1,8 @@
 import { ReferralRepository } from "@/repositories/referral.repo";
 import type { TPartnerDto, TPartnerSchema } from "@/models/partner.model";
 import { partnerToDto } from "@/models/partner.model";
-import { MongoClient, Db, ObjectId } from "mongodb";
+import { ObjectId } from "bson";
+import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
 
 const COLL = "partners";
 

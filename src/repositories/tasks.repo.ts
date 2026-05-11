@@ -1,5 +1,6 @@
 import { TaskSchema, TaskSchemaDto, TTaskSchema, TTaskSchemaDto } from "@/models/tasks.model";
-import { MongoClient, Db, ObjectId } from "mongodb";
+import { ObjectId } from "bson";
+import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
 
 export class TaskRepository {
   private readonly db: Db;

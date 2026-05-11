@@ -24,7 +24,7 @@ export async function getActiveHomepageHeroSchedule(): Promise<THomepageHeroSche
   noStore();
 
   try {
-    if (!process.env.MONGODB_URI) {
+    if (!process.env.DATABASE_URL?.trim()) {
       return null;
     }
 

@@ -1,4 +1,6 @@
-import { Db, Filter, MongoClient, ObjectId } from "mongodb";
+import { ObjectId } from "bson";
+import type { MongoFilter } from "@/lib/pg/types";
+import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
 import {
   LeadCaptureLeadSchema,
   LeadCaptureLeadSchemaDto,
@@ -100,8 +102,8 @@ export class LeadCaptureLeadRepository {
     return entity ? this.convertFromEntity(entity) : null;
   }
 
-  private buildListFilter(filters: LeadCaptureLeadListFilters): Filter<TLeadCaptureLeadSchema> {
-    const query: Filter<TLeadCaptureLeadSchema> = {};
+  private buildListFilter(filters: LeadCaptureLeadListFilters): MongoFilter<TLeadCaptureLeadSchema> {
+    const query: MongoFilter<TLeadCaptureLeadSchema> = {};
 
     if (filters.search) {
       query.$or = [

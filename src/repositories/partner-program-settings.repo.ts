@@ -1,4 +1,4 @@
-import { MongoClient, Db } from "mongodb";
+import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
 
 const COLL = "partnerProgramSettings";
 const DEFAULTS_DOC_ID = "program_defaults";

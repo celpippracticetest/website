@@ -8,7 +8,7 @@ import { PracticeRepository } from "@/repositories/practice.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { currentUser } from "@clerk/nextjs/server";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 import { permanentRedirect, redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
 import { skillPagesContent } from "@/data/skill-pages-content";

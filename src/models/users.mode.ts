@@ -6,7 +6,7 @@
 //     sub: 'auth0|67f9b7dea385541d95ca394e'
 //   }
 
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 import { z } from "zod";
 
 const UserSchema = z.object({

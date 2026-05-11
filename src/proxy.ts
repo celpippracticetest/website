@@ -13,6 +13,8 @@ import {
   runAccountSharingMiddlewareCheck,
   shouldEnforceAccountSharingSignals,
 } from "@/lib/accountSharingMiddleware";
+import { readPracticePlanFromSupabaseUser } from "@/lib/auth/supabase-user-plan";
+import { refreshSupabaseSessionFromRequest } from "@/lib/supabase/middleware-session";
 
 const isAdminRoute = createRouteMatcher(["/cms(.*)"]);
 const isProfileRoute = createRouteMatcher(["/profile(.*)"]);
@@ -94,6 +96,19 @@ export default clerkMiddleware(async (auth, req) => {
     }
   }
 
+  const authenticate = await auth();
+
+  const { user: supabaseWebUser, cookieWrites: supabaseCookieWrites } =
+    await refreshSupabaseSessionFromRequest(req);
+  const hasWebAuth = Boolean(authenticate.userId || supabaseWebUser);
+
+  const end = (response: NextResponse) => {
+    for (const w of supabaseCookieWrites) {
+      response.cookies.set(w.name, w.value, w.options);
+    }
+    return applyMarketingCookiesToResponse(req, response);
+  };
+
   if (PRACTICE_HUB_PATHS.has(req.nextUrl.pathname)) {
     const practiceId = req.nextUrl.searchParams.get("selectedPracticeId");
     const taskId = req.nextUrl.searchParams.get("taskId");
@@ -101,11 +116,9 @@ export default clerkMiddleware(async (auth, req) => {
       const url = req.nextUrl.clone();
       url.pathname = `${req.nextUrl.pathname}/${practiceId}/${taskId}`;
       url.search = "";
-      return applyMarketingCookiesToResponse(req, NextResponse.redirect(url, 301));
+      return end(NextResponse.redirect(url, 301));
     }
   }
-
-  const authenticate = await auth();
 
   const practiceMetaForSharing = jwtPracticeMetadata(authenticate.sessionClaims);
   if (
@@ -118,8 +131,7 @@ export default clerkMiddleware(async (auth, req) => {
     const shareCheck = await runAccountSharingMiddlewareCheck(req);
     if (!shareCheck.ok) {
       if (req.nextUrl.pathname.startsWith("/api/")) {
-        return applyMarketingCookiesToResponse(
-          req,
+        return end(
           NextResponse.json(
             {
               message: shareCheck.reason,
@@ -153,7 +165,7 @@ export default clerkMiddleware(async (auth, req) => {
         notice.searchParams.set("activeDevices", String(shareCheck.activeDevices));
       }
       if (shareCheck.currentPlan) notice.searchParams.set("currentPlan", shareCheck.currentPlan);
-      return applyMarketingCookiesToResponse(req, NextResponse.redirect(notice));
+      return end( NextResponse.redirect(notice));
     }
   }
 
@@ -179,7 +191,7 @@ export default clerkMiddleware(async (auth, req) => {
         maxAge: 60 * 60 * 24 * 180,
         sameSite: "lax",
       });
-      return applyMarketingCookiesToResponse(req, response);
+      return end( response);
     }
   }
 
@@ -221,7 +233,7 @@ export default clerkMiddleware(async (auth, req) => {
       });
     }
 
-    return applyMarketingCookiesToResponse(req, response);
+    return end( response);
   }
 
   if (
@@ -251,44 +263,62 @@ export default clerkMiddleware(async (auth, req) => {
         });
       }
 
-      return applyMarketingCookiesToResponse(req, response);
+      return end( response);
     }
   }
 
   if (isProfileRoute(req)) {
-    if (!authenticate.userId) {
+    if (!hasWebAuth) {
       const dashboard = new URL("/practice-overview", req.url);
-      return applyMarketingCookiesToResponse(req, NextResponse.redirect(dashboard));
+      return end(NextResponse.redirect(dashboard));
     }
     // All authenticated users can access their profile regardless of plan
   }
   if (isPlansRoute(req)) {
-    if (!authenticate.userId) {
+    if (!hasWebAuth) {
       const dashboard = new URL("/practice-overview", req.url);
-      return applyMarketingCookiesToResponse(req, NextResponse.redirect(dashboard));
+      return end(NextResponse.redirect(dashboard));
     }
-    const meta = jwtPracticeMetadata(authenticate.sessionClaims);
-    const plan = meta?.plan;
-    if (!hasPaidPracticeAccess(plan, meta?.purchaseDate)) {
+    let plan: string | undefined;
+    let purchaseDate: string | undefined;
+    if (authenticate.userId) {
+      const meta = jwtPracticeMetadata(authenticate.sessionClaims);
+      plan = meta?.plan;
+      purchaseDate = meta?.purchaseDate;
+    } else if (supabaseWebUser) {
+      const sp = readPracticePlanFromSupabaseUser(supabaseWebUser);
+      plan = sp.plan;
+      purchaseDate = sp.purchaseDate;
+    }
+    if (!hasPaidPracticeAccess(plan, purchaseDate)) {
       const homeUrl = new URL("/", req.url);
-      return applyMarketingCookiesToResponse(req, NextResponse.redirect(homeUrl));
+      return end(NextResponse.redirect(homeUrl));
     }
   }
 
   if (isReferralRoute(req)) {
     // Allow public access to referral page for non-authenticated users
     // They need to see the referral page to sign up
-    if (!authenticate.userId) {
+    if (!hasWebAuth) {
       // Don't redirect, allow access to referral page
-      return applyMarketingCookiesToResponse(req, NextResponse.next());
+      return end(NextResponse.next());
     }
 
     // For authenticated users, check plan
-    const meta = jwtPracticeMetadata(authenticate.sessionClaims);
-    const plan = meta?.plan;
-    if (!hasPaidPracticeAccess(plan, meta?.purchaseDate)) {
+    let plan: string | undefined;
+    let purchaseDate: string | undefined;
+    if (authenticate.userId) {
+      const meta = jwtPracticeMetadata(authenticate.sessionClaims);
+      plan = meta?.plan;
+      purchaseDate = meta?.purchaseDate;
+    } else if (supabaseWebUser) {
+      const sp = readPracticePlanFromSupabaseUser(supabaseWebUser);
+      plan = sp.plan;
+      purchaseDate = sp.purchaseDate;
+    }
+    if (!hasPaidPracticeAccess(plan, purchaseDate)) {
       const homeUrl = new URL("/", req.url);
-      return applyMarketingCookiesToResponse(req, NextResponse.redirect(homeUrl));
+      return end(NextResponse.redirect(homeUrl));
     }
   }
 
@@ -580,7 +610,7 @@ export default clerkMiddleware(async (auth, req) => {
       !authenticate.sessionClaims?.metadata?.roles?.includes("admin"))
   ) {
     const url = new URL("/", req.url);
-    return applyMarketingCookiesToResponse(req, NextResponse.redirect(url));
+    return end( NextResponse.redirect(url));
   }
 
   const protectedPaths = [
@@ -598,10 +628,12 @@ export default clerkMiddleware(async (auth, req) => {
 
   const requestedPath = `${req.method}:${req.nextUrl.pathname}`;
   if (protectedPaths.includes(requestedPath)) {
-    await auth.protect();
+    if (!authenticate.userId && !supabaseWebUser) {
+      await auth.protect();
+    }
   }
 
-  const response = applyMarketingCookiesToResponse(req, NextResponse.next());
+  const response = end(NextResponse.next());
   if (setReferralCreateCooldown) {
     response.cookies.set(REFERRAL_CREATE_COOLDOWN_COOKIE, "1", {
       path: "/",
@@ -621,8 +653,10 @@ export default clerkMiddleware(async (auth, req) => {
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest|manifest)).*)",
+    // Skip Next.js internals and non-image static assets. Do not skip raster/SVG image
+    // extensions: a missing public file (e.g. /volume.png) would render through the App
+    // Router and RootLayout's auth() requires clerkMiddleware() to have run.
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|ttf|woff2?|csv|docx?|xlsx?|zip|webmanifest|manifest)).*)",
     "/api/users/webhook",
     // Always run for API routes
     "/(api|trpc)(.*)",

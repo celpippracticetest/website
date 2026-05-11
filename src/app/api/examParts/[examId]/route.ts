@@ -1,7 +1,7 @@
 import { PracticeRepository } from "@/repositories/practice.repo";
 import { NextRequest, NextResponse } from "next/server";
 import mongoClient from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 import { PracticeDtoSchema } from "@/models/practice.model";
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
 import { ExamPartSchemaDto } from "@/models/examParts.model";

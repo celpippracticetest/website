@@ -1,14 +1,28 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
-import { CustomSignInForm } from "@/components/auth/CustomSignInForm";
+import { CustomSupabaseSignInForm } from "@/components/auth/CustomSupabaseSignInForm";
+import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-export default function SignInPageClient() {
-  const { isSignedIn, user } = useUser();
+/** Same-origin path only (query allowed); blocks open redirects. */
+function safeInternalRedirectPath(raw: string | null): string | undefined {
+  if (raw == null) return undefined;
+  const t = raw.trim();
+  if (!t.startsWith("/") || t.startsWith("//")) return undefined;
+  if (t.includes("://") || t.includes("\\")) return undefined;
+  return t;
+}
+
+export default function SignSupabasePageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [ready, setReady] = useState(false);
+
+  const redirectAfterAuth = useMemo(
+    () => safeInternalRedirectPath(searchParams.get("redirect_url")),
+    [searchParams]
+  );
 
   useEffect(() => {
     const gclid = searchParams.get("gclid");
@@ -64,17 +78,37 @@ export default function SignInPageClient() {
   };
 
   useEffect(() => {
-    if (isSignedIn && user) {
-      void saveAttribution();
-      router.push("/practice-overview");
+    const supabase = createBrowserSupabaseClient();
+    if (!supabase) {
+      setReady(true);
+      return;
     }
-  }, [isSignedIn, user, router]);
+    void supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user) {
+        void saveAttribution();
+        const dest = redirectAfterAuth ?? "/practice-overview";
+        if (dest.startsWith("/api/")) window.location.assign(dest);
+        else router.replace(dest);
+      }
+      setReady(true);
+    });
+  }, [redirectAfterAuth, router]);
+
+  if (!ready) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+          <p className="text-center text-sm text-slate-600">Loading…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="w-full max-w-md">
         <h1 className="sr-only">Sign In</h1>
-        <CustomSignInForm />
+        <CustomSupabaseSignInForm redirectAfterAuth={redirectAfterAuth} />
       </div>
     </div>
   );

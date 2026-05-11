@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
 import { requireAuthenticatedRequest } from "@/lib/auth/request-auth";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
 import { stripeCheckoutPaymentMethodParams } from "@/lib/stripeCheckoutPaymentMethods";
 import {
@@ -226,7 +227,7 @@ function readStringValue(value: unknown): string | null {
 
 export async function POST(request: NextRequest) {
   try {
-    const { user, userId } = await requireAuthenticatedRequest(request);
+    const { user, userId, mobileAuthKind } = await requireAuthenticatedRequest(request);
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -472,12 +473,26 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const client = await clerkClient();
-    await client.users.updateUserMetadata(userId, {
-      publicMetadata: {
-        planCancelled: false,
-      },
-    });
+    if (mobileAuthKind === "supabase") {
+      const admin = getSupabaseAdmin();
+      if (admin) {
+        const { data: existing } = await admin.auth.admin.getUserById(userId);
+        const app = (existing.user?.app_metadata ?? {}) as Record<string, unknown>;
+        await admin.auth.admin.updateUserById(userId, {
+          app_metadata: {
+            ...app,
+            planCancelled: false,
+          },
+        });
+      }
+    } else {
+      const client = await clerkClient();
+      await client.users.updateUserMetadata(userId, {
+        publicMetadata: {
+          planCancelled: false,
+        },
+      });
+    }
 
     return NextResponse.json({ url: session.url });
   } catch (error) {

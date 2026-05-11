@@ -459,6 +459,13 @@ export function CustomSignUpForm({
           </Link>
         </p>
       ) : null}
+      {step === "details" ? (
+        <p className="mt-3 text-center text-sm text-slate-500">
+          <Link href="/sign-up" className="font-medium text-blue-600 hover:underline">
+            Email/password sign-up (Supabase)
+          </Link>
+        </p>
+      ) : null}
     </div>
   );
 }

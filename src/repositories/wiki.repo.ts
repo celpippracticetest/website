@@ -1,4 +1,6 @@
-import { MongoClient, Db, ObjectId, Filter } from "mongodb";
+import { ObjectId } from "bson";
+import type { MongoFilter } from "@/lib/pg/types";
+import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
 import {
   WikiArticleSchema,
   WikiArticleSchemaDto,
@@ -74,7 +76,7 @@ export class WikiRepository {
     category: string,
     limit: number = 2
   ): Promise<TWikiArticleSchemaDto[]> {
-    const filter: Filter<TWikiArticleSchema> = {
+    const filter: MongoFilter<TWikiArticleSchema> = {
       _id: { $ne: new ObjectId(currentId) },
       category,
     };

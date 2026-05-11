@@ -4,7 +4,8 @@ import {
   TExamSchema,
   TExamSchemaDto,
 } from "@/models/exam.model";
-import { MongoClient, Db, ObjectId } from "mongodb";
+import { ObjectId } from "bson";
+import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
 
 export class ExamRepository {
   private readonly db: Db;

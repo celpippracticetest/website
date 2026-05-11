@@ -1,7 +1,7 @@
 import mongoClient from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";
 import { ExamRepository } from "@/repositories/exams.repo";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 
 function hasResults(res: any): boolean {
   if (!res) return false;

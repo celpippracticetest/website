@@ -1,4 +1,5 @@
-import { Db, MongoClient, ObjectId } from "mongodb";
+import { ObjectId } from "bson";
+import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
 import {
   HomepageHeroScheduleSchema,
   HomepageHeroScheduleSchemaDto,

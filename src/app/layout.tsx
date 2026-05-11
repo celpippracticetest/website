@@ -2,7 +2,7 @@ import "./globals.css";
 import NextTopLoader from "nextjs-toploader";
 import { Analytics } from "@vercel/analytics/react";
 import { ClerkProvider } from "@clerk/nextjs";
-import { auth } from "@clerk/nextjs/server";
+import { hasAnyWebSession } from "@/lib/auth/web-session-server";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import AskBeavoModal from "@/components/AskBeavo/AskBeavoModal";
@@ -167,8 +167,7 @@ export default async function RootLayout({
   const enableLegacyGtm = enableGtm && LEGACY_GTM_ID && LEGACY_GTM_ID !== GTM_ID;
   const enableClarity =
     process.env.NODE_ENV === "production" && Boolean(CLARITY_ID);
-  const { userId } = await auth();
-  const isSignedIn = !!userId;
+  const isSignedIn = await hasAnyWebSession();
 
   return (
     <html suppressHydrationWarning className={jakarta.variable} lang="en">
@@ -210,20 +209,18 @@ export default async function RootLayout({
         <meta name="theme-color" content="#3B82F6" />
 
         {/* Fix Stripe/Payment Attribution: Hide stripe.com (and other payment gateways) from GTM/GA4/Pixels to prevent session break */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if (typeof document !== 'undefined' && document.referrer && (document.referrer.includes('stripe.com') || document.referrer.includes('paypal.com'))) {
-                try {
-                  var originalReferrer = localStorage.getItem('pending_referrer') || window.location.origin;
-                  Object.defineProperty(document, 'referrer', {
-                    get: function() { return originalReferrer; }
-                  });
-                } catch (e) {}
-              }
-            `,
-          }}
-        />
+        <Script id="stripe-payment-referrer-fix" strategy="beforeInteractive">
+          {`
+            if (typeof document !== "undefined" && document.referrer && (document.referrer.includes("stripe.com") || document.referrer.includes("paypal.com"))) {
+              try {
+                var originalReferrer = localStorage.getItem("pending_referrer") || window.location.origin;
+                Object.defineProperty(document, "referrer", {
+                  get: function () { return originalReferrer; },
+                });
+              } catch (e) {}
+            }
+          `}
+        </Script>
 
         {/* Load analytics bootstrapping from static assets to keep SSR HTML leaner. */}
         {enableGtm && (

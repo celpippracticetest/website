@@ -3,9 +3,13 @@ import { useEffect, useState } from "react";
 export function useChunkErrorHandler() {
   const [shouldReload, setShouldReload] = useState(false);
 
-  // Remove chunkReloadCount from sessionStorage after successful load
+  // Reset retry counter after a stable load window (immediate clear on mount broke
+  // the "retry once" guard and treated unrelated script failures as chunk errors).
   useEffect(() => {
-    sessionStorage.removeItem("chunkReloadCount");
+    const t = window.setTimeout(() => {
+      sessionStorage.removeItem("chunkReloadCount");
+    }, 8000);
+    return () => window.clearTimeout(t);
   }, []);
 
   // Handle Promise-based chunk failures (unhandledrejection)
@@ -47,7 +51,7 @@ export function useChunkErrorHandler() {
       const isChunkError =
         (e.type === "error" &&
           target?.tagName?.toUpperCase() === "SCRIPT" &&
-          (target?.src.includes("/_next/") || target?.src.includes("clerk"))) ||
+          target?.src.includes("/_next/")) ||
         (e instanceof ErrorEvent &&
           /Loading chunk \d+ failed|ChunkLoadError/.test(e.message));
 

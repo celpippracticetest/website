@@ -116,7 +116,9 @@ export function isYearlyPlan(plan: SerializedPlan) {
 }
 
 export function hasMockExamFeature(plan: SerializedPlan) {
-  return plan.features.some((feature) => /mock exam/i.test(feature));
+  return Boolean(
+    plan.features?.some((feature) => /mock exam/i.test(String(feature)))
+  );
 }
 
 export function isPremiumPlusPlan(plan: SerializedPlan) {
@@ -203,7 +205,8 @@ export const PRICING_PLUS_FEATURE_LABELS: readonly string[] = PRICING_TIER_COMPA
 );
 
 export function getDurationGroupKey(plan: SerializedPlan): DurationGroupKey | null {
-  return getDurationGroupKeyFromName(plan) || getDurationGroupKeyFromBilling(plan);
+  // Prefer Stripe-backed billing when present so CMS title typos do not drop plans.
+  return getDurationGroupKeyFromBilling(plan) || getDurationGroupKeyFromName(plan);
 }
 
 export function getStablePlanId(plan: SerializedPlan, index: number) {

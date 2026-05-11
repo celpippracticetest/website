@@ -7,7 +7,8 @@ import {
   TRefundRequestStatus,
   TRefundRequestWriteInput,
 } from "@/models/refund-request.model";
-import { Db, MongoClient, ObjectId } from "mongodb";
+import { ObjectId } from "bson";
+import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
 
 export class RefundRequestRepository {
   private readonly db: Db;

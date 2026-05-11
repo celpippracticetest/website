@@ -1,5 +1,6 @@
 import { TUser, TUserDto, UserSchema, UserSchemaDto } from "@/models/users.mode";
-import { MongoClient, Db, ObjectId } from "mongodb";
+import { ObjectId } from "bson";
+import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
 
 export class UserRepository {
   private readonly db: Db;
