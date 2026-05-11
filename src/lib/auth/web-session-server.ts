@@ -8,12 +8,21 @@ import { getSupabaseAuthUserFromServerCookies } from "@/lib/supabase/server-app-
 
 /** True if the visitor has either a Clerk session or Supabase Auth cookies. */
 export async function hasAnyWebSession(): Promise<boolean> {
-  const { userId } = await auth();
-  if (userId) {
-    return true;
+  try {
+    const { userId } = await auth();
+    if (userId) {
+      return true;
+    }
+  } catch (err) {
+    console.error("[hasAnyWebSession] Clerk auth() failed:", err);
   }
-  const supabaseUser = await getSupabaseAuthUserFromServerCookies();
-  return Boolean(supabaseUser);
+  try {
+    const supabaseUser = await getSupabaseAuthUserFromServerCookies();
+    return Boolean(supabaseUser);
+  } catch (err) {
+    console.error("[hasAnyWebSession] Supabase session read failed:", err);
+    return false;
+  }
 }
 
 /** Unified auth for dashboard server layout (Clerk session or Supabase cookies). */

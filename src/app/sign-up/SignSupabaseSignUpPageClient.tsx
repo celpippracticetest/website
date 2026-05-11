@@ -12,17 +12,37 @@ export default function SignSupabaseSignUpPageClient() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     const supabase = createBrowserSupabaseClient();
     if (!supabase) {
       setReady(true);
       return;
     }
-    void supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user) {
-        router.replace("/practice-overview");
-      }
-      setReady(true);
-    });
+
+    const hangMs = 12_000;
+    const timeoutId = window.setTimeout(() => {
+      if (!cancelled) setReady(true);
+    }, hangMs);
+
+    void supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        window.clearTimeout(timeoutId);
+        if (cancelled) return;
+        if (data.session?.user) {
+          router.replace("/practice-overview");
+        }
+        setReady(true);
+      })
+      .catch(() => {
+        window.clearTimeout(timeoutId);
+        if (!cancelled) setReady(true);
+      });
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
   }, [router]);
 
   if (!ready) {

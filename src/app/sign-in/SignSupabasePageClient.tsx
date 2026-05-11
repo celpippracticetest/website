@@ -80,20 +80,40 @@ export default function SignSupabasePageClient() {
   };
 
   useEffect(() => {
+    let cancelled = false;
     const supabase = createBrowserSupabaseClient();
     if (!supabase) {
       setReady(true);
       return;
     }
-    void supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user) {
-        void saveAttribution();
-        const dest = redirectAfterAuth ?? "/practice-overview";
-        if (dest.startsWith("/api/")) window.location.assign(dest);
-        else router.replace(dest);
-      }
-      setReady(true);
-    });
+
+    const hangMs = 12_000;
+    const timeoutId = window.setTimeout(() => {
+      if (!cancelled) setReady(true);
+    }, hangMs);
+
+    void supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        window.clearTimeout(timeoutId);
+        if (cancelled) return;
+        if (data.session?.user) {
+          void saveAttribution();
+          const dest = redirectAfterAuth ?? "/practice-overview";
+          if (dest.startsWith("/api/")) window.location.assign(dest);
+          else router.replace(dest);
+        }
+        setReady(true);
+      })
+      .catch(() => {
+        window.clearTimeout(timeoutId);
+        if (!cancelled) setReady(true);
+      });
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
   }, [redirectAfterAuth, router]);
 
   if (!ready) {
