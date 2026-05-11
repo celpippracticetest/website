@@ -77,10 +77,11 @@ export function CustomSupabaseSignUpForm({ className }: { className?: string }) 
         Create account
       </h2>
       <p className="mt-2 text-center text-sm text-slate-600">
-        Prefer your old Clerk account?{" "}
+        Need to create another account with Google or Clerk? Use{" "}
         <Link href="/sign-up/clerk" className="font-medium text-blue-600 hover:underline">
-          Legacy sign-up
+          legacy sign-up
         </Link>
+        .
       </p>
 
       <form className="mt-6 space-y-4" onSubmit={onSubmit}>

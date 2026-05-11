@@ -454,15 +454,16 @@ export function CustomSignUpForm({
       {step === "details" ? (
         <p className="mt-6 text-center text-sm text-slate-600">
           Already have an account?{" "}
-          <Link href="/sign-in" className="font-medium text-blue-600 hover:underline">
-            Sign in
+          <Link href="/sign-in/clerk" className="font-medium text-blue-600 hover:underline">
+            Sign in (Clerk)
           </Link>
         </p>
       ) : null}
       {step === "details" ? (
         <p className="mt-3 text-center text-sm text-slate-500">
+          New email account?{" "}
           <Link href="/sign-up" className="font-medium text-blue-600 hover:underline">
-            Email/password sign-up (Supabase)
+            Sign up with email (Supabase)
           </Link>
         </p>
       ) : null}

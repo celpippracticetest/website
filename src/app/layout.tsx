@@ -17,6 +17,7 @@ import AttributionTracker from "@/components/analytics/AttributionTracker";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
 import RedditPixelTracker from "@/components/analytics/RedditPixelTracker";
 import MarketingFooterSection from "@/components/pages/landing/MarketingFooterSection";
+import SiteStatusBanner from "@/components/SiteStatusBanner";
 import MuiAppRouterCacheProvider from "@/components/MuiAppRouterCacheProvider";
 import { getHomepageHeroDisplay } from "@/lib/homepage-hero";
 import type { Metadata, Viewport } from "next";
@@ -300,6 +301,7 @@ export default async function RootLayout({
           )}
 
           <NextTopLoaderComponent />
+          <SiteStatusBanner />
           <ErrorBoundary>
             {children}
             <MarketingFooterSection isSignedIn={isSignedIn} />

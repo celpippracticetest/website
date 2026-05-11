@@ -68,10 +68,10 @@ export function CustomSupabaseSignInForm({
         Sign in
       </h2>
       <p className="mt-2 text-center text-sm text-slate-600">
-        New accounts use email and password here. If you originally signed up
-        with Clerk, use{" "}
+        New accounts sign in here with email and password. If you created your account
+        before we added this login, use{" "}
         <Link href="/sign-in/clerk" className="font-medium text-blue-600 hover:underline">
-          legacy sign-in
+          legacy Clerk sign-in
         </Link>
         .
       </p>
@@ -98,10 +98,10 @@ export function CustomSupabaseSignInForm({
           <div className="flex items-center justify-between gap-2">
             <Label htmlFor="supa-signin-password">Password</Label>
             <Link
-              href="/sign-in/clerk"
+              href="/sign-in/forgot-supabase"
               className="shrink-0 text-sm font-medium text-blue-600 hover:underline"
             >
-              Forgot password? (Clerk)
+              Forgot password?
             </Link>
           </div>
           <Input
@@ -127,6 +127,12 @@ export function CustomSupabaseSignInForm({
         No account?{" "}
         <Link href="/sign-up" className="font-medium text-blue-600 hover:underline">
           Create one
+        </Link>
+      </p>
+      <p className="mt-3 text-center text-sm text-slate-500">
+        Password help for an older Clerk-only account:{" "}
+        <Link href="/sign-in/clerk" className="font-medium text-blue-600 hover:underline">
+          legacy sign-in
         </Link>
       </p>
     </div>
