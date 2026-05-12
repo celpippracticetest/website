@@ -29,10 +29,8 @@ function createClient(): CompatMongoClient {
 }
 
 /** Same shape as the old MongoClient default export: `{ db }`. */
-const client: CompatMongoClient =
-  process.env.NODE_ENV === "development"
-    ? (globalForPg.__celpipPgClient ??= createClient())
-    : createClient();
+const client: CompatMongoClient = (globalForPg.__celpipPgClient ??=
+  createClient());
 
 export default client;
 

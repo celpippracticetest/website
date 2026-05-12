@@ -14,6 +14,7 @@ import { useGetUserSessions } from "@/hooks/useGetUserSessions";
 import { useRouter } from "next/navigation";
 import { useDeleteUserAccount } from "@/hooks/useDeleteUserAccount";
 import { useClerk } from "@clerk/nextjs";
+import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { useDeleteUserEmail } from "@/hooks/useDeleteUserEmail";
 import SvgCloseCircle from "@/components/icons/CloseCircle";
 import Link from "next/link";
@@ -347,9 +348,11 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
     setShowDeleteRetentionModal(true);
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     localStorage.removeItem("hasClosedExtraDiscountModal");
-    signOut();
+    const supabase = createBrowserSupabaseClient();
+    if (supabase) await supabase.auth.signOut();
+    await signOut({ redirectUrl: "/sign-in" });
   };
 
   const confirmDeleteAccount = (flowId?: string | null) => {
@@ -363,11 +366,15 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
           setShowDeleteRetentionModal(false);
           setTimeout(() => {
             setShowToast(false);
-            signOut();
             localStorage.removeItem("hasClosedExtraDiscountModal");
             localStorage.removeItem("pendingReferralCode");
             document.cookie =
               "pendingReferralCode=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+            void (async () => {
+              const supabase = createBrowserSupabaseClient();
+              if (supabase) await supabase.auth.signOut();
+              await signOut({ redirectUrl: "/sign-in" });
+            })();
           }, 3000);
         },
         onError: () => {

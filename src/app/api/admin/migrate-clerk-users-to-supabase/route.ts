@@ -1,54 +1,14 @@
-import { randomBytes } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
-import {
-  buildSupabaseAuthPayloadFromClerkUser,
-  type ClerkUserLike,
-} from "@/lib/migrations/clerkToSupabaseUserPayload";
+import type { ClerkUserLike } from "@/lib/migrations/clerkToSupabaseUserPayload";
 import { getDb } from "@/lib/mongodb";
-import { getSql } from "@/lib/pg/pool";
+import { migrateClerkUsersPage } from "@/lib/migrations/clerkToSupabaseMigrationBatch";
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
-
-function isDuplicateEmailError(message: string): boolean {
-  const m = message.toLowerCase();
-  return (
-    m.includes("already been registered") ||
-    m.includes("already registered") ||
-    m.includes("email address is already") ||
-    m.includes("user already registered")
-  );
-}
-
-async function findSupabaseUserIdByEmail(email: string): Promise<string | null> {
-  try {
-    const sql = getSql();
-    const rows = await sql<{ id: string }[]>`
-      select id::text as id
-      from auth.users
-      where lower(email) = lower(${email})
-      limit 1
-    `;
-    return rows[0]?.id ?? null;
-  } catch {
-    return null;
-  }
-}
-
-function randomMigrationPassword(): string {
-  return randomBytes(32).toString("hex");
-}
-
-function mergeRecord(
-  base: Record<string, unknown>,
-  patch: Record<string, unknown>
-): Record<string, unknown> {
-  return { ...base, ...patch };
-}
 
 export async function GET() {
   try {
@@ -60,7 +20,10 @@ export async function GET() {
 
     if (!isSupabaseAdminConfigured()) {
       return NextResponse.json(
-        { error: "Supabase admin is not configured (NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY)." },
+        {
+          error:
+            "Supabase admin is not configured (NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY).",
+        },
         { status: 500 }
       );
     }
@@ -113,7 +76,10 @@ export async function POST(request: NextRequest) {
 
     if (!isSupabaseAdminConfigured()) {
       return NextResponse.json(
-        { error: "Supabase admin is not configured (NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY)." },
+        {
+          error:
+            "Supabase admin is not configured (NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY).",
+        },
         { status: 500 }
       );
     }
@@ -140,206 +106,37 @@ export async function POST(request: NextRequest) {
     const db = await getDb();
     const usersCollection = db.collection("users");
 
-    let created = 0;
-    let linkedExisting = 0;
-    let refreshed = 0;
-    let skippedNoEmail = 0;
-    let skippedAlreadyLinked = 0;
-    let dryRunWouldCreateOrLink = 0;
-    let dryRunWouldRefresh = 0;
-    const errors: { clerkUserId: string; message: string }[] = [];
+    const result = await migrateClerkUsersPage({
+      admin,
+      usersCollection,
+      clerkUsers: page.data as unknown as ClerkUserLike[],
+      totalCount: page.totalCount,
+      offset,
+      dryRun,
+      linkExistingByEmail,
+      refreshMetadata,
+    });
 
-    for (const clerkUser of page.data) {
-      const cu = clerkUser as unknown as ClerkUserLike;
-      const { email, user_metadata, app_metadata } = buildSupabaseAuthPayloadFromClerkUser(cu);
-
-      if (!email) {
-        skippedNoEmail++;
-        continue;
-      }
-
-      const existingMongo = await usersCollection.findOne({ clerkUserId: cu.id });
-      const existingSupabaseId =
-        typeof existingMongo?.supabaseUserId === "string" ? existingMongo.supabaseUserId.trim() : "";
-
-      if (existingSupabaseId && !refreshMetadata) {
-        skippedAlreadyLinked++;
-        continue;
-      }
-
-      if (existingSupabaseId && refreshMetadata) {
-        if (dryRun) {
-          dryRunWouldRefresh++;
-          continue;
-        }
-        const { data: existingAuth, error: getErr } = await admin.auth.admin.getUserById(
-          existingSupabaseId
-        );
-        if (getErr || !existingAuth.user) {
-          errors.push({
-            clerkUserId: cu.id,
-            message: getErr?.message ?? "Supabase user from Mongo not found; clear supabaseUserId or fix id.",
-          });
-          continue;
-        }
-        const um = mergeRecord(
-          (existingAuth.user.user_metadata ?? {}) as Record<string, unknown>,
-          user_metadata
-        );
-        const am = mergeRecord(
-          (existingAuth.user.app_metadata ?? {}) as Record<string, unknown>,
-          app_metadata
-        );
-        const { error: upErr } = await admin.auth.admin.updateUserById(existingSupabaseId, {
-          user_metadata: um,
-          app_metadata: am,
-        });
-        if (upErr) {
-          errors.push({ clerkUserId: cu.id, message: upErr.message });
-          continue;
-        }
-        await usersCollection.updateOne(
-          { clerkUserId: cu.id },
-          {
-            $set: {
-              email,
-              firstName: cu.firstName ?? null,
-              lastName: cu.lastName ?? null,
-              imageUrl: cu.imageUrl ?? null,
-              publicMetadata: (cu.publicMetadata ?? {}) as Record<string, unknown>,
-              plan: ((cu.publicMetadata ?? {}) as { plan?: string }).plan || "free",
-              planType: ((cu.publicMetadata ?? {}) as { planType?: string | null }).planType ?? null,
-              clerkMigrationMetadataSyncedAt: new Date(),
-              updatedAt: new Date(),
-            },
-          },
-          { upsert: true }
-        );
-        refreshed++;
-        continue;
-      }
-
-      if (dryRun) {
-        dryRunWouldCreateOrLink++;
-        continue;
-      }
-
-      const publicMetadata = (cu.publicMetadata ?? {}) as Record<string, unknown>;
-      const mongoBase = {
-        clerkUserId: cu.id,
-        email,
-        firstName: cu.firstName ?? null,
-        lastName: cu.lastName ?? null,
-        imageUrl: cu.imageUrl ?? null,
-        publicMetadata,
-        plan: (publicMetadata.plan as string | undefined) || "free",
-        planType: (publicMetadata.planType as string | null | undefined) ?? null,
-        updatedAt: new Date(),
-      };
-
-      const { data: createdUser, error: createErr } = await admin.auth.admin.createUser({
-        email,
-        password: randomMigrationPassword(),
-        email_confirm: true,
-        user_metadata,
-        app_metadata,
-      });
-
-      if (createErr) {
-        if (linkExistingByEmail && isDuplicateEmailError(createErr.message)) {
-          const existingId = await findSupabaseUserIdByEmail(email);
-          if (!existingId) {
-            errors.push({
-              clerkUserId: cu.id,
-              message: `${createErr.message} (could not resolve existing Supabase user id; ensure DATABASE_URL can read auth.users, or link manually.)`,
-            });
-            continue;
-          }
-          const { data: existingAuth, error: getErr } = await admin.auth.admin.getUserById(existingId);
-          if (getErr || !existingAuth.user) {
-            errors.push({ clerkUserId: cu.id, message: getErr?.message ?? "getUserById failed after duplicate email." });
-            continue;
-          }
-          const um = mergeRecord(
-            (existingAuth.user.user_metadata ?? {}) as Record<string, unknown>,
-            user_metadata
-          );
-          const am = mergeRecord(
-            (existingAuth.user.app_metadata ?? {}) as Record<string, unknown>,
-            app_metadata
-          );
-          const { error: upErr } = await admin.auth.admin.updateUserById(existingId, {
-            user_metadata: um,
-            app_metadata: am,
-          });
-          if (upErr) {
-            errors.push({ clerkUserId: cu.id, message: upErr.message });
-            continue;
-          }
-          await usersCollection.updateOne(
-            { clerkUserId: cu.id },
-            {
-              $set: {
-                ...mongoBase,
-                supabaseUserId: existingId,
-                clerkLinkedToExistingSupabaseAt: new Date(),
-              },
-              $setOnInsert: { createdAt: new Date() },
-            },
-            { upsert: true }
-          );
-          linkedExisting++;
-          continue;
-        }
-
-        errors.push({ clerkUserId: cu.id, message: createErr.message });
-        continue;
-      }
-
-      if (!createdUser.user?.id) {
-        errors.push({ clerkUserId: cu.id, message: "createUser returned no user id." });
-        continue;
-      }
-
-      const supabaseUserId = createdUser.user.id;
-
-      await usersCollection.updateOne(
-        { clerkUserId: cu.id },
-        {
-          $set: {
-            ...mongoBase,
-            supabaseUserId,
-            clerkMigratedToSupabaseAt: new Date(),
-          },
-          $setOnInsert: { createdAt: new Date() },
-        },
-        { upsert: true }
-      );
-      created++;
-    }
-
-    const total = page.totalCount ?? 0;
-    const nextOffset = offset + page.data.length;
-    const done = nextOffset >= total;
+    const errors = result.errors.slice(0, 25);
 
     return NextResponse.json({
       success: true,
       dryRun,
       offset,
       limit,
-      batchSize: page.data.length,
-      totalClerkUsers: total,
-      nextOffset: done ? null : nextOffset,
-      done,
-      created,
-      linkedExisting,
-      refreshed,
-      skippedNoEmail,
-      skippedAlreadyLinked,
-      dryRunWouldCreateOrLink,
-      dryRunWouldRefresh,
-      errors: errors.slice(0, 25),
-      errorCount: errors.length,
+      batchSize: result.batchSize,
+      totalClerkUsers: result.totalClerkUsers,
+      nextOffset: result.nextOffset,
+      done: result.done,
+      created: result.created,
+      linkedExisting: result.linkedExisting,
+      refreshed: result.refreshed,
+      skippedNoEmail: result.skippedNoEmail,
+      skippedAlreadyLinked: result.skippedAlreadyLinked,
+      dryRunWouldCreateOrLink: result.dryRunWouldCreateOrLink,
+      dryRunWouldRefresh: result.dryRunWouldRefresh,
+      errors,
+      errorCount: result.errors.length,
       passwordNote:
         "Newly created Supabase users receive a random password. They must use /sign-in/forgot-supabase (or you send a recovery link) before email/password sign-in works.",
     });

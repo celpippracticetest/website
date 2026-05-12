@@ -19,6 +19,7 @@ import {
   UserButton,
   useUser,
 } from "@clerk/nextjs";
+import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 // import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 
 interface NavLinks {
@@ -286,9 +287,11 @@ const DesktopHeader = (props: {
                 </a>
               )}
             <button
-              onClick={() => {
+              onClick={async () => {
                 auth.logout();
-                signOut();
+                const supabase = createBrowserSupabaseClient();
+                if (supabase) await supabase.auth.signOut();
+                await signOut({ redirectUrl: "/sign-in" });
               }}
               className="block px-4 py-2 text-[14px] text-gray-700 cursor-pointer"
               role="menuitem"

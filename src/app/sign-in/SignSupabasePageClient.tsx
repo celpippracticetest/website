@@ -1,6 +1,6 @@
 "use client";
 
-import { CustomSupabaseSignInForm } from "@/components/auth/CustomSupabaseSignInForm";
+import { SupabaseAuthForm } from "@/components/auth/SupabaseAuthForm";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -24,7 +24,9 @@ export default function SignSupabasePageClient() {
     [searchParams]
   );
 
-  const showLegacyClerkAccountHint = searchParams.get("legacy") === "1";
+  const showLegacyClerkHint = searchParams.get("legacy") === "1";
+  const initialMode = searchParams.get("mode") === "sign-up" ? "sign-up" : "sign-in";
+
   const forceShowForm = useMemo(() => {
     const f = searchParams.get("force");
     return f === "1" || f?.toLowerCase() === "true";
@@ -136,12 +138,16 @@ export default function SignSupabasePageClient() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
       <div className="w-full max-w-md">
-        <h1 className="sr-only">Sign In</h1>
-        <CustomSupabaseSignInForm
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl font-bold text-slate-900">Welcome to CELPIP</h1>
+          <p className="mt-1 text-sm text-slate-500">Sign in or create a free account to start practising.</p>
+        </div>
+        <SupabaseAuthForm
+          initialMode={initialMode as "sign-in" | "sign-up"}
           redirectAfterAuth={redirectAfterAuth}
-          showLegacyClerkAccountHint={showLegacyClerkAccountHint}
+          showLegacyClerkHint={showLegacyClerkHint}
         />
       </div>
     </div>

@@ -13,6 +13,7 @@
     "migrate:onboarding:new-to-onboarding": "node ./scripts/migrate-onboarding-new-to-onboarding.js",
     "seed:profession-pages": "node ./scripts/seed-profession-pages.js",
     "export:clerk:all": "node ./tooling/export-clerk-all-users.js",
+    "migrate:clerk:supabase": "npx --yes tsx ./tooling/migrate-clerk-to-supabase.ts",
     "clerk:whoami": "clerk whoami --dotenv",
     "clerk:instance": "clerk instance get --dotenv -o json",
     "clerk:snapshot": "node ./tooling/clerk-instance-snapshot.mjs",

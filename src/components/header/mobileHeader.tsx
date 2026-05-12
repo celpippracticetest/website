@@ -13,6 +13,7 @@ import { useUser } from "@clerk/nextjs";
 import { useEventTracker } from "@/hooks/useTracking";
 import { isPaidClerkSubscriptionPlan } from "@/lib/clerkSubscriptionPlan";
 import { Show, SignInButton, SignUpButton, useClerk } from "@clerk/nextjs";
+import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 // import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 
 interface NavLinks {
@@ -292,9 +293,11 @@ const MobileHeader = (props: {
               )}
 
             <button
-              onClick={() => {
+              onClick={async () => {
                 auth.logout();
-                signOut();
+                const supabase = createBrowserSupabaseClient();
+                if (supabase) await supabase.auth.signOut();
+                await signOut({ redirectUrl: "/sign-in" });
               }}
               className="block px-4 py-2 text-[14px] text-gray-700 cursor-pointer"
               role="menuitem"

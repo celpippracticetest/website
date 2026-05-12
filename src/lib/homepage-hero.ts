@@ -29,8 +29,7 @@ export async function getActiveHomepageHeroSchedule(): Promise<THomepageHeroSche
     }
 
     const repo = new HomepageHeroScheduleRepository(mongoClient);
-    await repo.ensureIndexes();
-
+    // Indexes are ensured from CMS/API (`/api/admin/homepage-hero`); avoid DDL on every layout read (DB connection pressure).
     return await repo.getActiveSchedule(getDateInHomepageHeroTimezone());
   } catch (error) {
     console.error("[homepage-hero] failed to load active schedule:", error);
