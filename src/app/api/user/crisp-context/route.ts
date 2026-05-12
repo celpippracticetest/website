@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import Stripe from "stripe";
+import type { MobileUserBridge } from "@/lib/auth/supabase-mobile-user-bridge";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 import {
   emailsFromClerkUser,
@@ -21,34 +22,86 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const clerk = await clerkClient();
-    const user = await clerk.users.getUser(userId);
-    const meta = (user.publicMetadata || {}) as Record<string, unknown>;
+    const isSupabaseBacked = authContext.supabaseAuthUserId != null;
 
-    const db = await getDb();
-    const tokenAgg = await db
-      .collection("useractivities")
-      .aggregate<{ prompt: number; completion: number }>([
-        { $match: { userId } },
-        {
-          $group: {
-            _id: null,
-            prompt: { $sum: { $ifNull: ["$llmTokensPrompt", 0] } },
-            completion: { $sum: { $ifNull: ["$llmTokensCompletion", 0] } },
-          },
-        },
-      ])
-      .toArray();
+    let responseUserId: string;
+    let meta: Record<string, unknown>;
+    let clerkStripeCustomerId: string | undefined;
+    let email: string | null;
+    let fullName: string | null;
+    let username: string | null;
+    let createdAtIso: string;
 
-    const llmTokensPromptTotal = tokenAgg[0]?.prompt ?? 0;
-    const llmTokensCompletionTotal = tokenAgg[0]?.completion ?? 0;
-
-    const customerId = await resolveStripeCustomerId(userId, {
-      clerkStripeCustomerId: user.privateMetadata?.stripeCustomerId as
+    if (isSupabaseBacked) {
+      const bridge = authContext.user as MobileUserBridge;
+      responseUserId = bridge.id;
+      meta = { ...(bridge.publicMetadata || {}) };
+      clerkStripeCustomerId = bridge.privateMetadata?.stripeCustomerId ?? undefined;
+      email =
+        bridge.primaryEmailAddress?.emailAddress ??
+        bridge.emailAddresses?.[0]?.emailAddress ??
+        null;
+      const joined = [bridge.firstName, bridge.lastName].filter(Boolean).join(" ").trim();
+      fullName = joined.length > 0 ? joined : null;
+      username =
+        typeof meta.username === "string" && meta.username.trim().length > 0
+          ? String(meta.username).trim()
+          : null;
+      const rawCreated =
+        (typeof meta.createdAt === "string" && meta.createdAt) ||
+        (typeof meta.created_at === "string" && meta.created_at) ||
+        "";
+      if (rawCreated) {
+        try {
+          createdAtIso = new Date(rawCreated).toISOString();
+        } catch {
+          createdAtIso = "";
+        }
+      } else {
+        createdAtIso = "";
+      }
+    } else {
+      const clerk = await clerkClient();
+      const user = await clerk.users.getUser(userId);
+      responseUserId = user.id;
+      meta = (user.publicMetadata || {}) as Record<string, unknown>;
+      clerkStripeCustomerId = user.privateMetadata?.stripeCustomerId as
         | string
-        | undefined,
-      emails: emailsFromClerkUser(user),
-    });
+        | undefined;
+      email =
+        user.primaryEmailAddress?.emailAddress ??
+        user.emailAddresses?.[0]?.emailAddress ??
+        null;
+      fullName = user.fullName || null;
+      username = user.username || null;
+      createdAtIso =
+        user.createdAt != null
+          ? new Date(user.createdAt as number | string | Date).toISOString()
+          : "";
+    }
+
+    let llmTokensPromptTotal = 0;
+    let llmTokensCompletionTotal = 0;
+    try {
+      const db = await getDb();
+      const tokenAgg = await db
+        .collection("useractivities")
+        .aggregate<{ prompt: number; completion: number }>([
+          { $match: { userId } },
+          {
+            $group: {
+              _id: null,
+              prompt: { $sum: { $ifNull: ["$llmTokensPrompt", 0] } },
+              completion: { $sum: { $ifNull: ["$llmTokensCompletion", 0] } },
+            },
+          },
+        ])
+        .toArray();
+      llmTokensPromptTotal = tokenAgg[0]?.prompt ?? 0;
+      llmTokensCompletionTotal = tokenAgg[0]?.completion ?? 0;
+    } catch (mongoErr) {
+      console.error("crisp-context mongo:", mongoErr);
+    }
 
     let subscription: {
       status: string;
@@ -57,36 +110,37 @@ export async function GET(request: NextRequest) {
       cancelAtPeriodEnd: boolean;
     } | null = null;
 
-    if (customerId) {
-      const subs = await stripe.subscriptions.list({
-        customer: customerId,
-        status: "active",
-        limit: 1,
+    try {
+      const customerId = await resolveStripeCustomerId(userId, {
+        clerkStripeCustomerId,
+        emails: emailsFromClerkUser(authContext.user),
       });
-      const sub = subs.data[0];
-      if (sub) {
-        subscription = {
-          status: sub.status,
-          currentPeriodStart: sub.current_period_start,
-          currentPeriodEnd: sub.current_period_end,
-          cancelAtPeriodEnd: sub.cancel_at_period_end,
-        };
+
+      if (customerId) {
+        const subs = await stripe.subscriptions.list({
+          customer: customerId,
+          status: "active",
+          limit: 1,
+        });
+        const sub = subs.data[0];
+        if (sub) {
+          subscription = {
+            status: sub.status,
+            currentPeriodStart: sub.current_period_start,
+            currentPeriodEnd: sub.current_period_end,
+            cancelAtPeriodEnd: sub.cancel_at_period_end,
+          };
+        }
       }
+    } catch (stripeErr) {
+      console.error("crisp-context stripe:", stripeErr);
     }
 
-    const createdAtIso =
-      user.createdAt != null
-        ? new Date(user.createdAt as number | string | Date).toISOString()
-        : "";
-
     return NextResponse.json({
-      clerkUserId: user.id,
-      email:
-        user.primaryEmailAddress?.emailAddress ??
-        user.emailAddresses?.[0]?.emailAddress ??
-        null,
-      fullName: user.fullName || null,
-      username: user.username || null,
+      clerkUserId: responseUserId,
+      email,
+      fullName,
+      username,
       createdAtIso,
       plan: meta.plan != null ? String(meta.plan) : "",
       purchaseDate: meta.purchaseDate != null ? String(meta.purchaseDate) : "",

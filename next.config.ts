@@ -149,7 +149,7 @@ const nextConfig: NextConfig = {
 
   async redirects() {
     /** Legacy / mistaken paths linked from older content; targets verified in prod DB (Apr 2026). */
-    const fixes: { source: string; destination: string }[] = [
+    const fixes = [
       ["/celpip-for-medical-laboratory-technologist", "/celpip-for-medical-radiological-technologists"],
       ["/celpip-vs-ielts", "/blog/celpip-vs-ielts-format-fees-scoring"],
       ["/celpip-speaking-tips-for-healthcare", "/wiki/celpip-speaking-tips-high-score"],
@@ -174,6 +174,13 @@ const nextConfig: NextConfig = {
       {
         source: "/gtm/ns.html",
         destination: "https://www.googletagmanager.com/ns.html",
+      },
+      // GTM first-party mode loads `sw_iframe.html` (and related SW assets) under
+      // `/gtm/js/_/service_worker/<version>/…` on the site origin — proxy to Google.
+      {
+        source: "/gtm/js/_/service_worker/:path*",
+        destination:
+          "https://www.googletagmanager.com/static/service_worker/:path*",
       },
       {
         source: "/gtag/js",

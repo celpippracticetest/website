@@ -69,7 +69,9 @@ export default function PerformanceMonitor() {
       longTaskObserver = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
           const d = entry.duration as number;
-          if (d > 50) {
+          // Avoid flooding the console: the Long Task threshold is 50ms, so sub‑120ms
+          // noise is mostly idle scheduling + third-party scripts (GTM, ads, etc.).
+          if (d > 120) {
             console.warn(`Long task detected: ${d.toFixed(1)}ms`, entry);
           }
         }

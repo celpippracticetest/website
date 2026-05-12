@@ -137,8 +137,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const ExamsPage = async () => {
   const exampRepo = new ExamRepository(mongoClient);
-  const result = await exampRepo.getAllExam({ isReady: true }, 0, 1000);
-  const hybridUser = await getHybridCurrentUser();
+  const [result, hybridUser] = await Promise.all([
+    exampRepo.getAllExam({ isReady: true }, 0, 1000),
+    getHybridCurrentUser(),
+  ]);
   const user = hybridUser?.user ?? null;
   const noUser = !user;
 
