@@ -9,7 +9,8 @@ import { useHybridWebUser } from "@/hooks/useHybridWebUser";
  * and sends event to Google Analytics
  */
 export default function ActiveUsersTracker() {
-  const { user } = useHybridWebUser();`n  const userId = user?.id ?? null;
+  const { user } = useHybridWebUser();
+  const userId = user?.id ?? null;
   const sessionIdRef = useRef<string>(`session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasLoggedFetchFailureRef = useRef(false);

@@ -84,7 +84,8 @@ function persistAttributionFromUrl(pathname: string, searchParams: URLSearchPara
 export default function AttributionTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { isSignedIn, user } = useHybridWebUser();`n  const userId = user?.id ?? null;
+  const { isSignedIn, user } = useHybridWebUser();
+  const userId = user?.id ?? null;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
