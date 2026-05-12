@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 import mongoClient from "@/lib/mongodb";
 import { UserWordsRepository } from "@/repositories/userWords.repo";
 import { getDb } from "@/lib/mongodb";
@@ -54,10 +54,11 @@ async function classifyWordComplexity(word: string): Promise<ComplexityLevel> {
 }
 
 export async function GET(req: NextRequest) {
-    const user = await currentUser();
-    if (!user) {
+    const ctx = await getAuthenticatedRequestContext(req);
+    if (!ctx?.user) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
+    const user = ctx.user;
 
     const word = req.nextUrl.searchParams.get("word");
     const limit = parseInt(req.nextUrl.searchParams.get("limit") || "20");
@@ -79,10 +80,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const user = await currentUser();
-    if (!user) {
+    const ctx = await getAuthenticatedRequestContext(req);
+    if (!ctx?.user) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
+    const user = ctx.user;
 
     try {
         const { word } = await req.json();
@@ -126,10 +128,11 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-    const user = await currentUser();
-    if (!user) {
+    const ctx = await getAuthenticatedRequestContext(req);
+    if (!ctx?.user) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
+    const user = ctx.user;
 
     try {
         const word = req.nextUrl.searchParams.get("word");
@@ -147,10 +150,11 @@ export async function DELETE(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-    const user = await currentUser();
-    if (!user) {
+    const ctx = await getAuthenticatedRequestContext(req);
+    if (!ctx?.user) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
+    const user = ctx.user;
 
     try {
         const { word, isLearned, action } = await req.json();

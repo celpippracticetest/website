@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 import client from "@/lib/mongodb";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 const SYSTEM_PROMPT = `ROLE & AUDIENCE
@@ -160,7 +160,8 @@ One-liner template: "I can't help with that—my scope is CELPIP and English lea
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await currentUser();
+    const ctx = await getAuthenticatedRequestContext(request);
+    const user = ctx?.user ?? null;
     const isAuthenticated = !!user;
 
     const { message, context, conversationHistory } = await request.json();

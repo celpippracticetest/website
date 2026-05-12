@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 import mongoClient from "@/lib/mongodb";
 import { ObjectId } from "bson";
 
@@ -237,10 +237,11 @@ async function requestWordDetails(word: string, model: string) {
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await currentUser();
-    if (!user) {
+    const ctx = await getAuthenticatedRequestContext(request);
+    if (!ctx?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const user = ctx.user;
 
     const { searchParams } = new URL(request.url);
     const word = searchParams.get("word");

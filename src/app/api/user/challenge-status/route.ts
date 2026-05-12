@@ -1,17 +1,18 @@
-import { NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { NextRequest, NextResponse } from "next/server";
+import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 import { getDb } from "@/lib/mongodb";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const user = await currentUser();
-    if (!user) {
+    const ctx = await getAuthenticatedRequestContext(req);
+    if (!ctx?.user) {
       return NextResponse.json({ active: false }, { status: 401 });
     }
+    const user = ctx.user;
 
     const db = await getDb();
     const userDoc = await db.collection("users").findOne(
-      { clerkUserId: user.id },
+      { $or: [{ clerkUserId: user.id }, { supabaseUserId: ctx.supabaseAuthUserId }, { sub: user.id }] },
       {
         projection: {
           challenge: 1,

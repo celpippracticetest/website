@@ -1,6 +1,6 @@
 import Profile from "@/components/dashboard-new/Profile";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/nextjs/server";
 import mongoClient from "@/lib/mongodb";
 import {
   emailsFromClerkUser,
@@ -9,8 +9,8 @@ import {
 import { normalizePlan } from "@/lib/subscriptionAccess";
 import { redirect } from "next/navigation";
 import Stripe from "stripe";
-import { getSupabaseAuthUserFromServerCookies } from "@/lib/supabase/server-app-read-user";
-import { readClerkLegacyUserIdFromSupabaseUser } from "@/lib/auth/supabase-user-plan";
+import { getDashboardLayoutAuthContext } from "@/lib/auth/web-session-server";
+import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -51,11 +51,12 @@ async function buildSubscriptionDataFromStripeSub(
   subscription: Stripe.Subscription
 ): Promise<ProfileSubscriptionData> {
   const sub = subscription;
-  // Always use Stripe's billing period boundaries (product name still comes from price/product).
-  const currentPeriodStart = sub.current_period_start ?? undefined;
-  const currentPeriodEnd = sub.current_period_end ?? undefined;
+  // In Stripe SDK v18+, current_period_* moved from Subscription to SubscriptionItem.
+  const firstItem = sub.items.data[0];
+  const currentPeriodStart = firstItem?.current_period_start ?? undefined;
+  const currentPeriodEnd = firstItem?.current_period_end ?? undefined;
 
-  const price = sub.items.data[0]?.price as Stripe.Price | undefined;
+  const price = firstItem?.price as Stripe.Price | undefined;
   const planName = await resolveStripePlanDisplayName(price);
 
   return {
@@ -134,34 +135,36 @@ async function resolveSubscriptionDataForCustomer(
 }
 
 export default async function UserProfilePage() {
-  // Try Clerk first, then fall back to Supabase session.
-  let userId: string | null = null;
-
-  const clerkAuth = await auth();
-  if (clerkAuth.userId) {
-    userId = clerkAuth.userId;
-  } else {
-    const supabaseUser = await getSupabaseAuthUserFromServerCookies();
-    if (supabaseUser) {
-      userId = readClerkLegacyUserIdFromSupabaseUser(supabaseUser) ?? supabaseUser.id;
-    }
-  }
-
-  if (!userId) {
+  const ctx = await getDashboardLayoutAuthContext();
+  if (!ctx?.userId) {
     redirect("/sign-in");
   }
+
+  const { userId, user: ctxUser } = ctx;
 
   try {
     const userRepo = new CheckoutRepository(mongoClient);
     const prevCheckout = await userRepo.findLatestCheckoutByUserId(userId);
 
-    const client = await clerkClient();
-    const user = await client.users.getUser(userId);
+    // For Supabase-only users (UUID) skip the Clerk API — use the bridge user directly.
+    const isSupabaseUser = isLikelySupabaseAuthUserId(userId);
+
+    let clerkUser: Awaited<ReturnType<Awaited<ReturnType<typeof clerkClient>>["users"]["getUser"]>> | null = null;
+    if (!isSupabaseUser) {
+      try {
+        const client = await clerkClient();
+        clerkUser = await client.users.getUser(userId);
+      } catch {
+        // Clerk user not found — fall through to Supabase bridge
+      }
+    }
+
+    // Use Clerk user if available, otherwise fall back to the Supabase bridge (ctxUser)
+    const userForStripe = clerkUser ?? ctxUser;
+
     const customerId = await resolveStripeCustomerId(userId, {
-      clerkStripeCustomerId: user.privateMetadata?.stripeCustomerId as
-        | string
-        | undefined,
-      emails: emailsFromClerkUser(user),
+      clerkStripeCustomerId: userForStripe.privateMetadata?.stripeCustomerId as string | undefined,
+      emails: emailsFromClerkUser(userForStripe),
     });
 
     let subscriptionData: ProfileSubscriptionData | null = null;
@@ -174,7 +177,9 @@ export default async function UserProfilePage() {
       }
     }
 
-    if (subscriptionData) {
+    // Only sync Clerk metadata for Clerk-backed accounts
+    if (clerkUser && subscriptionData) {
+      const client = await clerkClient();
       const lower = (subscriptionData.planName ?? "").toLowerCase();
       const fromStripe =
         /\bplus\b/.test(lower) ||
@@ -182,29 +187,26 @@ export default async function UserProfilePage() {
         /\bpro\b/.test(lower)
           ? "pro"
           : "premium";
-      const currentPlan = normalizePlan(user.publicMetadata?.plan as string);
+      const currentPlan = normalizePlan(clerkUser.publicMetadata?.plan as string);
       const alreadyPlusTier = currentPlan === "pro" || currentPlan === "plus";
-      // Legacy Stripe products named only "Premium" must not downgrade migrated Plus (plan "plus"/"pro").
       const shouldBePlan =
         alreadyPlusTier && fromStripe === "premium"
           ? currentPlan === "plus"
             ? "plus"
             : "pro"
           : fromStripe;
-      if (user.publicMetadata.plan !== shouldBePlan) {
+      if (clerkUser.publicMetadata.plan !== shouldBePlan) {
         await client.users.updateUserMetadata(userId, {
           publicMetadata: {
-            ...user.publicMetadata,
+            ...clerkUser.publicMetadata,
             plan: shouldBePlan,
           },
         });
-        user.publicMetadata.plan = shouldBePlan;
       }
     }
 
     return (
       <Profile
-        user={JSON.parse(JSON.stringify(user))}
         prevCheckout={prevCheckout}
         subscriptionData={subscriptionData}
       />

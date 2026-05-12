@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 import mongoClient from "@/lib/mongodb";
 import { UserWordsRepository } from "@/repositories/userWords.repo";
 
 export async function POST(req: NextRequest) {
-    const user = await currentUser();
-    if (!user) {
+    const ctx = await getAuthenticatedRequestContext(req);
+    if (!ctx?.user) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
+    const user = ctx.user;
 
     try {
         const { words } = await req.json();

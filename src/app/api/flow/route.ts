@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { NextRequest, NextResponse } from "next/server";
+import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 import { getDb } from "@/lib/mongodb";
 import { buildMicrolearningFlow, FlowSkill } from "@/lib/flow";
 
@@ -45,21 +45,24 @@ async function buildPracticeActionUrl(skill: FlowSkill): Promise<string> {
   const db = await getDb();
   const hasAnyTask = await db
     .collection("tasks")
-    .countDocuments({ type: "practice", category }, { limit: 1 });
+    .countDocuments({ type: "practice", category });
 
   if (!hasAnyTask) return "/practice-overview";
   return `/${category}`;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const user = await currentUser();
-    if (!user) {
+    const ctx = await getAuthenticatedRequestContext(req);
+    if (!ctx?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const user = ctx.user;
 
     const db = await getDb();
-    const userDoc = await db.collection("users").findOne({ clerkUserId: user.id });
+    const userDoc = await db.collection("users").findOne({
+      $or: [{ clerkUserId: user.id }, { supabaseUserId: ctx.supabaseAuthUserId }, { sub: user.id }],
+    });
 
     const onboarding = (userDoc?.onboarding as Record<string, unknown> | undefined) || {};
     const intent = (userDoc?.intent as Record<string, unknown> | undefined) || {};

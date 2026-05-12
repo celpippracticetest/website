@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 import client from "@/lib/mongodb";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await currentUser();
+    const ctx = await getAuthenticatedRequestContext(request);
+    const user = ctx?.user ?? null;
     const isAuthenticated = !!user;
 
     // Check user plan

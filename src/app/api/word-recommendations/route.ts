@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 import mongoClient from "@/lib/mongodb";
 import { UserWordsRepository } from "@/repositories/userWords.repo";
 
@@ -12,10 +12,11 @@ function normalizeForCompare(word: string) {
     return normalized;
 }
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
     try {
-        const user = await currentUser();
-        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        const ctx = await getAuthenticatedRequestContext(req);
+        if (!ctx?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        const user = ctx.user;
 
         const repo = new UserWordsRepository(mongoClient);
         const { items } = await repo.getAllWords(user.id, 1000, 0);

@@ -64,6 +64,10 @@ export function buildSupabaseAuthPayloadFromClerkUser(clerkUser: ClerkUserLike):
     (typeof publicMeta.stripeCustomerId === "string" && publicMeta.stripeCustomerId) ||
     undefined;
 
+  const purchasedMockExamIds = Array.isArray(publicMeta.purchasedMockExamIds)
+    ? publicMeta.purchasedMockExamIds
+    : undefined;
+
   const app_metadata: Record<string, unknown> = {
     plan,
     ...(purchaseDate ? { purchaseDate } : {}),
@@ -76,6 +80,7 @@ export function buildSupabaseAuthPayloadFromClerkUser(clerkUser: ClerkUserLike):
       ? { planExpiresAt: publicMeta.planExpiresAt }
       : {}),
     ...(stripeCustomerId ? { stripeCustomerId } : {}),
+    ...(purchasedMockExamIds ? { purchasedMockExamIds } : {}),
     clerk_private_metadata: jsonSnapshot(privateMeta),
   };
 

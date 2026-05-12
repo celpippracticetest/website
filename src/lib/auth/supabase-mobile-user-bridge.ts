@@ -67,6 +67,12 @@ export function mobileUserBridgeFromSupabaseUser(
     readString(meta, "picture") ||
     readString(meta, "image_url");
 
+  // For Clerk-migrated users, purchasedMockExamIds lives in app_metadata (new migrations)
+  // or nested in user_metadata.clerk_public_metadata (older migrations). Read both paths.
+  const clerkPublicMeta = (meta.clerk_public_metadata ?? {}) as Record<string, unknown>;
+  const purchasedMockExamIds =
+    app.purchasedMockExamIds ?? clerkPublicMeta.purchasedMockExamIds ?? meta.purchasedMockExamIds;
+
   const publicMetadata: Record<string, unknown> = {
     ...meta,
     plan: app.plan ?? meta.plan ?? "free",
@@ -75,6 +81,8 @@ export function mobileUserBridgeFromSupabaseUser(
     planRenewsAt: app.planRenewsAt ?? meta.planRenewsAt,
     planExpiresAt: app.planExpiresAt ?? meta.planExpiresAt,
     targetCLB: app.targetCLB ?? meta.targetCLB ?? meta.targetClb,
+    ...(purchasedMockExamIds !== undefined ? { purchasedMockExamIds } : {}),
+    purchaseDate: app.purchaseDate ?? meta.purchaseDate,
   };
 
   return {
