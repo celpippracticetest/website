@@ -1,12 +1,12 @@
 import Referral from "@/components/dashboard-new/Referral";
-import { auth } from "@clerk/nextjs/server";
+import { getDashboardLayoutAuthContext } from "@/lib/auth/web-session-server";
 import { redirect } from "next/navigation";
 
 export default async function UserRefferalPage() {
-  const { userId } = await auth();
+  const ctx = await getDashboardLayoutAuthContext();
 
-  if (!userId) {
-    redirect("/");
+  if (!ctx?.userId) {
+    redirect("/sign-in");
   }
 
   try {

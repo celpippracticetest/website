@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { useUserContext } from "@/hooks/useUserContext";
 import SvgClose from "../icons/Close";
 import SvgChatBotSend from "../icons/ChatBotSend";
@@ -24,7 +24,7 @@ const CRISP_EMBED_SRC = `https://go.crisp.chat/chat/embed/?website_id=${encodeUR
 
 const AskBeavoModal: React.FC = () => {
     const { isOpen, setOpen, initialMessage } = useAskBeavoStore();
-    const { isSignedIn } = useAuth();
+    const { isSignedIn } = useHybridWebUser();
     const [supportTab, setSupportTab] = useState<SupportTab>("beavo");
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputText, setInputText] = useState("");

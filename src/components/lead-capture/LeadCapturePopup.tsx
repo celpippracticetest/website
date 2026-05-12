@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { usePathname } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import {
   Backdrop,
   Box,
@@ -83,7 +83,7 @@ function isCooldownActive(campaignId: string) {
 }
 
 export default function LeadCapturePopup() {
-  const { user, isLoaded } = useUser();
+  const { user, isLoaded } = useHybridWebUser();
   const pathname = usePathname();
   const [configs, setConfigs] = useState<LeadCaptureConfig[]>([FALLBACK_CONFIG]);
   const [activeConfig, setActiveConfig] = useState<LeadCaptureConfig | null>(FALLBACK_CONFIG);

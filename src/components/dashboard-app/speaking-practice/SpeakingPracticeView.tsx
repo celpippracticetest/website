@@ -12,7 +12,7 @@ import { TPassage } from "@/models/listenExam.model";
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "nextjs-toploader/app";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { TWritingAnswerDto } from "@/models/answer";
@@ -85,7 +85,7 @@ const SpeakingPracticeView = ({
   const [quickSubscribeAction, setQuickSubscribeAction] = useState("");
   const [pointsAwarded, setPointsAwarded] = useState(false);
   const [aiFeedbackPointsAwarded, setAiFeedbackPointsAwarded] = useState(false);
-  const { user, isLoaded, isSignedIn } = useUser();
+  const { user, isLoaded, isSignedIn } = useHybridWebUser();
   const stripeCheckoutDiscountLabel = useMemo(
     () =>
       isSignedIn &&

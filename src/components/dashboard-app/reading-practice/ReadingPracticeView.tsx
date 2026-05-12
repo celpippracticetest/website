@@ -11,7 +11,7 @@ import { useRouter } from "nextjs-toploader/app";
 import { useEffect } from "react";
 import ReadingQuestionList from "./components/ReadingQuestionList";
 import { Popover } from "radix-ui";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import React from "react";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
@@ -57,7 +57,7 @@ const ReadingPracticeView = ({
   const practiceCount = usePracticeCount(task.id, practice.id, task.taskNumber);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignUpModal, setShowSignUpModal] = useState(false);
-  const { user, isLoaded, isSignedIn } = useUser();
+  const { user, isLoaded, isSignedIn } = useHybridWebUser();
   const { addPoints } = useLeaguePoints();
   const {
     isModalOpen,

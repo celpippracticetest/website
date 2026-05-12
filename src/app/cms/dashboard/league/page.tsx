@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 
 interface Season {
   _id: string;
@@ -30,7 +30,7 @@ interface EligibleWinner {
 }
 
 export default function AdminLeaguePage() {
-  const { isLoaded, userId } = useAuth();
+  const { isLoaded, user } = useHybridWebUser();`n  const userId = user?.id ?? null;
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [selectedSeasonId, setSelectedSeasonId] = useState<string>("");
   const [seasonStats, setSeasonStats] = useState<any>(null);

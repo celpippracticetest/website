@@ -5,7 +5,7 @@ import { TTaskSchemaDto } from "@/models/tasks.model";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
 import { PracticeRepository } from "@/repositories/practice.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
-import { currentUser } from "@clerk/nextjs/server";
+import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import { ObjectId } from "bson";
 import { redirect, RedirectType } from "next/navigation";
 import type { Metadata } from "next";
@@ -77,7 +77,8 @@ export default async function ListeningPracticeSubPage({ params }: PageProps) {
     redirect("/practice-overview", RedirectType.replace);
   }
 
-  const user = await currentUser();
+  const hybridUser = await getHybridCurrentUser();
+  const user = hybridUser?.user ?? null;
   if (
     !hasPaidPracticeAccess(
       user?.publicMetadata.plan as string | undefined,

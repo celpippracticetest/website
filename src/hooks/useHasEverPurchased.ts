@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "@clerk/nextjs";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 
 export const useHasEverPurchased = () => {
-  const { user, isLoaded: userLoaded } = useHybridWebUser();
-  const { getToken, isLoaded: authLoaded } = useAuth();
+  const { user, isLoaded } = useHybridWebUser();
   const [hasEverPurchased, setHasEverPurchased] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -12,7 +10,7 @@ export const useHasEverPurchased = () => {
     let cancelled = false;
 
     const checkPurchaseHistory = async () => {
-      if (!userLoaded || !authLoaded || !user?.id) {
+      if (!isLoaded || !user?.id) {
         if (!cancelled) {
           setHasEverPurchased(false);
           setIsLoading(false);
@@ -21,7 +19,6 @@ export const useHasEverPurchased = () => {
       }
 
       try {
-        const token = await getToken();
         const url = new URL(
           "/api/users/has-ever-purchased",
           window.location.origin,
@@ -33,7 +30,6 @@ export const useHasEverPurchased = () => {
           cache: "no-store",
           headers: {
             Accept: "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         });
 
@@ -62,7 +58,7 @@ export const useHasEverPurchased = () => {
     return () => {
       cancelled = true;
     };
-  }, [user?.id, userLoaded, authLoaded, getToken]);
+  }, [user?.id, isLoaded]);
 
   return { hasEverPurchased, isLoading };
 };

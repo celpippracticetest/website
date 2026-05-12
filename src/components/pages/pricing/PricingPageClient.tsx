@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import Check from "@mui/icons-material/Check";
 import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
 import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
@@ -106,7 +106,7 @@ function PricingPlanCheckoutTile({
   recommendedSectionKey: DurationGroupKey | null | undefined;
 }) {
   const item = section.plus;
-  const { user, isSignedIn, isLoaded } = useUser();
+  const { user, isSignedIn, isLoaded } = useHybridWebUser();
   const { selectItem, beginCheckout } = useEcommerceTracking();
   const attribution = useCheckoutAttributionPayload();
 
@@ -516,7 +516,7 @@ export default function PricingPageClient({
   pricingAbParticipatesInExperiment,
 }: PricingPageClientProps) {
   const [mobilePlansSheetOpen, setMobilePlansSheetOpen] = useState(false);
-  const { isSignedIn } = useUser();
+  const { isSignedIn } = useHybridWebUser();
   const userContext = useUserContext();
   const pricingCheckoutFields = useMemo(
     () =>

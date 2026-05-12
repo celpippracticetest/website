@@ -2,7 +2,7 @@ import PlanCard from "@/components/pages/plans/PlanCard";
 import PlansPageTracking from "@/components/analytics/PlansPageTracking";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
-import { currentUser } from "@clerk/nextjs/server";
+import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import mongoClient from "@/lib/mongodb";
 import { PlansRepository } from "@/repositories/plans.repo";
 import SvgBestValuePlan from "@/components/icons/BestValuePlan";
@@ -26,7 +26,8 @@ const getIconComponent = (iconType?: string) => {
 };
 
 const Plans = async () => {
-  const user = await currentUser();
+  const hybridUser = await getHybridCurrentUser();
+  const user = hybridUser?.user ?? null;
   const db = await mongoClient.db();
   const userRepo = new CheckoutRepository(mongoClient);
   const plansRepo = new PlansRepository(db);

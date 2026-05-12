@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import LeaguePromotionModal from "@/components/modal/LeaguePromotionModal";
 
 const PromotionManager = () => {
-    const { user, isLoaded, isSignedIn } = useUser();
+    const { user, isLoaded, isSignedIn } = useHybridWebUser();
     const [showModal, setShowModal] = useState(false);
     const [isPageReady, setIsPageReady] = useState(false);
     const [leagueResult, setLeagueResult] = useState<{

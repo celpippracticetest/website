@@ -8,7 +8,7 @@ import { TExamPartSchemaDto } from "@/models/examParts.model";
 import { TListeningAndReadingAnswerDto, TWritingAnswerDto } from "@/models/answer";
 import { TExamSchemaDto } from "@/models/exam.model";
 import { useRouter } from "nextjs-toploader/app";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 import { ActivityLogger } from "@/lib/userActivity";
@@ -85,7 +85,7 @@ const ResultExamView = ({
     return allSpeakingAndWritingAnswers.filter((a) => (a.attemptId || "legacy") === selectedAttemptId);
   }, [allSpeakingAndWritingAnswers, selectedAttemptId]);
 
-  const { user, isLoaded } = useUser();
+  const { user, isLoaded } = useHybridWebUser();
 
   const plan = user?.publicMetadata?.plan as string | undefined;
   const purchaseDate = user?.publicMetadata?.purchaseDate as string | undefined;

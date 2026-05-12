@@ -9,7 +9,7 @@ import WritingAnswerModal from "./answerModal";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import ListeningTaskView from "../listening-practice/ListeningTaskView";
 import { useRouter } from "nextjs-toploader/app";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
@@ -41,7 +41,7 @@ const WritingPractice = ({
     useListeningPracticeCompletion();
   const [isAnswerModalOpen, setAnswerModalOpen] = useState(false);
   const [result, setResult] = useState<Record<string, any> | null>(null);
-  const { user } = useUser();
+  const { user } = useHybridWebUser();
   const shouldShowPractice =
     (selectedPractice && selectedPractice.isFree) ||
     (selectedPractice &&

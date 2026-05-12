@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 
 const navLinks = [
   { label: "Plans", href: "/pricing" },
@@ -17,7 +17,7 @@ const navLinks = [
 export default function ClassicHomeHeader() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const { isLoaded, isSignedIn } = useUser();
+  const { isLoaded, isSignedIn } = useHybridWebUser();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 12);

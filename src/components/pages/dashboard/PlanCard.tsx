@@ -2,7 +2,7 @@
 import React, { useMemo } from "react";
 import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
 import { useEcommerceTracking } from "@/hooks/useTracking";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { StripeCheckoutDiscountBadge } from "@/components/checkout/StripeCheckoutDiscountBadge";
 import { getStripeCheckoutAutoDiscountLabel } from "@/lib/stripeCheckoutDiscountLabel";
 
@@ -29,7 +29,7 @@ const PlanCard = ({
   stripePriceId,
 }: IPlanCard) => {
   const { beginCheckout, selectItem } = useEcommerceTracking();
-  const { user } = useUser();
+  const { user } = useHybridWebUser();
   const stripeCheckoutDiscountLabel = useMemo(
     () =>
       type !== "Free"

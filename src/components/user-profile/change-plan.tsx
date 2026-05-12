@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import LockOpen from "@mui/icons-material/LockOpen";
 
 export default function ChangePlan() {
-  const { user } = useUser();
+  const { user } = useHybridWebUser();
   return (
     <div className="bg-white w-full p-4 gap-4 rounded-xl border border-gray-300 shadow-lg mb-4 flex lg:flex-row flex-col lg:justify-between items-center">
       <div className="flex flex-col  items-center justify-between w-full lg:items-start">

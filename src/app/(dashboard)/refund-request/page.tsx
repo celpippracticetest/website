@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { getDashboardLayoutAuthContext } from "@/lib/auth/web-session-server";
 import { redirect } from "next/navigation";
 import RefundRequestPortal from "@/components/dashboard-new/RefundRequestPortal";
 import mongoClient from "@/lib/mongodb";
@@ -36,17 +36,18 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RefundRequestPage() {
-  const { userId, sessionClaims } = await auth();
+  const ctx = await getDashboardLayoutAuthContext();
   const REFUND_WINDOW_HOURS = 48;
 
-  if (!userId) {
-    redirect("/");
+  if (!ctx?.userId) {
+    redirect("/sign-in");
   }
 
-  const client = await clerkClient();
-  const clerkUser = await client.users.getUser(userId);
-  const userFullName = clerkUser.fullName || "";
-  const userEmail = clerkUser.emailAddresses?.[0]?.emailAddress || null;
+  const { userId, user } = ctx;
+  const firstName = user?.firstName ?? "";
+  const lastName = user?.lastName ?? "";
+  const userFullName = [firstName, lastName].filter(Boolean).join(" ");
+  const userEmail = user?.primaryEmailAddress?.emailAddress ?? null;
 
   const userLookupFilter = {
     $or: [
@@ -87,18 +88,14 @@ export default async function RefundRequestPage() {
         "publicMetadata.purchaseDate": 1,
       },
     });
-  const sessionPurchaseDate = (sessionClaims?.metadata as { purchaseDate?: unknown } | undefined)?.purchaseDate;
-  const clerkPublicPurchaseDate = (clerkUser.publicMetadata as { purchaseDate?: unknown } | null)?.purchaseDate;
-  const clerkPrivatePurchaseDate = (clerkUser.privateMetadata as { purchaseDate?: unknown } | null)?.purchaseDate;
+  const userPublicPurchaseDate = (user?.publicMetadata as { purchaseDate?: unknown } | null)?.purchaseDate;
   const rawDbRootPurchaseDate = rawUserEntity?.purchaseDate;
   const rawDbPublicPurchaseDate = rawUserEntity?.publicMetadata?.purchaseDate;
   const rawDbRootPurchaseDateProd = rawUserEntityProd?.purchaseDate;
   const rawDbPublicPurchaseDateProd = rawUserEntityProd?.publicMetadata?.purchaseDate;
 
   const rawPurchaseDate =
-    sessionPurchaseDate ??
-    clerkPublicPurchaseDate ??
-    clerkPrivatePurchaseDate ??
+    userPublicPurchaseDate ??
     rawDbPublicPurchaseDateProd ??
     rawDbRootPurchaseDateProd ??
     rawDbPublicPurchaseDate ??

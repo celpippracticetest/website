@@ -1,6 +1,6 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Box, Button, Typography } from "@mui/material";
@@ -13,7 +13,7 @@ const DISMISS_KEY = "dismiss_practice_pending_diagnostic_banner";
  * we have saved CLB / exam date for onboarding — sets expectations and nudges sign-up.
  */
 export default function PendingDiagnosticBanner() {
-  const { isLoaded, isSignedIn } = useUser();
+  const { isLoaded, isSignedIn } = useHybridWebUser();
   const [show, setShow] = useState(false);
 
   useEffect(() => {

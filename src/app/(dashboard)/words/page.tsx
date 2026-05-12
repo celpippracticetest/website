@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { TUserWordDto } from "@/models/userWords.model";
 import { WordDetailsCard } from "@/components/dashboard-app/words/WordDetailsCard";
 import RecommendedWordPill from "@/components/dashboard-app/words/RecommendedWordPill";
@@ -37,7 +37,7 @@ function WordsSeoIntro() {
 }
 
 const WordsPage = () => {
-    const { isSignedIn } = useUser();
+    const { isSignedIn } = useHybridWebUser();
 
     const [words, setWords] = useState<TUserWordDto[]>([]);
     const [total, setTotal] = useState(0);

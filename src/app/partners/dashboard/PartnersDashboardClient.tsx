@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { useCallback, useEffect, useState } from "react";
 
 type PartnerDto = {
@@ -31,7 +31,7 @@ type ReferredRow = {
 };
 
 export default function PartnersDashboardClient() {
-  const { user, isLoaded } = useUser();
+  const { user, isLoaded } = useHybridWebUser();
   const [partner, setPartner] = useState<PartnerDto | null>(null);
   const [commissions, setCommissions] = useState<CommissionRow[]>([]);
   const [totals, setTotals] = useState({ pending: 0, paid: 0, count: 0 });

@@ -15,7 +15,7 @@ import { useSearchParams } from "next/navigation";
 
 import { TWritingAnswerDto } from "@/models/answer";
 import { cn } from "@/lib/utils";
-import { SignInButton, SignUpButton, useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import PlanCard from "@/components/pages/dashboard/PlanCard";
@@ -85,7 +85,7 @@ const WritingPracticeView = ({
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignUpModal, setShowSignUpModal] = useState(false);
   const [pointsAwarded, setPointsAwarded] = useState(false);
-  const { user, isLoaded, isSignedIn } = useUser();
+  const { user, isLoaded, isSignedIn } = useHybridWebUser();
   const { addPoints } = useLeaguePoints();
   const {
     isModalOpen,

@@ -13,7 +13,7 @@ import { useRouter } from "nextjs-toploader/app";
 import { useEffect } from "react";
 import ListeningDropDownQuestionList from "./components/ListeningDropDownQuestionList";
 import { TTaskSchemaDto } from "@/models/tasks.model";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import LoginModal from "@/components/modal/LoginModal";
@@ -73,7 +73,7 @@ const ListeningPracticeView = ({
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignUpModal, setShowSignUpModal] = useState(false);
   const [pointsAwarded, setPointsAwarded] = useState(false);
-  const { user, isSignedIn, isLoaded } = useUser();
+  const { user, isSignedIn, isLoaded } = useHybridWebUser();
   const { addPoints } = useLeaguePoints();
   const {
     isModalOpen,

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import type { SubscriptionPlanFromStripe } from "@/lib/loadActivePlansWithStripePrices";
 import { useCheckoutAttributionPayload } from "@/components/analytics/CheckoutAttributionFields";
 import { mergePendingGa4IntoAttribution } from "@/lib/ga4BrowserIds";
@@ -77,7 +77,7 @@ const SUB_GOAL_MIN_CLB: Record<string, number> = {
 
 export default function FinalOfferPage() {
   const router = useRouter();
-  const { user, isLoaded, isSignedIn } = useUser();
+  const { user, isLoaded, isSignedIn } = useHybridWebUser();
   const userContext = useUserContext();
   const attribution = useCheckoutAttributionPayload();
   const [plans, setPlans] = useState<SubscriptionPlanFromStripe[]>([]);

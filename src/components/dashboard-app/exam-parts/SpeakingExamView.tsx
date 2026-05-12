@@ -7,7 +7,7 @@ import ErrorOutline from "@mui/icons-material/ErrorOutline";
 import Autorenew from "@mui/icons-material/Autorenew";
 import { TPracticeDto } from "@/models/practice.model";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 
 import LoginModal from "@/components/modal/LoginModal";
@@ -83,7 +83,7 @@ const SpeakingExamView = ({
   );
 
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const { user, isLoaded, isSignedIn } = useUser();
+  const { user, isLoaded, isSignedIn } = useHybridWebUser();
   const { addPoints } = useLeaguePoints();
   const {
     isModalOpen,

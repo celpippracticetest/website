@@ -9,11 +9,11 @@ import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 import { useIsMobile } from "@/hooks/use-mobile";
 import useStore from "@/store";
 import { useRouter } from "nextjs-toploader/app";
-import { useUser } from "@clerk/nextjs";
 import { useEventTracker } from "@/hooks/useTracking";
 import { isPaidClerkSubscriptionPlan } from "@/lib/clerkSubscriptionPlan";
-import { Show, SignInButton, SignUpButton, useClerk } from "@clerk/nextjs";
+import { useClerk } from "@clerk/nextjs";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 // import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 
 interface NavLinks {
@@ -36,7 +36,7 @@ const MobileHeader = (props: {
   const { trackNav, trackCTA, auth } = useEventTracker();
   const isMobile = useIsMobile();
   const [isUserDropDownOpen, setUserDropDownOpen] = useState(false);
-  const { user } = useUser();
+  const { user, isSignedIn } = useHybridWebUser();
   let headerButton: JSX.Element;
   const dashboard = useStore((state) => state.dashboard);
   const setViewMode = useStore((state) => state.dashboard.setView);
@@ -161,34 +161,33 @@ const MobileHeader = (props: {
               </div>
             )}
             <div className="flex items-center space-x-1">
-              <Show when="signed-out">
-                <div onClick={() => auth.loginInitiated("header")}>
-                  <SignInButton>
-                    <Button
-                      hidden={isMobile}
-                      variant="outline"
-                      className="rounded-full border-2 border-gray-200 font-medium cursor-pointer"
-                    >
-                      Log in
-                    </Button>
-                  </SignInButton>
-                </div>
-                <div onClick={() => auth.signUpInitiated("header")}>
-                  <SignUpButton>
-                    <Button className="bg-slate-800 hover:bg-slate-800/90 rounded-full text-white font-medium  cursor-pointer">
-                      Signup
-                    </Button>
-                  </SignUpButton>
-                </div>
-              </Show>
-              <Show when="signed-in">
+              {!isSignedIn && (
+                <>
+                  <div onClick={() => auth.loginInitiated("header")}>
+                    <a href="/sign-in">
+                      <Button
+                        hidden={isMobile}
+                        variant="outline"
+                        className="rounded-full border-2 border-gray-200 font-medium cursor-pointer"
+                      >
+                        Log in
+                      </Button>
+                    </a>
+                  </div>
+                  <div onClick={() => auth.signUpInitiated("header")}>
+                    <a href="/sign-in?mode=sign-up">
+                      <Button className="bg-slate-800 hover:bg-slate-800/90 rounded-full text-white font-medium cursor-pointer">
+                        Signup
+                      </Button>
+                    </a>
+                  </div>
+                </>
+              )}
+              {isSignedIn && (
                 <button
                   id="dropdownDefaultButton"
-                  data-dropdown-toggle="dropdown"
                   type="button"
-                  onClick={() => {
-                    setUserDropDownOpen(!isUserDropDownOpen);
-                  }}
+                  onClick={() => setUserDropDownOpen(!isUserDropDownOpen)}
                   className="cursor-pointer"
                 >
                   {user && user.imageUrl ? (
@@ -200,12 +199,12 @@ const MobileHeader = (props: {
                   ) : (
                     <div className="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
                       <span className="font-medium text-gray-600 dark:text-gray-300">
-                        {(user?.name ?? "user")[0].toLocaleUpperCase()}
+                        {(user?.firstName ?? user?.primaryEmailAddress?.emailAddress ?? "U")[0].toLocaleUpperCase()}
                       </span>
                     </div>
                   )}
                 </button>
-              </Show>
+              )}
             </div>
 
             {/* Mobile menu button */}

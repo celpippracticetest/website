@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useHybridWebUser } from '@/hooks/useHybridWebUser';
 
 export const useLeaguePoints = () => {
-  const { user } = useUser();
+  const { user } = useHybridWebUser();
 
   const addPoints = useCallback(async (
     points: number, 

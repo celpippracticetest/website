@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { WordMenu } from "./WordMenu";
 import { useAskBeavoStore } from "@/stores/askBeavoStore";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { useAuthModalStore } from "@/store/useAuthModal.store";
 import clsx from "clsx";
 
@@ -13,7 +13,7 @@ export const GlobalInteractiveProvider: React.FC = () => {
     const [activeWord, setActiveWord] = useState<string | null>(null);
     const [activeRect, setActiveRect] = useState<DOMRect | null>(null);
     const { askAboutWord } = useAskBeavoStore();
-    const { isSignedIn, user, isLoaded: isUserLoaded } = useUser();
+    const { isSignedIn, user, isLoaded: isUserLoaded } = useHybridWebUser();
     const { setShowLoginModal } = useAuthModalStore();
 
     const hoverVocabularyEnabled =

@@ -2,7 +2,8 @@
 import React from "react";
 import SvgCloseEye from "@/components/icons/CloseEye";
 import SvgOpenEye from "@/components/icons/OpenEye";
-import { useReverification, useUser } from "@clerk/nextjs";
+import { useReverification } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import SvgDesktop from "@/components/icons/Desktop";
 import SvgPhone from "@/components/icons/Phone";
 import SvgTrash from "@/components/icons/Trash";
@@ -40,7 +41,7 @@ function parseDateLikeToMs(value: unknown): number | null {
 }
 
 export default function Profile({ prevCheckout, subscriptionData }: any) {
-  const { user, isLoaded: isUserLoaded } = useUser();
+  const { user, isLoaded: isUserLoaded } = useHybridWebUser();
   const [planNameDisplay, setPlanNameDisplay] = useState<string>("");
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const userPlan = user?.publicMetadata?.plan as string | undefined;

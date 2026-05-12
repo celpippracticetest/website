@@ -19,7 +19,7 @@ import { TPracticeDto } from "@/models/practice.model";
 import { useRouter } from "nextjs-toploader/app";
 import { useSearchParams } from "next/navigation";
 import ListeningDropDownQuestionList from "../listening-practice/components/ListeningDropDownQuestionList";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
@@ -105,7 +105,7 @@ const ListeningExamView = (props: ListeningExamViewProps) => {
   } = props;
 
   const router = useRouter();
-  const { user, isLoaded } = useUser();
+  const { user, isLoaded } = useHybridWebUser();
   const searchParams = useSearchParams();
   const section = searchParams.get("section");
   const attemptId = searchParams.get("attemptId");

@@ -60,3 +60,14 @@ export async function getDashboardLayoutAuthContext() {
     new Request("http://localhost", { headers: { cookie } }),
   );
 }
+
+/**
+ * Drop-in replacement for Clerk's `currentUser()` that works for both Clerk and
+ * Supabase Auth sessions. Returns a Clerk-shaped user (or MobileUserBridge) so that
+ * existing code reading `user.publicMetadata.plan` etc. continues to work.
+ */
+export async function getHybridCurrentUser() {
+  const ctx = await getDashboardLayoutAuthContext();
+  if (!ctx) return null;
+  return { user: ctx.user, userId: ctx.userId };
+}

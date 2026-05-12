@@ -6,7 +6,7 @@ import { ExamPartsRepository } from "@/repositories/examParts.repo";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { Metadata } from "next";
-import { currentUser } from "@clerk/nextjs/server";
+import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import ExamFAQ, { FAQ_DATA } from "@/components/dashboard-app/ExamFAQ";
 import { Box, Paper, Stack, Typography } from "@mui/material";
 import {
@@ -138,7 +138,8 @@ export async function generateMetadata(): Promise<Metadata> {
 const ExamsPage = async () => {
   const exampRepo = new ExamRepository(mongoClient);
   const result = await exampRepo.getAllExam({ isReady: true }, 0, 1000);
-  const user = await currentUser();
+  const hybridUser = await getHybridCurrentUser();
+  const user = hybridUser?.user ?? null;
   const noUser = !user;
 
   const purchasedIdsRaw = user

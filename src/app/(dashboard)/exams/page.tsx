@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { currentUser } from "@clerk/nextjs/server";
+import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 
 export const metadata: Metadata = {
   title: "CELPIP Exam Practice Hub | CELPIP Practice Test",
@@ -11,7 +11,8 @@ export const metadata: Metadata = {
 };
 
 const DashboardApp = async () => {
-  const user = await currentUser();
+  const hybridUser = await getHybridCurrentUser();
+  const user = hybridUser?.user ?? null;
 
   return (
     <div className="flex flex-col h-screen w-full bg-slate-100">

@@ -1,7 +1,7 @@
 import { TPracticeDto } from "@/models/practice.model";
 import { Badge } from "@/components/ui/badge";
 import { TTaskSchemaDto } from "@/models/tasks.model";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import SvgCheckSquare from "@/components/icons/CheckSquare";
 import SvgLock from "@/components/icons/Lock";
 import SvgPlay from "@/components/icons/Play";
@@ -25,7 +25,7 @@ const ListeningSideMenu = ({
   selectedPracticeId: string | null;
   selectedTaskId: string | null;
 }) => {
-  const { user } = useUser();
+  const { user } = useHybridWebUser();
 
   return (
     <aside className="sticky top-0 hidden bg-white screen1280:!h-[920px] overflow-auto screen1280:!flex shrink-0 border-[1px] border-[#D5D6D8] max-w-[305px] rounded-lg w-full flex-col items-center ">

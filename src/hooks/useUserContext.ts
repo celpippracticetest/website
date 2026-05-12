@@ -1,4 +1,4 @@
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { useEffect, useState } from "react";
 
 interface UserContext {
@@ -31,7 +31,7 @@ interface UserContext {
 }
 
 export const useUserContext = (): UserContext => {
-  const { user } = useUser();
+  const { user } = useHybridWebUser();
   const [userData, setUserData] = useState<UserContext>({});
 
   useEffect(() => {

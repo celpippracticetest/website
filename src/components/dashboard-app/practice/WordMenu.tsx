@@ -3,7 +3,7 @@ import Add from "@mui/icons-material/Add";
 import AutoAwesome from "@mui/icons-material/AutoAwesome";
 import VolumeUp from "@mui/icons-material/VolumeUp";
 import * as Popover from "@radix-ui/react-popover";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { useAuthModalStore } from "@/store/useAuthModal.store";
 import clsx from "clsx";
 
@@ -29,7 +29,7 @@ export const WordMenu: React.FC<WordMenuProps> = ({
     const isOpen = controlledOpen !== undefined ? controlledOpen : uncontrolledOpen;
     const setIsOpen = controlledOnOpenChange !== undefined ? controlledOnOpenChange : setUncontrolledOpen;
 
-    const { isSignedIn } = useUser();
+    const { isSignedIn } = useHybridWebUser();
     const { setShowLoginModal } = useAuthModalStore();
 
     const [isSaved, setIsSaved] = useState(false);

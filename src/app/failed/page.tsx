@@ -12,7 +12,7 @@ import {
   safeStripePriceId,
   safeStripeProductId,
 } from "@/lib/checkoutCancelUrl";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
@@ -20,7 +20,7 @@ import { StripeCheckoutDiscountBadge } from "@/components/checkout/StripeCheckou
 import { getStripeCheckoutAutoDiscountLabel } from "@/lib/stripeCheckoutDiscountLabel";
 
 function FailedPageContent() {
-  const { isLoaded, isSignedIn, user } = useUser();
+  const { isLoaded, isSignedIn, user } = useHybridWebUser();
   const [hasMounted, setHasMounted] = useState(false);
   const noUser = isLoaded ? !isSignedIn : false;
   const [showLoginModal, setShowLoginModal] = useState(false);

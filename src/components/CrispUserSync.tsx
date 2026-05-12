@@ -1,6 +1,6 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { useEffect, useRef } from "react";
 import {
   applyCrispVisitorProfile,
@@ -34,7 +34,7 @@ type CrispContextResponse = {
  * from `/api/user/crisp-context` (plan, Stripe period, LLM token totals, etc.).
  */
 export default function CrispUserSync() {
-  const { user, isLoaded } = useUser();
+  const { user, isLoaded } = useHybridWebUser();
   const lastFingerprint = useRef<string | null>(null);
 
   useEffect(() => {

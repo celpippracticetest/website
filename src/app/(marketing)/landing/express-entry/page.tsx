@@ -82,7 +82,7 @@ const siteTheme = {
 };
 
 const Page = () => {
-  const { isSignedIn, isLoaded, user } = useUser();
+  const { isSignedIn, isLoaded, user } = useHybridWebUser();
   const stripeCheckoutDiscountLabel = useMemo(
     () =>
       isSignedIn

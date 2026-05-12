@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import {
   Box,
   Button,
@@ -272,7 +272,7 @@ export default function OnboardingSurvey({
     writing: 7,
     speaking: 7,
   });
-  const { user } = useUser();
+  const { user } = useHybridWebUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSkipping, setIsSkipping] = useState(false);
   const [isPersonalizing, setIsPersonalizing] = useState(false);

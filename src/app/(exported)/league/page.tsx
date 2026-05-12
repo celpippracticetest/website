@@ -13,7 +13,7 @@ import {
 import SvgSvgBeforeTypingWord from "@/components/icons/SvgBeforeTypingWord";
 import SvgLearningArrowUp from "@/components/icons/LearningArrowUp";
 import { useUserContext } from "@/hooks/useUserContext";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import LoginModal from "@/components/modal/LoginModal";
 import { ActivityLogger } from "@/lib/userActivity";
 import SvgLeagueKados from "@/components/icons/LeagueKados";
@@ -88,7 +88,7 @@ const Page = () => {
   const [isChatLocked, setIsChatLocked] = useState(false);
   const [serverMessageCount, setServerMessageCount] = useState(0);
   const userContext = useUserContext();
-  const { user, isLoaded, isSignedIn } = useUser();
+  const { user, isLoaded, isSignedIn } = useHybridWebUser();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const pathname = usePathname();

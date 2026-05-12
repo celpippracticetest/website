@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 import SvgBeavo from "../icons/Beavo";
 import { cn } from "@/lib/utils";
 import { useEngagementTracking } from "@/hooks/useTracking";
-import { useAuth } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { useRouter } from "next/navigation";
 import { useAskBeavoStore } from "@/stores/askBeavoStore";
 
@@ -20,7 +20,7 @@ const FloatingChatIcon: React.FC<FloatingChatIconProps> = ({
   onClick,
 }) => {
   const { chatbotMessageSent } = useEngagementTracking();
-  const { isSignedIn, isLoaded } = useAuth();
+  const { isSignedIn, isLoaded } = useHybridWebUser();
   const router = useRouter();
   const openAskBeavo = useAskBeavoStore((s) => s.openAskBeavo);
 

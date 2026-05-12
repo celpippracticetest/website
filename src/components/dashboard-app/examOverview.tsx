@@ -2,7 +2,7 @@
 
 import { TExamSchemaDto } from "@/models/exam.model";
 import { useSelectedExam } from "@/store/useSelectedExam.store";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import {
   Alert,
   Box,
@@ -46,11 +46,11 @@ const ExamOverview = ({
   exams: TExamSchemaDto[];
   examProgressById: Record<string, ExamProgressSummary>;
   showUserProgress: boolean;
-  /** From RSC `currentUser()` so purchased mocks work before `useUser()` finishes loading. */
+  /** From RSC `currentUser()` so purchased mocks work before `useHybridWebUser()` finishes loading. */
   clerkAccessSnapshot?: { purchasedMockExamIds?: unknown };
 }) => {
   const router = useRouter();
-  const { user, isLoaded, isSignedIn } = useUser();
+  const { user, isLoaded, isSignedIn } = useHybridWebUser();
   const noUser = isLoaded ? !isSignedIn : false;
   const plan = user?.publicMetadata?.plan as string | undefined;
   const purchaseDate = user?.publicMetadata?.purchaseDate as

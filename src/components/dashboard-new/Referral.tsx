@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -136,7 +136,7 @@ function extractReferralCode(link: string): string {
 }
 
 export default function Referral() {
-  const { user } = useUser();
+  const { user } = useHybridWebUser();
   const router = useRouter();
 
   // All useState hooks must be at the top level

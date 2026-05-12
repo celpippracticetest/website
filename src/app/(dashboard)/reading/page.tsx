@@ -8,7 +8,7 @@ import { TTaskSchemaDto } from "@/models/tasks.model";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
 import { PracticeRepository } from "@/repositories/practice.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
-import { currentUser } from "@clerk/nextjs/server";
+import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import { ObjectId } from "bson";
 import { permanentRedirect, redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
@@ -155,7 +155,8 @@ const ReadingPage = async ({
     },
   ];
 
-  const user = await currentUser();
+  const hybridUser = await getHybridCurrentUser();
+  const user = hybridUser?.user ?? null;
   if (!user && !taskId && !selectedPracticeId) {
     const availableTasks = tasks.items
       .filter((taskItem) => taskItem.category === "reading")

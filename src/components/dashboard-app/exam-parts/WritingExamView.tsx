@@ -8,7 +8,7 @@ import { TPracticeDto } from "@/models/practice.model";
 import { useRouter } from "nextjs-toploader/app";
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import LoginModal from "@/components/modal/LoginModal";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
@@ -94,7 +94,7 @@ const WritingExamView = ({
   const [tryToSubmit, setTryToSubmit] = useState(false);
 
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const { user, isLoaded, isSignedIn } = useUser();
+  const { user, isLoaded, isSignedIn } = useHybridWebUser();
   const { addPoints } = useLeaguePoints();
   const {
     isModalOpen,

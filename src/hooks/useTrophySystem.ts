@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 
 interface Trophy {
   id: string;
@@ -24,7 +24,7 @@ interface TrophySystemState {
 }
 
 export const useTrophySystem = () => {
-  const { user } = useUser();
+  const { user } = useHybridWebUser();
   const [state, setState] = useState<TrophySystemState>({
     isModalOpen: false,
     currentTrophy: null,

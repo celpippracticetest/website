@@ -1,4 +1,4 @@
-import { SignUpButton } from "@clerk/nextjs";
+import Link from "next/link";
 import { useAuthModalStore } from "@/store/useAuthModal.store";
 import Close from "../icons/Close";
 import { useRef, useEffect } from "react";
@@ -37,11 +37,11 @@ const LoginModal = (params: any) => {
         </div>
         <div className="text-[#76808F] mt-[12px] text-[14px] text-center font-normal">
           {loginMessage || "Please create an account to start the exam"}
-          <SignUpButton>
+          <Link href="/sign-in?mode=sign-up">
             <div className="text-[14px] mx-[16px] cursor-pointer flex items-center justify-center text-white bg-[#4A7DFF] rounded-[24px] h-[40px] mt-[12px]  text-center font-normal">
               Create a free account
             </div>
-          </SignUpButton>
+          </Link>
         </div>
 
         <div className="flex justify-center items-center mt-[32px] gap-[20px]">
@@ -50,9 +50,9 @@ const LoginModal = (params: any) => {
           <div className="h-[1px] w-full bg-[#D5D6D8]"></div>
         </div>
         <div className="text-[16px] mt-[32px] text-center font-medium">
-          <SignUpButton>
+          <Link href="/sign-in?mode=sign-up">
             <span className="text-[#316BFF] cursor-pointer">Sign up</span>
-          </SignUpButton>
+          </Link>
         </div>
       </div>
     </div>

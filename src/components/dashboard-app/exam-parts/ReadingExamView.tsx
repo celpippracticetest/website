@@ -9,7 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import ReadingQuestionList from "../reading-practice/components/ReadingQuestionList";
 import { Popover } from "radix-ui";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import React from "react";
 import Image from "next/image";
 import SvgArrowRight from "@/components/icons/ArrowRight";
@@ -91,7 +91,7 @@ const ReadingExamView = ({
   const section = searchParams.get("section");
 
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const { user, isLoaded, isSignedIn } = useUser();
+  const { user, isLoaded, isSignedIn } = useHybridWebUser();
   const { addPoints } = useLeaguePoints();
   const {
     isModalOpen,

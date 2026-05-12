@@ -5,7 +5,7 @@ import { TPracticeDto } from "@/models/practice.model";
 import { useSearchParams } from "next/navigation";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { useRouter } from "nextjs-toploader/app";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import SvgCheckSquare from "@/components/icons/CheckSquare";
 import SvgLock from "@/components/icons/Lock";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
@@ -26,7 +26,7 @@ const ListeningTaskView = ({
   title,
 }: ListeningTaskViewProps) => {
   const router = useRouter();
-  const { user, isLoaded } = useUser();
+  const { user, isLoaded } = useHybridWebUser();
   const [hasMounted, setHasMounted] = useState(false);
 
   const searchParams = useSearchParams();

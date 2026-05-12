@@ -25,7 +25,7 @@ const ResultExamView = dynamic(() => import("@/components/dashboard-app/exam-par
 import { ObjectId } from "bson";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
-import { currentUser } from "@clerk/nextjs/server";
+import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import { hasMockExamAccess } from "@/lib/subscriptionAccess";
 import { getFirstReadyMockExamId } from "@/lib/getFirstReadyMockExam";
 
@@ -38,7 +38,8 @@ const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
   const isResultPage: boolean = resolvedParams?.slug?.[1] === "results";
   let user: any = null;
   try {
-    user = await currentUser();
+    const hybridUser = await getHybridCurrentUser();
+    user = hybridUser?.user ?? null;
   } catch (e) {
     // Fallback: treat as unauthenticated
     user = null;

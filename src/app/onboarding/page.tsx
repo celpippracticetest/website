@@ -1,11 +1,11 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 export default function OnboardingPage() {
-  const { user, isSignedIn } = useUser();
+  const { user, isSignedIn } = useHybridWebUser();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
 

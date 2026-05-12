@@ -4,7 +4,7 @@ import PracticeOverview from "@/components/dashboard-app/PracticeOverview";
 import PendingDiagnosticBanner from "@/components/dashboard-app/PendingDiagnosticBanner";
 import { useEffect, useState } from "react";
 import { TTaskSchemaDto } from "@/models/tasks.model";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { Box, Skeleton, Stack, Typography } from "@mui/material";
 
 interface TasksList {
@@ -46,7 +46,7 @@ const PracticeSkeletonLoader = () => (
 );
 
 const DashboardApp = () => {
-  const { isSignedIn } = useUser();
+  const { isSignedIn } = useHybridWebUser();
   const [tasks, setTasks] = useState<TasksList>({
     speaking: [],
     listening: [],

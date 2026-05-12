@@ -7,7 +7,7 @@ import { useRouter } from "nextjs-toploader/app";
 import SpeakingPracticeView from "./SpeakingPracticeView";
 import SpeakingAnswerModal from "./AnswerModal";
 import ListeningTaskView from "../listening-practice/ListeningTaskView";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
@@ -48,7 +48,7 @@ const SpeakingPractice = ({
     useListeningPracticeCompletion();
   const [isAnswerModalOpen, setAnswerModalOpen] = useState(false);
   const [result, setResult] = useState<Record<string, any> | null>(null);
-  const { user } = useUser();
+  const { user } = useHybridWebUser();
   const shouldShowPractice =
     (selectedPractice && selectedPractice.isFree) ||
     (selectedPractice &&

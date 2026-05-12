@@ -1,6 +1,6 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 
@@ -75,7 +75,7 @@ function buildRedditInitPayload(user: ReturnType<typeof useUser>["user"]): Reddi
 export default function RedditPixelTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { user, isLoaded } = useUser();
+  const { user, isLoaded } = useHybridWebUser();
 
   const pixelId = process.env.NEXT_PUBLIC_REDDIT_PIXEL_ID || DEFAULT_REDDIT_PIXEL_ID;
 

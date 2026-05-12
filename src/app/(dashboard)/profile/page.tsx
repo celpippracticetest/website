@@ -9,6 +9,8 @@ import {
 import { normalizePlan } from "@/lib/subscriptionAccess";
 import { redirect } from "next/navigation";
 import Stripe from "stripe";
+import { getSupabaseAuthUserFromServerCookies } from "@/lib/supabase/server-app-read-user";
+import { readClerkLegacyUserIdFromSupabaseUser } from "@/lib/auth/supabase-user-plan";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -132,10 +134,21 @@ async function resolveSubscriptionDataForCustomer(
 }
 
 export default async function UserProfilePage() {
-  const { userId } = await auth();
+  // Try Clerk first, then fall back to Supabase session.
+  let userId: string | null = null;
+
+  const clerkAuth = await auth();
+  if (clerkAuth.userId) {
+    userId = clerkAuth.userId;
+  } else {
+    const supabaseUser = await getSupabaseAuthUserFromServerCookies();
+    if (supabaseUser) {
+      userId = readClerkLegacyUserIdFromSupabaseUser(supabaseUser) ?? supabaseUser.id;
+    }
+  }
 
   if (!userId) {
-    redirect("/");
+    redirect("/sign-in");
   }
 
   try {

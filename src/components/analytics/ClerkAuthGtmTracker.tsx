@@ -10,7 +10,7 @@
  * login / logout: `login_completed` / `logout` in GTM (see `trackAuth` in `gtm.ts`).
  */
 
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { useEffect, useRef } from "react";
 import { trackAuth } from "@/lib/gtm";
 
@@ -34,7 +34,7 @@ function inferAuthMethod(u: {
 }
 
 export default function ClerkAuthGtmTracker() {
-  const { user, isLoaded } = useUser();
+  const { user, isLoaded } = useHybridWebUser();
   const prevIdRef = useRef<string | null | undefined>(undefined);
   const initializedRef = useRef(false);
 

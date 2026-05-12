@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
@@ -19,7 +19,7 @@ const DASHBOARD_FIRST_SEGMENTS = new Set([
 ]);
 
 export default function FooterWrapper({ children }: { children: ReactNode }) {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn } = useHybridWebUser();
   const pathname = usePathname();
   const firstSegment = pathname?.split("/")[1];
   const isDashboard =

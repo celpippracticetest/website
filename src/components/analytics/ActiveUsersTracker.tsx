@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 
 /**
  * ActiveUsersTracker Component
@@ -9,7 +9,7 @@ import { useAuth } from "@clerk/nextjs";
  * and sends event to Google Analytics
  */
 export default function ActiveUsersTracker() {
-  const { userId } = useAuth();
+  const { user } = useHybridWebUser();`n  const userId = user?.id ?? null;
   const sessionIdRef = useRef<string>(`session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasLoggedFetchFailureRef = useRef(false);

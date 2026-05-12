@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useAuth, useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { trackPageView } from "@/lib/gtm";
 
 /**
@@ -13,8 +13,7 @@ import { trackPageView } from "@/lib/gtm";
 export default function PageViewTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { isSignedIn } = useAuth();
-  const { user } = useUser();
+  const { isSignedIn, user } = useHybridWebUser();
 
   useEffect(() => {
     // Track page view on mount and route changes

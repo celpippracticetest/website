@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 
 interface WithdrawalRequest {
   id: string;
@@ -22,7 +22,7 @@ interface WithdrawalRequest {
 }
 
 export default function WithdrawalRequests() {
-  const { user } = useUser();
+  const { user } = useHybridWebUser();
   const [requests, setRequests] = useState<WithdrawalRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);

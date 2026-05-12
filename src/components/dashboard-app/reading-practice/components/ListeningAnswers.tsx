@@ -1,6 +1,7 @@
 "use client";
 
-import { SignUpButton, useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import QuestionOption from "./QuestionOption";
 import { TQuestion } from "@/models/question.model";
@@ -29,7 +30,7 @@ const ListeningAnswerList = ({
   questions,
   selectedAnswers,
 }: ListeningAnswerListProps) => {
-  const { isLoaded, isSignedIn } = useUser();
+  const { isLoaded, isSignedIn } = useHybridWebUser();
 
   const isAnswerCorrect = (questionId: number, answerId: string) => {
     const question = questions[questionId];
@@ -142,14 +143,11 @@ const ListeningAnswerList = ({
         Create a free account to track your improvement over time.
       </div>
       <div className="mt-[12px]">
-        <SignUpButton>
-          <div
-            className="text-[14px] cursor-pointer flex items-center justify-center text-white bg-[#4A7DFF] rounded-[24px] h-[40px] w-full text-center font-normal"
-            onClick={() => savePendingImprovement()}
-          >
+        <Link href="/sign-in?mode=sign-up" onClick={() => savePendingImprovement()}>
+          <div className="text-[14px] cursor-pointer flex items-center justify-center text-white bg-[#4A7DFF] rounded-[24px] h-[40px] w-full text-center font-normal">
             Sign up
           </div>
-        </SignUpButton>
+        </Link>
       </div>
     </div>
   );

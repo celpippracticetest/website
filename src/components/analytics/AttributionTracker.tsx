@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { usePathname, useSearchParams } from "next/navigation";
 
 const STORAGE_KEYS = {
@@ -84,7 +84,7 @@ function persistAttributionFromUrl(pathname: string, searchParams: URLSearchPara
 export default function AttributionTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { isSignedIn, userId } = useAuth();
+  const { isSignedIn, user } = useHybridWebUser();`n  const userId = user?.id ?? null;
 
   useEffect(() => {
     if (typeof window === "undefined") return;

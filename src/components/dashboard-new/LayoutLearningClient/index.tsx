@@ -3,7 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import clsx from "clsx";
-import { SignInButton, SignUpButton, useClerk, useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
+import { useClerk } from "@clerk/nextjs";
 import { useHasEverPurchased } from "@/hooks/useHasEverPurchased";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
@@ -190,7 +192,7 @@ const LayoutClient = ({ children }: any) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [couponModal, setCouponModal] = useState(false);
   const [hasClosedModal, setHasClosedModal] = useState(false);
-  const { user, isLoaded, isSignedIn }: any = useUser();
+  const { user, isLoaded, isSignedIn } = useHybridWebUser();
   const { hasEverPurchased } = useHasEverPurchased();
 
   const router = useRouter();
@@ -342,11 +344,11 @@ const LayoutClient = ({ children }: any) => {
           </div>
           <div className="text-[#212E42] mt-[12px] text-[14px] text-center font-normal">
             Please log in to start the exam{" "}
-            <SignUpButton>
+            <Link href="/sign-in?mode=sign-up">
               <div className="text-[14px] cursor-pointer flex items-center justify-center text-white bg-[#4A7DFF] rounded-[24px] h-[40px] mt-[12px]  text-center font-normal">
                 Create a free account
               </div>
-            </SignUpButton>
+            </Link>
           </div>
 
           <div className="flex justify-center items-center mt-[32px] gap-[20px]">
@@ -356,9 +358,9 @@ const LayoutClient = ({ children }: any) => {
           </div>
           <div className="text-[16px]   mt-[32px]  text-center font-medium">
             <span>Do you have an account? </span>{" "}
-            <SignInButton>
+            <Link href="/sign-in">
               <span className="text-[#316BFF] cursor-pointer"> Login </span>
-            </SignInButton>
+            </Link>
           </div>
         </div>
       </div>
@@ -473,7 +475,12 @@ const LayoutClient = ({ children }: any) => {
     }
   }, [isLoaded, isSignedIn, isNewUser, user, setShowExtraDiscount]);
 
-  const { signOut } = useClerk();
+  const { signOut: clerkSignOut } = useClerk();
+  const signOut = async (opts?: { redirectUrl?: string }) => {
+    const supabase = createBrowserSupabaseClient();
+    if (supabase) await supabase.auth.signOut();
+    await clerkSignOut(opts);
+  };
   const [practice, setPractice] = useState(false);
   const [mockTest, setMockTest] = useState(false);
   const [learning, setLearning] = useState(false);

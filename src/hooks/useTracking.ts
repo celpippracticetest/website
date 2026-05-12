@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { useAuth, useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import {
   trackCTAClick,
   trackNavClick,
@@ -22,8 +22,8 @@ import type { UserData, VercelAnalyticsCustomProperties } from "@/types/analytic
  * Provides easy access to all GTM tracking functions with user context
  */
 export function useEventTracker() {
-  const { isSignedIn, userId } = useAuth();
-  const { user } = useUser();
+  const { isSignedIn, user } = useHybridWebUser();
+  const userId = user?.id ?? null;
 
   const getUserPlan = useCallback(() => {
     return (user?.publicMetadata?.plan as string) || "free";
@@ -117,7 +117,7 @@ export function useEventTracker() {
  * Specialized hook for exam-related events
  */
 export function useExamTracking() {
-  const { user } = useUser();
+  const { user } = useHybridWebUser();
 
   const getUserPlan = useCallback(() => {
     return (user?.publicMetadata?.plan as string) || "free";
@@ -364,7 +364,8 @@ export function useEngagementTracking() {
  * Specialized hook for referral events
  */
 export function useReferralTracking() {
-  const { userId } = useAuth();
+  const { user } = useHybridWebUser();
+  const userId = user?.id ?? null;
 
   return {
     pageViewed: useCallback(() => {

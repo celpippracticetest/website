@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from "react";
 import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
 import SvgCheck from "../../icons/Check";
-import { SignInButton, SignUpButton, useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import LoginModal from "@/components/modal/LoginModal";
 import { useEcommerceTracking } from "@/hooks/useTracking";
 import { StripeCheckoutDiscountBadge } from "@/components/checkout/StripeCheckoutDiscountBadge";
@@ -37,7 +37,7 @@ const PlanCard = ({
   isModal = false,
   stripePriceId,
 }: IPlanCard) => {
-  const { user, isLoaded, isSignedIn } = useUser();
+  const { user, isLoaded, isSignedIn } = useHybridWebUser();
   const { beginCheckout, selectItem } = useEcommerceTracking();
   const noUser = isLoaded ? !isSignedIn : false;
   const stripeCheckoutDiscountLabel = useMemo(

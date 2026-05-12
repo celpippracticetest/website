@@ -9,7 +9,7 @@ import {
   parsePrice,
 } from "@/lib/pricing";
 import type { PlanBillingInterval } from "@/types/pricing";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { StripeCheckoutDiscountBadge } from "@/components/checkout/StripeCheckoutDiscountBadge";
 import { getStripeCheckoutAutoDiscountLabel } from "@/lib/stripeCheckoutDiscountLabel";
 
@@ -75,7 +75,7 @@ const PlanCard = ({
   checkoutHiddenFields,
 }: IPlanCard) => {
   const { selectItem, beginCheckout } = useEcommerceTracking();
-  const { user, isSignedIn, isLoaded } = useUser();
+  const { user, isSignedIn, isLoaded } = useHybridWebUser();
   const stripeCheckoutDiscountLabel = useMemo(
     () =>
       isSignedIn && type !== "Free"

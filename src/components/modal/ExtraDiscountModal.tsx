@@ -2,12 +2,12 @@ import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useExtraDiscountStore } from "@/store/useExtraDiscount.store";
 import SvgCopy from "../icons/Copy";
-import { useUser } from "@clerk/nextjs";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import Close from "../icons/Close";
 
 const ExtraDiscountModal = () => {
   const ref = useRef<HTMLDivElement>(null);
-  const { user } = useUser();
+  const { user } = useHybridWebUser();
   const userCreatedAt = user?.createdAt;
   const { setShowExtraDiscount, couponId, setVisibleHorizontalCoupon } =
     useExtraDiscountStore((state) => state);
