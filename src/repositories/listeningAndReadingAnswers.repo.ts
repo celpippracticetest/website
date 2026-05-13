@@ -161,11 +161,36 @@ export class ListeningAndReadingAnswerRepository {
     page: number;
     totalPages: number;
     totalItems: number;
-  }> {
+  }  > {
     const skip = page * limit;
     const sanitizedFilter = Object.fromEntries(
       Object.entries(filter).filter(([, value]) => value !== undefined)
-    );
+    ) as Record<string, unknown>;
+
+    const coll = this.getAnswerCollection();
+    const examHex = objectIdHexFromComparable(sanitizedFilter.examId);
+    const userIdStr = typeof sanitizedFilter.userId === "string" ? sanitizedFilter.userId : null;
+    const keys = Object.keys(sanitizedFilter);
+    if (examHex && userIdStr && keys.length === 2 && keys.includes("examId") && keys.includes("userId")) {
+      const rows = await coll
+        .find({ examId: new ObjectId(examHex), userId: userIdStr })
+        .sort({ createdAt: -1 })
+        .toArray();
+      const filtered = rows.filter(
+        (a) => a && !["SPEAKING", "WRITING"].includes(String((a as { type?: string }).type ?? ""))
+      );
+      const totalItems = filtered.length;
+      const slice = filtered.slice(skip, skip + limit);
+      const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 0;
+      return {
+        items: slice.map((a) => this.convertFromEntity(a as TListeningAndReadingAnswer)),
+        page,
+        totalItems,
+        totalPages,
+        hasNextPage: skip + slice.length < totalItems,
+      };
+    }
+
     const aggregateFilter = [
       {
         $match: {

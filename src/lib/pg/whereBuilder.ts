@@ -161,8 +161,17 @@ export function documentFilterToSql(
         parts.push(`body->>'${k}' = $${paramIndex}`);
         params.push(String(v));
       } else {
-        ok = false;
-        break;
+        const hex = objectIdLikeToHex(v);
+        if (hex) {
+          parts.push(`(
+        body->>'${k}' = $${paramIndex}
+        OR body->'${k}'->>'$oid' = $${paramIndex}
+      )`);
+          params.push(hex);
+        } else {
+          ok = false;
+          break;
+        }
       }
       paramIndex++;
     }
@@ -188,6 +197,20 @@ export function documentFilterToSql(
       return {
         clause: `collection = $1 AND mongo_id = $2`,
         params: [collectionKey, v],
+      };
+    }
+  }
+
+  /** `examId` / `taskId` are often stored as ObjectId (JSONB `$oid` or 24-char string). */
+  if (k === "examId" || k === "taskId") {
+    const hex = objectIdLikeToHex(v);
+    if (hex) {
+      return {
+        clause: `collection = $1 AND (
+        body->>'${k}' = $2
+        OR body->'${k}'->>'$oid' = $2
+      )`,
+        params: [collectionKey, hex],
       };
     }
   }

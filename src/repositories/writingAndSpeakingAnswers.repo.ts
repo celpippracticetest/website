@@ -2,6 +2,14 @@ import { TWritingAnswer, TWritingAnswerDto, WritingAnswerDto, WritingAnswerSchem
 import { ObjectId } from "bson";
 import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
 
+const HEX24 = /^[a-f0-9]{24}$/i;
+
+function examIdAsObjectId(raw: unknown): ObjectId | null {
+  if (raw instanceof ObjectId) return raw;
+  if (typeof raw === "string" && HEX24.test(raw)) return new ObjectId(raw);
+  return null;
+}
+
 export class WritingAndSpeakingAnswerRepository {
   private readonly db: Db;
 
@@ -97,7 +105,37 @@ export class WritingAndSpeakingAnswerRepository {
     const skip = page * limit;
     const sanitizedFilter = Object.fromEntries(
       Object.entries(filter).filter(([, value]) => value !== undefined)
-    );
+    ) as Record<string, unknown>;
+
+    const coll = this.getAnswerCollection();
+    const userIdVal = typeof sanitizedFilter.userId === "string" ? sanitizedFilter.userId : null;
+    const examOid = examIdAsObjectId(sanitizedFilter.examId);
+    const typeVal = typeof sanitizedFilter.type === "string" ? sanitizedFilter.type : null;
+    const keys = Object.keys(sanitizedFilter);
+    if (
+      userIdVal &&
+      examOid &&
+      typeVal &&
+      keys.length === 3 &&
+      keys.includes("examId") &&
+      keys.includes("userId") &&
+      keys.includes("type")
+    ) {
+      const q = { userId: userIdVal, examId: examOid, type: typeVal };
+      const [totalItems, raw] = await Promise.all([
+        coll.countDocuments(q),
+        coll.find(q).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(),
+      ]);
+      const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 0;
+      return {
+        items: raw.map((a) => this.convertFromEntity(a)),
+        page,
+        totalItems,
+        totalPages,
+        hasNextPage: skip + raw.length < totalItems,
+      };
+    }
+
     const matchFilter = {
       ...sanitizedFilter,
       ...(!("type" in sanitizedFilter)

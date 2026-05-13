@@ -34,17 +34,11 @@ export class ExamPartsRepository {
     if (wantExamHex == null || !Number.isFinite(partId)) {
       return null;
     }
-    // Narrow by partId first (SQL fast path when only one filter key), then match examId by
-    // hex so Turbopack / PG deserialization never breaks on `ObjectId` constructor identity.
-    const candidates = await this.getExamPartsCollection()
-      .find({ partId })
-      .toArray();
-    const entity = candidates.find(
-      (d) =>
-        d != null &&
-        examIdHexFromUnknown((d as unknown as { examId?: unknown }).examId) === wantExamHex
-    ) as TExamPartSchema | undefined;
-    return entity ? this.convertFromEntity(entity) : null;
+    const entity = await this.getExamPartsCollection().findOne({
+      partId,
+      examId: new ObjectId(wantExamHex),
+    });
+    return entity ? this.convertFromEntity(entity as TExamPartSchema) : null;
   }
 
   async findById(id: string): Promise<TExamPartSchemaDto | null> {
@@ -103,105 +97,39 @@ export class ExamPartsRepository {
     const rest = { ...filterRecord } as Record<string, unknown>;
     delete rest.examId;
 
+    const coll = this.getExamPartsCollection();
+
     if (wantExamHex !== null) {
-      const coll = this.getExamPartsCollection();
       const baseFilter = Object.fromEntries(
         Object.entries(rest).filter(([, v]) => v !== undefined)
       ) as Record<string, unknown>;
-      const candidates = await coll.find(baseFilter).sort({ partId: 1 }).toArray();
-      const matched = candidates.filter(
-        (d) =>
-          d != null &&
-          examIdHexFromUnknown((d as unknown as { examId?: unknown }).examId) === wantExamHex
-      ) as TExamPartSchema[];
-      const totalItems = matched.length;
-      const slice = matched.slice(skip, skip + limit);
+      const combined: Record<string, unknown> = {
+        ...baseFilter,
+        examId: new ObjectId(wantExamHex),
+      };
+      const [totalItems, raw] = await Promise.all([
+        coll.countDocuments(combined),
+        coll.find(combined).sort({ partId: 1 }).skip(skip).limit(limit).toArray(),
+      ]);
       const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 0;
       return {
-        items: slice.map((p) => this.convertFromEntity(p)),
+        items: (raw as TExamPartSchema[]).map((p) => this.convertFromEntity(p)),
         page,
         totalItems,
         totalPages,
-        hasNextPage: skip + limit < totalItems,
+        hasNextPage: skip + raw.length < totalItems,
       };
     }
 
-    const aggregateFilter = [
-      {
-        $match: {
-          ...filter,
-        },
-      },
-      {
-        $sort: {
-          partId: 1,
-        },
-      },
-      {
-        $facet: {
-          total: [
-            {
-              $count: "count",
-            },
-          ],
-          data: [
-            {
-              $addFields: {
-                _id: "$_id",
-              },
-            },
-          ],
-        },
-      },
-      {
-        $unwind: "$total",
-      },
-      {
-        $project: {
-          items: {
-            $slice: [
-              "$data",
-              skip,
-              {
-                $ifNull: [limit, "$total.count"],
-              },
-            ],
-          },
-          page: {
-            $literal: skip / limit + 1,
-          },
-          hasNextPage: {
-            $lt: [{ $multiply: [limit, Number(page)] }, "$total.count"],
-          },
-          totalPages: {
-            $ceil: {
-              $divide: ["$total.count", limit],
-            },
-          },
-          totalItems: "$total.count",
-        },
-      },
-    ];
-
-    const results = await this.getExamPartsCollection().aggregate(aggregateFilter).toArray();
-
-    if (results.length == 0) {
-      return {
-        items: [],
-        page: 0,
-        totalItems: 0,
-        totalPages: 0,
-        hasNextPage: false,
-      };
-    }
-    const practices = results[0]?.items || [];
-
+    const totalItems = await coll.countDocuments(filterRecord);
+    const raw = await coll.find(filterRecord).sort({ partId: 1 }).skip(skip).limit(limit).toArray();
+    const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 0;
     return {
-      items: practices.map((practice: TExamPartSchema) => this.convertFromEntity(practice)),
+      items: (raw as TExamPartSchema[]).map((p) => this.convertFromEntity(p)),
       page,
-      totalItems: results[0].totalItems,
-      totalPages: results[0].totalPages,
-      hasNextPage: results[0].hasNextPage,
+      totalItems,
+      totalPages,
+      hasNextPage: skip + raw.length < totalItems,
     };
   }
 

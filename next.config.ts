@@ -289,6 +289,11 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "*.googleusercontent.com",
+        port: "",
+      },
+      {
+        protocol: "https",
         hostname: "acac98ae11ea860f690cce3ad5dcb630.r2.cloudflarestorage.com",
         port: "",
       },
