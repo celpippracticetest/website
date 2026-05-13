@@ -6,6 +6,36 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { logger } from "@/lib/sentry-logger";
 import { planNameIndicatesPremiumPlus } from "@/lib/subscriptionAccess";
 
+/** Upserts a Google Play purchase token → user mapping for RTDN lookups. */
+export async function trackGooglePlayPurchaseToken(args: {
+  supabaseAuthUserId: string;
+  purchaseToken: string;
+  subscriptionId: string;
+  packageName: string;
+  plan: string;
+}): Promise<void> {
+  const admin = getSupabaseAdmin();
+  if (!admin) return;
+  const { error } = await admin.from("google_play_subscriptions").upsert(
+    {
+      purchase_token: args.purchaseToken,
+      supabase_user_id: args.supabaseAuthUserId,
+      subscription_id: args.subscriptionId,
+      package_name: args.packageName,
+      plan: args.plan,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "purchase_token" }
+  );
+  if (error) {
+    logger.warn("Failed to track Google Play purchase token", {
+      component: "mobile_iap",
+      userId: args.supabaseAuthUserId,
+      metadata: { error: error.message },
+    });
+  }
+}
+
 function parseProductPlanMap(): Record<string, string> {
   const raw = process.env.MOBILE_IAP_PRODUCT_PLAN_JSON?.trim();
   if (!raw) return {};
@@ -75,6 +105,7 @@ async function syncUserPlanToUserDocument(args: {
 
 /**
  * After a verified store purchase, align auth user metadata and the `users` document with web Stripe behavior.
+ * Pass `purchaseToken` for Google Play purchases so RTDN renewals/cancellations can be matched to the user.
  */
 export async function applyVerifiedMobileSubscriptionPlan(args: {
   userId: string;
@@ -82,6 +113,10 @@ export async function applyVerifiedMobileSubscriptionPlan(args: {
   supabaseAuthUserId?: string | null;
   productId: string;
   platform: "google_play" | "apple";
+  /** Google Play purchase token — stored for RTDN event lookups. */
+  purchaseToken?: string | null;
+  /** Google Play package name — stored alongside the purchase token. */
+  packageName?: string | null;
 }): Promise<{ plan: string }> {
   const plan = resolvePlanFromMobileProductId(args.productId);
 
@@ -110,6 +145,20 @@ export async function applyVerifiedMobileSubscriptionPlan(args: {
         planSource: args.platform,
       },
     });
+
+    if (
+      args.platform === "google_play" &&
+      args.purchaseToken &&
+      args.packageName
+    ) {
+      await trackGooglePlayPurchaseToken({
+        supabaseAuthUserId: supabaseAdminTarget,
+        purchaseToken: args.purchaseToken,
+        subscriptionId: args.productId,
+        packageName: args.packageName,
+        plan,
+      });
+    }
 
     await syncUserPlanToUserDocument({
       userId: args.userId,

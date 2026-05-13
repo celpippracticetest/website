@@ -149,6 +149,8 @@ export async function POST(request: NextRequest) {
       supabaseAuthUserId: ctx.supabaseAuthUserId,
       productId,
       platform: "google_play",
+      purchaseToken,
+      packageName,
     });
 
     return NextResponse.json({ ok: true, message: null });
