@@ -18,7 +18,7 @@ function getExpectedPackageName(): string | null {
   return v && v.length > 0 ? v : null;
 }
 
-function getServiceAccountJson(): Record<string, unknown> | null {
+export function getGooglePlayServiceAccountJson(): Record<string, unknown> | null {
   const raw = process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON?.trim();
   if (!raw) return null;
   try {
@@ -28,19 +28,57 @@ function getServiceAccountJson(): Record<string, unknown> | null {
   }
 }
 
+export function buildAndroidPublisherAuth(credentials: Record<string, unknown>) {
+  const auth = new google.auth.GoogleAuth({
+    credentials,
+    scopes: ["https://www.googleapis.com/auth/androidpublisher"],
+  });
+  return google.androidpublisher({ version: "v3", auth });
+}
+
+type SubscriptionState =
+  | "SUBSCRIPTION_STATE_ACTIVE"
+  | "SUBSCRIPTION_STATE_CANCELED"
+  | "SUBSCRIPTION_STATE_IN_GRACE_PERIOD"
+  | "SUBSCRIPTION_STATE_ON_HOLD"
+  | "SUBSCRIPTION_STATE_PAUSED"
+  | "SUBSCRIPTION_STATE_EXPIRED"
+  | string;
+
+const ACTIVE_SUBSCRIPTION_STATES: SubscriptionState[] = [
+  "SUBSCRIPTION_STATE_ACTIVE",
+  "SUBSCRIPTION_STATE_IN_GRACE_PERIOD",
+  "SUBSCRIPTION_STATE_ON_HOLD",
+];
+
+/** Returns the latest expiry ISO string across all line items, or null if none found. */
+function getLatestExpiryFromV2(lineItems: { expiryTime?: string | null }[]): string | null {
+  let latest: Date | null = null;
+  for (const item of lineItems) {
+    if (!item.expiryTime) continue;
+    const d = new Date(item.expiryTime);
+    if (!Number.isNaN(d.getTime()) && (!latest || d > latest)) {
+      latest = d;
+    }
+  }
+  return latest ? latest.toISOString() : null;
+}
+
 /**
- * Verifies an existing Play subscription with the Android Publisher API,
- * then updates Clerk `publicMetadata.plan` (same values as Stripe web).
+ * Verifies a Play subscription purchase using the subscriptionsv2 API
+ * (required for multi-base-plan subscriptions introduced in Play Billing Library 5+),
+ * then writes `plan` to the user's auth metadata.
  */
 export async function POST(request: NextRequest) {
   try {
     const ctx = await requireAuthenticatedRequest(request);
-    const credentials = getServiceAccountJson();
+    const credentials = getGooglePlayServiceAccountJson();
     if (!credentials) {
       return NextResponse.json(
         {
           ok: false,
-          message: "Server is not configured for Google Play verification (GOOGLE_PLAY_SERVICE_ACCOUNT_JSON).",
+          message:
+            "Server is not configured for Google Play verification (GOOGLE_PLAY_SERVICE_ACCOUNT_JSON).",
         },
         { status: 503 }
       );
@@ -68,33 +106,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const auth = new google.auth.GoogleAuth({
-      credentials,
-      scopes: ["https://www.googleapis.com/auth/androidpublisher"],
-    });
+    const androidpublisher = buildAndroidPublisherAuth(credentials);
 
-    const androidpublisher = google.androidpublisher({ version: "v3", auth });
-    const { data } = await androidpublisher.purchases.subscriptions.get({
+    const { data } = await androidpublisher.purchases.subscriptionsv2.get({
       packageName,
-      subscriptionId: productId,
       token: purchaseToken,
     });
 
-    const expiryMs = data.expiryTimeMillis ? Number(data.expiryTimeMillis) : 0;
-    if (!expiryMs || Number.isNaN(expiryMs) || expiryMs < Date.now()) {
+    const state = data.subscriptionState as SubscriptionState | undefined;
+    if (!state || !ACTIVE_SUBSCRIPTION_STATES.includes(state)) {
+      logger.warn("Google Play subscription not in active state", {
+        component: "mobile_iap_google",
+        userId: ctx.userId,
+        metadata: { subscriptionState: state, productId },
+      });
       return NextResponse.json(
-        { ok: false, message: "Subscription is not active or has expired." },
+        {
+          ok: false,
+          message: `Subscription is not active (state: ${state ?? "unknown"}).`,
+        },
         { status: 400 }
       );
     }
 
-    const paymentState = data.paymentState;
-    if (paymentState !== undefined && paymentState !== 1 && paymentState !== 2) {
-      logger.warn("Google subscription unexpected paymentState", {
-        component: "mobile_iap_google",
-        userId: ctx.userId,
-        metadata: { paymentState },
-      });
+    const lineItems = data.lineItems ?? [];
+    const expiryIso = getLatestExpiryFromV2(lineItems);
+    if (expiryIso) {
+      const expiryMs = new Date(expiryIso).getTime();
+      if (
+        state === "SUBSCRIPTION_STATE_EXPIRED" ||
+        (state !== "SUBSCRIPTION_STATE_IN_GRACE_PERIOD" && expiryMs < Date.now())
+      ) {
+        return NextResponse.json(
+          { ok: false, message: "Subscription has expired." },
+          { status: 400 }
+        );
+      }
     }
 
     await applyVerifiedMobileSubscriptionPlan({
