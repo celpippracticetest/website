@@ -1,10 +1,6 @@
 import ExamOverview from "@/components/dashboard-app/examOverview";
 import documentsClient from "@/lib/appDocumentsClient";
-import { TListeningAndReadingAnswerDto, TWritingAnswerDto } from "@/models/answer";
 import { ExamRepository } from "@/repositories/exams.repo";
-import { ExamPartsRepository } from "@/repositories/examParts.repo";
-import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
-import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { Metadata } from "next";
 import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import ExamFAQ, { FAQ_DATA } from "@/components/dashboard-app/ExamFAQ";
@@ -15,108 +11,9 @@ import {
 } from "@/lib/subscriptionAccess";
 import type { TExamSchemaDto } from "@/models/exam.model";
 
-type ExamProgressSummary = {
-  completedParts: number;
-  totalParts: number;
-  completionPercentage: number;
-};
-
-const DEFAULT_EXAM_PART_COUNT = 20;
-const EXAM_PART_FETCH_LIMIT = 5000;
-const ANSWER_FETCH_LIMIT = 5000;
-
-const getAttemptKey = (attemptId?: string | null) => attemptId || "legacy";
-
-const hasCompletedListeningOrReadingPart = (
-  answer: TListeningAndReadingAnswerDto
-) =>
-  Boolean(
-    answer.examId &&
-      answer.partId &&
-      answer.answers &&
-      Object.keys(answer.answers).length > 0
-  );
-
-const hasCompletedWritingOrSpeakingPart = (answer: TWritingAnswerDto) => {
-  if (!answer.examId || !answer.partId) {
-    return false;
-  }
-
-  if (answer.audioUrl || answer.text?.trim()) {
-    return true;
-  }
-
-  if (answer.overalScore !== undefined) {
-    return true;
-  }
-
-  return Boolean(answer.result && Object.keys(answer.result).length > 0);
-};
-
-const buildExamProgressById = ({
-  examIds,
-  examPartCountsById,
-  listeningAndReadingAnswers,
-  writingAndSpeakingAnswers,
-}: {
-  examIds: string[];
-  examPartCountsById: Record<string, number>;
-  listeningAndReadingAnswers: TListeningAndReadingAnswerDto[];
-  writingAndSpeakingAnswers: TWritingAnswerDto[];
-}): Record<string, ExamProgressSummary> => {
-  const attemptsByExamId = new Map<string, Map<string, Set<number>>>();
-
-  const registerCompletedPart = (
-    examId?: string,
-    partId?: number,
-    attemptId?: string | null
-  ) => {
-    if (!examId || !partId) {
-      return;
-    }
-
-    const normalizedAttemptId = getAttemptKey(attemptId);
-    const examAttempts = attemptsByExamId.get(examId) ?? new Map<string, Set<number>>();
-    const completedParts = examAttempts.get(normalizedAttemptId) ?? new Set<number>();
-
-    completedParts.add(partId);
-    examAttempts.set(normalizedAttemptId, completedParts);
-    attemptsByExamId.set(examId, examAttempts);
-  };
-
-  listeningAndReadingAnswers
-    .filter(hasCompletedListeningOrReadingPart)
-    .forEach((answer) => {
-      registerCompletedPart(answer.examId, answer.partId, answer.attemptId);
-    });
-
-  writingAndSpeakingAnswers
-    .filter(hasCompletedWritingOrSpeakingPart)
-    .forEach((answer) => {
-      registerCompletedPart(answer.examId, answer.partId, answer.attemptId);
-    });
-
-  return examIds.reduce<Record<string, ExamProgressSummary>>((acc, examId) => {
-    const totalParts = examPartCountsById[examId] ?? DEFAULT_EXAM_PART_COUNT;
-    const examAttempts = attemptsByExamId.get(examId);
-    const completedParts = examAttempts
-      ? Array.from(examAttempts.values()).reduce(
-          (maxCompletedParts, completedPartIds) =>
-            Math.max(maxCompletedParts, completedPartIds.size),
-          0
-        )
-      : 0;
-
-    acc[examId] = {
-      completedParts,
-      totalParts,
-      completionPercentage:
-        totalParts > 0 ? Math.round((completedParts / totalParts) * 100) : 0,
-    };
-
-    return acc;
-  }, {});
-};
+const examOverviewTimingLog =
+  process.env.NODE_ENV === "development" ||
+  process.env.EXAM_OVERVIEW_TIMING_LOG === "1";
 
 export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "";
@@ -136,11 +33,13 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const ExamsPage = async () => {
+  const tPageStart = performance.now();
   const exampRepo = new ExamRepository(documentsClient);
   const [result, hybridUser] = await Promise.all([
     exampRepo.getAllExam({ isReady: true }, 0, 1000),
     getHybridCurrentUser(),
   ]);
+  const tAfterExamsAndUser = performance.now();
   const user = hybridUser?.user ?? null;
   const noUser = !user;
 
@@ -159,50 +58,14 @@ const ExamsPage = async () => {
     return (a.order ?? 0) - (b.order ?? 0);
   });
 
-  const examIds = examsForOverview.map((exam) => exam.id);
-  let examProgressById: Record<string, ExamProgressSummary> = {};
-
-  if (user) {
-    const examPartsRepo = new ExamPartsRepository(documentsClient);
-    const listeningAndReadingAnswerRepo = new ListeningAndReadingAnswerRepository(
-      documentsClient
-    );
-    const writingAndSpeakingAnswerRepo = new WritingAndSpeakingAnswerRepository(
-      documentsClient
-    );
-
-    const [examPartsResult, listeningAndReadingResult, writingAndSpeakingResult] =
-      await Promise.all([
-        examPartsRepo.getAllExamPart({}, 0, EXAM_PART_FETCH_LIMIT),
-        listeningAndReadingAnswerRepo.getAllListeningAndReadingAnswers(
-          { userId: user.id },
-          0,
-          ANSWER_FETCH_LIMIT
-        ),
-        writingAndSpeakingAnswerRepo.getAllWritingAnswers(
-          { userId: user.id },
-          0,
-          ANSWER_FETCH_LIMIT
-        ),
-      ]);
-
-    const examPartCountsById = examPartsResult.items.reduce<Record<string, number>>(
-      (acc, examPart) => {
-        acc[examPart.examId] = (acc[examPart.examId] ?? 0) + 1;
-        return acc;
-      },
-      {}
-    );
-
-    examProgressById = buildExamProgressById({
-      examIds,
-      examPartCountsById,
-      listeningAndReadingAnswers: listeningAndReadingResult.items.filter((answer) =>
-        Boolean(answer.examId)
-      ),
-      writingAndSpeakingAnswers: writingAndSpeakingResult.items.filter((answer) =>
-        Boolean(answer.examId)
-      ),
+  if (examOverviewTimingLog) {
+    const examsAndUserMs = tAfterExamsAndUser - tPageStart;
+    console.log("[exam-overview/timing] server", {
+      examsAndUserMs: +examsAndUserMs.toFixed(1),
+      examCount: examsForOverview.length,
+      signedIn: Boolean(user),
+      examCardsFromServer: true,
+      progressLoad: user ? "client" : "n/a",
     });
   }
 
@@ -385,8 +248,9 @@ const ExamsPage = async () => {
         <Box id="exam-overview-list">
           <ExamOverview
             exams={examsForOverview}
-            examProgressById={examProgressById}
+            examProgressById={{}}
             showUserProgress={Boolean(user)}
+            loadExamProgressClientSide={Boolean(user)}
             rscUserAccessSnapshot={
               user
                 ? {
@@ -396,6 +260,7 @@ const ExamsPage = async () => {
                   }
                 : undefined
             }
+            timingLog={examOverviewTimingLog}
           />
         </Box>
 
@@ -444,8 +309,8 @@ const ExamsPage = async () => {
                 }}
               >
                 Track your results across multiple mock exams to see whether listening accuracy,
-                reading speed, writing organization, and speaking fluency are improving.
-                Consistent review between tests is what turns practice into real score gains.
+                reading speed, writing organization, and speaking fluency are improving. Consistent
+                review between tests is what turns practice into real score gains.
               </Typography>
             </Stack>
           </Paper>

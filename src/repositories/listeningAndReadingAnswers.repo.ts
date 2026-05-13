@@ -3,9 +3,11 @@ import {
   ListeningAndReadingAnswerDto,
   TListeningAndReadingAnswer,
   TListeningAndReadingAnswerDto,
+  TWritingAnswerDto,
 } from "@/models/answer";
 import { ObjectId } from "bson";
 import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
+import { writingAnswerDtoFromLeanDocument } from "@/repositories/writingAndSpeakingAnswers.repo";
 
 const HEX24 = /^[a-f0-9]{24}$/i;
 
@@ -45,6 +47,21 @@ function optionalIdString(value: unknown): string | undefined {
   return undefined;
 }
 
+function listeningAnswerDtoFromLeanDocument(
+  doc: unknown
+): TListeningAndReadingAnswerDto {
+  const row = doc as TListeningAndReadingAnswer;
+  const answer: TListeningAndReadingAnswerDto = {
+    ...row,
+    id: row._id.toHexString(),
+    answers: row.answers ?? {},
+    taskId: optionalIdString(row.taskId as unknown),
+    examId: optionalIdString(row.examId as unknown),
+    practiceId: optionalIdString(row.practiceId as unknown),
+  };
+  return ListeningAndReadingAnswerDto.parse(answer);
+}
+
 export class ListeningAndReadingAnswerRepository {
   private readonly db: Db;
 
@@ -59,14 +76,78 @@ export class ListeningAndReadingAnswerRepository {
   private convertFromEntity(
     answerEntity: TListeningAndReadingAnswer
   ): TListeningAndReadingAnswerDto {
-    const answer: TListeningAndReadingAnswerDto = {
-      id: answerEntity._id.toHexString(),
-      ...answerEntity,
-      taskId: optionalIdString(answerEntity.taskId as unknown),
-      examId: optionalIdString(answerEntity.examId as unknown),
-      practiceId: optionalIdString(answerEntity.practiceId as unknown),
+    return listeningAnswerDtoFromLeanDocument(answerEntity);
+  }
+
+  /**
+   * One DB round-trip for mock-exam progress: L/R + W/S answers for these exams only,
+   * with a tight projection (avoids two full scans + large payloads).
+   */
+  async getPartitionedMockExamProgressAnswers(
+    userId: string,
+    examIds: string[]
+  ): Promise<{
+    listeningAndReading: TListeningAndReadingAnswerDto[];
+    writingAndSpeaking: TWritingAnswerDto[];
+    fetchedCount: number;
+  }> {
+    if (examIds.length === 0) {
+      return { listeningAndReading: [], writingAndSpeaking: [], fetchedCount: 0 };
+    }
+    const examIdMatch: (ObjectId | string)[] = [];
+    for (const id of examIds) {
+      if (!HEX24.test(id)) continue;
+      const h = id.toLowerCase();
+      examIdMatch.push(new ObjectId(h));
+      examIdMatch.push(h);
+    }
+    if (examIdMatch.length === 0) {
+      return { listeningAndReading: [], writingAndSpeaking: [], fetchedCount: 0 };
+    }
+
+    const projection = {
+      _id: 1,
+      userId: 1,
+      type: 1,
+      examId: 1,
+      partId: 1,
+      attemptId: 1,
+      answers: 1,
+      text: 1,
+      audioUrl: 1,
+      overalScore: 1,
+      result: 1,
+    } as const;
+
+    const raw = await this.getAnswerCollection()
+      .find({ userId, examId: { $in: examIdMatch } }, { projection })
+      .toArray();
+
+    const listeningAndReading: TListeningAndReadingAnswerDto[] = [];
+    const writingAndSpeaking: TWritingAnswerDto[] = [];
+
+    for (const doc of raw) {
+      const type = String((doc as { type?: string }).type ?? "").toUpperCase();
+      if (type === "WRITING" || type === "SPEAKING") {
+        try {
+          writingAndSpeaking.push(writingAnswerDtoFromLeanDocument(doc));
+        } catch {
+          /* skip malformed row */
+        }
+      } else {
+        try {
+          listeningAndReading.push(listeningAnswerDtoFromLeanDocument(doc));
+        } catch {
+          /* skip malformed row */
+        }
+      }
+    }
+
+    return {
+      listeningAndReading,
+      writingAndSpeaking,
+      fetchedCount: raw.length,
     };
-    return ListeningAndReadingAnswerDto.parse(answer);
   }
 
   async findAnswerByPracticeAndUser(

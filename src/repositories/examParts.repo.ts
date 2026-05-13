@@ -133,6 +133,31 @@ export class ExamPartsRepository {
     };
   }
 
+  /** Part counts per exam only for the given exam ids (avoids loading every part document). */
+  async countPartsByExamIds(examIds: string[]): Promise<Record<string, number>> {
+    if (examIds.length === 0) {
+      return {};
+    }
+    const oidList = examIds
+      .filter((id) => OID24.test(id))
+      .map((id) => new ObjectId(id.toLowerCase()));
+    if (oidList.length === 0) {
+      return {};
+    }
+    const coll = this.getExamPartsCollection();
+    const rows = (await coll
+      .aggregate([
+        { $match: { examId: { $in: oidList } } },
+        { $group: { _id: "$examId", count: { $sum: 1 } } },
+      ])
+      .toArray()) as { _id: ObjectId; count: number }[];
+    const out: Record<string, number> = {};
+    for (const row of rows) {
+      out[row._id.toHexString()] = row.count;
+    }
+    return out;
+  }
+
   //   async updateUser(id: string, dto: Omit<Partial<UserDTO>, "id">): Promise<UserDTO | null> {
   //     const candidate = userEntitySchema.partial().parse(dto);
 

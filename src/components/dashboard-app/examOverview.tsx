@@ -10,11 +10,12 @@ import {
   CircularProgress,
   LinearProgress,
   Paper,
+  Skeleton,
   Stack,
   Typography,
 } from "@mui/material";
 import { useRouter } from "nextjs-toploader/app";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import LoginModal from "../modal/LoginModal";
 import {
   hasMockExamAccess,
@@ -23,6 +24,7 @@ import {
   isMockExamUnlockedViaPurchase,
   normalizePlan,
 } from "@/lib/subscriptionAccess";
+import type { ExamProgressSummary } from "@/lib/examOverviewProgress";
 
 const examSections = [
   { label: "Listening", partId: 1, section: "listening" },
@@ -31,23 +33,23 @@ const examSections = [
   { label: "Speaking", partId: 13, section: "speaking" },
 ];
 
-type ExamProgressSummary = {
-  completedParts: number;
-  totalParts: number;
-  completionPercentage: number;
-};
-
 const ExamOverview = ({
   exams,
   examProgressById,
   showUserProgress,
   rscUserAccessSnapshot,
+  loadExamProgressClientSide = false,
+  timingLog = false,
 }: {
   exams: TExamSchemaDto[];
   examProgressById: Record<string, ExamProgressSummary>;
   showUserProgress: boolean;
   /** Server snapshot from the page so purchased mocks render correctly before `useHybridWebUser()` loads. */
   rscUserAccessSnapshot?: { purchasedMockExamIds?: unknown };
+  /** When true, completion bars load after exam cards via `/api/users/exam-overview-progress`. */
+  loadExamProgressClientSide?: boolean;
+  /** When true (dev or `EXAM_OVERVIEW_TIMING_LOG=1`), logs time from navigation start to exam list mount. */
+  timingLog?: boolean;
 }) => {
   const router = useRouter();
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
@@ -102,7 +104,80 @@ const ExamOverview = ({
   const [upgradeSubmitting, setUpgradeSubmitting] = useState(false);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
 
+  const [progressById, setProgressById] = useState<
+    Record<string, ExamProgressSummary>
+  >(() => ({ ...examProgressById }));
+  const [examProgressReady, setExamProgressReady] = useState(
+    () => !loadExamProgressClientSide
+  );
+
+  const examIdsKey = useMemo(() => exams.map((e) => e.id).join(","), [exams]);
+
   const { setSelectedExam } = useSelectedExam();
+
+  useEffect(() => {
+    if (loadExamProgressClientSide) {
+      return;
+    }
+    setProgressById({ ...examProgressById });
+    setExamProgressReady(true);
+  }, [loadExamProgressClientSide, examProgressById]);
+
+  useEffect(() => {
+    if (!timingLog || exams.length === 0) {
+      return;
+    }
+    const msSinceNavStart =
+      typeof performance !== "undefined" ? performance.now() : 0;
+    console.log("[exam-overview/timing] client exams mounted", {
+      msSinceNavigationStart: +msSinceNavStart.toFixed(1),
+      examCount: exams.length,
+    });
+  }, [timingLog, exams.length]);
+
+  useEffect(() => {
+    if (!loadExamProgressClientSide || !showUserProgress || examIdsKey.length === 0) {
+      return;
+    }
+    let cancelled = false;
+    const t0 = typeof performance !== "undefined" ? performance.now() : 0;
+    (async () => {
+      try {
+        const examIds = exams.map((e) => e.id);
+        const res = await fetch("/api/users/exam-overview-progress", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ examIds }),
+        });
+        const data = (await res.json().catch(() => ({}))) as {
+          examProgressById?: Record<string, ExamProgressSummary>;
+        };
+        if (cancelled) return;
+        if (res.ok && data.examProgressById) {
+          setProgressById(data.examProgressById);
+        }
+        if (timingLog && typeof performance !== "undefined") {
+          console.log("[exam-overview/timing] client progress loaded", {
+            ms: +(performance.now() - t0).toFixed(1),
+            ok: res.ok,
+          });
+        }
+      } finally {
+        if (!cancelled) {
+          setExamProgressReady(true);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    loadExamProgressClientSide,
+    showUserProgress,
+    examIdsKey,
+    exams,
+    timingLog,
+  ]);
 
   const runPremiumPlusUpgrade = async () => {
     if (upgradeSubmitting || !needsPremiumPlusUpgrade) {
@@ -260,7 +335,7 @@ const ExamOverview = ({
           }}
         >
           {exams.map((exam: TExamSchemaDto, i: number) => {
-            const progress = examProgressById[exam.id];
+            const progress = progressById[exam.id];
             const unlocked = mockExamUnlocked(exam);
             const purchasedUnlock = isMockExamUnlockedViaPurchase(
               exam.id,
@@ -394,7 +469,17 @@ const ExamOverview = ({
                       ))}
                     </Box>
 
-                    {showUserProgress && progress && progress.completionPercentage > 0 && (
+                    {showUserProgress && loadExamProgressClientSide && !examProgressReady && (
+                      <Skeleton
+                        variant="rounded"
+                        height={8}
+                        sx={{ borderRadius: "999px", mt: 0.25 }}
+                      />
+                    )}
+                    {showUserProgress &&
+                      examProgressReady &&
+                      progress &&
+                      progress.completionPercentage > 0 && (
                       <Stack spacing={0.85}>
                         <Box
                           sx={{

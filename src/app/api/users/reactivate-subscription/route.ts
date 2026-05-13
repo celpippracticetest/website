@@ -39,11 +39,10 @@ export async function POST(req: NextRequest) {
     });
 
     if (subscriptions.data.length === 0) {
-      // Check if there are any trailing subscriptions or past due?
-      // For now assume "active" includes those set to cancel at period end.
+      // 422: business rule (avoid 404 so DevTools does not look like a missing route)
       return NextResponse.json(
         { error: "No active subscriptions found" },
-        { status: 404 }
+        { status: 422 }
       );
     }
 

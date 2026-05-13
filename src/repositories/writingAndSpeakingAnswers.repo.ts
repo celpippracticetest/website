@@ -4,6 +4,15 @@ import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
 
 const HEX24 = /^[a-f0-9]{24}$/i;
 
+/** Lean `answers` row → DTO (e.g. after a projection for exam-overview progress). */
+export function writingAnswerDtoFromLeanDocument(doc: unknown): TWritingAnswerDto {
+  const row = doc as TWritingAnswer;
+  return WritingAnswerDto.parse({
+    ...row,
+    id: row._id.toHexString(),
+  });
+}
+
 function examIdAsObjectId(raw: unknown): ObjectId | null {
   if (raw instanceof ObjectId) return raw;
   if (typeof raw === "string" && HEX24.test(raw)) return new ObjectId(raw);
@@ -22,12 +31,9 @@ export class WritingAndSpeakingAnswerRepository {
   }
 
   private convertFromEntity(answerEntity: TWritingAnswer) {
-    const answer: TWritingAnswerDto = {
-      id: answerEntity._id.toHexString(),
-      ...answerEntity,
-    };
-    return WritingAnswerDto.parse(answer);
+    return writingAnswerDtoFromLeanDocument(answerEntity);
   }
+
   async findAnswer(id: string): Promise<TWritingAnswerDto | null> {
     const entity = await this.getAnswerCollection().findOne({ _id: new ObjectId(id) });
     return entity ? this.convertFromEntity(entity) : null;
