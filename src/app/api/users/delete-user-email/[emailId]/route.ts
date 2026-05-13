@@ -1,8 +1,8 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/server-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function DELETE(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: { emailId: string } }
 ) {
   try {
@@ -17,19 +17,16 @@ export async function DELETE(
       );
     }
 
-    const clerk = await clerkClient();
-    const user = await clerk.users.getUser(userId);
-
-    const email = user.emailAddresses.find((e) => e.id === emailId);
-    if (!email) {
-      return NextResponse.json({ error: "Email not found" }, { status: 404 });
-    }
-
-    await clerk.emailAddresses.deleteEmailAddress(email.id);
-
-    return NextResponse.json({ success: true });
-  } catch (err: any) {
+    return NextResponse.json(
+      {
+        error:
+          "Removing individual email addresses is not supported. Accounts use a single primary email.",
+      },
+      { status: 501 }
+    );
+  } catch (err: unknown) {
     console.error(err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Server error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

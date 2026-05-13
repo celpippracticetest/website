@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { requireAuthenticatedRequest } from "@/lib/auth/request-auth";
 import {
-  emailsFromClerkUser,
+  emailsFromAuthUser,
   resolveStripeCustomerId,
 } from "@/lib/resolveStripeCustomerId";
 import { stripe } from "@/lib/stripe";
@@ -29,10 +29,10 @@ export async function POST(request: NextRequest) {
     }
 
     const stripeCustomerId = await resolveStripeCustomerId(userId, {
-      clerkStripeCustomerId: user.privateMetadata?.stripeCustomerId as
+      stripeCustomerIdFromPrivate: user.privateMetadata?.stripeCustomerId as
         | string
         | undefined,
-      emails: emailsFromClerkUser(user),
+      emails: emailsFromAuthUser(user),
     });
     if (stripeCustomerId == null) {
       return NextResponse.json(

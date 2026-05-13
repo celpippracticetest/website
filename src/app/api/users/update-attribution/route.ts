@@ -1,14 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
-import { getDb } from "@/lib/mongodb";
+import { appUserAdmin } from "@/lib/auth/server-auth";
+import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
+import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
+import { getDb } from "@/lib/appDocumentsClient";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import {
   ACQUISITION_ATTRIBUTION_COOKIE,
   mergeAcquisitionCookieIntoAttributionData,
 } from "@/lib/attributionCookie";
+import {
+  matchUsersCollectionByWebUserIds,
+  supabaseAuthUserIdFieldsOnUserDoc,
+} from "@/lib/users/userDocumentIdentity";
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await auth();
+    const authContext = await getAuthenticatedRequestContext(req);
+    const userId = authContext?.userId;
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -108,50 +116,96 @@ export async function POST(req: NextRequest) {
     const resolvedCountry = attributionData.country || null;
     const resolvedCurrency = attributionData.currency || null;
 
-    // Write only flat UTM fields to Clerk (no firstTouch/lastTouch objects to keep JWT small)
-    const clerk = await clerkClient();
-    const clerkUser = await clerk.users.getUser(userId);
-    const existingPublicMetadata = (clerkUser.publicMetadata || {}) as Record<string, any>;
-    await clerk.users.updateUserMetadata(userId, {
-      publicMetadata: {
-        ...existingPublicMetadata,
-        ...(attributionData.utm_source && { utm_source: attributionData.utm_source }),
-        ...(attributionData.utm_medium && { utm_medium: attributionData.utm_medium }),
-        ...(attributionData.utm_campaign && { utm_campaign: attributionData.utm_campaign }),
-        ...(attributionData.utm_content && { utm_content: attributionData.utm_content }),
-        ...(attributionData.utm_term && { utm_term: attributionData.utm_term }),
-        ...(attributionData.gclid && { gclid: attributionData.gclid }),
-        ...(attributionData.gbraid && { gbraid: attributionData.gbraid }),
-        ...(attributionData.wbraid && { wbraid: attributionData.wbraid }),
-        ...(attributionData.google_ads_campaign_id && {
-          google_ads_campaign_id: attributionData.google_ads_campaign_id,
-        }),
-        ...(attributionData.fbclid && { fbclid: attributionData.fbclid }),
-        ...(attributionData.msclkid && { msclkid: attributionData.msclkid }),
-        ...(attributionData.ttclid && { ttclid: attributionData.ttclid }),
-        ...(referrer && { referrer }),
-        ...(resolvedEntryPage && { entryPage: resolvedEntryPage }),
-        ...(attributionData.country && { country: attributionData.country }),
-      },
-    });
+    const supabaseUuid = authContext.supabaseAuthUserId;
+    const isSupabaseBacked = supabaseUuid != null;
 
-    // Update MongoDB
+    if (isSupabaseBacked) {
+      const admin = getSupabaseAdmin();
+      if (admin) {
+        const { data: existingAuth, error: getErr } = await admin.auth.admin.getUserById(
+          supabaseUuid
+        );
+        if (!getErr && existingAuth.user) {
+          const currentUserMeta = (existingAuth.user.user_metadata ?? {}) as Record<
+            string,
+            unknown
+          >;
+          await admin.auth.admin.updateUserById(supabaseUuid, {
+            user_metadata: {
+              ...currentUserMeta,
+              ...(attributionData.utm_source && { utm_source: attributionData.utm_source }),
+              ...(attributionData.utm_medium && { utm_medium: attributionData.utm_medium }),
+              ...(attributionData.utm_campaign && { utm_campaign: attributionData.utm_campaign }),
+              ...(attributionData.utm_content && { utm_content: attributionData.utm_content }),
+              ...(attributionData.utm_term && { utm_term: attributionData.utm_term }),
+              ...(attributionData.gclid && { gclid: attributionData.gclid }),
+              ...(attributionData.gbraid && { gbraid: attributionData.gbraid }),
+              ...(attributionData.wbraid && { wbraid: attributionData.wbraid }),
+              ...(attributionData.google_ads_campaign_id && {
+                google_ads_campaign_id: attributionData.google_ads_campaign_id,
+              }),
+              ...(attributionData.fbclid && { fbclid: attributionData.fbclid }),
+              ...(attributionData.msclkid && { msclkid: attributionData.msclkid }),
+              ...(attributionData.ttclid && { ttclid: attributionData.ttclid }),
+              ...(referrer && { referrer }),
+              ...(resolvedEntryPage && { entryPage: resolvedEntryPage }),
+              ...(attributionData.country && { country: attributionData.country }),
+            },
+          });
+        }
+      }
+    } else {
+      const authAdmin = await appUserAdmin();
+      const clerkUser = await authAdmin.users.getUser(userId);
+      const existingPublicMetadata = (clerkUser.publicMetadata || {}) as Record<string, unknown>;
+      await authAdmin.users.updateUserMetadata(userId, {
+        publicMetadata: {
+          ...existingPublicMetadata,
+          ...(attributionData.utm_source && { utm_source: attributionData.utm_source }),
+          ...(attributionData.utm_medium && { utm_medium: attributionData.utm_medium }),
+          ...(attributionData.utm_campaign && { utm_campaign: attributionData.utm_campaign }),
+          ...(attributionData.utm_content && { utm_content: attributionData.utm_content }),
+          ...(attributionData.utm_term && { utm_term: attributionData.utm_term }),
+          ...(attributionData.gclid && { gclid: attributionData.gclid }),
+          ...(attributionData.gbraid && { gbraid: attributionData.gbraid }),
+          ...(attributionData.wbraid && { wbraid: attributionData.wbraid }),
+          ...(attributionData.google_ads_campaign_id && {
+            google_ads_campaign_id: attributionData.google_ads_campaign_id,
+          }),
+          ...(attributionData.fbclid && { fbclid: attributionData.fbclid }),
+          ...(attributionData.msclkid && { msclkid: attributionData.msclkid }),
+          ...(attributionData.ttclid && { ttclid: attributionData.ttclid }),
+          ...(referrer && { referrer }),
+          ...(resolvedEntryPage && { entryPage: resolvedEntryPage }),
+          ...(attributionData.country && { country: attributionData.country }),
+        },
+      });
+    }
+
     const db = await getDb();
     const usersCollection = db.collection("users");
-    const existingUser = await usersCollection.findOne({ clerkUserId: userId });
-    const existingPublicMetadataMongo = (existingUser?.publicMetadata || {}) as Record<string, any>;
+    const userFilter = matchUsersCollectionByWebUserIds(userId);
+    const existingUser = await usersCollection.findOne(userFilter);
+    const existingPublicMetadataFromDoc = (existingUser?.publicMetadata || {}) as Record<
+      string,
+      unknown
+    >;
+
+    const insertId = isLikelySupabaseAuthUserId(userId)
+      ? supabaseAuthUserIdFieldsOnUserDoc(userId)
+      : { clerkUserId: userId };
 
     await db.collection("users").updateOne(
-      { clerkUserId: userId },
+      userFilter,
       {
         $set: {
           publicMetadata: {
-            ...existingPublicMetadataMongo,
+            ...existingPublicMetadataFromDoc,
             ...attributionData,
-            acquisitionDate: existingPublicMetadataMongo.acquisitionDate || nowIso,
+            acquisitionDate: existingPublicMetadataFromDoc.acquisitionDate || nowIso,
           },
           attribution: {
-            firstTouch: existingUser?.attribution?.firstTouch || {
+            firstTouch: (existingUser as Record<string, any> | null)?.attribution?.firstTouch || {
               source,
               medium,
               campaign,
@@ -195,6 +249,7 @@ export async function POST(req: NextRequest) {
         },
         $setOnInsert: {
           createdAt: new Date(),
+          ...insertId,
         },
       },
       { upsert: true }

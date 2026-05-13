@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import client from "@/lib/mongodb";
+import { auth, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
+import client from "@/lib/appDocumentsClient";
 import { z } from "zod";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { RefundRequestRepository } from "@/repositories/refund-request.repo";
 
 export const runtime = "nodejs";
@@ -45,7 +45,7 @@ const UpdateStatusSchema = z
 export async function GET(request: NextRequest) {
   try {
     const { sessionClaims } = await auth();
-    const isAdmin = sessionClaims?.metadata?.roles?.includes("admin");
+    const isAdmin = sessionClaimsHasAdminRole(sessionClaims);
 
     if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -104,8 +104,8 @@ export async function GET(request: NextRequest) {
             ? {
                 timestamp: lastTokenUsage.timestampUtc,
                 totalTokens:
-                  (lastTokenUsage.llmTokensPrompt || 0) +
-                  (lastTokenUsage.llmTokensCompletion || 0),
+                  Number(lastTokenUsage.llmTokensPrompt ?? 0) +
+                  Number(lastTokenUsage.llmTokensCompletion ?? 0),
               }
             : null,
         };
@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const { sessionClaims } = await auth();
-    const isAdmin = sessionClaims?.metadata?.roles?.includes("admin");
+    const isAdmin = sessionClaimsHasAdminRole(sessionClaims);
 
     if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -161,7 +161,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const repo = new RefundRequestRepository(mongoClient);
+    const repo = new RefundRequestRepository(documentsClient);
     await repo.ensureIndexes();
 
     const updated = await repo.updateStatus({

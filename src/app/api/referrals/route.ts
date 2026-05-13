@@ -3,9 +3,9 @@ export const runtime = "nodejs";
 // This endpoint only supports GET. Referral code is generated once and never regenerated.
 
 import { NextResponse } from "next/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth, appUserAdmin } from "@/lib/auth/server-auth";
 import { headers } from "next/headers";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { ReferralRepository } from "@/repositories/referral.repo";
 
 function getBaseUrl(h: { get(name: string): string | null }) {
@@ -27,7 +27,7 @@ function getBaseUrl(h: { get(name: string): string | null }) {
 }
 
 async function getDb() {
-  const repo = new ReferralRepository(mongoClient);
+  const repo = new ReferralRepository(documentsClient);
   await repo.ensureIndexes();
   return repo;
 }
@@ -47,7 +47,7 @@ function buildReferralLink(
 }
 
 export async function ensureUserReferral(userId: string, baseUrl: string) {
-  const cc = await clerkClient();
+  const cc = await appUserAdmin();
   const user = await cc.users.getUser(userId);
   const pm = (user.publicMetadata || {}) as Record<string, any>;
 
@@ -64,7 +64,7 @@ export async function ensureUserReferral(userId: string, baseUrl: string) {
   if (existing) {
     const link = buildReferralLink(baseUrl, existing.code, user);
 
-    // Sync referralCode back to Clerk metadata (without referralLink to keep JWT small)
+    // Sync referralCode back to auth directory metadata (without referralLink to keep JWT small)
     await cc.users.updateUser(userId, {
       publicMetadata: {
         ...pm,

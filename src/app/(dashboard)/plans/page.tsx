@@ -3,7 +3,7 @@ import PlansPageTracking from "@/components/analytics/PlansPageTracking";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
 import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { PlansRepository } from "@/repositories/plans.repo";
 import SvgBestValuePlan from "@/components/icons/BestValuePlan";
 import SvgPopularPlan from "@/components/icons/PopularPlan";
@@ -28,8 +28,8 @@ const getIconComponent = (iconType?: string) => {
 const Plans = async () => {
   const hybridUser = await getHybridCurrentUser();
   const user = hybridUser?.user ?? null;
-  const db = await mongoClient.db();
-  const userRepo = new CheckoutRepository(mongoClient);
+  const db = await documentsClient.db();
+  const userRepo = new CheckoutRepository(documentsClient);
   const plansRepo = new PlansRepository(db);
 
   const [prevCheckout, plans] = await Promise.all([

@@ -1,4 +1,4 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { NextRequest, NextResponse } from "next/server";
 import { ObjectId } from "bson";
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   const practiceParser = ExamPartSchemaDto.omit({ id: true }).safeParse({...body, partId: parseInt(body.partId)});
 
   if (practiceParser.success) {
-    const practiceRepo = new ExamPartsRepository(mongoClient);
+    const practiceRepo = new ExamPartsRepository(documentsClient);
     const practiceDto = await practiceRepo.createExamPart(practiceParser.data);
     return NextResponse.json({ id: practiceDto.id }, { status: 200 });
   } else {
@@ -31,7 +31,7 @@ export const GET = async function (req: NextRequest) {
     filter['partId'] = parseInt(partId);
 
   }
-  const practiceRepo = new ExamPartsRepository(mongoClient);
+  const practiceRepo = new ExamPartsRepository(documentsClient);
   const practices = await practiceRepo.getAllExamPart(
     filter,
     parseInt(page),

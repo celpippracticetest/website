@@ -1,7 +1,7 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { HomepageHeroScheduleWriteSchema } from "@/models/homepage-hero-schedule.model";
 import { HomepageHeroScheduleRepository } from "@/repositories/homepage-hero-schedule.repo";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -17,7 +17,7 @@ async function ensureAdmin() {
   }
 
   const authenticate = await auth();
-  const isAdmin = authenticate.sessionClaims?.metadata?.roles?.includes("admin");
+  const isAdmin = sessionClaimsHasAdminRole(authenticate.sessionClaims);
   if (!isAdmin) {
     return {
       ok: false as const,
@@ -33,7 +33,7 @@ export async function GET() {
     const admin = await ensureAdmin();
     if (!admin.ok) return admin.response;
 
-    const repo = new HomepageHeroScheduleRepository(mongoClient);
+    const repo = new HomepageHeroScheduleRepository(documentsClient);
     await repo.ensureIndexes();
     const schedules = await repo.getAllSchedules();
 
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const repo = new HomepageHeroScheduleRepository(mongoClient);
+    const repo = new HomepageHeroScheduleRepository(documentsClient);
     await repo.ensureIndexes();
     const created = await repo.createSchedule(parsed.data);
 
@@ -106,7 +106,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const repo = new HomepageHeroScheduleRepository(mongoClient);
+    const repo = new HomepageHeroScheduleRepository(documentsClient);
     await repo.ensureIndexes();
     const updated = await repo.updateSchedule(id, parsed.data);
     if (!updated) {
@@ -139,7 +139,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const repo = new HomepageHeroScheduleRepository(mongoClient);
+    const repo = new HomepageHeroScheduleRepository(documentsClient);
     await repo.ensureIndexes();
     const deleted = await repo.deleteSchedule(id);
     if (!deleted) {

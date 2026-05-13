@@ -1,4 +1,4 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { ensureCmsAdmin } from "@/lib/cms/ensure-admin";
 import { ProfessionPageContentSchema } from "@/models/profession-page.model";
 import { ProfessionPageRepository } from "@/repositories/profession-page.repo";
@@ -16,7 +16,7 @@ export async function GET(_request: NextRequest, context: RouteCtx) {
 
     const { slug: raw } = await context.params;
     const slug = decodeURIComponent(raw);
-    const repo = new ProfessionPageRepository(mongoClient);
+    const repo = new ProfessionPageRepository(documentsClient);
     const doc = await repo.findBySlugAny(slug);
     if (!doc) {
       return NextResponse.json({ message: "Not found." }, { status: 404 });
@@ -44,7 +44,7 @@ export async function PATCH(request: NextRequest, context: RouteCtx) {
       );
     }
 
-    const repo = new ProfessionPageRepository(mongoClient);
+    const repo = new ProfessionPageRepository(documentsClient);
     const updated = await repo.replaceBySlug(slug, parsed.data);
     if (!updated) {
       return NextResponse.json({ message: "Not found." }, { status: 404 });
@@ -64,7 +64,7 @@ export async function DELETE(_request: NextRequest, context: RouteCtx) {
 
     const { slug: raw } = await context.params;
     const slug = decodeURIComponent(raw);
-    const repo = new ProfessionPageRepository(mongoClient);
+    const repo = new ProfessionPageRepository(documentsClient);
     const removed = await repo.deleteBySlug(slug);
     if (!removed) {
       return NextResponse.json({ message: "Not found." }, { status: 404 });

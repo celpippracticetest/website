@@ -1,12 +1,12 @@
 import { TUser, TUserDto, UserSchema, UserSchemaDto } from "@/models/users.mode";
 import { ObjectId } from "bson";
-import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
+import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
 
 export class UserRepository {
   private readonly db: Db;
 
-  constructor(mongoClient: MongoClient) {
-    this.db = mongoClient.db();
+  constructor(documentsClient: AppDocumentsClient) {
+    this.db = documentsClient.db();
   }
 
   private getUserCollection() {

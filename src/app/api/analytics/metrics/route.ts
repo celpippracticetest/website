@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
+import clientPromise from "@/lib/appDocumentsClient";
 import { getSubscriptionMetrics } from "@/lib/analytics/subscriptionMetrics";
 import { getRevenueMetrics } from "@/lib/analytics/revenueMetrics";
 import { getOnboardingMetrics } from "@/lib/analytics/onboardingMetrics";
@@ -48,7 +48,7 @@ function getDateRangeForPeriod(range: RangeType): {
 
 /**
  * GET /api/analytics/metrics?range=24h|7d|30d|90d|realtime
- * Returns aggregated marketing metrics from MongoDB for the specified time range
+ * Returns aggregated marketing metrics from app documents for the specified time range
  */
 export async function GET(request: Request) {
   try {
@@ -63,9 +63,9 @@ export async function GET(request: Request) {
     const usersCount = await db.collection("users").countDocuments();
 
     console.log(`[Metrics API] Fetching metrics for range: ${range}`, {
-      database: db.databaseName,
+      database: process.env.APP_DOCUMENTS_DB?.trim() || "prod",
       totalUsersInDB: usersCount,
-      mongoUri: process.env.MONGODB_URI?.substring(0, 30) + "...",
+      databaseUrlConfigured: Boolean(process.env.DATABASE_URL?.trim()),
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
       isRealtime,

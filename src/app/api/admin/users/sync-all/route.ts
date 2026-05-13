@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
-import client from "@/lib/mongodb";
+import { auth, appUserAdmin, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
+import client from "@/lib/appDocumentsClient";
+import {
+  matchUsersCollectionByWebUserIds,
+  supabaseAuthUserIdFieldsOnUserDoc,
+} from "@/lib/users/userDocumentIdentity";
 
 /**
- * Sync ALL users from Clerk to MongoDB
+ * Sync ALL users from Supabase Auth into the `users` document collection
  * This endpoint processes all users in batches to catch up on failed webhooks
  */
 export async function POST(request: NextRequest) {
@@ -11,7 +15,7 @@ export async function POST(request: NextRequest) {
     // Check admin authorization
     const authenticate = await auth();
     const isAdmin =
-      authenticate.sessionClaims?.metadata?.roles?.includes("admin");
+      sessionClaimsHasAdminRole(authenticate.sessionClaims);
     if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -21,12 +25,12 @@ export async function POST(request: NextRequest) {
     const maxBatches = body.maxBatches || 50; // Max batches to process (safety limit)
     const forceUpdate = body.forceUpdate || false; // Update even existing users
 
-    const clerkClientInstance = await clerkClient();
+    const adminClient = await appUserAdmin();
     const db = client.db();
     const usersCollection = db.collection("users");
 
     // Get total count first
-    const firstPage = await clerkClientInstance.users.getUserList({
+    const firstPage = await adminClient.users.getUserList({
       limit: 1,
     });
     const totalUsers = firstPage.totalCount || 0;
@@ -34,7 +38,7 @@ export async function POST(request: NextRequest) {
     if (totalUsers === 0) {
       return NextResponse.json({
         success: true,
-        message: "No users found in Clerk",
+        message: "No users found in Supabase Auth",
         synced: 0,
         updated: 0,
         skipped: 0,
@@ -54,12 +58,12 @@ export async function POST(request: NextRequest) {
     // Process users in batches
     while (batchNumber < maxBatches) {
       try {
-        const clerkUsers = await clerkClientInstance.users.getUserList({
+        const authPage = await adminClient.users.getUserList({
           limit: batchSize,
           offset,
         });
 
-        if (!clerkUsers.data || clerkUsers.data.length === 0) {
+        if (!authPage.data || authPage.data.length === 0) {
           break; // No more users
         }
 
@@ -68,36 +72,36 @@ export async function POST(request: NextRequest) {
         let batchSkipped = 0;
 
         // Process each user in the batch
-        for (const clerkUser of clerkUsers.data) {
+        for (const authUser of authPage.data) {
           try {
-            const userId = clerkUser.id;
+            const userId = authUser.id;
             const email =
-              clerkUser.emailAddresses?.[0]?.emailAddress ||
-              clerkUser.primaryEmailAddress?.emailAddress;
-            const firstName = clerkUser.firstName;
-            const lastName = clerkUser.lastName;
-            const imageUrl = clerkUser.imageUrl;
-            const publicMetadata = (clerkUser.publicMetadata || {}) as Record<
+              authUser.emailAddresses?.[0]?.emailAddress ||
+              authUser.primaryEmailAddress?.emailAddress;
+            const firstName = authUser.firstName;
+            const lastName = authUser.lastName;
+            const imageUrl = authUser.imageUrl;
+            const publicMetadata = (authUser.publicMetadata || {}) as Record<
               string,
               any
             >;
 
-            // Check if user already exists in MongoDB
-            const existingUser = await usersCollection.findOne({
-              clerkUserId: userId,
-            });
+            const userIdFilter = matchUsersCollectionByWebUserIds(userId);
+
+            // Check if user already exists in the document store
+            const existingUser = await usersCollection.findOne(userIdFilter);
 
             if (existingUser && !forceUpdate) {
               batchSkipped++;
               continue;
             }
 
-            // Sync/Update user to MongoDB
+            // Sync/Update user document
             const updateResult = await usersCollection.updateOne(
-              { clerkUserId: userId },
+              userIdFilter,
               {
                 $set: {
-                  clerkUserId: userId,
+                  ...supabaseAuthUserIdFieldsOnUserDoc(userId),
                   email: email || null,
                   firstName: firstName || null,
                   lastName: lastName || null,
@@ -122,7 +126,7 @@ export async function POST(request: NextRequest) {
               batchSkipped++;
             }
           } catch (error: any) {
-            const userId = clerkUser.id || "unknown";
+            const userId = authUser.id || "unknown";
             allErrors.push(`User ${userId}: ${error.message}`);
             console.error(`Error syncing user ${userId}:`, error);
           }
@@ -131,7 +135,7 @@ export async function POST(request: NextRequest) {
         totalSynced += batchSynced;
         totalUpdated += batchUpdated;
         totalSkipped += batchSkipped;
-        totalProcessed += clerkUsers.data.length;
+        totalProcessed += authPage.data.length;
         batchNumber++;
         offset += batchSize;
 

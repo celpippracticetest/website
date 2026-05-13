@@ -1,4 +1,4 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { NextRequest, NextResponse } from "next/server";
 import { ExamRepository } from "@/repositories/exams.repo";
 import { ObjectId } from "bson";
@@ -16,7 +16,7 @@ export const GET = async function (req: NextRequest) {
   const page: string = req.nextUrl.searchParams.get("page") ?? "0";
   const limit: string = req.nextUrl.searchParams.get("limit") ?? "10";
 
-  const examRepo = new ExamRepository(mongoClient);
+  const examRepo = new ExamRepository(documentsClient);
   const exams = await examRepo.getAllExam({}, parseInt(page), parseInt(limit));
   return NextResponse.json({ ...exams, filters: {} }, { status: 200 });
 };
@@ -28,7 +28,7 @@ export const DELETE = async function (req: NextRequest) {
       return NextResponse.json({ error: "_id is required" }, { status: 400 });
     }
     const id = new ObjectId(body._id);
-    const examRepo = new ExamRepository(mongoClient);
+    const examRepo = new ExamRepository(documentsClient);
 
     let deleted: any;
     try {
@@ -78,7 +78,7 @@ export const POST = async function (req: NextRequest) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
-    const examRepo = new ExamRepository(mongoClient);
+    const examRepo = new ExamRepository(documentsClient);
 
     const orderVal = Number.isFinite(body.order)
       ? Number(body.order)
@@ -145,12 +145,12 @@ export const PUT = async function (req: NextRequest) {
     }
 
     const id = new ObjectId(body._id);
-    const examRepo = new ExamRepository(mongoClient);
+    const examRepo = new ExamRepository(documentsClient);
 
     // 1) Ensure the exam exists first (so we never misreport 404 after a successful update)
     let exists = false;
     try {
-      const found: any = await examRepo.getAllExam({ _id: id }, 0, 1);
+      const found: any = await examRepo.getAllExam({ _id: id } as any, 0, 1);
       if (Array.isArray(found) && found.length) exists = true;
       else if (found && Array.isArray(found.items) && found.items.length)
         exists = true;
@@ -165,7 +165,7 @@ export const PUT = async function (req: NextRequest) {
     // 2) Optional: prevent duplicate name on update (excluding self)
     try {
       const existingByName: any = await examRepo.getAllExam(
-        { name: body.name, _id: { $ne: id } },
+        { name: body.name, _id: { $ne: id } } as any,
         0,
         1
       );
@@ -204,7 +204,7 @@ export const PUT = async function (req: NextRequest) {
 
     // 4) Return the fresh document
     try {
-      const one: any = await examRepo.getAllExam({ _id: id }, 0, 1);
+      const one: any = await examRepo.getAllExam({ _id: id } as any, 0, 1);
       if (one && Array.isArray(one.items) && one.items.length) {
         return NextResponse.json(one.items[0], { status: 200 });
       }

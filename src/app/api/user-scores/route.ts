@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import client from "@/lib/mongodb";
+import client from "@/lib/appDocumentsClient";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 import { PracticeRepository } from "@/repositories/practice.repo";
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
+import { matchUsersCollectionByWebUserIds } from "@/lib/users/userDocumentIdentity";
 
 type ObjectiveAnswerRecord = Record<string, string>;
 type ObjectiveQuestion = {
@@ -78,24 +79,36 @@ export async function GET(request: NextRequest) {
     const examPartsRepo = new ExamPartsRepository(client);
     const practiceCache = new Map<string, Promise<any>>();
     const examPartCache = new Map<string, Promise<any>>();
-    const userProfile = await db.collection("users").findOne(
-      { clerkUserId: user.id },
+    const userProfile = (await db.collection("users").findOne(
+      matchUsersCollectionByWebUserIds(user.id),
       {
         projection: {
           onboarding: 1,
           intent: 1,
         },
       }
-    );
+    )) as {
+      onboarding?: {
+        testDate?: unknown;
+        focusSkill?: unknown;
+        targetScore?: unknown;
+        subGoal?: unknown;
+      };
+      intent?: { targetScore?: unknown };
+    } | null;
 
     // Get answers from the answers collection
     const answersCollection = db.collection("answers");
 
     // Get all answers for the user
-    const allAnswers = await answersCollection
+    const allAnswersRaw = await answersCollection
       .find({ userId: user.id })
       .sort({ createdAt: -1 })
       .toArray();
+
+    const allAnswers = allAnswersRaw.filter(
+      (doc): doc is Record<string, unknown> => doc != null && typeof doc === "object"
+    );
 
     // Separate answers by type
     const writingAnswers = allAnswers.filter(
@@ -152,8 +165,8 @@ export async function GET(request: NextRequest) {
     // Writing scores (from result.overall)
     if (writingAnswers.length > 0) {
       const writingScores = writingAnswers
-        .map((answer) => answer.result?.overall)
-        .filter((score) => typeof score === "number");
+        .map((answer) => getStoredOverall(answer as Record<string, any>))
+        .filter((score): score is number => typeof score === "number");
 
       if (writingScores.length > 0) {
         scores.writing =
@@ -167,8 +180,8 @@ export async function GET(request: NextRequest) {
     // Speaking scores (from result.overall)
     if (speakingAnswers.length > 0) {
       const speakingScores = speakingAnswers
-        .map((answer) => answer.result?.overall)
-        .filter((score) => typeof score === "number");
+        .map((answer) => getStoredOverall(answer as Record<string, any>))
+        .filter((score): score is number => typeof score === "number");
 
       if (speakingScores.length > 0) {
         scores.speaking =
@@ -242,13 +255,13 @@ export async function GET(request: NextRequest) {
       scoresToUse: scores,
       weakAreas: weakAreas,
       onboardingProfile: {
-        testDate: userProfile?.onboarding?.testDate || null,
-        focusSkill: userProfile?.onboarding?.focusSkill || null,
+        testDate: userProfile?.onboarding?.testDate ?? null,
+        focusSkill: userProfile?.onboarding?.focusSkill ?? null,
         targetScore:
           userProfile?.onboarding?.targetScore ??
           userProfile?.intent?.targetScore ??
           null,
-        subGoal: userProfile?.onboarding?.subGoal || null,
+        subGoal: userProfile?.onboarding?.subGoal ?? null,
       },
       practiceHistory: {
         totalPractices: allAnswers.length,

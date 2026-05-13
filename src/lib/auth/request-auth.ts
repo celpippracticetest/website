@@ -1,35 +1,25 @@
 import {
-  auth,
-  clerkClient,
-  currentUser,
-  verifyToken,
-} from "@clerk/nextjs/server";
-
-import {
   mobileUserBridgeFromSupabaseUser,
   type MobileUserBridge,
 } from "@/lib/auth/supabase-mobile-user-bridge";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { getSupabaseAuthUserFromServerCookies } from "@/lib/supabase/server-app-read-user";
 import { getSupabaseAuthUserFromRequestCookies } from "@/lib/supabase/server-request-client";
 
 type RequestLike = Request & {
   headers: Headers;
 };
 
-type ClerkUserNonNull = NonNullable<Awaited<ReturnType<typeof currentUser>>>;
-
 export interface AuthenticatedRequestContext {
   /**
-   * Stable account id for MongoDB and business logic: Clerk id for Clerk sessions or for
-   * Supabase sessions created from Clerk migration (`user_metadata.clerk_user_id`), else Supabase UUID.
+   * Stable account id for user documents: legacy Clerk id from migration metadata, else Supabase Auth UUID.
    */
   userId: string;
-  /** Clerk user, or Clerk-shaped bridge for Supabase Auth (mobile bearer, web cookies). */
-  user: ClerkUserNonNull | MobileUserBridge;
+  user: MobileUserBridge;
   source: "web" | "mobile";
-  /** Present for bearer-token mobile requests: Clerk JWT vs Supabase access token. */
-  mobileAuthKind: "clerk" | "supabase" | null;
-  /** Real Supabase Auth user UUID when `user` is a Supabase bridge; null for Clerk-only sessions. */
+  /** Present for bearer-token mobile requests (Supabase access token). */
+  mobileAuthKind: "supabase" | null;
+  /** Supabase Auth user UUID for admin API calls. */
   supabaseAuthUserId: string | null;
   sessionId?: string | null;
   tokenPayload?: Record<string, unknown>;
@@ -44,7 +34,6 @@ function getBearerToken(request: RequestLike): string | null {
     return null;
   }
 
-  // Avoid naive `split(" ")` — multiple spaces after "Bearer" can yield an empty segment.
   const match = header.match(/^\s*Bearer\s+(\S+)\s*$/i);
   const token = match?.[1]?.trim();
   return token || null;
@@ -53,20 +42,6 @@ function getBearerToken(request: RequestLike): string | null {
 /** Exposed for routes that need bearer diagnostics without duplicating header parsing. */
 export function readBearerTokenFromRequest(request: RequestLike): string | null {
   return getBearerToken(request);
-}
-
-function getAuthorizedParties(): string[] | undefined {
-  const raw = process.env.CLERK_AUTHORIZED_PARTIES?.trim();
-  if (!raw) {
-    return undefined;
-  }
-
-  const values = raw
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
-
-  return values.length > 0 ? values : undefined;
 }
 
 async function resolveMobileUserFromSupabaseBearer(
@@ -110,43 +85,6 @@ async function resolveMobileUserFromSupabaseBearer(
   };
 }
 
-async function resolveMobileUserFromClerkBearer(
-  _request: RequestLike,
-  token: string
-): Promise<AuthenticatedRequestContext | null> {
-  try {
-    const verifiedToken = await verifyToken(token, {
-      jwtKey: process.env.CLERK_JWT_KEY,
-      secretKey: process.env.CLERK_SECRET_KEY,
-      authorizedParties: getAuthorizedParties(),
-    });
-
-    const userId = verifiedToken?.sub;
-    if (!userId) {
-      return null;
-    }
-
-    const client = await clerkClient();
-    const user = await client.users.getUser(userId);
-
-    return {
-      userId,
-      user,
-      source: "mobile",
-      mobileAuthKind: "clerk",
-      supabaseAuthUserId: null,
-      sessionId:
-        typeof (verifiedToken as Record<string, unknown>)?.sid === "string"
-          ? ((verifiedToken as Record<string, unknown>).sid as string)
-          : null,
-      tokenPayload: verifiedToken as Record<string, unknown>,
-    };
-  } catch {
-    // Common when the mobile app sends a Supabase access token after Supabase validation failed.
-    return null;
-  }
-}
-
 async function resolveMobileUserFromBearerToken(
   request: RequestLike
 ): Promise<AuthenticatedRequestContext | null> {
@@ -155,12 +93,7 @@ async function resolveMobileUserFromBearerToken(
     return null;
   }
 
-  const supabaseCtx = await resolveMobileUserFromSupabaseBearer(request, token);
-  if (supabaseCtx) {
-    return supabaseCtx;
-  }
-
-  return await resolveMobileUserFromClerkBearer(request, token);
+  return await resolveMobileUserFromSupabaseBearer(request, token);
 }
 
 async function resolveWebUserFromSupabaseCookies(
@@ -185,10 +118,31 @@ async function resolveWebUserFromSupabaseCookies(
 }
 
 /**
+ * Server Components / layouts only: resolve the signed-in web user using Next.js
+ * `cookies()` for Supabase (deduped via React `cache()` in `getSupabaseAuthUserFromServerCookies`).
+ */
+export async function getAuthenticatedRscContext(): Promise<AuthenticatedRequestContext | null> {
+  const supabaseUser = await getSupabaseAuthUserFromServerCookies();
+  if (!supabaseUser) {
+    return null;
+  }
+  const user = mobileUserBridgeFromSupabaseUser(supabaseUser);
+
+  return {
+    userId: user.id,
+    user,
+    source: "web",
+    mobileAuthKind: null,
+    supabaseAuthUserId: user.supabaseAuthUserId ?? null,
+    sessionId: null,
+    tokenPayload: undefined,
+  };
+}
+
+/**
  * Auth resolution order:
- * 1. `Authorization: Bearer` — mobile (Supabase token first, then Clerk JWT)
- * 2. Supabase session cookies — primary web sign-in
- * 3. Clerk session — remaining Clerk-only web sessions (Clerk sign-in UI redirects to `/sign-in?legacy=1`)
+ * 1. `Authorization: Bearer` — mobile (Supabase access token)
+ * 2. Supabase session cookies — web sign-in
  */
 export async function getAuthenticatedRequestContext(
   request: RequestLike
@@ -206,24 +160,6 @@ export async function getAuthenticatedRequestContext(
   const supabaseWebCtx = await resolveWebUserFromSupabaseCookies(request);
   if (supabaseWebCtx) {
     return supabaseWebCtx;
-  }
-
-  const authResult = await auth();
-  if (authResult.userId) {
-    const user = await currentUser();
-    if (!user) {
-      return null;
-    }
-
-    return {
-      userId: authResult.userId,
-      user,
-      source: "web",
-      mobileAuthKind: null,
-      supabaseAuthUserId: null,
-      sessionId: authResult.sessionId,
-      sessionClaims: authResult.sessionClaims,
-    };
   }
 
   return null;

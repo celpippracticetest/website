@@ -123,7 +123,7 @@ const PlansPage = () => {
             payload.maxUpdates = cap;
         }
         try {
-            const response = await fetch("/api/admin/migrate-clerk-premium-to-plus", {
+            const response = await fetch("/api/admin/migrate-premium-to-plus", {
                 method: "POST",
                 credentials: "same-origin",
                 headers: { "Content-Type": "application/json" },
@@ -505,10 +505,10 @@ const PlansPage = () => {
                                 One-time subscriber migration
                             </p>
                             <h2 className="mt-1 text-lg font-bold text-gray-900">
-                                Legacy Premium → Premium Plus (Clerk)
+                                Legacy Premium → Premium Plus
                             </h2>
                             <p className="mt-1 max-w-2xl text-sm text-gray-600">
-                                Users who still have Clerk{" "}
+                                Users who still have{" "}
                                 <code className="rounded bg-white/90 px-1 py-0.5 text-xs">
                                     {`publicMetadata.plan = 'premium'`}
                                 </code>{" "}
@@ -558,10 +558,10 @@ const PlansPage = () => {
                                 const limitMsg =
                                     Number.isFinite(cap) && cap > 0
                                         ? `Update at most ${cap} user(s) with plan "premium" to "plus"?`
-                                        : "Update all Clerk users with plan \"premium\" to \"plus\"?";
+                                        : "Update all users with plan \"premium\" to \"plus\"?";
                                 if (
                                     !confirm(
-                                        `${limitMsg} This cannot be undone from here (restore manually in Clerk if needed).`,
+                                        `${limitMsg} This cannot be undone from here (restore manually in auth metadata if needed).`,
                                     )
                                 ) {
                                     return;

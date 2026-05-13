@@ -1,19 +1,19 @@
 import type { PgDatabase } from "./database";
 import type { PgCollection } from "./pgCollection";
-import type { MongoDoc } from "./document";
+import type { AppDoc } from "./document";
 
-/** Drop-in type for legacy `MongoClient` constructor parameters. */
-export type CompatMongoClient = {
+/** Client shape used by repositories: `client.db()` returns a document database. */
+export type AppDocumentsClient = {
   db: (name?: string) => PgDatabase;
 };
 
-/** Drop-in type for legacy `Db` repository fields. */
-export type CompatDb = PgDatabase;
+/** Database handle returned by `client.db()`. */
+export type AppDocumentsDb = PgDatabase;
 
 /** Re-export for typing `collection()` return values. */
-export type { PgCollection, MongoDoc };
+export type { PgCollection, AppDoc };
 
-/** Replaces `mongodb.Filter` for repository query objects. */
-export type MongoFilter<T = Record<string, unknown>> = Record<string, unknown> & {
+/** Filter object for repository queries (document-style operators). */
+export type AppDocFilter<T = Record<string, unknown>> = Record<string, unknown> & {
   _placeholder?: T;
 };

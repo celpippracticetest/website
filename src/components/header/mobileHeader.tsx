@@ -10,9 +10,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import useStore from "@/store";
 import { useRouter } from "nextjs-toploader/app";
 import { useEventTracker } from "@/hooks/useTracking";
-import { isPaidClerkSubscriptionPlan } from "@/lib/clerkSubscriptionPlan";
-import { useClerk } from "@clerk/nextjs";
-import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
+import { isPaidSubscriptionPlan } from "@/lib/subscriptionPlan";
+import { signOutWebSession } from "@/lib/auth/client-sign-out";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 // import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 
@@ -31,7 +30,6 @@ const MobileHeader = (props: {
   viewMode: "practice" | "exams" | null;
   currentPage: string | null;
 }) => {
-  const { signOut } = useClerk();
   const router = useRouter();
   const { trackNav, trackCTA, auth } = useEventTracker();
   const isMobile = useIsMobile();
@@ -138,7 +136,7 @@ const MobileHeader = (props: {
           {/* Auth buttons */}
           <div className="flex items-right gap-4 lg:gap-5 md:gap-3 ">
             {(!user ||
-              !isPaidClerkSubscriptionPlan(user.publicMetadata?.plan)) && (
+              !isPaidSubscriptionPlan(user.publicMetadata?.plan)) && (
               <div
                 onClick={() => {
                   trackCTA("Upgrade Button", "header");
@@ -294,9 +292,7 @@ const MobileHeader = (props: {
             <button
               onClick={async () => {
                 auth.logout();
-                const supabase = createBrowserSupabaseClient();
-                if (supabase) await supabase.auth.signOut();
-                await signOut({ redirectUrl: "/sign-in" });
+                await signOutWebSession(router, "/sign-in");
               }}
               className="block px-4 py-2 text-[14px] text-gray-700 cursor-pointer"
               role="menuitem"

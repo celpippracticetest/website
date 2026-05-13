@@ -1,6 +1,6 @@
 import { PracticeRepository } from "@/repositories/practice.repo";
 import { NextRequest, NextResponse } from "next/server";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { WritingAnswerRequestSchema } from "@/models/answer";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
@@ -19,7 +19,7 @@ export const POST = async function (req: NextRequest) {
 
   if (answersParser.success) {
     const answerBody = answersParser.data;
-    const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
+    const answerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
     if (
       !hasPaidPracticeAccess(
         user.publicMetadata.plan as string | undefined,
@@ -44,7 +44,7 @@ export const POST = async function (req: NextRequest) {
         { status: 400 }
       );
     }
-    const practiceRepo = new PracticeRepository(mongoClient);
+    const practiceRepo = new PracticeRepository(documentsClient);
     const practice = await practiceRepo.findPractice(answerBody.practiceId);
     if (!practice || practice.taskId === undefined) {
       return NextResponse.json(
@@ -52,7 +52,7 @@ export const POST = async function (req: NextRequest) {
         { status: 404 }
       );
     }
-    const taskRepo = new TaskRepository(mongoClient);
+    const taskRepo = new TaskRepository(documentsClient);
     const task: TTaskSchemaDto | null = await taskRepo.findTaskById(
       practice?.taskId ?? ""
     );
@@ -403,7 +403,7 @@ export const GET = async function (req: NextRequest) {
     if (!user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
-    const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
+    const answerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
     const answers = await answerRepo.getAllWritingAnswers(
       { userId: user.id, practiceId, type: "WRITING" },
       0,

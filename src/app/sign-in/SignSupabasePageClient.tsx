@@ -24,7 +24,7 @@ export default function SignSupabasePageClient() {
     [searchParams]
   );
 
-  const showLegacyClerkHint = searchParams.get("legacy") === "1";
+  const showLegacyAuthHint = searchParams.get("legacy") === "1";
   const initialMode = searchParams.get("mode") === "sign-up" ? "sign-up" : "sign-in";
 
   const forceShowForm = useMemo(() => {
@@ -147,7 +147,7 @@ export default function SignSupabasePageClient() {
         <SupabaseAuthForm
           initialMode={initialMode as "sign-in" | "sign-up"}
           redirectAfterAuth={redirectAfterAuth}
-          showLegacyClerkHint={showLegacyClerkHint}
+          showLegacyAuthHint={showLegacyAuthHint}
         />
       </div>
     </div>

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 import { buildMicrolearningFlow, FlowSkill } from "@/lib/flow";
+import { matchUsersCollectionByWebUserIds } from "@/lib/users/userDocumentIdentity";
 
 type TargetScores = {
   listening?: number;
@@ -60,9 +61,9 @@ export async function GET(req: NextRequest) {
     const user = ctx.user;
 
     const db = await getDb();
-    const userDoc = await db.collection("users").findOne({
-      $or: [{ clerkUserId: user.id }, { supabaseUserId: ctx.supabaseAuthUserId }, { sub: user.id }],
-    });
+    const userDoc = await db.collection("users").findOne(
+      matchUsersCollectionByWebUserIds(user.id, ctx.supabaseAuthUserId ?? ""),
+    );
 
     const onboarding = (userDoc?.onboarding as Record<string, unknown> | undefined) || {};
     const intent = (userDoc?.intent as Record<string, unknown> | undefined) || {};

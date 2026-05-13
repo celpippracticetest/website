@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth, appUserAdmin, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
 import Stripe from "stripe";
-import client from "@/lib/mongodb";
+import client from "@/lib/appDocumentsClient";
+import { matchUsersCollectionByWebUserIds } from "@/lib/users/userDocumentIdentity";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -22,7 +23,7 @@ export async function POST(
     // Check admin authorization
     const authenticate = await auth();
     const isAdmin =
-      authenticate.sessionClaims?.metadata?.roles?.includes("admin");
+      sessionClaimsHasAdminRole(authenticate.sessionClaims);
     if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -34,17 +35,18 @@ export async function POST(
       );
     }
 
-    // Get user from Clerk
-    const clerkClientInstance = await clerkClient();
+    // Resolve user via Supabase Auth admin (Clerk-shaped AppShapeUser)
+    const authAdmin = await appUserAdmin();
     let user;
     let customerId: string | undefined;
 
     try {
-      user = await clerkClientInstance.users.getUser(userId);
+      user = await authAdmin.users.getUser(userId);
       customerId = user.privateMetadata?.stripeCustomerId as string | undefined;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
       return NextResponse.json(
-        { error: `User not found in Clerk: ${error.message}` },
+        { error: `User not found in auth directory: ${message}` },
         { status: 404 }
       );
     }
@@ -69,8 +71,8 @@ export async function POST(
 
       customerId = customers.data[0].id;
 
-      // Save customerId to Clerk for future use
-      await clerkClientInstance.users.updateUserMetadata(userId, {
+      // Persist Stripe customer id on the auth user for next time
+      await authAdmin.users.updateUserMetadata(userId, {
         privateMetadata: {
           ...user.privateMetadata,
           stripeCustomerId: customerId,
@@ -132,7 +134,7 @@ export async function POST(
         )
       : 0;
 
-    // Update Clerk metadata
+    // Update auth directory metadata
     const currentMetadata = (user.publicMetadata || {}) as Record<string, any>;
     const updatedMetadata = {
       ...currentMetadata,
@@ -142,12 +144,12 @@ export async function POST(
       subscriptionDurationDays,
     };
 
-    await clerkClientInstance.users.updateUserMetadata(userId, {
+    await authAdmin.users.updateUserMetadata(userId, {
       publicMetadata: updatedMetadata,
     });
 
     await usersCollection.updateOne(
-      { clerkUserId: userId },
+      matchUsersCollectionByWebUserIds(userId),
       {
         $set: {
           plan: "free",

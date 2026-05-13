@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
-import { currentUser } from "@clerk/nextjs/server";
+import { currentUser } from "@/lib/auth/server-auth";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 
 export async function POST(req: Request) {
     try {
@@ -12,7 +12,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const checkoutRepo = new CheckoutRepository(mongoClient);
+        const checkoutRepo = new CheckoutRepository(documentsClient);
         const lastCheckout = await checkoutRepo.findLatestCheckoutByUserId(user.id);
 
         let stripeCustomerId: string | undefined;
@@ -30,7 +30,15 @@ export async function POST(req: Request) {
             debugInfo += "No local checkout found. ";
         }
 
-        const email = user.emailAddresses.find(e => e.id === user.primaryEmailAddressId)?.emailAddress;
+        const primaryEmailId =
+          "primaryEmailAddressId" in user &&
+          typeof (user as { primaryEmailAddressId?: string }).primaryEmailAddressId === "string"
+            ? (user as { primaryEmailAddressId: string }).primaryEmailAddressId
+            : (user as { primaryEmailAddress?: { id?: string } }).primaryEmailAddress?.id ??
+              (user as { emailAddresses?: Array<{ id?: string }> }).emailAddresses?.[0]?.id;
+        const email = user.emailAddresses.find(
+          (e: { id?: string; emailAddress?: string }) => e.id === primaryEmailId
+        )?.emailAddress;
 
         // Fallback: If no local checkout is found, or Stripe session lookup failed,
         // try to find the customer by email directly in Stripe

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/server-auth";
 import { paypalApiCredentialsConfigured } from "@/lib/paypal/config";
 import { resolveOrCreateSharedPayPalCatalogProductId } from "@/lib/paypal/billingPlans";
 

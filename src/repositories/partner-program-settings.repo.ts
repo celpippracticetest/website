@@ -1,4 +1,4 @@
-import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
+import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
 
 const COLL = "partnerProgramSettings";
 const DEFAULTS_DOC_ID = "program_defaults";
@@ -16,8 +16,8 @@ const FALLBACK: PartnerProgramDefaults = {
 export class PartnerProgramSettingsRepository {
   private readonly db: Db;
 
-  constructor(mongoClient: MongoClient) {
-    this.db = mongoClient.db();
+  constructor(documentsClient: AppDocumentsClient) {
+    this.db = documentsClient.db();
   }
 
   private col() {

@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
+import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
+import {
+  matchUsersCollectionByWebUserIds,
+  supabaseAuthUserIdFieldsOnUserDoc,
+} from "@/lib/users/userDocumentIdentity";
 
 const REMINDER_STATE_COLLECTION = "useractivityreminders";
 
@@ -114,7 +119,9 @@ export async function POST(request: NextRequest) {
     const deviceType = detectDeviceType(clientUserAgent);
 
     if (isPracticeEvent || isCompletedTestEvent) {
-      const userDoc = await usersCollection.findOne({ clerkUserId: user.id });
+      const userDoc = (await usersCollection.findOne(matchUsersCollectionByWebUserIds(user.id))) as
+        | Record<string, any>
+        | null;
       const existingHistory = Array.isArray(userDoc?.engagement?.scoreHistory)
         ? (userDoc?.engagement?.scoreHistory as number[])
         : [];
@@ -137,7 +144,7 @@ export async function POST(request: NextRequest) {
           : 0;
 
       await usersCollection.updateOne(
-        { clerkUserId: user.id },
+        matchUsersCollectionByWebUserIds(user.id),
         {
           $set: {
             "engagement.lastPracticeTestDate": new Date(),
@@ -157,7 +164,12 @@ export async function POST(request: NextRequest) {
             updatedAt: new Date(),
           },
           ...(isCompletedTestEvent ? { $inc: { "engagement.totalTestsCompleted": 1 } } : {}),
-          $setOnInsert: { createdAt: new Date() },
+          $setOnInsert: {
+            createdAt: new Date(),
+            ...(isLikelySupabaseAuthUserId(user.id)
+              ? supabaseAuthUserIdFieldsOnUserDoc(user.id)
+              : { clerkUserId: user.id }),
+          },
         },
         { upsert: true }
       );
@@ -279,7 +291,7 @@ export async function PUT(request: NextRequest) {
     );
     if (hasPracticeOrMock) {
       await usersCollection.updateOne(
-        { clerkUserId: user.id },
+        matchUsersCollectionByWebUserIds(user.id),
         {
           $set: {
             "engagement.lastPracticeTestDate": new Date(),
@@ -290,7 +302,12 @@ export async function PUT(request: NextRequest) {
           ...(completedCount > 0
             ? { $inc: { "engagement.totalTestsCompleted": completedCount } }
             : {}),
-          $setOnInsert: { createdAt: new Date() },
+          $setOnInsert: {
+            createdAt: new Date(),
+            ...(isLikelySupabaseAuthUserId(user.id)
+              ? supabaseAuthUserIdFieldsOnUserDoc(user.id)
+              : { clerkUserId: user.id }),
+          },
         },
         { upsert: true }
       );

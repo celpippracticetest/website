@@ -1,4 +1,4 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 import { ExamRepository } from "@/repositories/exams.repo";
 import { NextRequest, NextResponse } from "next/server";
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     Math.max(1, parseInt(request.nextUrl.searchParams.get("limit") ?? "50", 10) || 50)
   );
 
-  const examRepo = new ExamRepository(mongoClient);
+  const examRepo = new ExamRepository(documentsClient);
   const exams = await examRepo.getAllExam({}, page, limit);
 
   const items = exams.items.map((e) => ({

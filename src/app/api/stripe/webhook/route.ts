@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
 import { ReferralRewardRepository } from "@/repositories/referral-reward.repo";
 import { ReferralRepository } from "@/repositories/referral.repo";
 import { ReferralInvitationRepository } from "@/repositories/referral-invitation.repo";
-import { clerkClient } from "@clerk/nextjs/server";
+import { appUserAdmin } from "@/lib/auth/server-auth";
 import { ActivityLogger } from "@/lib/userActivity";
 import { isPricingAbLayout } from "@/lib/pricingAbTest";
 import { isHomeAbExperimentVariant } from "@/lib/homeAbTest";
@@ -13,10 +13,15 @@ import { getAccessTierKey } from "@/lib/pricing";
 import { toSerializedPlan } from "@/lib/planSerialization";
 import type { Plan } from "@/models/plans.model";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
-import { findOrCreateClerkUserByEmail } from "@/lib/clerkGuestCheckout";
+import { findOrCreateWebUserByEmail } from "@/lib/guestCheckoutAuth";
 import { planNameIndicatesPremiumPlus } from "@/lib/subscriptionAccess";
-import { persistStripeCustomerIdToMongo } from "@/lib/resolveStripeCustomerId";
-import { recordPartnerCommissionFromMongoUser } from "@/lib/partner/recordPartnerCommissionFromMongoUser";
+import { persistStripeCustomerIdForUser } from "@/lib/resolveStripeCustomerId";
+import { recordPartnerCommissionForSubscriber } from "@/lib/partner/recordPartnerCommissionForSubscriber";
+import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
+import {
+  matchUsersCollectionByWebUserIds,
+  supabaseAuthUserIdFieldsOnUserDoc,
+} from "@/lib/users/userDocumentIdentity";
 import {
   sendGa4Events,
   type Ga4ItemParam,
@@ -227,12 +232,12 @@ async function updateUserPublicMetadata(
   newFields: Record<string, any>
 ) {
   try {
-    const clerk = await clerkClient();
-    const user = await clerk.users.getUser(userId);
+    const authAdmin = await appUserAdmin();
+    const user = await authAdmin.users.getUser(userId);
     const currentMetadata = user.publicMetadata || {};
     const updatedMetadata = { ...currentMetadata, ...newFields };
 
-    await clerk.users.updateUserMetadata(userId, {
+    await authAdmin.users.updateUserMetadata(userId, {
       publicMetadata: updatedMetadata,
     });
     logger.info("Successfully updated metadata for user", {
@@ -242,9 +247,9 @@ async function updateUserPublicMetadata(
       metadata: { fields: Object.keys(newFields) },
     });
 
-    // Sync to MongoDB users collection
+    // Sync to `users` collection
     try {
-      const db = await mongoClient.db();
+      const db = await documentsClient.db();
       const usersCollection = db.collection("users");
 
       const updateDoc: any = {
@@ -299,14 +304,22 @@ async function updateUserPublicMetadata(
       }
 
       await usersCollection.updateOne(
-        { clerkUserId: userId },
-        { $set: updateDoc },
+        matchUsersCollectionByWebUserIds(userId),
+        {
+          $set: updateDoc,
+          $setOnInsert: {
+            createdAt: new Date(),
+            ...(isLikelySupabaseAuthUserId(userId)
+              ? supabaseAuthUserIdFieldsOnUserDoc(userId)
+              : { clerkUserId: userId }),
+          },
+        },
         { upsert: true } // Upsert just in case, though user should exist
       );
 
-      await recordPartnerCommissionFromMongoUser(userId);
+      await recordPartnerCommissionForSubscriber(userId);
     } catch (dbErr) {
-      logger.error(" Failed to sync metadata to MongoDB", {
+      logger.error(" Failed to sync metadata to user document store", {
         component: "stripe_webhook",
         action: "sync_metadata_failed",
         userId,
@@ -328,7 +341,7 @@ async function handleReferralRewards(
   metadata: any
 ) {
   try {
-    const clerk = await clerkClient();
+    const authAdmin = await appUserAdmin();
     const metaUserId = metadata?.user_id as string | undefined;
     let userIdToUse: string | undefined = metaUserId;
 
@@ -337,7 +350,7 @@ async function handleReferralRewards(
 
     try {
       if (userIdToUse) {
-        user = await clerk.users.getUser(userIdToUse);
+        user = await authAdmin.users.getUser(userIdToUse);
       } else {
         throw new Error("No user_id in metadata");
       }
@@ -357,7 +370,7 @@ async function handleReferralRewards(
         (session as any)?.customer_email;
       if (inviteeEmail) {
         try {
-          const users = await clerk.users.getUserList({
+          const users = await authAdmin.users.getUserList({
             emailAddress: [String(inviteeEmail).trim().toLowerCase()],
           });
           if (users?.data?.length) {
@@ -374,7 +387,7 @@ async function handleReferralRewards(
               return;
             }
           } else {
-            console.warn(`❌ No Clerk user found by email ${inviteeEmail}`);
+            console.warn(`❌ No auth user found by email ${inviteeEmail}`);
             return;
           }
         } catch (err) {
@@ -393,7 +406,7 @@ async function handleReferralRewards(
     }
 
     // Find the referrer
-    const referralRepo = new ReferralRepository(mongoClient);
+    const referralRepo = new ReferralRepository(documentsClient);
     await referralRepo.ensureIndexes();
 
     const referrer = await referralRepo.findOneByCode(referralCode);
@@ -410,7 +423,7 @@ async function handleReferralRewards(
       return;
     }
 
-    const rewardRepo = new ReferralRewardRepository(mongoClient);
+    const rewardRepo = new ReferralRewardRepository(documentsClient);
     await rewardRepo.ensureIndexes();
 
     try {
@@ -427,12 +440,12 @@ async function handleReferralRewards(
       });
 
       // Update referrer's metadata with reward information
-      const referrerUser = await clerk.users.getUser(referrer.userId);
+      const referrerUser = await authAdmin.users.getUser(referrer.userId);
       const currentMetadata = referrerUser.publicMetadata || {};
       const currentTotalRewards = (currentMetadata as any)?.totalRewards || 0;
       const newTotalRewards = currentTotalRewards + rewardAmount;
 
-      const invitationRepo = new ReferralInvitationRepository(mongoClient);
+      const invitationRepo = new ReferralInvitationRepository(documentsClient);
       await invitationRepo.ensureIndexes();
 
       const invitation = await invitationRepo.findInvitationByCodeAndInvitee(
@@ -456,7 +469,7 @@ async function handleReferralRewards(
       if (totalSuccessfulPurchases >= 10) rewardLevel = 3;
       else if (totalSuccessfulPurchases >= 5) rewardLevel = 2;
 
-      await clerk.users.updateUserMetadata(referrer.userId, {
+      await authAdmin.users.updateUserMetadata(referrer.userId, {
         publicMetadata: {
           ...currentMetadata,
           hasPendingRewards: true,
@@ -474,7 +487,7 @@ async function handleReferralRewards(
     }
 
     try {
-      const freshUser = await clerk.users.getUser(userIdToUse as string);
+      const freshUser = await authAdmin.users.getUser(userIdToUse as string);
       const freshMeta = freshUser.publicMetadata as any;
       const promotionCodeId =
         freshMeta?.referralPromotionId || freshMeta?.promotionCodeId;
@@ -508,7 +521,7 @@ async function handleReferralRewards(
           updateData.newDiscountUsedAt = new Date().toISOString();
         }
 
-        await clerk.users.updateUserMetadata(userIdToUse as string, {
+        await authAdmin.users.updateUserMetadata(userIdToUse as string, {
           publicMetadata: updateData,
         });
       } catch (error) {
@@ -580,7 +593,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
-    const clerk = await clerkClient();
+    const authAdmin = await appUserAdmin();
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
@@ -604,7 +617,7 @@ export async function POST(req: Request) {
           return NextResponse.json({ received: true });
         }
         try {
-          const userId = await findOrCreateClerkUserByEmail(payEmail);
+          const userId = await findOrCreateWebUserByEmail(payEmail);
           metadata = { ...metadata, user_id: userId };
           subscriptionMetadata = metadata;
           if (session.subscription) {
@@ -641,12 +654,12 @@ export async function POST(req: Request) {
         typeof session.customer === "string" &&
         session.customer
       ) {
-        await persistStripeCustomerIdToMongo(metadata.user_id, session.customer);
+        await persistStripeCustomerIdForUser(metadata.user_id, session.customer);
       }
 
       if (metadata?.user_id) {
         // Get user metadata to check for any existing discounts
-        const user = await clerk.users.getUser(metadata.user_id);
+        const user = await authAdmin.users.getUser(metadata.user_id);
         const userMetadata = user.publicMetadata as any;
         const isMockExamPurchase = metadata.purchase_type === "mock_exam";
         const purchasedMockExamId = metadata.mock_exam_id;
@@ -782,7 +795,7 @@ export async function POST(req: Request) {
 
       if (metadata?.user_id && session.status === "complete") {
         try {
-          const checkoutRepo = new CheckoutRepository(mongoClient);
+          const checkoutRepo = new CheckoutRepository(documentsClient);
           const existing = await checkoutRepo.findCheckoutBySessionId(session.id);
           if (!existing) {
             await checkoutRepo.createCheckout({
@@ -862,7 +875,7 @@ export async function POST(req: Request) {
         metadata?.user_id
       ) {
         try {
-          const db = await mongoClient.db();
+          const db = await documentsClient.db();
           await db.collection("pricing_ab_events").insertOne({
             eventType: "purchase",
             layout: pricingAbRaw,
@@ -886,7 +899,7 @@ export async function POST(req: Request) {
         metadata?.user_id
       ) {
         try {
-          const db = await mongoClient.db();
+          const db = await documentsClient.db();
           await db.collection("home_ab_events").insertOne({
             eventType: "purchase",
             variant: homeAbRaw,
@@ -920,7 +933,7 @@ export async function POST(req: Request) {
       });
 
       try {
-        const checkoutRepo = new CheckoutRepository(mongoClient);
+        const checkoutRepo = new CheckoutRepository(documentsClient);
         await checkoutRepo.updateStatus(session.id, "expired");
       } catch (repoErr) {
         console.error("Failed to update expired checkout status:", repoErr);
@@ -985,7 +998,7 @@ export async function POST(req: Request) {
                 : null;
 
           if (priceId) {
-            const db = await mongoClient.db();
+            const db = await documentsClient.db();
             const planDoc = await db.collection("plans").findOne({
               isActive: true,
               stripePriceId: priceId,
@@ -995,9 +1008,10 @@ export async function POST(req: Request) {
             let planType: string | undefined;
 
             if (planDoc) {
-              const serialized = toSerializedPlan(planDoc as Plan);
+              const planEntity = planDoc as unknown as Plan;
+              const serialized = toSerializedPlan(planEntity);
               const tier = getAccessTierKey(serialized);
-              planType = (planDoc as Plan).title;
+              planType = planEntity.title;
               if (tier === "premiumPlus") plan = "pro";
               else if (tier === "premium") plan = "premium";
             }
@@ -1032,7 +1046,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true });
     }
 
-    const checkoutRepo = new CheckoutRepository(mongoClient);
+    const checkoutRepo = new CheckoutRepository(documentsClient);
     if (event.type === "invoice.payment_failed") {
       const invoice = event.data.object as any;
       const rawSubscription = invoice.subscription;
@@ -1043,7 +1057,7 @@ export async function POST(req: Request) {
 
       if (subscriptionId) {
         try {
-          const db = await mongoClient.db();
+          const db = await documentsClient.db();
           await db.collection("stripe_subscriptions").updateOne(
             { stripeId: subscriptionId },
             {
@@ -1132,7 +1146,7 @@ export async function POST(req: Request) {
         const email = invoice.customer_email?.trim().toLowerCase();
         if (email) {
           try {
-            const users: any = await clerk.users.getUserList({
+            const users: any = await authAdmin.users.getUserList({
               emailAddress: [email],
             });
             if (users?.data?.length) {
@@ -1140,19 +1154,20 @@ export async function POST(req: Request) {
               const lastCheckout = await checkoutRepo.findLastByUserId(user.id);
               if (lastCheckout) {
                 await checkoutRepo.updateCreatedAtBySessionId(
-                  lastCheckout.checkoutId,
+                  String(lastCheckout.checkoutId),
                   new Date(
-                    (invoice?.lines?.data[0]?.period?.start as number) * 1000
+                    Number((invoice?.lines?.data[0]?.period as { start?: unknown } | undefined)?.start ?? 0) *
+                      1000
                   )
                 );
                 await checkoutRepo.updateStatus(
-                  lastCheckout.checkoutId,
+                  String(lastCheckout.checkoutId),
                   "complete"
                 );
 
                 try {
                   const session = await stripe.checkout.sessions.retrieve(
-                    lastCheckout.checkoutId
+                    String(lastCheckout.checkoutId)
                   );
                   if (session) {
                     await handleReferralRewards(session, session.metadata);
@@ -1179,7 +1194,7 @@ export async function POST(req: Request) {
                           ? invoice.customer
                           : null,
                       userId: user.id,
-                      sessionId: lastCheckout.checkoutId,
+                      sessionId: String(lastCheckout.checkoutId),
                       subscriptionId,
                     }),
                     userId: user.id,
@@ -1369,7 +1384,7 @@ export async function POST(req: Request) {
           const email = invoice.customer_email;
 
           if (email) {
-            const users = await clerk.users.getUserList({
+            const users = await authAdmin.users.getUserList({
               emailAddress: [email.trim().toLowerCase()],
             });
             if (users.data.length) {
@@ -1385,7 +1400,7 @@ export async function POST(req: Request) {
         try {
           const lastCheckout = await checkoutRepo.findLastByUserId(user_id);
           if (lastCheckout) {
-            checkout_id = lastCheckout.checkoutId;
+            checkout_id = String(lastCheckout.checkoutId);
           }
         } catch (err) {
           console.warn("   ❗️ Fallback #4 error:", err);
@@ -1461,7 +1476,7 @@ export async function POST(req: Request) {
         const sessionId = chargeDetails.metadata?.session_id;
 
         if (sessionId) {
-          const checkoutRepo = new CheckoutRepository(mongoClient);
+          const checkoutRepo = new CheckoutRepository(documentsClient);
           const checkout = await checkoutRepo.findBySessionId(sessionId);
 
           if (checkout?.userId) {
@@ -1496,7 +1511,7 @@ export async function POST(req: Request) {
         const sessionId = chargeDetails.metadata?.session_id;
 
         if (sessionId) {
-          const checkoutRepo = new CheckoutRepository(mongoClient);
+          const checkoutRepo = new CheckoutRepository(documentsClient);
           const checkout = await checkoutRepo.findBySessionId(sessionId);
 
           if (checkout?.userId) {
@@ -1564,7 +1579,7 @@ export async function POST(req: Request) {
         }
 
         if (email) {
-          const users = await clerk.users.getUserList({
+          const users = await authAdmin.users.getUserList({
             emailAddress: [email.trim().toLowerCase()],
           });
           if (users.data.length) {
@@ -1626,7 +1641,7 @@ export async function POST(req: Request) {
               await checkoutRepo.updateStatus(checkoutId, "refunded");
             }
             if (userId) {
-              await clerk.users.updateUserMetadata(userId, {
+              await authAdmin.users.updateUserMetadata(userId, {
                 publicMetadata: { plan: "free" },
               });
             }
@@ -1641,7 +1656,7 @@ export async function POST(req: Request) {
             )) as any;
             const customerEmail = invEmail.customer_email;
             if (customerEmail) {
-              const usersByEmail = await clerk.users.getUserList({
+              const usersByEmail = await authAdmin.users.getUserList({
                 emailAddress: [customerEmail.trim().toLowerCase()],
               });
               if (usersByEmail.data.length) {
@@ -1664,7 +1679,7 @@ export async function POST(req: Request) {
           emailForDB = invEmailSearch.customer_email ?? undefined;
         }
         if (emailForDB) {
-          const usersByEmail2 = await clerk.users.getUserList({
+          const usersByEmail2 = await authAdmin.users.getUserList({
             emailAddress: [emailForDB.trim().toLowerCase()],
           });
           if (usersByEmail2.data.length) {
@@ -1713,7 +1728,7 @@ export async function POST(req: Request) {
 
       if (!userId) {
         const record = await checkoutRepo.findBySessionId(sessionId);
-        userId = record?.userId ?? null;
+        userId = record?.userId != null ? String(record.userId) : null;
       }
 
       if (userId) {

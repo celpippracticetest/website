@@ -17,7 +17,7 @@ import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import LoginModal from "@/components/modal/LoginModal";
-import { CustomSignUpForm } from "@/components/auth/CustomSignUpForm";
+import { SupabaseAuthForm } from "@/components/auth/SupabaseAuthForm";
 import SvgChevronRight from "@/components/icons/ChevronRight";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 import { ActivityLogger } from "@/lib/userActivity";
@@ -287,7 +287,7 @@ const ListeningPracticeView = ({
             >
               ×
             </button>
-            <CustomSignUpForm className="shadow-xl" />
+            <SupabaseAuthForm className="shadow-xl" initialMode="sign-up" />
           </div>
         </div>
       )}

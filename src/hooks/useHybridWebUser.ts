@@ -1,18 +1,17 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 import { useEffect, useMemo, useState } from "react";
 import {
-  readClerkLegacyUserIdFromSupabaseUser,
+  readLegacyImportedExternalUserId,
   readPracticePlanFromSupabaseUser,
 } from "@/lib/auth/supabase-user-plan";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 
 /**
- * Minimal Clerk-shaped user for client UI when the session is Supabase Auth.
+ * Bridge user for client UI when the session is Supabase Auth.
  */
-function clerkLikeUserFromSupabase(u: SupabaseAuthUser) {
+function bridgeUserFromSupabase(u: SupabaseAuthUser) {
   const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
   const app = (u.app_metadata ?? {}) as Record<string, unknown>;
   const { plan, purchaseDate } = readPracticePlanFromSupabaseUser(u);
@@ -46,8 +45,8 @@ function clerkLikeUserFromSupabase(u: SupabaseAuthUser) {
     null;
 
   const email = u.email?.trim() ?? "";
-  const legacyClerkId = readClerkLegacyUserIdFromSupabaseUser(u);
-  const stableId = legacyClerkId ?? u.id;
+  const legacyImportedId = readLegacyImportedExternalUserId(u);
+  const stableId = legacyImportedId ?? u.id;
 
   return {
     id: stableId,
@@ -67,13 +66,20 @@ function clerkLikeUserFromSupabase(u: SupabaseAuthUser) {
       planExpiresAt: app.planExpiresAt ?? meta.planExpiresAt,
       targetCLB: app.targetCLB ?? meta.targetCLB ?? meta.targetClb,
     },
+    privateMetadata: {
+      stripeCustomerId:
+        (app.stripeCustomerId as string | undefined) ??
+        (meta.stripeCustomerId as string | undefined) ??
+        null,
+    },
+    externalAccounts: [] as { provider: string }[],
+    passwordEnabled: true,
   };
 }
 
-export type HybridAuthSource = "clerk" | "supabase" | null;
+export type HybridAuthSource = "supabase" | null;
 
 export function useHybridWebUser() {
-  const clerk = useUser();
   const [supabaseUser, setSupabaseUser] = useState<SupabaseAuthUser | null | undefined>(
     undefined
   );
@@ -102,22 +108,13 @@ export function useHybridWebUser() {
 
   return useMemo(() => {
     const supaReady = supabaseUser !== undefined;
-    const isLoaded = Boolean(clerk.isLoaded && supaReady);
-
-    if (clerk.isSignedIn && clerk.user) {
-      return {
-        isLoaded,
-        isSignedIn: true as const,
-        user: clerk.user,
-        authSource: "clerk" as const satisfies HybridAuthSource,
-      };
-    }
+    const isLoaded = supaReady;
 
     if (supabaseUser) {
       return {
         isLoaded,
         isSignedIn: true as const,
-        user: clerkLikeUserFromSupabase(supabaseUser) as any,
+        user: bridgeUserFromSupabase(supabaseUser) as any,
         authSource: "supabase" as const satisfies HybridAuthSource,
       };
     }
@@ -128,5 +125,5 @@ export function useHybridWebUser() {
       user: null,
       authSource: null as HybridAuthSource,
     };
-  }, [clerk.isLoaded, clerk.isSignedIn, clerk.user, supabaseUser]);
+  }, [supabaseUser]);
 }

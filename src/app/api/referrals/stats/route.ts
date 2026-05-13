@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import mongoClient from "@/lib/mongodb";
+import { auth } from "@/lib/auth/server-auth";
+import documentsClient from "@/lib/appDocumentsClient";
 import { ReferralRewardRepository } from "@/repositories/referral-reward.repo";
 import { ReferralInvitationRepository } from "@/repositories/referral-invitation.repo";
 import { WithdrawalRequestRepository } from "@/repositories/withdrawal-request.repo";
@@ -12,15 +12,15 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { clerkClient } = await import("@clerk/nextjs/server");
-    const clerk = await clerkClient();
-    const user = await clerk.users.getUser(userId);
+    const { appUserAdmin } = await import("@/lib/auth/app-user-admin");
+    const authAdmin = await appUserAdmin();
+    const user = await authAdmin.users.getUser(userId);
     const userMetadata = user.publicMetadata as any;
 
     // Initialize repositories
-    const rewardRepo = new ReferralRewardRepository(mongoClient);
-    const invitationRepo = new ReferralInvitationRepository(mongoClient);
-    const withdrawalRepo = new WithdrawalRequestRepository(mongoClient);
+    const rewardRepo = new ReferralRewardRepository(documentsClient);
+    const invitationRepo = new ReferralInvitationRepository(documentsClient);
+    const withdrawalRepo = new WithdrawalRequestRepository(documentsClient);
 
     await rewardRepo.ensureIndexes();
     await invitationRepo.ensureIndexes();
@@ -205,25 +205,27 @@ export async function GET() {
         return res;
       };
 
-      // Batch fetch Clerk users by IDs to avoid N calls
+      // Batch fetch auth users by IDs to avoid N calls
       const idChunks = chunk(userIds, 50); // safe batch size
       const userEmailMap = new Map<string, string | undefined>();
 
       for (const ids of idChunks) {
         try {
-          const result: any = await clerk.users.getUserList({
-            userId: ids,
-          });
-          const list = Array.isArray(result?.data)
-            ? result.data
-            : Array.isArray(result)
-            ? result
-            : [];
-          for (const u of list) {
-            const uid = u?.id;
+          const users = await Promise.all(
+            ids.map(async (id) => {
+              try {
+                return await authAdmin.users.getUser(id);
+              } catch {
+                return null;
+              }
+            })
+          );
+          for (const u of users) {
+            if (!u) continue;
+            const uid = u.id;
             const email =
-              u?.primaryEmailAddress?.emailAddress ||
-              u?.emailAddresses?.[0]?.emailAddress;
+              u.primaryEmailAddress?.emailAddress ||
+              u.emailAddresses?.[0]?.emailAddress;
             if (uid) userEmailMap.set(uid, email);
           }
         } catch (_) {}

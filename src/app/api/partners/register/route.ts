@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { auth, currentUser } from "@clerk/nextjs/server";
-import mongoClient from "@/lib/mongodb";
+import { auth, currentUser } from "@/lib/auth/server-auth";
+import documentsClient from "@/lib/appDocumentsClient";
 import { PartnerRepository } from "@/repositories/partner.repo";
 import { generateUniquePartnerCode } from "@/lib/partner/generatePartnerCode";
 
@@ -14,10 +14,10 @@ export async function POST() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const partnerRepo = new PartnerRepository(mongoClient);
+    const partnerRepo = new PartnerRepository(documentsClient);
     await partnerRepo.ensureIndexes();
 
-    const existing = await partnerRepo.findByClerkUserId(userId);
+    const existing = await partnerRepo.findByWebUserId(userId);
     if (existing) {
       return NextResponse.json({ ok: true, partner: existing });
     }
@@ -35,7 +35,7 @@ export async function POST() {
     const code = await generateUniquePartnerCode();
     const partner = await partnerRepo.insertPartner({
       code,
-      clerkUserId: userId,
+      webUserId: userId,
       payoutEmail: email,
       status: "active",
     });

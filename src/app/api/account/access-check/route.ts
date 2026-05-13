@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { clerkClient } from "@clerk/nextjs/server";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
-import { evaluateDeviceAccessWithClerk } from "@/lib/accountDeviceAccess";
+import { evaluateDeviceAccessWithAuth } from "@/lib/accountDeviceAccess";
 import { canUseStripeDeviceSeatBilling } from "@/lib/accountDeviceBilling";
-import {
-  getActiveDeletedDeviceRestriction,
-  getStableDeviceKeyFromSession,
-} from "@/lib/accountDeviceRestriction";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { captureException } from "@/lib/sentry-logger";
 
@@ -30,45 +25,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ allowed: true, skipped: true as const });
     }
 
-    if (authContext?.sessionId) {
-      try {
-        const clerk = await clerkClient();
-        const currentSession = await clerk.sessions.getSession(authContext.sessionId);
-        const deviceKey = getStableDeviceKeyFromSession(currentSession);
-        if (deviceKey) {
-          const activeRestriction = await getActiveDeletedDeviceRestriction({
-            userId,
-            deviceKey,
-          });
-          if (activeRestriction) {
-            return NextResponse.json({
-              allowed: false,
-              code: "DEVICE_RESTRICTED_48H",
-              reason:
-                "This device was removed from your active sessions. You can sign in again on this device after 48 hours.",
-              restrictedUntil: activeRestriction.expiresAt.toISOString(),
-            });
-          }
-        }
-      } catch (error) {
-        captureException(error, {
-          component: "api",
-          action: "account_access_check_device_restriction_lookup_failed",
-          userId,
-        });
-      }
-    }
-
-    const deviceCheck = await evaluateDeviceAccessWithClerk({
+    const deviceCheck = await evaluateDeviceAccessWithAuth({
       userId,
       currentSessionId: authContext?.sessionId,
       publicMetadata: (user?.publicMetadata ?? {}) as Record<string, unknown>,
       currentPlan: plan ?? "premium",
+      user: user ?? null,
     });
     if (!deviceCheck.allowed) {
       let allowAddDevice = false;
       try {
-        allowAddDevice = await canUseStripeDeviceSeatBilling({ userId, user });
+        allowAddDevice = await canUseStripeDeviceSeatBilling({ userId, user: user! });
       } catch (error) {
         captureException(error, {
           component: "api",

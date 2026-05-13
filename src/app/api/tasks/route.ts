@@ -1,4 +1,4 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { TaskSchemaDto, TTaskCategoryEnum, TTaskTypeEnum } from "@/models/tasks.model";
 import { TaskRepository } from "@/repositories/tasks.repo";
 import { NextRequest, NextResponse } from "next/server";
@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   const taskParser = TaskSchemaDto.omit({ id: true }).safeParse(body);
 
   if (taskParser.success) {
-    const taskRepo = new TaskRepository(mongoClient);
+    const taskRepo = new TaskRepository(documentsClient);
     const taskDto = await taskRepo.createTask(taskParser.data);
     return NextResponse.json({ id: taskDto.id }, { status: 200 });
   } else {
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
   const page: string = req.nextUrl.searchParams.get("page") ?? "0";
   const limit: string = req.nextUrl.searchParams.get("limit") ?? "10";
 
-  const taskRepo = new TaskRepository(mongoClient);
+  const taskRepo = new TaskRepository(documentsClient);
   const filter: Record<string, TTaskTypeEnum | TTaskCategoryEnum | string> = {}; 
   if(type){
     filter['type'] = type as TTaskTypeEnum;

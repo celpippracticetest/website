@@ -1,4 +1,4 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { WikiArticleWriteSchema } from "@/models/wiki.model";
 import { WikiRepository } from "@/repositories/wiki.repo";
 import { ObjectId } from "bson";
@@ -21,7 +21,7 @@ export async function GET(
       );
     }
 
-    const repo = new WikiRepository(mongoClient);
+    const repo = new WikiRepository(documentsClient);
     const article = await repo.findById(id);
 
     if (!article) {
@@ -65,7 +65,7 @@ export async function PATCH(
       );
     }
 
-    const repo = new WikiRepository(mongoClient);
+    const repo = new WikiRepository(documentsClient);
     const updated = await repo.updateById(id, parser.data);
 
     if (!updated) {
@@ -98,7 +98,7 @@ export async function DELETE(
       );
     }
 
-    const repo = new WikiRepository(mongoClient);
+    const repo = new WikiRepository(documentsClient);
     await repo.deleteById(id);
 
     return NextResponse.json(

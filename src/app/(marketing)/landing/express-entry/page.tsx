@@ -41,7 +41,7 @@ import {
   parsePrice,
 } from '@/lib/pricing';
 import type { DurationGroupKey, SerializedPlan } from '@/types/pricing';
-import { useUser } from '@clerk/nextjs';
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { getStripeCheckoutAutoDiscountLabel } from '@/lib/stripeCheckoutDiscountLabel';
 
 type FunnelStep = 'input' | 'email' | 'result';
@@ -90,7 +90,7 @@ const Page = () => {
         : null,
     [isSignedIn, user?.publicMetadata],
   );
-  /** Avoid SSR vs client mismatch on Clerk + checkout action URLs */
+  /** Avoid SSR vs client mismatch on authentication + checkout action URLs */
   const [hasMounted, setHasMounted] = useState(false);
   const [currentCLB, setCurrentCLB] = useState(7);
   const [funnelStep, setFunnelStep] = useState<FunnelStep>('input');

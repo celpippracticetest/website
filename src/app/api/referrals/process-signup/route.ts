@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
-import mongoClient from "@/lib/mongodb";
+import { auth, appUserAdmin } from "@/lib/auth/server-auth";
+import documentsClient from "@/lib/appDocumentsClient";
 import { ReferralRepository } from "@/repositories/referral.repo";
 import { ReferralInvitationRepository } from "@/repositories/referral-invitation.repo";
 export async function POST(req: Request) {
@@ -20,9 +20,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const clerk = await clerkClient();
+    const authAdmin = await appUserAdmin();
     // Get user information
-    const user = await clerk.users.getUser(userId);
+    const user = await authAdmin.users.getUser(userId);
     const userEmail = user.emailAddresses[0]?.emailAddress;
 
     if (!userEmail) {
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     }
 
     // Find the referrer
-    const referralRepo = new ReferralRepository(mongoClient);
+    const referralRepo = new ReferralRepository(documentsClient);
     const referrer = await referralRepo.findOneByCode(referralCode);
 
     if (!referrer) {
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     }
 
     // Get referrer user info
-    const referrerUser = await clerk.users.getUser(referrer.userId);
+    const referrerUser = await authAdmin.users.getUser(referrer.userId);
     const referrerEmail = referrerUser.emailAddresses[0]?.emailAddress;
 
     if (!referrerEmail) {
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
     // apply-discount even when that flag is missing or false; reward eligibility is enforced elsewhere.
 
     // Store referral relationship in user metadata
-    await clerk.users.updateUserMetadata(userId, {
+    await authAdmin.users.updateUserMetadata(userId, {
       publicMetadata: {
         referredBy: referrer.userId,
         referralCode: referralCode,
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
       },
     });
 
-    const invitationRepo = new ReferralInvitationRepository(mongoClient);
+    const invitationRepo = new ReferralInvitationRepository(documentsClient);
     await invitationRepo.ensureIndexes();
 
     // Check if invitation already exists
@@ -108,7 +108,7 @@ export async function POST(req: Request) {
     if (newTotalInvitees >= 10) rewardLevel = 3;
     else if (newTotalInvitees >= 5) rewardLevel = 2;
 
-    await clerk.users.updateUserMetadata(referrer.userId, {
+    await authAdmin.users.updateUserMetadata(referrer.userId, {
       publicMetadata: {
         ...currentMetadata,
         hasSuccessfulReferral: true,

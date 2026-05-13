@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 export default function SignSupabaseSignUpPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const showLegacyClerkSignupHint = searchParams.get("legacy") === "1";
+  const showLegacyAuthSignupHint = searchParams.get("legacy") === "1";
   const forceShowForm = useMemo(() => {
     const f = searchParams.get("force");
     return f === "1" || f?.toLowerCase() === "true";
@@ -68,7 +68,7 @@ export default function SignSupabaseSignUpPageClient() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="w-full max-w-md">
         <h1 className="sr-only">Sign Up</h1>
-        <CustomSupabaseSignUpForm showLegacyClerkSignupHint={showLegacyClerkSignupHint} />
+        <CustomSupabaseSignUpForm showLegacyAuthSignupHint={showLegacyAuthSignupHint} />
       </div>
     </div>
   );

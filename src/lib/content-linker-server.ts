@@ -1,4 +1,4 @@
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 import { unstable_cache } from "next/cache";
 import { linkContentCore, LinkerConfig } from "./content-linker-core";
 

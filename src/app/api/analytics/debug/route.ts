@@ -1,21 +1,26 @@
 import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
+import clientPromise from "@/lib/appDocumentsClient";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 /**
  * GET /api/analytics/debug
- * Debug endpoint to check MongoDB connection and data availability
+ * Debug endpoint to check document store connectivity and data availability
  */
 export async function GET() {
   try {
     const client = await clientPromise;
     const db = client.db("prod");
 
-    // Check connection
-    const collections = await db.listCollections().toArray();
-    const collectionNames = collections.map((c) => c.name);
+    const collectionNames = [
+      "useractivities",
+      "users",
+      "checkouts",
+      "onboarding",
+      "referralInvitations",
+      "referralRewards",
+    ];
 
     // Count documents in key collections
     const userActivitiesCount = await db
@@ -145,7 +150,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      database: db.databaseName,
+      database: process.env.APP_DOCUMENTS_DB?.trim() || "prod",
       collections: collectionNames,
       counts: {
         useractivities: userActivitiesCount,
@@ -161,10 +166,13 @@ export async function GET() {
       usersWithPlans,
       dateRange:
         dateRange.length > 0 ?
-          {
-            oldest: dateRange[0].oldest,
-            newest: dateRange[0].newest,
-          }
+          (() => {
+            const row = dateRange[0] as Record<string, unknown>;
+            return {
+              oldest: row.oldest,
+              newest: row.newest,
+            };
+          })()
         : null,
       last30Days: {
         total: recentActivitiesCount,

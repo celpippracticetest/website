@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
-import { getDb } from "@/lib/mongodb";
+import { currentUser } from "@/lib/auth/server-auth";
+import { getDb } from "@/lib/appDocumentsClient";
 import { PlansRepository } from "@/repositories/plans.repo";
 import {
   resolveSuccessUpgradeOfferFromSourcePrice,
@@ -10,6 +10,7 @@ import { resolvePayPalPlanIdForStripePrice } from "@/lib/paypal/planMap";
 import { resolveOrCreatePayPalPromoUpgradePlanId } from "@/lib/paypal/billingPlans";
 import { getPayPalCheckoutPublicOrigin } from "@/lib/requestOrigin";
 import { syncUserPlanPublicMetadata } from "@/lib/syncUserPlanPublicMetadata";
+import { matchUsersCollectionByWebUserIds } from "@/lib/users/userDocumentIdentity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,9 +53,13 @@ export async function POST(req: NextRequest) {
   const pending = await db.collection("paypal_subscription_pending").findOne<{
     stripePriceId?: string;
     clerkUserId?: string;
+    supabaseUserId?: string;
+    sub?: string;
   }>({
-    clerkUserId: user.id,
-    paypalSubscriptionId: subscriptionId,
+    $and: [
+      matchUsersCollectionByWebUserIds(user.id),
+      { paypalSubscriptionId: subscriptionId },
+    ],
   });
   const sourceStripePriceId = pending?.stripePriceId?.trim();
   if (!sourceStripePriceId) {
@@ -167,7 +172,7 @@ export async function POST(req: NextRequest) {
 
   try {
     await syncUserPlanPublicMetadata(user.id, {
-      plan: resolved.clerkPlanKey,
+      plan: resolved.webPlanKey,
       planType: resolved.targetPlanTitle,
       planCancelled: false,
       planExpiresAt: null,

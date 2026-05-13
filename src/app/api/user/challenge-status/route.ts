@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
+import { matchUsersCollectionByWebUserIds } from "@/lib/users/userDocumentIdentity";
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function GET(req: NextRequest) {
 
     const db = await getDb();
     const userDoc = await db.collection("users").findOne(
-      { $or: [{ clerkUserId: user.id }, { supabaseUserId: ctx.supabaseAuthUserId }, { sub: user.id }] },
+      matchUsersCollectionByWebUserIds(user.id, ctx.supabaseAuthUserId ?? ""),
       {
         projection: {
           challenge: 1,

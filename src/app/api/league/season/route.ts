@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 import { LeagueRepository } from "@/repositories/league.repo";
 import { ObjectId } from "bson";
 

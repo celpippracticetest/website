@@ -24,7 +24,7 @@ import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 // planDetails import removed
 
 import LoginModal from "@/components/modal/LoginModal";
-import { CustomSignUpForm } from "@/components/auth/CustomSignUpForm";
+import { SupabaseAuthForm } from "@/components/auth/SupabaseAuthForm";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 import { ActivityLogger } from "@/lib/userActivity";
@@ -370,7 +370,7 @@ const WritingPracticeView = ({
             >
               ×
             </button>
-            <CustomSignUpForm className="shadow-xl" />
+            <SupabaseAuthForm className="shadow-xl" initialMode="sign-up" />
           </div>
         </div>
       )}

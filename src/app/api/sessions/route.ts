@@ -1,4 +1,4 @@
-import { clerkClient } from "@clerk/nextjs/server";
+import { appUserAdmin } from "@/lib/auth/server-auth";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
 import { NextRequest, NextResponse } from "next/server";
@@ -26,10 +26,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json([]);
   }
 
-  const clerk = await clerkClient();
-  const { data: sessions } = await clerk.sessions.getSessionList({
+  const authAdmin = await appUserAdmin();
+  const { data: sessions } = await authAdmin.sessions.getSessionList({
     userId: authContext.userId,
   });
-  const activeSessions = sessions.filter((s) => s.status === "active");
+  type SessionRow = { status?: string };
+  const list = (sessions ?? []) as SessionRow[];
+  const activeSessions = list.filter((s) => s.status === "active");
   return NextResponse.json(activeSessions);
 }

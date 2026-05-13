@@ -1,5 +1,5 @@
 import { ObjectId } from "bson";
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 import { logger, captureException } from "@/lib/sentry-logger";
 import { isPricingAbLayout } from "@/lib/pricingAbTest";
 import { isHomeAbExperimentVariant, isHomeAbVariant } from "@/lib/homeAbTest";
@@ -14,6 +14,8 @@ const GRANTS_COLL = "paypal_subscription_grants";
 export type PayPalPendingDoc = {
   _id: ObjectId;
   clerkUserId: string;
+  supabaseUserId?: string;
+  sub?: string;
   stripePriceId: string;
   planDisplayName: string;
   pricingAbLayout?: string | null;
@@ -83,10 +85,10 @@ function isActivePayPalStatus(status: string | undefined): boolean {
 }
 
 export async function finalizePayPalSubscriptionReturn(params: {
-  clerkUserId: string;
+  webUserId: string;
   subscriptionId: string;
 }): Promise<{ ok: true } | { ok: false; reason: string }> {
-  const { clerkUserId, subscriptionId } = params;
+  const { webUserId, subscriptionId } = params;
 
   if (!subscriptionId || !/^I-[A-Z0-9]+$/i.test(subscriptionId)) {
     return { ok: false, reason: "invalid_subscription" };
@@ -99,7 +101,7 @@ export async function finalizePayPalSubscriptionReturn(params: {
   try {
     await grants.insertOne({
       paypalSubscriptionId: subscriptionId,
-      clerkUserId,
+      clerkUserId: webUserId,
       createdAt: new Date(),
     });
     grantInserted = true;
@@ -126,7 +128,10 @@ export async function finalizePayPalSubscriptionReturn(params: {
       .collection(PENDING_COLL)
       .findOne({ _id: new ObjectId(customId) })) as PayPalPendingDoc | null;
 
-    if (!pending || pending.clerkUserId !== clerkUserId) {
+    const ownerIds = [pending.clerkUserId, pending.supabaseUserId, pending.sub].filter(
+      (x): x is string => typeof x === "string" && x.length > 0
+    );
+    if (!pending || !ownerIds.includes(webUserId)) {
       if (grantInserted) {
         await grants.deleteOne({ paypalSubscriptionId: subscriptionId });
       }
@@ -166,7 +171,7 @@ export async function finalizePayPalSubscriptionReturn(params: {
     const renews = sub.billing_info?.next_billing_time?.trim() || null;
 
     await applyPayPalSubscriptionEntitlements({
-      userId: clerkUserId,
+      userId: webUserId,
       planDisplayName,
       purchaseAmount: amount,
       purchaseCurrency: currency,
@@ -197,13 +202,13 @@ export async function finalizePayPalSubscriptionReturn(params: {
     if (
       typeof layoutRaw === "string" &&
       isPricingAbLayout(layoutRaw) &&
-      clerkUserId
+      webUserId
     ) {
       try {
         await db.collection("pricing_ab_events").insertOne({
           eventType: "purchase",
           layout: layoutRaw,
-          userId: clerkUserId,
+          userId: webUserId,
           sessionId: null,
           amountTotal: amountTotalCents,
           planName: planDisplayName,
@@ -223,13 +228,13 @@ export async function finalizePayPalSubscriptionReturn(params: {
       typeof homeRaw === "string" &&
       isHomeAbVariant(homeRaw) &&
       isHomeAbExperimentVariant(homeRaw) &&
-      clerkUserId
+      webUserId
     ) {
       try {
         await db.collection("home_ab_events").insertOne({
           eventType: "purchase",
           variant: homeRaw,
-          userId: clerkUserId,
+          userId: webUserId,
           sessionId: null,
           amountTotal: amountTotalCents,
           planName: planDisplayName,
@@ -249,7 +254,7 @@ export async function finalizePayPalSubscriptionReturn(params: {
     captureException(err, {
       component: "paypal_subscriptions",
       action: "finalize_error",
-      userId: clerkUserId,
+      userId: webUserId,
       metadata: { subscriptionId },
     });
     try {

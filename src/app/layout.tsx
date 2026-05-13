@@ -1,14 +1,13 @@
 import "./globals.css";
 import NextTopLoader from "nextjs-toploader";
 import { Analytics } from "@vercel/analytics/react";
-import { ClerkProvider } from "@clerk/nextjs";
 import { hasAnyWebSession } from "@/lib/auth/web-session-server";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import AskBeavoModal from "@/components/AskBeavo/AskBeavoModal";
 import CrispChat from "@/components/CrispChat";
 import CrispUserSync from "@/components/CrispUserSync";
-import ClerkAuthGtmTracker from "@/components/analytics/ClerkAuthGtmTracker";
+import AuthGtmTracker from "@/components/analytics/AuthGtmTracker";
 import { LazyLeadCapturePopup, LazyPromotionManager } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -17,7 +16,6 @@ import AttributionTracker from "@/components/analytics/AttributionTracker";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
 import RedditPixelTracker from "@/components/analytics/RedditPixelTracker";
 import MarketingFooterSection from "@/components/pages/landing/MarketingFooterSection";
-import SiteStatusBanner from "@/components/SiteStatusBanner";
 import { SupabaseAuthHashRecoveryRedirect } from "@/components/auth/SupabaseAuthHashRecoveryRedirect";
 import MuiAppRouterCacheProvider from "@/components/MuiAppRouterCacheProvider";
 import { getHomepageHeroDisplay } from "@/lib/homepage-hero";
@@ -275,11 +273,10 @@ export default async function RootLayout({
 
       <body className="bg-[#F4F7FF]" suppressHydrationWarning>
         <MuiAppRouterCacheProvider>
-          <ClerkProvider>
           <AskBeavoModal />
           <CrispChat />
           <CrispUserSync />
-          <ClerkAuthGtmTracker />
+          <AuthGtmTracker />
           {enableGtm && (
             <noscript>
               <iframe
@@ -302,7 +299,6 @@ export default async function RootLayout({
           )}
 
           <NextTopLoaderComponent />
-          <SiteStatusBanner />
           <ErrorBoundary>
             <SupabaseAuthHashRecoveryRedirect />
             {children}
@@ -329,7 +325,6 @@ export default async function RootLayout({
           )}
 
           <Script src="/scripts/third-party-loader.js" strategy="lazyOnload" />
-          </ClerkProvider>
         </MuiAppRouterCacheProvider>
       </body>
     </html>

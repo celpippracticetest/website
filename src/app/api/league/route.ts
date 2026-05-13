@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 import { LeagueRepository } from "@/repositories/league.repo";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/server-auth";
 import { ObjectId } from "bson";
 
 // Helper function to get league level for comparison
@@ -14,6 +14,24 @@ function getLeagueLevel(leagueType: string): number {
   }
 }
 import { TUserLeaguePoints } from "@/models/league.model";
+
+/** Parse `timestampUtc` from app_documents JSON (Date, ISO string, or EJSON `$date`). */
+function activityTimestampUtc(row: Record<string, unknown>): Date | null {
+  const ts = row.timestampUtc;
+  if (ts instanceof Date) return ts;
+  if (typeof ts === "string" || typeof ts === "number") {
+    const d = new Date(ts);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  if (ts && typeof ts === "object" && !Array.isArray(ts)) {
+    const o = ts as Record<string, unknown>;
+    if (typeof o.$date === "string" || typeof o.$date === "number") {
+      const d = new Date(o.$date as string | number);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+  }
+  return null;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -78,9 +96,6 @@ export async function GET(request: NextRequest) {
     } catch (bootstrapErr) {
       console.error("Failed to ensure active season in POST /api/league:", bootstrapErr);
     }
-
-    // Clean up any duplicate users in groups
-    await leagueRepo.cleanupDuplicateUsers();
 
     // Get current season or create one
     let currentSeason = await leagueRepo.getCurrentSeason();
@@ -169,6 +184,8 @@ export async function GET(request: NextRequest) {
           { $set: { leagues: currentSeason.leagues } }
         );
       }
+
+      await leagueRepo.cleanupDuplicateUsers(currentSeason.seasonId);
     }
 
     // Get user's league points (only if user is authenticated)
@@ -273,7 +290,7 @@ export async function GET(request: NextRequest) {
           // OPTIMIZATION: Instead of fetching ALL groups and sorting in memory,
           // find ONE active group that has users.
           // We prefer a group with users, but any active group will do as a base.
-          // Since we can't easily sort by array length in MongoDB without aggregation,
+          // Since we can't easily sort by array length without aggregation,
           // we'll try to find a group with at least one user first.
 
           let chosenGroupId: string | null = null;
@@ -288,7 +305,8 @@ export async function GET(request: NextRequest) {
           });
 
           if (activeGroupWithUsers) {
-            chosenGroupId = activeGroupWithUsers._id.toString();
+            chosenGroupId =
+              activeGroupWithUsers._id != null ? String(activeGroupWithUsers._id) : null;
           } else if (league.groups.length > 0) {
             // Fallback to the first group if no group has users yet
             chosenGroupId = league.groups[0].toString();
@@ -356,22 +374,33 @@ export async function GET(request: NextRequest) {
 
     // Get skills tried by user (if authenticated)
     let skillsTried: string[] = [];
+    let userActivitiesCompletedSinceSeason = 0;
     if (userId) {
       try {
-        // Query user activities to find which skills they've practiced
-        // Only get activities from the current season to avoid old data
-        const currentSeasonStart = currentSeason?.startDate ? new Date(currentSeason.startDate) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days ago as fallback
+        const currentSeasonStart = currentSeason?.startDate
+          ? new Date(currentSeason.startDate)
+          : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-        // OPTIMIZATION: Use distinct to get unique skills directly from DB
-        const uniqueSkills = await db.collection("useractivities").distinct("skill", {
-          userId: userId,
-          eventType: "practice_attempt_completed",
-          status: "completed",
-          timestampUtc: { $gte: currentSeasonStart },
-          skill: { $ne: null }
-        });
+        // Primitive equality only → `documentFilterToSql` uses indexed-friendly SQL
+        // (`collection` + body fields). `$gte` / `$ne` would force a full-partition scan.
+        const activities = (await db
+          .collection("useractivities")
+          .find({
+            userId,
+            eventType: "practice_attempt_completed",
+            status: "completed",
+          })
+          .toArray()) as Record<string, unknown>[];
 
-        skillsTried = uniqueSkills as string[];
+        const skills = new Set<string>();
+        for (const row of activities) {
+          const ts = activityTimestampUtc(row);
+          if (!ts || ts < currentSeasonStart) continue;
+          userActivitiesCompletedSinceSeason += 1;
+          const sk = row.skill;
+          if (sk != null && sk !== "") skills.add(String(sk));
+        }
+        skillsTried = [...skills];
         console.log("Skills tried extracted (current season - optimized):", skillsTried);
       } catch (error) {
         console.error("Error fetching skills tried:", error);
@@ -395,12 +424,7 @@ export async function GET(request: NextRequest) {
         skillsTriedCount: skillsTried.length,
         skillsTriedArray: skillsTried,
         currentSeasonStart: currentSeason?.startDate,
-        userActivitiesCount: userId ? (await db.collection("useractivities").countDocuments({
-          userId: userId,
-          eventType: "practice_attempt_completed",
-          status: "completed",
-          timestampUtc: { $gte: currentSeason?.startDate ? new Date(currentSeason.startDate) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
-        })) : 0
+        userActivitiesCount: userId ? userActivitiesCompletedSinceSeason : 0
       }
     });
   } catch (error: any) {

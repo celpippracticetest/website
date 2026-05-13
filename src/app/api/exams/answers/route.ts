@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { ListeningAndReadingAnswerSchemaRequest } from "@/models/answer";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
@@ -33,12 +33,12 @@ export async function POST(req: NextRequest) {
     ) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
-    const examPartsRepo = new ExamPartsRepository(mongoClient);
+    const examPartsRepo = new ExamPartsRepository(documentsClient);
     const examPart: TExamPartSchemaDto | null = await examPartsRepo.findExamPartByExamIdAndPartId(parseResult.data.examId, parseResult.data.partId);
     if (!examPart) {
       return NextResponse.json({ message: "examPart not found" }, { status: 404 });
     }
-    const answerRepo = new ListeningAndReadingAnswerRepository(mongoClient);
+    const answerRepo = new ListeningAndReadingAnswerRepository(documentsClient);
     const createdAnswer = await answerRepo.createOrUpdateAnswer({
       ...parseResult.data,
       userId: user.id,

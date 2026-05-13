@@ -16,11 +16,11 @@ function formatSupabaseAuthError(message: string | undefined): string {
 
 export function CustomSupabaseSignUpForm({
   className,
-  showLegacyClerkSignupHint = false,
+  showLegacyAuthSignupHint = false,
 }: {
   className?: string;
   /** From `/sign-up?legacy=1` (old Clerk sign-up URL). */
-  showLegacyClerkSignupHint?: boolean;
+  showLegacyAuthSignupHint?: boolean;
 }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -83,7 +83,7 @@ export function CustomSupabaseSignUpForm({
       <h2 className="text-center text-xl font-semibold text-slate-900">
         Create account
       </h2>
-      {showLegacyClerkSignupHint ? (
+      {showLegacyAuthSignupHint ? (
         <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
           <p className="font-medium">New accounts use this page</p>
           <p className="mt-1 text-amber-900/90">
@@ -164,7 +164,7 @@ export function CustomSupabaseSignUpForm({
       <p className="mt-6 text-center text-sm text-slate-600">
         Already have an account?{" "}
         <Link
-          href={showLegacyClerkSignupHint ? "/sign-in?legacy=1" : "/sign-in"}
+          href={showLegacyAuthSignupHint ? "/sign-in?legacy=1" : "/sign-in"}
           className="font-medium text-blue-600 hover:underline"
         >
           Sign in

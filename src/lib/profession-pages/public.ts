@@ -1,5 +1,5 @@
 import type { ProfessionPageConfig } from "@/components/pages/marketing/ProfessionPageTemplate";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { TProfessionPageContent } from "@/models/profession-page.model";
 import {
   ProfessionPageRepository,
@@ -36,8 +36,8 @@ export async function getPublishedProfessionPageBySlug(
   slug: string
 ): Promise<TProfessionPageContent | null> {
   try {
-    if (!mongoClient) return null;
-    const repo = new ProfessionPageRepository(mongoClient);
+    if (!documentsClient) return null;
+    const repo = new ProfessionPageRepository(documentsClient);
     return await repo.findPublishedBySlug(slug);
   } catch (error) {
     console.error("Failed to read profession page:", slug, error);
@@ -47,8 +47,8 @@ export async function getPublishedProfessionPageBySlug(
 
 export async function getPublishedProfessionPageSlugs(): Promise<string[]> {
   try {
-    if (!mongoClient) return [];
-    const repo = new ProfessionPageRepository(mongoClient);
+    if (!documentsClient) return [];
+    const repo = new ProfessionPageRepository(documentsClient);
     return await repo.listPublishedSlugs();
   } catch (error) {
     console.error("Failed to list profession page slugs:", error);
@@ -58,8 +58,8 @@ export async function getPublishedProfessionPageSlugs(): Promise<string[]> {
 
 export async function getPublishedProfessionPages(): Promise<TProfessionPageContent[]> {
   try {
-    if (!mongoClient) return [];
-    const repo = new ProfessionPageRepository(mongoClient);
+    if (!documentsClient) return [];
+    const repo = new ProfessionPageRepository(documentsClient);
     return await repo.listPublished();
   } catch (error) {
     console.error("Failed to list profession pages:", error);
@@ -69,8 +69,8 @@ export async function getPublishedProfessionPages(): Promise<TProfessionPageCont
 
 export async function getPublishedProfessionPageSummaries(): Promise<ProfessionPageSummary[]> {
   try {
-    if (!mongoClient) return [];
-    const repo = new ProfessionPageRepository(mongoClient);
+    if (!documentsClient) return [];
+    const repo = new ProfessionPageRepository(documentsClient);
     return await repo.listPublishedSummaries();
   } catch (error) {
     console.error("Failed to list profession page summaries:", error);

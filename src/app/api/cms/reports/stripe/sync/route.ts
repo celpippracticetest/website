@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, currentUser } from "@clerk/nextjs/server";
-import { getDb } from "@/lib/mongodb";
+import { auth, currentUser, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
+import { getDb } from "@/lib/appDocumentsClient";
 import { StripeReportingRepository } from "@/repositories/stripe-reporting.repo";
 import { syncStripeReportingData } from "@/lib/stripe/reporting-sync";
 
@@ -25,7 +25,7 @@ async function ensureAdmin() {
   }
 
   const authenticate = await auth();
-  const isAdmin = authenticate.sessionClaims?.metadata?.roles?.includes("admin");
+  const isAdmin = sessionClaimsHasAdminRole(authenticate.sessionClaims);
   if (!isAdmin) {
     return {
       ok: false as const,

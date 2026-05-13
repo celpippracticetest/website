@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
-import clientPromise from "@/lib/mongodb";
+import { auth, appUserAdmin } from "@/lib/auth/server-auth";
+import clientPromise from "@/lib/appDocumentsClient";
 
 export async function DELETE(req: NextRequest) {
   const { userId } = await auth();
@@ -31,8 +31,8 @@ export async function DELETE(req: NextRequest) {
       createdAt: new Date(),
     });
 
-    const clerk = await clerkClient();
-    await clerk.users.deleteUser(userId);
+    const authAdmin = await appUserAdmin();
+    await authAdmin.users.deleteUser(userId);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting user:", error);

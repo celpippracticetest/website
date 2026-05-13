@@ -1,7 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 import { LeagueRepository } from "@/repositories/league.repo";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/server-auth";
+
+type LeagueGroupUserEntry = { userId: string } & Record<string, unknown>;
+type LeagueGroupForDebug = {
+  groupNumber?: number;
+  maxUsers?: number;
+  users?: LeagueGroupUserEntry[];
+};
+
+type SeasonLeagueEntry = {
+  leagueType: string;
+  groups: unknown[];
+};
+type LeagueSeasonForDebug = {
+  leagues?: SeasonLeagueEntry[];
+};
 
 
 export async function GET(request: NextRequest) {
@@ -93,32 +108,45 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ error: "Season not found" }, { status: 404 });
         }
 
+        const seasonTyped = season as LeagueSeasonForDebug;
+        const seasonLeagues = Array.isArray(seasonTyped.leagues) ? seasonTyped.leagues : [];
+
         const debugInfo = {
           seasonId,
           season,
           groups: [] as any[],
         };
 
-        for (const league of season.leagues) {
-          for (const groupId of league.groups) {
-            const group = await db
+        /** Supabase-backed admin bridge; `getUser` accepts legacy Clerk id or Supabase UUID. */
+        const { appUserAdmin } = await import("@/lib/auth/app-user-admin");
+        const authAdmin = await appUserAdmin();
+
+        for (const league of seasonLeagues) {
+          const groupIds = Array.isArray(league.groups) ? league.groups : [];
+          for (const groupId of groupIds) {
+            const groupDoc = await db
               .collection("league_groups")
               .findOne({ _id: groupId });
-            
-            if (group) {
-              // Fetch user names from Clerk
+
+            if (groupDoc) {
+              const group = groupDoc as LeagueGroupForDebug;
+              const groupUsers: LeagueGroupUserEntry[] = Array.isArray(group.users)
+                ? group.users
+                : [];
+
               const usersWithNames = await Promise.all(
-                group.users.map(async (user: any) => {
+                groupUsers.map(async (user) => {
                   try {
-                    const { clerkClient } = await import("@clerk/nextjs/server");
-                    const client = await clerkClient();
-                    const clerkUser = await client.users.getUser(user.userId);
+                    const appUser = await authAdmin.users.getUser(user.userId);
                     return {
                       ...user,
-                      name: clerkUser.firstName && clerkUser.lastName 
-                        ? `${clerkUser.firstName} ${clerkUser.lastName}`.trim()
-                        : clerkUser.firstName || clerkUser.emailAddresses[0]?.emailAddress?.split('@')[0] || 'User',
-                      email: clerkUser.emailAddresses[0]?.emailAddress,
+                      name:
+                        appUser.firstName && appUser.lastName
+                          ? `${appUser.firstName} ${appUser.lastName}`.trim()
+                          : appUser.firstName ||
+                            appUser.emailAddresses[0]?.emailAddress?.split("@")[0] ||
+                            "User",
+                      email: appUser.emailAddresses[0]?.emailAddress,
                     };
                   } catch (error) {
                     console.log("Error fetching user name for:", user.userId, error);
@@ -133,10 +161,10 @@ export async function GET(request: NextRequest) {
 
               debugInfo.groups.push({
                 leagueType: league.leagueType,
-                groupId: groupId.toString(),
+                groupId: String(groupId),
                 groupNumber: group.groupNumber,
                 maxUsers: group.maxUsers,
-                userCount: group.users.length,
+                userCount: groupUsers.length,
                 users: usersWithNames,
               });
             }

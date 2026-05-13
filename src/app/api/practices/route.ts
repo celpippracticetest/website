@@ -1,9 +1,8 @@
 import { PracticeDtoSchema } from "@/models/practice.model";
 import { PracticeRepository } from "@/repositories/practice.repo";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { TExamType } from "@/models/enums";
 import { NextRequest, NextResponse } from "next/server";
-import { ObjectId } from "bson";
 import { logger, captureException, trackAPICall, PerformanceTracker } from "@/lib/sentry-logger";
 export async function POST(req: NextRequest) {
   const tracker = new PerformanceTracker("Create Practice Session", "practices_api");
@@ -21,7 +20,7 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      const practiceRepo = new PracticeRepository(mongoClient);
+      const practiceRepo = new PracticeRepository(documentsClient);
       const practiceDto = await practiceRepo.createPractice(
         practiceParser.data
       );
@@ -89,11 +88,11 @@ export const GET = async function (req: NextRequest) {
       },
     });
 
-    const practiceRepo = new PracticeRepository(mongoClient);
+    const practiceRepo = new PracticeRepository(documentsClient);
     const practices = await practiceRepo.getAllPractice(
       {
         type: type ? (type.toString().toUpperCase() as TExamType) : undefined,
-        taskId: taskId ? new ObjectId(taskId) : undefined,
+        taskId: taskId ?? undefined,
       },
       parseInt(page),
       parseInt(limit)

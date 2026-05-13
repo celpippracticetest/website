@@ -1,4 +1,4 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
 import { NextResponse } from "next/server";
 import { listResendAudiences } from "@/lib/email/resend-client";
 
@@ -11,7 +11,7 @@ async function ensureAdmin() {
     return { ok: false as const, response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
   const authenticate = await auth();
-  const isAdmin = authenticate.sessionClaims?.metadata?.roles?.includes("admin");
+  const isAdmin = sessionClaimsHasAdminRole(authenticate.sessionClaims);
   if (!isAdmin) {
     return { ok: false as const, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }

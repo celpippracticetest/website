@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import client from "@/lib/mongodb";
+import { auth } from "@/lib/auth/server-auth";
+import client from "@/lib/appDocumentsClient";
 
 const KEEP_EVENTS = [
   "keep_subscription_clicked",
@@ -13,7 +13,8 @@ const KEEP_EVENTS = [
 export async function GET(request: NextRequest) {
   try {
     const { sessionClaims } = await auth();
-    const isAdmin = sessionClaims?.metadata?.roles?.includes("admin");
+    const roles = sessionClaims?.metadata?.roles;
+    const isAdmin = Array.isArray(roles) && roles.some((r) => r === "admin");
 
     if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -92,7 +93,7 @@ export async function GET(request: NextRequest) {
         current.started = true;
       } else if (event.eventName === "subscription_cancelled_success") {
         current.cancelled = true;
-      } else if (KEEP_EVENTS.includes(event.eventName)) {
+      } else if (typeof event.eventName === "string" && KEEP_EVENTS.includes(event.eventName)) {
         current.kept = true;
         if (!current.reason && typeof event.reason === "string" && event.reason) {
           current.reason = event.reason;

@@ -1,6 +1,6 @@
 import { PracticeRepository } from "@/repositories/practice.repo";
 import { NextRequest, NextResponse } from "next/server";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { ListeningAndReadingAnswerSchemaRequest } from "@/models/answer";
 
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    const practiceRepo = new PracticeRepository(mongoClient);
+    const practiceRepo = new PracticeRepository(documentsClient);
     const practice: TPracticeDto | null = await practiceRepo.findPractice(
       parseResult.data.practiceId
     );
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
         { status: 404 }
       );
     }
-    const answerRepo = new ListeningAndReadingAnswerRepository(mongoClient);
+    const answerRepo = new ListeningAndReadingAnswerRepository(documentsClient);
     const createdAnswer = await answerRepo.createOrUpdateAnswer({
       ...parseResult.data,
       userId: user.id,
@@ -107,7 +107,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const answerRepo = new ListeningAndReadingAnswerRepository(mongoClient);
+    const answerRepo = new ListeningAndReadingAnswerRepository(documentsClient);
     const answer = await answerRepo.findAnswerByPracticeAndUser(
       practiceId,
       userId

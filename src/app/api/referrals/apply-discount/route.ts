@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import Stripe from "stripe";
-import { clerkClient } from "@clerk/nextjs/server";
-import mongoClient from "@/lib/mongodb";
+import { appUserAdmin } from "@/lib/auth/server-auth";
+import documentsClient from "@/lib/appDocumentsClient";
 import { ReferralRepository } from "@/repositories/referral.repo";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -29,9 +29,9 @@ export async function POST(req: Request) {
 
     const { referralCode, userId, userEmail } = parsed.data;
 
-    const clerk = await clerkClient();
+    const authAdmin = await appUserAdmin();
     // Check if user has already used a referral discount
-    const user = await clerk.users.getUser(userId);
+    const user = await authAdmin.users.getUser(userId);
     const userMetadata = user.publicMetadata as any;
 
     // Check if user already has a referral discount or has used one
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     }
 
     // Find the referrer
-    const referralRepo = new ReferralRepository(mongoClient);
+    const referralRepo = new ReferralRepository(documentsClient);
     const referrer = await referralRepo.findOneByCode(referralCode);
 
     if (!referrer) {
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     }
 
     // Get referrer user info
-    const referrerUser = await clerk.users.getUser(referrer.userId);
+    const referrerUser = await authAdmin.users.getUser(referrer.userId);
     const referrerEmail = referrerUser.emailAddresses[0]?.emailAddress;
 
     if (!referrerEmail) {
@@ -120,7 +120,7 @@ export async function POST(req: Request) {
     });
 
     // Store referral relationship in user metadata
-    await clerk.users.updateUserMetadata(userId, {
+    await authAdmin.users.updateUserMetadata(userId, {
       publicMetadata: {
         referredBy: referrer.userId,
         referralCode,

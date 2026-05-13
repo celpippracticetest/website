@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, currentUser } from "@clerk/nextjs/server";
-import { getDb } from "@/lib/mongodb";
+import { auth, currentUser } from "@/lib/auth/server-auth";
+import { getDb } from "@/lib/appDocumentsClient";
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
 import { JWT } from "google-auth-library";
 
@@ -17,7 +17,8 @@ async function ensureAdmin() {
   }
 
   const authenticate = await auth();
-  const isAdmin = authenticate.sessionClaims?.metadata?.roles?.includes("admin");
+  const roles = authenticate.sessionClaims?.metadata?.roles;
+  const isAdmin = Array.isArray(roles) && roles.some((r) => r === "admin");
   if (!isAdmin) {
     return {
       ok: false as const,
@@ -218,7 +219,8 @@ export async function POST(request: NextRequest) {
     const userIds: string[] = [];
     const seen = new Set<string>();
     for (const sub of recentSubs) {
-      const uid = sub?.metadata?.user_id as string | undefined;
+      const meta = (sub?.metadata ?? {}) as Record<string, unknown>;
+      const uid = typeof meta.user_id === "string" ? meta.user_id : undefined;
       if (!uid || seen.has(uid)) continue;
       seen.add(uid);
       userIds.push(uid);
@@ -251,54 +253,75 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const stripeRows = await db
+    type StripeSubscriptionAggRow = { _id: string; meta: Record<string, string> };
+
+    const stripeRows = (await db
       .collection("stripe_subscriptions")
-      .aggregate<{ _id: string; meta: Record<string, string> }>([
+      .aggregate([
         { $match: { "metadata.user_id": { $in: userIds } } },
         { $sort: { createdAt: -1 } },
         { $group: { _id: "$metadata.user_id", meta: { $first: "$metadata" } } },
       ])
-      .toArray();
+      .toArray()) as StripeSubscriptionAggRow[];
 
     const stripeByUser = new Map<string, { source: string | null; medium: string | null; campaign: string | null }>();
     for (const r of stripeRows) {
       if (!r._id || !r.meta) continue;
-      const m = r.meta as Record<string, string>;
+      const m = r.meta;
       const a = attributionFromStripeMetadata(m);
       stripeByUser.set(r._id, a);
     }
 
-    const clerkRows = await db
+    const usersForMetadataFallback = await db
       .collection("users")
-      .find({ clerkUserId: { $in: userIds } })
-      .project({ clerkUserId: 1, publicMetadata: 1 })
+      .find({
+        $or: [
+          { clerkUserId: { $in: userIds } },
+          { supabaseUserId: { $in: userIds } },
+          { sub: { $in: userIds } },
+        ],
+      })
+      .project({
+        clerkUserId: 1,
+        supabaseUserId: 1,
+        sub: 1,
+        publicMetadata: 1,
+      })
       .toArray();
 
-    const clerkByUser = new Map<string, { source: string | null; medium: string | null; campaign: string | null }>();
-    for (const u of clerkRows) {
-      const id = u.clerkUserId as string | undefined;
-      if (!id) continue;
+    type Attribution = {
+      source: string | null;
+      medium: string | null;
+      campaign: string | null;
+    };
+    const attributionFromUserDocs = new Map<string, Attribution>();
+    for (const u of usersForMetadataFallback) {
       const pm = (u.publicMetadata || {}) as Record<string, string>;
-      const fromStripe = stripeByUser.get(id);
-      if (fromStripe && (fromStripe.source || fromStripe.medium)) continue;
       const gclid = normalizeDim(pm.gclid);
-      if (gclid) {
-        clerkByUser.set(id, {
-          source: "google",
-          medium: "cpc",
-          campaign: normalizeDim(pm.utm_campaign),
-        });
-        continue;
+      const fromPublicMetadata: Attribution = gclid
+        ? {
+            source: "google",
+            medium: "cpc",
+            campaign: normalizeDim(pm.utm_campaign),
+          }
+        : {
+            source: normalizeDim(pm.utm_source),
+            medium: normalizeDim(pm.utm_medium),
+            campaign: normalizeDim(pm.utm_campaign),
+          };
+
+      const docIds = [u.clerkUserId, u.supabaseUserId, u.sub].filter(
+        (x): x is string => typeof x === "string" && x.length > 0
+      );
+      for (const id of [...new Set(docIds)]) {
+        const fromStripe = stripeByUser.get(id);
+        if (fromStripe && (fromStripe.source || fromStripe.medium)) continue;
+        attributionFromUserDocs.set(id, fromPublicMetadata);
       }
-      clerkByUser.set(id, {
-        source: normalizeDim(pm.utm_source),
-        medium: normalizeDim(pm.utm_medium),
-        campaign: normalizeDim(pm.utm_campaign),
-      });
     }
 
     let filledFromStripe = 0;
-    let filledFromClerk = 0;
+    let filledFromUserPublicMetadata = 0;
     for (const uid of userIds) {
       const ga = attributionMap.get(uid);
       const gaEmpty = !ga || (!ga.source && !ga.medium && !ga.campaign);
@@ -309,10 +332,10 @@ export async function POST(request: NextRequest) {
         filledFromStripe += 1;
         continue;
       }
-      const cl = clerkByUser.get(uid);
-      if (cl && (cl.source || cl.medium || cl.campaign)) {
-        attributionMap.set(uid, cl);
-        filledFromClerk += 1;
+      const fromUserDoc = attributionFromUserDocs.get(uid);
+      if (fromUserDoc && (fromUserDoc.source || fromUserDoc.medium || fromUserDoc.campaign)) {
+        attributionMap.set(uid, fromUserDoc);
+        filledFromUserPublicMetadata += 1;
       }
     }
 
@@ -357,7 +380,7 @@ export async function POST(request: NextRequest) {
       matchedInGa: fetchResult.rows?.length ?? 0,
       missingInGa: userIds.length - (fetchResult.rows?.length ?? 0),
       filledFromStripeMetadata: filledFromStripe,
-      filledFromClerkUsers: filledFromClerk,
+      filledFromUserPublicMetadata: filledFromUserPublicMetadata,
       schemaUsed: fetchResult.schemaUsed,
       warning:
         !fetchResult.schemaUsed && fetchResult.error

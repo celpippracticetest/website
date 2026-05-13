@@ -1,6 +1,6 @@
 import { ExamRepository } from "@/repositories/exams.repo";
 import { NextRequest, NextResponse } from "next/server";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 
 export const GET = async function (req: NextRequest) {
   // Parse query params
@@ -16,7 +16,7 @@ export const GET = async function (req: NextRequest) {
     filter.name = { $regex: q, $options: "i" };
   }
 
-  const examRepo = new ExamRepository(mongoClient);
+  const examRepo = new ExamRepository(documentsClient);
   const result: any = await examRepo.getAllExam(filter, pageNum, limitNum);
 
   // Normalize output to { items, total, page, limit }

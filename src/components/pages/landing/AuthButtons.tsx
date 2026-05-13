@@ -6,8 +6,8 @@ import { useState, useEffect, useRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useHasEverPurchased } from "@/hooks/useHasEverPurchased";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
-import { useClerk } from "@clerk/nextjs";
-import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
+import { useRouter } from "next/navigation";
+import { signOutWebSession } from "@/lib/auth/client-sign-out";
 
 const AuthButtons = () => {
   type ChallengeStatus = {
@@ -16,7 +16,7 @@ const AuthButtons = () => {
     daysLeft?: number | null;
   };
   const { isSignedIn, user, isLoaded } = useHybridWebUser();
-  const { signOut } = useClerk();
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [isUserDropDownOpen, setUserDropDownOpen] = useState(false);
   const [challengeStatus, setChallengeStatus] = useState<ChallengeStatus | null>(null);
@@ -60,9 +60,7 @@ const AuthButtons = () => {
 
   const handleSignOut = async () => {
     localStorage.removeItem("hasClosedExtraDiscountModal");
-    const supabase = createBrowserSupabaseClient();
-    if (supabase) await supabase.auth.signOut();
-    await signOut({ redirectUrl: "/sign-in" });
+    await signOutWebSession(router, "/sign-in");
   };
 
   if (!mounted || !isLoaded) {

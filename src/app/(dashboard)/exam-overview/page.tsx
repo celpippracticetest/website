@@ -1,5 +1,5 @@
 import ExamOverview from "@/components/dashboard-app/examOverview";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { TListeningAndReadingAnswerDto, TWritingAnswerDto } from "@/models/answer";
 import { ExamRepository } from "@/repositories/exams.repo";
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
@@ -136,7 +136,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const ExamsPage = async () => {
-  const exampRepo = new ExamRepository(mongoClient);
+  const exampRepo = new ExamRepository(documentsClient);
   const [result, hybridUser] = await Promise.all([
     exampRepo.getAllExam({ isReady: true }, 0, 1000),
     getHybridCurrentUser(),
@@ -163,12 +163,12 @@ const ExamsPage = async () => {
   let examProgressById: Record<string, ExamProgressSummary> = {};
 
   if (user) {
-    const examPartsRepo = new ExamPartsRepository(mongoClient);
+    const examPartsRepo = new ExamPartsRepository(documentsClient);
     const listeningAndReadingAnswerRepo = new ListeningAndReadingAnswerRepository(
-      mongoClient
+      documentsClient
     );
     const writingAndSpeakingAnswerRepo = new WritingAndSpeakingAnswerRepository(
-      mongoClient
+      documentsClient
     );
 
     const [examPartsResult, listeningAndReadingResult, writingAndSpeakingResult] =
@@ -387,7 +387,7 @@ const ExamsPage = async () => {
             exams={examsForOverview}
             examProgressById={examProgressById}
             showUserProgress={Boolean(user)}
-            clerkAccessSnapshot={
+            rscUserAccessSnapshot={
               user
                 ? {
                     purchasedMockExamIds: (

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
-import client from "@/lib/mongodb";
+import client from "@/lib/appDocumentsClient";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
 export async function GET(request: NextRequest) {
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
         date: new Date().toISOString().split("T")[0], // Today's date
       });
 
-      const currentCount = existingRecord?.count || 0;
+      const currentCount = Number(existingRecord?.count ?? 0);
 
       return NextResponse.json({
         count: currentCount,

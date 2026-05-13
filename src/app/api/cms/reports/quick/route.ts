@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, currentUser } from "@clerk/nextjs/server";
-import { getDb } from "@/lib/mongodb";
+import { auth, currentUser } from "@/lib/auth/server-auth";
+import { getDb } from "@/lib/appDocumentsClient";
 import { stripe } from "@/lib/stripe";
 import { StripeReportingRepository } from "@/repositories/stripe-reporting.repo";
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
@@ -594,8 +594,8 @@ export async function GET(request: NextRequest) {
 
     // Count unique users created in range, robust to mixed createdAt types.
     const getUserCount = async (from: Date, to: Date) => {
-      const result = await usersCollection
-        .aggregate<{ count: number }>([
+      const result = (await usersCollection
+        .aggregate([
           {
             $project: {
               clerkUserId: 1,
@@ -626,7 +626,7 @@ export async function GET(request: NextRequest) {
           },
           { $count: "count" },
         ])
-        .next();
+        .next()) as { count?: number } | null;
 
       return result?.count ?? 0;
     };
@@ -666,7 +666,9 @@ export async function GET(request: NextRequest) {
       const usersSubscribedInPeriod = users.filter((user) => {
         const startDate =
           normalizeDate(user?.subscriptionStartDate) ||
-          normalizeDate(user?.publicMetadata?.purchaseDate);
+          normalizeDate(
+            (user?.publicMetadata as Record<string, unknown> | undefined)?.purchaseDate
+          );
         if (!startDate) return false;
         const endDate = resolveSubscriptionEndDate(user, now, startDate);
         if (!endDate) return false;
@@ -762,8 +764,8 @@ export async function GET(request: NextRequest) {
     };
 
     const getUserDailyCounts = async (from: Date, to: Date) => {
-      const rows = await usersCollection
-        .aggregate<{ date: string; count: number }>([
+      const rows = (await usersCollection
+        .aggregate([
           {
             $project: {
               clerkUserId: 1,
@@ -810,7 +812,7 @@ export async function GET(request: NextRequest) {
             },
           },
         ])
-        .toArray();
+        .toArray()) as { date: string; count: number }[];
 
       return new Map(rows.map((row) => [row.date, row.count]));
     };
@@ -899,7 +901,7 @@ export async function GET(request: NextRequest) {
       const key = dayKeys[i];
       activeByDay.set(key, Math.max(0, currentStripe.activeSubscribers - futureNet));
       futureNet +=
-        (stripeDailyStartedMap.get(key) ?? 0) - (stripeDailyCanceledMap.get(key) ?? 0);
+        Number(stripeDailyStartedMap.get(key) ?? 0) - Number(stripeDailyCanceledMap.get(key) ?? 0);
     }
 
     const dailyTrends: DailyTrendPoint[] = dayKeys.map((key) => ({

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ObjectId } from "bson";
-import { auth } from "@clerk/nextjs/server";
-import { getDb } from "@/lib/mongodb";
+import { auth } from "@/lib/auth/server-auth";
+import { getDb } from "@/lib/appDocumentsClient";
 import type { Plan } from "@/models/plans.model";
 import { paypalApiCredentialsConfigured } from "@/lib/paypal/config";
 import { createPayPalProductAndBillingPlan } from "@/lib/paypal/billingPlans";
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     }
 
     const db = await getDb();
-    const plan = await db.collection("plans").findOne<Plan>({ _id: new ObjectId(planId) });
+    const plan = (await db.collection("plans").findOne({ _id: new ObjectId(planId) })) as Plan | null;
 
     if (!plan) {
       return NextResponse.json({ error: "Plan not found" }, { status: 404 });

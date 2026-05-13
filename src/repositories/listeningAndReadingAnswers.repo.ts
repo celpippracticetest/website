@@ -5,12 +5,12 @@ import {
   TListeningAndReadingAnswerDto,
 } from "@/models/answer";
 import { ObjectId } from "bson";
-import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
+import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
 
 const HEX24 = /^[a-f0-9]{24}$/i;
 
 /** Stringify ObjectId-like values for DTOs (PG layer may revive `taskId` as `ObjectId` via `rowToDocument`). */
-function mongoIdLikeToHex(value: unknown): string | null {
+function objectIdHexFromComparable(value: unknown): string | null {
   if (value == null) return null;
   if (typeof value === "string") {
     return HEX24.test(value) ? value.toLowerCase() : null;
@@ -39,7 +39,7 @@ function mongoIdLikeToHex(value: unknown): string | null {
 }
 
 function optionalIdString(value: unknown): string | undefined {
-  const hex = mongoIdLikeToHex(value);
+  const hex = objectIdHexFromComparable(value);
   if (hex) return hex;
   if (typeof value === "string" && value.length > 0) return value;
   return undefined;
@@ -48,8 +48,8 @@ function optionalIdString(value: unknown): string | undefined {
 export class ListeningAndReadingAnswerRepository {
   private readonly db: Db;
 
-  constructor(mongoClient: MongoClient) {
-    this.db = mongoClient.db();
+  constructor(documentsClient: AppDocumentsClient) {
+    this.db = documentsClient.db();
   }
 
   private getAnswerCollection() {
@@ -91,7 +91,7 @@ export class ListeningAndReadingAnswerRepository {
     taskId: string,
     userId: string
   ): Promise<string[]> {
-    const wantHex = mongoIdLikeToHex(taskId);
+    const wantHex = objectIdHexFromComparable(taskId);
     const answers = await this.getAnswerCollection()
       .find({ userId })
       .project({ practiceId: 1, taskId: 1 })
@@ -99,7 +99,7 @@ export class ListeningAndReadingAnswerRepository {
     return answers
       .filter((a) => {
         if (!wantHex) return false;
-        return mongoIdLikeToHex(a.taskId as unknown) === wantHex;
+        return objectIdHexFromComparable(a.taskId as unknown) === wantHex;
       })
       .map((a) => String(a.practiceId));
   }

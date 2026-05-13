@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 type PartnerDto = {
   id: string;
   code: string;
-  clerkUserId: string;
+  webUserId: string;
   payoutEmail: string;
   status: "pending" | "active" | "suspended";
 };
@@ -23,7 +23,7 @@ type CommissionRow = {
 };
 
 type ReferredRow = {
-  clerkUserId?: string;
+  webUserId?: string;
   purchaseAmount?: number;
   purchaseCurrency?: string;
   plan?: string;
@@ -247,9 +247,9 @@ export default function PartnersDashboardClient() {
                       </tr>
                     ) : (
                       referredUsers.map((r) => (
-                        <tr key={r.clerkUserId} className="border-b border-slate-100">
+                        <tr key={r.webUserId} className="border-b border-slate-100">
                           <td className="py-2 pr-4 font-mono text-xs">
-                            {r.clerkUserId?.slice(0, 12)}…
+                            {r.webUserId?.slice(0, 12)}…
                           </td>
                           <td className="py-2 pr-4">{r.plan || "—"}</td>
                           <td className="py-2 pr-4">

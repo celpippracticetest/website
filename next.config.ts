@@ -157,7 +157,8 @@ const nextConfig: NextConfig = {
       ["/ircc-language-requirements-for-nurses", "/blog/celpip-2026-canadian-immigration-updates"],
       ["/pass-celpip-writing", "/blog/7-key-strategies-to-excel-in-celpip-writing-test"],
       ["/clb-levels-for-immigration", "/blog/complete-guide-celpip-test-booking-results-clb"],
-      ["/celpip-speaking-tips", "/wiki/celpip-speaking-tips-high-score"],
+      ["/sign-in/clerk", "/sign-in/legacy"],
+      ["/sign-up/clerk", "/sign-up/legacy"],
       ["/celpip-writing-email-tips", "/blog/celpip-writing-task-1-samples-email-tone-clb-9-2026"],
     ].map(([source, destination]) => ({ source, destination, permanent: true }));
     return fixes;
@@ -341,14 +342,6 @@ const nextConfig: NextConfig = {
             name: "react",
             chunks: "all",
             priority: 20,
-            enforce: true,
-          },
-          // Clerk specific
-          clerk: {
-            test: /[\\/]node_modules[\\/]@clerk[\\/]/,
-            name: "clerk",
-            chunks: "all",
-            priority: 15,
             enforce: true,
           },
           // UI libraries

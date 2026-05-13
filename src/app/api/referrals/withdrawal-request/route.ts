@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/server-auth";
 
 import { z } from "zod";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { ReferralRewardRepository } from "@/repositories/referral-reward.repo";
 import { WithdrawalRequestRepository } from "@/repositories/withdrawal-request.repo";
 import { ReferralInvitationRepository } from "@/repositories/referral-invitation.repo";
-import { clerkClient } from "@clerk/nextjs/server";
+import { appUserAdmin } from "@/lib/auth/server-auth";
 import { getResendClient, sendResendHtmlEmail } from "@/lib/email/resend-client";
 
 export const runtime = "nodejs";
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
 
     const { amount, paypalEmail } = parsed.data;
 
-    const cc = await clerkClient();
+    const cc = await appUserAdmin();
     const user = await cc.users.getUser(userId);
     const userEmail =
       user.emailAddresses.find((e: any) => e.id === user.primaryEmailAddressId)
@@ -50,8 +50,8 @@ export async function POST(req: Request) {
     }
 
     // Initialize repositories
-    const rewardRepo = new ReferralRewardRepository(mongoClient);
-    const withdrawalRepo = new WithdrawalRequestRepository(mongoClient);
+    const rewardRepo = new ReferralRewardRepository(documentsClient);
+    const withdrawalRepo = new WithdrawalRequestRepository(documentsClient);
 
     await rewardRepo.ensureIndexes();
     await withdrawalRepo.ensureIndexes();
@@ -82,7 +82,7 @@ export async function POST(req: Request) {
     }
 
     // Get referral statistics
-    const invitationRepo = new ReferralInvitationRepository(mongoClient);
+    const invitationRepo = new ReferralInvitationRepository(documentsClient);
     await invitationRepo.ensureIndexes();
 
     const totalInvitees = await invitationRepo.getTotalInvitations(userId);
@@ -93,7 +93,8 @@ export async function POST(req: Request) {
 
     // Get user's plan and purchase info from metadata
     const planPurchased = (user.publicMetadata as any)?.plan || "free";
-    const purchaseDate = user.createdAt || new Date();
+    const createdAtRaw = (user as unknown as { createdAt?: number }).createdAt;
+    const purchaseDate = typeof createdAtRaw === "number" ? new Date(createdAtRaw) : new Date();
 
     // Create withdrawal request
     const withdrawalRequest = await withdrawalRepo.createWithdrawalRequest({

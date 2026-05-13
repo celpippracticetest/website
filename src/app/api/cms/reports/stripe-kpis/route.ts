@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import { getDb } from "@/lib/mongodb";
+import { auth } from "@/lib/auth/server-auth";
+import { getDb } from "@/lib/appDocumentsClient";
 import { StripeReportingRepository } from "@/repositories/stripe-reporting.repo";
 
 export const runtime = "nodejs";

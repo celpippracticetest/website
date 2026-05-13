@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@clerk/nextjs/server";
-import mongoClient from "@/lib/mongodb";
+import { auth } from "@/lib/auth/server-auth";
+import documentsClient from "@/lib/appDocumentsClient";
 import { PartnerRepository } from "@/repositories/partner.repo";
 
 export const runtime = "nodejs";
@@ -26,7 +26,7 @@ export async function PATCH(req: Request) {
       );
     }
 
-    const partnerRepo = new PartnerRepository(mongoClient);
+    const partnerRepo = new PartnerRepository(documentsClient);
     await partnerRepo.ensureIndexes();
     const updated = await partnerRepo.updatePayoutEmail(
       userId,

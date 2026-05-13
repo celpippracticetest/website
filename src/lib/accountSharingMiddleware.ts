@@ -77,7 +77,7 @@ export type AccountSharingMiddlewareResult =
     };
 
 /**
- * Calls the Node route handler so MongoDB runs outside the proxy bundle.
+ * Calls the Node route handler so the document store runs outside the proxy bundle.
  */
 export async function runAccountSharingMiddlewareCheck(
   req: NextRequest,

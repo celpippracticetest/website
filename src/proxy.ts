@@ -1,9 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import {
-  clerkClient,
-  clerkMiddleware,
-  createRouteMatcher,
-} from "@clerk/nextjs/server";
+  readLegacyImportedExternalUserId,
+  readPracticePlanFromSupabaseUser,
+} from "@/lib/auth/supabase-user-plan";
+import { mobileUserBridgeFromSupabaseUser } from "@/lib/auth/supabase-mobile-user-bridge";
+import { appUserAdmin } from "@/lib/auth/app-user-admin";
 import { logger, trackUserAction, captureException } from "@/lib/sentry-logger";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { PRICING_AB_COOKIE, type PricingAbLayout } from "@/lib/pricingAbTest";
@@ -13,27 +14,21 @@ import {
   runAccountSharingMiddlewareCheck,
   shouldEnforceAccountSharingSignals,
 } from "@/lib/accountSharingMiddleware";
-import { readPracticePlanFromSupabaseUser } from "@/lib/auth/supabase-user-plan";
 import { refreshSupabaseSessionFromRequest } from "@/lib/supabase/middleware-session";
 
-const isAdminRoute = createRouteMatcher(["/cms(.*)"]);
-const isProfileRoute = createRouteMatcher(["/profile(.*)"]);
-const isReferralRoute = createRouteMatcher(["/referral(.*)"]);
-const isPlansRoute = createRouteMatcher(["/plans(.*)"]);
-const isPreviewEnvironment = process.env.VERCEL_ENV === "preview";
+const isAdminRoute = (req: NextRequest) => req.nextUrl.pathname.startsWith("/cms");
 
-/** Clerk JWT public metadata used for practice gating (see `src/types/globals.d.ts`). */
-type JwtPracticeMetadata = {
-  plan?: string;
-  purchaseDate?: string;
-};
-
-function jwtPracticeMetadata(
-  sessionClaims: { metadata?: unknown } | null | undefined,
-): JwtPracticeMetadata | undefined {
-  if (!sessionClaims?.metadata) return undefined;
-  return sessionClaims.metadata as JwtPracticeMetadata;
+/** `publicMetadata.roles` is untyped; narrow before calling array methods. */
+function metadataRolesIncludeAdmin(
+  metadata: Record<string, unknown> | null | undefined,
+): boolean {
+  const roles = metadata?.roles;
+  return Array.isArray(roles) && roles.some((r) => r === "admin");
 }
+const isProfileRoute = (req: NextRequest) => req.nextUrl.pathname.startsWith("/profile");
+const isReferralRoute = (req: NextRequest) => req.nextUrl.pathname.startsWith("/referral");
+const isPlansRoute = (req: NextRequest) => req.nextUrl.pathname.startsWith("/plans");
+const isPreviewEnvironment = process.env.VERCEL_ENV === "preview";
 
 const requiresPreviewAuth = (req: NextRequest) => {
   // Keep incoming third-party webhooks reachable in preview if needed.
@@ -81,7 +76,7 @@ const PRACTICE_HUB_PATHS = new Set([
 const REFERRAL_CREATE_COOLDOWN_COOKIE = "referralCodeCreateCooldown";
 const REFERRAL_CREATE_COOLDOWN_SECONDS = 60;
 
-export default clerkMiddleware(async (auth, req) => {
+export default async function middleware(req: NextRequest) {
   let setReferralCreateCooldown = false;
   let clearPendingReferralCookie = false;
 
@@ -96,11 +91,18 @@ export default clerkMiddleware(async (auth, req) => {
     }
   }
 
-  const authenticate = await auth();
-
   const { user: supabaseWebUser, cookieWrites: supabaseCookieWrites } =
     await refreshSupabaseSessionFromRequest(req);
-  const hasWebAuth = Boolean(authenticate.userId || supabaseWebUser);
+  const webStableId = supabaseWebUser
+    ? readLegacyImportedExternalUserId(supabaseWebUser) ?? supabaseWebUser.id
+    : null;
+  const hasWebAuth = Boolean(supabaseWebUser);
+  const sessionClaims = supabaseWebUser
+    ? {
+        metadata: mobileUserBridgeFromSupabaseUser(supabaseWebUser)
+          .publicMetadata as Record<string, unknown>,
+      }
+    : null;
 
   const end = (response: NextResponse) => {
     for (const w of supabaseCookieWrites) {
@@ -120,11 +122,13 @@ export default clerkMiddleware(async (auth, req) => {
     }
   }
 
-  const practiceMetaForSharing = jwtPracticeMetadata(authenticate.sessionClaims);
+  const practiceMetaForSharing = supabaseWebUser
+    ? readPracticePlanFromSupabaseUser(supabaseWebUser)
+    : undefined;
   if (
     shouldEnforceAccountSharingSignals(
       req,
-      authenticate.userId,
+      webStableId,
       practiceMetaForSharing,
     )
   ) {
@@ -281,11 +285,7 @@ export default clerkMiddleware(async (auth, req) => {
     }
     let plan: string | undefined;
     let purchaseDate: string | undefined;
-    if (authenticate.userId) {
-      const meta = jwtPracticeMetadata(authenticate.sessionClaims);
-      plan = meta?.plan;
-      purchaseDate = meta?.purchaseDate;
-    } else if (supabaseWebUser) {
+    if (supabaseWebUser) {
       const sp = readPracticePlanFromSupabaseUser(supabaseWebUser);
       plan = sp.plan;
       purchaseDate = sp.purchaseDate;
@@ -307,11 +307,7 @@ export default clerkMiddleware(async (auth, req) => {
     // For authenticated users, check plan
     let plan: string | undefined;
     let purchaseDate: string | undefined;
-    if (authenticate.userId) {
-      const meta = jwtPracticeMetadata(authenticate.sessionClaims);
-      plan = meta?.plan;
-      purchaseDate = meta?.purchaseDate;
-    } else if (supabaseWebUser) {
+    if (supabaseWebUser) {
       const sp = readPracticePlanFromSupabaseUser(supabaseWebUser);
       plan = sp.plan;
       purchaseDate = sp.purchaseDate;
@@ -322,10 +318,10 @@ export default clerkMiddleware(async (auth, req) => {
     }
   }
 
-  if (authenticate.userId && !authenticate.sessionClaims?.metadata.roles) {
-    const client = await clerkClient();
-    const existingPlan = (authenticate.sessionClaims?.metadata as any)?.plan;
-    await client.users.updateUserMetadata(authenticate.userId, {
+  if (webStableId && !sessionClaims?.metadata.roles) {
+    const client = await appUserAdmin();
+    const existingPlan = (sessionClaims?.metadata as any)?.plan;
+    await client.users.updateUserMetadata(webStableId, {
       publicMetadata: {
         roles: ["user"],
         plan: existingPlan || "free",
@@ -334,12 +330,14 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   // Create referral code when user becomes premium
-  const practiceMeta = jwtPracticeMetadata(authenticate.sessionClaims);
+  const practiceMeta = supabaseWebUser
+    ? readPracticePlanFromSupabaseUser(supabaseWebUser)
+    : undefined;
   if (
-    authenticate.userId &&
+    webStableId &&
     hasPaidPracticeAccess(practiceMeta?.plan, practiceMeta?.purchaseDate)
   ) {
-    const hasReferralCode = (authenticate.sessionClaims?.metadata as any)
+    const hasReferralCode = (sessionClaims?.metadata as any)
       ?.referralCode;
     const onEligiblePage =
       req.method === "GET" &&
@@ -354,7 +352,7 @@ export default clerkMiddleware(async (auth, req) => {
       logger.info("User is premium but has no referral code, creating one", {
         component: "middleware",
         action: "create_referral_code",
-        userId: authenticate.userId,
+        userId: webStableId,
       });
       setReferralCreateCooldown = true;
 
@@ -380,7 +378,7 @@ export default clerkMiddleware(async (auth, req) => {
           logger.info("Referral code created successfully", {
             component: "middleware",
             action: "referral_code_created",
-            userId: authenticate.userId,
+            userId: webStableId,
             metadata: { code: data.code },
           });
         } else {
@@ -391,7 +389,7 @@ export default clerkMiddleware(async (auth, req) => {
           logger.error("Failed to create referral code", {
             component: "middleware",
             action: "referral_code_creation_failed",
-            userId: authenticate.userId,
+            userId: webStableId,
             metadata: {
               status: response.status,
               retryAfter: body.retryAfter,
@@ -403,18 +401,18 @@ export default clerkMiddleware(async (auth, req) => {
         captureException(error, {
           component: "middleware",
           action: "referral_code_creation_error",
-          userId: authenticate.userId,
+          userId: webStableId,
         });
       }
     }
   }
 
   // Update onboarding status when user visits practice-overview
-  if (authenticate.userId && req.nextUrl.pathname === "/practice-overview") {
-    const hasCompletedOnboarding = (authenticate.sessionClaims?.metadata as any)
+  if (webStableId && req.nextUrl.pathname === "/practice-overview") {
+    const hasCompletedOnboarding = (sessionClaims?.metadata as any)
       ?.onboardingCompleted;
     if (!hasCompletedOnboarding) {
-      const client = await clerkClient();
+      const client = await appUserAdmin();
 
       const referralCode = req.cookies.get("pendingReferralCode")?.value;
 
@@ -453,7 +451,7 @@ export default clerkMiddleware(async (auth, req) => {
           captureException(error, {
             component: "middleware",
             action: "classify_pending_code_error",
-            userId: authenticate.userId,
+            userId: webStableId,
           });
         }
 
@@ -463,19 +461,19 @@ export default clerkMiddleware(async (auth, req) => {
           logger.info("Partner attribution applied from pending cookie", {
             component: "middleware",
             action: "partner_attribution_from_cookie",
-            userId: authenticate.userId,
+            userId: webStableId,
             metadata: { referralCode },
           });
         } else if (pendingKind === "user_referral") {
           logger.info("Referral code found in cookies", {
             component: "middleware",
             action: "referral_code_found",
-            userId: authenticate.userId,
+            userId: webStableId,
             metadata: { referralCode },
           });
-          await client.users.updateUserMetadata(authenticate.userId, {
+          await client.users.updateUserMetadata(webStableId, {
             publicMetadata: {
-              ...authenticate.sessionClaims?.metadata,
+              ...sessionClaims?.metadata,
               onboardingCompleted: true,
               referralCode: referralCode,
               referralActive: true,
@@ -485,7 +483,7 @@ export default clerkMiddleware(async (auth, req) => {
           logger.info("Processing referral discount", {
             component: "middleware",
             action: "process_referral_discount",
-            userId: authenticate.userId,
+            userId: webStableId,
             metadata: { referralCode },
           });
 
@@ -499,8 +497,8 @@ export default clerkMiddleware(async (auth, req) => {
                 },
                 body: JSON.stringify({
                   referralCode,
-                  userId: authenticate.userId,
-                  userEmail: (authenticate.sessionClaims as any)
+                  userId: webStableId,
+                  userEmail: (sessionClaims as any)
                     ?.email_addresses?.[0]?.email_address,
                 }),
               },
@@ -510,7 +508,7 @@ export default clerkMiddleware(async (auth, req) => {
               logger.info("Referral discount applied successfully", {
                 component: "middleware",
                 action: "referral_discount_applied",
-                userId: authenticate.userId,
+                userId: webStableId,
                 metadata: { referralCode },
               });
             } else {
@@ -518,7 +516,7 @@ export default clerkMiddleware(async (auth, req) => {
               logger.error("Failed to apply referral discount", {
                 component: "middleware",
                 action: "referral_discount_failed",
-                userId: authenticate.userId,
+                userId: webStableId,
                 metadata: { referralCode, error: errorData },
               });
             }
@@ -526,7 +524,7 @@ export default clerkMiddleware(async (auth, req) => {
             captureException(error, {
               component: "middleware",
               action: "referral_discount_error",
-              userId: authenticate.userId,
+              userId: webStableId,
               metadata: { referralCode },
             });
           }
@@ -557,7 +555,7 @@ export default clerkMiddleware(async (auth, req) => {
               logger.error("Failed to track signup", {
                 component: "middleware",
                 action: "track_signup_failed",
-                userId: authenticate.userId,
+                userId: webStableId,
                 metadata: {
                   status: response.status,
                   statusText: response.statusText,
@@ -573,7 +571,7 @@ export default clerkMiddleware(async (auth, req) => {
               logger.info("Successfully tracked signup for referral code", {
                 component: "middleware",
                 action: "signup_tracked",
-                userId: authenticate.userId,
+                userId: webStableId,
                 metadata: { referralCode, data },
               });
             }
@@ -581,22 +579,22 @@ export default clerkMiddleware(async (auth, req) => {
             captureException(error, {
               component: "middleware",
               action: "track_signup_error",
-              userId: authenticate.userId,
+              userId: webStableId,
               metadata: { referralCode },
             });
           }
         } else {
-          await client.users.updateUserMetadata(authenticate.userId, {
+          await client.users.updateUserMetadata(webStableId, {
             publicMetadata: {
-              ...authenticate.sessionClaims?.metadata,
+              ...sessionClaims?.metadata,
               onboardingCompleted: true,
             },
           });
         }
       } else {
-        await client.users.updateUserMetadata(authenticate.userId, {
+        await client.users.updateUserMetadata(webStableId, {
           publicMetadata: {
-            ...authenticate.sessionClaims?.metadata,
+            ...sessionClaims?.metadata,
             onboardingCompleted: true,
           },
         });
@@ -604,11 +602,7 @@ export default clerkMiddleware(async (auth, req) => {
     }
   }
 
-  if (
-    isAdminRoute(req) &&
-    (!authenticate.sessionClaims?.metadata.roles ||
-      !authenticate.sessionClaims?.metadata?.roles?.includes("admin"))
-  ) {
+  if (isAdminRoute(req) && !metadataRolesIncludeAdmin(sessionClaims?.metadata)) {
     const url = new URL("/", req.url);
     return end( NextResponse.redirect(url));
   }
@@ -628,8 +622,9 @@ export default clerkMiddleware(async (auth, req) => {
 
   const requestedPath = `${req.method}:${req.nextUrl.pathname}`;
   if (protectedPaths.includes(requestedPath)) {
-    if (!authenticate.userId && !supabaseWebUser) {
-      await auth.protect();
+    if (!supabaseWebUser) {
+      const signIn = new URL("/sign-in", req.url);
+      return end(NextResponse.redirect(signIn));
     }
   }
 
@@ -649,13 +644,13 @@ export default clerkMiddleware(async (auth, req) => {
     });
   }
   return response;
-});
+}
 
 export const config = {
   matcher: [
     // Skip Next.js internals and non-image static assets. Do not skip raster/SVG image
     // extensions: a missing public file (e.g. /volume.png) would render through the App
-    // Router and RootLayout's auth() requires clerkMiddleware() to have run.
+    // Router and still hit this middleware.
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|ttf|woff2?|csv|docx?|xlsx?|zip|webmanifest|manifest)).*)",
     "/api/users/webhook",
     // Always run for API routes

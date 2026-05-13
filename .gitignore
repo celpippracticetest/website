@@ -17,6 +17,9 @@ secrets/ga-mcp-credentials.json
 # GTM OAuth desktop client JSON for gtm-mcp (never commit)
 secrets/gtm-client-auth.json
 
+# Windows: optional repo-root junction `templates` -> `supabase/templates` for Supabase CLI (auth email content_path)
+/templates
+
 # dependencies
 /node_modules
 /.pnp

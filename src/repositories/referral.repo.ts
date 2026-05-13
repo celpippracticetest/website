@@ -6,7 +6,7 @@ export class ReferralRepository {
 
   constructor(client: any) {
     this.client = client;
-    this.dbName = process.env.MONGODB_DB || process.env.MONGODB_DATABASE;
+    this.dbName = process.env.APP_DOCUMENTS_DB?.trim();
     this.db = this.dbName ? this.client.db(this.dbName) : this.client.db();
     this.col = this.db.collection("referralCodes");
   }

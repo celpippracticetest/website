@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth, appUserAdmin, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
 
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { WithdrawalRequestRepository } from "@/repositories/withdrawal-request.repo";
 import { getResendClient, sendResendHtmlEmail } from "@/lib/email/resend-client";
 
@@ -10,11 +10,10 @@ export const dynamic = "force-dynamic";
 
 async function isAdmin(userId: string): Promise<boolean> {
   try {
-    const clerk = await clerkClient();
-    const user = await clerk.users.getUser(userId);
-    const metadata = user.publicMetadata as any;
-
-    return metadata?.roles?.includes("admin");
+    const authAdmin = await appUserAdmin();
+    const user = await authAdmin.users.getUser(userId);
+    const metadata = (user.publicMetadata ?? {}) as Record<string, unknown>;
+    return sessionClaimsHasAdminRole({ metadata });
   } catch {
     return false;
   }
@@ -42,8 +41,8 @@ export async function GET(req: Request) {
       statusFilter = "all";
     }
 
-    // The rest of the logic (query building, fetching from Mongo, etc.) remains unchanged.
-    const withdrawalRepo = new WithdrawalRequestRepository(mongoClient);
+    // The rest of the logic (query building, fetching from the document store, etc.) remains unchanged.
+    const withdrawalRepo = new WithdrawalRequestRepository(documentsClient);
     await withdrawalRepo.ensureIndexes();
 
     // For demonstration, assuming you have a method that takes statusFilter.
@@ -98,7 +97,7 @@ export async function PATCH(req: Request) {
       );
     }
 
-    const withdrawalRepo = new WithdrawalRequestRepository(mongoClient);
+    const withdrawalRepo = new WithdrawalRequestRepository(documentsClient);
     await withdrawalRepo.ensureIndexes();
 
     const updatedRequest = await withdrawalRepo.updateWithdrawalStatus(

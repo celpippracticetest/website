@@ -2,7 +2,7 @@ import SpeakingPractice from "@/components/dashboard-app/speaking-practice/Speak
 import ShowTasks from "@/components/dashboard-new/ShowTasks";
 import ShowTaskHeader from "@/components/dashboard-new/ShowTasks/Header";
 import SvgSpeakingPart from "@/components/icons/SpeakingPart";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { PracticeRepository } from "@/repositories/practice.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
@@ -69,7 +69,7 @@ const SpeakingPage = async ({
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) => {
   const { selectedPracticeId, taskId } = await searchParams;
-  const taskRepo = new TaskRepository(mongoClient);
+  const taskRepo = new TaskRepository(documentsClient);
   const tasks = await taskRepo.getAllTask({ type: "practice" }, 0, 100);
 
   const speakingTasks: PracticeSection[] = [
@@ -154,7 +154,7 @@ const SpeakingPage = async ({
     redirect("/practice-overview", RedirectType.replace);
   }
 
-  const practiceRepo = new PracticeRepository(mongoClient);
+  const practiceRepo = new PracticeRepository(documentsClient);
   const practices = await practiceRepo.getAllPractice(
     {
       type: "SPEAKING",
@@ -189,7 +189,7 @@ const SpeakingPage = async ({
     }
   }
   if (user) {
-    const writingAnswerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
+    const writingAnswerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
     completedPracticeId =
       await writingAnswerRepo.findAnswersByPracticeIdsAndUser(
         practices.items.map((p) => p.id),

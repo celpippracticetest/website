@@ -1,6 +1,6 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { LeadCaptureLeadRepository } from "@/repositories/lead-capture-lead.repo";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -13,7 +13,7 @@ async function ensureAdmin() {
   }
 
   const authenticate = await auth();
-  const isAdmin = authenticate.sessionClaims?.metadata?.roles?.includes("admin");
+  const isAdmin = sessionClaimsHasAdminRole(authenticate.sessionClaims);
   if (!isAdmin) {
     return { ok: false as const, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(request.nextUrl.searchParams.get("page") ?? "0", 10);
     const limit = parseInt(request.nextUrl.searchParams.get("limit") ?? "20", 10);
 
-    const repo = new LeadCaptureLeadRepository(mongoClient);
+    const repo = new LeadCaptureLeadRepository(documentsClient);
     await repo.ensureIndexes();
     const result = await repo.getLeads({ search, leadCaptureId }, page, limit);
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import client from "@/lib/mongodb";
+import { auth, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
+import client from "@/lib/appDocumentsClient";
 
 const KEEP_EVENTS = [
   "keep_subscription_clicked",
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   try {
     const { sessionClaims } = await auth();
     const isAdmin =
-      sessionClaims?.metadata?.roles?.includes("admin");
+      sessionClaimsHasAdminRole(sessionClaims);
     
     if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -63,9 +63,10 @@ export async function GET(request: NextRequest) {
     let matchedEvents: any[] = [];
     if (surveys.length > 0) {
       const surveyDates = surveys
-        .map((survey) =>
-          survey.createdAt instanceof Date ? survey.createdAt : new Date(survey.createdAt)
-        )
+        .map((survey) => {
+          const raw = survey.createdAt;
+          return raw instanceof Date ? raw : new Date(String(raw));
+        })
         .filter((date) => Number.isFinite(date.getTime()))
         .sort((a, b) => a.getTime() - b.getTime());
 
@@ -121,8 +122,9 @@ export async function GET(request: NextRequest) {
     }
 
     const surveysWithOutcome = surveys.map((survey) => {
+      const surveyDateRaw = survey.createdAt;
       const surveyDate =
-        survey.createdAt instanceof Date ? survey.createdAt : new Date(survey.createdAt);
+        surveyDateRaw instanceof Date ? surveyDateRaw : new Date(String(surveyDateRaw));
       const surveyTimestamp = surveyDate.getTime();
       const maxEventWindow = surveyTimestamp + 1000 * 60 * 60 * 24 * 2;
 

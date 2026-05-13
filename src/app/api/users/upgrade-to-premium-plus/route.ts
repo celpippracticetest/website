@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth, appUserAdmin } from "@/lib/auth/server-auth";
 import {
-  emailsFromClerkUser,
+  emailsFromAuthUser,
   resolveStripeCustomerId,
 } from "@/lib/resolveStripeCustomerId";
 import { stripe } from "@/lib/stripe";
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 import type { Plan } from "@/models/plans.model";
 import {
   getAccessTierKey,
@@ -27,8 +27,8 @@ export async function POST() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const clerk = await clerkClient();
-    const user = await clerk.users.getUser(userId);
+    const authAdmin = await appUserAdmin();
+    const user = await authAdmin.users.getUser(userId);
     const meta = user.publicMetadata || {};
     const plan = meta.plan as string | undefined;
     const purchaseDate = meta.purchaseDate as string | undefined;
@@ -48,10 +48,10 @@ export async function POST() {
     }
 
     const customerId = await resolveStripeCustomerId(userId, {
-      clerkStripeCustomerId: user.privateMetadata?.stripeCustomerId as
+      stripeCustomerIdFromPrivate: user.privateMetadata?.stripeCustomerId as
         | string
         | undefined,
-      emails: emailsFromClerkUser(user),
+      emails: emailsFromAuthUser(user),
     });
     if (!customerId) {
       return NextResponse.json(
@@ -96,10 +96,10 @@ export async function POST() {
         : item.price;
 
     const db = await getDb();
-    const plans = await db
-      .collection<Plan>("plans")
+    const plans = (await db
+      .collection("plans")
       .find({ isActive: true })
-      .toArray();
+      .toArray()) as unknown as Plan[];
 
     const currentDoc = plans.find((p) => p.stripePriceId === currentPriceId);
     let durationKey = currentDoc
@@ -158,7 +158,7 @@ export async function POST() {
           getDurationGroupKey(s) === durationKey
         );
       })
-      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      .sort((a, b) => Number(a.order ?? 0) - Number(b.order ?? 0));
 
     const target = plusCandidates[0];
     if (!target?.stripePriceId) {
@@ -182,11 +182,11 @@ export async function POST() {
       proration_behavior: "always_invoice",
     });
 
-    // Stripe webhooks can lag; exams UI calls `user.reload()` and needs Clerk updated now.
+    // Stripe webhooks can lag; exams UI calls `user.reload()` and needs auth metadata updated now.
     // Same mapping as `customer.subscription.updated` in the Stripe webhook (`premiumPlus` → `pro`).
     await syncUserPlanPublicMetadata(userId, {
       plan: "pro",
-      planType: target.title,
+      planType: String(target.title ?? ""),
       planCancelled: false,
       planExpiresAt: null,
     });

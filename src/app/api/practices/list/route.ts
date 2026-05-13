@@ -1,5 +1,5 @@
 import { PracticeRepository } from "@/repositories/practice.repo";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { TExamType } from "@/models/enums";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   const page: string = req.nextUrl.searchParams.get("page") ?? "0";
   const limit: string = req.nextUrl.searchParams.get("limit") ?? "10";
 
-  const practiceRepo = new PracticeRepository(mongoClient);
+  const practiceRepo = new PracticeRepository(documentsClient);
   const practices = await practiceRepo.getAllPractice(
     { type: type?.toString().toUpperCase() as TExamType },
     parseInt(page),

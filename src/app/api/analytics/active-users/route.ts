@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
+import clientPromise from "@/lib/appDocumentsClient";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

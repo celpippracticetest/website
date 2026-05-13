@@ -1,5 +1,5 @@
 import WritingPractice from "@/components/dashboard-app/writing-practice/WritingPractice";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { PracticeRepository } from "@/repositories/practice.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
@@ -24,8 +24,8 @@ type PageProps = {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { practiceId, taskId } = await params;
-  const taskRepo = new TaskRepository(mongoClient);
-  const practiceRepo = new PracticeRepository(mongoClient);
+  const taskRepo = new TaskRepository(documentsClient);
+  const practiceRepo = new PracticeRepository(documentsClient);
   const task = await taskRepo.findTaskById(taskId);
   const practice = await practiceRepo.findPractice(practiceId);
   if (!task || !practice) {
@@ -56,13 +56,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function WritingPracticeSubPage({ params }: PageProps) {
   const { practiceId, taskId } = await params;
-  const taskRepo = new TaskRepository(mongoClient);
+  const taskRepo = new TaskRepository(documentsClient);
   const task: TTaskSchemaDto | null = await taskRepo.findTaskById(taskId);
   if (!task) {
     redirect("/practice-overview", RedirectType.replace);
   }
 
-  const practiceRepo = new PracticeRepository(mongoClient);
+  const practiceRepo = new PracticeRepository(documentsClient);
   const practices = await practiceRepo.getAllPractice(
     {
       type: "WRITING",
@@ -98,7 +98,7 @@ export default async function WritingPracticeSubPage({ params }: PageProps) {
 
   let completedPracticeId: string[] = [];
   if (user) {
-    const writingAnswerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
+    const writingAnswerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
     completedPracticeId = await writingAnswerRepo.findAnswersByPracticeIdsAndUser(
       practices.items.map((p) => p.id),
       user.id

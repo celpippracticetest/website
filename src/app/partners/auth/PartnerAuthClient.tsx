@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { CustomSignInForm } from "@/components/auth/CustomSignInForm";
-import { CustomSignUpForm } from "@/components/auth/CustomSignUpForm";
+import { SupabaseAuthForm } from "@/components/auth/SupabaseAuthForm";
 
 type Mode = "sign-in" | "sign-up";
 
@@ -54,11 +53,11 @@ export default function PartnerAuthClient() {
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          {mode === "sign-in" ? (
-            <CustomSignInForm redirectAfterAuth="/partners/dashboard" />
-          ) : (
-            <CustomSignUpForm redirectAfterSignUp="/partners/dashboard" />
-          )}
+          <SupabaseAuthForm
+            key={mode}
+            initialMode={mode}
+            redirectAfterAuth="/partners/dashboard"
+          />
         </div>
       </div>
     </div>

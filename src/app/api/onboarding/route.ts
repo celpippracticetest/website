@@ -1,10 +1,11 @@
 import * as XLSX from "xlsx";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { OnboardingRepository } from "@/repositories/onboarding.repo";
 import { NextResponse } from "next/server";
-import { clerkClient, currentUser } from "@clerk/nextjs/server";
-import { getDb } from "@/lib/mongodb";
-import { getStripeSubscriptionDurationForClerkUser } from "@/lib/stripeSubscriptionSummary";
+import { appUserAdmin, currentUser } from "@/lib/auth/server-auth";
+import { getDb } from "@/lib/appDocumentsClient";
+import { getStripeSubscriptionDurationForAuthUser } from "@/lib/stripeSubscriptionSummary";
+import { matchUsersCollectionByWebUserIds } from "@/lib/users/userDocumentIdentity";
 
 export const runtime = "nodejs";
 export const maxDuration = 60; // Stripe enrichment per row needs headroom
@@ -18,10 +19,11 @@ export async function POST(req: Request) {
 
   const data = await req.json();
 
+  const privMeta = user.privateMetadata as Record<string, unknown> | undefined;
   const existingOnboarding =
-    (user.privateMetadata?.onboarding as Record<string, any>) || {};
+    (privMeta?.onboarding as Record<string, any>) || {};
   const existingOnboardingNew =
-    (user.privateMetadata?.onboardingNew as Record<string, any>) || {};
+    (privMeta?.onboardingNew as Record<string, any>) || {};
   const onboardingMeta: Record<string, any> = { ...existingOnboarding };
   const onboardingNewMeta: Record<string, any> = { ...existingOnboardingNew };
   const isNewOnboardingPayload = Boolean(
@@ -101,7 +103,7 @@ export async function POST(req: Request) {
       const previousAttempts = Number(data?.answers?.previousAttempts || 0);
 
       await db.collection("users").updateOne(
-        { clerkUserId: user.id },
+        matchUsersCollectionByWebUserIds(user.id),
         {
           $set: {
             intent: {
@@ -135,7 +137,7 @@ export async function POST(req: Request) {
         { upsert: true }
       );
     } else {
-      const onboardingRepo = new OnboardingRepository(mongoClient);
+      const onboardingRepo = new OnboardingRepository(documentsClient);
       await onboardingRepo.createOrUpdateOnboardingResult({
         userId: user.id,
         answers: data.answers,
@@ -146,7 +148,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   }
 
-  const clerk = await clerkClient();
+  const authAdmin = await appUserAdmin();
   const publicMetadata: Record<string, unknown> = {
     ...(user.publicMetadata as Record<string, unknown>),
   };
@@ -154,7 +156,7 @@ export async function POST(req: Request) {
     publicMetadata.onboardingSurveyCompleted = true;
   }
 
-  await clerk.users.updateUser(user.id, {
+  await authAdmin.users.updateUser(user.id, {
     privateMetadata: {
       ...user.privateMetadata,
       onboarding: onboardingMeta,
@@ -269,21 +271,21 @@ export async function GET(request: Request) {
             : 0,
       };
 
-      const clerkForView = await clerkClient();
+      const authAdminForView = await appUserAdmin();
       const processedResults = await Promise.all(
         results.map(async (result) => {
           let name = "";
           let subscriptionDuration = "—";
           try {
-            const user = await clerkForView.users.getUser(result.userId);
+            const user = await authAdminForView.users.getUser(String(result.userId));
             name = (user.firstName || "") + " " + (user.lastName || "");
             subscriptionDuration =
-              await getStripeSubscriptionDurationForClerkUser(
-                result.userId,
+              await getStripeSubscriptionDurationForAuthUser(
+                String(result.userId),
                 user
               );
           } catch (e) {
-            console.warn("⚠️ Clerk user not found for:", result.userId);
+            console.warn("⚠️ Auth user not found for:", result.userId);
           }
 
           return {
@@ -308,7 +310,7 @@ export async function GET(request: Request) {
     }
 
     console.log(`⏳ Fetching onboarding results... Page: ${page}, Limit: ${limit}`);
-    const onboardingRepo = new OnboardingRepository(mongoClient);
+    const onboardingRepo = new OnboardingRepository(documentsClient);
     
     // Get paginated data
     const results = await onboardingRepo.getOnboardingResultsPaginated(page, limit);
@@ -333,15 +335,15 @@ export async function GET(request: Request) {
 
     
     // Process results to include user names
-    const clerkForLegacy = await clerkClient();
+    const authAdminLegacy = await appUserAdmin();
     const processedResults = await Promise.all(
       results.map(async (result) => {
         let name = "";
         try {
-          const user = await clerkForLegacy.users.getUser(result.userId);
+          const user = await authAdminLegacy.users.getUser(String(result.userId));
           name = (user.firstName || "") + " " + (user.lastName || "");
         } catch (e) {
-          console.warn("⚠️ Clerk user not found for:", result.userId);
+          console.warn("⚠️ Auth user not found for:", result.userId);
         }
         
         return {

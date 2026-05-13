@@ -3,7 +3,7 @@ import "server-only";
 import type Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import {
-  emailsFromClerkUser,
+  emailsFromAuthUser,
   resolveStripeCustomerId,
 } from "@/lib/resolveStripeCustomerId";
 
@@ -84,7 +84,7 @@ export async function getStripeSubscriptionDurationLabel(
   return "No subscription";
 }
 
-export async function getStripeSubscriptionDurationForClerkUser(
+export async function getStripeSubscriptionDurationForAuthUser(
   userId: string,
   user: {
     privateMetadata?: Record<string, unknown> | null;
@@ -93,10 +93,10 @@ export async function getStripeSubscriptionDurationForClerkUser(
 ): Promise<string> {
   try {
     const customerId = await resolveStripeCustomerId(userId, {
-      clerkStripeCustomerId: user.privateMetadata?.stripeCustomerId as
+      stripeCustomerIdFromPrivate: user.privateMetadata?.stripeCustomerId as
         | string
         | undefined,
-      emails: emailsFromClerkUser(user),
+      emails: emailsFromAuthUser(user),
     });
     if (!customerId) return "—";
     return await getStripeSubscriptionDurationLabel(customerId);

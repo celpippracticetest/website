@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import "chart.js/auto";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import {
   countActiveChallenges,
   loadChallengeAcceptances,
@@ -22,6 +22,19 @@ type PendingRefundRequest = {
   email: string;
   createdAt: Date | string;
 };
+
+function coerceRefundCreatedAt(value: unknown): Date | string {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value;
+  }
+  if (typeof value === "string") {
+    return value;
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return new Date(value);
+  }
+  return "";
+}
 
 export default async function CMSDashboard({
   searchParams,
@@ -69,7 +82,7 @@ export default async function CMSDashboard({
 
   if (tab === "overview") {
     try {
-      const pendingFromDefaultDb = await mongoClient
+      const pendingFromDefaultDb = await documentsClient
         .db()
         .collection("refundRequests")
         .find({ status: "pending" })
@@ -87,7 +100,7 @@ export default async function CMSDashboard({
       const pendingFromProdDb =
         pendingFromDefaultDb.length > 0
           ? []
-          : await mongoClient
+          : await documentsClient
               .db("prod")
               .collection("refundRequests")
               .find({ status: "pending" })
@@ -108,7 +121,9 @@ export default async function CMSDashboard({
         trackingCode: String(item.trackingCode || ""),
         fullName: String(item.fullName || ""),
         email: String(item.email || ""),
-        createdAt: item.createdAt || "",
+        createdAt: coerceRefundCreatedAt(
+          (item as { createdAt?: unknown }).createdAt
+        ),
       }));
     } catch (error) {
       console.error("Failed to load pending refund requests for overview:", error);
@@ -116,7 +131,7 @@ export default async function CMSDashboard({
     }
 
     try {
-      const loadFrom = async (db: ReturnType<typeof mongoClient.db>) => {
+      const loadFrom = async (db: ReturnType<typeof documentsClient.db>) => {
         const [pack, activeCount] = await Promise.all([
           loadChallengeAcceptances(db, challengePage, challengeLimit),
           countActiveChallenges(db),
@@ -124,9 +139,9 @@ export default async function CMSDashboard({
         return { ...pack, activeCount };
       };
 
-      let pack = await loadFrom(mongoClient.db());
+      let pack = await loadFrom(documentsClient.db());
       if (pack.total === 0) {
-        pack = await loadFrom(mongoClient.db("prod"));
+        pack = await loadFrom(documentsClient.db("prod"));
       }
       challengeReport = pack;
     } catch (error) {
@@ -211,7 +226,7 @@ export default async function CMSDashboard({
               Users who enrolled from the final-offer challenge flow (<code className="text-[13px]">
                 challenge_offer_source: final_offer
               </code>
-              ). Data lives on MongoDB <code className="text-[13px]">users.challenge</code>.
+              ). Data lives in <code className="text-[13px]">users.challenge</code>.
             </p>
 
             <Box className="mt-[12px] flex flex-wrap gap-[16px] text-[14px]">
@@ -238,7 +253,7 @@ export default async function CMSDashboard({
                     <thead className="border-b bg-[#F9FAFB]">
                       <tr>
                         <th className="px-[12px] py-[10px] text-left text-[12px] font-semibold uppercase text-[#6B7280]">
-                          Clerk user
+                          User ID
                         </th>
                         <th className="px-[12px] py-[10px] text-left text-[12px] font-semibold uppercase text-[#6B7280]">
                           Email

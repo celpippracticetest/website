@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { clerkClient } from "@clerk/nextjs/server";
+import { appUserAdmin } from "@/lib/auth/server-auth";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 import {
-  getTelegramLinkByClerkId,
+  getTelegramLinkByUserId,
   getTelegramBotUsername,
   telegramPlanDisplayName,
 } from "@/lib/telegramLinkDb";
@@ -18,12 +18,12 @@ export async function GET(request: NextRequest) {
 
     const botUsername = getTelegramBotUsername();
 
-    const link = await getTelegramLinkByClerkId(userId);
+    const link = await getTelegramLinkByUserId(userId);
     if (!link) {
       return NextResponse.json({ linked: false as const, botUsername });
     }
 
-    const client = await clerkClient();
+    const client = await appUserAdmin();
     const user = await client.users.getUser(userId);
     const meta = (user.publicMetadata ?? {}) as Record<string, unknown>;
     const plan = String(meta.plan ?? "free");

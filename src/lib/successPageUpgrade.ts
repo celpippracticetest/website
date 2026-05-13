@@ -1,4 +1,4 @@
-import type { CompatDb as Db } from "@/lib/pg/types";
+import type { AppDocumentsDb as Db } from "@/lib/pg/types";
 import type { Plan } from "@/models/plans.model";
 import { getPlanRecurringConfig } from "@/lib/planBilling";
 import {
@@ -40,8 +40,8 @@ export type ResolvedSuccessUpgrade = SuccessUpgradeOfferForClient & {
   firstPeriodCents: number;
   discountOffCents: number;
   currency: string;
-  /** Clerk `publicMetadata.plan` — app treats `pro` as Premium Plus (mock exams, etc.). */
-  clerkPlanKey: "pro" | "premium";
+  /** `publicMetadata.plan` — app treats `pro` as Premium Plus (mock exams, etc.). */
+  webPlanKey: "pro" | "premium";
 };
 
 function billingPlanPhrase(template: PlanTemplate): string {
@@ -125,12 +125,12 @@ function sessionBelongsToUser(
 export async function resolveSuccessUpgradeOffer(
   checkoutSessionId: string,
   db: Db,
-  opts: { clerkUserId: string; clerkEmail?: string | null }
+  opts: { webUserId: string; userEmail?: string | null }
 ): Promise<ResolvedSuccessUpgrade | null> {
   const session = await stripe.checkout.sessions.retrieve(checkoutSessionId);
 
   if (session.status !== "complete") return null;
-  if (!sessionBelongsToUser(session, opts.clerkUserId, opts.clerkEmail ?? undefined))
+  if (!sessionBelongsToUser(session, opts.webUserId, opts.userEmail ?? undefined))
     return null;
 
   const { data: lineItems } = await stripe.checkout.sessions.listLineItems(
@@ -226,7 +226,7 @@ export async function resolveSuccessUpgradeOfferFromSourcePrice(
     firstPeriodCents,
     discountOffCents,
     currency,
-    clerkPlanKey:
+    webPlanKey:
       targetTemplate.accessTier === "premiumPlus" ? "pro" : "premium",
   };
 }

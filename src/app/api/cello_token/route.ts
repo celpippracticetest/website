@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
-import { currentUser } from "@clerk/nextjs/server";
+import { currentUser } from "@/lib/auth/server-auth";
 
 export async function GET() {
   try {

@@ -1,15 +1,15 @@
 import "server-only";
 
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
-import { readClerkLegacyUserIdFromSupabaseUser } from "@/lib/auth/supabase-user-plan";
+import { readLegacyImportedExternalUserId } from "@/lib/auth/supabase-user-plan";
 
 /**
- * Minimal Clerk-shaped user for mobile API routes that were built around Clerk.
+ * Minimal bridge user shape for mobile API routes (legacy field compatibility).
  */
 export type MobileUserBridge = {
   /**
-   * Stable id for MongoDB and legacy rows: Clerk user id when this account was migrated
-   * from Clerk (`user_metadata.clerk_user_id`), otherwise the Supabase Auth UUID.
+   * Stable id for user documents and legacy rows: imported external id when present in
+   * `user_metadata`, otherwise the Supabase Auth UUID.
    */
   id: string;
   /** Present only for Supabase-backed sessions: real Auth user id for Admin API calls. */
@@ -41,8 +41,8 @@ export function mobileUserBridgeFromSupabaseUser(
   const app = (user.app_metadata ?? {}) as Record<string, unknown>;
   const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
   const email = user.email?.trim() ?? "";
-  const legacyClerkId = readClerkLegacyUserIdFromSupabaseUser(user);
-  const stableId = legacyClerkId ?? user.id;
+  const legacyImportedId = readLegacyImportedExternalUserId(user);
+  const stableId = legacyImportedId ?? user.id;
 
   const given =
     readString(meta, "given_name") ||
@@ -67,11 +67,17 @@ export function mobileUserBridgeFromSupabaseUser(
     readString(meta, "picture") ||
     readString(meta, "image_url");
 
-  // For Clerk-migrated users, purchasedMockExamIds lives in app_metadata (new migrations)
-  // or nested in user_metadata.clerk_public_metadata (older migrations). Read both paths.
-  const clerkPublicMeta = (meta.clerk_public_metadata ?? {}) as Record<string, unknown>;
+  // For imported accounts, purchasedMockExamIds lives in app_metadata (new migrations)
+  // or nested in user_metadata legacy public metadata (older migrations). Read both paths.
+  const legacyPublicMeta = (meta.clerk_public_metadata ?? {}) as Record<string, unknown>;
   const purchasedMockExamIds =
-    app.purchasedMockExamIds ?? clerkPublicMeta.purchasedMockExamIds ?? meta.purchasedMockExamIds;
+    app.purchasedMockExamIds ?? legacyPublicMeta.purchasedMockExamIds ?? meta.purchasedMockExamIds;
+
+  const roleList = Array.isArray(app.roles)
+    ? app.roles
+    : Array.isArray(meta.roles)
+      ? meta.roles
+      : undefined;
 
   const publicMetadata: Record<string, unknown> = {
     ...meta,
@@ -84,6 +90,9 @@ export function mobileUserBridgeFromSupabaseUser(
     ...(purchasedMockExamIds !== undefined ? { purchasedMockExamIds } : {}),
     purchaseDate: app.purchaseDate ?? meta.purchaseDate,
   };
+  if (roleList !== undefined) {
+    publicMetadata.roles = roleList;
+  }
 
   return {
     id: stableId,

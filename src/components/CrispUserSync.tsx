@@ -9,7 +9,7 @@ import {
 } from "@/lib/crisp";
 
 type CrispContextResponse = {
-  clerkUserId: string;
+  webUserId: string;
   email: string | null;
   fullName: string | null;
   username: string | null;
@@ -56,7 +56,7 @@ export default function CrispUserSync() {
         const data = (await res.json()) as CrispContextResponse;
 
         const fingerprint = [
-          data.clerkUserId,
+          data.webUserId,
           data.plan,
           data.llmTokensPromptTotal,
           data.llmTokensCompletionTotal,
@@ -68,7 +68,7 @@ export default function CrispUserSync() {
         lastFingerprint.current = fingerprint;
 
         const pairs: CrispSessionPair[] = [
-          ["clerk_user_id", data.clerkUserId],
+          ["app_user_id", data.webUserId],
           ["plan", data.plan || "unknown"],
         ];
 

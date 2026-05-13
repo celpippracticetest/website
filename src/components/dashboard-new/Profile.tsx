@@ -2,7 +2,6 @@
 import React from "react";
 import SvgCloseEye from "@/components/icons/CloseEye";
 import SvgOpenEye from "@/components/icons/OpenEye";
-import { useReverification } from "@clerk/nextjs";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import SvgDesktop from "@/components/icons/Desktop";
 import SvgPhone from "@/components/icons/Phone";
@@ -11,10 +10,10 @@ import SvgTrashCircle from "@/components/icons/TrashCircle";
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { useDeleteUserSessions } from "@/hooks/useDeleteUserSessions";
+import { useDeleteUserAccount } from "@/hooks/useDeleteUserAccount";
 import { useGetUserSessions } from "@/hooks/useGetUserSessions";
 import { useRouter } from "next/navigation";
-import { useDeleteUserAccount } from "@/hooks/useDeleteUserAccount";
-import { useClerk } from "@clerk/nextjs";
+import { signOutWebSession } from "@/lib/auth/client-sign-out";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { useDeleteUserEmail } from "@/hooks/useDeleteUserEmail";
 import SvgCloseCircle from "@/components/icons/CloseCircle";
@@ -39,6 +38,15 @@ function parseDateLikeToMs(value: unknown): number | null {
   const ms = date.getTime();
   return Number.isFinite(ms) ? ms : null;
 }
+
+/** Shapes used for `user.emailAddresses` while `useHybridWebUser().user` remains loosely typed. */
+type HybridProfileEmailAddress = {
+  id?: string;
+  emailAddress: string;
+  verification?: { status?: string };
+  attemptVerification?: (args: { code: string }) => Promise<unknown>;
+  prepareVerification?: (args: { strategy: string }) => Promise<unknown>;
+};
 
 export default function Profile({ prevCheckout, subscriptionData }: any) {
   const { user, isLoaded: isUserLoaded } = useHybridWebUser();
@@ -97,7 +105,6 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
 
   const router = useRouter();
   const [showToast, setShowToast] = useState(false);
-  const { signOut } = useClerk();
   const [showEditEmail, setShowEditEmail] = useState(false);
   const [newEmail, setNewEmail] = useState("");
   const [step, setStep] = useState<"input" | "verify">("input");
@@ -351,9 +358,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
 
   const handleSignOut = async () => {
     localStorage.removeItem("hasClosedExtraDiscountModal");
-    const supabase = createBrowserSupabaseClient();
-    if (supabase) await supabase.auth.signOut();
-    await signOut({ redirectUrl: "/sign-in" });
+    await signOutWebSession(router, "/sign-in");
   };
 
   const confirmDeleteAccount = (flowId?: string | null) => {
@@ -371,11 +376,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
             localStorage.removeItem("pendingReferralCode");
             document.cookie =
               "pendingReferralCode=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-            void (async () => {
-              const supabase = createBrowserSupabaseClient();
-              if (supabase) await supabase.auth.signOut();
-              await signOut({ redirectUrl: "/sign-in" });
-            })();
+            void signOutWebSession(router, "/sign-in");
           }, 3000);
         },
         onError: () => {
@@ -418,21 +419,28 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
     return createdEmail;
   };
 
-  const addEmailWithReverification = useReverification(addEmailFetcher);
+  const addEmailWithReverification = addEmailFetcher;
 
-  const updatePrimaryWithReverification = useReverification(async () => {
+  const updatePrimaryWithReverification = async () => {
     if (!user) throw new Error("User not found");
     const existingEmail = user.emailAddresses.find(
-      (e) => e.emailAddress === newEmail
+      (e: HybridProfileEmailAddress) => e.emailAddress === newEmail
     );
     if (!existingEmail) throw new Error("Existing email not found");
     return await user.update({ primaryEmailAddressId: existingEmail.id });
-  });
+  };
 
   const handleAddEmail = async () => {
     try {
+      if (!user || typeof (user as { createEmailAddress?: unknown }).createEmailAddress !== "function") {
+        setToastType("error");
+        setToastMessage("Email changes for this account are handled via Support or password recovery.");
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 4000);
+        return;
+      }
       const existingEmail = user?.emailAddresses.find(
-        (e) => e.emailAddress === newEmail
+        (e: HybridProfileEmailAddress) => e.emailAddress === newEmail
       );
       if (existingEmail) {
         if (existingEmail.verification?.status === "verified") {
@@ -474,13 +482,24 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
   const handleVerifyCode = async () => {
     try {
       if (!user) return;
+      if (typeof (user as { reload?: unknown }).reload !== "function") {
+        setToastType("error");
+        setToastMessage("Email verification is not available for this account.");
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 4000);
+        return;
+      }
 
-      const email = user.emailAddresses.find((e) => e.id === newEmailId);
+      const email = user.emailAddresses.find(
+        (e: HybridProfileEmailAddress) => e.id === newEmailId
+      );
       if (!email) throw new Error("Email not found");
 
       await email.attemptVerification({ code: verificationCode });
       await user?.reload();
-      const verified = user.emailAddresses.find((e) => e.id === email.id);
+      const verified = user.emailAddresses.find(
+        (e: HybridProfileEmailAddress) => e.id === email.id
+      );
       if (!verified || verified.verification?.status !== "verified") {
         throw new Error("Email not verified yet");
       }
@@ -663,15 +682,21 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
     if (!user) return;
     setVocabHoverSaving(true);
     try {
-      await user.update({
-        unsafeMetadata: {
-          ...(typeof user.unsafeMetadata === "object" && user.unsafeMetadata !== null
-            ? user.unsafeMetadata
-            : {}),
+      const supabase = createBrowserSupabaseClient();
+      if (!supabase) throw new Error("Auth not configured");
+      const prev =
+        (typeof user.unsafeMetadata === "object" && user.unsafeMetadata !== null
+          ? user.unsafeMetadata
+          : {}) as Record<string, unknown>;
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          ...prev,
+          unsafeMetadata: { ...prev, hoverVocabularyEnabled: checked },
           hoverVocabularyEnabled: checked,
         },
       });
-      await user.reload();
+      if (error) throw error;
+      router.refresh();
     } catch (error) {
       console.error(error);
       setToastType("error");
@@ -943,8 +968,11 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
 
               {user.emailAddresses && user.emailAddresses.length > 0 ? (
                 user.emailAddresses
-                  .filter((e) => e.verification?.status === "verified")
-                  .map((email: any) => (
+                  .filter(
+                    (e: HybridProfileEmailAddress) =>
+                      e.verification?.status === "verified"
+                  )
+                  .map((email: HybridProfileEmailAddress) => (
                     <div
                       key={email.id}
                       className="flex items-center justify-between"
@@ -957,7 +985,9 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
                       {email.id !== user.primaryEmailAddressId && (
                         <button
                           className="cursor-pointer"
-                          onClick={() => setConfirmEmailId(email.id)}
+                          onClick={() =>
+                            setConfirmEmailId(email.id ?? null)
+                          }
                         >
                           <SvgTrashCircle />
                         </button>
@@ -1362,10 +1392,13 @@ function SetPasswordModal({
   const confirmPasswordActive =
     showConfirmPassword === "text" || confirmPassword.length > 0;
 
-  const updatePasswordWithReverification = useReverification(async () => {
+  const updatePasswordWithReverification = async () => {
     if (!user) throw new Error("User not found");
-    await user.updatePassword({ newPassword: password });
-  });
+    const supabase = createBrowserSupabaseClient();
+    if (!supabase) throw new Error("Auth not configured");
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+  };
 
   return (
     <div

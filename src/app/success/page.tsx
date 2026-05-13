@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { stripe } from "../../lib/stripe";
 import DashboardHome from "@/components/dashboard-app/dashboardHome";
-import mongoClient, { getDb } from "@/lib/mongodb";
-import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
+import documentsClient, { getDb } from "@/lib/appDocumentsClient";
+import { auth, appUserAdmin, currentUser } from "@/lib/auth/server-auth";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
 import { Analytics } from "@customerio/cdp-analytics-node";
 import SuccessPageTracking from "@/components/analytics/SuccessPageTracking";
@@ -12,7 +12,7 @@ import {
   type SuccessUpgradeOfferForClient,
 } from "@/lib/successPageUpgrade";
 import { waitForCheckoutRecord } from "@/lib/waitForCheckoutRecord";
-import { findOrCreateClerkUserByEmail } from "@/lib/clerkGuestCheckout";
+import { findOrCreateWebUserByEmail } from "@/lib/guestCheckoutAuth";
 import { getRequestOriginFromHeaders } from "@/lib/requestOrigin";
 
 function inferSkillTypeFromPath(pathLike: unknown): "Speaking" | "Writing" | "Listening" | "Reading" | "General" {
@@ -69,8 +69,8 @@ export default async function Success({ searchParams }: any) {
     try {
       const db = await getDb();
       const resolved = await resolveSuccessUpgradeOffer(session_id, db, {
-        clerkUserId: user.id,
-        clerkEmail: user.primaryEmailAddress?.emailAddress ?? null,
+        webUserId: user.id,
+        userEmail: user.primaryEmailAddress?.emailAddress ?? null,
       });
       if (resolved) upgradeOffer = toClientUpgradeOffer(resolved);
     } catch (err) {
@@ -124,12 +124,12 @@ export default async function Success({ searchParams }: any) {
   const guestCheckout =
     String(checkoutMetadata.guest_checkout ?? "").toLowerCase() === "true";
 
-  // Guest checkout: ensure Clerk user exists (webhook may still be running), then
+  // Guest checkout: ensure web user exists (webhook may still be running), then
   // send payer to sign-up with a locked Stripe email + password (or Google for Gmail).
   if (!user && status === "complete" && guestCheckout && customerEmail?.trim()) {
     const emailNorm = customerEmail.trim().toLowerCase();
     try {
-      await findOrCreateClerkUserByEmail(emailNorm);
+      await findOrCreateWebUserByEmail(emailNorm);
     } catch (e) {
       console.error("[success] guest findOrCreateUser", e);
     }
@@ -139,10 +139,10 @@ export default async function Success({ searchParams }: any) {
     );
   }
 
-  // Logged-out payer with an existing Clerk account (non-guest): magic link before dashboard.
+  // Logged-out payer with an existing account (non-guest): magic link before dashboard.
   if (!user && status === "complete" && !guestCheckout && customerEmail?.trim()) {
     const emailNorm = customerEmail.trim().toLowerCase();
-    const client = await clerkClient();
+    const client = await appUserAdmin();
     const users = await client.users.getUserList({
       emailAddress: [emailNorm],
       limit: 1,
@@ -158,10 +158,10 @@ export default async function Success({ searchParams }: any) {
     }
   }
 
-  const userRepo = new CheckoutRepository(mongoClient);
+  const userRepo = new CheckoutRepository(documentsClient);
   let prevCheckout = await userRepo.findCheckoutBySessionId(session_id);
   if (prevCheckout === null && status === "complete") {
-    prevCheckout = await waitForCheckoutRecord(mongoClient, session_id);
+    prevCheckout = await waitForCheckoutRecord(documentsClient, session_id);
   }
   if (prevCheckout !== null) {
     const transactionId = (session?.invoice as string) || session_id;
@@ -203,7 +203,7 @@ export default async function Success({ searchParams }: any) {
 
   if (status === "complete" && paymentIntentExpanded) {
     const publicMetadata = (await auth()).sessionClaims?.metadata;
-    const client = await clerkClient();
+    const client = await appUserAdmin();
     await client.users.updateUserMetadata(user.id, {
       publicMetadata: {
         ...publicMetadata,

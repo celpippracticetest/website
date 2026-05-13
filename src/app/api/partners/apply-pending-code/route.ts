@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
-import mongoClient from "@/lib/mongodb";
+import { auth, appUserAdmin } from "@/lib/auth/server-auth";
+import documentsClient from "@/lib/appDocumentsClient";
 import { PartnerRepository } from "@/repositories/partner.repo";
 import { PartnerProgramSettingsRepository } from "@/repositories/partner-program-settings.repo";
 import { ReferralRepository } from "@/repositories/referral.repo";
-import { syncPartnerFieldsToMongoUser } from "@/lib/partner/syncPartnerFieldsToMongo";
+import { syncPartnerFieldsToUserDocument } from "@/lib/partner/syncPartnerFieldsToUserDocument";
 import { createPartnerRefereeStripeDiscount } from "@/lib/partner/createPartnerRefereeStripeDiscount";
 
 export const runtime = "nodejs";
@@ -29,13 +29,13 @@ export async function POST(req: Request) {
       );
     }
 
-    const partnerRepo = new PartnerRepository(mongoClient);
+    const partnerRepo = new PartnerRepository(documentsClient);
     await partnerRepo.ensureIndexes();
     const activePartner = await partnerRepo.findActiveByCode(code);
 
     if (activePartner) {
-      const clerk = await clerkClient();
-      const user = await clerk.users.getUser(userId);
+      const authAdmin = await appUserAdmin();
+      const user = await authAdmin.users.getUser(userId);
       const current = (user.publicMetadata || {}) as Record<string, unknown>;
       if (
         typeof current.partnerId === "string" &&
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
           ? current.partnerAttributedAt
           : new Date().toISOString();
 
-      const settingsRepo = new PartnerProgramSettingsRepository(mongoClient);
+      const settingsRepo = new PartnerProgramSettingsRepository(documentsClient);
       const programDefaults = await settingsRepo.getDefaults();
       const discountPct =
         typeof activePartner.referredDiscountPercent === "number"
@@ -80,7 +80,7 @@ export async function POST(req: Request) {
       if (!partnerReferralPromotionId) {
         try {
           const stripeDiscount = await createPartnerRefereeStripeDiscount({
-            partnerMongoId: activePartner.id,
+            partnerRecordId: activePartner.id,
             partnerDisplayCode: activePartner.code,
             clerkUserId: userId,
             discountPercent: discountPct,
@@ -114,8 +114,8 @@ export async function POST(req: Request) {
           : {}),
       };
 
-      await clerk.users.updateUserMetadata(userId, { publicMetadata });
-      await syncPartnerFieldsToMongoUser(userId, publicMetadata);
+      await authAdmin.users.updateUserMetadata(userId, { publicMetadata });
+      await syncPartnerFieldsToUserDocument(userId, publicMetadata);
 
       return NextResponse.json({
         kind: "partner" as ApplyPendingCodeKind,
@@ -126,7 +126,7 @@ export async function POST(req: Request) {
       });
     }
 
-    const refRepo = new ReferralRepository(mongoClient);
+    const refRepo = new ReferralRepository(documentsClient);
     await refRepo.ensureIndexes();
     const referrer = await refRepo.findOneByCode(code);
     if (referrer) {

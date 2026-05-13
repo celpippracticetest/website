@@ -1,8 +1,8 @@
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 import { ipToAccountSharingNetworkKey } from "@/lib/clientIpGeo";
 import type { ObjectId } from "bson";
 import type { PgCollection } from "@/lib/pg/pgCollection";
-import type { MongoDoc } from "@/lib/pg/document";
+import type { AppDoc } from "@/lib/pg/document";
 
 const COLLECTION = "account_access_signals";
 
@@ -50,7 +50,7 @@ function isDuplicateKeyError(error: unknown): boolean {
   return "code" in error && (error as { code?: number }).code === 11000;
 }
 
-async function ensureUserIdUniqueIndex(col: PgCollection<MongoDoc>) {
+async function ensureUserIdUniqueIndex(col: PgCollection<AppDoc>) {
   if (!uniqueIndexInitPromise) {
     uniqueIndexInitPromise = col
       .createIndex({ userId: 1 }, { unique: true, name: "userId_unique" })

@@ -1,8 +1,8 @@
 import DashboardHome from "@/components/dashboard-app/dashboardHome";
 import SuccessPageTracking from "@/components/analytics/SuccessPageTracking";
-import { clerkClient, currentUser } from "@clerk/nextjs/server";
+import { appUserAdmin, currentUser } from "@/lib/auth/server-auth";
 import { redirect } from "next/navigation";
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 import { PlansRepository } from "@/repositories/plans.repo";
 import {
   resolveSuccessUpgradeOfferFromSourcePrice,
@@ -11,6 +11,7 @@ import {
 } from "@/lib/successPageUpgrade";
 import { resolvePayPalPlanIdForStripePrice } from "@/lib/paypal/planMap";
 import { finalizePayPalSubscriptionReturn } from "@/lib/paypal/finalizeSubscriptionReturn";
+import { matchUsersCollectionByWebUserIds } from "@/lib/users/userDocumentIdentity";
 
 export default async function PayPalSuccessPage({ searchParams }: any) {
   const params = searchParams ? await searchParams : {};
@@ -28,7 +29,7 @@ export default async function PayPalSuccessPage({ searchParams }: any) {
   if (subscriptionId !== "-") {
     try {
       await finalizePayPalSubscriptionReturn({
-        clerkUserId: user.id,
+        webUserId: user.id,
         subscriptionId,
       });
     } catch (err) {
@@ -36,7 +37,7 @@ export default async function PayPalSuccessPage({ searchParams }: any) {
     }
   }
 
-  const client = await clerkClient();
+  const client = await appUserAdmin();
   const freshUser = await client.users.getUser(user.id);
   const publicMetadata = (freshUser.publicMetadata || {}) as Record<string, unknown>;
   const purchaseAmountRaw = Number(publicMetadata.purchaseAmount);
@@ -52,10 +53,14 @@ export default async function PayPalSuccessPage({ searchParams }: any) {
       const pending = await db.collection("paypal_subscription_pending").findOne<{
         stripePriceId?: string;
         clerkUserId?: string;
+        supabaseUserId?: string;
+        sub?: string;
         planDisplayName?: string;
       }>({
-        clerkUserId: user.id,
-        paypalSubscriptionId: subscriptionId,
+        $and: [
+          matchUsersCollectionByWebUserIds(user.id),
+          { paypalSubscriptionId: subscriptionId },
+        ],
       });
       if (typeof pending?.planDisplayName === "string" && pending.planDisplayName.trim()) {
         paypalPlanDisplayName = pending.planDisplayName.trim();

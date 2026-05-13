@@ -1,5 +1,5 @@
 import type { Sql } from "postgres";
-import { PgCollection, type MongoDoc } from "./pgCollection";
+import { PgCollection, type AppDoc } from "./pgCollection";
 
 /** Maps `db("prod")` to collection keys like `prod.checkouts`. */
 export class PgDatabase {
@@ -8,7 +8,7 @@ export class PgDatabase {
     private readonly namespace: string | null
   ) {}
 
-  collection<T extends MongoDoc = MongoDoc>(name: string): PgCollection<T> {
+  collection<T extends AppDoc = AppDoc>(name: string): PgCollection<T> {
     const key = this.namespace ? `${this.namespace}.${name}` : name;
     return new PgCollection<T>(this.sql, key);
   }

@@ -1,9 +1,9 @@
 import Profile from "@/components/dashboard-new/Profile";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
-import { clerkClient } from "@clerk/nextjs/server";
-import mongoClient from "@/lib/mongodb";
+import { appUserAdmin, type AppShapeUser } from "@/lib/auth/server-auth";
+import documentsClient from "@/lib/appDocumentsClient";
 import {
-  emailsFromClerkUser,
+  emailsFromAuthUser,
   resolveStripeCustomerId,
 } from "@/lib/resolveStripeCustomerId";
 import { normalizePlan } from "@/lib/subscriptionAccess";
@@ -143,28 +143,28 @@ export default async function UserProfilePage() {
   const { userId, user: ctxUser } = ctx;
 
   try {
-    const userRepo = new CheckoutRepository(mongoClient);
+    const userRepo = new CheckoutRepository(documentsClient);
     const prevCheckout = await userRepo.findLatestCheckoutByUserId(userId);
 
-    // For Supabase-only users (UUID) skip the Clerk API — use the bridge user directly.
+    // For Supabase-only users (UUID) skip the admin user fetch — use the bridge user directly.
     const isSupabaseUser = isLikelySupabaseAuthUserId(userId);
 
-    let clerkUser: Awaited<ReturnType<Awaited<ReturnType<typeof clerkClient>>["users"]["getUser"]>> | null = null;
+    let appUserRecord: AppShapeUser | null = null;
     if (!isSupabaseUser) {
       try {
-        const client = await clerkClient();
-        clerkUser = await client.users.getUser(userId);
+        const client = await appUserAdmin();
+        appUserRecord = await client.users.getUser(userId);
       } catch {
-        // Clerk user not found — fall through to Supabase bridge
+        // External id not found — fall through to Supabase bridge
       }
     }
 
-    // Use Clerk user if available, otherwise fall back to the Supabase bridge (ctxUser)
-    const userForStripe = clerkUser ?? ctxUser;
+    // Prefer admin API user when available, otherwise the session bridge (`ctxUser`)
+    const userForStripe = appUserRecord ?? ctxUser;
 
     const customerId = await resolveStripeCustomerId(userId, {
-      clerkStripeCustomerId: userForStripe.privateMetadata?.stripeCustomerId as string | undefined,
-      emails: emailsFromClerkUser(userForStripe),
+      stripeCustomerIdFromPrivate: userForStripe.privateMetadata?.stripeCustomerId as string | undefined,
+      emails: emailsFromAuthUser(userForStripe),
     });
 
     let subscriptionData: ProfileSubscriptionData | null = null;
@@ -177,9 +177,9 @@ export default async function UserProfilePage() {
       }
     }
 
-    // Only sync Clerk metadata for Clerk-backed accounts
-    if (clerkUser && subscriptionData) {
-      const client = await clerkClient();
+    // Only sync public plan metadata when we resolved the user via the admin API (legacy external ids)
+    if (appUserRecord && subscriptionData) {
+      const client = await appUserAdmin();
       const lower = (subscriptionData.planName ?? "").toLowerCase();
       const fromStripe =
         /\bplus\b/.test(lower) ||
@@ -187,7 +187,7 @@ export default async function UserProfilePage() {
         /\bpro\b/.test(lower)
           ? "pro"
           : "premium";
-      const currentPlan = normalizePlan(clerkUser.publicMetadata?.plan as string);
+      const currentPlan = normalizePlan(appUserRecord.publicMetadata?.plan as string);
       const alreadyPlusTier = currentPlan === "pro" || currentPlan === "plus";
       const shouldBePlan =
         alreadyPlusTier && fromStripe === "premium"
@@ -195,10 +195,10 @@ export default async function UserProfilePage() {
             ? "plus"
             : "pro"
           : fromStripe;
-      if (clerkUser.publicMetadata.plan !== shouldBePlan) {
+      if (appUserRecord.publicMetadata.plan !== shouldBePlan) {
         await client.users.updateUserMetadata(userId, {
           publicMetadata: {
-            ...clerkUser.publicMetadata,
+            ...appUserRecord.publicMetadata,
             plan: shouldBePlan,
           },
         });

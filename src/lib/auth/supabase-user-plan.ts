@@ -5,8 +5,10 @@ function readString(meta: Record<string, unknown>, key: string): string | null {
   return typeof v === "string" && v.trim().length > 0 ? v.trim() : null;
 }
 
-/** Stable Mongo / business key for accounts migrated from Clerk (`user_metadata.clerk_user_id`). */
-export function readClerkLegacyUserIdFromSupabaseUser(
+/**
+ * Stable business id stored on imported accounts (`user_metadata` legacy keys).
+ */
+export function readLegacyImportedExternalUserId(
   user: Pick<SupabaseAuthUser, "user_metadata">
 ): string | null {
   const meta = (user.user_metadata ?? {}) as Record<string, unknown>;

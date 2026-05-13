@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { UserWordsRepository } from "@/repositories/userWords.repo";
 
 function normalizeForCompare(word: string) {
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
         if (!ctx?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         const user = ctx.user;
 
-        const repo = new UserWordsRepository(mongoClient);
+        const repo = new UserWordsRepository(documentsClient);
         const { items } = await repo.getAllWords(user.id, 1000, 0);
         const userWordSet = new Set(items.map((item) => normalizeForCompare(item.word)));
         const rankedWords = await repo.getTopReviewedWords(100);

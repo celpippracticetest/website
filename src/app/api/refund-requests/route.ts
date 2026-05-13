@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/server-auth";
 import { z } from "zod";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { RefundRequestWriteSchema } from "@/models/refund-request.model";
 import { RefundRequestRepository } from "@/repositories/refund-request.repo";
 import { getResendClient, sendResendHtmlEmail } from "@/lib/email/resend-client";
@@ -58,9 +58,9 @@ async function generateUniqueTrackingCode(repo: RefundRequestRepository) {
 
 async function userHasCompletedCheckout(clerkUserId: string): Promise<boolean> {
   const filter = { userId: clerkUserId, status: "complete" as const };
-  const inDefault = await mongoClient.db().collection("checkouts").findOne(filter);
+  const inDefault = await documentsClient.db().collection("checkouts").findOne(filter);
   if (inDefault) return true;
-  const inProd = await mongoClient.db("prod").collection("checkouts").findOne(filter);
+  const inProd = await documentsClient.db("prod").collection("checkouts").findOne(filter);
   return Boolean(inProd);
 }
 
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const repo = new RefundRequestRepository(mongoClient);
+    const repo = new RefundRequestRepository(documentsClient);
     await repo.ensureIndexes();
 
     const trackingCode = await generateUniqueTrackingCode(repo);
@@ -177,7 +177,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const repo = new RefundRequestRepository(mongoClient);
+    const repo = new RefundRequestRepository(documentsClient);
     const request = await repo.findByTrackingCodeForUser({
       userId: userId as string,
       trackingCode: parsed.data.trackingCode,

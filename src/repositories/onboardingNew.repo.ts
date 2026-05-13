@@ -1,4 +1,4 @@
-import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
+import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
 
 type TOnboardingNewResult = {
   userId: string;
@@ -23,8 +23,8 @@ type TOnboardingNewResult = {
 export class OnboardingNewRepository {
   private readonly db: Db;
 
-  constructor(mongoClient: MongoClient) {
-    this.db = mongoClient.db();
+  constructor(documentsClient: AppDocumentsClient) {
+    this.db = documentsClient.db();
   }
 
   private getCollection() {

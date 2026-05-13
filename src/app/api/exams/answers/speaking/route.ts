@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { createClient } from "@deepgram/sdk";
 import { uploadAudioBuffer } from "@/lib/s3-client";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
@@ -96,7 +96,7 @@ export const POST = async function (req: Request) {
       30000
     );
 
-    const examPartRepo = new ExamPartsRepository(mongoClient);
+    const examPartRepo = new ExamPartsRepository(documentsClient);
     const examId = formData.get("examId") as string;
     const partId = formData.get("partId") as string;
     const attemptId = formData.get("attemptId") as string;
@@ -406,7 +406,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
         },
       };
 
-      const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
+      const answerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
       const contentInput = msg.content.find(
         (item: any) => item.input && typeof item.input === "object"
       )?.input ?? null;
@@ -466,7 +466,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
       }
     }
 
-    const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
+    const answerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
 
     const contentInput =
       msg.content.find(
@@ -532,7 +532,7 @@ export const GET = async function (req: NextRequest) {
   }
   const attemptId = req.nextUrl.searchParams.get("attemptId");
   const filterAttemptId = attemptId === "legacy" ? null : (attemptId || undefined);
-  const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
+  const answerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
   const answers = await answerRepo.getAllWritingAnswers(
     { userId: user.id, examId, partId: parseInt(partId), type: "SPEAKING", attemptId: filterAttemptId as any },
     0,

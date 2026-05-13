@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { stripeCheckoutPaymentMethodParams } from "@/lib/stripeCheckoutPaymentMethods";
 import { captureException, logger, trackAPICall } from "@/lib/sentry-logger";
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 import { isPricingAbLayout } from "@/lib/pricingAbTest";
 import { isHomeAbExperimentVariant, isHomeAbVariant } from "@/lib/homeAbTest";
 import {
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
 
 /**
  * Guest checkout: no Clerk session required. Stripe collects email; webhook links
- * or creates the Clerk user and applies plan metadata.
+ * or creates the auth user and applies plan metadata.
  */
 export async function POST(req: NextRequest) {
   return guestCheckoutResponse(req);
@@ -290,7 +290,6 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       metadata: {
         guest_checkout: "true",
         plan_name: productDetails.name,
-        purchase_type: purchaseType || null,
         referral_code: "",
         ...(campaignPromoKey && { campaign_promo: campaignPromoKey }),
         ...attributionMetadata,
@@ -304,7 +303,6 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
           metadata: {
             guest_checkout: "true",
             plan_name: productDetails.name,
-            purchase_type: purchaseType || null,
             referral_code: "",
             ...(campaignPromoKey && { campaign_promo: campaignPromoKey }),
             ...ga4CheckoutMeta,

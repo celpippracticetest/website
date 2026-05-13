@@ -76,7 +76,6 @@ interface User {
   subscriptionDurationDays?: number;
   subscriptionStartDate?: string;
   subscriptionEndDate?: string;
-  clerkDeviceCount?: number;
 }
 
 interface UsersResponse {
@@ -97,7 +96,6 @@ export default function UsersPage() {
   const [sortBy, setSortBy] = useState("lastActivity");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [subscriptionStatus, setSubscriptionStatus] = useState("all");
-  const [deviceFilter, setDeviceFilter] = useState("all");
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
@@ -113,8 +111,8 @@ export default function UsersPage() {
   const [syncDialogOpen, setSyncDialogOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<{
-    totalClerkUsers?: number;
-    totalMongoUsers?: number;
+    totalAuthUsers?: number;
+    totalUsersInDocuments?: number;
     missingUsers?: number;
   } | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -128,7 +126,6 @@ export default function UsersPage() {
         sortBy,
         sortOrder,
         subscriptionStatus,
-        deviceFilter,
       });
 
       const response = await fetch(`/api/admin/users?${params}`);
@@ -147,7 +144,7 @@ export default function UsersPage() {
   useEffect(() => {
     fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search, sortBy, sortOrder, subscriptionStatus, deviceFilter]);
+  }, [page, search, sortBy, sortOrder, subscriptionStatus]);
 
   const getRiskColor = (riskScore: number) => {
     if (riskScore >= 70) return "text-red-600 bg-red-50";
@@ -429,21 +426,6 @@ export default function UsersPage() {
               </Select>
             </FormControl>
 
-            <FormControl size="small" sx={{ minWidth: 170 }}>
-              <InputLabel>Devices</InputLabel>
-              <Select
-                label="Devices"
-                value={deviceFilter}
-                onChange={(e) => {
-                  setPage(1);
-                  setDeviceFilter(e.target.value);
-                }}
-              >
-                <MenuItem value="all">All Device Counts</MenuItem>
-                <MenuItem value="gt3">More than 3 devices</MenuItem>
-              </Select>
-            </FormControl>
-
             <FormControl size="small" sx={{ minWidth: 140 }}>
               <InputLabel>Order</InputLabel>
               <Select
@@ -473,7 +455,7 @@ export default function UsersPage() {
                 </IconButton>
               </span>
             </Tooltip>
-            <Tooltip title="Sync All Users from Clerk">
+            <Tooltip title="Sync all users from auth into the document store">
               <span>
                 <IconButton
                   onClick={() => {
@@ -671,13 +653,13 @@ export default function UsersPage() {
                         </Typography>
                       </TableCell>
 
-                      {/* IPs / Devices */}
+                      {/* IPs / user agents */}
                       <TableCell>
                         <Typography variant="body2">
                           {user.uniqueIpAddresses} IPs
                         </Typography>
                         <Typography variant="caption" className="text-gray-500">
-                          {user.clerkDeviceCount ?? 0} devices (Clerk)
+                          {user.uniqueUserAgents} user agents
                         </Typography>
                       </TableCell>
 
@@ -949,10 +931,10 @@ export default function UsersPage() {
                                   </Box>
                                   <Box className="flex justify-between">
                                     <Typography variant="body2" className="text-gray-600">
-                                      Unique Devices:
+                                      Distinct user agents:
                                     </Typography>
                                     <Typography variant="body2" className="font-medium">
-                                      {user.clerkDeviceCount ?? 0}
+                                      {user.uniqueUserAgents}
                                     </Typography>
                                   </Box>
                                   {user.ipAddresses && user.ipAddresses.length > 0 && (
@@ -1098,7 +1080,7 @@ export default function UsersPage() {
             This will:
             <ul style={{ marginTop: "8px", paddingLeft: "20px" }}>
               <li>Immediately cancel the subscription in Stripe</li>
-              <li>Update the user's plan to "free" in Clerk</li>
+              <li>Update the user's plan to &quot;free&quot; in auth metadata</li>
               <li>Update the user's plan in the database</li>
             </ul>
             This action cannot be undone.
@@ -1178,7 +1160,7 @@ export default function UsersPage() {
         <DialogTitle id="sync-users-dialog-title">
           <Box className="flex items-center gap-2">
             <People className="w-5 h-5" />
-            Sync All Users from Clerk
+            Sync all users from Supabase Auth
           </Box>
         </DialogTitle>
         <DialogContent>
@@ -1190,12 +1172,12 @@ export default function UsersPage() {
                 </Typography>
                 <Box className="space-y-1">
                   <Typography variant="body2">
-                    📊 Clerk Users:{" "}
-                    <strong>{syncStatus.totalClerkUsers || 0}</strong>
+                    📊 Auth directory users:{" "}
+                    <strong>{syncStatus.totalAuthUsers || 0}</strong>
                   </Typography>
                   <Typography variant="body2">
-                    💾 MongoDB Users:{" "}
-                    <strong>{syncStatus.totalMongoUsers || 0}</strong>
+                    💾 Users in documents:{" "}
+                    <strong>{syncStatus.totalUsersInDocuments || 0}</strong>
                   </Typography>
                   <Typography
                     variant="body2"
@@ -1213,7 +1195,7 @@ export default function UsersPage() {
               </Box>
             )}
             <Typography variant="body2" className="mb-2">
-              This will sync all users from Clerk to MongoDB. This is useful to
+              This will sync all users from Supabase Auth into the `users` collection. This is useful to
               catch up on failed webhooks.
             </Typography>
             <Typography variant="body2" className="mb-2">
@@ -1221,7 +1203,7 @@ export default function UsersPage() {
             </Typography>
             <ul style={{ marginTop: "8px", paddingLeft: "20px" }}>
               <li>Process users in batches of 100</li>
-              <li>Only sync users missing from MongoDB</li>
+              <li>Only sync users missing from the document store</li>
               <li>Preserve existing user data</li>
               <li>Update the users list automatically</li>
             </ul>

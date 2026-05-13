@@ -1,5 +1,5 @@
 import { ObjectId } from "bson";
-import type { CompatDb as Db } from "@/lib/pg/types";
+import type { AppDocumentsDb as Db } from "@/lib/pg/types";
 import {
   TLeague,
   TLeagueGroup,
@@ -359,15 +359,26 @@ export class LeagueRepository {
     const currentSeason = await this.getCurrentSeason();
     if (!currentSeason) return group as TLeagueGroup;
 
-    // OPTIMIZATION: Batch fetch user points instead of N+1 queries
-    const userIds = group.users.map((u: any) => u.userId);
-    const allUserPoints = await this.db
-      .collection(this.userLeaguePointsCollection)
-      .find({
-        userId: { $in: userIds },
-        seasonId: currentSeason.seasonId,
-      })
-      .toArray();
+    // One `{ userId, seasonId }` find per member — each compiles to selective SQL.
+    // `{ userId: { $in } }` is not supported in `documentFilterToSql` and would scan
+    // the whole `user_league_points` partition.
+    const userIdsRaw = group.users.map((u: any) => u.userId);
+    const userIds = [
+      ...new Set(
+        userIdsRaw.filter((id: unknown): id is string => typeof id === "string" && id.length > 0)
+      ),
+    ];
+    const pointsColl = this.db.collection(this.userLeaguePointsCollection);
+    const allUserPoints = (
+      await Promise.all(
+        userIds.map((uid) =>
+          pointsColl.findOne({
+            userId: uid,
+            seasonId: currentSeason.seasonId,
+          })
+        )
+      )
+    ).filter((p): p is NonNullable<typeof p> => p != null);
 
     // Create a map for faster lookup
     const userPointsMap = new Map();
@@ -382,9 +393,9 @@ export class LeagueRepository {
     const userDetailsMap = new Map();
     try {
       const usersCollection = this.db.collection("users");
-      const localUsers = await usersCollection
-        .find({ clerkUserId: { $in: userIds } })
-        .toArray();
+      const localUsers = (
+        await Promise.all(userIds.map((uid) => usersCollection.findOne({ clerkUserId: uid })))
+      ).filter((u): u is NonNullable<typeof u> => u != null);
 
       localUsers.forEach((u: any) => {
         userDetailsMap.set(u.clerkUserId, u);
@@ -417,8 +428,8 @@ export class LeagueRepository {
       } else {
         // Fallback to Clerk only if not found locally (should be rare)
         try {
-          const { clerkClient } = await import("@clerk/nextjs/server");
-          const client = await clerkClient();
+          const { appUserAdmin } = await import("@/lib/auth/app-user-admin");
+          const client = await appUserAdmin();
           const clerkUser = await client.users.getUser(user.userId);
           user.name = clerkUser.firstName && clerkUser.lastName
             ? `${clerkUser.firstName} ${clerkUser.lastName}`.trim()
@@ -1206,14 +1217,21 @@ export class LeagueRepository {
 
   async getCurrentSeason(): Promise<TLeagueSeason | null> {
     const now = new Date();
-    const season = await this.db
+    // `documentFilterToSql` cannot express `$lte` / `$gte`; a findOne on those fields
+    // would scan the entire `league_seasons` partition. Narrow with `isActive` in SQL,
+    // then pick the season that contains `now` (typically a handful of rows).
+    const activeCandidates = (await this.db
       .collection(this.leagueSeasonsCollection)
-      .findOne({
-        startDate: { $lte: now },
-        endDate: { $gte: now },
-        isActive: true,
-      });
-    return season as TLeagueSeason | null;
+      .find({ isActive: true })
+      .toArray()) as TLeagueSeason[];
+
+    return (
+      activeCandidates.find((s) => {
+        const start = s.startDate ? new Date(s.startDate as Date | string) : null;
+        const end = s.endDate ? new Date(s.endDate as Date | string) : null;
+        return Boolean(start && end && !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && start <= now && end >= now);
+      }) ?? null
+    );
   }
 
   async endSeason(seasonId: string): Promise<boolean> {
@@ -1344,12 +1362,13 @@ export class LeagueRepository {
     }
   }
 
-  // Clean up duplicate users in groups
-  async cleanupDuplicateUsers(): Promise<void> {
+  // Clean up duplicate users in groups (scoped to one season — avoids loading every
+  // historical `league_groups` row on each request).
+  async cleanupDuplicateUsers(seasonId: string): Promise<void> {
     try {
       const groups = await this.db
         .collection(this.leagueGroupsCollection)
-        .find({})
+        .find({ seasonId })
         .toArray();
 
       for (const group of groups) {
@@ -2216,8 +2235,8 @@ export class LeagueRepository {
 
       // Enrich with user details (name, avatar) for real users only
       const enrichedUsers = [];
-      const { clerkClient } = await import("@clerk/nextjs/server");
-      const client = await clerkClient();
+      const { appUserAdmin } = await import("@/lib/auth/app-user-admin");
+      const client = await appUserAdmin();
 
       for (const u of topUsers) {
         if ((u as any).isFake) {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import mongoClient from "@/lib/mongodb";
+import { auth } from "@/lib/auth/server-auth";
+import documentsClient from "@/lib/appDocumentsClient";
 import { PartnerRepository } from "@/repositories/partner.repo";
 
 export const runtime = "nodejs";
@@ -13,9 +13,9 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const partnerRepo = new PartnerRepository(mongoClient);
+    const partnerRepo = new PartnerRepository(documentsClient);
     await partnerRepo.ensureIndexes();
-    const partner = await partnerRepo.findByClerkUserId(userId);
+    const partner = await partnerRepo.findByWebUserId(userId);
     if (!partner) {
       return NextResponse.json({ partner: null }, { status: 200 });
     }

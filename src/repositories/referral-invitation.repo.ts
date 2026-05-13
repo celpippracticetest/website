@@ -1,5 +1,5 @@
 import { ObjectId } from "bson";
-import type { CompatMongoClient as MongoClient } from "@/lib/pg/types";
+import type { AppDocumentsClient } from "@/lib/pg/types";
 
 export interface ReferralInvitation {
   _id?: ObjectId;
@@ -19,8 +19,8 @@ export interface ReferralInvitation {
 export class ReferralInvitationRepository {
   private readonly db: any;
 
-  constructor(mongoClient: MongoClient) {
-    this.db = mongoClient.db();
+  constructor(documentsClient: AppDocumentsClient) {
+    this.db = documentsClient.db();
   }
 
   private getCollection() {
@@ -197,11 +197,11 @@ export class ReferralInvitationRepository {
 
     const emails: string[] = [];
     try {
-      const { clerkClient } = await import("@clerk/nextjs/server");
-      const clerk = await clerkClient();
+      const { appUserAdmin } = await import("@/lib/auth/app-user-admin");
+      const authAdmin = await appUserAdmin();
       const results = await Promise.all(
         inviteeIds.map((id) =>
-          clerk.users
+          authAdmin.users
             .getUser(id)
             .then((u) => u?.emailAddresses?.[0]?.emailAddress)
             .catch(() => undefined)

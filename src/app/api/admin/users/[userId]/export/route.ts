@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, currentUser } from "@clerk/nextjs/server";
-import client from "@/lib/mongodb";
+import { auth, currentUser, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
+import client from "@/lib/appDocumentsClient";
 import * as XLSX from "xlsx";
 
 export async function GET(
@@ -18,7 +18,7 @@ export async function GET(
     const authenticate = await auth();
 
     const isAdmin =
-      authenticate.sessionClaims?.metadata?.roles?.includes("admin");
+      sessionClaimsHasAdminRole(authenticate.sessionClaims);
     if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -181,15 +181,16 @@ export async function GET(
     const summaryResult = await userActivityCollection
       .aggregate(summaryPipeline)
       .toArray();
-    const summary = summaryResult[0] || {
-      practiceAttempted: 0,
-      practiceCompleted: 0,
-      mockAttempted: 0,
-      mockCompleted: 0,
-      practiceTokens: 0,
-      mockTokens: 0,
-      learningTokens: 0,
-      lastActive: null,
+    const raw = summaryResult[0] as Record<string, unknown> | undefined;
+    const summary = {
+      practiceAttempted: Number(raw?.practiceAttempted ?? 0),
+      practiceCompleted: Number(raw?.practiceCompleted ?? 0),
+      mockAttempted: Number(raw?.mockAttempted ?? 0),
+      mockCompleted: Number(raw?.mockCompleted ?? 0),
+      practiceTokens: Number(raw?.practiceTokens ?? 0),
+      mockTokens: Number(raw?.mockTokens ?? 0),
+      learningTokens: Number(raw?.learningTokens ?? 0),
+      lastActive: raw?.lastActive ?? null,
     };
 
     // Create Excel workbook
@@ -212,7 +213,9 @@ export async function GET(
       ["LLM Tokens - Learning", summary.learningTokens],
       [
         "Last Active (UTC)",
-        summary.lastActive ? new Date(summary.lastActive).toISOString() : "N/A",
+        summary.lastActive != null && summary.lastActive !== ""
+          ? new Date(String(summary.lastActive)).toISOString()
+          : "N/A",
       ],
     ];
 
@@ -222,7 +225,7 @@ export async function GET(
     // Activities sheet
     const activitiesData = activities.map((activity) => [
       activity.timestampUtc
-        ? new Date(activity.timestampUtc).toISOString()
+        ? new Date(String(activity.timestampUtc)).toISOString()
         : "",
       activity.eventType || "",
       activity.context || "",

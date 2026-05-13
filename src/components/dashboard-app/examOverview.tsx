@@ -41,13 +41,13 @@ const ExamOverview = ({
   exams,
   examProgressById,
   showUserProgress,
-  clerkAccessSnapshot,
+  rscUserAccessSnapshot,
 }: {
   exams: TExamSchemaDto[];
   examProgressById: Record<string, ExamProgressSummary>;
   showUserProgress: boolean;
-  /** From RSC `currentUser()` so purchased mocks work before `useHybridWebUser()` finishes loading. */
-  clerkAccessSnapshot?: { purchasedMockExamIds?: unknown };
+  /** Server snapshot from the page so purchased mocks render correctly before `useHybridWebUser()` loads. */
+  rscUserAccessSnapshot?: { purchasedMockExamIds?: unknown };
 }) => {
   const router = useRouter();
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
@@ -60,7 +60,7 @@ const ExamOverview = ({
   const purchasedMockExamIds =
     fromClient !== undefined && fromClient !== null
       ? fromClient
-      : clerkAccessSnapshot?.purchasedMockExamIds;
+      : rscUserAccessSnapshot?.purchasedMockExamIds;
 
   const signedInFreeUser =
     isLoaded &&
@@ -78,9 +78,9 @@ const ExamOverview = ({
     }
     return best.id;
   }, [exams]);
-  /** Before `useUser` is ready, trust RSC snapshot when present (avoids false "Buy" on first paint). */
+  /** Before `useHybridWebUser()` is ready, trust the server snapshot when present (avoids false "Buy" on first paint). */
   const effectiveSignedIn = !isLoaded
-    ? Boolean(clerkAccessSnapshot && showUserProgress)
+    ? Boolean(rscUserAccessSnapshot && showUserProgress)
     : isSignedIn;
   const mockExamUnlocked = (exam: TExamSchemaDto) =>
     Boolean(

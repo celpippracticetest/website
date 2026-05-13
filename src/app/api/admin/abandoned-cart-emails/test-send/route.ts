@@ -1,6 +1,6 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@/lib/auth/server-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 import {
   ABANDONED_CART_EMAIL_CONFIG_COLLECTION,
   ABANDONED_CART_EMAIL_CONFIG_KEY,
@@ -27,7 +27,8 @@ async function ensureAdmin() {
   }
 
   const authenticate = await auth();
-  const isAdmin = authenticate.sessionClaims?.metadata?.roles?.includes("admin");
+  const roles = authenticate.sessionClaims?.metadata?.roles;
+  const isAdmin = Array.isArray(roles) && roles.some((r) => r === "admin");
   if (!isAdmin) {
     return {
       ok: false as const,

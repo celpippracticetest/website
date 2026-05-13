@@ -65,12 +65,12 @@ export function SupabaseAuthForm({
   className,
   initialMode = "sign-in",
   redirectAfterAuth,
-  showLegacyClerkHint = false,
+  showLegacyAuthHint = false,
 }: {
   className?: string;
   initialMode?: AuthMode;
   redirectAfterAuth?: string;
-  showLegacyClerkHint?: boolean;
+  showLegacyAuthHint?: boolean;
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>(initialMode);
@@ -236,7 +236,7 @@ export function SupabaseAuthForm({
 
       <div className="p-6 sm:p-8">
         {/* Legacy hint */}
-        {showLegacyClerkHint && mode === "sign-in" && (
+        {showLegacyAuthHint && mode === "sign-in" && (
           <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
             <p className="font-medium">Same email, new login</p>
             <p className="mt-1 text-amber-900/90">

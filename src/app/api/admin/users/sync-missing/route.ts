@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
-import client from "@/lib/mongodb";
+import { auth, appUserAdmin, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
+import client from "@/lib/appDocumentsClient";
+import {
+  matchUsersCollectionByWebUserIds,
+  supabaseAuthUserIdFieldsOnUserDoc,
+} from "@/lib/users/userDocumentIdentity";
 
 export async function POST(request: NextRequest) {
   try {
     // Check admin authorization
     const authenticate = await auth();
     const isAdmin =
-      authenticate.sessionClaims?.metadata?.roles?.includes("admin");
+      sessionClaimsHasAdminRole(authenticate.sessionClaims);
     if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -17,24 +21,24 @@ export async function POST(request: NextRequest) {
     const offset = body.offset || 0;
     const forceUpdate = body.forceUpdate || false; // If true, update even existing users
 
-    const clerkClientInstance = await clerkClient();
+    const adminClient = await appUserAdmin();
     const db = client.db();
     const usersCollection = db.collection("users");
 
-    // Fetch users from Clerk
-    const clerkUsers = await clerkClientInstance.users.getUserList({
+    // Fetch users from Supabase Auth
+    const authUsersPage = await adminClient.users.getUserList({
       limit,
       offset,
     });
 
-    if (!clerkUsers.data || clerkUsers.data.length === 0) {
+    if (!authUsersPage.data || authUsersPage.data.length === 0) {
       return NextResponse.json({
         success: true,
         synced: 0,
         skipped: 0,
         updated: 0,
         total: 0,
-        message: "No users found in Clerk",
+        message: "No users found in Supabase Auth",
       });
     }
 
@@ -43,37 +47,36 @@ export async function POST(request: NextRequest) {
     let updated = 0;
     const errors: string[] = [];
 
-    // Process each user
-    for (const clerkUser of clerkUsers.data) {
+    for (const authUser of authUsersPage.data) {
       try {
-        const userId = clerkUser.id;
+        const userId = authUser.id;
         const email =
-          clerkUser.emailAddresses?.[0]?.emailAddress ||
-          clerkUser.primaryEmailAddress?.emailAddress;
-        const firstName = clerkUser.firstName;
-        const lastName = clerkUser.lastName;
-        const imageUrl = clerkUser.imageUrl;
-        const publicMetadata = (clerkUser.publicMetadata || {}) as Record<
+          authUser.emailAddresses?.[0]?.emailAddress ||
+          authUser.primaryEmailAddress?.emailAddress;
+        const firstName = authUser.firstName;
+        const lastName = authUser.lastName;
+        const imageUrl = authUser.imageUrl;
+        const publicMetadata = (authUser.publicMetadata || {}) as Record<
           string,
           any
         >;
 
-        // Check if user already exists in MongoDB
-        const existingUser = await usersCollection.findOne({
-          clerkUserId: userId,
-        });
+        const userIdFilter = matchUsersCollectionByWebUserIds(userId);
+
+        // Check if user already exists in the document store
+        const existingUser = await usersCollection.findOne(userIdFilter);
 
         if (existingUser && !forceUpdate) {
           skipped++;
           continue;
         }
 
-        // Sync/Update user to MongoDB
+        // Sync/Update user document
         const updateResult = await usersCollection.updateOne(
-          { clerkUserId: userId },
+          userIdFilter,
           {
             $set: {
-              clerkUserId: userId,
+              ...supabaseAuthUserIdFieldsOnUserDoc(userId),
               email: email || null,
               firstName: firstName || null,
               lastName: lastName || null,
@@ -98,7 +101,7 @@ export async function POST(request: NextRequest) {
           skipped++;
         }
       } catch (error: any) {
-        const userId = clerkUser.id || "unknown";
+        const userId = authUser.id || "unknown";
         errors.push(`Failed to sync user ${userId}: ${error.message}`);
         console.error(`Error syncing user ${userId}:`, error);
       }
@@ -109,12 +112,12 @@ export async function POST(request: NextRequest) {
       synced,
       updated,
       skipped,
-      total: clerkUsers.data.length,
-      hasMore: clerkUsers.totalCount
-        ? offset + limit < clerkUsers.totalCount
+      total: authUsersPage.data.length,
+      hasMore: authUsersPage.totalCount
+        ? offset + limit < authUsersPage.totalCount
         : false,
       nextOffset: offset + limit,
-      totalClerkUsers: clerkUsers.totalCount,
+      totalAuthUsers: authUsersPage.totalCount,
       errors: errors.length > 0 ? errors.slice(0, 10) : undefined, // Limit errors in response
       errorCount: errors.length,
       message: `Synced ${synced} new users, updated ${updated} existing users, skipped ${skipped} unchanged users`,
@@ -134,31 +137,35 @@ export async function GET(request: NextRequest) {
     // Check admin authorization
     const authenticate = await auth();
     const isAdmin =
-      authenticate.sessionClaims?.metadata?.roles?.includes("admin");
+      sessionClaimsHasAdminRole(authenticate.sessionClaims);
     if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const clerkClientInstance = await clerkClient();
+    const adminClient = await appUserAdmin();
     const db = client.db();
     const usersCollection = db.collection("users");
 
-    // Get total count from Clerk
-    const clerkUsers = await clerkClientInstance.users.getUserList({
+    // Total users in Supabase Auth (directory)
+    const authDirectoryPage = await adminClient.users.getUserList({
       limit: 1,
     });
-    const totalClerkUsers = clerkUsers.totalCount || 0;
+    const totalAuthUsers = authDirectoryPage.totalCount || 0;
 
-    // Get count from MongoDB
-    const mongoUserCount = await usersCollection.countDocuments({
-      clerkUserId: { $exists: true, $ne: null },
+    // Get count from the document store
+    const usersInDocumentsCount = await usersCollection.countDocuments({
+      $or: [
+        { clerkUserId: { $exists: true, $nin: [null, ""] } },
+        { supabaseUserId: { $exists: true, $nin: [null, ""] } },
+        { sub: { $exists: true, $nin: [null, ""] } },
+      ],
     });
 
-    const missingCount = Math.max(0, totalClerkUsers - mongoUserCount);
+    const missingCount = Math.max(0, totalAuthUsers - usersInDocumentsCount);
 
     return NextResponse.json({
-      totalClerkUsers,
-      totalMongoUsers: mongoUserCount,
+      totalAuthUsers,
+      totalUsersInDocuments: usersInDocumentsCount,
       missingUsers: missingCount,
       syncNeeded: missingCount > 0,
     });

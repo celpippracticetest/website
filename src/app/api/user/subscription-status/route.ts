@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { clerkClient } from "@clerk/nextjs/server";
+import { appUserAdmin } from "@/lib/auth/server-auth";
 import Stripe from "stripe";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 import {
-  emailsFromClerkUser,
+  emailsFromAuthUser,
   resolveStripeCustomerId,
 } from "@/lib/resolveStripeCustomerId";
 
@@ -18,13 +18,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const client = await clerkClient();
+    const client = await appUserAdmin();
     const user = await client.users.getUser(userId);
     const customerId = await resolveStripeCustomerId(userId, {
-      clerkStripeCustomerId: user.privateMetadata?.stripeCustomerId as
+      stripeCustomerIdFromPrivate: user.privateMetadata?.stripeCustomerId as
         | string
         | undefined,
-      emails: emailsFromClerkUser(user),
+      emails: emailsFromAuthUser(user),
     });
 
     if (!customerId) {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import { getDb } from "@/lib/mongodb";
+import { auth } from "@/lib/auth/server-auth";
+import { getDb } from "@/lib/appDocumentsClient";
 import { LeagueRepository } from "@/repositories/league.repo";
 
 export async function POST() {

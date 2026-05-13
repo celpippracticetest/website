@@ -23,7 +23,7 @@ Use this when changing subscription access, exams, practices, or auth so mobile 
 
 - [ ] **Google Play**: `POST /api/mobile/iap/google/verify` — service account JSON, expected package name, product → plan mapping (`MOBILE_IAP_PRODUCT_PLAN_JSON`).
 - [ ] **Apple**: `POST /api/mobile/iap/apple/verify` — root CA DER base64 (`APPLE_IAP_ROOT_CA_BASE64`), bundle id, environment; production may require **`APPLE_APP_APPLE_ID`** per Apple’s verifier rules.
-- [ ] After IAP verify, **Clerk `publicMetadata.plan`** and **Mongo `users`** (`clerkUserId`) stay in sync with web Stripe updates.
+- [ ] After IAP verify, **auth `publicMetadata.plan`** and the **`users`** document (`clerkUserId` / `supabaseUserId`) stay in sync with web Stripe updates.
 
 ## Stripe / web checkout (reference)
 

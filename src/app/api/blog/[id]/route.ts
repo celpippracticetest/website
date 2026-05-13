@@ -1,4 +1,4 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { BlogWriteSchema } from "@/models/blog.model";
 import { BlogRepository } from "@/repositories/blog.repo";
 import { ObjectId } from "bson";
@@ -20,7 +20,7 @@ export async function GET(
       return NextResponse.json({ message: "Invalid blog id." }, { status: 400 });
     }
 
-    const repo = new BlogRepository(mongoClient);
+    const repo = new BlogRepository(documentsClient);
     const blog = await repo.findBlogById(id);
 
     if (!blog) {
@@ -50,7 +50,7 @@ export async function PATCH(
       return NextResponse.json({ message: parser.error.flatten() }, { status: 400 });
     }
 
-    const repo = new BlogRepository(mongoClient);
+    const repo = new BlogRepository(documentsClient);
     const updated = await repo.updateBlog(id, parser.data);
 
     if (!updated) {
@@ -74,7 +74,7 @@ export async function DELETE(
       return NextResponse.json({ message: "Invalid blog id." }, { status: 400 });
     }
 
-    const repo = new BlogRepository(mongoClient);
+    const repo = new BlogRepository(documentsClient);
     await repo.deleteBlog(id);
 
     return NextResponse.json({ message: "Blog post deleted." }, { status: 200 });

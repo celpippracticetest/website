@@ -1,10 +1,10 @@
 import * as XLSX from "xlsx";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { OnboardingRepository } from "@/repositories/onboarding.repo";
 import { NextResponse } from "next/server";
-import { clerkClient } from "@clerk/nextjs/server";
-import { getDb } from "@/lib/mongodb";
-import { getStripeSubscriptionDurationForClerkUser } from "@/lib/stripeSubscriptionSummary";
+import { appUserAdmin } from "@/lib/auth/server-auth";
+import { getDb } from "@/lib/appDocumentsClient";
+import { getStripeSubscriptionDurationForAuthUser } from "@/lib/stripeSubscriptionSummary";
 
 export const runtime = "nodejs";
 export const maxDuration = 60; // 60 seconds timeout for export
@@ -12,7 +12,7 @@ export const maxDuration = 60; // 60 seconds timeout for export
 // GET: Export onboarding data as Excel
 export async function GET(request: Request) {
   try {
-    const clerk = await clerkClient();
+    const authAdmin = await appUserAdmin();
     const { searchParams } = new URL(request.url);
     const view = searchParams.get("view");
 
@@ -55,7 +55,7 @@ export async function GET(request: Request) {
         });
 
       for (const result of results) {
-        const userId = result.userId;
+        const userId = String(result.userId ?? "");
         const nestedAnswers = (result as any)?.answers || {};
         const answers = {
           primaryGoal:
@@ -98,12 +98,12 @@ export async function GET(request: Request) {
         let subscriptionDuration = "—";
 
         try {
-          const user = await clerk.users.getUser(userId);
+          const user = await authAdmin.users.getUser(userId);
           name = (user.firstName || "") + " " + (user.lastName || "");
           subscriptionDuration =
-            await getStripeSubscriptionDurationForClerkUser(userId, user);
+            await getStripeSubscriptionDurationForAuthUser(userId, user);
         } catch (e) {
-          console.warn("⚠️ Clerk user not found for:", userId);
+          console.warn("⚠️ Auth user not found for:", userId);
           name = "";
         }
 
@@ -131,7 +131,12 @@ export async function GET(request: Request) {
           "Target Reading": targetScores.reading || 0,
           "Target Writing": targetScores.writing || 0,
           "Target Speaking": targetScores.speaking || 0,
-          "Answered At": result.answeredAt?.toISOString() || "",
+          "Answered At":
+            result.answeredAt instanceof Date
+              ? result.answeredAt.toISOString()
+              : typeof result.answeredAt === "string"
+                ? result.answeredAt
+                : "",
         });
       }
 
@@ -153,22 +158,22 @@ export async function GET(request: Request) {
       });
     }
 
-    const onboardingRepo = new OnboardingRepository(mongoClient);
+    const onboardingRepo = new OnboardingRepository(documentsClient);
     const results = await onboardingRepo.getAllOnboardingResults();
 
     const workbookData: any[] = [];
     const stats: Record<string, number> = {};
 
     for (const result of results) {
-      const userId = result.userId;
+      const userId = String(result.userId ?? "");
       const answers = result.answers || {};
       let name = "";
 
       try {
-        const user = await clerk.users.getUser(userId);
+        const user = await authAdmin.users.getUser(userId);
         name = (user.firstName || "") + " " + (user.lastName || "");
       } catch (e) {
-        console.warn("⚠️ Clerk user not found for:", userId);
+        console.warn("⚠️ Auth user not found for:", userId);
         name = "";
       }
 

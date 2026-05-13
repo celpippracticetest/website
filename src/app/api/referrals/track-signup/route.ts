@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
-import mongoClient from "@/lib/mongodb";
+import { auth, appUserAdmin } from "@/lib/auth/server-auth";
+import documentsClient from "@/lib/appDocumentsClient";
 import { ReferralRepository } from "@/repositories/referral.repo";
 import { ReferralInvitationRepository } from "@/repositories/referral-invitation.repo";
 
@@ -20,12 +20,12 @@ export async function POST(req: Request) {
       );
     }
 
-    const referralRepo = new ReferralRepository(mongoClient);
+    const referralRepo = new ReferralRepository(documentsClient);
     await referralRepo.ensureIndexes();
 
     const referrer = await referralRepo.findOneByCode(referralCode);
 
-    const clerk = await clerkClient();
+    const authAdmin = await appUserAdmin();
 
     if (!referrer) {
       return NextResponse.json(
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const invitationRepo = new ReferralInvitationRepository(mongoClient);
+    const invitationRepo = new ReferralInvitationRepository(documentsClient);
     await invitationRepo.ensureIndexes();
 
     const existingInvitation =
@@ -69,12 +69,12 @@ export async function POST(req: Request) {
 
     console.log(`✅ Created referral invitation: ${invitation._id}`);
 
-    const referrerUser = await clerk.users.getUser(referrer.userId);
+    const referrerUser = await authAdmin.users.getUser(referrer.userId);
     const currentMetadata = referrerUser.publicMetadata || {};
     const currentTotalInvitees = (currentMetadata as any)?.totalInvitees || 0;
     const newTotalInvitees = currentTotalInvitees + 1;
 
-    await clerk.users.updateUserMetadata(referrer.userId, {
+    await authAdmin.users.updateUserMetadata(referrer.userId, {
       publicMetadata: {
         ...currentMetadata,
         totalInvitees: newTotalInvitees,

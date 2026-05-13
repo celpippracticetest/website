@@ -8,7 +8,7 @@ import SvgLearningGift from "@/components/icons/LearningGift";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useHasEverPurchased } from "@/hooks/useHasEverPurchased";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
-import { isPaidClerkSubscriptionPlan } from "@/lib/clerkSubscriptionPlan";
+import { isPaidSubscriptionPlan } from "@/lib/subscriptionPlan";
 import { HomePricingPlansModal } from "@/components/pages/landing/HomePricingPlansModal";
 
 const TopHeaderRightSide = () => {
@@ -16,7 +16,7 @@ const TopHeaderRightSide = () => {
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
   const { user, isLoaded } = useHybridWebUser();
   const showPricingCta =
-    !user || !isPaidClerkSubscriptionPlan(user.publicMetadata?.plan);
+    !user || !isPaidSubscriptionPlan(user.publicMetadata?.plan);
   const { hasEverPurchased } = useHasEverPurchased();
 
   useEffect(() => {

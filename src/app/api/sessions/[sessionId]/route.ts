@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth, appUserAdmin } from "@/lib/auth/server-auth";
 import {
   addDeletedDeviceRestriction,
   getStableDeviceKeyFromSession,
@@ -24,8 +24,13 @@ export async function DELETE(
   }
 
   try {
-    const clerk = await clerkClient();
-    const targetSession = await clerk.sessions.getSession(sessionId);
+    const authAdmin = await appUserAdmin();
+    const targetSession = (await authAdmin.sessions.getSession(sessionId)) as {
+      userId: string;
+    } | null;
+    if (!targetSession) {
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
+    }
     if (targetSession.userId !== userId) {
       return NextResponse.json(
         { error: "You can only revoke your own sessions." },
@@ -33,9 +38,9 @@ export async function DELETE(
       );
     }
 
-    await clerk.sessions.revokeSession(sessionId);
+    await authAdmin.sessions.revokeSession(sessionId);
 
-    const deviceKey = getStableDeviceKeyFromSession(targetSession);
+    const deviceKey = getStableDeviceKeyFromSession(targetSession as any);
     if (!deviceKey) {
       return NextResponse.json({
         success: true,

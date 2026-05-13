@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import clientPromise from "@/lib/mongodb";
+import { auth } from "@/lib/auth/server-auth";
+import clientPromise from "@/lib/appDocumentsClient";
 import { sendGa4Events } from "@/lib/ga4MeasurementProtocol";
 
 export const dynamic = "force-dynamic";

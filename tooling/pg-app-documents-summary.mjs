@@ -38,10 +38,7 @@ if (!hasTasks || !hasPractices) {
     "\nPractice overview and /api/tasks need `tasks` and `practices` (or `prod.*`). None found in this DB."
   );
   console.log(
-    "Copy from Mongo: set MONGODB_URI and DATABASE_URL, then run: npm run etl:mongo-to-pg"
-  );
-  console.log(
-    "If those collections are in Mongo database named `prod`, set MONGODB_SECONDARY_DB=prod for the ETL run."
+    "Ensure `tasks` and `practices` exist in app_documents (DATABASE_URL). Use APP_DOCUMENTS_DB if collections use a `prod.*` prefix."
   );
 }
 

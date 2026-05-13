@@ -1,4 +1,4 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { BlogTargetKeywordRepository } from "@/repositories/blog-target-keyword.repo";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
 
     let targetPhrases: string[] = [];
     try {
-      const kwRepo = new BlogTargetKeywordRepository(mongoClient);
+      const kwRepo = new BlogTargetKeywordRepository(documentsClient);
       targetPhrases = await kwRepo.listActivePhrases();
     } catch (e) {
       console.warn("Blog generate-content: could not load target keywords", e);

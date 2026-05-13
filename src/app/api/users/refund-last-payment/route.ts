@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth, appUserAdmin } from "@/lib/auth/server-auth";
 import { z } from "zod";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import {
-  emailsFromClerkUser,
+  emailsFromAuthUser,
   resolveStripeCustomerId,
 } from "@/lib/resolveStripeCustomerId";
 import { RefundRequestRepository } from "@/repositories/refund-request.repo";
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   const { trackingCode } = parsed.data;
 
   try {
-    const repo = new RefundRequestRepository(mongoClient);
+    const repo = new RefundRequestRepository(documentsClient);
     const refundReq = await repo.findByTrackingCodeForUser({
       userId,
       trackingCode,
@@ -54,14 +54,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const clerk = await clerkClient();
-    const user = await clerk.users.getUser(userId);
+    const authAdmin = await appUserAdmin();
+    const user = await authAdmin.users.getUser(userId);
 
     const customerId = await resolveStripeCustomerId(userId, {
-      clerkStripeCustomerId: user.privateMetadata?.stripeCustomerId as
+      stripeCustomerIdFromPrivate: user.privateMetadata?.stripeCustomerId as
         | string
         | undefined,
-      emails: emailsFromClerkUser(user),
+      emails: emailsFromAuthUser(user),
     });
 
     if (!customerId) {
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
     const now = new Date();
     const currentMeta = (user.publicMetadata || {}) as Record<string, unknown>;
     try {
-      await clerk.users.updateUserMetadata(userId, {
+      await authAdmin.users.updateUserMetadata(userId, {
         publicMetadata: {
           ...currentMeta,
           plan: "free",
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
         },
       });
     } catch (metaErr) {
-      console.error("[refund-last-payment] Clerk metadata update failed", metaErr);
+      console.error("[refund-last-payment] Auth metadata update failed", metaErr);
     }
 
     return NextResponse.json({

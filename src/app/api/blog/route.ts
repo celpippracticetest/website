@@ -1,4 +1,4 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { BlogWriteSchema, BlogStatusEnumSchema } from "@/models/blog.model";
 import { BlogRepository } from "@/repositories/blog.repo";
 import { NextRequest, NextResponse } from "next/server";
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: parser.error.flatten() }, { status: 400 });
     }
 
-    const repo = new BlogRepository(mongoClient);
+    const repo = new BlogRepository(documentsClient);
     const blog = await repo.createBlog(parser.data);
     const shouldPublishToLinkedIn = publishToLinkedIn && blog.status === "published";
     const linkedinResult = shouldPublishToLinkedIn
@@ -131,7 +131,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: "Invalid status filter." }, { status: 400 });
     }
 
-    const repo = new BlogRepository(mongoClient);
+    const repo = new BlogRepository(documentsClient);
     const result = await repo.getAllBlogs(
       {
         status: statusParser.data,

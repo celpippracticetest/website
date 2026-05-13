@@ -1,11 +1,11 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { BlogTargetKeywordWriteSchema } from "@/models/blog-target-keyword.model";
 import { BlogTargetKeywordRepository } from "@/repositories/blog-target-keyword.repo";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const repo = new BlogTargetKeywordRepository(mongoClient);
+    const repo = new BlogTargetKeywordRepository(documentsClient);
     const items = await repo.listAll();
     return NextResponse.json({ items }, { status: 200 });
   } catch (error) {
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: parser.error.flatten() }, { status: 400 });
     }
 
-    const repo = new BlogTargetKeywordRepository(mongoClient);
+    const repo = new BlogTargetKeywordRepository(documentsClient);
     const duplicate = await repo.findDuplicatePhrase(parser.data.phrase);
     if (duplicate) {
       return NextResponse.json(

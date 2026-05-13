@@ -1,5 +1,5 @@
 import { attachStripePricingToSerializedPlans } from "@/lib/loadActivePlansWithStripePrices";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { isPremiumPlusPlan } from "@/lib/pricing";
 import { PlansRepository } from "@/repositories/plans.repo";
 import type { SerializedPlan } from "@/types/pricing";
@@ -52,7 +52,7 @@ export type GetActivePlansCatalogOptions = {
 export async function getActivePlansCatalog(
   options: GetActivePlansCatalogOptions = {}
 ): Promise<SerializedPlan[]> {
-  const db = await mongoClient.db();
+  const db = await documentsClient.db();
   const plansRepo = new PlansRepository(db);
   const plans = await plansRepo.getActivePlans();
   const serializedPlans = plans.map(serializePlan);

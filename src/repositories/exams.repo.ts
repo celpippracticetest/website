@@ -5,13 +5,13 @@ import {
   TExamSchemaDto,
 } from "@/models/exam.model";
 import { ObjectId } from "bson";
-import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
+import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
 
 export class ExamRepository {
   private readonly db: Db;
 
-  constructor(mongoClient: MongoClient) {
-    this.db = mongoClient.db();
+  constructor(documentsClient: AppDocumentsClient) {
+    this.db = documentsClient.db();
   }
 
   private getExamCollection() {
@@ -53,99 +53,27 @@ export class ExamRepository {
     totalItems: number;
   }> {
     const skip = page * limit;
-    const aggregateFilter = [
-      {
-        $match: {
-          ...filter,
-        },
-      },
-      {
-        $lookup: {
-          from: "practices", // The practices collection
-          localField: "_id", // The task ID in the tasks collection
-          foreignField: "taskId", // The task ID in the practices collection
-          as: "practices", // The resulting array of practices
-        },
-      },
-      {
-        $addFields: {
-          practiceCount: { $size: "$practices" }, // Count the number of practices for each task
-        },
-      },
-      {
-        $sort: {
-          order: 1,
-        },
-      },
-      {
-        $facet: {
-          total: [
-            {
-              $count: "count",
-            },
-          ],
-          data: [
-            {
-              $addFields: {
-                _id: "$_id",
-              },
-            },
-          ],
-        },
-      },
-      {
-        $unwind: "$total",
-      },
-      {
-        $project: {
-          items: {
-            $slice: [
-              "$data",
-              skip,
-              {
-                $ifNull: [limit, "$total.count"],
-              },
-            ],
-          },
-          page: {
-            $literal: skip / limit + 1,
-          },
-          hasNextPage: {
-            $lt: [{ $multiply: [limit, Number(page)] }, "$total.count"],
-          },
-          totalPages: {
-            $ceil: {
-              $divide: ["$total.count", limit],
-            },
-          },
-          totalItems: "$total.count",
-        },
-      },
-    ];
-
-    const results = await this.getExamCollection()
-      .aggregate(aggregateFilter)
-      .toArray();
-
-    if (results.length == 0) {
-      return {
-        items: [],
-        page: 0,
-        totalItems: 0,
-        totalPages: 0,
-        hasNextPage: false,
-      };
+    const entityFilter: Record<string, unknown> = { ...filter };
+    if ("id" in entityFilter && entityFilter.id != null) {
+      entityFilter._id = new ObjectId(String(entityFilter.id));
+      delete entityFilter.id;
     }
-    const practices = results[0]?.items || [];
+
+    const coll = this.getExamCollection();
+    const [totalItems, rawItems] = await Promise.all([
+      coll.countDocuments(entityFilter),
+      coll.find(entityFilter).sort({ order: 1 }).skip(skip).limit(limit).toArray(),
+    ]);
+
+    const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 0;
+    const hasNextPage = skip + rawItems.length < totalItems;
 
     return {
-      items: practices.map((practice: TExamSchema) =>
-        this.convertFromEntity(practice)
-      ),
+      items: (rawItems as TExamSchema[]).map((row) => this.convertFromEntity(row)),
       page,
-      totalItems: results[0].totalItems,
-      totalPages: results[0].totalPages,
-      hasNextPage: results[0].hasNextPage,
+      totalItems,
+      totalPages,
+      hasNextPage,
     };
   }
 

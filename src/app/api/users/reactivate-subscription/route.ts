@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth, appUserAdmin } from "@/lib/auth/server-auth";
 import {
-  emailsFromClerkUser,
+  emailsFromAuthUser,
   resolveStripeCustomerId,
 } from "@/lib/resolveStripeCustomerId";
 import { stripe } from "@/lib/stripe";
@@ -14,14 +14,14 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const clerk = await clerkClient();
-    const user = await clerk.users.getUser(userId);
+    const authAdmin = await appUserAdmin();
+    const user = await authAdmin.users.getUser(userId);
 
     const customerId = await resolveStripeCustomerId(userId, {
-      clerkStripeCustomerId: user.privateMetadata?.stripeCustomerId as
+      stripeCustomerIdFromPrivate: user.privateMetadata?.stripeCustomerId as
         | string
         | undefined,
-      emails: emailsFromClerkUser(user),
+      emails: emailsFromAuthUser(user),
     });
 
     if (!customerId) {
@@ -58,8 +58,8 @@ export async function POST(req: NextRequest) {
       }
     );
 
-    // Update Clerk metadata
-    await clerk.users.updateUserMetadata(userId, {
+    // Update auth directory metadata
+    await authAdmin.users.updateUserMetadata(userId, {
       publicMetadata: {
         planCancelled: false,
       },

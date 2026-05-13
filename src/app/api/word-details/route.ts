@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { ObjectId } from "bson";
 
 const SYSTEM_PROMPT = `You are a professional dictionary assistant helping students prepare for the CELPIP English proficiency exam. 
@@ -70,7 +70,7 @@ function normalizeWordKey(word: string) {
 }
 
 function getWordDetailsCollection() {
-  return mongoClient.db().collection<CachedWordDetails>("worddetails");
+  return documentsClient.db().collection<CachedWordDetails>("worddetails");
 }
 
 function ensureRequiredFields(details: WordDetails): WordDetails {
@@ -253,8 +253,8 @@ export async function GET(request: NextRequest) {
     const wordKey = normalizeWordKey(word);
     const collection = getWordDetailsCollection();
     const cached = await collection.findOne({ wordKey });
-    if (cached?.details && isCacheComplete(cached.details)) {
-      return NextResponse.json(cached.details);
+    if (cached?.details && isCacheComplete(cached.details as WordDetails)) {
+      return NextResponse.json(cached.details as WordDetails);
     }
 
     let details: WordDetails;

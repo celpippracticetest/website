@@ -1,6 +1,6 @@
 import { PracticeDtoSchema, PracticeSchema, TPracticeDto, TPracticeSchema } from "@/models/practice.model";
 import { ObjectId } from "bson";
-import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
+import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
 
 /**
  * Extract a 24-char hex string from an ObjectId-like value. Uses duck-typing so it works
@@ -62,8 +62,8 @@ function practiceEntityMatchesFilter(
 export class PracticeRepository {
   private readonly db: Db;
 
-  constructor(mongoClient: MongoClient) {
-    this.db = mongoClient.db();
+  constructor(documentsClient: AppDocumentsClient) {
+    this.db = documentsClient.db();
   }
 
   private getPracticeCollection() {

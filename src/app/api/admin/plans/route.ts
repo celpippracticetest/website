@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 import { ObjectId } from "bson";
 import { Plan } from "@/models/plans.model";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/server-auth";
 import { stripe } from "@/lib/stripe";
 import { getPlanRecurringConfig, parseBillingIntervalCount } from "@/lib/planBilling";
 
@@ -281,9 +281,9 @@ export async function PUT(req: NextRequest) {
         }
 
         const db = await getDb();
-        const existingPlan = await db.collection("plans").findOne<Plan>({
+        const existingPlan = (await db.collection("plans").findOne({
             _id: new ObjectId(_id),
-        });
+        })) as Plan | null;
 
         if (!existingPlan) {
             return NextResponse.json({ error: "Plan not found" }, { status: 404 });

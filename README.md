@@ -127,7 +127,7 @@ Production GA4 export tables live under **`celpip-d8f02.analytics_533185817`** (
 
 **Revenue / finance / growth** (UTMs, consent, Looker-style dashboard, paid social tests, churn experiments, Semrush when API units are available): see [`docs/finance-growth-bq-dashboard.md`](docs/finance-growth-bq-dashboard.md) and the linked playbooks in that doc.
 
-BigQuery receives **analytics events** (including `user_id` when set), not a full export of Clerk/Mongo/Stripe; join other sources in your warehouse when you need complete user records.
+BigQuery receives **analytics events** (including `user_id` when set), not a full export of auth providers or billing systems; join other sources in your warehouse when you need complete user records.
 
 ### 7) Cursor MCP for BigQuery
 

@@ -16,7 +16,7 @@ import React from "react";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
 import LoginModal from "@/components/modal/LoginModal";
-import { CustomSignUpForm } from "@/components/auth/CustomSignUpForm";
+import { SupabaseAuthForm } from "@/components/auth/SupabaseAuthForm";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import SvgCircle from "@/components/icons/Circle";
@@ -230,7 +230,7 @@ const ReadingPracticeView = ({
             >
               ×
             </button>
-            <CustomSignUpForm className="shadow-xl" />
+            <SupabaseAuthForm className="shadow-xl" initialMode="sign-up" />
           </div>
         </div>
       )}

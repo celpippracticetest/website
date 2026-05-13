@@ -1,5 +1,5 @@
 import { redirect, RedirectType } from "next/navigation";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
 import { TExamPartSchemaDto } from "@/models/examParts.model";
 import { PracticeDtoSchema } from "@/models/practice.model";
@@ -66,18 +66,18 @@ const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
   ) {
     redirect("/exam-overview", RedirectType.push);
   }
-  const examRepo = new ExamRepository(mongoClient);
+  const examRepo = new ExamRepository(documentsClient);
   const exam: TExamSchemaDto | null = await examRepo.findExamById(examId);
   if (!exam) {
     redirect("/exam-overview", RedirectType.push);
   }
-  const examPartsRepo = new ExamPartsRepository(mongoClient);
+  const examPartsRepo = new ExamPartsRepository(documentsClient);
   if (isResultPage) {
     const examParts = await examPartsRepo.getAllExamPart({
       examId: new ObjectId(examId),
     });
-    const answersRepo = new ListeningAndReadingAnswerRepository(mongoClient);
-    const writingRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
+    const answersRepo = new ListeningAndReadingAnswerRepository(documentsClient);
+    const writingRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
 
     const answers = await answersRepo.getAllListeningAndReadingAnswers({
       examId: examId,

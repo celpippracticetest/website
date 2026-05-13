@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 type PartnerRow = {
   id: string;
   code: string;
-  clerkUserId: string;
+  webUserId: string;
   payoutEmail: string;
   status: "pending" | "active" | "suspended";
   referredDiscountPercent: number | null;
@@ -273,7 +273,7 @@ export default function PartnersAdminClient() {
               <tr>
                 <th className="px-3 py-2 font-medium">Code</th>
                 <th className="px-3 py-2 font-medium">Payout email</th>
-                <th className="px-3 py-2 font-medium">Clerk user</th>
+                <th className="px-3 py-2 font-medium">User ID</th>
                 <th className="px-3 py-2 font-medium">Status</th>
                 <th className="px-3 py-2 font-medium">Referee %</th>
                 <th className="px-3 py-2 font-medium">Comm. %</th>
@@ -286,7 +286,7 @@ export default function PartnersAdminClient() {
                 <tr key={p.id} className="border-b border-border">
                   <td className="px-3 py-2 font-mono text-xs">{p.code}</td>
                   <td className="px-3 py-2">{p.payoutEmail}</td>
-                  <td className="px-3 py-2 font-mono text-xs">{p.clerkUserId}</td>
+                  <td className="px-3 py-2 font-mono text-xs">{p.webUserId}</td>
                   <td className="px-3 py-2">{p.status}</td>
                   <td className="px-3 py-2">
                     <input

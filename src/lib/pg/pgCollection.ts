@@ -3,13 +3,25 @@ import { EJSON } from "bson";
 import { Query, aggregate as mingoAggregate, update as mingoUpdate } from "mingo";
 import type { Sql } from "postgres";
 import { serializeDocument } from "./ejson";
-import { mongoFilterToSql } from "./whereBuilder";
-import { prepareInsertDocument, rowToDocument, documentRowKey, type MongoDoc } from "./document";
+import { documentFilterToSql } from "./whereBuilder";
+import { prepareInsertDocument, rowToDocument, documentRowKey, type AppDoc } from "./document";
 
-export type { MongoDoc } from "./document";
+export type { AppDoc } from "./document";
 
-function cloneDoc(doc: MongoDoc): MongoDoc {
-  return EJSON.deserialize(EJSON.serialize(doc)) as MongoDoc;
+function cloneDoc(doc: AppDoc): AppDoc {
+  return EJSON.deserialize(EJSON.serialize(doc)) as AppDoc;
+}
+
+/** `postgres` rows can include sparse/undefined slots; never assume every element is a row object. */
+function mapRowsToAppDocs<T extends AppDoc = AppDoc>(rows: unknown[]): T[] {
+  const out: T[] = [];
+  for (const r of rows) {
+    if (r == null || typeof r !== "object") continue;
+    const row = r as { mongo_id?: unknown; body?: unknown };
+    if (typeof row.mongo_id !== "string") continue;
+    out.push(rowToDocument(row.mongo_id, row.body) as T);
+  }
+  return out;
 }
 
 /**
@@ -26,12 +38,12 @@ function stripSetOnInsert(update: Record<string, unknown>): Record<string, unkno
   return out;
 }
 
-function runMingoUpdate(doc: MongoDoc, update: Record<string, unknown>): void {
+function runMingoUpdate(doc: AppDoc, update: Record<string, unknown>): void {
   mingoUpdate(doc, stripSetOnInsert(update) as never);
 }
 
-/** Mingo does not implement `$setOnInsert`; apply it only for upsert inserts (Mongo semantics). */
-function applySetOnInsert(doc: MongoDoc, update: Record<string, unknown>): void {
+/** Mingo does not implement `$setOnInsert`; apply it only for upsert inserts (document-store semantics). */
+function applySetOnInsert(doc: AppDoc, update: Record<string, unknown>): void {
   const soi = update.$setOnInsert;
   if (!soi || typeof soi !== "object" || Array.isArray(soi)) return;
   for (const [k, v] of Object.entries(soi as Record<string, unknown>)) {
@@ -39,8 +51,8 @@ function applySetOnInsert(doc: MongoDoc, update: Record<string, unknown>): void 
   }
 }
 
-function filterToPlainDoc(filter: Record<string, unknown>): MongoDoc {
-  const o: MongoDoc = {};
+function filterToPlainDoc(filter: Record<string, unknown>): AppDoc {
+  const o: AppDoc = {};
   for (const [k, v] of Object.entries(filter)) {
     if (k.startsWith("$")) continue;
     if (
@@ -93,7 +105,7 @@ async function resolvePinnedEnvPartition(
     if (process.env.NODE_ENV === "development" && !partitionFallbackWarned.has(preferredKey)) {
       partitionFallbackWarned.add(preferredKey);
       console.warn(
-        `[celpip/pg] APP_DOCUMENTS_DB=${env} but "${preferredKey}" is empty; using "${bare}" (${nBare} rows). Re-run ETL with MONGODB_SECONDARY_DB=${env} to fill ${preferredKey}, or unset APP_DOCUMENTS_DB.`
+        `[celpip/pg] APP_DOCUMENTS_DB=${env} but "${preferredKey}" is empty; using "${bare}" (${nBare} rows). Re-run ETL with the same namespace (e.g. APP_DOCUMENTS_DB=${env}) so "${preferredKey}" is populated, or unset APP_DOCUMENTS_DB.`
       );
     }
     return bare;
@@ -132,10 +144,9 @@ export async function resolveAppDocumentsPartitionKey(sql: Sql, logical: string)
   if (env != null && env !== "") {
     resolved = await resolvePinnedEnvPartition(sql, `${env}.${logical}`, env);
   } else if (process.env.APP_DOCUMENTS_AUTO_PROBE !== "0") {
-    // Prefer the unprefixed partition (default ETL output: `mongoClient.db()` against a
-    // URI like `mongodb://.../prod` writes rows under `practices`, not `prod.practices`).
-    // Only fall back to `prod.<name>` when nothing exists unprefixed — that catches old
-    // dumps produced when `MONGODB_SECONDARY_DB=prod` was still set.
+    // Prefer the unprefixed partition (default ETL: documents land under `practices`, not `prod.practices`).
+    // Only fall back to `prod.<name>` when nothing exists unprefixed — that catches older
+    // dumps produced when the ETL used a secondary namespace prefix.
     const nBare = await countAppDocumentsByCollection(sql, logical);
     if (nBare > 0) {
       resolved = logical;
@@ -146,7 +157,7 @@ export async function resolveAppDocumentsPartitionKey(sql: Sql, logical: string)
         if (process.env.NODE_ENV === "development" && !partitionFallbackWarned.has(logical)) {
           partitionFallbackWarned.add(logical);
           console.info(
-            `[celpip/pg] "${logical}" empty; falling back to "${prefixed}" (${nPref} rows). Re-run ETL without MONGODB_SECONDARY_DB so the unprefixed partition is the source of truth.`
+            `[celpip/pg] "${logical}" empty; falling back to "${prefixed}" (${nPref} rows). Re-run ETL so the unprefixed partition is the source of truth (or align APP_DOCUMENTS_DB with where data was written).`
           );
         }
         resolved = prefixed;
@@ -212,9 +223,15 @@ export class PgAggregateCursor {
   async toArray(): Promise<unknown[]> {
     return this.run();
   }
+
+  /** First row only (Mongo cursor compatibility; pipeline re-runs each call). */
+  async next(): Promise<unknown | null> {
+    const rows = await this.run();
+    return rows[0] ?? null;
+  }
 }
 
-export class PgCollection<T extends MongoDoc = MongoDoc> {
+export class PgCollection<T extends AppDoc = AppDoc> {
   /** Cached `app_documents.collection` (e.g. `prod.tasks`). */
   private resolvedPhysicalKey: string | null = null;
 
@@ -226,7 +243,7 @@ export class PgCollection<T extends MongoDoc = MongoDoc> {
   /**
    * Maps logical collection name from `db().collection("tasks")` to the row prefix in Postgres.
    * Uses `APP_DOCUMENTS_DB` when set; otherwise (unless `APP_DOCUMENTS_AUTO_PROBE=0`) prefers
-   * `prod.<name>` when that partition has rows, matching ETL with `MONGODB_SECONDARY_DB=prod`.
+   * `prod.<name>` when that partition has rows, matching ETL runs that used a namespace prefix.
    */
   async resolvePhysicalCollectionKey(): Promise<string> {
     if (this.resolvedPhysicalKey !== null) return this.resolvedPhysicalKey;
@@ -237,9 +254,17 @@ export class PgCollection<T extends MongoDoc = MongoDoc> {
   /** Fast path for `PgFindCursor` when the filter is empty. */
   async scanRawDocuments(rowLimit: number): Promise<{ mongo_id: string; body: unknown }[]> {
     const key = await this.resolvePhysicalCollectionKey();
-    return this.sql`
+    const rows = await this.sql`
       SELECT mongo_id, body FROM app_documents WHERE collection = ${key} LIMIT ${rowLimit}
     `;
+    const out: { mongo_id: string; body: unknown }[] = [];
+    for (const r of rows) {
+      if (r == null || typeof r !== "object") continue;
+      const row = r as { mongo_id?: unknown; body?: unknown };
+      if (typeof row.mongo_id !== "string") continue;
+      out.push({ mongo_id: row.mongo_id, body: row.body });
+    }
+    return out;
   }
 
   private async countAll(): Promise<number> {
@@ -255,7 +280,7 @@ export class PgCollection<T extends MongoDoc = MongoDoc> {
   }
 
   /** Full scan of another `app_documents.collection` key (for mingo `$lookup` / `$unionWith`). */
-  private async loadAllDocumentsForCollectionKey(collectionKey: string): Promise<MongoDoc[]> {
+  private async loadAllDocumentsForCollectionKey(collectionKey: string): Promise<AppDoc[]> {
     const n = await this.countDocumentsForCollectionKey(collectionKey);
     if (n > maxScan()) {
       throw new Error(
@@ -265,56 +290,55 @@ export class PgCollection<T extends MongoDoc = MongoDoc> {
     const rows = await this.sql`
       SELECT mongo_id, body FROM app_documents WHERE collection = ${collectionKey}
     `;
-    return rows.map((r: { mongo_id: string; body: unknown }) =>
-      rowToDocument(r.mongo_id, r.body)
-    );
+    return mapRowsToAppDocs(rows);
   }
 
   async findDocuments(filter: Record<string, unknown>): Promise<T[]> {
-    const n = await this.countAll();
-    if (n > maxScan()) {
-      throw new Error(
-        `Refusing to scan collection "${this.collectionKey}" with ${n} rows (APP_DOCUMENTS_MAX_SCAN=${maxScan()}).`
-      );
+    const phys = await this.resolvePhysicalCollectionKey();
+    const sqlParts = documentFilterToSql(phys, filter);
+    // `countAll()` hits the whole partition — avoid it when the filter already narrows in SQL
+    // (e.g. answers by practiceId + userId). Unscoped `collection = $1` still needs the guard.
+    const needsPartitionWideGuard =
+      sqlParts == null ||
+      sqlParts.clause.replace(/\s+/g, " ").trim() === "collection = $1";
+    if (needsPartitionWideGuard) {
+      const n = await this.countAll();
+      if (n > maxScan()) {
+        throw new Error(
+          `Refusing to scan collection "${this.collectionKey}" with ${n} rows (APP_DOCUMENTS_MAX_SCAN=${maxScan()}).`
+        );
+      }
     }
 
-    const phys = await this.resolvePhysicalCollectionKey();
-    const sqlParts = mongoFilterToSql(phys, filter);
     if (sqlParts) {
       const rows = await this.sql.unsafe(
         `SELECT mongo_id, body FROM app_documents WHERE ${sqlParts.clause}`,
         sqlParts.params as never[]
       );
-      return rows.map((r: { mongo_id: string; body: unknown }) =>
-        rowToDocument(r.mongo_id, r.body)
-      ) as T[];
+      return mapRowsToAppDocs<T>(rows);
     }
 
     const rows = await this.sql`
       SELECT mongo_id, body FROM app_documents WHERE collection = ${phys}
     `;
     const q = new Query(filter);
-    const out: T[] = [];
-    for (const r of rows) {
-      const doc = rowToDocument(r.mongo_id, r.body) as T;
-      if (q.test(doc as never)) out.push(doc);
-    }
-    return out;
+    return mapRowsToAppDocs<T>(rows).filter((doc) => q.test(doc as never));
   }
 
-  find<T extends MongoDoc = MongoDoc>(
+  find<T extends AppDoc = AppDoc>(
     filter: Record<string, unknown> = {},
     _options?: unknown
   ): PgFindCursor<T> {
     return new PgFindCursor<T>(this, filter);
   }
 
-  async findOne<T extends MongoDoc = MongoDoc>(
+  async findOne<T extends AppDoc = AppDoc>(
     filter: Record<string, unknown> = {},
-    options?: { projection?: Record<string, 0 | 1> }
+    options?: { projection?: Record<string, 0 | 1>; sort?: Record<string, 1 | -1> }
   ): Promise<T | null> {
     const cursor = new PgFindCursor<T>(this, filter);
     if (options?.projection) cursor.project(options.projection);
+    if (options?.sort) cursor.sort(options.sort);
     cursor.limit(1);
     const arr = await cursor.toArray();
     return (arr[0] ?? null) as T | null;
@@ -344,7 +368,7 @@ export class PgCollection<T extends MongoDoc = MongoDoc> {
       }
       throw e;
     }
-    const d = doc as MongoDoc;
+    const d = doc as AppDoc;
     const insertedId: ObjectId | string | number =
       d._id instanceof ObjectId
         ? d._id
@@ -424,7 +448,7 @@ export class PgCollection<T extends MongoDoc = MongoDoc> {
       if (upsert && !many) {
         const seed = filterToPlainDoc(filter);
         const next = cloneDoc(seed);
-        // Mongo upsert semantics: $setOnInsert fields form the base document, then $inc/$set apply.
+        // Upsert semantics: $setOnInsert fields form the base document, then $inc/$set apply.
         // Applying $setOnInsert after $inc would reset totals (e.g. totalPoints back to 0).
         applySetOnInsert(next, update);
         runMingoUpdate(next, update);
@@ -484,7 +508,7 @@ export class PgCollection<T extends MongoDoc = MongoDoc> {
 
   async countDocuments(filter: Record<string, unknown> = {}): Promise<number> {
     const phys = await this.resolvePhysicalCollectionKey();
-    const sqlParts = mongoFilterToSql(phys, filter);
+    const sqlParts = documentFilterToSql(phys, filter);
     if (sqlParts) {
       const rows = await this.sql.unsafe(
         `SELECT COUNT(*)::int AS c FROM app_documents WHERE ${sqlParts.clause}`,
@@ -540,7 +564,7 @@ export class PgCollection<T extends MongoDoc = MongoDoc> {
     return new PgAggregateCursor(async () => {
       const baseKey = await this.resolvePhysicalCollectionKey();
       const joinShortNames = collectJoinCollectionShortNames(pipeline);
-      const preload = new Map<string, MongoDoc[]>();
+      const preload = new Map<string, AppDoc[]>();
       for (const short of joinShortNames) {
         const key = await resolveAppDocumentsPartitionKey(this.sql, short);
         preload.set(short, await this.loadAllDocumentsForCollectionKey(key));
@@ -556,9 +580,7 @@ export class PgCollection<T extends MongoDoc = MongoDoc> {
       const rows = await this.sql`
         SELECT mongo_id, body FROM app_documents WHERE collection = ${baseKey}
       `;
-      const docs = rows.map((r: { mongo_id: string; body: unknown }) =>
-        rowToDocument(r.mongo_id, r.body)
-      );
+      const docs = mapRowsToAppDocs(rows);
       return mingoAggregate(docs, pipeline as never[], {
         collectionResolver: (name: string) => preload.get(name) ?? [],
       });
@@ -597,7 +619,7 @@ export class PgCollection<T extends MongoDoc = MongoDoc> {
   }
 }
 
-export class PgFindCursor<T extends MongoDoc = MongoDoc> {
+export class PgFindCursor<T extends AppDoc = AppDoc> {
   private sortSpec: Record<string, 1 | -1> | null = null;
   private skipN = 0;
   private limitN: number | null = null;
@@ -672,7 +694,7 @@ export class PgFindCursor<T extends MongoDoc = MongoDoc> {
     });
   }
 
-  /** Mongo cursor compatibility: returns first remaining document (uses limit 1 semantics). */
+  /** Compatibility cursor: returns first remaining document (uses limit 1 semantics). */
   async next(): Promise<T | null> {
     const arr = await this.toArray();
     return arr[0] ?? null;
@@ -685,9 +707,7 @@ export class PgFindCursor<T extends MongoDoc = MongoDoc> {
     if (filterEmpty && !this.sortSpec && this.limitN != null) {
       const rows = await this.coll.scanRawDocuments(this.skipN + this.limitN);
       const sliced = rows.slice(this.skipN);
-      docs = sliced.map((r: { mongo_id: string; body: unknown }) =>
-        rowToDocument(r.mongo_id, r.body)
-      ) as T[];
+      docs = mapRowsToAppDocs<T>(sliced);
     } else {
       docs = await this.coll.findDocuments(this.filter as Record<string, unknown>);
       docs = this.applySort(docs);

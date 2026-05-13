@@ -782,7 +782,7 @@ export default function PricingPageClient({
             </p>
             <p className="mt-3 text-xs leading-relaxed text-slate-600">
               Admins: sync the <span className="font-mono">plans</span> collection into Postgres{" "}
-              <span className="font-mono">app_documents</span> (Mongo→Postgres ETL), align{" "}
+              <span className="font-mono">app_documents</span> (legacy ETL into Postgres), align{" "}
               <span className="font-mono">APP_DOCUMENTS_DB</span> with how rows are keyed, and
               ensure plans are marked active in the CMS.
             </p>

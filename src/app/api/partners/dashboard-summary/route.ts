@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import mongoClient from "@/lib/mongodb";
+import { auth } from "@/lib/auth/server-auth";
+import documentsClient from "@/lib/appDocumentsClient";
 import { PartnerRepository } from "@/repositories/partner.repo";
 import { PartnerCommissionRepository } from "@/repositories/partner-commission.repo";
 
@@ -14,19 +14,19 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const partnerRepo = new PartnerRepository(mongoClient);
+    const partnerRepo = new PartnerRepository(documentsClient);
     await partnerRepo.ensureIndexes();
-    const partner = await partnerRepo.findByClerkUserId(userId);
+    const partner = await partnerRepo.findByWebUserId(userId);
     if (!partner) {
       return NextResponse.json({ error: "Partner not found" }, { status: 404 });
     }
 
-    const commissionRepo = new PartnerCommissionRepository(mongoClient);
+    const commissionRepo = new PartnerCommissionRepository(documentsClient);
     await commissionRepo.ensureIndexes();
     const commissions = await commissionRepo.findByPartnerId(partner.id);
     const totals = await commissionRepo.aggregateTotalsForPartner(partner.id);
 
-    const db = mongoClient.db();
+    const db = documentsClient.db();
     const referred = await db
       .collection("users")
       .find(
@@ -57,7 +57,7 @@ export async function GET() {
       commissions,
       totals,
       referredUsers: referred.map((u) => ({
-        clerkUserId: u.clerkUserId,
+        webUserId: u.clerkUserId,
         purchaseAmount: u.purchaseAmount,
         purchaseCurrency: u.purchaseCurrency,
         plan: u.plan,

@@ -1,5 +1,5 @@
-import { clerkClient } from "@clerk/nextjs/server";
-import mongoClient from "@/lib/mongodb";
+import { appUserAdmin } from "@/lib/auth/server-auth";
+import documentsClient from "@/lib/appDocumentsClient";
 
 export type PlanPublicMetadataPatch = {
   plan: string;
@@ -9,14 +9,14 @@ export type PlanPublicMetadataPatch = {
 };
 
 /**
- * Merges into Clerk `publicMetadata` and mirrors plan fields to MongoDB `users`
- * (same pattern as Stripe webhook `updateUserPublicMetadata`).
+ * Merges into `publicMetadata` (Supabase Auth / app bridge) and mirrors plan fields to the `users`
+ * collection (same pattern as Stripe webhook `updateUserPublicMetadata`).
  */
 export async function syncUserPlanPublicMetadata(
   userId: string,
   patch: PlanPublicMetadataPatch
 ) {
-  const client = await clerkClient();
+  const client = await appUserAdmin();
   const user = await client.users.getUser(userId);
   const current = (user.publicMetadata || {}) as Record<string, unknown>;
   const publicMetadata = { ...current, ...patch };
@@ -26,7 +26,7 @@ export async function syncUserPlanPublicMetadata(
   });
 
   try {
-    const db = await mongoClient.db();
+    const db = await documentsClient.db();
     const $set: Record<string, unknown> = {
       publicMetadata,
       updatedAt: new Date(),
@@ -35,11 +35,11 @@ export async function syncUserPlanPublicMetadata(
     if (patch.planType !== undefined) $set.planType = patch.planType;
 
     await db.collection("users").updateOne(
-      { clerkUserId: userId },
+      { $or: [{ clerkUserId: userId }, { supabaseUserId: userId }] },
       { $set },
       { upsert: true }
     );
   } catch (err) {
-    console.error("[syncUserPlanPublicMetadata] MongoDB sync failed", err);
+    console.error("[syncUserPlanPublicMetadata] user document sync failed", err);
   }
 }

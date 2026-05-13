@@ -22,7 +22,7 @@ export type TPartnerSchema = z.infer<typeof PartnerBaseSchema>;
 const PartnerDtoSchema = z.object({
   id: z.string(),
   code: z.string(),
-  clerkUserId: z.string(),
+  webUserId: z.string(),
   payoutEmail: z.string(),
   status: PartnerStatusSchema,
   referredDiscountPercent: z.number().nullable().optional(),
@@ -37,7 +37,7 @@ export function partnerToDto(doc: TPartnerSchema): TPartnerDto {
   return {
     id: doc._id.toHexString(),
     code: doc.code,
-    clerkUserId: doc.clerkUserId,
+    webUserId: doc.clerkUserId,
     payoutEmail: doc.payoutEmail,
     status: doc.status,
     referredDiscountPercent:

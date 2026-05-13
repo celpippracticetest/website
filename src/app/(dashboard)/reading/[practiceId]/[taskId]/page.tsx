@@ -1,5 +1,5 @@
 import ReadingPractice from "@/components/dashboard-app/reading-practice/ReadingPractice";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
@@ -25,8 +25,8 @@ type PageProps = {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { practiceId, taskId } = await params;
-  const taskRepo = new TaskRepository(mongoClient);
-  const practiceRepo = new PracticeRepository(mongoClient);
+  const taskRepo = new TaskRepository(documentsClient);
+  const practiceRepo = new PracticeRepository(documentsClient);
   const task = await taskRepo.findTaskById(taskId);
   const practice = await practiceRepo.findPractice(practiceId);
   if (!task || !practice) {
@@ -57,13 +57,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ReadingPracticeSubPage({ params }: PageProps) {
   const { practiceId, taskId } = await params;
-  const taskRepo = new TaskRepository(mongoClient);
+  const taskRepo = new TaskRepository(documentsClient);
   const task: TTaskSchemaDto | null = await taskRepo.findTaskById(taskId);
   if (!task) {
     redirect("/practice-overview", RedirectType.replace);
   }
 
-  const practiceRepo = new PracticeRepository(mongoClient);
+  const practiceRepo = new PracticeRepository(documentsClient);
   const practices = await practiceRepo.getAllPractice(
     {
       type: "READING",
@@ -98,7 +98,7 @@ export default async function ReadingPracticeSubPage({ params }: PageProps) {
   let answers: TListeningAndReadingAnswerDto | null = null;
   let completedPractice: string[] = [];
   if (user) {
-    const listeningAndReadingAnswerRepo = new ListeningAndReadingAnswerRepository(mongoClient);
+    const listeningAndReadingAnswerRepo = new ListeningAndReadingAnswerRepository(documentsClient);
     answers = await listeningAndReadingAnswerRepo.findAnswerByPracticeAndUser(
       practiceId,
       user.id

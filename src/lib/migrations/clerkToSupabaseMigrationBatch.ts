@@ -75,7 +75,7 @@ export type MigrateClerkUsersPageOutput = {
 };
 
 /**
- * Migrates one page of Clerk users into Supabase Auth + app `users` documents (same rules as the admin API route).
+ * Migrates one page of Clerk users into Supabase Auth + app `users` documents.
  */
 export async function migrateClerkUsersPage(
   input: MigrateClerkUsersPageInput
@@ -108,9 +108,18 @@ export async function migrateClerkUsersPage(
       continue;
     }
 
-    const existingMongo = await usersCollection.findOne({ clerkUserId: cu.id });
+    const existingUserDoc = await usersCollection.findOne({ clerkUserId: cu.id });
     const existingSupabaseId =
-      typeof existingMongo?.supabaseUserId === "string" ? existingMongo.supabaseUserId.trim() : "";
+      typeof existingUserDoc?.supabaseUserId === "string" ? existingUserDoc.supabaseUserId.trim() : "";
+
+    const userDocBase: Record<string, unknown> = {
+      clerkUserId: cu.id,
+      email,
+      updatedAt: new Date(),
+    };
+    if (cu.firstName) userDocBase.firstName = cu.firstName;
+    if (cu.lastName) userDocBase.lastName = cu.lastName;
+    if (cu.imageUrl) userDocBase.imageUrl = cu.imageUrl;
 
     if (existingSupabaseId && !refreshMetadata) {
       skippedAlreadyLinked++;
@@ -126,7 +135,7 @@ export async function migrateClerkUsersPage(
       if (getErr || !existingAuth.user) {
         errors.push({
           clerkUserId: cu.id,
-          message: getErr?.message ?? "Supabase user from Mongo not found; clear supabaseUserId or fix id.",
+          message: getErr?.message ?? "getUserById failed for refresh.",
         });
         continue;
       }
@@ -150,16 +159,11 @@ export async function migrateClerkUsersPage(
         { clerkUserId: cu.id },
         {
           $set: {
-            email,
-            firstName: cu.firstName ?? null,
-            lastName: cu.lastName ?? null,
-            imageUrl: cu.imageUrl ?? null,
-            publicMetadata: (cu.publicMetadata ?? {}) as Record<string, unknown>,
-            plan: ((cu.publicMetadata ?? {}) as { plan?: string }).plan || "free",
-            planType: ((cu.publicMetadata ?? {}) as { planType?: string | null }).planType ?? null,
-            clerkMigrationMetadataSyncedAt: new Date(),
-            updatedAt: new Date(),
+            ...userDocBase,
+            supabaseUserId: existingSupabaseId,
+            clerkSupabaseMetadataRefreshedAt: new Date(),
           },
+          $setOnInsert: { createdAt: new Date() },
         },
         { upsert: true }
       );
@@ -172,23 +176,11 @@ export async function migrateClerkUsersPage(
       continue;
     }
 
-    const publicMetadata = (cu.publicMetadata ?? {}) as Record<string, unknown>;
-    const mongoBase = {
-      clerkUserId: cu.id,
-      email,
-      firstName: cu.firstName ?? null,
-      lastName: cu.lastName ?? null,
-      imageUrl: cu.imageUrl ?? null,
-      publicMetadata,
-      plan: (publicMetadata.plan as string | undefined) || "free",
-      planType: (publicMetadata.planType as string | null | undefined) ?? null,
-      updatedAt: new Date(),
-    };
-
+    const password = randomMigrationPassword();
     const { data: createdUser, error: createErr } = await admin.auth.admin.createUser({
       email,
-      password: randomMigrationPassword(),
       email_confirm: true,
+      password,
       user_metadata,
       app_metadata,
     });
@@ -231,7 +223,7 @@ export async function migrateClerkUsersPage(
           { clerkUserId: cu.id },
           {
             $set: {
-              ...mongoBase,
+              ...userDocBase,
               supabaseUserId: existingId,
               clerkLinkedToExistingSupabaseAt: new Date(),
             },
@@ -258,7 +250,7 @@ export async function migrateClerkUsersPage(
       { clerkUserId: cu.id },
       {
         $set: {
-          ...mongoBase,
+          ...userDocBase,
           supabaseUserId,
           clerkMigratedToSupabaseAt: new Date(),
         },

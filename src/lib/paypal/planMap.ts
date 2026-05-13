@@ -1,5 +1,5 @@
 import { safeStripePriceId } from "@/lib/checkoutCancelUrl";
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 
 type PlanEntry = { paypalPlanId: string };
 
@@ -71,7 +71,7 @@ export async function resolvePayPalPlanIdForStripePrice(
       return id;
     }
   } catch {
-    /* Mongo unavailable in some environments */
+    /* Document store unavailable in some environments */
   }
   return null;
 }

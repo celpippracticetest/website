@@ -1,4 +1,4 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { TBlogSchemaDto } from "@/models/blog.model";
 import { BlogRepository } from "@/repositories/blog.repo";
 
@@ -7,7 +7,7 @@ export async function getPublishedBlogPosts(
   limit: number = 20
 ): Promise<{ items: TBlogSchemaDto[]; totalItems: number }> {
   try {
-    const repo = new BlogRepository(mongoClient);
+    const repo = new BlogRepository(documentsClient);
     const result = await repo.getPublishedBlogs(page, limit);
     return {
       items: result.items,
@@ -21,7 +21,7 @@ export async function getPublishedBlogPosts(
 
 export async function getPublishedBlogPostBySlug(slug: string): Promise<TBlogSchemaDto | null> {
   try {
-    const repo = new BlogRepository(mongoClient);
+    const repo = new BlogRepository(documentsClient);
     return await repo.findPublishedBySlug(slug);
   } catch (error) {
     console.error("Failed to read published blog post by slug:", error);
@@ -36,7 +36,7 @@ export async function getRelatedPublishedPosts(
   limit: number = 3
 ): Promise<TBlogSchemaDto[]> {
   try {
-    const repo = new BlogRepository(mongoClient);
+    const repo = new BlogRepository(documentsClient);
     return await repo.findRelatedPublishedBlogs(currentId, categories, tags, limit);
   } catch (error) {
     console.error("Failed to read related published blog posts:", error);
@@ -46,7 +46,7 @@ export async function getRelatedPublishedPosts(
 
 export async function getPublishedBlogSlugs(): Promise<Array<{ slug: string; updatedAt: Date; canonicalUrl?: string }>> {
   try {
-    const repo = new BlogRepository(mongoClient);
+    const repo = new BlogRepository(documentsClient);
     return await repo.getPublishedSlugs();
   } catch (error) {
     console.error("Failed to read published blog slugs:", error);

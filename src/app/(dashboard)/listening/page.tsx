@@ -2,7 +2,7 @@ import ListeningPractice from "@/components/dashboard-app/listening-practice/Lis
 import ShowTasks from "@/components/dashboard-new/ShowTasks";
 import ShowTaskHeader from "@/components/dashboard-new/ShowTasks/Header";
 import SvgListeningPart from "@/components/icons/ListeningPart";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
@@ -78,7 +78,7 @@ const DashboardApp = async ({
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) => {
   const { selectedPracticeId, taskId } = await searchParams;
-  const taskRepo = new TaskRepository(mongoClient);
+  const taskRepo = new TaskRepository(documentsClient);
   const tasks = await taskRepo.getAllTask({ type: "practice" }, 0, 100);
 
   const listeningTasks: PracticeSection[] = [
@@ -162,7 +162,7 @@ const DashboardApp = async ({
   if (!task) {
     redirect("/practice-overview", RedirectType.replace);
   }
-  const practiceRepo = new PracticeRepository(mongoClient);
+  const practiceRepo = new PracticeRepository(documentsClient);
   const practices = await practiceRepo.getAllPractice(
     {
       type: "LISTENING",
@@ -193,7 +193,7 @@ const DashboardApp = async ({
   let completedPractice: string[] = [];
   if (user) {
     const listeningAndReadingAnswerRepo =
-      new ListeningAndReadingAnswerRepository(mongoClient);
+      new ListeningAndReadingAnswerRepository(documentsClient);
     if (selectedPracticeId) {
       answers = await listeningAndReadingAnswerRepo.findAnswerByPracticeAndUser(
         selectedPracticeId,

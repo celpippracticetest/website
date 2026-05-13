@@ -1,8 +1,13 @@
-import { clerkClient } from "@clerk/nextjs/server";
-import { getDb } from "@/lib/mongodb";
+import { appUserAdmin } from "@/lib/auth/server-auth";
+import { getDb } from "@/lib/appDocumentsClient";
 import { logger, captureException } from "@/lib/sentry-logger";
 import { planNameIndicatesPremiumPlus } from "@/lib/subscriptionAccess";
-import { recordPartnerCommissionFromMongoUser } from "@/lib/partner/recordPartnerCommissionFromMongoUser";
+import { recordPartnerCommissionForSubscriber } from "@/lib/partner/recordPartnerCommissionForSubscriber";
+import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
+import {
+  matchUsersCollectionByWebUserIds,
+  supabaseAuthUserIdFieldsOnUserDoc,
+} from "@/lib/users/userDocumentIdentity";
 
 export async function applyPayPalSubscriptionEntitlements(params: {
   userId: string;
@@ -12,8 +17,8 @@ export async function applyPayPalSubscriptionEntitlements(params: {
   planRenewsAtIso?: string | null;
 }): Promise<void> {
   try {
-    const clerk = await clerkClient();
-    const user = await clerk.users.getUser(params.userId);
+    const authAdmin = await appUserAdmin();
+    const user = await authAdmin.users.getUser(params.userId);
     const userMetadata = user.publicMetadata as Record<string, unknown>;
 
     const hasDiscountFields = Boolean(
@@ -56,7 +61,7 @@ export async function applyPayPalSubscriptionEntitlements(params: {
     const currentMetadata = user.publicMetadata || {};
     const updatedMetadata = { ...currentMetadata, ...newFields };
 
-    await clerk.users.updateUserMetadata(params.userId, {
+    await authAdmin.users.updateUserMetadata(params.userId, {
       publicMetadata: updatedMetadata,
     });
 
@@ -95,12 +100,20 @@ export async function applyPayPalSubscriptionEntitlements(params: {
     }
 
     await db.collection("users").updateOne(
-      { clerkUserId: params.userId },
-      { $set: updateDoc },
+      matchUsersCollectionByWebUserIds(params.userId),
+      {
+        $set: updateDoc,
+        $setOnInsert: {
+          createdAt: new Date(),
+          ...(isLikelySupabaseAuthUserId(params.userId)
+            ? supabaseAuthUserIdFieldsOnUserDoc(params.userId)
+            : { clerkUserId: params.userId }),
+        },
+      },
       { upsert: true }
     );
 
-    await recordPartnerCommissionFromMongoUser(params.userId);
+    await recordPartnerCommissionForSubscriber(params.userId);
 
     logger.info("PayPal subscription entitlements applied", {
       component: "paypal_subscriptions",

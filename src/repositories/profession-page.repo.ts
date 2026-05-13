@@ -1,5 +1,5 @@
-import type { MongoFilter } from "@/lib/pg/types";
-import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
+import type { AppDocFilter } from "@/lib/pg/types";
+import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
 import {
   ProfessionPageContentSchema,
   TProfessionPageContent,
@@ -18,8 +18,8 @@ export type ProfessionPageSummary = {
 export class ProfessionPageRepository {
   private readonly db: Db;
 
-  constructor(mongoClient: MongoClient) {
-    this.db = mongoClient.db();
+  constructor(documentsClient: AppDocumentsClient) {
+    this.db = documentsClient.db();
   }
 
   private collection() {
@@ -34,7 +34,7 @@ export class ProfessionPageRepository {
     const doc = await this.collection().findOne({
       slug,
       published: true,
-    } satisfies MongoFilter<ProfessionPageDoc>);
+    } satisfies AppDocFilter<ProfessionPageDoc>);
     if (!doc) return null;
     const parsed = ProfessionPageContentSchema.safeParse(doc);
     if (!parsed.success) {
@@ -67,7 +67,7 @@ export class ProfessionPageRepository {
 
   async listPublishedSlugs(): Promise<string[]> {
     const rows = await this.collection()
-      .find({ published: true } satisfies MongoFilter<ProfessionPageDoc>, { projection: { slug: 1 } })
+      .find({ published: true } satisfies AppDocFilter<ProfessionPageDoc>, { projection: { slug: 1 } })
       .sort({ slug: 1 })
       .toArray();
     return rows.map((r) => r.slug).filter(Boolean);
@@ -75,7 +75,7 @@ export class ProfessionPageRepository {
 
   async listPublished(): Promise<TProfessionPageContent[]> {
     const rows = await this.collection()
-      .find({ published: true } satisfies MongoFilter<ProfessionPageDoc>)
+      .find({ published: true } satisfies AppDocFilter<ProfessionPageDoc>)
       .sort({ slug: 1 })
       .toArray();
 
@@ -98,7 +98,7 @@ export class ProfessionPageRepository {
   async listPublishedSummaries(): Promise<ProfessionPageSummary[]> {
     const rows = await this.collection()
       .find(
-        { published: true } satisfies MongoFilter<ProfessionPageDoc>,
+        { published: true } satisfies AppDocFilter<ProfessionPageDoc>,
         { projection: { slug: 1, title: 1, icon: 1 } }
       )
       .sort({ slug: 1 })

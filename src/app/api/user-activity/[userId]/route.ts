@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, currentUser } from "@clerk/nextjs/server";
-import client from "@/lib/mongodb";
+import { auth, currentUser, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
+import client from "@/lib/appDocumentsClient";
+import { matchUsersCollectionByWebUserIds } from "@/lib/users/userDocumentIdentity";
 
 export async function GET(
   request: NextRequest,
@@ -17,7 +18,7 @@ export async function GET(
     const authenticate = await auth();
 
     const isAdmin =
-      authenticate.sessionClaims?.metadata?.roles?.includes("admin");
+      sessionClaimsHasAdminRole(authenticate.sessionClaims);
     if (!isAdmin && currentUserData.id !== resolvedParams.userId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -207,7 +208,7 @@ export async function GET(
     let challengeProfile: unknown = null;
     try {
       const userRow = await usersCollection.findOne(
-        { clerkUserId: resolvedParams.userId },
+        matchUsersCollectionByWebUserIds(resolvedParams.userId),
         { projection: { challenge: 1 } }
       );
       challengeProfile = userRow?.challenge ?? null;

@@ -1,4 +1,4 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { WikiArticleWriteSchema } from "@/models/wiki.model";
 import { WikiRepository } from "@/repositories/wiki.repo";
 import { NextRequest, NextResponse } from "next/server";
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const repo = new WikiRepository(mongoClient);
+    const repo = new WikiRepository(documentsClient);
     const article = await repo.create(parser.data);
 
     return NextResponse.json({ id: article.id }, { status: 200 });
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   try {
-    const repo = new WikiRepository(mongoClient);
+    const repo = new WikiRepository(documentsClient);
     const items = await repo.findAll();
     return NextResponse.json({
       items,

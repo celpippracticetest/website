@@ -1,4 +1,4 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { LeadCaptureConfigRepository } from "@/repositories/lead-capture-config.repo";
 import { NextResponse } from "next/server";
 
@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const repo = new LeadCaptureConfigRepository(mongoClient);
+    const repo = new LeadCaptureConfigRepository(documentsClient);
     await repo.ensureIndexes();
     const configs = await repo.getPublicConfigs();
 

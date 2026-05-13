@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { clerkClient } from "@clerk/nextjs/server";
+import { appUserAdmin } from "@/lib/auth/server-auth";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const client = await clerkClient();
+    const client = await appUserAdmin();
     const user = await client.users.getUser(userId);
     const userMetadata = user.publicMetadata as any;
 

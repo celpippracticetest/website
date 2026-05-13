@@ -1,4 +1,4 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { BlogTargetKeywordWriteSchema } from "@/models/blog-target-keyword.model";
 import { BlogTargetKeywordRepository } from "@/repositories/blog-target-keyword.repo";
 import { ObjectId } from "bson";
@@ -30,7 +30,7 @@ export async function PATCH(
       return NextResponse.json({ message: "No fields to update." }, { status: 400 });
     }
 
-    const repo = new BlogTargetKeywordRepository(mongoClient);
+    const repo = new BlogTargetKeywordRepository(documentsClient);
 
     if (parser.data.phrase != null) {
       const duplicate = await repo.findDuplicatePhrase(parser.data.phrase, id);
@@ -64,7 +64,7 @@ export async function DELETE(
       return NextResponse.json({ message: "Invalid keyword id." }, { status: 400 });
     }
 
-    const repo = new BlogTargetKeywordRepository(mongoClient);
+    const repo = new BlogTargetKeywordRepository(documentsClient);
     const deleted = await repo.delete(id);
     if (!deleted) {
       return NextResponse.json({ message: "Keyword not found." }, { status: 404 });

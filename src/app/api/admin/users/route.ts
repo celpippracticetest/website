@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
-import client from "@/lib/mongodb";
+import { auth, currentUser, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
+import client from "@/lib/appDocumentsClient";
 
 function toDate(value: unknown): Date | null {
   if (!value) return null;
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     const authenticate = await auth();
     const isAdmin =
-      authenticate.sessionClaims?.metadata?.roles?.includes("admin");
+      sessionClaimsHasAdminRole(authenticate.sessionClaims);
     if (!isAdmin)
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
@@ -31,7 +31,6 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get("sortBy") || "lastActivity";
     const sortOrder = searchParams.get("sortOrder") || "desc";
     const subscriptionStatus = searchParams.get("subscriptionStatus");
-    const deviceFilter = searchParams.get("deviceFilter") || "all";
 
     const db = client.db();
     const userActivityCollection = db.collection("useractivities");
@@ -185,7 +184,26 @@ export async function GET(request: NextRequest) {
           pipeline: [
             {
               $project: {
-                _id: "$clerkUserId", // Map clerkUserId to _id to match activity grouping
+                // Canonical id for $group: must match `useractivities.userId` (Supabase UUID, legacy Clerk id, or JWT sub).
+                _id: {
+                  $let: {
+                    vars: {
+                      orderedIds: {
+                        $filter: {
+                          input: ["$supabaseUserId", "$clerkUserId", "$sub"],
+                          as: "uid",
+                          cond: {
+                            $and: [
+                              { $eq: [{ $type: "$$uid" }, "string"] },
+                              { $gt: [{ $strLenCP: "$$uid" }, 0] },
+                            ],
+                          },
+                        },
+                      },
+                    },
+                    in: { $arrayElemAt: ["$$orderedIds", 0] },
+                  },
+                },
                 email: 1,
                 firstName: 1,
                 lastName: 1,
@@ -195,29 +213,29 @@ export async function GET(request: NextRequest) {
                 purchaseCurrency: { $ifNull: ["$publicMetadata.purchaseCurrency", "CAD"] },
                 totalSpend: { $ifNull: ["$publicMetadata.totalSpend", 0] },
                 // Try publicMetadata first, fallback to attribution.firstTouch
-                utm_source: { 
+                utm_source: {
                   $ifNull: [
-                    "$publicMetadata.utm_source", 
-                    { $ifNull: ["$attribution.firstTouch.source", null] }
-                  ] 
+                    "$publicMetadata.utm_source",
+                    { $ifNull: ["$attribution.firstTouch.source", null] },
+                  ],
                 },
-                utm_medium: { 
+                utm_medium: {
                   $ifNull: [
-                    "$publicMetadata.utm_medium", 
-                    { $ifNull: ["$attribution.firstTouch.medium", null] }
-                  ] 
+                    "$publicMetadata.utm_medium",
+                    { $ifNull: ["$attribution.firstTouch.medium", null] },
+                  ],
                 },
-                utm_campaign: { 
+                utm_campaign: {
                   $ifNull: [
-                    "$publicMetadata.utm_campaign", 
-                    { $ifNull: ["$attribution.firstTouch.campaign", null] }
-                  ] 
+                    "$publicMetadata.utm_campaign",
+                    { $ifNull: ["$attribution.firstTouch.campaign", null] },
+                  ],
                 },
-                gclid: { 
+                gclid: {
                   $ifNull: [
-                    "$publicMetadata.gclid", 
-                    { $ifNull: ["$attribution.firstTouch.gclid", null] }
-                  ] 
+                    "$publicMetadata.gclid",
+                    { $ifNull: ["$attribution.firstTouch.gclid", null] },
+                  ],
                 },
                 planCancelled: { $ifNull: ["$publicMetadata.planCancelled", false] },
                 publicMetadataPurchaseDate: "$publicMetadata.purchaseDate",
@@ -229,6 +247,7 @@ export async function GET(request: NextRequest) {
                 isUserProfile: { $literal: true },
               },
             },
+            { $match: { _id: { $nin: [null, ""] } } },
           ],
         },
       },
@@ -330,8 +349,12 @@ export async function GET(request: NextRequest) {
       .aggregate(pipeline, { allowDiskUse: true })
       .toArray();
 
-    const data = result[0].data || [];
-    const totalCount = result[0].metadata[0]?.total || 0;
+    const facet = result[0] as {
+      data?: unknown[];
+      metadata?: Array<{ total?: number }>;
+    };
+    const data = facet.data || [];
+    const totalCount = facet.metadata?.[0]?.total || 0;
 
     // Format Response
     const formattedUsers = data.map((user: any) => {
@@ -439,46 +462,13 @@ export async function GET(request: NextRequest) {
       subscriptionEndDate: subscriptionEndDate ? subscriptionEndDate.toISOString() : null,
     }});
 
-    const clerk = await clerkClient();
-    const usersWithClerkDevices = await Promise.all(
-      formattedUsers.map(async (user: any) => {
-        try {
-          const { data: sessions } = await clerk.sessions.getSessionList({
-            userId: user.userId,
-          });
-          const activeSessions = sessions.filter((session) => session.status === "active");
-          return {
-            ...user,
-            clerkDeviceCount: activeSessions.length,
-          };
-        } catch (error) {
-          console.error("Failed to load Clerk sessions for user:", user.userId, error);
-          return {
-            ...user,
-            clerkDeviceCount: 0,
-          };
-        }
-      })
-    );
-
-    const filteredUsers =
-      deviceFilter === "gt3"
-        ? usersWithClerkDevices.filter(
-            (user: { clerkDeviceCount?: number }) =>
-              (user.clerkDeviceCount ?? 0) > 3
-          )
-        : usersWithClerkDevices;
-
     return NextResponse.json({
-      users: filteredUsers,
+      users: formattedUsers,
       pagination: {
         page,
         limit,
-        totalCount: deviceFilter === "gt3" ? filteredUsers.length : totalCount,
-        totalPages:
-          deviceFilter === "gt3"
-            ? Math.max(1, Math.ceil(filteredUsers.length / limit))
-            : Math.ceil(totalCount / limit),
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
       },
     });
   } catch (error) {

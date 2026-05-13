@@ -2,17 +2,17 @@ import { ReferralRepository } from "@/repositories/referral.repo";
 import type { TPartnerDto, TPartnerSchema } from "@/models/partner.model";
 import { partnerToDto } from "@/models/partner.model";
 import { ObjectId } from "bson";
-import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
+import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
 
 const COLL = "partners";
 
 export class PartnerRepository {
   private readonly db: Db;
-  private readonly mongoClient: MongoClient;
+  private readonly documentsClient: AppDocumentsClient;
 
-  constructor(mongoClient: MongoClient) {
-    this.mongoClient = mongoClient;
-    this.db = mongoClient.db();
+  constructor(documentsClient: AppDocumentsClient) {
+    this.documentsClient = documentsClient;
+    this.db = documentsClient.db();
   }
 
   private col() {
@@ -41,8 +41,8 @@ export class PartnerRepository {
     return doc ? partnerToDto(doc) : null;
   }
 
-  async findByClerkUserId(clerkUserId: string): Promise<TPartnerDto | null> {
-    const doc = await this.col().findOne({ clerkUserId });
+  async findByWebUserId(webUserId: string): Promise<TPartnerDto | null> {
+    const doc = await this.col().findOne({ clerkUserId: webUserId });
     return doc ? partnerToDto(doc) : null;
   }
 
@@ -56,7 +56,7 @@ export class PartnerRepository {
     const c = code.trim();
     const hit = await this.col().findOne({ code: c }, { projection: { _id: 1 } });
     if (hit) return true;
-    const refRepo = new ReferralRepository(this.mongoClient);
+    const refRepo = new ReferralRepository(this.documentsClient);
     await refRepo.ensureIndexes();
     const refHit = await refRepo.findOneByCode(c);
     return Boolean(refHit);
@@ -64,7 +64,7 @@ export class PartnerRepository {
 
   async insertPartner(doc: {
     code: string;
-    clerkUserId: string;
+    webUserId: string;
     payoutEmail: string;
     status: "pending" | "active" | "suspended";
   }): Promise<TPartnerDto> {
@@ -72,7 +72,7 @@ export class PartnerRepository {
     const entity: TPartnerSchema = {
       _id: new ObjectId(),
       code: doc.code.trim(),
-      clerkUserId: doc.clerkUserId,
+      clerkUserId: doc.webUserId,
       payoutEmail: doc.payoutEmail.trim().toLowerCase(),
       status: doc.status,
       createdAt: now,
@@ -83,11 +83,11 @@ export class PartnerRepository {
   }
 
   async updatePayoutEmail(
-    clerkUserId: string,
+    webUserId: string,
     payoutEmail: string
   ): Promise<TPartnerDto | null> {
     const r = await this.col().findOneAndUpdate(
-      { clerkUserId },
+      { clerkUserId: webUserId },
       {
         $set: {
           payoutEmail: payoutEmail.trim().toLowerCase(),

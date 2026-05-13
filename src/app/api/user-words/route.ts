@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { UserWordsRepository } from "@/repositories/userWords.repo";
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 
 const COMPLEXITY_PROMPT = `Classify the English vocabulary word into one CELPIP learner level:
 - beginner
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
     const word = req.nextUrl.searchParams.get("word");
     const limit = parseInt(req.nextUrl.searchParams.get("limit") || "20");
     const skip = parseInt(req.nextUrl.searchParams.get("skip") || "0");
-    const repo = new UserWordsRepository(mongoClient);
+    const repo = new UserWordsRepository(documentsClient);
 
     try {
         if (word) {
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: "Word is required" }, { status: 400 });
         }
 
-        const repo = new UserWordsRepository(mongoClient);
+        const repo = new UserWordsRepository(documentsClient);
         const complexityLevel = await classifyWordComplexity(word);
         const saved = await repo.saveWord(user.id, word, complexityLevel);
         const now = new Date();
@@ -140,7 +140,7 @@ export async function DELETE(req: NextRequest) {
             return NextResponse.json({ message: "Word is required" }, { status: 400 });
         }
 
-        const repo = new UserWordsRepository(mongoClient);
+        const repo = new UserWordsRepository(documentsClient);
         await repo.deleteWord(user.id, word);
         return NextResponse.json({ message: "Deleted successfully" });
     } catch (error) {
@@ -162,7 +162,7 @@ export async function PATCH(req: NextRequest) {
             return NextResponse.json({ message: "Word is required" }, { status: 400 });
         }
 
-        const repo = new UserWordsRepository(mongoClient);
+        const repo = new UserWordsRepository(documentsClient);
         if (action === "review") {
             const reviewed = await repo.incrementReviewedTimes(user.id, word);
             const db = await getDb();

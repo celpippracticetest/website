@@ -1,7 +1,7 @@
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 import type { ObjectId } from "bson";
 import type { PgCollection } from "@/lib/pg/pgCollection";
-import type { MongoDoc } from "@/lib/pg/document";
+import type { AppDoc } from "@/lib/pg/document";
 
 const COLLECTION = "account_device_restrictions";
 const DEVICE_BLOCK_MS = 48 * 60 * 60 * 1000;
@@ -60,7 +60,7 @@ export function getStableDeviceKeyFromSession(session: SessionLike | null | unde
   return parts.join("|");
 }
 
-async function ensureIndexes(col: PgCollection<MongoDoc>) {
+async function ensureIndexes(col: PgCollection<AppDoc>) {
   if (!indexInitPromise) {
     indexInitPromise = Promise.all([
       col.createIndex(

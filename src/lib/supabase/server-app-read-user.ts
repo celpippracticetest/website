@@ -1,14 +1,18 @@
 import "server-only";
 
-import { createServerClient } from "@supabase/ssr";
+import { cache } from "react";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 
 /**
  * Reads the current Supabase Auth user from cookies in a Server Component / RSC.
  * May refresh the session (writes cookies via Next.js cookie store).
+ *
+ * Wrapped in React `cache()` so a single navigation only hits Supabase Auth once
+ * when both the root layout and nested layouts/pages read the session.
  */
-export async function getSupabaseAuthUserFromServerCookies(): Promise<SupabaseAuthUser | null> {
+async function getSupabaseAuthUserFromServerCookiesUncached(): Promise<SupabaseAuthUser | null> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
   if (!url || !anonKey) {
@@ -22,7 +26,7 @@ export async function getSupabaseAuthUserFromServerCookies(): Promise<SupabaseAu
       getAll() {
         return cookieStore.getAll();
       },
-      setAll(cookiesToSet) {
+      setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
         try {
           for (const { name, value, options } of cookiesToSet) {
             cookieStore.set(name, value, options);
@@ -41,3 +45,7 @@ export async function getSupabaseAuthUserFromServerCookies(): Promise<SupabaseAu
 
   return data.user;
 }
+
+export const getSupabaseAuthUserFromServerCookies = cache(
+  getSupabaseAuthUserFromServerCookiesUncached,
+);

@@ -1,4 +1,4 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { getResendClient, sendResendHtmlEmail } from "@/lib/email/resend-client";
 import { z } from "zod";
@@ -22,7 +22,7 @@ async function ensureAdmin() {
   }
 
   const authenticate = await auth();
-  const isAdmin = authenticate.sessionClaims?.metadata?.roles?.includes("admin");
+  const isAdmin = sessionClaimsHasAdminRole(authenticate.sessionClaims);
   if (!isAdmin) {
     return {
       ok: false as const,

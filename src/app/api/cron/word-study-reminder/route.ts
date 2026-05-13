@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { clerkClient } from "@clerk/nextjs/server";
-import { getDb } from "@/lib/mongodb";
+import { appUserAdmin } from "@/lib/auth/server-auth";
+import { getDb } from "@/lib/appDocumentsClient";
 import { applyMergeTags, getResendClient, sendResendHtmlEmail } from "@/lib/email/resend-client";
 import {
   buildReminderEmailConfigWithDefaults,
@@ -102,7 +102,7 @@ async function getCandidates(limit: number): Promise<Candidate[]> {
   const minSignupAt = new Date(Date.now() - SIGNUP_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
 
   const rows = await usersCollection
-    .aggregate<Candidate>([
+    .aggregate([
       {
         $project: {
           _id: 0,
@@ -183,7 +183,7 @@ async function getCandidates(limit: number): Promise<Candidate[]> {
     ])
     .toArray();
 
-  return rows;
+  return rows as Candidate[];
 }
 
 function findNextStageForCandidate(
@@ -287,7 +287,7 @@ export async function GET(request: NextRequest) {
       claimKey: string;
       createdAt: Date;
     }>(REMINDER_LOCK_COLLECTION);
-    const cc = await clerkClient();
+    const cc = await appUserAdmin();
 
     let sent = 0;
     let skipped = 0;
@@ -364,9 +364,10 @@ export async function GET(request: NextRequest) {
           continue;
         }
 
+        const u = user as { firstName?: unknown; username?: unknown };
         const firstName =
-          user.firstName?.trim() ||
-          user.username?.trim() ||
+          (typeof u.firstName === "string" ? u.firstName.trim() : "") ||
+          (typeof u.username === "string" ? u.username.trim() : "") ||
           primaryEmail.split("@")[0] ||
           "there";
         const mergeFields = { first_name: firstName };

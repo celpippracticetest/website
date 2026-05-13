@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
+  const answerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
   const answers = await answerRepo.getAllWritingAnswers(
     {
       userId: authContext.userId,
@@ -30,7 +30,8 @@ export async function GET(request: NextRequest) {
     10
   );
 
-  const latestAnswer = answers.items.isNotEmpty ? answers.items.first : null;
+  const items = answers.items ?? [];
+  const latestAnswer = items.length > 0 ? items[0] : null;
 
   return NextResponse.json({
     status: latestAnswer ? "ready" : "pending",

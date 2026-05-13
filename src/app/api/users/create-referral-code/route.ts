@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth, appUserAdmin } from "@/lib/auth/server-auth";
 import { headers } from "next/headers";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { ReferralRepository } from "@/repositories/referral.repo";
 import { randomInt } from "crypto";
 
@@ -31,7 +31,7 @@ function getBaseUrl(h: { get(name: string): string | null }) {
   return `${proto}://${host}`;
 }
 
-function isClerkTooManyRequests(error: unknown): error is { status: number; retryAfter?: number } {
+function isAuthDirectoryRateLimited(error: unknown): error is { status: number; retryAfter?: number } {
   if (!error || typeof error !== "object") return false;
   const maybe = error as { status?: unknown; retryAfter?: unknown };
   return maybe.status === 429;
@@ -48,14 +48,14 @@ export async function POST() {
     const baseUrl = getBaseUrl(h);
 
     // Check if referral code exists in database
-    const referralRepo = new ReferralRepository(mongoClient);
+    const referralRepo = new ReferralRepository(documentsClient);
     await referralRepo.ensureIndexes();
 
     const existingCode = await referralRepo.findOneByUserId(userId);
     if (existingCode) {
       const link = `${baseUrl}/referral/?ref=${existingCode.code}&inviter=${encodeURIComponent(userId)}`;
 
-      const cc = await clerkClient();
+      const cc = await appUserAdmin();
       await cc.users.updateUserMetadata(userId, {
         publicMetadata: {
           referralCode: existingCode.code,
@@ -96,8 +96,8 @@ export async function POST() {
     // Create referral link
     const link = `${baseUrl}/referral/?ref=${code}&inviter=${encodeURIComponent(userId)}`;
 
-    // Update Clerk metadata
-    const cc = await clerkClient();
+    // Update auth directory metadata
+    const cc = await appUserAdmin();
     await cc.users.updateUserMetadata(userId, {
       publicMetadata: {
         referralCode: code,
@@ -114,9 +114,9 @@ export async function POST() {
 
   } catch (error: any) {
     console.error("Create referral code error:", error);
-    if (isClerkTooManyRequests(error)) {
+    if (isAuthDirectoryRateLimited(error)) {
       return NextResponse.json(
-        { error: "Clerk rate limit", retryAfter: error.retryAfter ?? 10 },
+        { error: "Auth directory rate limit", retryAfter: error.retryAfter ?? 10 },
         { status: 429 },
       );
     }

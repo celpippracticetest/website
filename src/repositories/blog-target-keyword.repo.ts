@@ -1,6 +1,6 @@
 import { ObjectId } from "bson";
-import type { MongoFilter } from "@/lib/pg/types";
-import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
+import type { AppDocFilter } from "@/lib/pg/types";
+import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
 import {
   BlogTargetKeywordSchema,
   BlogTargetKeywordSchemaDto,
@@ -23,8 +23,8 @@ const PHRASE_MAX_LEN = 200;
 export class BlogTargetKeywordRepository {
   private readonly db: Db;
 
-  constructor(mongoClient: MongoClient) {
-    this.db = mongoClient.db();
+  constructor(documentsClient: AppDocumentsClient) {
+    this.db = documentsClient.db();
   }
 
   private getCollection() {
@@ -45,7 +45,7 @@ export class BlogTargetKeywordRepository {
     excludeId?: string
   ): Promise<TBlogTargetKeywordSchemaDto | null> {
     const key = this.normalizePhraseKey(phrase);
-    const filter: MongoFilter<TBlogTargetKeywordSchema> = {
+    const filter: AppDocFilter<TBlogTargetKeywordSchema> = {
       phraseKey: key,
     };
     if (excludeId && ObjectId.isValid(excludeId)) {

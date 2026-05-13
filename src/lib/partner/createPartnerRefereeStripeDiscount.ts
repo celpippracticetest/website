@@ -17,7 +17,7 @@ export function stripePromotionCodeBaseFromPartnerCode(partnerCode: string): str
  * One Stripe promotion per referee (max_redemptions: 1). Coupon metadata stores the real partner code.
  */
 export async function createPartnerRefereeStripeDiscount(input: {
-  partnerMongoId: string;
+  partnerRecordId: string;
   partnerDisplayCode: string;
   clerkUserId: string;
   discountPercent: number;
@@ -34,7 +34,7 @@ export async function createPartnerRefereeStripeDiscount(input: {
     redeem_by: Math.floor(Date.now() / 1000) + YEAR_SECONDS,
     metadata: {
       kind: "partner_referee",
-      partnerId: input.partnerMongoId,
+      partnerId: input.partnerRecordId,
       partnerCode: input.partnerDisplayCode,
       subscriberClerkUserId: input.clerkUserId,
     },
@@ -47,7 +47,7 @@ export async function createPartnerRefereeStripeDiscount(input: {
     active: true,
     metadata: {
       kind: "partner_referee",
-      partnerId: input.partnerMongoId,
+      partnerId: input.partnerRecordId,
       partnerCode: input.partnerDisplayCode,
       subscriberClerkUserId: input.clerkUserId,
     },

@@ -1,4 +1,4 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { TaskSchemaDto } from "@/models/tasks.model";
 import { TaskRepository } from "@/repositories/tasks.repo";
 import { NextRequest, NextResponse } from "next/server";
@@ -8,7 +8,7 @@ export async function GET(
     { params }: { params: { id: string } }
 ) {
     const { id } = params;
-    const taskRepo = new TaskRepository(mongoClient);
+    const taskRepo = new TaskRepository(documentsClient);
     const task = await taskRepo.findTaskById(id);
 
     if (!task) {
@@ -32,7 +32,7 @@ export async function PATCH(
         return NextResponse.json({ message: taskParser.error }, { status: 400 });
     }
 
-    const taskRepo = new TaskRepository(mongoClient);
+    const taskRepo = new TaskRepository(documentsClient);
     const updatedTask = await taskRepo.updateTask(id, taskParser.data);
 
     if (!updatedTask) {
@@ -47,7 +47,7 @@ export async function DELETE(
     { params }: { params: { id: string } }
 ) {
     const { id } = params;
-    const taskRepo = new TaskRepository(mongoClient);
+    const taskRepo = new TaskRepository(documentsClient);
     await taskRepo.deleteTask(id);
 
     return NextResponse.json({ message: "Task deleted successfully" }, { status: 200 });

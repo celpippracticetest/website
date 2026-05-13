@@ -1,7 +1,7 @@
 import { ObjectId } from "bson";
 import { deserializeDocument, serializeDocument } from "./ejson";
 
-export type MongoDoc = Record<string, unknown> & { _id?: ObjectId | string | number };
+export type AppDoc = Record<string, unknown> & { _id?: ObjectId | string | number };
 
 const OID_HEX = /^[a-f0-9]{24}$/i;
 
@@ -35,13 +35,13 @@ export function objectIdLikeToHex(value: unknown): string | null {
   return null;
 }
 
-/** `app_documents.mongo_id` text for updates/deletes (ObjectId hex or non-OID `_id` from Mongo). */
-export function documentRowKey(doc: MongoDoc): string {
+/** `app_documents.mongo_id` text for updates/deletes (ObjectId hex or non-OID `_id`). */
+export function documentRowKey(doc: AppDoc): string {
   const id = doc._id;
   if (id instanceof ObjectId) return id.toHexString();
   if (typeof id === "string") return OID_HEX.test(id) ? id.toLowerCase() : id;
   if (typeof id === "number" || typeof id === "bigint") return String(id);
-  throw new Error("Cannot derive Postgres mongo_id from document _id");
+  throw new Error("Cannot derive app_documents.mongo_id from document _id");
 }
 
 function toObjectIdIfHex(value: unknown): ObjectId | undefined {
@@ -86,14 +86,14 @@ function coerceNumericDocFields(doc: Record<string, unknown>, keys: readonly str
   }
 }
 
-export function rowToDocument(mongoId: string, bodyJson: unknown): MongoDoc {
+export function rowToDocument(mongoId: string, bodyJson: unknown): AppDoc {
   const raw = deserializeDocument(bodyJson);
   if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
     throw new Error(
       `app_documents.body must deserialize to an object (mongo_id=${mongoId}, got ${raw === null ? "null" : Array.isArray(raw) ? "array" : typeof raw})`
     );
   }
-  const doc = raw as MongoDoc;
+  const doc = raw as AppDoc;
   if (!(doc._id instanceof ObjectId)) {
     if (OID_HEX.test(mongoId)) {
       doc._id = new ObjectId(mongoId);
@@ -120,7 +120,7 @@ export function prepareInsertDocument(doc: unknown): {
   mongoId: string;
   bodySerialized: unknown;
 } {
-  const d = doc as MongoDoc;
+  const d = doc as AppDoc;
   if (d._id instanceof ObjectId) {
     return { mongoId: d._id.toHexString(), bodySerialized: serializeDocument(d) };
   }

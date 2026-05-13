@@ -1,6 +1,6 @@
 import { ObjectId } from "bson";
-import type { MongoFilter } from "@/lib/pg/types";
-import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
+import type { AppDocFilter } from "@/lib/pg/types";
+import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
 import {
   BlogSchema,
   BlogSchemaDto,
@@ -28,8 +28,8 @@ type PaginatedBlogResult = {
 export class BlogRepository {
   private readonly db: Db;
 
-  constructor(mongoClient: MongoClient) {
-    this.db = mongoClient.db();
+  constructor(documentsClient: AppDocumentsClient) {
+    this.db = documentsClient.db();
   }
 
   private getBlogCollection() {
@@ -59,7 +59,7 @@ export class BlogRepository {
     let sequence = 2;
 
     while (true) {
-      const filter: MongoFilter<TBlogSchema> = excludeId
+      const filter: AppDocFilter<TBlogSchema> = excludeId
         ? {
             slug: candidate,
             _id: { $ne: new ObjectId(excludeId) },
@@ -74,8 +74,8 @@ export class BlogRepository {
     }
   }
 
-  private buildListFilter(filters: BlogListFilters): MongoFilter<TBlogSchema> {
-    const query: MongoFilter<TBlogSchema> = {};
+  private buildListFilter(filters: BlogListFilters): AppDocFilter<TBlogSchema> {
+    const query: AppDocFilter<TBlogSchema> = {};
 
     if (filters.status) {
       query.status = filters.status;
@@ -99,7 +99,7 @@ export class BlogRepository {
     return query;
   }
 
-  private buildPublishedFilter(extraFilter: MongoFilter<TBlogSchema> = {}): MongoFilter<TBlogSchema> {
+  private buildPublishedFilter(extraFilter: AppDocFilter<TBlogSchema> = {}): AppDocFilter<TBlogSchema> {
     return {
       status: "published",
       publishedAt: { $ne: null, $lte: new Date() },
@@ -205,7 +205,7 @@ export class BlogRepository {
     tags: string[],
     limit: number = 3
   ): Promise<TBlogSchemaDto[]> {
-    const relatedFilter: MongoFilter<TBlogSchema> = {
+    const relatedFilter: AppDocFilter<TBlogSchema> = {
       _id: { $ne: new ObjectId(currentId) },
     };
 

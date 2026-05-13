@@ -1,4 +1,4 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { BlogRepository } from "@/repositories/blog.repo";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -9,7 +9,7 @@ export async function GET(
   try {
     const { slug } = params;
     const excludeId = req.nextUrl.searchParams.get("excludeId") ?? undefined;
-    const repo = new BlogRepository(mongoClient);
+    const repo = new BlogRepository(documentsClient);
 
     const existing = await repo.findBlogBySlug(slug);
     if (!existing) {

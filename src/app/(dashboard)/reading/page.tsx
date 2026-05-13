@@ -2,7 +2,7 @@ import ReadingPractice from "@/components/dashboard-app/reading-practice/Reading
 import ShowTasks from "@/components/dashboard-new/ShowTasks";
 import ShowTaskHeader from "@/components/dashboard-new/ShowTasks/Header";
 import SvgReadingPart from "@/components/icons/ReadingPart";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
@@ -133,7 +133,7 @@ const ReadingPage = async ({
 }) => {
   const { selectedPracticeId, taskId } = await searchParams;
 
-  const taskRepo = new TaskRepository(mongoClient);
+  const taskRepo = new TaskRepository(documentsClient);
   const tasks = await taskRepo.getAllTask({ type: "practice" }, 0, 100);
 
   const readingTasks: PracticeSection[] = [
@@ -228,7 +228,7 @@ const ReadingPage = async ({
     redirect("/practice-overview", RedirectType.replace);
   }
 
-  const practiceRepo = new PracticeRepository(mongoClient);
+  const practiceRepo = new PracticeRepository(documentsClient);
   const practices = await practiceRepo.getAllPractice(
     {
       type: "READING",
@@ -261,7 +261,7 @@ const ReadingPage = async ({
   let completedPractice: string[] = [];
   if (user) {
     const listeningAndReadingAnswerRepo =
-      new ListeningAndReadingAnswerRepository(mongoClient);
+      new ListeningAndReadingAnswerRepository(documentsClient);
     if (selectedPracticeId) {
       answers = await listeningAndReadingAnswerRepo.findAnswerByPracticeAndUser(
         selectedPracticeId,

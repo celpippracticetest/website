@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { currentUser } from "@/lib/auth/server-auth";
 import { getRequestOriginFromHeaders } from "@/lib/requestOrigin";
 import { paypalSubscriptionsConfigured } from "@/lib/paypal/config";
 import { finalizePayPalSubscriptionReturn } from "@/lib/paypal/finalizeSubscriptionReturn";
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
   }
 
   const result = await finalizePayPalSubscriptionReturn({
-    clerkUserId: user.id,
+    webUserId: user.id,
     subscriptionId,
   });
 

@@ -14,7 +14,6 @@ import {
 } from "@/components/icons";
 import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
 import SvgWord from "@/components/icons/Word";
-import { CircleDollarSign } from "lucide-react";
 
 const SvgClose = dynamic(() => import("../../icons/Close"), { ssr: false });
 const SvgHamburger = dynamic(() => import("../../icons/Hamburger"), {
@@ -22,10 +21,9 @@ const SvgHamburger = dynamic(() => import("../../icons/Hamburger"), {
 });
 const mainNav = [
   { label: "Mock Exams", href: "/exam-overview" },
-  { label: "Practice Overview", href: "/practice-overview" },
+  { label: "Practice", href: "/practice-overview" },
   { label: "Learning", href: "/learning" },
   { label: "Words", href: "/words" },
-  { label: "Pricing", href: "/pricing" },
 ] as const;
 
 const TopHeader = () => {
@@ -107,9 +105,6 @@ const TopHeader = () => {
       <div className="hidden group-hover:flex w-[24px] h-[24px] items-center justify-center">
         <SvgWord className="text-[#316BFF]" />
       </div>
-    </div>,
-    <div key="pricing-icon" className="relative flex items-center justify-center w-[24px] h-[24px]">
-      <CircleDollarSign className="w-[22px] h-[22px] text-[#76808F] group-hover:text-[#316BFF] duration-200" aria-hidden />
     </div>,
   ];
 

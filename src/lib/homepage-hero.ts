@@ -1,6 +1,6 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { cache } from "react";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import type { THomepageHeroScheduleSchemaDto } from "@/models/homepage-hero-schedule.model";
 import { HomepageHeroScheduleRepository } from "@/repositories/homepage-hero-schedule.repo";
 
@@ -28,7 +28,7 @@ export async function getActiveHomepageHeroSchedule(): Promise<THomepageHeroSche
       return null;
     }
 
-    const repo = new HomepageHeroScheduleRepository(mongoClient);
+    const repo = new HomepageHeroScheduleRepository(documentsClient);
     // Indexes are ensured from CMS/API (`/api/admin/homepage-hero`); avoid DDL on every layout read (DB connection pressure).
     return await repo.getActiveSchedule(getDateInHomepageHeroTimezone());
   } catch (error) {

@@ -1,7 +1,7 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { LeadCaptureConfigWriteSchema } from "@/models/lead-capture.model";
 import { LeadCaptureConfigRepository } from "@/repositories/lead-capture-config.repo";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -14,7 +14,7 @@ async function ensureAdmin() {
   }
 
   const authenticate = await auth();
-  const isAdmin = authenticate.sessionClaims?.metadata?.roles?.includes("admin");
+  const isAdmin = sessionClaimsHasAdminRole(authenticate.sessionClaims);
   if (!isAdmin) {
     return { ok: false as const, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
@@ -27,7 +27,7 @@ export async function GET() {
     const admin = await ensureAdmin();
     if (!admin.ok) return admin.response;
 
-    const repo = new LeadCaptureConfigRepository(mongoClient);
+    const repo = new LeadCaptureConfigRepository(documentsClient);
     await repo.ensureIndexes();
     const configs = await repo.getAllConfigs();
 
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const repo = new LeadCaptureConfigRepository(mongoClient);
+    const repo = new LeadCaptureConfigRepository(documentsClient);
     await repo.ensureIndexes();
     const created = await repo.createConfig(parsed.data);
 
@@ -85,7 +85,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const repo = new LeadCaptureConfigRepository(mongoClient);
+    const repo = new LeadCaptureConfigRepository(documentsClient);
     await repo.ensureIndexes();
     const updated = await repo.updateConfig(id, parsed.data);
     if (!updated) {
@@ -112,7 +112,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const repo = new LeadCaptureConfigRepository(mongoClient);
+    const repo = new LeadCaptureConfigRepository(documentsClient);
     await repo.ensureIndexes();
     const deleted = await repo.deleteConfig(id);
     if (!deleted) {

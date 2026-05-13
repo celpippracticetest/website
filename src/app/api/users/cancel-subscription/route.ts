@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth, appUserAdmin } from "@/lib/auth/server-auth";
 import Stripe from "stripe";
-import clientPromise from "@/lib/mongodb";
+import clientPromise from "@/lib/appDocumentsClient";
 import {
-  emailsFromClerkUser,
+  emailsFromAuthUser,
   resolveStripeCustomerId,
 } from "@/lib/resolveStripeCustomerId";
+import { matchUsersCollectionByWebUserIds } from "@/lib/users/userDocumentIdentity";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 function normalizeDate(value: unknown): Date | null {
@@ -25,14 +26,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const flowId = typeof body?.flowId === "string" ? body.flowId : null;
 
-    const clerk = await clerkClient();
-    const user = await clerk.users.getUser(userId);
+    const authAdmin = await appUserAdmin();
+    const user = await authAdmin.users.getUser(userId);
 
     const customerId = await resolveStripeCustomerId(userId, {
-      clerkStripeCustomerId: user.privateMetadata?.stripeCustomerId as
+      stripeCustomerIdFromPrivate: user.privateMetadata?.stripeCustomerId as
         | string
         | undefined,
-      emails: emailsFromClerkUser(user),
+      emails: emailsFromAuthUser(user),
     });
 
     if (!customerId) {
@@ -60,8 +61,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const mongoClient = await clientPromise;
-    const db = mongoClient.db();
+    const documentsClient = await clientPromise;
+    const db = documentsClient.db();
     const usersCollection = db.collection("users");
     const userActivityCollection = db.collection("useractivities");
 
@@ -89,7 +90,7 @@ export async function POST(req: NextRequest) {
         )
       : 0;
 
-    await clerk.users.updateUserMetadata(userId, {
+    await authAdmin.users.updateUserMetadata(userId, {
       publicMetadata: {
         planCancelled: true,
         subscriptionCancelledAt: now.toISOString(),
@@ -98,7 +99,7 @@ export async function POST(req: NextRequest) {
     });
 
     await usersCollection.updateOne(
-      { clerkUserId: userId },
+      matchUsersCollectionByWebUserIds(userId),
       {
         $set: {
           subscriptionStartDate: subscriptionStartDate ?? null,

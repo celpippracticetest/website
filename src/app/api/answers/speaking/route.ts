@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { createClient } from "@deepgram/sdk";
 import { uploadAudioBuffer } from "@/lib/s3-client";
 import { PracticeRepository } from "@/repositories/practice.repo";
@@ -202,7 +202,7 @@ export const POST = async function (req: Request) {
       shouldRetry: (e) => /ECONNRESET|ETIMEDOUT/i.test(e.message),
     });
 
-    const practiceRepo = new PracticeRepository(mongoClient);
+    const practiceRepo = new PracticeRepository(documentsClient);
     const practiceIdRaw = formData.get("practiceId");
     if (typeof practiceIdRaw !== "string" || practiceIdRaw.length === 0) {
       return NextResponse.json(
@@ -222,7 +222,7 @@ export const POST = async function (req: Request) {
       );
     }
 
-    const taskRepo = new TaskRepository(mongoClient);
+    const taskRepo = new TaskRepository(documentsClient);
     const task: TTaskSchemaDto | null = await taskRepo.findTaskById(
       practice.taskId ?? ""
     );
@@ -513,7 +513,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
       
       console.log("Successfully extracted complete data from content");
       
-      const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
+      const answerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
       const answer = await answerRepo.createOrUpdateAnswer({
         audioUrl: location,
         userId: user.id,
@@ -570,7 +570,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
     
     const stored = toStoredEvaluation(evaluation);
 
-    const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
+    const answerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
     const answer = await answerRepo.createOrUpdateAnswer({
       audioUrl: location,
       userId: user.id,
@@ -613,7 +613,7 @@ export const GET = async function (req: NextRequest) {
   if (!user) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
-  const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
+  const answerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
   const answers = await answerRepo.getAllWritingAnswers(
     { userId: user.id, practiceId, type: "SPEAKING" },
     0,

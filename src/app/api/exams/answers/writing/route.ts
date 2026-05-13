@@ -1,6 +1,6 @@
 import { PracticeRepository } from "@/repositories/practice.repo";
 import { NextRequest, NextResponse } from "next/server";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { WritingAnswerRequestSchema } from "@/models/answer";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
@@ -43,7 +43,7 @@ export const POST = async function (req: NextRequest) {
         { status: 400 }
       );
     }
-    const examPartRepo = new ExamPartsRepository(mongoClient);
+    const examPartRepo = new ExamPartsRepository(documentsClient);
     const examPart = await examPartRepo.findExamPartByExamIdAndPartId(
       answerBody.examId,
       answerBody.partId
@@ -358,7 +358,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
 
     // Extract tool call result
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
+    const answerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
 
     if (!toolCall) {
       console.error("No tool call! Full response:", JSON.stringify(data, null, 2));
@@ -538,7 +538,7 @@ export const GET = async function (req: NextRequest) {
   }
   const attemptId = req.nextUrl.searchParams.get("attemptId");
   const filterAttemptId = attemptId === "legacy" ? null : (attemptId || undefined);
-  const answerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
+  const answerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
   const answers = await answerRepo.getAllWritingAnswers(
     { userId: user.id, examId, partId: parseInt(partId), type: "WRITING", attemptId: filterAttemptId as any },
     0,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
-import client from "@/lib/mongodb";
+import client from "@/lib/appDocumentsClient";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 const SYSTEM_PROMPT = `ROLE & AUDIENCE
 You are CELPIP Tutor, an expert CELPIP coach and English tutor inside CelpipPracticeTest.com.
@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
         date: new Date().toISOString().split("T")[0], // Today's date
       });
 
-      const currentCount = existingRecord?.count || 0;
+      const currentCount = Number(existingRecord?.count ?? 0);
 
       // Check if user has exceeded their limit
       if (currentCount >= 1) {

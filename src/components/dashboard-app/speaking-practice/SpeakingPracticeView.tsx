@@ -17,7 +17,7 @@ import SvgArrowRight from "@/components/icons/ArrowRight";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { TWritingAnswerDto } from "@/models/answer";
 import LoginModal from "@/components/modal/LoginModal";
-import { CustomSignUpForm } from "@/components/auth/CustomSignUpForm";
+import { SupabaseAuthForm } from "@/components/auth/SupabaseAuthForm";
 import SvgRecording from "@/components/icons/Recording";
 import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
@@ -486,7 +486,7 @@ const SpeakingPracticeView = ({
             >
               ×
             </button>
-            <CustomSignUpForm className="shadow-xl" />
+            <SupabaseAuthForm className="shadow-xl" initialMode="sign-up" />
           </div>
         </div>
       )}

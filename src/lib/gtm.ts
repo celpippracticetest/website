@@ -98,22 +98,31 @@ function getDataLayer(): any[] {
 }
 
 /**
- * Get current user context from Clerk
+ * Browser-side user context for GTM events (set by `AuthGtmTracker` from the active session).
  */
 function getUserContext(): UserContext {
   if (!isBrowser) return {};
 
   try {
-    // Get user data from Clerk's global object if available
-    const clerk = (window as any).Clerk;
-    const user = clerk?.user;
-    
+    type AnalyticsUser = {
+      id: string;
+      publicMetadata?: { plan?: unknown; planType?: unknown; totalSpend?: unknown };
+    };
+    const w = window as Window & { __CELPIP_ANALYTICS_USER?: AnalyticsUser | null };
+    const user = w.__CELPIP_ANALYTICS_USER;
     if (user) {
+      const meta = user.publicMetadata ?? {};
       return {
         user_id: user.id,
-        user_plan: (user.publicMetadata as any)?.plan || "free",
-        user_plan_type: (user.publicMetadata as any)?.planType,
-        user_total_spend: (user.publicMetadata as any)?.totalSpend || 0,
+        user_plan: (meta as { plan?: unknown }).plan != null ? String((meta as { plan?: unknown }).plan) : "free",
+        user_plan_type:
+          (meta as { planType?: unknown }).planType != null
+            ? String((meta as { planType?: unknown }).planType)
+            : undefined,
+        user_total_spend:
+          (meta as { totalSpend?: unknown }).totalSpend != null
+            ? Number((meta as { totalSpend?: unknown }).totalSpend)
+            : 0,
         is_authenticated: true,
       };
     }
@@ -575,7 +584,7 @@ export const trackAuth = {
 
     const conversionLabel = GOOGLE_ADS_SIGNUP_LABEL;
 
-    // GA4 `sign_up` is sent from the Clerk `user.created` webhook (Measurement Protocol)
+    // GA4 `sign_up` is sent from the `user.created` webhook (Measurement Protocol)
     // when `GA_MEASUREMENT_ID` + `GA_API_SECRET` are set — avoids double-count vs browser.
     // Set `NEXT_PUBLIC_GA4_CLIENT_SIGNUP=1` to also push `sign_up` here (e.g. local dev without MP).
     if (process.env.NEXT_PUBLIC_GA4_CLIENT_SIGNUP === "1") {

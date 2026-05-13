@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { auth, currentUser } from "@clerk/nextjs/server";
-import mongoClient from "@/lib/mongodb";
+import { auth, currentUser, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
+import documentsClient from "@/lib/appDocumentsClient";
 import { PartnerRepository } from "@/repositories/partner.repo";
 import { PartnerProgramSettingsRepository } from "@/repositories/partner-program-settings.repo";
 
@@ -18,7 +18,7 @@ async function ensureAdmin() {
   }
 
   const authenticate = await auth();
-  const isAdmin = authenticate.sessionClaims?.metadata?.roles?.includes("admin");
+  const isAdmin = sessionClaimsHasAdminRole(authenticate.sessionClaims);
   if (!isAdmin) {
     return {
       ok: false as const,
@@ -34,10 +34,10 @@ export async function GET() {
   if (!admin.ok) return admin.response;
 
   try {
-    const repo = new PartnerRepository(mongoClient);
+    const repo = new PartnerRepository(documentsClient);
     await repo.ensureIndexes();
     const partners = await repo.listAll();
-    const settingsRepo = new PartnerProgramSettingsRepository(mongoClient);
+    const settingsRepo = new PartnerProgramSettingsRepository(documentsClient);
     const programDefaults = await settingsRepo.getDefaults();
     return NextResponse.json({ ok: true, partners, programDefaults });
   } catch (e) {
@@ -70,7 +70,7 @@ export async function PATCH(req: NextRequest) {
     const raw = await req.json().catch(() => ({}));
     const programParsed = PatchProgramSchema.safeParse(raw);
     if (programParsed.success) {
-      const settingsRepo = new PartnerProgramSettingsRepository(mongoClient);
+      const settingsRepo = new PartnerProgramSettingsRepository(documentsClient);
       const programDefaults = await settingsRepo.setDefaults(
         programParsed.data.programDefaults
       );
@@ -96,7 +96,7 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    const repo = new PartnerRepository(mongoClient);
+    const repo = new PartnerRepository(documentsClient);
     await repo.ensureIndexes();
 
     if (parsed.data.status !== undefined) {

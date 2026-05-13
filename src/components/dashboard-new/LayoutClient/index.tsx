@@ -3,9 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import clsx from "clsx";
-import { useClerk } from "@clerk/nextjs";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
-import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
+import { signOutWebSession } from "@/lib/auth/client-sign-out";
 import { useHasEverPurchased } from "@/hooks/useHasEverPurchased";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
@@ -457,11 +456,8 @@ const LayoutClient = ({ children }: any) => {
     }
   }, [isLoaded, isSignedIn, isNewUser, user, setShowExtraDiscount]);
 
-  const { signOut: clerkSignOut } = useClerk();
   const signOut = async (opts?: { redirectUrl?: string }) => {
-    const supabase = createBrowserSupabaseClient();
-    if (supabase) await supabase.auth.signOut();
-    await clerkSignOut(opts);
+    await signOutWebSession(router, opts?.redirectUrl ?? "/sign-in");
   };
   const [practice, setPractice] = useState(false);
   const [mockTest, setMockTest] = useState(false);

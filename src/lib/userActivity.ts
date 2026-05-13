@@ -120,7 +120,7 @@ export const ActivityLogger = {
     // Track in GTM
     trackPractice.started(contentId, skill);
 
-    // Track in MongoDB
+    // Persist user activity to the document store
     return logUserActivity({
       eventType: "practice_attempt_started",
       context: "practice",
@@ -142,7 +142,7 @@ export const ActivityLogger = {
     // Track in GTM
     trackPractice.completed(contentId, skill, scoreOverall, durationSeconds);
 
-    // Track in MongoDB
+    // Persist user activity to the document store
     return logUserActivity({
       eventType: "practice_attempt_completed",
       context: "practice",
@@ -163,7 +163,7 @@ export const ActivityLogger = {
     // Track in GTM
     trackExam.started(contentId);
 
-    // Track in MongoDB
+    // Persist user activity to the document store
     return logUserActivity({
       eventType: "mock_attempt_started",
       context: "mock",
@@ -183,7 +183,7 @@ export const ActivityLogger = {
     // Track in GTM
     trackExam.completed(contentId, scoreOverall, durationSeconds);
 
-    // Track in MongoDB
+    // Persist user activity to the document store
     return logUserActivity({
       eventType: "mock_attempt_completed",
       context: "mock",
@@ -232,7 +232,7 @@ export const ActivityLogger = {
     // Track in GTM
     trackAuth.signUpCompleted(userId);
 
-    // Track in MongoDB
+    // Persist user activity to the document store
     return logUserActivity({
       eventType: "signup",
       context: "system",
@@ -244,7 +244,7 @@ export const ActivityLogger = {
     // Track in GTM (userId will be enriched automatically by GTM utility)
     trackAuth.loginCompleted("", "email");
 
-    // Track in MongoDB
+    // Persist user activity to the document store
     return logUserActivity({
       eventType: "login",
       context: "system",
@@ -255,7 +255,7 @@ export const ActivityLogger = {
     // Track in GTM
     trackAuth.logout();
 
-    // Track in MongoDB
+    // Persist user activity to the document store
     return logUserActivity({
       eventType: "logout",
       context: "system",
@@ -271,7 +271,7 @@ export const ActivityLogger = {
     // Note: Purchase tracking is handled in SuccessPageTracking component
     // to capture full transaction details from Stripe
 
-    // Track in MongoDB
+    // Persist user activity to the document store
     return logUserActivity({
       eventType: "payment_successful",
       context: "payment",
@@ -377,7 +377,7 @@ export const ActivityLogger = {
       trackExam.resultsViewed(attemptId);
     }
 
-    // Track in MongoDB
+    // Persist user activity to the document store
     return logUserActivity({
       eventType: "score_report_viewed",
       context,

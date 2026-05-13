@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { currentUser } from "@/lib/auth/server-auth";
 import { stripe } from "@/lib/stripe";
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 import { logger } from "@/lib/sentry-logger";
 import { isPricingAbLayout } from "@/lib/pricingAbTest";
 import { isHomeAbExperimentVariant, isHomeAbVariant } from "@/lib/homeAbTest";
@@ -17,6 +17,12 @@ import {
   isValidFinalOfferChallengeCombo,
   tierKeyFromCombo,
 } from "@/lib/finalOfferChallenge";
+import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
+import {
+  matchUsersCollectionByWebUserIds,
+  supabaseAuthUserIdFieldsOnUserDoc,
+} from "@/lib/users/userDocumentIdentity";
+import { objectIdLikeToHex } from "@/lib/pg/document";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -191,7 +197,7 @@ export async function POST(req: NextRequest) {
 
     if (hasChallengePayload) {
       await db.collection("users").updateOne(
-        { clerkUserId: user.id },
+        matchUsersCollectionByWebUserIds(user.id),
         {
           $set: {
             challenge: {
@@ -209,8 +215,10 @@ export async function POST(req: NextRequest) {
             updatedAt: new Date(),
           },
           $setOnInsert: {
-            clerkUserId: user.id,
             createdAt: new Date(),
+            ...(isLikelySupabaseAuthUserId(user.id)
+              ? supabaseAuthUserIdFieldsOnUserDoc(user.id)
+              : { clerkUserId: user.id }),
           },
         },
         { upsert: true }
@@ -219,6 +227,8 @@ export async function POST(req: NextRequest) {
 
     const pendingDoc = {
       clerkUserId: user.id,
+      supabaseUserId: user.id,
+      sub: user.id,
       stripePriceId,
       planDisplayName,
       pricingAbLayout,
@@ -236,7 +246,8 @@ export async function POST(req: NextRequest) {
       createdAt: new Date(),
     };
     const insert = await db.collection(PENDING_COLL).insertOne(pendingDoc);
-    const customId = insert.insertedId.toHexString();
+    const customId =
+      objectIdLikeToHex(insert.insertedId) ?? String(insert.insertedId);
 
     const origin = await getPayPalCheckoutPublicOrigin();
     const returnUrl = `${origin}/api/paypal/subscription-return`;

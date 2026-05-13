@@ -1,7 +1,7 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { currentUser } from "@/lib/auth/server-auth";
 import { NextRequest, NextResponse } from "next/server";
 
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 import { stripe } from "@/lib/stripe";
 import { resolveSuccessUpgradeOffer } from "@/lib/successPageUpgrade";
 import { syncUserPlanPublicMetadata } from "@/lib/syncUserPlanPublicMetadata";
@@ -63,8 +63,8 @@ export async function POST(req: NextRequest) {
   }
 
   const resolved = await resolveSuccessUpgradeOffer(session_id, db, {
-    clerkUserId: user.id,
-    clerkEmail: email,
+    webUserId: user.id,
+    userEmail: email,
   });
 
   if (!resolved) {
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
       metadata: {
         success_upgrade: "true",
         from_checkout_session: session_id,
-        clerk_user_id: user.id,
+        app_user_id: user.id,
       },
     });
   } catch (err) {
@@ -173,13 +173,13 @@ export async function POST(req: NextRequest) {
 
   try {
     await syncUserPlanPublicMetadata(user.id, {
-      plan: resolved.clerkPlanKey,
+      plan: resolved.webPlanKey,
       planType: resolved.targetPlanTitle,
       planCancelled: false,
       planExpiresAt: null,
     });
   } catch (metaErr) {
-    console.error("[success-upgrade] Clerk plan metadata sync failed", metaErr);
+    console.error("[success-upgrade] Plan metadata sync failed", metaErr);
   }
 
   return NextResponse.json({ ok: true });

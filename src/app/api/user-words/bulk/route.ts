@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { UserWordsRepository } from "@/repositories/userWords.repo";
 
 export async function POST(req: NextRequest) {
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: "Words array is required" }, { status: 400 });
         }
 
-        const repo = new UserWordsRepository(mongoClient);
+        const repo = new UserWordsRepository(documentsClient);
         await repo.saveBulkWords(user.id, words);
         return NextResponse.json({ message: "Words saved successfully" });
     } catch (error) {

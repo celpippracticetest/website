@@ -1,4 +1,4 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { BlogRepository } from "@/repositories/blog.repo";
 import { NextRequest, NextResponse } from "next/server";
 import { BlogTargetKeywordRepository } from "@/repositories/blog-target-keyword.repo";
@@ -104,7 +104,7 @@ export async function GET(req: NextRequest) {
     // 2. Fetch SEO Target Keywords
     let targetPhrases: string[] = [];
     try {
-      const kwRepo = new BlogTargetKeywordRepository(mongoClient);
+      const kwRepo = new BlogTargetKeywordRepository(documentsClient);
       targetPhrases = await kwRepo.listActivePhrases();
     } catch (e) {
       console.warn("Blog generate-content: could not load target keywords", e);
@@ -167,7 +167,7 @@ export async function GET(req: NextRequest) {
     }
 
     // 4. Save Blog to Database
-    const repo = new BlogRepository(mongoClient);
+    const repo = new BlogRepository(documentsClient);
 
     const slug =
       typeof parsed.slug === "string"

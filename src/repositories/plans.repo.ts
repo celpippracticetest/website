@@ -1,4 +1,4 @@
-import type { CompatDb as Db } from "@/lib/pg/types";
+import type { AppDocumentsDb as Db } from "@/lib/pg/types";
 import { Plan } from "@/models/plans.model";
 
 function planDocIsActive(isActive: unknown): boolean {

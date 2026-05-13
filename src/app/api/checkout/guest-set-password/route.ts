@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { clerkClient } from "@clerk/nextjs/server";
+import { appUserAdmin } from "@/lib/auth/server-auth";
 import { stripe } from "@/lib/stripe";
 import { getRequestOriginFromHeaders } from "@/lib/requestOrigin";
 
@@ -47,83 +47,46 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No email on checkout" }, { status: 400 });
     }
 
-    const clerk = await clerkClient();
-    let users = await clerk.users.getUserList({
+    const admin = await appUserAdmin();
+    let users = await admin.users.getUserList({
       emailAddress: [email],
       limit: 1,
     });
 
     let userId: string | null = null;
     if (users.data.length > 0) {
-      userId = users.data[0].id;
+      userId = String(users.data[0].id);
     } else {
-      // Webhook / success-page provisioning can lag behind the UI; create the
-      // same passwordless Clerk user here (idempotent with webhook).
-      // Important: use the same Clerk client instance as the rest of this route.
       try {
-        const created = await clerk.users.createUser({
+        const created = await admin.users.createUser({
           emailAddress: [email],
           skipPasswordRequirement: true,
-          // Required when legal consent is enabled in Clerk.
-          legalAcceptedAt: new Date(),
         });
-        userId = created.id;
-      } catch (provisionErr: any) {
-        const code =
-          provisionErr &&
-          typeof provisionErr === "object" &&
-          "errors" in provisionErr &&
-          Array.isArray((provisionErr as any).errors)
-            ? (provisionErr as any).errors[0]?.code
-            : null;
-
-        const provisionMsg =
-          provisionErr &&
-          typeof provisionErr === "object" &&
-          "errors" in provisionErr &&
-          Array.isArray((provisionErr as any).errors) &&
-          (provisionErr as any).errors[0]?.message
-            ? (provisionErr as any).errors[0].message
-            : null;
-
-        const provisionLongMsg =
-          provisionErr &&
-          typeof provisionErr === "object" &&
-          "errors" in provisionErr &&
-          Array.isArray((provisionErr as any).errors) &&
-          (provisionErr as any).errors[0]?.longMessage
-            ? (provisionErr as any).errors[0].longMessage
-            : null;
-
-        // If another request created it first, fetch again and continue.
-        if (code === "form_identifier_exists" || code === "identifier_exists") {
-          // Clerk writes can be slightly delayed; retry a couple times.
+        userId = String(created.id);
+      } catch (provisionErr: unknown) {
+        const msg =
+          provisionErr && typeof provisionErr === "object" && "message" in provisionErr
+            ? String((provisionErr as Error).message)
+            : "";
+        if (/already been registered|already exists|duplicate/i.test(msg)) {
           for (let attempt = 0; attempt < 3; attempt++) {
-            users = await clerk.users.getUserList({
+            users = await admin.users.getUserList({
               emailAddress: [email],
               limit: 1,
             });
             if (users.data.length > 0) {
-              userId = users.data[0].id;
+              userId = String(users.data[0].id);
               break;
             }
             await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
           }
-
-          if (!userId) throw provisionErr;
-        } else {
+        }
+        if (!userId) {
           console.error("[guest-set-password] createUser failed", provisionErr);
           return NextResponse.json(
             {
               error:
-                provisionLongMsg ||
-                provisionMsg ||
-                code ||
-                (provisionErr &&
-                typeof provisionErr === "object" &&
-                "message" in provisionErr
-                  ? (provisionErr as any).message
-                  : null) ||
+                msg ||
                 "We could not finish creating your account. Please try again in a few seconds.",
             },
             { status: 503 }
@@ -144,25 +107,18 @@ export async function POST(req: NextRequest) {
     const fn = typeof body.firstName === "string" ? body.firstName.trim() : "";
     const ln = typeof body.lastName === "string" ? body.lastName.trim() : "";
 
-    await clerk.users.updateUser(userId, {
+    await admin.users.updateUser(userId, {
       password,
       ...(fn ? { firstName: fn } : {}),
       ...(ln ? { lastName: ln } : {}),
     });
 
-    const signIn = await clerk.signInTokens.createSignInToken({
-      userId,
-      expiresInSeconds: 900,
-    });
-    if (!signIn?.url) {
-      return NextResponse.json({ error: "Could not create sign-in link" }, { status: 500 });
-    }
-
     const origin = await getRequestOriginFromHeaders();
-    const url = new URL(signIn.url);
-    url.searchParams.set("redirect_url", `${origin}/practice-overview`);
+    const signIn = new URL("/sign-in", origin);
+    signIn.searchParams.set("redirect", "/practice-overview");
+    signIn.searchParams.set("email", email);
 
-    return NextResponse.json({ url: url.toString() }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ url: signIn.toString() }, { headers: { "Cache-Control": "no-store" } });
   } catch (e: unknown) {
     console.error("[guest-set-password]", e);
     const msg =

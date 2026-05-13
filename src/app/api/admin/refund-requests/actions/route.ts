@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth, appUserAdmin, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
 import Stripe from "stripe";
 import { z } from "zod";
-import client from "@/lib/mongodb";
+import client from "@/lib/appDocumentsClient";
 import { ObjectId } from "bson";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -19,7 +19,7 @@ const ActionSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const { sessionClaims } = await auth();
-    const isAdmin = sessionClaims?.metadata?.roles?.includes("admin");
+    const isAdmin = sessionClaimsHasAdminRole(sessionClaims);
 
     if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -50,7 +50,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userEmail = refundRequest.email;
+    const userEmail =
+      typeof refundRequest.email === "string" && refundRequest.email.trim()
+        ? refundRequest.email.trim()
+        : "";
     if (!userEmail) {
       return NextResponse.json(
         { error: "User email not found in refund request" },
@@ -58,16 +61,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user from Clerk (if exists)
-    const clerkClientInstance = await clerkClient();
+    // Resolve Stripe customer id from Supabase Auth user metadata when possible
+    const authAdmin = await appUserAdmin();
     let customerId: string | undefined;
-    
+
     try {
-      const user = await clerkClientInstance.users.getUser(userId);
+      const user = await authAdmin.users.getUser(userId);
       customerId = user.privateMetadata?.stripeCustomerId as string | undefined;
-    } catch (error: any) {
-      // User might not exist in Clerk, continue with email lookup
-      console.log(`User ${userId} not found in Clerk, will use email lookup`);
+    } catch (error: unknown) {
+      console.log(
+        `User ${userId} not found in auth directory, will use email lookup`,
+        error,
+      );
     }
 
     // If no customerId in metadata, try to find by email
@@ -84,13 +89,13 @@ export async function POST(request: NextRequest) {
 
       // Try to update user metadata with customerId for future use (if user exists)
       try {
-        await clerkClientInstance.users.updateUserMetadata(userId, {
+        await authAdmin.users.updateUserMetadata(userId, {
           privateMetadata: {
             stripeCustomerId: customerId,
           },
         });
-      } catch (error) {
-        // Ignore if user doesn't exist in Clerk
+      } catch {
+        // Ignore if user doesn't exist in auth directory
       }
     }
 
@@ -189,16 +194,16 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // Try to update Clerk metadata (if user exists)
+      // Try to update auth directory metadata (if user exists)
       try {
-        await clerkClientInstance.users.updateUserMetadata(userId, {
+        await authAdmin.users.updateUserMetadata(userId, {
           publicMetadata: {
             plan: "free",
             planCancelled: true,
           },
         });
-      } catch (error) {
-        // Ignore if user doesn't exist in Clerk
+      } catch {
+        // Ignore if user doesn't exist in auth directory
       }
 
       // Update refund request status to "done"

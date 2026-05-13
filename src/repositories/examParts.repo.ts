@@ -1,6 +1,6 @@
 import { ExamPartSchema, ExamPartSchemaDto, TExamPartSchema, TExamPartSchemaDto } from "@/models/examParts.model";
 import { ObjectId } from "bson";
-import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
+import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
 import { objectIdLikeToHex } from "@/lib/pg/document";
 
 const OID24 = /^[a-f0-9]{24}$/i;
@@ -12,8 +12,8 @@ function examIdHexFromUnknown(value: unknown): string | null {
 export class ExamPartsRepository {
   private readonly db: Db;
 
-  constructor(mongoClient: MongoClient) {
-    this.db = mongoClient.db();
+  constructor(documentsClient: AppDocumentsClient) {
+    this.db = documentsClient.db();
   }
 
   private getExamPartsCollection() {
@@ -40,7 +40,9 @@ export class ExamPartsRepository {
       .find({ partId })
       .toArray();
     const entity = candidates.find(
-      (d) => examIdHexFromUnknown((d as unknown as { examId?: unknown }).examId) === wantExamHex
+      (d) =>
+        d != null &&
+        examIdHexFromUnknown((d as unknown as { examId?: unknown }).examId) === wantExamHex
     ) as TExamPartSchema | undefined;
     return entity ? this.convertFromEntity(entity) : null;
   }
@@ -108,7 +110,9 @@ export class ExamPartsRepository {
       ) as Record<string, unknown>;
       const candidates = await coll.find(baseFilter).sort({ partId: 1 }).toArray();
       const matched = candidates.filter(
-        (d) => examIdHexFromUnknown((d as unknown as { examId?: unknown }).examId) === wantExamHex
+        (d) =>
+          d != null &&
+          examIdHexFromUnknown((d as unknown as { examId?: unknown }).examId) === wantExamHex
       ) as TExamPartSchema[];
       const totalItems = matched.length;
       const slice = matched.slice(skip, skip + limit);

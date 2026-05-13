@@ -39,8 +39,8 @@ function objectIdLikeToHex(value: unknown): string | null {
   return null;
 }
 
-/** Best-effort SQL for simple Mongo filters. Returns null if not expressible safely. */
-export function mongoFilterToSql(
+/** Best-effort SQL for simple document-style filters. Returns null if not expressible safely. */
+export function documentFilterToSql(
   collectionKey: string,
   filter: Record<string, unknown>
 ): SqlParts | null {
@@ -48,11 +48,75 @@ export function mongoFilterToSql(
     return { clause: `collection = $1`, params: [collectionKey] };
   }
 
+  /**
+   * `{ $or: [ { clerkUserId: "x" }, { sub: "x" } ] }` — used by `matchUsersCollectionByWebUserIds`.
+   * Without SQL, PG falls back to loading the entire partition (timeouts / fragile row iteration).
+   */
+  if (Object.keys(filter).length === 1 && "$or" in filter) {
+    const branches = (filter as { $or: unknown }).$or;
+    if (!Array.isArray(branches) || branches.length === 0) {
+      return { clause: `collection = $1 AND false`, params: [collectionKey] };
+    }
+    const orSql: string[] = [];
+    const params: unknown[] = [collectionKey];
+    let paramIndex = 2;
+    for (const branch of branches) {
+      if (!branch || typeof branch !== "object" || Array.isArray(branch)) {
+        return null;
+      }
+      const sub = Object.entries(branch as Record<string, unknown>);
+      if (sub.length !== 1) {
+        return null;
+      }
+      const [field, val] = sub[0]!;
+      if (!SAFE_KEY.test(field) || field.startsWith("$")) {
+        return null;
+      }
+      if (typeof val === "number" || typeof val === "bigint") {
+        const num = typeof val === "bigint" ? Number(val) : val;
+        if (!Number.isFinite(num)) return null;
+        const s = String(num);
+        orSql.push(`(
+        body->>'${field}' = $${paramIndex}
+        OR body->'${field}'->>'$numberInt' = $${paramIndex}
+        OR body->'${field}'->>'$numberLong' = $${paramIndex}
+        OR body->'${field}'->>'$numberDouble' = $${paramIndex}
+      )`);
+        params.push(s);
+        paramIndex++;
+      } else if (typeof val === "boolean" && val === true) {
+        orSql.push(`(
+        body->>'${field}' = 'true'
+        OR body->>'${field}' = '1'
+        OR body->'${field}'->>'$numberInt' = '1'
+        OR body->'${field}'->>'$numberLong' = '1'
+      )`);
+      } else if (typeof val === "boolean" && val === false) {
+        orSql.push(`(
+        body->>'${field}' = 'false'
+        OR body->>'${field}' = '0'
+        OR body->'${field}'->>'$numberInt' = '0'
+        OR body->'${field}'->>'$numberLong' = '0'
+      )`);
+      } else if (typeof val === "string") {
+        orSql.push(`body->>'${field}' = $${paramIndex}`);
+        params.push(val);
+        paramIndex++;
+      } else {
+        return null;
+      }
+    }
+    return {
+      clause: `collection = $1 AND (${orSql.join(" OR ")})`,
+      params,
+    };
+  }
+
   const entries = Object.entries(filter);
 
   /**
    * Compound AND on multiple primitive fields (e.g. `{ userId, seasonId }` for
-   * `user_league_points`). Without this, `mongoFilterToSql` returned null → full
+   * `user_league_points`). Without this, `documentFilterToSql` returned null → full
    * collection scan + mingo, which breaks league updates at scale (maxScan / timeouts).
    */
   if (entries.length > 1) {

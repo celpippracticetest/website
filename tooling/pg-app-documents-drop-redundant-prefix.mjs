@@ -1,8 +1,9 @@
 /**
  * Drops redundant `prod.<name>` rows from `app_documents` whenever the unprefixed
- * partition (`<name>`) already has rows. The `MONGODB_SECONDARY_DB=prod` flag used to
- * mirror the same Mongo DB twice, which produced these duplicates. After clearing them
- * the auto-probe in `pgCollection.ts` resolves cleanly to the unprefixed partition.
+ * partition (`<name>`) already has rows. A legacy dual-namespace setup (`APP_DOCUMENTS_DB=prod`)
+ * could mirror the same source twice and produce
+ * these duplicates. After clearing them the auto-probe in `pgCollection.ts` resolves cleanly to the
+ * unprefixed partition.
  *
  * Set `DRY_RUN=0` to actually delete (default just prints the plan).
  *

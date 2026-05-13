@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto";
 import { PartnerRepository } from "@/repositories/partner.repo";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 
 const PREFIX = "PT";
 
@@ -10,7 +10,7 @@ function randomSegment(): string {
 
 /** Unique across `partners` and user `referralCodes` (via PartnerRepository.codeExists). */
 export async function generateUniquePartnerCode(): Promise<string> {
-  const repo = new PartnerRepository(mongoClient);
+  const repo = new PartnerRepository(documentsClient);
   await repo.ensureIndexes();
   for (let i = 0; i < 20; i++) {
     const code = `${PREFIX}-${randomSegment()}`;

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import mongoClient from "@/lib/mongodb";
+import { auth } from "@/lib/auth/server-auth";
+import documentsClient from "@/lib/appDocumentsClient";
 import { WikiRepository } from "@/repositories/wiki.repo";
 import { wikiArticles } from "@/data/wiki";
 
@@ -16,7 +16,7 @@ export async function POST() {
   }
 
   try {
-    const repo = new WikiRepository(mongoClient);
+    const repo = new WikiRepository(documentsClient);
     let upserted = 0;
 
     for (let i = 0; i < wikiArticles.length; i++) {

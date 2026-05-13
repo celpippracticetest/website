@@ -1,12 +1,9 @@
 import "server-only";
 
-import { auth } from "@clerk/nextjs/server";
-import { headers } from "next/headers";
-
-import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 import { getSupabaseAuthUserFromServerCookies } from "@/lib/supabase/server-app-read-user";
+import { getAuthenticatedRscContext } from "@/lib/auth/request-auth";
 
-/** Next throws this during static prerender when `auth()` / `cookies()` need a real request. */
+/** Next throws this during static prerender when `cookies()` need a real request. */
 function isDynamicServerUsage(err: unknown): boolean {
   return (
     typeof err === "object" &&
@@ -16,17 +13,8 @@ function isDynamicServerUsage(err: unknown): boolean {
   );
 }
 
-/** True if the visitor has either a Clerk session or Supabase Auth cookies. */
+/** True if the visitor has a Supabase Auth session (web cookies). */
 export async function hasAnyWebSession(): Promise<boolean> {
-  try {
-    const { userId } = await auth();
-    if (userId) {
-      return true;
-    }
-  } catch (err) {
-    if (isDynamicServerUsage(err)) throw err;
-    console.error("[hasAnyWebSession] Clerk auth() failed:", err);
-  }
   try {
     const supabaseUser = await getSupabaseAuthUserFromServerCookies();
     return Boolean(supabaseUser);
@@ -37,10 +25,7 @@ export async function hasAnyWebSession(): Promise<boolean> {
   }
 }
 
-/**
- * True when the visitor has Supabase Auth cookies (this site’s email/password session).
- * Ignores Clerk-only sessions so `/sign-in` stays usable during Clerk → Supabase overlap.
- */
+/** True when the visitor has Supabase Auth cookies (email/password or OAuth session). */
 export async function hasSupabaseWebSession(): Promise<boolean> {
   try {
     const supabaseUser = await getSupabaseAuthUserFromServerCookies();
@@ -52,19 +37,13 @@ export async function hasSupabaseWebSession(): Promise<boolean> {
   }
 }
 
-/** Unified auth for dashboard server layout (Clerk session or Supabase cookies). */
+/** Unified auth for dashboard server layout (Supabase cookies). */
 export async function getDashboardLayoutAuthContext() {
-  const h = await headers();
-  const cookie = h.get("cookie") ?? "";
-  return getAuthenticatedRequestContext(
-    new Request("http://localhost", { headers: { cookie } }),
-  );
+  return getAuthenticatedRscContext();
 }
 
 /**
- * Drop-in replacement for Clerk's `currentUser()` that works for both Clerk and
- * Supabase Auth sessions. Returns a Clerk-shaped user (or MobileUserBridge) so that
- * existing code reading `user.publicMetadata.plan` etc. continues to work.
+ * Returns the signed-in user from Supabase Auth (Clerk-shaped bridge for legacy UI fields).
  */
 export async function getHybridCurrentUser() {
   const ctx = await getDashboardLayoutAuthContext();

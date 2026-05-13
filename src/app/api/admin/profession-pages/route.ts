@@ -1,4 +1,4 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { ensureCmsAdmin } from "@/lib/cms/ensure-admin";
 import { ProfessionPageContentSchema } from "@/models/profession-page.model";
 import { ProfessionPageRepository } from "@/repositories/profession-page.repo";
@@ -12,7 +12,7 @@ export async function GET() {
     const admin = await ensureCmsAdmin();
     if (!admin.ok) return admin.response;
 
-    const repo = new ProfessionPageRepository(mongoClient);
+    const repo = new ProfessionPageRepository(documentsClient);
     await repo.ensureSlugIndex();
     const items = await repo.listAllForAdmin();
     return NextResponse.json({ items, totalItems: items.length }, { status: 200 });
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const repo = new ProfessionPageRepository(mongoClient);
+    const repo = new ProfessionPageRepository(documentsClient);
     await repo.ensureSlugIndex();
     await repo.create(parsed.data);
     return NextResponse.json({ ok: true, slug: parsed.data.slug }, { status: 201 });

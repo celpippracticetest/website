@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
-import client from "@/lib/mongodb";
+import { auth, appUserAdmin, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
+import client from "@/lib/appDocumentsClient";
 
 export async function POST(
   _request: NextRequest,
@@ -11,7 +11,7 @@ export async function POST(
 
     const authenticate = await auth();
     const isAdmin =
-      authenticate.sessionClaims?.metadata?.roles?.includes("admin");
+      sessionClaimsHasAdminRole(authenticate.sessionClaims);
     if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -20,14 +20,16 @@ export async function POST(
       return NextResponse.json({ error: "User ID is required" }, { status: 400 });
     }
 
-    const clerk = await clerkClient();
-    const { data: sessions } = await clerk.sessions.getSessionList({ userId });
-    const activeSessions = sessions.filter((session) => session.status === "active");
+    const authAdmin = await appUserAdmin();
+    const { data: sessions } = await authAdmin.sessions.getSessionList({ userId });
+    type SessionRow = { id?: string; status?: string };
+    const sessionRows = (sessions ?? []) as SessionRow[];
+    const activeSessions = sessionRows.filter((session) => session.status === "active");
 
     let revokedCount = 0;
     for (const session of activeSessions) {
       if (!session.id) continue;
-      await clerk.sessions.revokeSession(session.id);
+      await authAdmin.sessions.revokeSession(session.id);
       revokedCount += 1;
     }
 

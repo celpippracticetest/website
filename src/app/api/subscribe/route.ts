@@ -1,4 +1,4 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import {
   LeadCaptureLeadWriteSchema,
   LeadTriggerSourceEnumSchema,
@@ -86,9 +86,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const leadRepo = new LeadCaptureLeadRepository(mongoClient);
+    const leadRepo = new LeadCaptureLeadRepository(documentsClient);
     await leadRepo.ensureIndexes();
-    const configRepo = new LeadCaptureConfigRepository(mongoClient);
+    const configRepo = new LeadCaptureConfigRepository(documentsClient);
     await configRepo.ensureIndexes();
 
     const sourceUrl = parsedBody.data.sourceUrl || request.headers.get("referer") || "unknown";

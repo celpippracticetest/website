@@ -2,7 +2,7 @@ import WritingPractice from "@/components/dashboard-app/writing-practice/Writing
 import ShowTasks from "@/components/dashboard-new/ShowTasks";
 import ShowTaskHeader from "@/components/dashboard-new/ShowTasks/Header";
 import SvgWritingPart from "@/components/icons/WritingPart";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { PracticeRepository } from "@/repositories/practice.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
@@ -75,7 +75,7 @@ const WritingPage = async ({
 }) => {
   const { selectedPracticeId, taskId } = await searchParams;
 
-  const taskRepo = new TaskRepository(mongoClient);
+  const taskRepo = new TaskRepository(documentsClient);
   const tasks = await taskRepo.getAllTask({ type: "practice" }, 0, 100);
 
   const writingTasks: PracticeSection[] = [
@@ -160,7 +160,7 @@ const WritingPage = async ({
     redirect("/practice-overview", RedirectType.push);
   }
 
-  const practiceRepo = new PracticeRepository(mongoClient);
+  const practiceRepo = new PracticeRepository(documentsClient);
   const practices = await practiceRepo.getAllPractice(
     {
       type: "WRITING",
@@ -195,7 +195,7 @@ const WritingPage = async ({
     }
   }
   if (user) {
-    const writingAnswerRepo = new WritingAndSpeakingAnswerRepository(mongoClient);
+    const writingAnswerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
     completedPracticeId =
       await writingAnswerRepo.findAnswersByPracticeIdsAndUser(
         practices.items.map((p) => p.id),

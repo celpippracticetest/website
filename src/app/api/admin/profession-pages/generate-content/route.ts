@@ -1,4 +1,4 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { ensureCmsAdmin } from "@/lib/cms/ensure-admin";
 import {
   ProfessionPageAccentSchema,
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
 
     let targetPhrases: string[] = [];
     try {
-      const kwRepo = new BlogTargetKeywordRepository(mongoClient);
+      const kwRepo = new BlogTargetKeywordRepository(documentsClient);
       targetPhrases = await kwRepo.listActivePhrases();
     } catch (e) {
       console.warn("Profession generate-content: could not load target keywords", e);

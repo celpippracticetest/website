@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { TaskRepository } from "@/repositories/tasks.repo";
 import type { SkillRoute } from "@/lib/practiceRoutes";
 
@@ -36,7 +36,7 @@ export async function skillHubPageMetadata(
 
   if (taskId) {
     canonical = `${root}${hubPath}?taskId=${encodeURIComponent(taskId)}`;
-    const taskRepo = new TaskRepository(mongoClient);
+    const taskRepo = new TaskRepository(documentsClient);
     const task = await taskRepo.findTaskById(taskId);
     if (task && task.category === skill) {
       const n = task.taskNumber.replace(/\D/g, "") || task.taskNumber;

@@ -1,7 +1,7 @@
-import { clerkClient } from "@clerk/nextjs/server";
+import { appUserAdmin } from "@/lib/auth/server-auth";
 
 import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { logger } from "@/lib/sentry-logger";
 import { planNameIndicatesPremiumPlus } from "@/lib/subscriptionAccess";
@@ -37,14 +37,14 @@ export function resolvePlanFromMobileProductId(productId: string): string {
   return planNameIndicatesPremiumPlus(productId) ? "pro" : "premium";
 }
 
-async function updateMongoUserPlan(args: {
+async function syncUserPlanToUserDocument(args: {
   userId: string;
   plan: string;
   platform: "google_play" | "apple";
 }): Promise<void> {
-  if (!mongoClient) return;
+  if (!documentsClient) return;
   try {
-    const db = mongoClient.db();
+    const db = documentsClient.db();
     const usersCollection = db.collection("users");
     const filter = isLikelySupabaseAuthUserId(args.userId)
       ? { supabaseUserId: args.userId }
@@ -65,7 +65,7 @@ async function updateMongoUserPlan(args: {
       { upsert: true }
     );
   } catch (e) {
-    logger.warn("Mongo user plan sync skipped or failed after mobile IAP", {
+    logger.warn("User plan document sync skipped or failed after mobile IAP", {
       component: "mobile_iap",
       userId: args.userId,
       metadata: { error: String(e) },
@@ -74,8 +74,7 @@ async function updateMongoUserPlan(args: {
 }
 
 /**
- * After a verified store purchase, align auth user metadata (Clerk or Supabase)
- * and Mongo user doc with web Stripe behavior.
+ * After a verified store purchase, align auth user metadata and the `users` document with web Stripe behavior.
  */
 export async function applyVerifiedMobileSubscriptionPlan(args: {
   userId: string;
@@ -112,7 +111,7 @@ export async function applyVerifiedMobileSubscriptionPlan(args: {
       },
     });
 
-    await updateMongoUserPlan({
+    await syncUserPlanToUserDocument({
       userId: args.userId,
       plan,
       platform: args.platform,
@@ -131,8 +130,8 @@ export async function applyVerifiedMobileSubscriptionPlan(args: {
     return { plan };
   }
 
-  const clerk = await clerkClient();
-  const user = await clerk.users.getUser(args.userId);
+  const authAdmin = await appUserAdmin();
+  const user = await authAdmin.users.getUser(args.userId);
   const currentMetadata = (user.publicMetadata || {}) as Record<string, unknown>;
   const updatedMetadata = {
     ...currentMetadata,
@@ -140,11 +139,11 @@ export async function applyVerifiedMobileSubscriptionPlan(args: {
     planSource: args.platform,
   };
 
-  await clerk.users.updateUserMetadata(args.userId, {
+  await authAdmin.users.updateUserMetadata(args.userId, {
     publicMetadata: updatedMetadata,
   });
 
-  await updateMongoUserPlan({
+  await syncUserPlanToUserDocument({
     userId: args.userId,
     plan,
     platform: args.platform,

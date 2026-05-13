@@ -4,15 +4,15 @@ import type {
 } from "@/models/partner-commission.model";
 import { partnerCommissionToDto } from "@/models/partner-commission.model";
 import { ObjectId } from "bson";
-import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
+import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
 
 const COLL = "partnerCommissions";
 
 export class PartnerCommissionRepository {
   private readonly db: Db;
 
-  constructor(mongoClient: MongoClient) {
-    this.db = mongoClient.db();
+  constructor(documentsClient: AppDocumentsClient) {
+    this.db = documentsClient.db();
   }
 
   private col() {

@@ -1,6 +1,6 @@
 import { ObjectId } from "bson";
-import type { MongoFilter } from "@/lib/pg/types";
-import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
+import type { AppDocFilter } from "@/lib/pg/types";
+import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
 import {
   LeadCaptureLeadSchema,
   LeadCaptureLeadSchemaDto,
@@ -26,8 +26,8 @@ type PaginatedLeadCaptureLeadsResult = {
 export class LeadCaptureLeadRepository {
   private readonly db: Db;
 
-  constructor(mongoClient: MongoClient) {
-    this.db = mongoClient.db();
+  constructor(documentsClient: AppDocumentsClient) {
+    this.db = documentsClient.db();
   }
 
   private getCollection() {
@@ -102,8 +102,8 @@ export class LeadCaptureLeadRepository {
     return entity ? this.convertFromEntity(entity) : null;
   }
 
-  private buildListFilter(filters: LeadCaptureLeadListFilters): MongoFilter<TLeadCaptureLeadSchema> {
-    const query: MongoFilter<TLeadCaptureLeadSchema> = {};
+  private buildListFilter(filters: LeadCaptureLeadListFilters): AppDocFilter<TLeadCaptureLeadSchema> {
+    const query: AppDocFilter<TLeadCaptureLeadSchema> = {};
 
     if (filters.search) {
       query.$or = [

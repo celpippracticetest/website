@@ -1,4 +1,4 @@
-import { clerkClient } from "@clerk/nextjs/server";
+import { appUserAdmin } from "@/lib/auth/server-auth";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
@@ -134,7 +134,7 @@ async function resolvePromotionCode(
       });
 
       if (response.ok) {
-        const client = await clerkClient();
+        const client = await appUserAdmin();
         const refreshedUser = await client.users.getUser(userId);
         const refreshedPromotionId = getAuthorizedPromotionId(
           (refreshedUser.publicMetadata ?? {}) as UserMetadata
@@ -488,7 +488,7 @@ export async function POST(request: NextRequest) {
         });
       }
     } else {
-      const client = await clerkClient();
+      const client = await appUserAdmin();
       await client.users.updateUserMetadata(userId, {
         publicMetadata: {
           planCancelled: false,

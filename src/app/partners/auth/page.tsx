@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/server-auth";
 import { redirect } from "next/navigation";
 import PartnerAuthClient from "./PartnerAuthClient";
 

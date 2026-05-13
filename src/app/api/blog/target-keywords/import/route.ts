@@ -1,4 +1,4 @@
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { BlogTargetKeywordRepository } from "@/repositories/blog-target-keyword.repo";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const repo = new BlogTargetKeywordRepository(mongoClient);
+    const repo = new BlogTargetKeywordRepository(documentsClient);
     const result = await repo.bulkImportPhrases(raw, { isActive: isActive ?? true });
 
     return NextResponse.json(result, { status: 200 });

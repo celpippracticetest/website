@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { attachStripePricingToSerializedPlans } from "@/lib/loadActivePlansWithStripePrices";
 import { getAccessTierKey } from "@/lib/pricing";
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 import { PlansRepository } from "@/repositories/plans.repo";
 import type { SerializedPlan } from "@/types/pricing";
 
@@ -62,7 +62,10 @@ export async function GET() {
   } catch (err) {
     console.error("express-entry plans:", err);
     const message = err instanceof Error ? err.message : "Failed to fetch plans";
-    if (message.includes("MONGODB_URI") || message.includes("not initialized")) {
+    if (
+      message.includes("DATABASE_URL") ||
+      message.includes("not initialized")
+    ) {
       return NextResponse.json({ plans: [], error: "Database unavailable" }, { status: 503 });
     }
     return NextResponse.json({ error: "Failed to fetch plans" }, { status: 500 });

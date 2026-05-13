@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/server-auth";
 import { ObjectId } from "bson";
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 import { InternalLinkWriteSchema } from "@/models/internal-link.model";
 
 export async function GET() {
@@ -11,10 +11,12 @@ export async function GET() {
   const db = await getDb();
   const links = await db.collection("internalLinks").find().sort({ keyword: 1 }).toArray();
 
-  return NextResponse.json(links.map(link => ({
-    ...link,
-    id: link._id.toString(),
-  })));
+  return NextResponse.json(
+    links.map((link) => ({
+      ...link,
+      id: link._id != null ? String(link._id) : "",
+    }))
+  );
 }
 
 export async function POST(req: NextRequest) {

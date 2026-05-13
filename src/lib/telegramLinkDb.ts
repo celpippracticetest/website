@@ -1,4 +1,4 @@
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 import { randomBytes } from "crypto";
 
 const TELEGRAM_LINKS = "telegram_links";
@@ -12,13 +12,13 @@ export type TelegramLinkRow = {
   updatedAt: Date;
 };
 
-export async function getTelegramLinkByClerkId(
-  clerkUserId: string
+export async function getTelegramLinkByUserId(
+  userId: string
 ): Promise<TelegramLinkRow | null> {
   const db = await getDb();
   return db
     .collection<TelegramLinkRow>(TELEGRAM_LINKS)
-    .findOne({ clerkUserId });
+    .findOne({ clerkUserId: userId });
 }
 
 export async function createLinkingToken(
@@ -45,7 +45,7 @@ export function generateLinkTokenSecret(): string {
   return randomBytes(24).toString("hex");
 }
 
-/** Matches celpip-telegram-sync / Clerk helper display names. */
+/** Matches celpip-telegram-sync helper display names. */
 export function telegramPlanDisplayName(plan: string): string {
   const n = plan.trim().toLowerCase();
   switch (n) {

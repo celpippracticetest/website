@@ -1,4 +1,4 @@
-import type { CompatDb as Db } from "@/lib/pg/types";
+import type { AppDocumentsDb as Db } from "@/lib/pg/types";
 import { stripe } from "@/lib/stripe";
 import type { Plan } from "@/models/plans.model";
 import { PlansRepository } from "@/repositories/plans.repo";

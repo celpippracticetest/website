@@ -1,6 +1,6 @@
 import type { Plan, PlanBillingInterval } from "@/models/plans.model";
 import { getPlanRecurringConfig } from "@/lib/planBilling";
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 import { payPalCatalogProductExistsOnCurrentApi, paypalApiJson } from "./subscriptionsApi";
 
 function parsePriceToCadDecimalString(price: string | undefined): string {

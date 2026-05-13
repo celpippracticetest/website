@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getDashboardLayoutAuthContext } from "@/lib/auth/web-session-server";
 import { redirect } from "next/navigation";
 import RefundRequestPortal from "@/components/dashboard-new/RefundRequestPortal";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { Box } from "@/components/ui/Box";
 export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
@@ -49,41 +49,36 @@ export default async function RefundRequestPage() {
   const userFullName = [firstName, lastName].filter(Boolean).join(" ");
   const userEmail = user?.primaryEmailAddress?.emailAddress ?? null;
 
+  /** `users` collection uses legacy BSON keys; `userId` here is the app-stable id (Supabase UUID and/or migrated Clerk id). */
   const userLookupFilter = {
     $or: [
       { clerkUserId: userId },
+      { supabaseUserId: userId },
       { sub: userId },
       ...(userEmail ? [{ email: userEmail }] : []),
     ],
   };
 
-  const rawUserEntity = await mongoClient
+  const rawUserEntity = await documentsClient
     .db()
     .collection("users")
     .findOne<{
-      clerkUserId?: string;
-      purchaseDate?: unknown;
-      publicMetadata?: { purchaseDate?: unknown };
-    }>(
-      userLookupFilter,
-      {
-        projection: {
-          clerkUserId: 1,
-          purchaseDate: 1,
-          "publicMetadata.purchaseDate": 1,
-        },
-      }
-    );
-  const rawUserEntityProd = await mongoClient
-    .db("prod")
-    .collection("users")
-    .findOne<{
-      clerkUserId?: string;
       purchaseDate?: unknown;
       publicMetadata?: { purchaseDate?: unknown };
     }>(userLookupFilter, {
       projection: {
-        clerkUserId: 1,
+        purchaseDate: 1,
+        "publicMetadata.purchaseDate": 1,
+      },
+    });
+  const rawUserEntityProd = await documentsClient
+    .db("prod")
+    .collection("users")
+    .findOne<{
+      purchaseDate?: unknown;
+      publicMetadata?: { purchaseDate?: unknown };
+    }>(userLookupFilter, {
+      projection: {
         purchaseDate: 1,
         "publicMetadata.purchaseDate": 1,
       },
@@ -100,14 +95,14 @@ export default async function RefundRequestPage() {
     rawDbRootPurchaseDateProd ??
     rawDbPublicPurchaseDate ??
     rawDbRootPurchaseDate;
-  const prevCheckoutDefault = await mongoClient
+  const prevCheckoutDefault = await documentsClient
     .db()
     .collection("checkouts")
     .find({ userId })
     .sort({ createdAt: -1 })
     .limit(1)
     .next();
-  const prevCheckoutProd = await mongoClient
+  const prevCheckoutProd = await documentsClient
     .db("prod")
     .collection("checkouts")
     .find({ userId })
@@ -132,12 +127,18 @@ export default async function RefundRequestPage() {
       return fromMetadata;
     }
 
-    const fallbackTs = prevCheckout?.createdAt
-      ? new Date(prevCheckout.createdAt).getTime()
-      : null;
-    return typeof fallbackTs === "number" && Number.isFinite(fallbackTs)
-      ? fallbackTs
-      : null;
+    let fallbackTs: number | null = null;
+    const createdAt = prevCheckout?.createdAt;
+    if (createdAt instanceof Date) {
+      const ts = createdAt.getTime();
+      if (Number.isFinite(ts)) fallbackTs = ts;
+    } else if (typeof createdAt === "number") {
+      if (Number.isFinite(createdAt)) fallbackTs = createdAt;
+    } else if (typeof createdAt === "string" && createdAt.trim() !== "") {
+      const ts = new Date(createdAt).getTime();
+      if (Number.isFinite(ts)) fallbackTs = ts;
+    }
+    return fallbackTs;
   })();
   const hoursSincePurchase = purchaseAt
     ? Number.isFinite(purchaseAt)

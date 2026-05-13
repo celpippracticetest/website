@@ -1,10 +1,10 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth, appUserAdmin } from "@/lib/auth/server-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { captureException } from "@/lib/sentry-logger";
 import { getAllowedDeviceCount } from "@/lib/accountDeviceAccess";
 import {
-  emailsFromClerkUser,
+  emailsFromAuthUser,
   resolveStripeCustomerId,
 } from "@/lib/resolveStripeCustomerId";
 import { stripe } from "@/lib/stripe";
@@ -27,8 +27,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const clerk = await clerkClient();
-    const user = await clerk.users.getUser(userId);
+    const authAdmin = await appUserAdmin();
+    const user = await authAdmin.users.getUser(userId);
     const plan = user.publicMetadata?.plan as string | undefined;
     const purchaseDate = user.publicMetadata?.purchaseDate as string | undefined;
     if (!hasPaidPracticeAccess(plan, purchaseDate)) {
@@ -44,10 +44,10 @@ export async function POST(req: NextRequest) {
     const currentAddons = asNonNegativeInt(user.publicMetadata?.deviceSeatAddons, 0);
 
     const customerId = await resolveStripeCustomerId(userId, {
-      clerkStripeCustomerId: user.privateMetadata?.stripeCustomerId as
+      stripeCustomerIdFromPrivate: user.privateMetadata?.stripeCustomerId as
         | string
         | undefined,
-      emails: emailsFromClerkUser(user),
+      emails: emailsFromAuthUser(user),
     });
     if (!customerId) {
       return NextResponse.json(
@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
       deviceSeatChargeMode: "stripe_quantity",
     };
 
-    await clerk.users.updateUserMetadata(userId, {
+    await authAdmin.users.updateUserMetadata(userId, {
       publicMetadata: mergedPublicMetadata,
     });
 

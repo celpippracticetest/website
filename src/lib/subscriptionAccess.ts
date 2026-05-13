@@ -66,7 +66,7 @@ export function hasPremiumPlusAccess(
 }
 
 /**
- * Canonical Mongo ObjectId string for access checks. URLs use `exam_<id>`; Clerk/Stripe may store either form.
+ * Canonical ObjectId string for access checks. URLs use `exam_<id>`; auth/Stripe may store either form.
  */
 export function normalizeMockExamIdForAccess(id: string | null | undefined): string | null {
   if (id == null) return null;

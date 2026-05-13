@@ -1,12 +1,12 @@
 import { ObjectId } from "bson";
-import type { CompatMongoClient as MongoClient, CompatDb as Db } from "@/lib/pg/types";
+import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
 import { TUserWord, TUserWordDto, UserWordSchemaDto } from "@/models/userWords.model";
 
 export class UserWordsRepository {
     private readonly db: Db;
 
-    constructor(mongoClient: MongoClient) {
-        this.db = mongoClient.db();
+    constructor(documentsClient: AppDocumentsClient) {
+        this.db = documentsClient.db();
     }
 
     private getCollection() {

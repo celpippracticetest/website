@@ -1,11 +1,11 @@
 import "server-only";
 
 import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
-import mongoClient from "@/lib/mongodb";
+import documentsClient from "@/lib/appDocumentsClient";
 import { stripe } from "@/lib/stripe";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
 
-export function emailsFromClerkUser(user: {
+export function emailsFromAuthUser(user: {
   emailAddresses?: { emailAddress?: string | null }[];
 }): string[] {
   return normalizeEmails(
@@ -22,26 +22,26 @@ function normalizeEmails(emails: readonly string[]): string[] {
   return [...out];
 }
 
-function userIdMongoFilter(userId: string): Record<string, unknown> {
+function userIdAppDocFilter(userId: string): Record<string, unknown> {
   if (isLikelySupabaseAuthUserId(userId)) {
     return { supabaseUserId: userId };
   }
   return { clerkUserId: userId };
 }
 
-/** Writes `stripeCustomerId` on MongoDB `users` (by Clerk or Supabase id). */
-export async function persistStripeCustomerIdToMongo(
+/** Writes `stripeCustomerId` on the `users` document (by legacy external id or Supabase id). */
+export async function persistStripeCustomerIdForUser(
   userId: string,
   stripeCustomerId: string
 ): Promise<void> {
-  if (!mongoClient) return;
+  if (!documentsClient) return;
   try {
-    const filter = userIdMongoFilter(userId);
+    const filter = userIdAppDocFilter(userId);
     const insertKey =
       "supabaseUserId" in filter
         ? { supabaseUserId: userId }
         : { clerkUserId: userId };
-    await mongoClient.db().collection("users").updateOne(
+    await documentsClient.db().collection("users").updateOne(
       filter,
       {
         $set: { stripeCustomerId, updatedAt: new Date() },
@@ -55,21 +55,21 @@ export async function persistStripeCustomerIdToMongo(
 }
 
 /**
- * Stripe customer id for a Clerk user — not only Clerk privateMetadata.
- * Order: MongoDB `users.stripeCustomerId`, Clerk `privateMetadata.stripeCustomerId`,
+ * Stripe customer id for a user — not only `privateMetadata.stripeCustomerId`.
+ * Order: `users.stripeCustomerId`, `privateMetadata.stripeCustomerId`,
  * latest completed checkout session, then Stripe customer search by email.
- * Newly resolved ids are written to MongoDB for later requests.
+ * Newly resolved ids are written to `users` for later requests.
  */
 export async function resolveStripeCustomerId(
   userId: string,
   options: {
-    clerkStripeCustomerId?: string | null;
+    stripeCustomerIdFromPrivate?: string | null;
     emails: readonly string[];
   }
 ): Promise<string | null> {
-  if (mongoClient) {
+  if (documentsClient) {
     try {
-      const doc = await mongoClient
+      const doc = await documentsClient
         .db()
         .collection("users")
         .findOne(
@@ -87,15 +87,15 @@ export async function resolveStripeCustomerId(
     }
   }
 
-  const fromClerk = options.clerkStripeCustomerId?.trim();
-  if (fromClerk) {
-    await persistStripeCustomerIdToMongo(userId, fromClerk);
-    return fromClerk;
+  const fromPrivate = options.stripeCustomerIdFromPrivate?.trim();
+  if (fromPrivate) {
+    await persistStripeCustomerIdForUser(userId, fromPrivate);
+    return fromPrivate;
   }
 
-  if (mongoClient) {
+  if (documentsClient) {
     try {
-      const checkoutRepo = new CheckoutRepository(mongoClient);
+      const checkoutRepo = new CheckoutRepository(documentsClient);
       const lastCheckout = await checkoutRepo.findLatestCheckoutByUserId(userId);
       if (lastCheckout) {
         const session = await stripe.checkout.sessions.retrieve(
@@ -104,7 +104,7 @@ export async function resolveStripeCustomerId(
         const cid =
           typeof session.customer === "string" ? session.customer : null;
         if (cid) {
-          await persistStripeCustomerIdToMongo(userId, cid);
+          await persistStripeCustomerIdForUser(userId, cid);
           return cid;
         }
       }
@@ -118,7 +118,7 @@ export async function resolveStripeCustomerId(
       const customers = await stripe.customers.list({ email, limit: 1 });
       if (customers.data.length > 0) {
         const cid = customers.data[0].id;
-        await persistStripeCustomerIdToMongo(userId, cid);
+        await persistStripeCustomerIdForUser(userId, cid);
         return cid;
       }
     } catch {

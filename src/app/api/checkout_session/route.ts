@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import type Stripe from "stripe";
 
 import { stripe } from "@/lib/stripe";
-import { clerkClient, currentUser } from "@clerk/nextjs/server";
+import { appUserAdmin, currentUser } from "@/lib/auth/server-auth";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
-import { getDb } from "@/lib/mongodb";
+import { getDb } from "@/lib/appDocumentsClient";
 import { isPricingAbLayout } from "@/lib/pricingAbTest";
 import { isHomeAbExperimentVariant, isHomeAbVariant } from "@/lib/homeAbTest";
 import {
@@ -22,6 +23,20 @@ import {
   ACQUISITION_ATTRIBUTION_COOKIE,
   flatAcquisitionFromCookie,
 } from "@/lib/attributionCookie";
+import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
+import {
+  matchUsersCollectionByWebUserIds,
+  supabaseAuthUserIdFieldsOnUserDoc,
+} from "@/lib/users/userDocumentIdentity";
+
+function recordToStripeMetadata(record: Record<string, unknown>): Stripe.MetadataParam {
+  const out: Stripe.MetadataParam = {};
+  for (const [key, value] of Object.entries(record)) {
+    if (value === undefined) continue;
+    out[key] = value === null ? "" : String(value);
+  }
+  return out;
+}
 
 /** GET — same handler as POST (no self-fetch: avoids dev deadlock / invalid response). */
 export async function GET(req: NextRequest) {
@@ -83,7 +98,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
     if (!email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const clerk = await clerkClient();
+    const authAdmin = await appUserAdmin();
     if (!product && !price) {
       return NextResponse.json(
         { error: "Product ID or Price ID is required" },
@@ -193,7 +208,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
 
         if (applyDiscountResponse.ok) {
           // Refresh user metadata to get the new promotion ID
-          const updatedUser = await clerk.users.getUser(user.id);
+          const updatedUser = await authAdmin.users.getUser(user.id);
           const updatedMetadata = updatedUser.publicMetadata as any;
           const newReferralPromotionId = updatedMetadata?.referralPromotionId;
 
@@ -347,12 +362,24 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
 
     const mode = priceObject.recurring ? "subscription" : "payment";
     const db = await getDb();
-    const userDoc = await db.collection("users").findOne({ clerkUserId: user.id });
+    const userDoc = await db.collection("users").findOne(matchUsersCollectionByWebUserIds(user.id));
+    const ud = userDoc as Record<string, unknown> | null;
+    const attribution = (ud?.attribution ?? {}) as Record<string, unknown>;
+    const lastTouch = (attribution.lastTouch ?? {}) as Record<string, unknown>;
+    const firstTouch = (attribution.firstTouch ?? {}) as Record<string, unknown>;
+    const publicMetaForCheckout = (ud?.publicMetadata ?? {}) as Record<string, unknown>;
     const firstTouchTimestamp =
-      userDoc?.attribution?.firstTouch?.timestamp ||
-      userDoc?.publicMetadata?.acquisitionDate ||
+      firstTouch.timestamp ||
+      publicMetaForCheckout.acquisitionDate ||
       null;
-    const firstTouchDate = firstTouchTimestamp ? new Date(firstTouchTimestamp) : null;
+    const firstTouchDate =
+      firstTouchTimestamp != null && firstTouchTimestamp !== ""
+        ? new Date(
+            typeof firstTouchTimestamp === "string" || typeof firstTouchTimestamp === "number"
+              ? firstTouchTimestamp
+              : String(firstTouchTimestamp)
+          )
+        : null;
     const timeToPurchaseMinutes =
       firstTouchDate && !Number.isNaN(firstTouchDate.getTime())
         ? Math.max(0, Math.round((Date.now() - firstTouchDate.getTime()) / 60000))
@@ -369,7 +396,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
     const country =
       req.headers.get("x-vercel-ip-country") ||
       req.headers.get("cf-ipcountry") ||
-      userDoc?.attribution?.lastTouch?.country ||
+      lastTouch.country ||
       null;
     const readRequestAttribution = (field: string) => {
       const formValue = formData.get(field);
@@ -424,7 +451,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       campaignPromoKey = null;
 
       await db.collection("users").updateOne(
-        { clerkUserId: user.id },
+        matchUsersCollectionByWebUserIds(user.id),
         {
           $set: {
             challenge: {
@@ -442,8 +469,10 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
             updatedAt: new Date(),
           },
           $setOnInsert: {
-            clerkUserId: user.id,
             createdAt: new Date(),
+            ...(isLikelySupabaseAuthUserId(user.id)
+              ? supabaseAuthUserIdFieldsOnUserDoc(user.id)
+              : { clerkUserId: user.id }),
           },
         },
         { upsert: true }
@@ -454,9 +483,8 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       finalOfferSource === "onboarding_final_chance" && !hasChallengePayload;
     const finalOfferMetadata = isOnboardingFinalOffer ? finalOfferSource : null;
     const lastTouchCampaign =
-      typeof userDoc?.attribution?.lastTouch?.campaign === "string" &&
-      userDoc.attribution.lastTouch.campaign !== "(not set)"
-        ? userDoc.attribution.lastTouch.campaign
+      typeof lastTouch.campaign === "string" && lastTouch.campaign !== "(not set)"
+        ? lastTouch.campaign
         : null;
     const metadataUtmCampaign =
       typeof userMetadata?.utm_campaign === "string" && userMetadata.utm_campaign !== "(not set)"
@@ -471,9 +499,9 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       readRequestAttribution("google_ads_campaign_id") ||
       readRequestAttribution("gad_campaignid") ||
       acqCk.google_ads_campaign_id ||
-      (typeof userDoc?.attribution?.lastTouch?.googleAdsCampaignId === "string" &&
-      userDoc.attribution.lastTouch.googleAdsCampaignId.trim()
-        ? userDoc.attribution.lastTouch.googleAdsCampaignId.trim()
+      (typeof lastTouch.googleAdsCampaignId === "string" &&
+      lastTouch.googleAdsCampaignId.trim()
+        ? lastTouch.googleAdsCampaignId.trim()
         : null) ||
       clerkGoogleAdsId ||
       null;
@@ -481,13 +509,13 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       utm_source:
         readRequestAttribution("utm_source") ||
         acqCk.utm_source ||
-        userDoc?.attribution?.lastTouch?.source ||
+        lastTouch.source ||
         userMetadata?.utm_source ||
         null,
       utm_medium:
         readRequestAttribution("utm_medium") ||
         acqCk.utm_medium ||
-        userDoc?.attribution?.lastTouch?.medium ||
+        lastTouch.medium ||
         userMetadata?.utm_medium ||
         null,
       utm_campaign:
@@ -511,37 +539,37 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       gclid:
         readRequestAttribution("gclid") ||
         acqCk.gclid ||
-        userDoc?.attribution?.lastTouch?.gclid ||
+        lastTouch.gclid ||
         userMetadata?.gclid ||
         null,
       gbraid:
         readRequestAttribution("gbraid") ||
         acqCk.gbraid ||
-        userDoc?.attribution?.lastTouch?.gbraid ||
+        lastTouch.gbraid ||
         userMetadata?.gbraid ||
         null,
       wbraid:
         readRequestAttribution("wbraid") ||
         acqCk.wbraid ||
-        userDoc?.attribution?.lastTouch?.wbraid ||
+        lastTouch.wbraid ||
         userMetadata?.wbraid ||
         null,
       fbclid:
         readRequestAttribution("fbclid") ||
         acqCk.fbclid ||
-        userDoc?.attribution?.lastTouch?.fbclid ||
+        lastTouch.fbclid ||
         userMetadata?.fbclid ||
         null,
       msclkid:
         readRequestAttribution("msclkid") ||
         acqCk.msclkid ||
-        userDoc?.attribution?.lastTouch?.msclkid ||
+        lastTouch.msclkid ||
         userMetadata?.msclkid ||
         null,
       ttclid:
         readRequestAttribution("ttclid") ||
         acqCk.ttclid ||
-        userDoc?.attribution?.lastTouch?.ttclid ||
+        lastTouch.ttclid ||
         userMetadata?.ttclid ||
         null,
     };
@@ -591,12 +619,12 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       entry_page:
         readRequestAttribution("entry_page") ||
         acqCk.entry_page ||
-        userDoc?.attribution?.firstTouch?.entryPage ||
+        firstTouch.entryPage ||
         userMetadata?.entryPage ||
         null,
       referrer:
         readRequestAttribution("referrer") ||
-        userDoc?.attribution?.firstTouch?.referrer ||
+        firstTouch.referrer ||
         userMetadata?.referrer ||
         null,
       attribution_session_id:
@@ -706,10 +734,9 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
         ? { allow_promotion_codes: !hasChallengePayload }
         : {}),
       ...(checkoutDiscounts.length > 0 ? { discounts: checkoutDiscounts } : {}),
-      metadata: {
+      metadata: recordToStripeMetadata({
         user_id: user.id,
         plan_name: productDetails.name,
-        purchase_type: purchaseType || null,
         referral_code: userMetadata?.referralCode || null,
         final_offer_source: finalOfferMetadata,
         challenge_mode: hasChallengePayload ? "refund_goal" : null,
@@ -736,13 +763,12 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
         }),
         ...(campaignPromoKey && { campaign_promo: campaignPromoKey }),
         ...ga4CheckoutMeta,
-      },
+      }),
       ...(mode === "subscription" && {
         subscription_data: {
-          metadata: {
+          metadata: recordToStripeMetadata({
             user_id: user.id,
             plan_name: productDetails.name,
-            purchase_type: purchaseType || null,
             referral_code: userMetadata?.referralCode || null,
             final_offer_source: finalOfferMetadata,
             challenge_mode: hasChallengePayload ? "refund_goal" : null,
@@ -769,7 +795,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
                   : "",
             }),
             ...(campaignPromoKey && { campaign_promo: campaignPromoKey }),
-          },
+          }),
         },
       }),
     });
@@ -792,7 +818,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
 
     if (mode === "subscription" && session?.subscription) {
       await stripe.subscriptions.update(session.subscription, {
-        metadata: {
+        metadata: recordToStripeMetadata({
           user_id: user.id,
           checkout_id: session.id,
           referral_code: userMetadata?.referralCode || null,
@@ -813,10 +839,10 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
               userMetadata?.referralDiscount || "referral",
           }),
           ...(campaignPromoKey && { campaign_promo: campaignPromoKey }),
-        },
+        }),
       });
     }
-    await clerk.users.updateUserMetadata(user.id, {
+    await authAdmin.users.updateUserMetadata(user.id, {
       publicMetadata: {
         planCancelled: false,
       },
