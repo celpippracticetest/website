@@ -3,13 +3,19 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
+const APP_PACKAGE = 'com.celpippt.app';
+
 /**
  * Auth deep-link bridge for the mobile app.
  *
  * Supabase redirects to /app?code=XXXX after verifying an email confirmation.
- * Chrome on Android blocks custom-scheme redirects that arrive via a
- * server-side redirect chain, so we perform a direct JS navigation to
- * celpipapp://auth?… which reliably triggers the Android intent.
+ *
+ * On Android, Chrome blocks `window.location.href = 'celpipapp://...'` when
+ * triggered from a useEffect without a user gesture originating from the same
+ * page.  We use the Android Intent URL format instead
+ * (intent://…#Intent;scheme=celpipapp;package=…;end) which Chrome handles
+ * natively and does not require an explicit user gesture.
+ * A visible "Open app" button is always shown as a guaranteed fallback.
  */
 export function AppAuthBridge() {
   return (
@@ -19,28 +25,38 @@ export function AppAuthBridge() {
   );
 }
 
+/** Converts the query-string params to an Android Intent URL for Chrome. */
+function toIntentUrl(queryString: string): string {
+  // intent://auth?<params>#Intent;scheme=celpipapp;package=com.celpippt.app;end
+  return `intent://auth?${queryString}#Intent;scheme=celpipapp;package=${APP_PACKAGE};end`;
+}
+
+/** Plain custom-scheme URL for non-Chrome browsers (iOS Safari, Firefox, etc.). */
+function toAppUrl(queryString: string): string {
+  return `celpipapp://auth?${queryString}`;
+}
+
 function Bridge() {
   const params = useSearchParams();
-  const [launched, setLaunched] = useState(false);
+  const [tried, setTried] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const qs = params.toString();
 
   useEffect(() => {
     const errorParam = params.get('error');
-    const errorDescription = params.get('error_description');
-
     if (errorParam) {
-      setError(errorDescription ?? errorParam);
+      setError(params.get('error_description') ?? errorParam);
       return;
     }
+    if (!qs) return;
 
-    // Forward every query parameter to the app unchanged.
-    const appUrl = `celpipapp://auth?${params.toString()}`;
-
-    // Direct JS navigation reliably fires an Android intent; server-side
-    // redirect chains to celpipapp:// are silently dropped by Chrome 83+.
-    window.location.href = appUrl;
-    setLaunched(true);
-  }, [params]);
+    // Android Intent URL: Chrome opens the app directly without gesture check.
+    const isAndroid = /android/i.test(navigator.userAgent);
+    const target = isAndroid ? toIntentUrl(qs) : toAppUrl(qs);
+    window.location.href = target;
+    setTried(true);
+  }, [qs, params]);
 
   if (error) {
     return (
@@ -53,38 +69,54 @@ function Bridge() {
     );
   }
 
-  if (launched) {
-    return (
-      <Screen
-        title="Opening CELPIP app…"
-        hint={
-          <>
-            If the app did not open,{' '}
-            <a
-              href={`celpipapp://auth?${params.toString()}`}
-              style={{ color: '#0070f3', textDecoration: 'underline' }}
-            >
-              tap here
+  return (
+    <Screen
+      title={tried ? 'Opening CELPIP app…' : 'Verifying…'}
+      hint={
+        qs ? (
+          <span>
+            App did not open?{' '}
+            <a href={toAppUrl(qs)} style={{ color: '#0070f3', fontWeight: 600 }}>
+              Tap here to open
             </a>
-            .
-          </>
-        }
-      />
-    );
-  }
-
-  return <Screen title="Verifying…" />;
+          </span>
+        ) : undefined
+      }
+      cta={
+        qs ? (
+          <a
+            href={toIntentUrl(qs)}
+            style={{
+              display: 'inline-block',
+              marginTop: '20px',
+              padding: '14px 32px',
+              background: '#0070f3',
+              color: '#fff',
+              borderRadius: '10px',
+              fontSize: '16px',
+              fontWeight: 700,
+              textDecoration: 'none',
+            }}
+          >
+            Open CELPIP App
+          </a>
+        ) : undefined
+      }
+    />
+  );
 }
 
 function Screen({
   title,
   body,
   hint,
+  cta,
   titleColor = '#111',
 }: {
   title: string;
   body?: string;
   hint?: React.ReactNode;
+  cta?: React.ReactNode;
   titleColor?: string;
 }) {
   return (
@@ -107,7 +139,10 @@ function Screen({
       {body && (
         <p style={{ fontSize: '15px', color: '#333', marginBottom: '12px' }}>{body}</p>
       )}
-      {hint && <p style={{ fontSize: '14px', color: '#666' }}>{hint}</p>}
+      {cta}
+      {hint && (
+        <p style={{ fontSize: '13px', color: '#888', marginTop: '16px' }}>{hint}</p>
+      )}
     </main>
   );
 }
