@@ -6,18 +6,12 @@ import { useSearchParams } from 'next/navigation';
 /**
  * Auth deep-link bridge for the mobile app.
  *
- * Supabase redirects here after verifying an email confirmation or OAuth
- * callback (e.g. celpippracticetest.com/app?code=XXXX&…).
- *
+ * Supabase redirects to /app?code=XXXX after verifying an email confirmation.
  * Chrome on Android blocks custom-scheme redirects that arrive via a
- * server-side redirect chain.  This page performs a direct JS navigation to
- * celpipapp://auth?… which *does* trigger the Android intent and opens the
- * app reliably.
- *
- * Supabase Dashboard → Authentication → URL Configuration → Redirect URLs:
- *   add  https://celpippracticetest.com/app
+ * server-side redirect chain, so we perform a direct JS navigation to
+ * celpipapp://auth?… which reliably triggers the Android intent.
  */
-export default function AppAuthBridgePage() {
+export function AppAuthBridge() {
   return (
     <Suspense fallback={<Screen title="Verifying…" />}>
       <Bridge />

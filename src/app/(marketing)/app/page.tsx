@@ -3,6 +3,7 @@ import Download from "@mui/icons-material/Download";
 import Bolt from "@mui/icons-material/Bolt";
 import { Box } from "@/components/ui/Box";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { AppAuthBridge } from "@/components/app/AppAuthBridge";
 
 const DEFAULT_APP_BASE_URL = "https://celpippracticetest.com";
 
@@ -64,7 +65,21 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function AppDownloadPage() {
+export default function AppDownloadPage({
+  searchParams,
+}: {
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
+  // Auth deep-link bridge: Supabase redirects here after email confirmation
+  // with ?code= (PKCE) or ?error=. Hand off to the client component which
+  // performs a direct JS navigation to celpipapp://auth?… — the only way to
+  // reliably open the app from a server-side redirect chain on Android.
+  const hasCode = 'code' in searchParams;
+  const hasError = 'error' in searchParams;
+  if (hasCode || hasError) {
+    return <AppAuthBridge />;
+  }
+
   const iosAppUrl = process.env.NEXT_PUBLIC_IOS_APP_URL;
   const androidAppUrl = process.env.NEXT_PUBLIC_ANDROID_APP_URL;
 
