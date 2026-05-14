@@ -26,16 +26,19 @@ import { ObjectId } from "bson";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
-import { hasMockExamAccess } from "@/lib/subscriptionAccess";
+import { hasMockExamAccess, normalizeMockExamIdForAccess } from "@/lib/subscriptionAccess";
 import { getFirstReadyMockExamId } from "@/lib/getFirstReadyMockExam";
 
 const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
   const resolvedParams = await params;
   const examId: string | undefined =
-    resolvedParams?.slug?.[0]?.split("exam_")?.[1];
-  const partNumber: string | undefined =
-    resolvedParams?.slug?.[1]?.split("part")?.[1];
-  const isResultPage: boolean = resolvedParams?.slug?.[1] === "results";
+    normalizeMockExamIdForAccess(resolvedParams?.slug?.[0]) ?? undefined;
+  const partSlug = resolvedParams?.slug?.[1];
+  const partMatch =
+    typeof partSlug === "string" ? /^part(\d+)$/i.exec(partSlug) : null;
+  const partNumber: string | undefined = partMatch?.[1];
+  const isResultPage: boolean =
+    typeof partSlug === "string" && partSlug.toLowerCase() === "results";
   let user: any = null;
   try {
     const hybridUser = await getHybridCurrentUser();

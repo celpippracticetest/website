@@ -35,7 +35,7 @@ function examWhereSql(filter: Partial<TExamSchemaDto>) {
   const sql = getSql();
   const parts = [];
   if (filter.id != null && String(filter.id).trim() !== "") {
-    parts.push(sql`mongo_id = ${String(filter.id)}`);
+    parts.push(sql`mongo_id = ${String(filter.id).trim().toLowerCase()}`);
   }
   if (filter.name != null) {
     parts.push(sql`name = ${filter.name}`);
@@ -65,10 +65,14 @@ export class ExamRepository {
 
   async findExamById(id: string): Promise<TExamSchemaDto | null> {
     const sql = getSql();
+    const key = id.trim().toLowerCase();
+    if (!/^[a-f0-9]{24}$/.test(key)) {
+      return null;
+    }
     const rows = await sql<ExamRow[]>`
       SELECT mongo_id, name, sort_order, is_ready, created_at, updated_at
       FROM public.exams
-      WHERE mongo_id = ${id}
+      WHERE mongo_id = ${key}
       LIMIT 1
     `;
     const row = rows[0];
@@ -174,6 +178,10 @@ export class ExamRepository {
     if (!mongoId) {
       return null;
     }
+    mongoId = mongoId.trim().toLowerCase();
+    if (!/^[a-f0-9]{24}$/.test(mongoId)) {
+      return null;
+    }
 
     const current = await this.findExamById(mongoId);
     if (!current) {
@@ -235,6 +243,10 @@ export class ExamRepository {
     }
 
     if (!mongoId) {
+      return { acknowledged: true, deletedCount: 0 };
+    }
+    mongoId = mongoId.trim().toLowerCase();
+    if (!/^[a-f0-9]{24}$/.test(mongoId)) {
       return { acknowledged: true, deletedCount: 0 };
     }
 
