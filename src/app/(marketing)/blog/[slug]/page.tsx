@@ -84,8 +84,8 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
     post.excerpt || stripHtml(post.contentHtml).slice(0, 155) || "CELPIP preparation article.";
   const title = buildBlogTitle(post.seo?.metaTitle || post.title);
   const description =
-    BLOG_META_DESCRIPTION_OVERRIDES[slug] ??
-    BLOG_META_DESCRIPTION_OVERRIDES[requestedSlug] ||
+    (BLOG_META_DESCRIPTION_OVERRIDES[slug] ??
+      BLOG_META_DESCRIPTION_OVERRIDES[requestedSlug]) ||
     post.seo?.metaDescription ||
     fallbackDescription;
   const canonicalPath = `/blog/${post.slug}`;
