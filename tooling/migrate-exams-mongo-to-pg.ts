@@ -1,49 +1,16 @@
 /**
- * Copy `exam-parts` from MongoDB into Postgres `app_documents`.
- * Mock exam metadata lives in relational `public.exams` (maintained in Supabase / app), not `app_documents`.
- * For the full catalog, run `npm run migrate:mongo:app-documents` (see `migrate-mongo-collections-to-pg.ts`).
+ * Legacy entrypoint: mock exam metadata and sections now live in Postgres as
+ * `public.exams` and `public.exam_parts` (not `app_documents`).
+ *
+ * To sync other Mongo collections into `app_documents`, use:
+ *   npm run migrate:mongo:app-documents
  */
 
 import "./bootstrap-website-env";
-import {
-  printPostgresCollectionCounts,
-  syncMongoCollectionsToPg,
-} from "./mongo-pg-sync-shared";
-
-const LOGICAL = ["exam-parts"] as const;
-
-function parseArgs(argv: string[]) {
-  let dryRun = false;
-  let only: (typeof LOGICAL)[number] | null = null;
-  for (const a of argv) {
-    if (a === "--dry-run") dryRun = true;
-    if (a === "--only=exam-parts") only = "exam-parts";
-  }
-  return { dryRun, only };
-}
 
 async function main() {
-  const { dryRun, only } = parseArgs(process.argv.slice(2));
-  const mongoUri = process.env.MONGODB_URI?.trim();
-  if (!mongoUri && !dryRun) {
-    console.error("MONGODB_URI is required (set in .env) unless you only inspect with --dry-run and no source.");
-    process.exit(1);
-  }
-
-  const targets = only ? [only] : [...LOGICAL];
-
-  if (!mongoUri) {
-    console.log("No MONGODB_URI; printing Postgres counts only.");
-    await printPostgresCollectionCounts(targets);
-    return;
-  }
-
-  const { totalIns, totalUpd } = await syncMongoCollectionsToPg(targets, {
-    dryRun,
-    onDocError: "throw",
-  });
   console.log(
-    `\nSummary: ${dryRun ? `dry-run would_insert=${totalIns} would_update=${totalUpd}` : `inserted=${totalIns} updated=${totalUpd}`}`
+    "[migrate-exams-mongo-to-pg] Skipped: exams and exam-parts are relational tables (public.exams, public.exam_parts)."
   );
 }
 

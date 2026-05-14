@@ -1,23 +1,105 @@
-import { ExamPartSchema, ExamPartSchemaDto, TExamPartSchema, TExamPartSchemaDto } from "@/models/examParts.model";
+import {
+  ExamPartSchema,
+  ExamPartSchemaDto,
+  TExamPartSchema,
+  TExamPartSchemaDto,
+} from "@/models/examParts.model";
 import { ObjectId } from "bson";
-import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
+import type { AppDocumentsClient } from "@/lib/pg/types";
 import { objectIdLikeToHex } from "@/lib/pg/document";
+import { getSql } from "@/lib/pg/pool";
 
 const OID24 = /^[a-f0-9]{24}$/i;
+
+function isPgUniqueViolation(e: unknown): boolean {
+  return typeof e === "object" && e !== null && (e as { code?: string }).code === "23505";
+}
 
 function examIdHexFromUnknown(value: unknown): string | null {
   return objectIdLikeToHex(value);
 }
 
-export class ExamPartsRepository {
-  private readonly db: Db;
+function partIdFromUnknown(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "bigint") return Number(value);
+  if (typeof value === "string" && /^-?\d+$/.test(value.trim())) return Number(value.trim());
+  if (!value || typeof value !== "object") return undefined;
+  const o = value as Record<string, unknown>;
+  if (typeof o.$numberInt === "string") return Number(o.$numberInt);
+  if (typeof o.$numberLong === "string") return Number(o.$numberLong);
+  return undefined;
+}
 
-  constructor(documentsClient: AppDocumentsClient) {
-    this.db = documentsClient.db();
+type ExamPartRow = {
+  mongo_id: string;
+  exam_mongo_id: string;
+  part_id: number;
+  name: string;
+  title: string;
+  type: string;
+  description: string | null;
+  duration: string | null;
+  total_question: number | null;
+  total_passages: number | null;
+  instructions: unknown;
+  passages: unknown;
+  updated_at: Date;
+};
+
+function rowToDto(row: ExamPartRow): TExamPartSchemaDto {
+  const instructions =
+    row.instructions === null || row.instructions === undefined
+      ? undefined
+      : (row.instructions as TExamPartSchemaDto["instructions"]);
+  return ExamPartSchemaDto.parse({
+    id: row.mongo_id,
+    examId: row.exam_mongo_id,
+    partId: row.part_id,
+    name: row.name,
+    title: row.title,
+    type: row.type,
+    description: row.description ?? undefined,
+    duration: row.duration ?? undefined,
+    totalQuestion: row.total_question ?? undefined,
+    totalPassages: row.total_passages ?? undefined,
+    instructions,
+    passages: row.passages as TExamPartSchemaDto["passages"],
+  });
+}
+
+function examPartWhereSql(filterRecord: Record<string, unknown>, examHex: string | null) {
+  const sql = getSql();
+  const parts = [];
+  if (examHex) {
+    parts.push(sql`exam_mongo_id = ${examHex}`);
   }
+  const partId = partIdFromUnknown(filterRecord.partId);
+  if (partId !== undefined && Number.isFinite(partId)) {
+    parts.push(sql`part_id = ${partId}`);
+  }
+  if (typeof filterRecord.name === "string") {
+    parts.push(sql`name = ${filterRecord.name}`);
+  }
+  if (typeof filterRecord.title === "string") {
+    parts.push(sql`title = ${filterRecord.title}`);
+  }
+  if (typeof filterRecord.type === "string") {
+    parts.push(sql`type = ${filterRecord.type}`);
+  }
+  const idHex =
+    filterRecord._id instanceof ObjectId
+      ? filterRecord._id.toHexString().toLowerCase()
+      : examIdHexFromUnknown(filterRecord._id);
+  if (idHex && OID24.test(idHex)) {
+    parts.push(sql`mongo_id = ${idHex}`);
+  }
+  if (parts.length === 0) return sql`true`;
+  return parts.reduce((a, b) => sql`${a} AND ${b}`);
+}
 
-  private getExamPartsCollection() {
-    return this.db.collection<TExamPartSchema>("exam-parts");
+export class ExamPartsRepository {
+  constructor(_documentsClient: AppDocumentsClient) {
+    void _documentsClient;
   }
 
   private convertFromEntity(taskEntity: TExamPartSchema) {
@@ -28,38 +110,123 @@ export class ExamPartsRepository {
     };
     return ExamPartSchemaDto.parse(task);
   }
-  async findExamPartByExamIdAndPartId(examId: string, partId: number): Promise<TExamPartSchemaDto | null> {
+
+  async findExamPartByExamIdAndPartId(
+    examId: string,
+    partId: number
+  ): Promise<TExamPartSchemaDto | null> {
     const wantExamHex =
       examIdHexFromUnknown(examId) ?? (OID24.test(examId) ? examId.toLowerCase() : null);
     if (wantExamHex == null || !Number.isFinite(partId)) {
       return null;
     }
-    const entity = await this.getExamPartsCollection().findOne({
-      partId,
-      examId: new ObjectId(wantExamHex),
-    });
-    return entity ? this.convertFromEntity(entity as TExamPartSchema) : null;
+    const sql = getSql();
+    const rows = await sql<ExamPartRow[]>`
+      SELECT
+        mongo_id,
+        exam_mongo_id,
+        part_id,
+        name,
+        title,
+        type,
+        description,
+        duration,
+        total_question,
+        total_passages,
+        instructions,
+        passages,
+        updated_at
+      FROM public.exam_parts
+      WHERE exam_mongo_id = ${wantExamHex} AND part_id = ${partId}
+      LIMIT 1
+    `;
+    const row = rows[0];
+    return row ? rowToDto(row) : null;
   }
 
   async findById(id: string): Promise<TExamPartSchemaDto | null> {
-    const entity = await this.getExamPartsCollection().findOne({ _id: new ObjectId(id) });
-    return entity ? this.convertFromEntity(entity) : null;
+    const sql = getSql();
+    const rows = await sql<ExamPartRow[]>`
+      SELECT
+        mongo_id,
+        exam_mongo_id,
+        part_id,
+        name,
+        title,
+        type,
+        description,
+        duration,
+        total_question,
+        total_passages,
+        instructions,
+        passages,
+        updated_at
+      FROM public.exam_parts
+      WHERE mongo_id = ${id.toLowerCase()}
+      LIMIT 1
+    `;
+    const row = rows[0];
+    return row ? rowToDto(row) : null;
   }
 
   async deletePractice(id: string): Promise<void> {
-    await this.getExamPartsCollection().deleteOne({ _id: new ObjectId(id) });
+    const sql = getSql();
+    await sql`
+      DELETE FROM public.exam_parts WHERE mongo_id = ${id.toLowerCase()}
+    `;
   }
 
+  async updateExam(
+    id: string,
+    dto: Omit<Partial<TExamPartSchemaDto>, "id">
+  ): Promise<TExamPartSchemaDto | null> {
+    const current = await this.findById(id);
+    if (!current) {
+      return null;
+    }
 
-  async updateExam(id: string, dto: Omit<Partial<TExamPartSchemaDto>, "id">): Promise<TExamPartSchemaDto | null> {
-    const candidate = ExamPartSchema.partial().parse({...dto, examId: new ObjectId(dto.examId ?? "")});
+    const merged: TExamPartSchemaDto = {
+      ...current,
+      ...dto,
+      id: current.id,
+      examId: dto.examId ?? current.examId,
+    };
+    const v = ExamPartSchemaDto.parse(merged);
 
-    const result = await this.getExamPartsCollection().findOneAndUpdate(
-      { _id: new ObjectId(id) },
-      { $set: candidate },
-      { returnDocument: "after" }
-    );
-    return result ? this.convertFromEntity(result) : null;
+    const sql = getSql();
+    const rows = await sql<ExamPartRow[]>`
+      UPDATE public.exam_parts
+      SET
+        exam_mongo_id = ${v.examId.toLowerCase()},
+        part_id = ${v.partId},
+        name = ${v.name},
+        title = ${v.title},
+        type = ${v.type},
+        description = ${v.description ?? null},
+        duration = ${v.duration ?? null},
+        total_question = ${v.totalQuestion ?? null},
+        total_passages = ${v.totalPassages ?? null},
+        instructions = ${v.instructions ?? null},
+        passages = ${v.passages as object},
+        updated_at = now()
+      WHERE mongo_id = ${id.toLowerCase()}
+      RETURNING
+        mongo_id,
+        exam_mongo_id,
+        part_id,
+        name,
+        title,
+        type,
+        description,
+        duration,
+        total_question,
+        total_passages,
+        instructions,
+        passages,
+        updated_at
+    `;
+    const row = rows[0];
+    return row ? rowToDto(row) : null;
   }
 
   async createExamPart(dto: Omit<TExamPartSchemaDto, "id">): Promise<TExamPartSchemaDto> {
@@ -68,8 +235,51 @@ export class ExamPartsRepository {
       examId: new ObjectId(dto.examId.toString()),
       _id: new ObjectId(),
     });
-    const { insertedId } = await this.getExamPartsCollection().insertOne(task);
-    return this.convertFromEntity({ ...dto, _id: insertedId, examId: task.examId });
+    const sql = getSql();
+    const mongoId = task._id.toHexString();
+    const examHex = task.examId.toHexString().toLowerCase();
+    try {
+      await sql`
+        INSERT INTO public.exam_parts (
+          mongo_id,
+          exam_mongo_id,
+          part_id,
+          name,
+          title,
+          type,
+          description,
+          duration,
+          total_question,
+          total_passages,
+          instructions,
+          passages,
+          updated_at
+        )
+        VALUES (
+          ${mongoId},
+          ${examHex},
+          ${task.partId},
+          ${task.name},
+          ${task.title},
+          ${task.type},
+          ${task.description ?? null},
+          ${task.duration ?? null},
+          ${task.totalQuestion ?? null},
+          ${task.totalPassages ?? null},
+          ${task.instructions ?? null},
+          ${task.passages as object},
+          now()
+        )
+      `;
+    } catch (e: unknown) {
+      if (isPgUniqueViolation(e)) {
+        const err = new Error("E11000 duplicate key error") as Error & { code: number };
+        err.code = 11000;
+        throw err;
+      }
+      throw e;
+    }
+    return this.convertFromEntity(task);
   }
 
   async getAllExamPart(
@@ -89,43 +299,45 @@ export class ExamPartsRepository {
     const wantExamHex =
       examIdRaw !== undefined && examIdRaw !== null
         ? examIdHexFromUnknown(examIdRaw) ??
-          (typeof examIdRaw === "string" && OID24.test(examIdRaw)
-            ? examIdRaw.toLowerCase()
-            : null)
+          (typeof examIdRaw === "string" && OID24.test(examIdRaw) ? examIdRaw.toLowerCase() : null)
         : null;
 
-    const rest = { ...filterRecord } as Record<string, unknown>;
+    const rest = { ...filterRecord };
     delete rest.examId;
 
-    const coll = this.getExamPartsCollection();
+    const where = examPartWhereSql(rest, wantExamHex);
+    const sql = getSql();
 
-    if (wantExamHex !== null) {
-      const baseFilter = Object.fromEntries(
-        Object.entries(rest).filter(([, v]) => v !== undefined)
-      ) as Record<string, unknown>;
-      const combined: Record<string, unknown> = {
-        ...baseFilter,
-        examId: new ObjectId(wantExamHex),
-      };
-      const [totalItems, raw] = await Promise.all([
-        coll.countDocuments(combined),
-        coll.find(combined).sort({ partId: 1 }).skip(skip).limit(limit).toArray(),
-      ]);
-      const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 0;
-      return {
-        items: (raw as TExamPartSchema[]).map((p) => this.convertFromEntity(p)),
-        page,
-        totalItems,
-        totalPages,
-        hasNextPage: skip + raw.length < totalItems,
-      };
-    }
+    const countRows = await sql<{ c: number }[]>`
+      SELECT COUNT(*)::int AS c FROM public.exam_parts WHERE ${where}
+    `;
+    const totalItems = countRows[0]?.c ?? 0;
 
-    const totalItems = await coll.countDocuments(filterRecord);
-    const raw = await coll.find(filterRecord).sort({ partId: 1 }).skip(skip).limit(limit).toArray();
+    const raw = await sql<ExamPartRow[]>`
+      SELECT
+        mongo_id,
+        exam_mongo_id,
+        part_id,
+        name,
+        title,
+        type,
+        description,
+        duration,
+        total_question,
+        total_passages,
+        instructions,
+        passages,
+        updated_at
+      FROM public.exam_parts
+      WHERE ${where}
+      ORDER BY exam_mongo_id ASC, part_id ASC
+      OFFSET ${skip}
+      LIMIT ${limit}
+    `;
+
     const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 0;
     return {
-      items: (raw as TExamPartSchema[]).map((p) => this.convertFromEntity(p)),
+      items: raw.map((p) => rowToDto(p)),
       page,
       totalItems,
       totalPages,
@@ -133,43 +345,27 @@ export class ExamPartsRepository {
     };
   }
 
-  /** Part counts per exam only for the given exam ids (avoids loading every part document). */
   async countPartsByExamIds(examIds: string[]): Promise<Record<string, number>> {
     if (examIds.length === 0) {
       return {};
     }
     const oidList = examIds
       .filter((id) => OID24.test(id))
-      .map((id) => new ObjectId(id.toLowerCase()));
+      .map((id) => id.toLowerCase());
     if (oidList.length === 0) {
       return {};
     }
-    const coll = this.getExamPartsCollection();
-    const rows = (await coll
-      .aggregate([
-        { $match: { examId: { $in: oidList } } },
-        { $group: { _id: "$examId", count: { $sum: 1 } } },
-      ])
-      .toArray()) as { _id: ObjectId; count: number }[];
+    const sql = getSql();
+    const rows = await sql<{ exam_mongo_id: string; c: number }[]>`
+      SELECT exam_mongo_id, COUNT(*)::int AS c
+      FROM public.exam_parts
+      WHERE exam_mongo_id = ANY(${oidList})
+      GROUP BY exam_mongo_id
+    `;
     const out: Record<string, number> = {};
     for (const row of rows) {
-      out[row._id.toHexString()] = row.count;
+      out[row.exam_mongo_id] = row.c;
     }
     return out;
   }
-
-  //   async updateUser(id: string, dto: Omit<Partial<UserDTO>, "id">): Promise<UserDTO | null> {
-  //     const candidate = userEntitySchema.partial().parse(dto);
-
-  //     const { value } = await this.getUsersCollection().findOneAndUpdate(
-  //       { _id: new ObjectId(id) },
-  //       { $set: candidate },
-  //       { returnDocument: "after" }
-  //     );
-  //     return value ? UserDTO.convertFromEntity(value) : null;
-  //   }
-
-  //   async deleteUser(id: string): Promise<void> {
-  //     await this.getUsersCollection().deleteOne({ _id: new ObjectId(id) });
-  //   }
 }

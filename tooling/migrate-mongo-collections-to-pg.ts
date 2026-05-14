@@ -29,8 +29,7 @@ export const DEFAULT_MONGO_PG_SYNC_COLLECTIONS: readonly string[] = [
   "cancellation_flow_events",
   "cancellation_surveys",
   "checkouts",
-  "exam-parts",
-  // "exams" — stored in relational table `public.exams` (not `app_documents`).
+  // "exams" / "exam-parts" — relational `public.exams` and `public.exam_parts` (not `app_documents`).
   "ga_user_attribution",
   "home_ab_events",
   "homepageHeroSchedules",
