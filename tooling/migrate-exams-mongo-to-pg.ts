@@ -1,5 +1,6 @@
 /**
- * Copy `exams` and `exam-parts` from MongoDB into Postgres `app_documents`.
+ * Copy `exam-parts` from MongoDB into Postgres `app_documents`.
+ * Mock exam metadata lives in relational `public.exams` (maintained in Supabase / app), not `app_documents`.
  * For the full catalog, run `npm run migrate:mongo:app-documents` (see `migrate-mongo-collections-to-pg.ts`).
  */
 
@@ -9,14 +10,13 @@ import {
   syncMongoCollectionsToPg,
 } from "./mongo-pg-sync-shared";
 
-const LOGICAL = ["exams", "exam-parts"] as const;
+const LOGICAL = ["exam-parts"] as const;
 
 function parseArgs(argv: string[]) {
   let dryRun = false;
   let only: (typeof LOGICAL)[number] | null = null;
   for (const a of argv) {
     if (a === "--dry-run") dryRun = true;
-    if (a === "--only=exams") only = "exams";
     if (a === "--only=exam-parts") only = "exam-parts";
   }
   return { dryRun, only };
