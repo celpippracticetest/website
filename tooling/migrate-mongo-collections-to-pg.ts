@@ -29,7 +29,7 @@ export const DEFAULT_MONGO_PG_SYNC_COLLECTIONS: readonly string[] = [
   "cancellation_flow_events",
   "cancellation_surveys",
   "checkouts",
-  // "exams" / "exam-parts" — relational `public.exams` and `public.exam_parts` (not `app_documents`).
+  // "exams" / "exam-parts" / "practices" — relational `public.exams`, `public.exam_parts`, `public.practices`.
   "ga_user_attribution",
   "home_ab_events",
   "homepageHeroSchedules",
@@ -52,7 +52,6 @@ export const DEFAULT_MONGO_PG_SYNC_COLLECTIONS: readonly string[] = [
   "paypal_subscription_pending",
   "plans",
   "pricing_ab_events",
-  "practices",
   "profession_pages",
   "referralCodes",
   "referralInvitations",

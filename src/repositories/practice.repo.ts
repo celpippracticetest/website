@@ -1,12 +1,17 @@
 import { PracticeDtoSchema, PracticeSchema, TPracticeDto, TPracticeSchema } from "@/models/practice.model";
 import { ObjectId } from "bson";
-import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
+import type postgres from "postgres";
+import type { AppDocumentsClient } from "@/lib/pg/types";
+import { getSql } from "@/lib/pg/pool";
+
+const OID24 = /^[a-f0-9]{24}$/i;
+
+function isPgUniqueViolation(e: unknown): boolean {
+  return typeof e === "object" && e !== null && (e as { code?: string }).code === "23505";
+}
 
 /**
- * Extract a 24-char hex string from an ObjectId-like value. Uses duck-typing so it works
- * even when Turbopack/webpack double-bundles `bson` (the API route's `ObjectId` and the
- * repo's `ObjectId` can be different constructors → `instanceof` returns false → the
- * filter silently drops every row). See `src/lib/pg/document.ts` for the same pattern.
+ * Extract a 24-char hex string from an ObjectId-like value (duplicate-bson–safe).
  */
 function taskIdHexLoose(value: unknown): string | null {
   if (value == null) return null;
@@ -24,7 +29,7 @@ function taskIdHexLoose(value: unknown): string | null {
         const hex = (obj as { toHexString: () => string }).toHexString();
         if (typeof hex === "string" && /^[a-f0-9]{24}$/i.test(hex)) return hex.toLowerCase();
       } catch {
-        // fall through to other shape checks
+        // fall through
       }
     }
     if (obj._bsontype === "ObjectId" && obj.id) {
@@ -36,38 +41,108 @@ function taskIdHexLoose(value: unknown): string | null {
   return null;
 }
 
-/** Avoid mingo `isEqual` on ObjectId (fails when duplicate `bson` bundles give different constructors). */
-function practiceEntityMatchesFilter(
-  doc: TPracticeSchema,
-  filter: Record<string, unknown>
-): boolean {
-  for (const [key, want] of Object.entries(filter)) {
-    if (want === undefined) continue;
-    const got = (doc as unknown as Record<string, unknown>)[key];
-    if (key === "taskId") {
-      const wh = taskIdHexLoose(want);
-      const gh = taskIdHexLoose(got);
-      if (!wh || !gh || wh !== gh) return false;
-      continue;
-    }
-    if (key === "type") {
-      if (String(got ?? "").toUpperCase() !== String(want).toUpperCase()) return false;
-      continue;
-    }
-    if (got !== want && String(got) !== String(want)) return false;
+type PracticeRow = {
+  mongo_id: string;
+  task_mongo_id: string;
+  title: string;
+  name: string;
+  type: string;
+  description: string | null;
+  duration: string | null;
+  is_free: boolean | null;
+  difficulty: string | null;
+  total_question: number | null;
+  total_passages: number | null;
+  instructions: unknown;
+  passages: unknown;
+  updated_at: Date;
+};
+
+function rowToDto(row: PracticeRow): TPracticeDto {
+  const instructions =
+    row.instructions === null || row.instructions === undefined
+      ? undefined
+      : (row.instructions as TPracticeDto["instructions"]);
+  return PracticeDtoSchema.parse({
+    id: row.mongo_id,
+    taskId: row.task_mongo_id,
+    title: row.title,
+    name: row.name,
+    type: row.type,
+    description: row.description ?? undefined,
+    instructions,
+    passages: row.passages as TPracticeDto["passages"],
+    isFree: row.is_free ?? undefined,
+    duration: row.duration ?? undefined,
+    difficulty: row.difficulty ?? undefined,
+    totalQuestion: row.total_question ?? undefined,
+    totalPassages: row.total_passages ?? undefined,
+  });
+}
+
+function practiceWhereSql(filter: Record<string, unknown>) {
+  const sql = getSql();
+  const parts = [];
+  const taskHex = filter.taskId != null ? taskIdHexLoose(filter.taskId) : null;
+  if (taskHex) {
+    parts.push(sql`task_mongo_id = ${taskHex}`);
   }
-  return true;
+  if (typeof filter.type === "string" && filter.type.trim() !== "") {
+    parts.push(sql`upper(type) = upper(${filter.type})`);
+  }
+  if (typeof filter.isFree === "boolean") {
+    parts.push(sql`is_free = ${filter.isFree}`);
+  }
+  if (typeof filter.title === "string") {
+    parts.push(sql`title = ${filter.title}`);
+  }
+  if (typeof filter.name === "string") {
+    parts.push(sql`name = ${filter.name}`);
+  }
+  if (typeof filter.description === "string") {
+    parts.push(sql`description = ${filter.description}`);
+  }
+  if (typeof filter.difficulty === "string") {
+    parts.push(sql`difficulty = ${filter.difficulty}`);
+  }
+  if (typeof filter.duration === "string") {
+    parts.push(sql`duration = ${filter.duration}`);
+  }
+  if (typeof filter.totalQuestion === "number" && Number.isFinite(filter.totalQuestion)) {
+    parts.push(sql`total_question = ${filter.totalQuestion}`);
+  }
+  if (typeof filter.totalPassages === "number" && Number.isFinite(filter.totalPassages)) {
+    parts.push(sql`total_passages = ${filter.totalPassages}`);
+  }
+  if (typeof filter.id === "string" && OID24.test(filter.id)) {
+    parts.push(sql`mongo_id = ${filter.id.toLowerCase()}`);
+  }
+  if (parts.length === 0) return sql`true`;
+  return parts.reduce((a, b) => sql`${a} AND ${b}`);
+}
+
+function practiceRowColumns(sql: ReturnType<typeof getSql>) {
+  return sql`
+    mongo_id,
+    task_mongo_id,
+    title,
+    name,
+    type,
+    description,
+    duration,
+    is_free,
+    difficulty,
+    total_question,
+    total_passages,
+    instructions,
+    passages,
+    updated_at
+  `;
 }
 
 export class PracticeRepository {
-  private readonly db: Db;
-
-  constructor(documentsClient: AppDocumentsClient) {
-    this.db = documentsClient.db();
-  }
-
-  private getPracticeCollection() {
-    return this.db.collection<TPracticeSchema>("practices");
+  constructor(_documentsClient: AppDocumentsClient) {
+    void _documentsClient;
   }
 
   private convertFromEntity(practiceEntity: TPracticeSchema) {
@@ -79,10 +154,19 @@ export class PracticeRepository {
     };
     return PracticeDtoSchema.parse(practice);
   }
-    async findPractice(id: string): Promise<TPracticeDto | null> {
-      const entity = await this.getPracticeCollection().findOne({ _id: new ObjectId(id) });
-      return entity ? this.convertFromEntity(entity) : null;
-    }
+
+  async findPractice(id: string): Promise<TPracticeDto | null> {
+    const sql = getSql();
+    const cols = practiceRowColumns(sql);
+    const rows = await sql<PracticeRow[]>`
+      SELECT ${cols}
+      FROM public.practices
+      WHERE mongo_id = ${id.toLowerCase()}
+      LIMIT 1
+    `;
+    const row = rows[0];
+    return row ? rowToDto(row) : null;
+  }
 
   async createPractice(dto: Omit<TPracticeDto, "id">): Promise<TPracticeDto> {
     const practice = PracticeSchema.parse({
@@ -90,18 +174,73 @@ export class PracticeRepository {
       taskId: new ObjectId(dto.taskId ?? ""),
       _id: new ObjectId(),
     });
-    const { insertedId } = await this.getPracticeCollection().insertOne(practice);
-    return this.convertFromEntity({ ...dto, taskId: new ObjectId(dto.taskId ?? ""), _id: insertedId });
+    const sql = getSql();
+    const mongoId = practice._id.toHexString();
+    const taskHex = practice.taskId.toHexString().toLowerCase();
+    const instructionsJson = sql.json(
+      (practice.instructions ?? null) as postgres.JSONValue
+    );
+    const passagesJson = sql.json(practice.passages as postgres.JSONValue);
+    try {
+      await sql`
+        INSERT INTO public.practices (
+          mongo_id,
+          task_mongo_id,
+          title,
+          name,
+          type,
+          description,
+          duration,
+          is_free,
+          difficulty,
+          total_question,
+          total_passages,
+          instructions,
+          passages,
+          updated_at
+        )
+        VALUES (
+          ${mongoId},
+          ${taskHex},
+          ${practice.title},
+          ${practice.name},
+          ${practice.type},
+          ${practice.description ?? null},
+          ${practice.duration ?? null},
+          ${practice.isFree ?? null},
+          ${practice.difficulty ?? null},
+          ${practice.totalQuestion ?? null},
+          ${practice.totalPassages ?? null},
+          ${instructionsJson},
+          ${passagesJson},
+          now()
+        )
+      `;
+    } catch (e: unknown) {
+      if (isPgUniqueViolation(e)) {
+        const err = new Error("E11000 duplicate key error") as Error & { code: number };
+        err.code = 11000;
+        throw err;
+      }
+      throw e;
+    }
+    return this.convertFromEntity(practice);
   }
 
   async getAllPractice(
     filter: Partial<TPracticeDto>,
     page: number = 0,
     limit: number = 10
-  ): Promise<{ items: TPracticeDto[]; hasNextPage: boolean; page: number; totalPages: number; totalItems: number }> {
+  ): Promise<{
+    items: TPracticeDto[];
+    hasNextPage: boolean;
+    page: number;
+    totalPages: number;
+    totalItems: number;
+  }> {
     const skip = page * limit;
     const sanitizedFilter = Object.fromEntries(
-      Object.entries(filter).filter(([_, value]) => value !== undefined)
+      Object.entries(filter).filter(([, value]) => value !== undefined)
     ) as Record<string, unknown>;
     if (typeof sanitizedFilter.type === "string") {
       sanitizedFilter.type = sanitizedFilter.type.toUpperCase();
@@ -111,17 +250,27 @@ export class PracticeRepository {
       if (hex) sanitizedFilter.taskId = hex;
     }
 
-    const coll = this.getPracticeCollection();
-    const all = await coll.find({}).sort({ isFree: -1 }).toArray();
-    const matched = all.filter((doc) =>
-      practiceEntityMatchesFilter(doc as TPracticeSchema, sanitizedFilter)
-    );
-    const totalItems = matched.length;
-    const slice = matched.slice(skip, skip + limit);
-    const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 0;
+    const where = practiceWhereSql(sanitizedFilter);
+    const sql = getSql();
+    const cols = practiceRowColumns(sql);
 
+    const countRows = await sql<{ c: number }[]>`
+      SELECT COUNT(*)::int AS c FROM public.practices WHERE ${where}
+    `;
+    const totalItems = countRows[0]?.c ?? 0;
+
+    const slice = await sql<PracticeRow[]>`
+      SELECT ${cols}
+      FROM public.practices
+      WHERE ${where}
+      ORDER BY is_free DESC NULLS LAST, mongo_id ASC
+      OFFSET ${skip}
+      LIMIT ${limit}
+    `;
+
+    const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 0;
     return {
-      items: slice.map((practice) => this.convertFromEntity(practice as TPracticeSchema)),
+      items: slice.map((practice) => rowToDto(practice)),
       page,
       totalItems,
       totalPages,
@@ -129,18 +278,50 @@ export class PracticeRepository {
     };
   }
 
-    async updatePractice(id: string, dto: Omit<Partial<TPracticeDto>, "id">): Promise<TPracticeDto | null> {
-      const candidate = PracticeSchema.partial().parse({...dto, taskId: new ObjectId(dto.taskId ?? "")});
-
-      const result = await this.getPracticeCollection().findOneAndUpdate(
-        { _id: new ObjectId(id) },
-        { $set: candidate },
-        { returnDocument: "after" }
-      );
-      return result ? this.convertFromEntity(result) : null;
+  async updatePractice(id: string, dto: Omit<Partial<TPracticeDto>, "id">): Promise<TPracticeDto | null> {
+    const current = await this.findPractice(id);
+    if (!current) {
+      return null;
     }
+    const merged: TPracticeDto = {
+      ...current,
+      ...dto,
+      id: current.id,
+      taskId: dto.taskId ?? current.taskId,
+    };
+    const v = PracticeDtoSchema.parse(merged);
 
-    async deletePractice(id: string): Promise<void> {
-      await this.getPracticeCollection().deleteOne({ _id: new ObjectId(id) });
-    }
+    const sql = getSql();
+    const cols = practiceRowColumns(sql);
+    const instructionsJson = sql.json((v.instructions ?? null) as postgres.JSONValue);
+    const passagesJson = sql.json(v.passages as postgres.JSONValue);
+    const rows = await sql<PracticeRow[]>`
+      UPDATE public.practices
+      SET
+        task_mongo_id = ${v.taskId.toLowerCase()},
+        title = ${v.title},
+        name = ${v.name},
+        type = ${v.type},
+        description = ${v.description ?? null},
+        duration = ${v.duration ?? null},
+        is_free = ${v.isFree ?? null},
+        difficulty = ${v.difficulty ?? null},
+        total_question = ${v.totalQuestion ?? null},
+        total_passages = ${v.totalPassages ?? null},
+        instructions = ${instructionsJson},
+        passages = ${passagesJson},
+        updated_at = now()
+      WHERE mongo_id = ${id.toLowerCase()}
+      RETURNING ${cols}
+    `;
+    const row = rows[0];
+    return row ? rowToDto(row) : null;
+  }
+
+  async deletePractice(id: string): Promise<void> {
+    const sql = getSql();
+    await sql`
+      DELETE FROM public.practices WHERE mongo_id = ${id.toLowerCase()}
+    `;
+  }
 }
