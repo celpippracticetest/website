@@ -31,11 +31,15 @@ export function hideCrispChat(): void {
   window.$crisp.push(["do", "chat:hide"]);
 }
 
-/** Load Crisp once; keep default widget hidden until {@link openCrispChat} (custom button). */
+/**
+ * Official Crisp embed pattern (queue + `CRISP_WEBSITE_ID`, then `l.js` in head).
+ * Idempotent: safe to call from {@link CrispLoader}, {@link CrispChat}, and custom launchers.
+ */
 export function ensureCrispScript(): void {
   if (typeof document === "undefined") return;
   if (document.getElementById("crisp-chat-script")) {
     if (!window.$crisp) window.$crisp = [];
+    if (!window.CRISP_WEBSITE_ID) window.CRISP_WEBSITE_ID = CRISP_WEBSITE_ID;
     attachCrispHideLauncherOnClose();
     return;
   }
@@ -43,10 +47,11 @@ export function ensureCrispScript(): void {
   window.CRISP_WEBSITE_ID = CRISP_WEBSITE_ID;
   attachCrispHideLauncherOnClose();
   const s = document.createElement("script");
+  s.type = "text/javascript";
   s.id = "crisp-chat-script";
   s.src = "https://client.crisp.chat/l.js";
   s.async = true;
-  document.head.appendChild(s);
+  document.getElementsByTagName("head")[0]?.appendChild(s);
 }
 
 /** Open Crisp from the floating support button (after optional {@link ensureCrispScript}). */

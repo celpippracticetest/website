@@ -12,6 +12,7 @@ import SvgWritingPart from "../icons/WritingPart";
 import SvgSpeakingPart from "../icons/SpeakingPart";
 import {
   Box,
+  Button,
   Chip,
   CircularProgress,
   Collapse,
@@ -210,6 +211,62 @@ const PracticeOverview = ({
       >
         Practices
       </Typography>
+
+      <Paper
+        component="section"
+        elevation={0}
+        aria-label="PrepHere CELPIP promotion"
+        sx={{
+          borderRadius: 2,
+          border: "1px solid rgba(49, 107, 255, 0.22)",
+          background: "linear-gradient(135deg, #FFFFFF 0%, #E8EFFF 100%)",
+          p: { xs: 2.5, md: 3 },
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
+          alignItems: { xs: "stretch", sm: "center" },
+          justifyContent: "space-between",
+          gap: 2,
+        }}
+      >
+        <Stack spacing={0.75} sx={{ minWidth: 0 }}>
+          <Typography sx={{ fontWeight: 700, fontSize: { xs: 16, md: 17 }, color: "#212E42" }}>
+            Improve your CLB for free on PrepHere
+          </Typography>
+          <Typography sx={{ fontSize: { xs: 14, md: 15 }, color: "#64748B", lineHeight: 1.55 }}>
+            Use{" "}
+            <Box
+              component="span"
+              sx={{ color: "#316BFF", fontWeight: 600, wordBreak: "break-all" }}
+            >
+              PrepHere.ai/celpip
+            </Box>{" "}
+            to practice and build the skills that support a higher Canadian Language Benchmark
+            score—designed for learning and CLB growth, not a replacement for the official exam.
+          </Typography>
+        </Stack>
+        <Button
+          component="a"
+          href="https://PrepHere.ai/celpip"
+          target="_blank"
+          rel="noopener noreferrer"
+          variant="contained"
+          sx={{
+            flexShrink: 0,
+            alignSelf: { xs: "stretch", sm: "center" },
+            bgcolor: "#316BFF",
+            color: "#fff",
+            textTransform: "none",
+            fontWeight: 600,
+            fontSize: 15,
+            py: 1.25,
+            px: 2.5,
+            boxShadow: "none",
+            "&:hover": { bgcolor: "#2558e6", boxShadow: "none" },
+          }}
+        >
+          Open PrepHere — free
+        </Button>
+      </Paper>
 
       <Box
         sx={{

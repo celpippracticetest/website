@@ -6,6 +6,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import AskBeavoModal from "@/components/AskBeavo/AskBeavoModal";
 import CrispChat from "@/components/CrispChat";
+import CrispLoader from "@/components/CrispLoader";
 import CrispUserSync from "@/components/CrispUserSync";
 import AuthGtmTracker from "@/components/analytics/AuthGtmTracker";
 import { LazyLeadCapturePopup, LazyPromotionManager } from "@/components/LazyComponents";
@@ -275,6 +276,7 @@ export default async function RootLayout({
       <body className="bg-[#F4F7FF]" suppressHydrationWarning>
         <MuiAppRouterCacheProvider>
           <AskBeavoModal />
+          <CrispLoader />
           <CrispChat />
           <CrispUserSync />
           <AuthGtmTracker />

@@ -268,33 +268,63 @@ IMPORTANT: Use the current scores to provide personalized advice. Focus on the w
       content: message,
     });
 
-    // Call OpenRouter API
-    const openRouterResponse = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          "HTTP-Referer": "https://celpippracticetest.com",
-          "X-Title": "CELPIP Practice Test",
-          "Content-Type": "application/json",
+    const openRouterKey = process.env.OPENROUTER_API_KEY;
+    if (!openRouterKey) {
+      console.error("Chatbot: OPENROUTER_API_KEY is not set");
+      return NextResponse.json(
+        { error: "Chat is temporarily unavailable. Please try again later." },
+        { status: 503 }
+      );
+    }
+
+    const upstreamAbort = new AbortController();
+    const upstreamTimer = setTimeout(() => upstreamAbort.abort(), 110_000);
+
+    let openRouterResponse: Response;
+    try {
+      openRouterResponse = await fetch(
+        "https://openrouter.ai/api/v1/chat/completions",
+        {
+          method: "POST",
+          signal: upstreamAbort.signal,
+          headers: {
+            Authorization: `Bearer ${openRouterKey}`,
+            "HTTP-Referer": "https://celpippracticetest.com",
+            "X-Title": "CELPIP Practice Test",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "qwen/qwen3-next-80b-a3b-instruct",
+            messages: [
+              {
+                role: "system",
+                content: SYSTEM_PROMPT + userContext,
+              },
+              ...messages,
+            ],
+            max_tokens: 1000,
+          }),
+        }
+      );
+    } catch (e) {
+      const aborted =
+        e instanceof Error &&
+        (e.name === "AbortError" || e.message.includes("abort"));
+      console.error("Chatbot: OpenRouter fetch failed:", e);
+      return NextResponse.json(
+        {
+          error: aborted
+            ? "The AI service took too long to respond. Please try again."
+            : "Could not reach the AI service. Please try again.",
         },
-        body: JSON.stringify({
-          model: "qwen/qwen3-next-80b-a3b-instruct",
-          messages: [
-            {
-              role: "system",
-              content: SYSTEM_PROMPT + userContext,
-            },
-            ...messages,
-          ],
-          max_tokens: 1000,
-        }),
-      }
-    );
+        { status: aborted ? 504 : 502 }
+      );
+    } finally {
+      clearTimeout(upstreamTimer);
+    }
 
     if (!openRouterResponse.ok) {
-      const errorData = await openRouterResponse.json();
+      const errorData = await openRouterResponse.json().catch(() => ({}));
       console.error("OpenRouter API error:", errorData);
       throw new Error(`OpenRouter API failed: ${openRouterResponse.status}`);
     }
