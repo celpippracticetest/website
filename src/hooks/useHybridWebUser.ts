@@ -48,6 +48,10 @@ function bridgeUserFromSupabase(u: SupabaseAuthUser) {
   const legacyImportedId = readLegacyImportedExternalUserId(u);
   const stableId = legacyImportedId ?? u.id;
 
+  const legacyPublicMeta = (meta.clerk_public_metadata ?? {}) as Record<string, unknown>;
+  const purchasedMockExamIds =
+    app.purchasedMockExamIds ?? legacyPublicMeta.purchasedMockExamIds ?? meta.purchasedMockExamIds;
+
   return {
     id: stableId,
     primaryEmailAddress: email ? { emailAddress: email } : null,
@@ -65,6 +69,7 @@ function bridgeUserFromSupabase(u: SupabaseAuthUser) {
       planRenewsAt: app.planRenewsAt ?? meta.planRenewsAt,
       planExpiresAt: app.planExpiresAt ?? meta.planExpiresAt,
       targetCLB: app.targetCLB ?? meta.targetCLB ?? meta.targetClb,
+      ...(purchasedMockExamIds !== undefined ? { purchasedMockExamIds } : {}),
     },
     privateMetadata: {
       stripeCustomerId:

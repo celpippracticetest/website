@@ -22,6 +22,7 @@ import {
   hasPaidPracticeAccess,
   hasPremiumPlusAccess,
   isMockExamUnlockedViaPurchase,
+  normalizeMockExamIdForAccess,
   normalizePlan,
 } from "@/lib/subscriptionAccess";
 import type { ExamProgressSummary } from "@/lib/examOverviewProgress";
@@ -74,8 +75,16 @@ const ExamOverview = ({
     let best = exams[0];
     for (let i = 1; i < exams.length; i++) {
       const e = exams[i];
-      if ((e.order ?? 0) < (best.order ?? 0)) {
+      const bo = best.order ?? 0;
+      const eo = e.order ?? 0;
+      if (eo < bo) {
         best = e;
+      } else if (eo === bo) {
+        const bid = normalizeMockExamIdForAccess(best.id) ?? String(best.id);
+        const eid = normalizeMockExamIdForAccess(e.id) ?? String(e.id);
+        if (eid.localeCompare(bid, undefined, { sensitivity: "base" }) < 0) {
+          best = e;
+        }
       }
     }
     return best.id;

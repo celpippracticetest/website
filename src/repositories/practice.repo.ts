@@ -83,39 +83,43 @@ function rowToDto(row: PracticeRow): TPracticeDto {
 function practiceWhereSql(filter: Record<string, unknown>) {
   const sql = getSql();
   const parts = [];
-  const taskHex = filter.taskId != null ? taskIdHexLoose(filter.taskId) : null;
+  const rec = filter as Record<string, unknown>;
+  const taskHex = rec.taskId != null ? taskIdHexLoose(rec.taskId) : null;
   if (taskHex) {
     parts.push(sql`task_mongo_id = ${taskHex}`);
   }
-  if (typeof filter.type === "string" && filter.type.trim() !== "") {
-    parts.push(sql`upper(type) = upper(${filter.type})`);
+  if (typeof rec.type === "string" && rec.type.trim() !== "") {
+    parts.push(sql`upper(type) = upper(${rec.type})`);
   }
-  if (typeof filter.isFree === "boolean") {
-    parts.push(sql`is_free = ${filter.isFree}`);
+  if (typeof rec.isFree === "boolean") {
+    parts.push(sql`is_free = ${rec.isFree}`);
   }
-  if (typeof filter.title === "string") {
-    parts.push(sql`title = ${filter.title}`);
+  if (typeof rec.title === "string") {
+    parts.push(sql`title = ${rec.title}`);
   }
-  if (typeof filter.name === "string") {
-    parts.push(sql`name = ${filter.name}`);
+  if (typeof rec.name === "string") {
+    parts.push(sql`name = ${rec.name}`);
   }
-  if (typeof filter.description === "string") {
-    parts.push(sql`description = ${filter.description}`);
+  if (typeof rec.description === "string") {
+    parts.push(sql`description = ${rec.description}`);
   }
-  if (typeof filter.difficulty === "string") {
-    parts.push(sql`difficulty = ${filter.difficulty}`);
+  if (typeof rec.difficulty === "string") {
+    parts.push(sql`difficulty = ${rec.difficulty}`);
   }
-  if (typeof filter.duration === "string") {
-    parts.push(sql`duration = ${filter.duration}`);
+  if (typeof rec.duration === "string") {
+    parts.push(sql`duration = ${rec.duration}`);
   }
-  if (typeof filter.totalQuestion === "number" && Number.isFinite(filter.totalQuestion)) {
-    parts.push(sql`total_question = ${filter.totalQuestion}`);
+  if (typeof rec.totalQuestion === "number" && Number.isFinite(rec.totalQuestion)) {
+    parts.push(sql`total_question = ${rec.totalQuestion}`);
   }
-  if (typeof filter.totalPassages === "number" && Number.isFinite(filter.totalPassages)) {
-    parts.push(sql`total_passages = ${filter.totalPassages}`);
+  if (typeof rec.totalPassages === "number" && Number.isFinite(rec.totalPassages)) {
+    parts.push(sql`total_passages = ${rec.totalPassages}`);
   }
-  if (typeof filter.id === "string" && OID24.test(filter.id)) {
-    parts.push(sql`mongo_id = ${filter.id.toLowerCase()}`);
+  if (typeof rec.id === "string" && OID24.test(rec.id.trim())) {
+    parts.push(sql`mongo_id = ${rec.id.trim().toLowerCase()}`);
+  } else if (rec._id != null) {
+    const mh = taskIdHexLoose(rec._id);
+    if (mh) parts.push(sql`mongo_id = ${mh}`);
   }
   if (parts.length === 0) return sql`true`;
   return parts.reduce((a, b) => sql`${a} AND ${b}`);
@@ -156,12 +160,16 @@ export class PracticeRepository {
   }
 
   async findPractice(id: string): Promise<TPracticeDto | null> {
+    const key = id.trim().toLowerCase();
+    if (!OID24.test(key)) {
+      return null;
+    }
     const sql = getSql();
     const cols = practiceRowColumns(sql);
     const rows = await sql<PracticeRow[]>`
       SELECT ${cols}
       FROM public.practices
-      WHERE mongo_id = ${id.toLowerCase()}
+      WHERE mongo_id = ${key}
       LIMIT 1
     `;
     const row = rows[0];
@@ -169,9 +177,13 @@ export class PracticeRepository {
   }
 
   async createPractice(dto: Omit<TPracticeDto, "id">): Promise<TPracticeDto> {
+    const rawTaskId = String(dto.taskId ?? "").trim();
+    if (!OID24.test(rawTaskId)) {
+      throw new Error("taskId must be a 24-character hex Mongo ObjectId string");
+    }
     const practice = PracticeSchema.parse({
       ...dto,
-      taskId: new ObjectId(dto.taskId ?? ""),
+      taskId: new ObjectId(rawTaskId),
       _id: new ObjectId(),
     });
     const sql = getSql();
@@ -274,12 +286,16 @@ export class PracticeRepository {
       page,
       totalItems,
       totalPages,
-      hasNextPage: skip + limit < totalItems,
+      hasNextPage: skip + slice.length < totalItems,
     };
   }
 
   async updatePractice(id: string, dto: Omit<Partial<TPracticeDto>, "id">): Promise<TPracticeDto | null> {
-    const current = await this.findPractice(id);
+    const idKey = id.trim().toLowerCase();
+    if (!OID24.test(idKey)) {
+      return null;
+    }
+    const current = await this.findPractice(idKey);
     if (!current) {
       return null;
     }
@@ -298,7 +314,7 @@ export class PracticeRepository {
     const rows = await sql<PracticeRow[]>`
       UPDATE public.practices
       SET
-        task_mongo_id = ${v.taskId.toLowerCase()},
+        task_mongo_id = ${v.taskId.trim().toLowerCase()},
         title = ${v.title},
         name = ${v.name},
         type = ${v.type},
@@ -311,7 +327,7 @@ export class PracticeRepository {
         instructions = ${instructionsJson},
         passages = ${passagesJson},
         updated_at = now()
-      WHERE mongo_id = ${id.toLowerCase()}
+      WHERE mongo_id = ${idKey}
       RETURNING ${cols}
     `;
     const row = rows[0];
@@ -319,9 +335,13 @@ export class PracticeRepository {
   }
 
   async deletePractice(id: string): Promise<void> {
+    const key = id.trim().toLowerCase();
+    if (!OID24.test(key)) {
+      return;
+    }
     const sql = getSql();
     await sql`
-      DELETE FROM public.practices WHERE mongo_id = ${id.toLowerCase()}
+      DELETE FROM public.practices WHERE mongo_id = ${key}
     `;
   }
 }

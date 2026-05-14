@@ -78,7 +78,7 @@ export function normalizeMockExamIdForAccess(id: string | null | undefined): str
   if (/^[0-9a-f]{24}$/i.test(core)) {
     return core.toLowerCase();
   }
-  return core;
+  return null;
 }
 
 /** Normalize Clerk `publicMetadata.purchasedMockExamIds` (array, JSON string, comma-separated, or odd shapes). */

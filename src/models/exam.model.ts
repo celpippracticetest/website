@@ -5,7 +5,7 @@ const ExamSchema = z.object({
   _id: z.instanceof(ObjectId),
   name: z.string(),
   order: z.number(),
-  createdAt: z.date(),
+  createdAt: z.coerce.date(),
   isReady: z.boolean().default(false),
 });
 

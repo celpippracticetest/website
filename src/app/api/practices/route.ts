@@ -4,6 +4,15 @@ import documentsClient from "@/lib/appDocumentsClient";
 import { TExamType } from "@/models/enums";
 import { NextRequest, NextResponse } from "next/server";
 import { logger, captureException, trackAPICall, PerformanceTracker } from "@/lib/sentry-logger";
+
+function optionalBoolFromQuery(v: string | null): boolean | undefined {
+  if (v == null || String(v).trim() === "") return undefined;
+  const t = String(v).trim().toLowerCase();
+  if (t === "true" || t === "1" || t === "yes") return true;
+  if (t === "false" || t === "0" || t === "no") return false;
+  return undefined;
+}
+
 export async function POST(req: NextRequest) {
   const tracker = new PerformanceTracker("Create Practice Session", "practices_api");
 
@@ -54,6 +63,10 @@ export async function POST(req: NextRequest) {
       );
     }
   } catch (error) {
+    if (error instanceof Error && error.message.includes("taskId")) {
+      tracker.finish({ success: false, reason: "bad_task_id" });
+      return NextResponse.json({ message: error.message }, { status: 400 });
+    }
     captureException(error, {
       component: "practices_api",
       action: "create_practice_error",
@@ -76,6 +89,7 @@ export const GET = async function (req: NextRequest) {
     const page: string = req.nextUrl.searchParams.get("page") ?? "0";
     const limit: string = req.nextUrl.searchParams.get("limit") ?? "10";
     const taskId: string | null = req.nextUrl.searchParams.get("taskId") ?? null;
+    const isFreeFilter = optionalBoolFromQuery(isFree);
 
     logger.info("Fetching practices", {
       component: "practices_api",
@@ -85,6 +99,8 @@ export const GET = async function (req: NextRequest) {
         page,
         limit,
         taskId,
+        isFree,
+        isFreeParsed: isFreeFilter,
       },
     });
 
@@ -93,6 +109,7 @@ export const GET = async function (req: NextRequest) {
       {
         type: type ? (type.toString().toUpperCase() as TExamType) : undefined,
         taskId: taskId ?? undefined,
+        isFree: isFreeFilter,
       },
       parseInt(page),
       parseInt(limit)

@@ -133,7 +133,7 @@ export class ExamRepository {
       SELECT mongo_id, name, sort_order, is_ready, created_at, updated_at
       FROM public.exams
       WHERE ${where}
-      ORDER BY sort_order ASC
+      ORDER BY sort_order ASC, mongo_id ASC
       OFFSET ${skip}
       LIMIT ${limit}
     `;
@@ -169,7 +169,7 @@ export class ExamRepository {
         SELECT mongo_id
         FROM public.exams
         WHERE ${examWhereSql(f)}
-        ORDER BY sort_order ASC
+        ORDER BY sort_order ASC, mongo_id ASC
         LIMIT 1
       `;
       mongoId = rows[0]?.mongo_id ?? null;
@@ -236,7 +236,7 @@ export class ExamRepository {
         SELECT mongo_id
         FROM public.exams
         WHERE ${examWhereSql(f)}
-        ORDER BY sort_order ASC
+        ORDER BY sort_order ASC, mongo_id ASC
         LIMIT 1
       `;
       mongoId = rows[0]?.mongo_id ?? null;
