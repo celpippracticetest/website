@@ -1,5 +1,7 @@
 /**
  * Sync MongoDB document collections into Supabase Postgres `app_documents` (same keys as the app).
+ * Wiki articles use `public.wiki_articles`; blog posts use `public.blogs` — run
+ * `npm run migrate:mongo:wiki` / `npm run migrate:mongo:blogs` when syncing those from Mongo.
  *
  * Uses `resolveAppDocumentsPartitionKey` per logical name (honours `APP_DOCUMENTS_DB` and fallbacks).
  * BSON from the Mongo driver is normalised through the driver's bson@6 EJSON before bson@7 serialisation.
@@ -24,7 +26,6 @@ export const DEFAULT_MONGO_PG_SYNC_COLLECTIONS: readonly string[] = [
   "account_deletion_surveys",
   "account_device_restrictions",
   "answers",
-  "blogs",
   "blog_target_keywords",
   "cancellation_flow_events",
   "cancellation_surveys",
@@ -76,7 +77,6 @@ export const DEFAULT_MONGO_PG_SYNC_COLLECTIONS: readonly string[] = [
   "userwords",
   "userwordstudyactivities",
   "users",
-  "wikiArticles",
   "withdrawalRequests",
   "worddetails",
 ].sort((a, b) => a.localeCompare(b));

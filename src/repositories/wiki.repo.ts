@@ -1,74 +1,133 @@
 import { ObjectId } from "bson";
-import type { AppDocFilter } from "@/lib/pg/types";
-import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
+import type { AppDocumentsClient } from "@/lib/pg/types";
+import { getSql } from "@/lib/pg/pool";
+import { normalizeWikiSlug, normalizeWikiSlugStorage } from "@/lib/wiki/slug";
 import {
-  WikiArticleSchema,
   WikiArticleSchemaDto,
-  TWikiArticleSchema,
   TWikiArticleSchemaDto,
   TWikiArticleWriteInput,
 } from "@/models/wiki.model";
 
-const COLLECTION_NAME = "wikiArticles";
+type WikiArticleRow = {
+  mongo_id: string;
+  title: string;
+  slug: string;
+  description: string;
+  category: string;
+  color: string;
+  summary: string;
+  content: string;
+  sort_order: number;
+  created_at: Date;
+  updated_at: Date;
+};
+
+function isPgUniqueViolation(e: unknown): boolean {
+  return typeof e === "object" && e !== null && (e as { code?: string }).code === "23505";
+}
+
+function isHex24(id: string): boolean {
+  return /^[a-f0-9]{24}$/i.test(id.trim());
+}
+
+function rowToDto(row: WikiArticleRow): TWikiArticleSchemaDto {
+  return WikiArticleSchemaDto.parse({
+    id: row.mongo_id,
+    title: row.title,
+    slug: row.slug,
+    description: row.description,
+    category: row.category,
+    color: row.color,
+    summary: row.summary,
+    content: row.content,
+    sortOrder: row.sort_order,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  });
+}
 
 export class WikiRepository {
-  private readonly db: Db;
-
-  constructor(documentsClient: AppDocumentsClient) {
-    this.db = documentsClient.db();
-  }
-
-  private getCollection() {
-    return this.db.collection<TWikiArticleSchema>(COLLECTION_NAME);
-  }
-
-  private convertFromEntity(entity: TWikiArticleSchema): TWikiArticleSchemaDto {
-    const { _id, ...rest } = entity;
-    const dto = { id: _id.toHexString(), ...rest };
-    return WikiArticleSchemaDto.parse(dto);
-  }
-
-  private normalizeSlug(rawSlug: string): string {
-    return rawSlug
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .replace(/-{2,}/g, "-");
+  constructor(_documentsClient: AppDocumentsClient) {
+    void _documentsClient;
   }
 
   async findById(id: string): Promise<TWikiArticleSchemaDto | null> {
-    if (!ObjectId.isValid(id)) return null;
-    const entity = await this.getCollection().findOne({
-      _id: new ObjectId(id),
-    });
-    return entity ? this.convertFromEntity(entity) : null;
+    if (!isHex24(id)) return null;
+    const sql = getSql();
+    const rows = await sql<WikiArticleRow[]>`
+      SELECT
+        mongo_id,
+        title,
+        slug,
+        description,
+        category,
+        color,
+        summary,
+        content,
+        sort_order,
+        created_at,
+        updated_at
+      FROM public.wiki_articles
+      WHERE mongo_id = ${id.trim().toLowerCase()}
+      LIMIT 1
+    `;
+    const row = rows[0];
+    return row ? rowToDto(row) : null;
   }
 
   async findBySlug(slug: string): Promise<TWikiArticleSchemaDto | null> {
-    const entity = await this.getCollection().findOne({
-      slug: this.normalizeSlug(slug),
-    });
-    return entity ? this.convertFromEntity(entity) : null;
+    const normalized = normalizeWikiSlug(slug);
+    const sql = getSql();
+    const rows = await sql<WikiArticleRow[]>`
+      SELECT
+        mongo_id,
+        title,
+        slug,
+        description,
+        category,
+        color,
+        summary,
+        content,
+        sort_order,
+        created_at,
+        updated_at
+      FROM public.wiki_articles
+      WHERE slug = ${normalized}
+      LIMIT 1
+    `;
+    const row = rows[0];
+    return row ? rowToDto(row) : null;
   }
 
   async findAll(): Promise<TWikiArticleSchemaDto[]> {
-    const entities = await this.getCollection()
-      .find({})
-      .sort({ sortOrder: 1, slug: 1 })
-      .toArray();
-    return entities.map((e) => this.convertFromEntity(e));
+    const sql = getSql();
+    const rows = await sql<WikiArticleRow[]>`
+      SELECT
+        mongo_id,
+        title,
+        slug,
+        description,
+        category,
+        color,
+        summary,
+        content,
+        sort_order,
+        created_at,
+        updated_at
+      FROM public.wiki_articles
+      ORDER BY sort_order ASC, slug ASC
+    `;
+    return rows.map(rowToDto);
   }
 
   async getSlugs(): Promise<Array<{ slug: string; updatedAt: Date }>> {
-    const rows = await this.getCollection()
-      .find({}, { projection: { slug: 1, updatedAt: 1 } })
-      .sort({ sortOrder: 1, slug: 1 })
-      .toArray();
-    return rows.map((row) => ({
-      slug: row.slug,
-      updatedAt: row.updatedAt,
-    }));
+    const sql = getSql();
+    const rows = await sql<{ slug: string; updated_at: Date }[]>`
+      SELECT slug, updated_at
+      FROM public.wiki_articles
+      ORDER BY sort_order ASC, slug ASC
+    `;
+    return rows.map((row) => ({ slug: row.slug, updatedAt: row.updated_at }));
   }
 
   async findRelated(
@@ -76,113 +135,307 @@ export class WikiRepository {
     category: string,
     limit: number = 2
   ): Promise<TWikiArticleSchemaDto[]> {
-    const filter: AppDocFilter<TWikiArticleSchema> = {
-      _id: { $ne: new ObjectId(currentId) },
-      category,
-    };
-    const entities = await this.getCollection()
-      .find(filter)
-      .sort({ sortOrder: 1, slug: 1 })
-      .limit(Math.max(limit, 1))
-      .toArray();
-    return entities.map((e) => this.convertFromEntity(e));
+    if (!isHex24(currentId)) return [];
+    const sql = getSql();
+    const lim = Math.max(limit, 1);
+    const rows = await sql<WikiArticleRow[]>`
+      SELECT
+        mongo_id,
+        title,
+        slug,
+        description,
+        category,
+        color,
+        summary,
+        content,
+        sort_order,
+        created_at,
+        updated_at
+      FROM public.wiki_articles
+      WHERE mongo_id <> ${currentId.trim().toLowerCase()}
+        AND category = ${category}
+      ORDER BY sort_order ASC, slug ASC
+      LIMIT ${lim}
+    `;
+    return rows.map(rowToDto);
   }
 
-  /** Get the next article after the one with the given slug (by sortOrder, then slug). */
   async findNextBySlug(slug: string): Promise<TWikiArticleSchemaDto | null> {
-    const current = await this.findBySlug(slug);
-    if (!current) return null;
-
-    const entities = await this.getCollection()
-      .find({
-        $or: [
-          { sortOrder: { $gt: current.sortOrder } },
-          { sortOrder: current.sortOrder, slug: { $gt: current.slug } },
-        ],
-      })
-      .sort({ sortOrder: 1, slug: 1 })
-      .limit(1)
-      .toArray();
-
-    return entities[0] ? this.convertFromEntity(entities[0]) : null;
+    const normalized = normalizeWikiSlug(slug);
+    const sql = getSql();
+    const rows = await sql<WikiArticleRow[]>`
+      SELECT
+        w.mongo_id,
+        w.title,
+        w.slug,
+        w.description,
+        w.category,
+        w.color,
+        w.summary,
+        w.content,
+        w.sort_order,
+        w.created_at,
+        w.updated_at
+      FROM public.wiki_articles w
+      WHERE (w.sort_order, w.slug) > (
+        SELECT cur.sort_order, cur.slug
+        FROM public.wiki_articles cur
+        WHERE cur.slug = ${normalized}
+        LIMIT 1
+      )
+      ORDER BY w.sort_order ASC, w.slug ASC
+      LIMIT 1
+    `;
+    const row = rows[0];
+    return row ? rowToDto(row) : null;
   }
 
   async create(dto: TWikiArticleWriteInput): Promise<TWikiArticleSchemaDto> {
     const now = new Date();
-    const slug = this.normalizeSlug(dto.slug);
-    const doc: TWikiArticleSchema = {
-      _id: new ObjectId(),
-      ...dto,
-      slug,
-      createdAt: now,
-      updatedAt: now,
-    };
-    await this.getCollection().insertOne(doc);
-    return this.convertFromEntity(doc);
+    const slug = normalizeWikiSlugStorage(dto.slug);
+    const mongoId = new ObjectId().toHexString();
+    const sql = getSql();
+    try {
+      const rows = await sql<WikiArticleRow[]>`
+        INSERT INTO public.wiki_articles (
+          mongo_id,
+          title,
+          slug,
+          description,
+          category,
+          color,
+          summary,
+          content,
+          sort_order,
+          created_at,
+          updated_at
+        )
+        VALUES (
+          ${mongoId},
+          ${dto.title},
+          ${slug},
+          ${dto.description},
+          ${dto.category},
+          ${dto.color},
+          ${dto.summary},
+          ${dto.content},
+          ${dto.sortOrder},
+          ${now},
+          ${now}
+        )
+        RETURNING
+          mongo_id,
+          title,
+          slug,
+          description,
+          category,
+          color,
+          summary,
+          content,
+          sort_order,
+          created_at,
+          updated_at
+      `;
+      const row = rows[0];
+      if (!row) throw new Error("wiki_articles insert returned no row");
+      return rowToDto(row);
+    } catch (e: unknown) {
+      if (isPgUniqueViolation(e)) {
+        const err = new Error("E11000 duplicate key error") as Error & { code: number };
+        err.code = 11000;
+        throw err;
+      }
+      throw e;
+    }
   }
 
   async upsertBySlug(
     slug: string,
     dto: TWikiArticleWriteInput
   ): Promise<TWikiArticleSchemaDto> {
-    const normalized = this.normalizeSlug(slug);
+    const normalized = normalizeWikiSlug(slug);
     const now = new Date();
-    const existing = await this.getCollection().findOne({ slug: normalized });
+    const payloadSlug = normalizeWikiSlugStorage(dto.slug);
+    const sql = getSql();
 
-    const payload = {
-      ...dto,
-      slug: normalized,
-      updatedAt: now,
-    };
+    const updated = await sql<WikiArticleRow[]>`
+      UPDATE public.wiki_articles
+      SET
+        title = ${dto.title},
+        slug = ${payloadSlug},
+        description = ${dto.description},
+        category = ${dto.category},
+        color = ${dto.color},
+        summary = ${dto.summary},
+        content = ${dto.content},
+        sort_order = ${dto.sortOrder},
+        updated_at = ${now}
+      WHERE slug = ${normalized}
+      RETURNING
+        mongo_id,
+        title,
+        slug,
+        description,
+        category,
+        color,
+        summary,
+        content,
+        sort_order,
+        created_at,
+        updated_at
+    `;
+    if (updated[0]) return rowToDto(updated[0]);
 
-    if (existing) {
-      const updated = await this.getCollection().findOneAndUpdate(
-        { slug: normalized },
-        { $set: payload },
-        { returnDocument: "after" }
-      );
-      return updated ? this.convertFromEntity(updated) : this.convertFromEntity(existing);
+    const mongoId = new ObjectId().toHexString();
+    try {
+      const inserted = await sql<WikiArticleRow[]>`
+        INSERT INTO public.wiki_articles (
+          mongo_id,
+          title,
+          slug,
+          description,
+          category,
+          color,
+          summary,
+          content,
+          sort_order,
+          created_at,
+          updated_at
+        )
+        VALUES (
+          ${mongoId},
+          ${dto.title},
+          ${payloadSlug},
+          ${dto.description},
+          ${dto.category},
+          ${dto.color},
+          ${dto.summary},
+          ${dto.content},
+          ${dto.sortOrder},
+          ${now},
+          ${now}
+        )
+        RETURNING
+          mongo_id,
+          title,
+          slug,
+          description,
+          category,
+          color,
+          summary,
+          content,
+          sort_order,
+          created_at,
+          updated_at
+      `;
+      const row = inserted[0];
+      if (!row) throw new Error("wiki_articles insert returned no row");
+      return rowToDto(row);
+    } catch (e: unknown) {
+      if (isPgUniqueViolation(e)) {
+        const err = new Error("E11000 duplicate key error") as Error & { code: number };
+        err.code = 11000;
+        throw err;
+      }
+      throw e;
     }
-
-    const doc: TWikiArticleSchema = {
-      _id: new ObjectId(),
-      ...payload,
-      createdAt: now,
-    };
-    await this.getCollection().insertOne(doc);
-    return this.convertFromEntity(doc);
   }
 
   async deleteBySlug(slug: string): Promise<boolean> {
-    const result = await this.getCollection().deleteOne({
-      slug: this.normalizeSlug(slug),
-    });
-    return (result.deletedCount ?? 0) > 0;
+    const sql = getSql();
+    const result = await sql`
+      DELETE FROM public.wiki_articles
+      WHERE slug = ${normalizeWikiSlug(slug)}
+    `;
+    return result.count > 0;
   }
 
   async updateById(
     id: string,
     dto: Partial<TWikiArticleWriteInput>
   ): Promise<TWikiArticleSchemaDto | null> {
-    if (!ObjectId.isValid(id)) return null;
+    if (!isHex24(id)) return null;
     const now = new Date();
-    const payload = { ...dto, updatedAt: now };
-    if (dto.slug !== undefined) {
-      payload.slug = this.normalizeSlug(dto.slug);
+    const key = id.trim().toLowerCase();
+    const sql = getSql();
+
+    const currentRows = await sql<WikiArticleRow[]>`
+      SELECT
+        mongo_id,
+        title,
+        slug,
+        description,
+        category,
+        color,
+        summary,
+        content,
+        sort_order,
+        created_at,
+        updated_at
+      FROM public.wiki_articles
+      WHERE mongo_id = ${key}
+      LIMIT 1
+    `;
+    const cur = currentRows[0];
+    if (!cur) return null;
+
+    const nextSlug =
+      dto.slug !== undefined ? normalizeWikiSlugStorage(dto.slug) : cur.slug;
+    const nextTitle = dto.title !== undefined ? dto.title : cur.title;
+    const nextDesc = dto.description !== undefined ? dto.description : cur.description;
+    const nextCat = dto.category !== undefined ? dto.category : cur.category;
+    const nextColor = dto.color !== undefined ? dto.color : cur.color;
+    const nextSummary = dto.summary !== undefined ? dto.summary : cur.summary;
+    const nextContent = dto.content !== undefined ? dto.content : cur.content;
+    const nextSort =
+      dto.sortOrder !== undefined ? dto.sortOrder : cur.sort_order;
+
+    try {
+      const rows = await sql<WikiArticleRow[]>`
+        UPDATE public.wiki_articles
+        SET
+          title = ${nextTitle},
+          slug = ${nextSlug},
+          description = ${nextDesc},
+          category = ${nextCat},
+          color = ${nextColor},
+          summary = ${nextSummary},
+          content = ${nextContent},
+          sort_order = ${nextSort},
+          updated_at = ${now}
+        WHERE mongo_id = ${key}
+        RETURNING
+          mongo_id,
+          title,
+          slug,
+          description,
+          category,
+          color,
+          summary,
+          content,
+          sort_order,
+          created_at,
+          updated_at
+      `;
+      const row = rows[0];
+      return row ? rowToDto(row) : null;
+    } catch (e: unknown) {
+      if (isPgUniqueViolation(e)) {
+        const err = new Error("E11000 duplicate key error") as Error & { code: number };
+        err.code = 11000;
+        throw err;
+      }
+      throw e;
     }
-    const updated = await this.getCollection().findOneAndUpdate(
-      { _id: new ObjectId(id) },
-      { $set: payload },
-      { returnDocument: "after" }
-    );
-    return updated ? this.convertFromEntity(updated) : null;
   }
 
   async deleteById(id: string): Promise<boolean> {
-    if (!ObjectId.isValid(id)) return false;
-    const result = await this.getCollection().deleteOne({
-      _id: new ObjectId(id),
-    });
-    return (result.deletedCount ?? 0) > 0;
+    if (!isHex24(id)) return false;
+    const sql = getSql();
+    const result = await sql`
+      DELETE FROM public.wiki_articles
+      WHERE mongo_id = ${id.trim().toLowerCase()}
+    `;
+    return result.count > 0;
   }
 }

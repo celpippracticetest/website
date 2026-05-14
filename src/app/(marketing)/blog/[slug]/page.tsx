@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Box } from "@/components/ui/Box";
 import { JsonLd } from "@/components/seo/JsonLd";
 import {
@@ -19,6 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import ChevronRight from "@mui/icons-material/ChevronRight";
+import { normalizeWikiSlug } from "@/lib/wiki/slug";
 
 export const dynamic = "force-dynamic";
 
@@ -61,8 +62,9 @@ function formatDate(value?: Date | string | null): string {
 }
 
 export async function generateMetadata({ params }: BlogPageProps): Promise<Metadata> {
-  const { slug } = await params;
-  const post = await getPublishedBlogPostBySlug(slug);
+  const { slug: requestedSlug } = await params;
+  const slug = normalizeWikiSlug(requestedSlug);
+  const post = await getPublishedBlogPostBySlug(requestedSlug);
 
   if (!post) {
     return {
@@ -82,7 +84,10 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
     post.excerpt || stripHtml(post.contentHtml).slice(0, 155) || "CELPIP preparation article.";
   const title = buildBlogTitle(post.seo?.metaTitle || post.title);
   const description =
-    BLOG_META_DESCRIPTION_OVERRIDES[slug] || post.seo?.metaDescription || fallbackDescription;
+    BLOG_META_DESCRIPTION_OVERRIDES[slug] ??
+    BLOG_META_DESCRIPTION_OVERRIDES[requestedSlug] ||
+    post.seo?.metaDescription ||
+    fallbackDescription;
   const canonicalPath = `/blog/${post.slug}`;
   const path = post.seo?.canonicalUrl?.startsWith("http") ? null : (post.seo?.canonicalUrl || canonicalPath);
   const canonical = path === null
@@ -131,11 +136,16 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
 }
 
 export default async function BlogPostPage({ params }: BlogPageProps) {
-  const { slug } = await params;
-  const post = await getPublishedBlogPostBySlug(slug);
+  const { slug: requestedSlug } = await params;
+  const slug = normalizeWikiSlug(requestedSlug);
+  const post = await getPublishedBlogPostBySlug(requestedSlug);
 
   if (!post) {
     notFound();
+  }
+
+  if (requestedSlug !== slug) {
+    redirect(`/blog/${slug}`);
   }
 
   const relatedPosts = await getRelatedPublishedPosts(post.id, post.categories, post.tags, 3);

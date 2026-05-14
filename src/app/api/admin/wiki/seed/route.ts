@@ -6,7 +6,7 @@ import { wikiArticles } from "@/data/wiki";
 
 /**
  * POST /api/admin/wiki/seed
- * One-time (or re-run) seed: upserts all hardcoded wiki articles into the wikiArticles collection.
+ * One-time (or re-run) seed: upserts all hardcoded wiki articles into `public.wiki_articles`.
  * Preserves order via sortOrder. Requires auth.
  */
 export async function POST() {

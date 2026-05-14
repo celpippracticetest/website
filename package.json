@@ -25,7 +25,9 @@
     "test:e2e:ui": "npx playwright test --ui",
     "pg:documents:summary": "node ./tooling/pg-app-documents-summary.mjs",
     "migrate:exams:mongo-to-pg": "npx --yes tsx ./tooling/migrate-exams-mongo-to-pg.ts",
-    "migrate:mongo:app-documents": "npx --yes tsx ./tooling/migrate-mongo-collections-to-pg.ts"
+    "migrate:mongo:app-documents": "npx --yes tsx ./tooling/migrate-mongo-collections-to-pg.ts",
+    "migrate:mongo:wiki": "npx --yes tsx ./tooling/migrate-mongo-wiki-to-pg.ts",
+    "migrate:mongo:blogs": "npx --yes tsx ./tooling/migrate-mongo-blogs-to-pg.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",

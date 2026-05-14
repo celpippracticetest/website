@@ -7,6 +7,18 @@ import {
 } from "@/models/answer";
 import { ObjectId } from "bson";
 import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
+import { shouldUseSupabaseForPracticeAnswers } from "@/lib/auth/should-use-supabase-practice-answers";
+import {
+  supabaseCreateOrUpdateAnswer,
+  supabaseDeleteAnswer,
+  supabaseFindAllTaskIdsByTaskAndUser,
+  supabaseFindAnswerById,
+  supabaseFindAnswerByPracticeAndUser,
+  supabaseFindAnswersByExamIdAndUser,
+  supabaseGetAllListeningAndReadingAnswers,
+  supabaseGetPartitionedMockExamProgressAnswers,
+  supabaseUpdateAnswer,
+} from "@/repositories/supabaseUserPracticeAnswers.store";
 import { writingAnswerDtoFromLeanDocument } from "@/repositories/writingAndSpeakingAnswers.repo";
 
 const HEX24 = /^[a-f0-9]{24}$/i;
@@ -105,6 +117,38 @@ export class ListeningAndReadingAnswerRepository {
       return { listeningAndReading: [], writingAndSpeaking: [], fetchedCount: 0 };
     }
 
+    if (shouldUseSupabaseForPracticeAnswers(userId)) {
+      const projection = {
+        _id: 1,
+        userId: 1,
+        type: 1,
+        examId: 1,
+        partId: 1,
+        attemptId: 1,
+        answers: 1,
+        text: 1,
+        audioUrl: 1,
+        overalScore: 1,
+        result: 1,
+      } as const;
+
+      return supabaseGetPartitionedMockExamProgressAnswers(
+        userId,
+        examIds,
+        async () =>
+          this.getAnswerCollection()
+            .find(
+              {
+                userId,
+                examId: { $in: examIdMatch },
+                type: { $in: ["WRITING", "SPEAKING"] },
+              },
+              { projection }
+            )
+            .toArray()
+      );
+    }
+
     const projection = {
       _id: 1,
       userId: 1,
@@ -154,24 +198,32 @@ export class ListeningAndReadingAnswerRepository {
     practiceId: string,
     userId: string
   ): Promise<TListeningAndReadingAnswerDto | null> {
+    if (shouldUseSupabaseForPracticeAnswers(userId)) {
+      return supabaseFindAnswerByPracticeAndUser(practiceId, userId);
+    }
     const entity = await this.getAnswerCollection().findOne({
       practiceId,
       userId,
     });
-    return entity ? this.convertFromEntity(entity) : null;
+    return entity ? this.convertFromEntity(entity as TListeningAndReadingAnswer) : null;
   }
 
   async findAnswer(id: string): Promise<TListeningAndReadingAnswerDto | null> {
+    const fromSb = await supabaseFindAnswerById(id);
+    if (fromSb) return fromSb;
     const entity = await this.getAnswerCollection().findOne({
       _id: new ObjectId(id),
     });
-    return entity ? this.convertFromEntity(entity) : null;
+    return entity ? this.convertFromEntity(entity as TListeningAndReadingAnswer) : null;
   }
 
   async findAllTaskIdsByTaskAndUser(
     taskId: string,
     userId: string
   ): Promise<string[]> {
+    if (shouldUseSupabaseForPracticeAnswers(userId)) {
+      return supabaseFindAllTaskIdsByTaskAndUser(taskId, userId);
+    }
     const wantHex = objectIdHexFromComparable(taskId);
     const answers = await this.getAnswerCollection()
       .find({ userId })
@@ -188,6 +240,9 @@ export class ListeningAndReadingAnswerRepository {
   async createOrUpdateAnswer(
     dto: Omit<TListeningAndReadingAnswerDto, "id">
   ): Promise<TListeningAndReadingAnswerDto> {
+    if (shouldUseSupabaseForPracticeAnswers(dto.userId)) {
+      return supabaseCreateOrUpdateAnswer(dto);
+    }
     // Check if an answer exists for the given practiceId and userId
     const existing = await this.getAnswerCollection().findOne(
       dto.attemptId
@@ -253,6 +308,14 @@ export class ListeningAndReadingAnswerRepository {
     const userIdStr = typeof sanitizedFilter.userId === "string" ? sanitizedFilter.userId : null;
     const keys = Object.keys(sanitizedFilter);
     if (examHex && userIdStr && keys.length === 2 && keys.includes("examId") && keys.includes("userId")) {
+      if (shouldUseSupabaseForPracticeAnswers(userIdStr)) {
+        return supabaseGetAllListeningAndReadingAnswers(
+          userIdStr,
+          String(sanitizedFilter.examId),
+          page,
+          limit
+        );
+      }
       const rows = await coll
         .find({ examId: new ObjectId(examHex), userId: userIdStr })
         .sort({ createdAt: -1 })
@@ -342,42 +405,62 @@ export class ListeningAndReadingAnswerRepository {
         hasNextPage: false,
       };
     }
-    const answers = results[0]?.items || [];
+    const row = results[0] as {
+      items?: TListeningAndReadingAnswer[];
+      totalItems?: number;
+      totalPages?: number;
+      hasNextPage?: boolean;
+    };
+    const answers = row.items ?? [];
 
     return {
       items: answers.map((answer: TListeningAndReadingAnswer) =>
         this.convertFromEntity(answer)
       ),
       page,
-      totalItems: results[0].totalItems,
-      totalPages: results[0].totalPages,
-      hasNextPage: results[0].hasNextPage,
+      totalItems: row.totalItems ?? 0,
+      totalPages: row.totalPages ?? 0,
+      hasNextPage: row.hasNextPage ?? false,
     };
   }
 
   async findAnswersByExamIdAndUser(examId: string, userId: string) {
+    if (shouldUseSupabaseForPracticeAnswers(userId)) {
+      return supabaseFindAnswersByExamIdAndUser(examId, userId);
+    }
     const rawAnswers = await this.getAnswerCollection()
       .find({ examId, userId, answers: { $ne: {} } })
       .toArray();
 
-    return rawAnswers.map((ans) => ({
-      ...ans,
-      _id: ans._id.toHexString(),
-      createdAt:
-        ans.createdAt instanceof Date
-          ? ans.createdAt.toISOString()
-          : ans.createdAt,
-      updatedAt:
-        ans.updatedAt instanceof Date
-          ? ans.updatedAt.toISOString()
-          : ans.updatedAt,
-    }));
+    return rawAnswers.map((ans) => {
+      const idVal = ans._id;
+      const idStr =
+        idVal instanceof ObjectId
+          ? idVal.toHexString()
+          : idVal != null
+            ? String(idVal)
+            : "";
+      return {
+        ...ans,
+        _id: idStr,
+        createdAt:
+          ans.createdAt instanceof Date
+            ? ans.createdAt.toISOString()
+            : ans.createdAt,
+        updatedAt:
+          ans.updatedAt instanceof Date
+            ? ans.updatedAt.toISOString()
+            : ans.updatedAt,
+      };
+    });
   }
 
   async updateAnswer(
     id: string,
     dto: Omit<Partial<TListeningAndReadingAnswerDto>, "id">
   ): Promise<TListeningAndReadingAnswerDto | null> {
+    const fromSb = await supabaseUpdateAnswer(id, dto);
+    if (fromSb) return fromSb;
     const candidate = ListeningAndReadingAnswerDto.partial().parse({ ...dto });
 
     const result = await this.getAnswerCollection().findOneAndUpdate(
@@ -389,6 +472,10 @@ export class ListeningAndReadingAnswerRepository {
   }
 
   async deleteAnswer(id: string): Promise<void> {
-    await this.getAnswerCollection().deleteOne({ _id: new ObjectId(id) });
+    await supabaseDeleteAnswer(id);
+    const trimmed = id.trim();
+    if (HEX24.test(trimmed)) {
+      await this.getAnswerCollection().deleteOne({ _id: new ObjectId(trimmed) });
+    }
   }
 }

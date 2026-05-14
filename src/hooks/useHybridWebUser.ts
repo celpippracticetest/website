@@ -52,6 +52,27 @@ function bridgeUserFromSupabase(u: SupabaseAuthUser) {
   const purchasedMockExamIds =
     app.purchasedMockExamIds ?? legacyPublicMeta.purchasedMockExamIds ?? meta.purchasedMockExamIds;
 
+  const roleList = Array.isArray(app.roles)
+    ? app.roles
+    : Array.isArray(meta.roles)
+      ? meta.roles
+      : undefined;
+
+  const publicMetadata: Record<string, unknown> = {
+    ...meta,
+    plan,
+    purchaseDate,
+    planType: app.planType ?? meta.planType,
+    planCancelled: app.planCancelled ?? meta.planCancelled,
+    planRenewsAt: app.planRenewsAt ?? meta.planRenewsAt,
+    planExpiresAt: app.planExpiresAt ?? meta.planExpiresAt,
+    targetCLB: app.targetCLB ?? meta.targetCLB ?? meta.targetClb,
+    ...(purchasedMockExamIds !== undefined ? { purchasedMockExamIds } : {}),
+  };
+  if (roleList !== undefined) {
+    publicMetadata.roles = roleList;
+  }
+
   return {
     id: stableId,
     primaryEmailAddress: email ? { emailAddress: email } : null,
@@ -60,17 +81,7 @@ function bridgeUserFromSupabase(u: SupabaseAuthUser) {
     lastName,
     imageUrl,
     createdAt: new Date(u.created_at),
-    publicMetadata: {
-      ...meta,
-      plan,
-      purchaseDate,
-      planType: app.planType ?? meta.planType,
-      planCancelled: app.planCancelled ?? meta.planCancelled,
-      planRenewsAt: app.planRenewsAt ?? meta.planRenewsAt,
-      planExpiresAt: app.planExpiresAt ?? meta.planExpiresAt,
-      targetCLB: app.targetCLB ?? meta.targetCLB ?? meta.targetClb,
-      ...(purchasedMockExamIds !== undefined ? { purchasedMockExamIds } : {}),
-    },
+    publicMetadata,
     privateMetadata: {
       stripeCustomerId:
         (app.stripeCustomerId as string | undefined) ??

@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import {
   getWikiArticleBySlug,
   getNextWikiArticle,
@@ -8,6 +8,7 @@ import {
 } from "@/lib/wiki/public";
 import { linkContentServer } from "@/lib/content-linker-server";
 import WikiArticleContent from "@/components/wiki/WikiArticleContent";
+import { normalizeWikiSlug } from "@/lib/wiki/slug";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -57,8 +58,9 @@ function buildWikiTitle(title: string): string {
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const { slug } = await params;
-  const currentArticle = await getWikiArticleBySlug(slug);
+  const { slug: requestedSlug } = await params;
+  const slug = normalizeWikiSlug(requestedSlug);
+  const currentArticle = await getWikiArticleBySlug(requestedSlug);
 
   if (!currentArticle) {
     return {
@@ -70,7 +72,7 @@ export async function generateMetadata({
   const baseUrl = new URL(
     process.env.APP_BASE_URL || "https://celpippracticetest.com"
   ).toString();
-  const seo = WIKI_SEO_BY_SLUG[slug];
+  const seo = WIKI_SEO_BY_SLUG[slug] ?? WIKI_SEO_BY_SLUG[requestedSlug];
   const description =
     seo?.description ||
     currentArticle.description ||
@@ -80,20 +82,25 @@ export async function generateMetadata({
     title: buildWikiTitle(seo?.title ?? currentArticle.title),
     description,
     alternates: {
-      canonical: new URL(`/wiki/${slug}`, baseUrl).toString(),
+      canonical: new URL(`/wiki/${currentArticle.slug}`, baseUrl).toString(),
     },
   };
 }
 
 export default async function WikiPage({ params, searchParams }: PageProps) {
-  const { slug } = await params;
+  const { slug: requestedSlug } = await params;
+  const slug = normalizeWikiSlug(requestedSlug);
   const { q } = await searchParams;
   const sidebarSearchQuery = (q ?? "").trim();
 
-  const currentArticle = await getWikiArticleBySlug(slug);
+  const currentArticle = await getWikiArticleBySlug(requestedSlug);
 
   if (!currentArticle) {
     return notFound();
+  }
+
+  if (requestedSlug !== slug) {
+    redirect(`/wiki/${slug}`);
   }
 
   let linkedContentHtml = await linkContentServer(currentArticle.content, `/wiki/${slug}`);
@@ -116,7 +123,9 @@ export default async function WikiPage({ params, searchParams }: PageProps) {
     <WikiArticleContent
       currentArticle={currentArticle}
       slug={slug}
-      pageHeading={WIKI_SEO_BY_SLUG[slug]?.pageHeading}
+      pageHeading={
+        (WIKI_SEO_BY_SLUG[slug] ?? WIKI_SEO_BY_SLUG[requestedSlug])?.pageHeading
+      }
       linkedContent={linkedContentHtml}
       filteredArticles={filteredArticles}
       nextArticle={nextArticle}
