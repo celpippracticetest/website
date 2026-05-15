@@ -4,10 +4,8 @@ import { TExamSchemaDto } from "@/models/exam.model";
 import { useSelectedExam } from "@/store/useSelectedExam.store";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import {
-  Alert,
   Box,
   Button,
-  CircularProgress,
   LinearProgress,
   Paper,
   Skeleton,
@@ -20,7 +18,6 @@ import LoginModal from "../modal/LoginModal";
 import {
   hasMockExamAccess,
   hasPaidPracticeAccess,
-  hasPremiumPlusAccess,
   isMockExamUnlockedViaPurchase,
   normalizeMockExamIdForAccess,
   normalizePlan,
@@ -104,14 +101,7 @@ const ExamOverview = ({
           purchasedMockExamIds
         )
     );
-  const needsPremiumPlusUpgrade =
-    isLoaded &&
-    isSignedIn &&
-    hasPaidPracticeAccess(plan, purchaseDate) &&
-    !hasPremiumPlusAccess(plan, purchaseDate);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [upgradeSubmitting, setUpgradeSubmitting] = useState(false);
-  const [upgradeError, setUpgradeError] = useState<string | null>(null);
 
   const [progressById, setProgressById] = useState<
     Record<string, ExamProgressSummary>
@@ -188,33 +178,6 @@ const ExamOverview = ({
     timingLog,
   ]);
 
-  const runPremiumPlusUpgrade = async () => {
-    if (upgradeSubmitting || !needsPremiumPlusUpgrade) {
-      return;
-    }
-    setUpgradeError(null);
-    setUpgradeSubmitting(true);
-    try {
-      const res = await fetch("/api/users/upgrade-to-premium-plus", {
-        method: "POST",
-      });
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
-        throw new Error(data.error || "Could not upgrade your plan.");
-      }
-      await user?.reload();
-      if (typeof (router as { refresh?: () => void }).refresh === "function") {
-        (router as { refresh: () => void }).refresh();
-      }
-    } catch (e) {
-      setUpgradeError(
-        e instanceof Error ? e.message : "Could not upgrade your plan."
-      );
-    } finally {
-      setUpgradeSubmitting(false);
-    }
-  };
-
   const navigateToExamPart = (
     exam: TExamSchemaDto,
     partId: number,
@@ -255,14 +218,6 @@ const ExamOverview = ({
       router.push("/pricing");
       return;
     }
-    if (needsPremiumPlusUpgrade) {
-      if (mockExamUnlocked(exam)) {
-        navigateToExamPart(exam, 1);
-        return;
-      }
-      void runPremiumPlusUpgrade();
-      return;
-    }
     navigateToExamPart(exam, 1);
   };
 
@@ -274,67 +229,6 @@ const ExamOverview = ({
         <></>
       )}
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        {needsPremiumPlusUpgrade && (
-          <Paper
-            elevation={0}
-            sx={{
-              p: { xs: 2, sm: 2.5 },
-              borderRadius: "20px",
-              border: "1px solid #C7D6F8",
-              background:
-                "linear-gradient(135deg, rgba(74, 125, 255, 0.12), rgba(13, 170, 148, 0.08))",
-            }}
-          >
-            <Stack spacing={1.5}>
-              <Typography
-                sx={{
-                  fontSize: { xs: "1rem", sm: "1.05rem" },
-                  fontWeight: 700,
-                  color: "#2F3A4C",
-                }}
-              >
-                Upgrade account for mock exams
-              </Typography>
-              <Typography sx={{ fontSize: "0.9rem", color: "#5A6678" }}>
-                Your Premium plan includes practice and one full mock exam (the
-                first test in this list). Unlock every mock exam with Premium
-                Plus. Upgrade keeps the same billing period—you only pay the
-                prorated difference.
-              </Typography>
-              {upgradeError && (
-                <Alert severity="error" onClose={() => setUpgradeError(null)}>
-                  {upgradeError}
-                </Alert>
-              )}
-              <Box>
-                <Button
-                  variant="contained"
-                  disabled={upgradeSubmitting}
-                  onClick={() => void runPremiumPlusUpgrade()}
-                  sx={{
-                    minHeight: 44,
-                    borderRadius: "999px",
-                    textTransform: "none",
-                    fontWeight: 700,
-                    px: 3,
-                    backgroundColor: "#4A7DFF",
-                    boxShadow: "none",
-                    "&:hover": {
-                      backgroundColor: "#3A6DEB",
-                      boxShadow: "none",
-                    },
-                  }}
-                >
-                  {upgradeSubmitting ? (
-                    <CircularProgress size={22} color="inherit" />
-                  ) : (
-                    "Upgrade"
-                  )}
-                </Button>
-              </Box>
-            </Stack>
-          </Paper>
-        )}
         <Box
           sx={{
             display: "flex",
@@ -543,12 +437,7 @@ const ExamOverview = ({
                   <Box sx={{ position: "relative", width: 1 }}>
                     <Button
                       variant="contained"
-                      disabled={
-                        !isLoaded ||
-                        (needsPremiumPlusUpgrade &&
-                          !mockExamUnlocked(exam) &&
-                          upgradeSubmitting)
-                      }
+                      disabled={!isLoaded}
                       onClick={() => handlePrimaryAction(exam)}
                       fullWidth
                       sx={{
@@ -586,13 +475,7 @@ const ExamOverview = ({
                           : "View plans"
                         : noUser
                           ? "Sign in"
-                          : needsPremiumPlusUpgrade
-                            ? mockExamUnlocked(exam)
-                              ? "Start Practice"
-                              : upgradeSubmitting
-                                ? "Upgrading…"
-                                : "Upgrade"
-                            : "Start Full Test"}
+                          : "Start Full Test"}
                     </Button>
                   </Box>
                 </Stack>

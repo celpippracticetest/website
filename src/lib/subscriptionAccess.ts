@@ -129,25 +129,21 @@ export function isMockExamUnlockedViaPurchase(
   return coercePurchasedMockExamIds(purchasedMockExamIds).includes(normalizedExamId);
 }
 
-/** Full mock exam access: Plus/Enterprise for all exams; Premium only for the first ready exam (catalog order). */
+/**
+ * Full mock exam access for any paid practice tier (Premium, Plus/Pro, Enterprise),
+ * or for exams bought à la carte. `firstReadyExamId` is kept for call-site compatibility.
+ */
 export function hasMockExamAccess(
   plan: string | null | undefined,
   purchaseDate: unknown,
   examId: string | null | undefined,
-  firstReadyExamId: string | null | undefined,
+  _firstReadyExamId: string | null | undefined,
   purchasedMockExamIds?: unknown
 ) {
   const normalizedExamId = normalizeMockExamIdForAccess(examId ?? undefined);
   const purchasedIds = coercePurchasedMockExamIds(purchasedMockExamIds);
   if (normalizedExamId && purchasedIds.includes(normalizedExamId)) {
     return true;
-  }
-  if (hasPremiumPlusAccess(plan)) {
-    return true;
-  }
-  const normalizedFirstReady = normalizeMockExamIdForAccess(firstReadyExamId ?? undefined);
-  if (!normalizedExamId || !normalizedFirstReady || normalizedExamId !== normalizedFirstReady) {
-    return false;
   }
   return hasPaidPracticeAccess(plan, purchaseDate);
 }
