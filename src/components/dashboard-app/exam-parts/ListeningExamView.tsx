@@ -143,8 +143,12 @@ const ListeningExamView = (props: ListeningExamViewProps) => {
     getPartsForSection ?? getMockExamPartsForSection;
 
   const ref = useRef<HTMLDivElement>(null);
-  const hasSubmittedAnswersRef = useRef(false);
+  /** True only after answers are successfully persisted (avoids navigating away on failed save). */
+  const examAnswerPersistDoneRef = useRef(false);
+  const examAnswerPersistInFlightRef = useRef(false);
   const officialAutoAdvanceTriggeredRef = useRef(false);
+  const [listenPersistError, setListenPersistError] = useState<string | null>(null);
+  const [listenPersistRetryNonce, setListenPersistRetryNonce] = useState(0);
 
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
@@ -203,11 +207,20 @@ const ListeningExamView = (props: ListeningExamViewProps) => {
   }, [user, practice.taskId, searchParams]);
 
   useEffect(() => {
-    if (page !== "answer" || !user || hasSubmittedAnswersRef.current) {
+    examAnswerPersistDoneRef.current = false;
+    setListenPersistError(null);
+  }, [partId, practice.taskId]);
+
+  useEffect(() => {
+    if (page !== "answer" || !user) {
+      return;
+    }
+    if (examAnswerPersistDoneRef.current || examAnswerPersistInFlightRef.current) {
       return;
     }
 
-    hasSubmittedAnswersRef.current = true;
+    examAnswerPersistInFlightRef.current = true;
+    setListenPersistError(null);
 
     const submitAnswers = async () => {
       try {
@@ -216,6 +229,7 @@ const ListeningExamView = (props: ListeningExamViewProps) => {
           headers: {
             "Content-Type": "application/json",
           },
+          credentials: "include",
           body: JSON.stringify({
             examId: practice.taskId,
             partId: partId,
@@ -224,56 +238,70 @@ const ListeningExamView = (props: ListeningExamViewProps) => {
           }),
         });
 
-        if (response.ok) {
-          const result = await response.json();
-          const loggerAttemptId = attemptId || `mock_${practice.taskId}_${Date.now()}`;
-
-          await ActivityLogger.mockCompleted(
-            loggerAttemptId,
-            practice.taskId.toString(),
-            result.overall,
-            result,
-            time
+        if (!response.ok) {
+          console.error("Exam listening save failed:", response.status);
+          setListenPersistError(
+            "We could not save your answers yet. Check your connection, then tap Try again."
           );
+          return;
+        }
 
-          await addPoints(
+        const result = await response.json();
+        const loggerAttemptId = attemptId || `mock_${practice.taskId}_${Date.now()}`;
+
+        await ActivityLogger.mockCompleted(
+          loggerAttemptId,
+          practice.taskId.toString(),
+          result.overall,
+          result,
+          time
+        );
+
+        await addPoints(
+          20,
+          "mockExams",
+          `${Math.floor(time / 60)} minutes`
+        );
+
+        if (!section) {
+          await checkTrophyAchievements(
             20,
             "mockExams",
-            `${Math.floor(time / 60)} minutes`
+            `${Math.floor(time / 60)}:${time % 60}`
           );
-
-          if (!section) {
-            await checkTrophyAchievements(
-              20,
-              "mockExams",
-              `${Math.floor(time / 60)}:${time % 60}`
-            );
-          }
         }
+
+        examAnswerPersistDoneRef.current = true;
+
+        if (section === "listening" && partId >= 6) {
+          setShowContinueModal(true);
+          return;
+        }
+
+        const params = new URLSearchParams();
+        if (section) params.set("section", section);
+        if (attemptId) params.set("attemptId", attemptId);
+        const query = params.toString() ? `?${params.toString()}` : "";
+
+        router.push(
+          `/exams/exam_${practice.taskId}/part${(partId + 1).toString()}${query}`
+        );
       } catch (error) {
         console.error("Failed to submit answers:", error);
+        setListenPersistError(
+          "We could not save your answers yet. Check your connection, then tap Try again."
+        );
+      } finally {
+        examAnswerPersistInFlightRef.current = false;
       }
-
-      if (section === "listening" && partId >= 6) {
-        setShowContinueModal(true);
-        return;
-      }
-
-      const params = new URLSearchParams();
-      if (section) params.set("section", section);
-      if (attemptId) params.set("attemptId", attemptId);
-      const query = params.toString() ? `?${params.toString()}` : "";
-
-      router.push(
-        `/exams/exam_${practice.taskId}/part${(partId + 1).toString()}${query}`
-      );
     };
 
-    submitAnswers();
+    void submitAnswers();
   }, [
     addPoints,
     attemptId,
     checkTrophyAchievements,
+    listenPersistRetryNonce,
     page,
     partId,
     practice.taskId,
@@ -629,12 +657,32 @@ const ListeningExamView = (props: ListeningExamViewProps) => {
                 backgroundColor: "#F8FBFF",
               }}
             >
-              <Stack spacing={2} alignItems="center">
-                <CircularProgress sx={{ color: "#316BFF" }} />
-                <Typography sx={{ fontSize: "0.95rem", fontWeight: 600, color: "#37465C" }}>
-                  Uploading answers...
-                </Typography>
-              </Stack>
+              {listenPersistError ? (
+                <Stack spacing={2} alignItems="center" sx={{ maxWidth: 420, textAlign: "center" }}>
+                  <Typography sx={{ fontSize: "0.95rem", fontWeight: 600, color: "#B42318" }}>
+                    {listenPersistError}
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    onClick={() => setListenPersistRetryNonce((n) => n + 1)}
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 700,
+                      backgroundColor: "#316BFF",
+                      "&:hover": { backgroundColor: "#255CE0" },
+                    }}
+                  >
+                    Try again
+                  </Button>
+                </Stack>
+              ) : (
+                <Stack spacing={2} alignItems="center">
+                  <CircularProgress sx={{ color: "#316BFF" }} />
+                  <Typography sx={{ fontSize: "0.95rem", fontWeight: 600, color: "#37465C" }}>
+                    Saving your results...
+                  </Typography>
+                </Stack>
+              )}
             </Box>
           )}
 

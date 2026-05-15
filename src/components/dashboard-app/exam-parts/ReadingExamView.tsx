@@ -119,6 +119,10 @@ const ReadingExamView = ({
   >({});
   const [time, setTime] = useState(timerTime);
   const officialAutoAdvanceTriggeredRef = useRef(false);
+  const examAnswerPersistDoneRef = useRef(false);
+  const examAnswerPersistInFlightRef = useRef(false);
+  const [readingPersistError, setReadingPersistError] = useState<string | null>(null);
+  const [readingPersistRetryNonce, setReadingPersistRetryNonce] = useState(0);
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
 
@@ -161,75 +165,105 @@ const ReadingExamView = ({
   }, [user, practice.taskId, searchParams]);
 
   useEffect(() => {
-    if (page === "answer" && user) {
-      const submitAnswers = async () => {
-        try {
-          const response = await fetch("/api/exams/answers", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              examId: practice.taskId,
-              partId: partId,
-              answers: selectedAnswers,
-              attemptId: searchParams.get("attemptId"),
-            }),
-          });
+    examAnswerPersistDoneRef.current = false;
+    setReadingPersistError(null);
+  }, [partId, practice.taskId]);
 
-          if (response.ok) {
-            const result = await response.json();
-            // Log mock exam part completed
-            const loggerAttemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
-            await ActivityLogger.mockCompleted(
-              loggerAttemptId,
-              practice.taskId.toString(),
-              result.overall,
-              result,
-              time
-            );
+  useEffect(() => {
+    if (page !== "answer" || !user) {
+      return;
+    }
+    if (examAnswerPersistDoneRef.current || examAnswerPersistInFlightRef.current) {
+      return;
+    }
 
-            // Add league points for mock exam completion
-            await addPoints(
-              20,
-              "mockExams",
-              `${Math.floor(time / 60)} minutes`
-            );
+    examAnswerPersistInFlightRef.current = true;
+    setReadingPersistError(null);
 
-            // Check for trophy achievements (only for complete exam mode)
-            if (!section) {
-              await checkTrophyAchievements(
-                20,
-                "mockExams",
-                `${Math.floor(time / 60)}:${time % 60}`
-              );
-            }
-          }
-        } catch (error) {
-          // Optionally handle error
-          console.error("Failed to submit answers:", error);
+    const attemptIdParam = searchParams.get("attemptId");
+    const query =
+      section && attemptIdParam
+        ? `?section=${section}&attemptId=${attemptIdParam}`
+        : attemptIdParam
+          ? `?attemptId=${attemptIdParam}`
+          : section
+            ? `?section=${section}`
+            : "";
+
+    const submitAnswers = async () => {
+      try {
+        const response = await fetch("/api/exams/answers", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            examId: practice.taskId,
+            partId: partId,
+            answers: selectedAnswers,
+            attemptId: attemptIdParam,
+          }),
+        });
+
+        if (!response.ok) {
+          console.error("Exam reading save failed:", response.status);
+          setReadingPersistError(
+            "We could not save your answers yet. Check your connection, then tap Try again."
+          );
+          return;
         }
-        const attemptId = searchParams.get("attemptId");
-        const query = section ? `?section=${section}&attemptId=${attemptId}` : `?attemptId=${attemptId}`;
+
+        const result = await response.json();
+        const loggerAttemptId = attemptIdParam || `mock_${practice.taskId}_${Date.now()}`;
+        await ActivityLogger.mockCompleted(
+          loggerAttemptId,
+          practice.taskId.toString(),
+          result.overall,
+          result,
+          time
+        );
+
+        await addPoints(
+          20,
+          "mockExams",
+          `${Math.floor(time / 60)} minutes`
+        );
+
+        if (!section) {
+          await checkTrophyAchievements(
+            20,
+            "mockExams",
+            `${Math.floor(time / 60)}:${time % 60}`
+          );
+        }
+
+        examAnswerPersistDoneRef.current = true;
+
         if (section === "reading" && partId >= 10) {
           setShowContinueModal(true);
         } else {
-          const attemptId = searchParams.get("attemptId");
-          const query = section ? `?section=${section}&attemptId=${attemptId}` : `?attemptId=${attemptId}`;
           router.push(
             "/exams/exam_" +
-            practice.taskId +
-            "/part" +
-            (partId + 1).toString() +
-            query
+              practice.taskId +
+              "/part" +
+              (partId + 1).toString() +
+              query
           );
         }
-      };
+      } catch (error) {
+        console.error("Failed to submit answers:", error);
+        setReadingPersistError(
+          "We could not save your answers yet. Check your connection, then tap Try again."
+        );
+      } finally {
+        examAnswerPersistInFlightRef.current = false;
+      }
+    };
 
-      submitAnswers();
-    }
+    void submitAnswers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, user]);
+  }, [page, user, readingPersistRetryNonce]);
 
   const handleAnswerSelect = (questionId: number, answerId: string) => {
     setSelectedAnswers((prev) => ({
@@ -431,11 +465,28 @@ const ReadingExamView = ({
           <div className="flex flex-col h-full overflow-hidden w-full">
             {page == "answer" && (
               <div className="flex flex-col justify-center items-center grow p-4  overflow-y-scroll [&::-webkit-scrollbar]:w-2  [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full  [&::-webkit-scrollbar-track]:bg-slate-100">
-                <div className="flex flex-col items-center justify-center mx-auto space-y-2 w-full">
-                  <div className="text-center text-base font-medium text-gray-800 mb-2 w-full">
-                    Upload Answers...
-                  </div>
-                  <Autorenew className="w-8 h-8 text-gray-800 animate-spin" />
+                <div className="flex flex-col items-center justify-center mx-auto space-y-4 w-full max-w-md text-center">
+                  {readingPersistError ? (
+                    <>
+                      <div className="text-base font-semibold text-red-700">
+                        {readingPersistError}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setReadingPersistRetryNonce((n) => n + 1)}
+                        className="rounded-full bg-[#316BFF] px-6 py-2 text-sm font-bold text-white hover:bg-[#255CE0]"
+                      >
+                        Try again
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-center text-base font-medium text-gray-800 w-full">
+                        Saving your results...
+                      </div>
+                      <Autorenew className="w-8 h-8 text-gray-800 animate-spin" />
+                    </>
+                  )}
                 </div>
               </div>
             )}

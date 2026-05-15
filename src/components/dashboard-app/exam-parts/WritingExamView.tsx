@@ -180,56 +180,63 @@ const WritingExamView = ({
         setProgressBar((prev) => (prev < 100 ? prev + 1 : prev));
       }, 300); // Increment every 300ms to reach 100 in ~30s
 
-      const response = await fetch(url, {
-        method: "POST",
-        body: JSON.stringify(requestData),
-      });
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(requestData),
+        });
 
-      clearInterval(progressInterval); // Stop progress increment
+        if (!response.ok) {
+          throw new Error("Network response was not ok.");
+        }
+        setProgressBar(100);
+        const result = await response.json();
 
-      if (!response.ok) {
-        throw new Error("Network response was not ok.");
-      }
-      setProgressBar(100);
-      const result = await response.json();
-
-      // Log mock exam part completed
-      const attemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
-      await ActivityLogger.mockCompleted(
-        attemptId,
-        practice.taskId.toString(),
-        result.overall,
-        result,
-        time
-      );
-
-      // Add league points for mock exam completion
-      await addPoints(20, "mockExams", `${Math.floor(time / 60)} minutes`);
-
-      // Check for trophy achievements (only for complete exam mode)
-      if (!section) {
-        await checkTrophyAchievements(
-          20,
-          "mockExams",
-          `${Math.floor(time / 60)}:${time % 60}`
-        );
-      }
-
-      // Log AI feedback generation
-      if (result.usage) {
-        await ActivityLogger.aiFeedbackGenerated(
-          "mock",
-          "Writing",
-          result.usage.prompt_tokens || 0,
-          result.usage.completion_tokens || 0,
-          attemptId
+        // Log mock exam part completed
+        const attemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
+        await ActivityLogger.mockCompleted(
+          attemptId,
+          practice.taskId.toString(),
+          result.overall,
+          result,
+          time
         );
 
-        // Add league points for AI feedback
-        await addPoints(5, "aiFeedback");
+        // Add league points for mock exam completion
+        await addPoints(20, "mockExams", `${Math.floor(time / 60)} minutes`);
+
+        // Check for trophy achievements (only for complete exam mode)
+        if (!section) {
+          await checkTrophyAchievements(
+            20,
+            "mockExams",
+            `${Math.floor(time / 60)}:${time % 60}`
+          );
+        }
+
+        // Log AI feedback generation
+        if (result.usage) {
+          await ActivityLogger.aiFeedbackGenerated(
+            "mock",
+            "Writing",
+            result.usage.prompt_tokens || 0,
+            result.usage.completion_tokens || 0,
+            attemptId
+          );
+
+          // Add league points for AI feedback
+          await addPoints(5, "aiFeedback");
+        }
+      } finally {
+        clearInterval(progressInterval);
       }
     } catch (error) {
       console.error("Error submitting answer:", error);
+      setIsSubmit(false);
     } finally {
       // setProgressBar(100); // Ensure progress bar reaches 100
       // setTimeout(() => setProgressBar(0), 1000); // Reset progress bar after a short delay
