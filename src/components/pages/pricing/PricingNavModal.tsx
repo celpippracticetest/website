@@ -273,9 +273,9 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
         )}
       >
         <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
-          <div className="shrink-0 bg-gradient-to-br from-[#1B2B5A] via-[#2E4494] to-[#3B5998] px-4 pb-4 pt-2 sm:px-6 sm:pb-5">
+          <div className="shrink-0 bg-gradient-to-br from-[#1B2B5A] via-[#2E4494] to-[#3B5998] px-3 pb-3 pt-1.5 sm:px-6 sm:pb-5 sm:pt-2">
             <div
-              className="mx-auto mb-3 h-1 w-10 shrink-0 rounded-full bg-white/35 sm:mb-3.5"
+              className="mx-auto mb-2 h-1 w-10 shrink-0 rounded-full bg-white/35 sm:mb-3.5"
               aria-hidden
             />
             <Box
@@ -284,14 +284,16 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
                 pr: 10,
               }}
             >
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
-                <WorkspacePremiumIcon sx={{ color: "#FCD34D", fontSize: 22 }} />
-                <DialogTitle className="border-0 p-0 text-base font-bold leading-tight tracking-normal text-white shadow-none sm:text-lg">
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: { xs: 0.5, sm: 0.75 } }}>
+                <WorkspacePremiumIcon
+                  sx={{ color: "#FCD34D", fontSize: { xs: 20, sm: 22 } }}
+                />
+                <DialogTitle className="border-0 p-0 text-[0.95rem] font-bold leading-tight tracking-normal text-white shadow-none sm:text-lg">
                   {pricingUpgradeOfferTitle}
                 </DialogTitle>
               </Stack>
 
-              <DialogDescription className="mb-3 mt-0 text-xs font-normal leading-snug text-white/78 sm:text-sm">
+              <DialogDescription className="mb-2 mt-0 text-[11px] font-normal leading-snug text-white/78 sm:mb-3 sm:text-sm">
                 One plan, every feature. Pick the billing period that matches your exam timeline.
               </DialogDescription>
 
@@ -302,6 +304,7 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
                 flexWrap="wrap"
                 useFlexGap
                 sx={{
+                  display: { xs: "none", sm: "flex" },
                   p: 1.25,
                   borderRadius: 2,
                   backgroundColor: "rgba(255,255,255,0.08)",
@@ -362,10 +365,64 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
                   />
                 )}
               </Stack>
+
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                justifyContent="space-between"
+                sx={{
+                  display: { xs: "flex", sm: "none" },
+                  py: 0.75,
+                  px: 1,
+                  borderRadius: 2,
+                  backgroundColor: "rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                }}
+              >
+                <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.88)", fontWeight: 600, fontSize: "0.7rem" }}>
+                  <Box component="span" sx={{ color: "#FCD34D" }}>
+                    {signupDisplay}+
+                  </Box>{" "}
+                  joined today
+                </Typography>
+                {GOOGLE_REVIEWS_URL ? (
+                  <Chip
+                    component="a"
+                    href={GOOGLE_REVIEWS_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    clickable
+                    icon={<StarIcon sx={{ fontSize: 11, color: "#FCD34D !important" }} />}
+                    label="Reviews"
+                    size="small"
+                    sx={{
+                      backgroundColor: "rgba(252,211,77,0.15)",
+                      color: "#FCD34D",
+                      fontWeight: 600,
+                      fontSize: "0.6rem",
+                      height: 22,
+                    }}
+                  />
+                ) : (
+                  <Chip
+                    icon={<StarIcon sx={{ fontSize: 11, color: "#FCD34D !important" }} />}
+                    label="4.9★"
+                    size="small"
+                    sx={{
+                      backgroundColor: "rgba(252,211,77,0.15)",
+                      color: "#FCD34D",
+                      fontWeight: 600,
+                      fontSize: "0.6rem",
+                      height: 22,
+                    }}
+                  />
+                )}
+              </Stack>
             </Box>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain px-3 pb-6 pt-3 sm:px-4">
+          <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain px-2 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 sm:px-4 sm:pb-6 sm:pt-3">
         {loading && (
           <Typography sx={{ py: 4, textAlign: "center", color: "text.secondary" }}>
             Loading plans…
@@ -396,8 +453,8 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
               sx={{
                 display: "grid",
                 gridTemplateColumns: "1fr",
-                gap: 1.25,
-                mb: 2,
+                gap: { xs: 0.75, sm: 1.25 },
+                mb: { xs: 1.25, sm: 2 },
               }}
             >
               {sortedPlans.map((plan, planIndex) => {
@@ -426,7 +483,7 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
                     key={stableId}
                     elevation={0}
                     sx={{
-                      p: { xs: 1.5, sm: 1.75 },
+                      p: { xs: 1, sm: 1.75 },
                       borderRadius: 2,
                       border: "2px solid",
                       borderColor: isRec ? alpha("#F59E0B", 0.55) : "divider",
@@ -448,14 +505,14 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
                         size="small"
                         sx={{
                           position: "absolute",
-                          top: -12,
+                          top: { xs: -10, sm: -12 },
                           left: "50%",
                           transform: "translateX(-50%)",
                           backgroundColor: isRec ? "#F59E0B" : accent,
                           color: isRec ? "#1B2B5A" : "#fff",
                           fontWeight: 700,
-                          fontSize: "0.6rem",
-                          height: 22,
+                          fontSize: { xs: "0.55rem", sm: "0.6rem" },
+                          height: { xs: 20, sm: 22 },
                           letterSpacing: "0.05em",
                         }}
                       />
@@ -463,11 +520,26 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
 
                     <Typography
                       variant="overline"
-                      sx={{ color: accent, fontWeight: 700, letterSpacing: "0.04em", fontSize: "0.65rem" }}
+                      sx={{
+                        color: accent,
+                        fontWeight: 700,
+                        letterSpacing: "0.04em",
+                        fontSize: { xs: "0.6rem", sm: "0.65rem" },
+                        lineHeight: 1.2,
+                      }}
                     >
                       {headline}
                     </Typography>
-                    <Typography variant="caption" display="block" sx={{ color: "text.secondary", mb: 1, fontSize: "0.7rem" }}>
+                    <Typography
+                      variant="caption"
+                      display="block"
+                      sx={{
+                        color: "text.secondary",
+                        mb: { xs: 0.35, sm: 1 },
+                        fontSize: { xs: "0.65rem", sm: "0.7rem" },
+                        lineHeight: 1.25,
+                      }}
+                    >
                       {subtitle}
                     </Typography>
 
@@ -480,29 +552,50 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
                             color: "error.main",
                             fontWeight: 600,
                             mr: 0.5,
+                            fontSize: { xs: "0.65rem", sm: "0.75rem" },
                           }}
                         >
                           Was CA${formatPlanCadPrice(wasAmountStr)}
                         </Typography>
                       ) : null}
-                      <Typography variant="h6" sx={{ fontWeight: 800, color: accent }}>
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          fontWeight: 800,
+                          color: accent,
+                          fontSize: { xs: "1.05rem", sm: "1.25rem" },
+                          lineHeight: 1.2,
+                        }}
+                      >
                         CA${formatPlanCadPrice(plan.price)}
                       </Typography>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        component="span"
+                        sx={{ fontSize: { xs: "0.65rem", sm: "0.7rem" } }}
+                      >
+                        {" "}
+                        · {perBillingLabel(plan)}
+                      </Typography>
                     </Stack>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem" }}>
-                      {perBillingLabel(plan)}
-                    </Typography>
 
                     <Box
                       sx={{
-                        mt: 1,
-                        p: 0.75,
+                        mt: { xs: 0.5, sm: 1 },
+                        py: { xs: 0.35, sm: 0.75 },
+                        px: { xs: 0.5, sm: 0.75 },
                         borderRadius: 1.25,
                         backgroundColor: isRec ? alpha(accent, 0.08) : "#F8FAFC",
                         textAlign: "center",
                       }}
                     >
-                      <Typography variant="caption" fontWeight={600} color={accent} sx={{ fontSize: "0.7rem" }}>
+                      <Typography
+                        variant="caption"
+                        fontWeight={600}
+                        color={accent}
+                        sx={{ fontSize: { xs: "0.65rem", sm: "0.7rem" } }}
+                      >
                         CA${perDay}/day
                       </Typography>
                     </Box>
@@ -512,11 +605,12 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
                         label={`Save ${discountPct}%`}
                         size="small"
                         sx={{
-                          mt: 1.25,
+                          mt: { xs: 0.75, sm: 1.25 },
                           backgroundColor: "#ECFDF5",
                           color: "#059669",
                           fontWeight: 700,
-                          fontSize: "0.7rem",
+                          fontSize: { xs: "0.65rem", sm: "0.7rem" },
+                          height: { xs: 24, sm: 28 },
                           width: "100%",
                         }}
                       />
@@ -525,18 +619,19 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
                     <Button
                       variant="contained"
                       fullWidth
-                      size="medium"
+                      size="small"
                       disabled={!plan.stripePriceId || !authLoaded}
-                      startIcon={<BoltIcon sx={{ fontSize: 18 }} />}
+                      startIcon={<BoltIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />}
                       onClick={() => onUpgradePlan(plan.stripePriceId)}
                       sx={{
-                        mt: 1.5,
-                        py: 1.1,
-                        fontSize: "0.8rem",
+                        mt: { xs: 1, sm: 1.5 },
+                        py: { xs: 0.55, sm: 1.1 },
+                        fontSize: { xs: "0.72rem", sm: "0.8rem" },
                         fontWeight: 700,
                         borderRadius: 2,
                         textTransform: "none",
                         boxShadow: "none",
+                        lineHeight: 1.25,
                         ...(isRec
                           ? {
                               background: "linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)",
@@ -556,7 +651,12 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
                             }),
                       }}
                     >
-                      Get Plus — {headline} (CA${formatPlanCadPrice(plan.price)})
+                      <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+                        Get Plus — {headline} (CA${formatPlanCadPrice(plan.price)})
+                      </Box>
+                      <Box component="span" sx={{ display: { xs: "inline", sm: "none" } }}>
+                        Get Plus · {headline} · CA${formatPlanCadPrice(plan.price)}
+                      </Box>
                     </Button>
                   </Paper>
                 );
@@ -566,17 +666,21 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
             <Paper
               elevation={0}
               sx={{
-                p: { xs: 1.5, sm: 1.75 },
+                p: { xs: 1, sm: 1.75 },
                 borderRadius: 2,
                 border: "1px solid",
                 borderColor: "divider",
                 backgroundColor: "white",
-                mb: 2,
+                mb: { xs: 1.25, sm: 2 },
               }}
             >
-              <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 1.25 }}>
-                <AllInclusiveIcon sx={{ fontSize: 16, color: "#2563EB" }} />
-                <Typography variant="caption" fontWeight={700} sx={{ textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: { xs: 0.75, sm: 1.25 } }}>
+                <AllInclusiveIcon sx={{ fontSize: { xs: 14, sm: 16 }, color: "#2563EB" }} />
+                <Typography
+                  variant="caption"
+                  fontWeight={700}
+                  sx={{ textTransform: "uppercase", letterSpacing: "0.04em", fontSize: { xs: "0.65rem", sm: "0.75rem" } }}
+                >
                   Everything included:
                 </Typography>
               </Stack>
@@ -584,13 +688,19 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
                 sx={{
                   display: "grid",
                   gridTemplateColumns: "1fr",
-                  gap: 0.75,
+                  gap: { xs: 0.5, sm: 0.75 },
                 }}
               >
                 {PRICING_PLUS_FEATURE_LABELS.map((label) => (
-                  <Stack direction="row" spacing={1} alignItems="flex-start" key={label}>
-                    <CheckCircleIcon sx={{ fontSize: 16, color: "#10B981", flexShrink: 0, mt: "2px" }} />
-                    <Typography variant="caption" fontWeight={500} sx={{ lineHeight: 1.35 }}>
+                  <Stack direction="row" spacing={0.75} alignItems="flex-start" key={label}>
+                    <CheckCircleIcon
+                      sx={{ fontSize: { xs: 14, sm: 16 }, color: "#10B981", flexShrink: 0, mt: "2px" }}
+                    />
+                    <Typography
+                      variant="caption"
+                      fontWeight={500}
+                      sx={{ lineHeight: 1.35, fontSize: { xs: "0.68rem", sm: "0.75rem" } }}
+                    >
                       {label}
                     </Typography>
                   </Stack>
@@ -600,32 +710,32 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
 
             <Stack
               direction="column"
-              spacing={1}
+              spacing={{ xs: 0.5, sm: 1 }}
               justifyContent="center"
               alignItems="stretch"
               sx={{
-                p: 1.25,
+                p: { xs: 1, sm: 1.25 },
                 borderRadius: 2,
                 backgroundColor: "#F0FDF4",
                 border: "1px solid #BBF7D0",
-                mb: 1.5,
+                mb: { xs: 1, sm: 1.5 },
               }}
             >
               <Stack direction="row" spacing={0.75} alignItems="center">
-                <ShieldIcon sx={{ fontSize: 16, color: "#059669", flexShrink: 0 }} />
-                <Typography variant="caption" fontWeight={600} color="#059669">
+                <ShieldIcon sx={{ fontSize: { xs: 14, sm: 16 }, color: "#059669", flexShrink: 0 }} />
+                <Typography variant="caption" fontWeight={600} color="#059669" sx={{ fontSize: { xs: "0.68rem", sm: "0.75rem" } }}>
                   48-hour money-back guarantee
                 </Typography>
               </Stack>
               <Stack direction="row" spacing={0.75} alignItems="center">
-                <DevicesIcon sx={{ fontSize: 16, color: "#059669", flexShrink: 0 }} />
-                <Typography variant="caption" fontWeight={600} color="#059669">
+                <DevicesIcon sx={{ fontSize: { xs: 14, sm: 16 }, color: "#059669", flexShrink: 0 }} />
+                <Typography variant="caption" fontWeight={600} color="#059669" sx={{ fontSize: { xs: "0.68rem", sm: "0.75rem" } }}>
                   Use on 2 devices
                 </Typography>
               </Stack>
               <Stack direction="row" spacing={0.75} alignItems="center">
-                <TimerIcon sx={{ fontSize: 16, color: "#059669", flexShrink: 0 }} />
-                <Typography variant="caption" fontWeight={600} color="#059669">
+                <TimerIcon sx={{ fontSize: { xs: 14, sm: 16 }, color: "#059669", flexShrink: 0 }} />
+                <Typography variant="caption" fontWeight={600} color="#059669" sx={{ fontSize: { xs: "0.68rem", sm: "0.75rem" } }}>
                   Cancel anytime
                 </Typography>
               </Stack>

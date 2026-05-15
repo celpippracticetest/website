@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import client from "@/lib/appDocumentsClient";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 import { PracticeRepository } from "@/repositories/practice.repo";
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
+import { supabaseListAllAnswersForUser } from "@/repositories/supabaseAnswers.store";
 import { matchUsersCollectionByWebUserIds } from "@/lib/users/userDocumentIdentity";
 
 type ObjectiveAnswerRecord = Record<string, string>;
@@ -66,6 +68,14 @@ function calculateObjectiveOverall(
   return Math.round((correctAnswers / questions.length) * 100);
 }
 
+function userScoreAnswerKey(a: Record<string, unknown>): string {
+  const type = String(a.type ?? "");
+  const pid = String(a.practiceId ?? "");
+  const ex = a.examId != null ? String(a.examId) : "";
+  const part = String(a.partId ?? "");
+  return [type, pid, ex, part].join("|");
+}
+
 export async function GET(request: NextRequest) {
   try {
     const authContext = await getAuthenticatedRequestContext(request);
@@ -106,9 +116,25 @@ export async function GET(request: NextRequest) {
       .sort({ createdAt: -1 })
       .toArray();
 
-    const allAnswers = allAnswersRaw.filter(
+    let mergedDocList: Record<string, unknown>[] = allAnswersRaw.filter(
       (doc): doc is Record<string, unknown> => doc != null && typeof doc === "object"
     );
+
+    if (isSupabaseAdminConfigured()) {
+      const fromSb = await supabaseListAllAnswersForUser(user.id);
+      const sbKeys = new Set(fromSb.map((r) => userScoreAnswerKey(r)));
+      mergedDocList = [
+        ...fromSb,
+        ...mergedDocList.filter((r) => !sbKeys.has(userScoreAnswerKey(r))),
+      ];
+      mergedDocList.sort((a, b) => {
+        const ta = new Date(String(a.createdAt ?? 0)).getTime();
+        const tb = new Date(String(b.createdAt ?? 0)).getTime();
+        return tb - ta;
+      });
+    }
+
+    const allAnswers = mergedDocList;
 
     // Separate answers by type
     const writingAnswers = allAnswers.filter(
@@ -269,7 +295,9 @@ export async function GET(request: NextRequest) {
           allAnswers.length > 0 ? allAnswers[0].createdAt : null,
         averageScore: overallAverage,
       },
-      scoreSource: "answers_collection",
+      scoreSource: isSupabaseAdminConfigured()
+        ? "answers_postgres_with_legacy_fallback"
+        : "answers_collection",
       answerCounts: {
         writing: writingAnswers.length,
         speaking: speakingAnswers.length,

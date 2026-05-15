@@ -82,6 +82,16 @@ type TWritingAnswerDto = z.infer<typeof WritingAnswerDto>;
 type TListeningAndReadingAnswerRequest = z.infer<typeof ListeningAndReadingAnswerSchemaRequest>;
 type TListeningAndReadingAnswer = z.infer<typeof ListeningAndReadingAnswer>;
 type TListeningAndReadingAnswerDto = z.infer<typeof ListeningAndReadingAnswerDto>;
+
+/** Lean `answers` row (e.g. from `app_documents`) → DTO. */
+export function writingAnswerDtoFromLeanDocument(doc: unknown): TWritingAnswerDto {
+  const row = doc as TWritingAnswer;
+  return WritingAnswerDto.parse({
+    ...row,
+    id: row._id.toHexString(),
+  });
+}
+
 export {
   WritingAnswerRequestSchema,
   WritingAnswerSchema,

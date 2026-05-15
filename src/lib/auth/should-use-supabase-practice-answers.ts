@@ -1,13 +1,18 @@
 import "server-only";
 
-import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
 import { isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 
 /**
- * Listening/reading practice and mock-exam L/R rows for accounts whose stable
- * document id is the Supabase Auth UUID (not a legacy Clerk-import id).
+ * When the service-role Supabase client is configured, practice and mock-exam
+ * answers are persisted in Postgres `public.answers` instead of `app_documents`.
  */
-export function shouldUseSupabaseForPracticeAnswers(userId: string): boolean {
-  if (!isSupabaseAdminConfigured()) return false;
-  return isLikelySupabaseAuthUserId(userId);
+export function shouldPersistAnswersInSupabase(): boolean {
+  return isSupabaseAdminConfigured();
+}
+
+/**
+ * @deprecated Use {@link shouldPersistAnswersInSupabase}; the `userId` argument is ignored.
+ */
+export function shouldUseSupabaseForPracticeAnswers(_userId: string): boolean {
+  return shouldPersistAnswersInSupabase();
 }

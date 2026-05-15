@@ -4,10 +4,8 @@ import {
   TListeningAndReadingAnswer,
   TListeningAndReadingAnswerDto,
   TWritingAnswerDto,
+  writingAnswerDtoFromLeanDocument,
 } from "@/models/answer";
-import { ObjectId } from "bson";
-import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
-import { shouldUseSupabaseForPracticeAnswers } from "@/lib/auth/should-use-supabase-practice-answers";
 import {
   supabaseCreateOrUpdateAnswer,
   supabaseDeleteAnswer,
@@ -18,8 +16,10 @@ import {
   supabaseGetAllListeningAndReadingAnswers,
   supabaseGetPartitionedMockExamProgressAnswers,
   supabaseUpdateAnswer,
-} from "@/repositories/supabaseUserPracticeAnswers.store";
-import { writingAnswerDtoFromLeanDocument } from "@/repositories/writingAndSpeakingAnswers.repo";
+} from "@/repositories/supabaseAnswers.store";
+import { ObjectId } from "bson";
+import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
+import { shouldPersistAnswersInSupabase } from "@/lib/auth/should-use-supabase-practice-answers";
 
 const HEX24 = /^[a-f0-9]{24}$/i;
 
@@ -57,6 +57,49 @@ function optionalIdString(value: unknown): string | undefined {
   if (hex) return hex;
   if (typeof value === "string" && value.length > 0) return value;
   return undefined;
+}
+
+function listeningDedupeKey(a: TListeningAndReadingAnswerDto): string {
+  if (a.practiceId) return `p:${a.userId}:${a.practiceId}`;
+  const e = String(a.examId ?? "")
+    .trim()
+    .toLowerCase();
+  return `e:${a.userId}:${e}:${String(a.partId ?? "")}:${a.attemptId ?? ""}`;
+}
+
+/** Dedupe key for `findAnswersByExamIdAndUser` payloads (legacy mongo + Supabase rows). */
+function listeningDedupeFromLooseRow(r: Record<string, unknown>): string | null {
+  const uid = typeof r.userId === "string" ? r.userId : null;
+  if (!uid) return null;
+  if (typeof r.practiceId === "string" && r.practiceId.length > 0) {
+    return `p:${uid}:${r.practiceId}`;
+  }
+  const ex = r.examId;
+  const examStr =
+    ex instanceof ObjectId
+      ? ex.toHexString().toLowerCase()
+      : typeof ex === "string"
+        ? ex.trim().toLowerCase()
+        : "";
+  const partId = typeof r.partId === "number" ? r.partId : Number(r.partId);
+  const attempt = r.attemptId;
+  return `e:${uid}:${examStr}:${Number.isFinite(partId) ? String(partId) : ""}:${attempt ?? ""}`;
+}
+
+function answerDtoTimeMs(a: TListeningAndReadingAnswerDto): number {
+  const u = a.updatedAt ?? a.createdAt;
+  return u instanceof Date ? u.getTime() : 0;
+}
+
+/** Same logical row in Postgres wins over legacy `app_documents` (newer writes). */
+function mergeListeningPreferSupabase(
+  legacy: TListeningAndReadingAnswerDto[],
+  fromSb: TListeningAndReadingAnswerDto[]
+): TListeningAndReadingAnswerDto[] {
+  const m = new Map<string, TListeningAndReadingAnswerDto>();
+  for (const x of legacy) m.set(listeningDedupeKey(x), x);
+  for (const x of fromSb) m.set(listeningDedupeKey(x), x);
+  return [...m.values()].sort((a, b) => answerDtoTimeMs(b) - answerDtoTimeMs(a));
 }
 
 function listeningAnswerDtoFromLeanDocument(
@@ -117,7 +160,7 @@ export class ListeningAndReadingAnswerRepository {
       return { listeningAndReading: [], writingAndSpeaking: [], fetchedCount: 0 };
     }
 
-    if (shouldUseSupabaseForPracticeAnswers(userId)) {
+    if (shouldPersistAnswersInSupabase()) {
       const projection = {
         _id: 1,
         userId: 1,
@@ -132,7 +175,7 @@ export class ListeningAndReadingAnswerRepository {
         result: 1,
       } as const;
 
-      return supabaseGetPartitionedMockExamProgressAnswers(
+      const sb = await supabaseGetPartitionedMockExamProgressAnswers(
         userId,
         examIds,
         async () =>
@@ -147,6 +190,37 @@ export class ListeningAndReadingAnswerRepository {
             )
             .toArray()
       );
+
+      const rawLr = await this.getAnswerCollection()
+        .find(
+          {
+            userId,
+            examId: { $in: examIdMatch },
+            type: { $nin: ["WRITING", "SPEAKING"] },
+          },
+          { projection }
+        )
+        .toArray();
+
+      const legacyLr: TListeningAndReadingAnswerDto[] = [];
+      for (const doc of rawLr) {
+        try {
+          legacyLr.push(listeningAnswerDtoFromLeanDocument(doc));
+        } catch {
+          /* skip malformed row */
+        }
+      }
+
+      const listeningAndReading = mergeListeningPreferSupabase(
+        legacyLr,
+        sb.listeningAndReading
+      );
+
+      return {
+        listeningAndReading,
+        writingAndSpeaking: sb.writingAndSpeaking,
+        fetchedCount: listeningAndReading.length + sb.writingAndSpeaking.length,
+      };
     }
 
     const projection = {
@@ -198,8 +272,9 @@ export class ListeningAndReadingAnswerRepository {
     practiceId: string,
     userId: string
   ): Promise<TListeningAndReadingAnswerDto | null> {
-    if (shouldUseSupabaseForPracticeAnswers(userId)) {
-      return supabaseFindAnswerByPracticeAndUser(practiceId, userId);
+    if (shouldPersistAnswersInSupabase()) {
+      const sb = await supabaseFindAnswerByPracticeAndUser(practiceId, userId);
+      if (sb) return sb;
     }
     const entity = await this.getAnswerCollection().findOne({
       practiceId,
@@ -221,26 +296,31 @@ export class ListeningAndReadingAnswerRepository {
     taskId: string,
     userId: string
   ): Promise<string[]> {
-    if (shouldUseSupabaseForPracticeAnswers(userId)) {
-      return supabaseFindAllTaskIdsByTaskAndUser(taskId, userId);
-    }
     const wantHex = objectIdHexFromComparable(taskId);
     const answers = await this.getAnswerCollection()
       .find({ userId })
       .project({ practiceId: 1, taskId: 1 })
       .toArray();
-    return answers
+    const legacy = answers
       .filter((a) => {
         if (!wantHex) return false;
         return objectIdHexFromComparable(a.taskId as unknown) === wantHex;
       })
       .map((a) => String(a.practiceId));
+    if (shouldPersistAnswersInSupabase()) {
+      const merged = new Set([
+        ...legacy,
+        ...(await supabaseFindAllTaskIdsByTaskAndUser(taskId, userId)),
+      ]);
+      return [...merged];
+    }
+    return legacy;
   }
 
   async createOrUpdateAnswer(
     dto: Omit<TListeningAndReadingAnswerDto, "id">
   ): Promise<TListeningAndReadingAnswerDto> {
-    if (shouldUseSupabaseForPracticeAnswers(dto.userId)) {
+    if (shouldPersistAnswersInSupabase()) {
       return supabaseCreateOrUpdateAnswer(dto);
     }
     // Check if an answer exists for the given practiceId and userId
@@ -308,14 +388,6 @@ export class ListeningAndReadingAnswerRepository {
     const userIdStr = typeof sanitizedFilter.userId === "string" ? sanitizedFilter.userId : null;
     const keys = Object.keys(sanitizedFilter);
     if (examHex && userIdStr && keys.length === 2 && keys.includes("examId") && keys.includes("userId")) {
-      if (shouldUseSupabaseForPracticeAnswers(userIdStr)) {
-        return supabaseGetAllListeningAndReadingAnswers(
-          userIdStr,
-          String(sanitizedFilter.examId),
-          page,
-          limit
-        );
-      }
       const rows = await coll
         .find({ examId: new ObjectId(examHex), userId: userIdStr })
         .sort({ createdAt: -1 })
@@ -323,11 +395,33 @@ export class ListeningAndReadingAnswerRepository {
       const filtered = rows.filter(
         (a) => a && !["SPEAKING", "WRITING"].includes(String((a as { type?: string }).type ?? ""))
       );
-      const totalItems = filtered.length;
-      const slice = filtered.slice(skip, skip + limit);
+      const legacyDtos = filtered.map((a) =>
+        this.convertFromEntity(a as TListeningAndReadingAnswer)
+      );
+      if (shouldPersistAnswersInSupabase()) {
+        const sb = await supabaseGetAllListeningAndReadingAnswers(
+          userIdStr,
+          String(sanitizedFilter.examId),
+          0,
+          20_000
+        );
+        const merged = mergeListeningPreferSupabase(legacyDtos, sb.items);
+        const totalItems = merged.length;
+        const slice = merged.slice(skip, skip + limit);
+        const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 0;
+        return {
+          items: slice,
+          page,
+          totalItems,
+          totalPages,
+          hasNextPage: skip + slice.length < totalItems,
+        };
+      }
+      const totalItems = legacyDtos.length;
+      const slice = legacyDtos.slice(skip, skip + limit);
       const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 0;
       return {
-        items: slice.map((a) => this.convertFromEntity(a as TListeningAndReadingAnswer)),
+        items: slice,
         page,
         totalItems,
         totalPages,
@@ -425,14 +519,11 @@ export class ListeningAndReadingAnswerRepository {
   }
 
   async findAnswersByExamIdAndUser(examId: string, userId: string) {
-    if (shouldUseSupabaseForPracticeAnswers(userId)) {
-      return supabaseFindAnswersByExamIdAndUser(examId, userId);
-    }
     const rawAnswers = await this.getAnswerCollection()
       .find({ examId, userId, answers: { $ne: {} } })
       .toArray();
 
-    return rawAnswers.map((ans) => {
+    const legacyOut = rawAnswers.map((ans) => {
       const idVal = ans._id;
       const idStr =
         idVal instanceof ObjectId
@@ -453,6 +544,25 @@ export class ListeningAndReadingAnswerRepository {
             : ans.updatedAt,
       };
     });
+
+    if (!shouldPersistAnswersInSupabase()) {
+      return legacyOut;
+    }
+
+    const sbRows = await supabaseFindAnswersByExamIdAndUser(examId, userId);
+    const sbKeys = new Set(
+      sbRows
+        .map((r) => listeningDedupeFromLooseRow(r as Record<string, unknown>))
+        .filter((k): k is string => k != null)
+    );
+
+    return [
+      ...sbRows,
+      ...legacyOut.filter((r) => {
+        const k = listeningDedupeFromLooseRow(r as Record<string, unknown>);
+        return k == null || !sbKeys.has(k);
+      }),
+    ];
   }
 
   async updateAnswer(
