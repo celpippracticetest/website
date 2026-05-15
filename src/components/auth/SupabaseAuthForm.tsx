@@ -1,13 +1,20 @@
 "use client";
 
+import BoltIcon from "@mui/icons-material/Bolt";
+import ShieldIcon from "@mui/icons-material/Shield";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
+import { AuthLiveJoinedBanner } from "@/components/auth/AuthPageChrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { cn } from "@/lib/utils";
+
+const primaryCtaClass =
+  "w-full rounded-xl bg-[linear-gradient(135deg,#1E3A8A_0%,#2563EB_55%,#3B82F6_100%)] font-semibold text-white shadow-md hover:opacity-[0.96]";
 
 type AuthMode = "sign-in" | "sign-up";
 type EmailMethod = "password" | "magic-link";
@@ -211,30 +218,66 @@ export function SupabaseAuthForm({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-slate-200 bg-white shadow-sm",
+        "overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-lg",
         className
       )}
     >
-      {/* Mode tabs */}
-      <div className="flex border-b border-slate-200">
-        {(["sign-in", "sign-up"] as const).map((m) => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => resetState(m)}
-            className={cn(
-              "flex-1 py-3.5 text-sm font-medium transition-colors",
-              mode === m
-                ? "border-b-2 border-blue-600 text-blue-600"
-                : "text-slate-500 hover:text-slate-700"
-            )}
-          >
-            {m === "sign-in" ? "Sign in" : "Sign up"}
-          </button>
-        ))}
+      <div className="border-b border-slate-100 px-6 pb-5 pt-6 text-center sm:px-8">
+        <Link
+          href="/"
+          className="mb-4 inline-flex items-center justify-center gap-2"
+        >
+          <Image
+            src="/images/header-logo-left.png"
+            alt=""
+            width={32}
+            height={32}
+            className="hidden h-8 w-8 min-[376px]:block"
+            sizes="32px"
+          />
+          <Image
+            src="/images/header-logo-right.png"
+            alt="CELPIP Practice Test"
+            width={84}
+            height={40}
+            className="h-8 w-auto max-[375px]:max-w-[140px]"
+            sizes="(max-width: 743px) 120px, 84px"
+          />
+        </Link>
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-blue-600">
+          Free to start
+        </p>
+        <h1 className="mt-1.5 text-xl font-extrabold tracking-tight text-[#1B2B5A] sm:text-2xl">
+          {mode === "sign-in" ? "Welcome back" : "Create free account"}
+        </h1>
+        <p className="mt-1 text-sm text-slate-500">
+          {mode === "sign-in"
+            ? "Sign in to continue practising."
+            : "Join thousands improving their CELPIP scores."}
+        </p>
       </div>
 
-      <div className="p-6 sm:p-8">
+      <div className="px-4 pb-2 pt-4">
+        <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
+          {(["sign-in", "sign-up"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => resetState(m)}
+              className={cn(
+                "flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all",
+                mode === m
+                  ? "bg-white text-[#1B2B5A] shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              {m === "sign-in" ? "Sign in" : "Sign up"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="px-6 pb-6 pt-2 sm:px-8 sm:pb-8">
         {/* Legacy hint */}
         {showLegacyAuthHint && mode === "sign-in" && (
           <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
@@ -262,7 +305,7 @@ export function SupabaseAuthForm({
           variant="outline"
           onClick={handleGoogleSignIn}
           disabled={submitting}
-          className="mt-4 flex w-full items-center justify-center gap-2.5 rounded-lg border-slate-200 font-medium hover:bg-slate-50"
+          className="mt-4 flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border-slate-200 bg-gradient-to-b from-white to-slate-50 font-semibold text-slate-800 shadow-sm hover:bg-slate-50"
         >
           <GoogleIcon />
           {mode === "sign-in" ? "Sign in with Google" : "Sign up with Google"}
@@ -272,16 +315,16 @@ export function SupabaseAuthForm({
 
         {/* Method toggle (sign-in only) */}
         {mode === "sign-in" && (
-          <div className="mb-4 flex rounded-lg border border-slate-200 p-1">
+          <div className="mb-4 flex gap-1 rounded-xl bg-slate-100 p-1">
             {(["password", "magic-link"] as const).map((m) => (
               <button
                 key={m}
                 type="button"
                 onClick={() => { setEmailMethod(m); setError(null); setNotice(null); }}
                 className={cn(
-                  "flex-1 rounded-md py-1.5 text-xs font-medium transition-colors",
+                  "flex-1 rounded-lg py-2 text-xs font-semibold transition-all",
                   emailMethod === m
-                    ? "bg-blue-600 text-white"
+                    ? "bg-white text-[#1B2B5A] shadow-sm"
                     : "text-slate-500 hover:text-slate-700"
                 )}
               >
@@ -312,7 +355,7 @@ export function SupabaseAuthForm({
             <Button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+              className={primaryCtaClass}
             >
               {submitting ? "Sending…" : "Send magic link"}
             </Button>
@@ -365,7 +408,7 @@ export function SupabaseAuthForm({
             <Button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+              className={primaryCtaClass}
             >
               {submitting
                 ? "Please wait…"
@@ -416,6 +459,19 @@ export function SupabaseAuthForm({
             </>
           )}
         </p>
+
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-slate-100 pt-5 text-[11px] text-slate-500">
+          <span className="inline-flex items-center gap-1">
+            <ShieldIcon sx={{ fontSize: 15, color: "#64748B" }} aria-hidden />
+            Bank-level security
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <BoltIcon sx={{ fontSize: 15, color: "#64748B" }} aria-hidden />
+            Instant access
+          </span>
+        </div>
+
+        <AuthLiveJoinedBanner />
       </div>
     </div>
   );

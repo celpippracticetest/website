@@ -34,6 +34,8 @@ import TrophyModal from "@/components/modal/TrophyModal";
 import StatBadge from "@/components/shared/StatBadge";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
 import { practicePath } from "@/lib/practiceRoutes";
+import { sanitizeMockExamAttemptIdParam } from "@/lib/mockExamAttemptId";
+
 const SvgBestValuePlan = dynamic(
   () => import("../../../components/icons/BestValuePlan"),
   {
@@ -101,7 +103,7 @@ const WritingPracticeView = ({
   const [isHydrated, setIsHydrated] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
-  const attemptId = searchParams.get("attemptId");
+  const browserAttemptId = sanitizeMockExamAttemptIdParam(searchParams.get("attemptId"));
   const [page, setPage] = useState(
     practice.id.includes("part11") ? "description" : "question"
   );
@@ -156,10 +158,10 @@ const WritingPracticeView = ({
   useEffect(() => {
     // Log mock exam started when component mounts
     if (user && practice.taskId) {
-      const loggerAttemptId = attemptId || `mock_${practice.taskId}_${Date.now()}`;
+      const loggerAttemptId = browserAttemptId || `mock_${practice.taskId}_${Date.now()}`;
       ActivityLogger.mockStarted(loggerAttemptId, practice.taskId.toString());
     }
-  }, [user, practice.taskId, attemptId]);
+  }, [user, practice.taskId, browserAttemptId]);
 
   useEffect(() => {
     if (!isSubmit) return;
@@ -218,7 +220,7 @@ const WritingPracticeView = ({
       const requestData = {
         practiceId: practice.id,
         text,
-        attemptId,
+        attemptId: browserAttemptId,
       };
 
       // Simulate progress bar increment

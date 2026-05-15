@@ -9,7 +9,7 @@ const SvgPlay = (props: SVGProps<SVGSVGElement>) => (
     {...props}
   >
     <path
-      fill="#F27059"
+      fill="currentColor"
       d="M16.833 9.134a1 1 0 0 1 0 1.732l-9.5 5.485a1 1 0 0 1-1.5-.866V4.515a1 1 0 0 1 1.5-.866z"
     />
   </svg>

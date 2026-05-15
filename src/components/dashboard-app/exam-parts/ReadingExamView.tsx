@@ -47,6 +47,7 @@ import {
   getMockExamPartsForSection,
   type PracticeSectionItem,
 } from "./mockExamShared";
+import { sanitizeMockExamAttemptIdParam } from "@/lib/mockExamAttemptId";
 
 interface ReadingExamViewProps {
   practice: TPracticeDto;
@@ -159,7 +160,9 @@ const ReadingExamView = ({
   useEffect(() => {
     // Log mock exam started when component mounts
     if (user && practice.taskId) {
-      const loggerAttemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
+      const loggerAttemptId =
+        sanitizeMockExamAttemptIdParam(searchParams.get("attemptId")) ||
+        `mock_${practice.taskId}_${Date.now()}`;
       ActivityLogger.mockStarted(loggerAttemptId, practice.taskId.toString());
     }
   }, [user, practice.taskId, searchParams]);
@@ -180,7 +183,7 @@ const ReadingExamView = ({
     examAnswerPersistInFlightRef.current = true;
     setReadingPersistError(null);
 
-    const attemptIdParam = searchParams.get("attemptId");
+    const attemptIdParam = sanitizeMockExamAttemptIdParam(searchParams.get("attemptId"));
     const query =
       section && attemptIdParam
         ? `?section=${section}&attemptId=${attemptIdParam}`
@@ -325,7 +328,7 @@ const ReadingExamView = ({
   }, []);
   const buildCurrentQuery = () => {
     const params = new URLSearchParams();
-    const attemptId = searchParams.get("attemptId");
+    const attemptId = sanitizeMockExamAttemptIdParam(searchParams.get("attemptId"));
 
     if (section) params.set("section", section);
     if (attemptId) params.set("attemptId", attemptId);
@@ -783,8 +786,12 @@ const ReadingExamView = ({
         <ContinueExamModal
           onContinue={() => {
             setShowContinueModal(false);
+            const params = new URLSearchParams();
+            params.set("section", "writing");
+            const aid = sanitizeMockExamAttemptIdParam(searchParams.get("attemptId"));
+            if (aid) params.set("attemptId", aid);
             router.push(
-              `/exams/exam_${practice.taskId}/part11?section=writing&attemptId=${searchParams.get("attemptId")}`
+              `/exams/exam_${practice.taskId}/part11?${params.toString()}`
             );
           }}
           onFinish={() => {

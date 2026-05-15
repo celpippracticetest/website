@@ -15,6 +15,11 @@ const examOverviewTimingLog =
   process.env.NODE_ENV === "development" ||
   process.env.EXAM_OVERVIEW_TIMING_LOG === "1";
 
+const examOverviewPageBg =
+  "linear-gradient(135deg, #FAFBFF 0%, #EEF2FF 50%, #F8FAFC 100%)";
+const examOverviewNavy = "#1B2B5A";
+const examOverviewMuted = "#475569";
+
 export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "";
   const isPreview = appBaseUrl.includes("vercel.app");
@@ -77,7 +82,7 @@ const ExamsPage = async () => {
         minHeight: "100vh",
         display: "flex",
         justifyContent: "center",
-        backgroundColor: "#F2F6FF",
+        background: examOverviewPageBg,
       }}
     >
       <Box
@@ -113,9 +118,9 @@ const ExamsPage = async () => {
               sx={{
                 overflow: "hidden",
                 borderRadius: "28px",
-                border: "1px solid #E2EAF6",
+                border: "1px solid rgba(27, 43, 90, 0.10)",
                 background:
-                  "linear-gradient(135deg, rgba(74, 125, 255, 0.16), rgba(13, 170, 148, 0.10))",
+                  "linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(13, 170, 148, 0.09))",
               }}
             >
               <Box
@@ -132,10 +137,11 @@ const ExamsPage = async () => {
                       px: 1.75,
                       py: 0.75,
                       borderRadius: "999px",
-                      backgroundColor: "rgba(74, 125, 255, 0.10)",
-                      color: "#4A7DFF",
+                      backgroundColor: "rgba(37, 99, 235, 0.10)",
+                      color: "#2563EB",
                       fontSize: "0.8125rem",
                       fontWeight: 700,
+                      letterSpacing: "0.02em",
                     }}
                   >
                     Full-length CELPIP preparation
@@ -147,7 +153,7 @@ const ExamsPage = async () => {
                       fontSize: { xs: "2rem", md: "3rem" },
                       lineHeight: { xs: 1.2, md: 1.15 },
                       fontWeight: 800,
-                      color: "#37465C",
+                      color: examOverviewNavy,
                     }}
                   >
                     CELPIP Mock Test Online — Full-Length Practice Exams
@@ -158,7 +164,7 @@ const ExamsPage = async () => {
                       fontSize: { xs: "1.05rem", md: "1.35rem" },
                       lineHeight: 1.6,
                       fontWeight: 600,
-                      color: "#415167",
+                      color: examOverviewMuted,
                     }}
                   >
                     Prepare for the CELPIP exam with realistic full-length practice tests in the
@@ -169,7 +175,7 @@ const ExamsPage = async () => {
                       maxWidth: "920px",
                       fontSize: { xs: "0.98rem", md: "1.05rem" },
                       lineHeight: 1.85,
-                      color: "#526071",
+                      color: "#64748B",
                     }}
                   >
                     Practice with full mock exams designed to mirror the real exam structure. Each
@@ -192,8 +198,8 @@ const ExamsPage = async () => {
                           py: 0.9,
                           borderRadius: "999px",
                           backgroundColor: "#FFFFFF",
-                          border: "1px solid #E2EAF6",
-                          color: "#4B5A70",
+                          border: "1px solid rgba(27, 43, 90, 0.10)",
+                          color: examOverviewMuted,
                           fontSize: "0.8125rem",
                           fontWeight: 700,
                         }}
@@ -214,8 +220,9 @@ const ExamsPage = async () => {
               px: { xs: 3, md: 4 },
               py: { xs: 3, md: 3.5 },
               borderRadius: "24px",
-              border: "1px solid #E2EAF6",
+              border: "1px solid rgba(27, 43, 90, 0.10)",
               backgroundColor: "#FFFFFF",
+              boxShadow: "0 12px 40px rgba(15, 23, 42, 0.06)",
             }}
           >
             <Stack spacing={1}>
@@ -225,7 +232,7 @@ const ExamsPage = async () => {
                   fontSize: { xs: "1.75rem", md: "2rem" },
                   lineHeight: 1.2,
                   fontWeight: 800,
-                  color: "#37465C",
+                  color: examOverviewNavy,
                 }}
               >
                 CELPIP Mock Exams
@@ -235,7 +242,7 @@ const ExamsPage = async () => {
                   maxWidth: "760px",
                   fontSize: "1rem",
                   lineHeight: 1.7,
-                  color: "#526071",
+                  color: examOverviewMuted,
                 }}
               >
                 Choose a full-length mock exam or jump into one section to focus on the skill you
@@ -274,8 +281,9 @@ const ExamsPage = async () => {
               px: { xs: 3, md: 4 },
               py: { xs: 3, md: 4 },
               borderRadius: "24px",
-              border: "1px solid #E2EAF6",
+              border: "1px solid rgba(27, 43, 90, 0.10)",
               backgroundColor: "#FFFFFF",
+              boxShadow: "0 12px 40px rgba(15, 23, 42, 0.06)",
             }}
           >
             <Stack spacing={2}>
@@ -285,7 +293,7 @@ const ExamsPage = async () => {
                   fontSize: { xs: "1.4rem", md: "1.65rem" },
                   lineHeight: 1.25,
                   fontWeight: 700,
-                  color: "#37465C",
+                  color: examOverviewNavy,
                 }}
               >
                 How to use CELPIP mock exams effectively
@@ -294,7 +302,7 @@ const ExamsPage = async () => {
                 sx={{
                   fontSize: "1rem",
                   lineHeight: 1.85,
-                  color: "#526071",
+                  color: examOverviewMuted,
                 }}
               >
                 Full-length CELPIP practice tests work best as performance checkpoints, not only as
@@ -305,7 +313,7 @@ const ExamsPage = async () => {
                 sx={{
                   fontSize: "1rem",
                   lineHeight: 1.85,
-                  color: "#526071",
+                  color: examOverviewMuted,
                 }}
               >
                 Track your results across multiple mock exams to see whether listening accuracy,

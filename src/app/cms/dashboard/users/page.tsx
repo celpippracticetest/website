@@ -87,6 +87,7 @@ interface UsersResponse {
     totalCount: number;
     totalPages: number;
   };
+  listMode?: "profiles_sql" | "users_documents_sql" | "activity_aggregate";
 }
 
 export default function UsersPage() {
@@ -99,7 +100,7 @@ export default function UsersPage() {
   const [subscriptionStatus, setSubscriptionStatus] = useState("all");
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 20,
+    limit: 50,
     totalCount: 0,
     totalPages: 0,
   });
@@ -126,6 +127,7 @@ export default function UsersPage() {
     try {
       const params = new URLSearchParams({
         page: page.toString(),
+        limit: pagination.limit.toString(),
         search,
         sortBy,
         sortOrder,
@@ -148,7 +150,7 @@ export default function UsersPage() {
   useEffect(() => {
     fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search, sortBy, sortOrder, subscriptionStatus]);
+  }, [page, search, sortBy, sortOrder, subscriptionStatus, pagination.limit]);
 
   const getRiskColor = (riskScore: number) => {
     if (riskScore >= 70) return "text-red-600 bg-red-50";

@@ -50,7 +50,9 @@ const ListeningSideMenu = ({
                 : `/${p.type.toLowerCase()}`
             }
           >
-            {selectedPracticeId === p.id && <SvgPlay className=" shrink-0 " />}
+            {selectedPracticeId === p.id && (
+              <SvgPlay className="shrink-0 text-[#F27059]" />
+            )}
             {selectedPracticeId !== p.id &&
               (completedPractice.includes(p.id) ? (
                 <SvgConfirmCheck className="mr-[4px]" />

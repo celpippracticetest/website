@@ -8,6 +8,7 @@ import { alpha } from "@mui/material/styles";
 import type { MockExamViewMode } from "./useExamViewMode";
 import ExamLayoutToggle from "./ExamLayoutToggle";
 import { MOCK_EXAM_GUIDE_REPLAY_EVENT } from "./mockExamGuideTourConstants";
+import { sanitizeMockExamAttemptIdParam } from "@/lib/mockExamAttemptId";
 
 interface PracticeSectionItem {
     title: string;
@@ -76,14 +77,16 @@ const ExamHeader = forwardRef<HTMLDivElement, ExamHeaderProps>(
     ) => {
         const router = useRouter();
         const searchParams = useSearchParams();
-        const attemptId = searchParams.get("attemptId");
+        const browserAttemptId = sanitizeMockExamAttemptIdParam(
+            searchParams.get("attemptId")
+        );
         const currentSection = searchParams.get("section");
         const examLabel = examNumber ?? (examName ?? "").match(/\d+/)?.[0] ?? "";
-        const resultsHref = `/exams/exam_${examId}/results?partNumber=part${partId}${attemptId &&
-            attemptId !== "null"
-            ? `&attemptId=${attemptId}`
-            : ""
-            }`;
+        const resultsHref = (() => {
+            const base = `/exams/exam_${examId}/results?partNumber=part${partId}`;
+            if (!browserAttemptId) return base;
+            return `${base}&attemptId=${encodeURIComponent(browserAttemptId)}`;
+        })();
         const isOfficial = viewMode === "official";
 
         const openGuideTour = () => {
@@ -204,7 +207,7 @@ const ExamHeader = forwardRef<HTMLDivElement, ExamHeaderProps>(
                                                     type="button"
                                                     onClick={() => {
                                                         const params = new URLSearchParams();
-                                                        if (attemptId) params.set("attemptId", attemptId);
+                                                        if (browserAttemptId) params.set("attemptId", browserAttemptId);
                                                         if (currentSection) params.set("section", currentSection);
                                                         const queryString = params.toString() ? `?${params.toString()}` : "";
 

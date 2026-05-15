@@ -24,6 +24,10 @@ import {
 } from "@/lib/subscriptionAccess";
 import type { ExamProgressSummary } from "@/lib/examOverviewProgress";
 
+const examCardNavy = "#1B2B5A";
+const examPrimaryGradient =
+  "linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #3B82F6 100%)";
+
 const examSections = [
   { label: "Listening", partId: 1, section: "listening" },
   { label: "Reading", partId: 7, section: "reading" },
@@ -268,15 +272,16 @@ const ExamOverview = ({
                   minHeight: showUserProgress ? 286 : 228,
                   p: 3,
                   borderRadius: "24px",
-                  border: "1px solid #E3EAF5",
+                  border: "1px solid rgba(27, 43, 90, 0.10)",
                   overflow: "hidden",
                   backgroundColor: "#FFFFFF",
+                  boxShadow: "0 12px 36px rgba(15, 23, 42, 0.06)",
                   transition:
                     "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
                   "&:hover": {
                     transform: "translateY(-2px)",
-                    boxShadow: "0 20px 40px rgba(55, 70, 92, 0.10)",
-                    borderColor: "#C7D6F8",
+                    boxShadow: "0 20px 48px rgba(15, 23, 42, 0.10)",
+                    borderColor: "rgba(37, 99, 235, 0.28)",
                   },
                 }}
               >
@@ -285,8 +290,8 @@ const ExamOverview = ({
                     position: "absolute",
                     inset: 0,
                     background:
-                      "linear-gradient(135deg, rgba(74, 125, 255, 0.10), rgba(13, 170, 148, 0.05))",
-                    opacity: 0.9,
+                      "linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(13, 170, 148, 0.04))",
+                    opacity: 0.95,
                     pointerEvents: "none",
                   }}
                 />
@@ -300,15 +305,14 @@ const ExamOverview = ({
                   }}
                 >
                   <Stack spacing={2}>
-                   
-
                     <Typography
                       component="h2"
                       sx={{
                         fontSize: { xs: "1.125rem", md: "1.25rem" },
                         lineHeight: 1.3,
-                        fontWeight: 700,
-                        color: "#37465C",
+                        fontWeight: 800,
+                        color: examCardNavy,
+                        letterSpacing: "-0.02em",
                       }}
                     >
                       {exam.name}
@@ -347,23 +351,23 @@ const ExamOverview = ({
                             px: 1.5,
                             py: 0.75,
                             borderRadius: "999px",
-                            backgroundColor: "#F7F9FC",
-                            color: "#5A6678",
+                            backgroundColor: "#F8FAFC",
+                            color: "#475569",
                             fontSize: "0.75rem",
                             fontWeight: 600,
                             textAlign: "center",
-                            border: "1px solid #E6ECF5",
+                            border: "1px solid #E2E8F0",
                             opacity: unlocked ? 1 : 0.45,
                             transition:
                               "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, opacity 0.2s ease",
                             "&:hover:not(:disabled)": {
-                              backgroundColor: "#EEF4FF",
-                              borderColor: "#BFD1FF",
-                              color: "#2F5FD7",
+                              backgroundColor: "#EFF6FF",
+                              borderColor: "#93C5FD",
+                              color: "#1D4ED8",
                             },
                             "&:focus-visible": {
-                              borderColor: "#4A7DFF",
-                              boxShadow: "0 0 0 3px rgba(74, 125, 255, 0.18)",
+                              borderColor: "#2563EB",
+                              boxShadow: "0 0 0 3px rgba(37, 99, 235, 0.22)",
                             },
                           }}
                         >
@@ -396,7 +400,7 @@ const ExamOverview = ({
                             sx={{
                               fontSize: "0.8rem",
                               fontWeight: 600,
-                              color: "#5A6678",
+                              color: "#64748B",
                             }}
                           >
                             Completion
@@ -407,8 +411,8 @@ const ExamOverview = ({
                               fontWeight: 700,
                               color:
                                 progress.completionPercentage === 100
-                                  ? "#0DAA94"
-                                  : "#4A7DFF",
+                                  ? "#0D9488"
+                                  : "#2563EB",
                             }}
                           >
                             {progress.completionPercentage}%
@@ -420,13 +424,13 @@ const ExamOverview = ({
                           sx={{
                             height: 8,
                             borderRadius: "999px",
-                            backgroundColor: "#E7EEF8",
+                            backgroundColor: "#E2E8F0",
                             "& .MuiLinearProgress-bar": {
                               borderRadius: "999px",
                               background:
                                 progress.completionPercentage === 100
-                                  ? "linear-gradient(90deg, #0DAA94, #08C3A6)"
-                                  : "linear-gradient(90deg, #4A7DFF, #7AA1FF)",
+                                  ? "linear-gradient(90deg, #0D9488, #14B8A6)"
+                                  : "linear-gradient(90deg, #2563EB, #60A5FA)",
                             },
                           }}
                         />
@@ -461,10 +465,16 @@ const ExamOverview = ({
                               },
                             }
                           : {
-                              backgroundColor: "#4A7DFF",
+                              background: examPrimaryGradient,
+                              color: "#FFFFFF",
                               "&:hover": {
-                                backgroundColor: "#3A6DEB",
+                                opacity: 0.96,
                                 boxShadow: "none",
+                              },
+                              "&.Mui-disabled": {
+                                background:
+                                  "linear-gradient(135deg, rgba(30, 58, 138, 0.45), rgba(59, 130, 246, 0.45))",
+                                color: "#FFFFFF",
                               },
                             }),
                       }}

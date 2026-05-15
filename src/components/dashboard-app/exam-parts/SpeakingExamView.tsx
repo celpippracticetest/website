@@ -42,6 +42,10 @@ import {
   getMockExamPartsForSection,
   type PracticeSectionItem,
 } from "./mockExamShared";
+import {
+  mockExamResultsHref,
+  sanitizeMockExamAttemptIdParam,
+} from "@/lib/mockExamAttemptId";
 
 interface SpeakingExamViewProps {
   practice: TPracticeDto;
@@ -74,6 +78,7 @@ const SpeakingExamView = ({
   const router = useRouter();
   const searchParams = useSearchParams();
   const section = searchParams.get("section");
+  const browserAttemptId = sanitizeMockExamAttemptIdParam(searchParams.get("attemptId"));
   const [sendingResult] = useState(false);
   const [passageIndex, setPassageIndex] = useState(0);
 
@@ -217,7 +222,7 @@ const SpeakingExamView = ({
     formData.append("audio", blob, "recording.m4a");
     formData.append("examId", practice.taskId);
     formData.append("partId", partId.toString());
-    formData.append("attemptId", searchParams.get("attemptId") || "");
+    if (browserAttemptId) formData.append("attemptId", browserAttemptId);
 
     const progressInterval = setInterval(() => {
       setProgressBar((prev) => (prev < 100 ? prev + 1 : prev));
@@ -239,7 +244,7 @@ const SpeakingExamView = ({
 
       await response.json();
       // Log mock exam part completed
-      const loggerAttemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
+      const loggerAttemptId = browserAttemptId || `mock_${practice.taskId}_${Date.now()}`;
       await ActivityLogger.mockCompleted(
         loggerAttemptId,
         practice.taskId.toString(),
@@ -381,7 +386,7 @@ const SpeakingExamView = ({
 
     // Log mock exam started when component mounts
     if (user && practice.taskId) {
-      const loggerAttemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
+      const loggerAttemptId = browserAttemptId || `mock_${practice.taskId}_${Date.now()}`;
       ActivityLogger.mockStarted(loggerAttemptId, practice.taskId.toString());
     }
   }, [practice.taskId, partId, user]);
@@ -403,9 +408,8 @@ const SpeakingExamView = ({
   }, []);
   const buildFinalQuery = () => {
     const params = new URLSearchParams();
-    const attemptId = searchParams.get("attemptId");
 
-    if (attemptId) params.set("attemptId", attemptId);
+    if (browserAttemptId) params.set("attemptId", browserAttemptId);
     if (section) params.set("section", section);
 
     const query = params.toString();
@@ -465,9 +469,7 @@ const SpeakingExamView = ({
         resetSpeakingTimers();
       }
     } else if (page == "evaluateResult") {
-      router.push(
-        `/exams/exam_${practice.taskId}/results?attemptId=${searchParams.get("attemptId")}`
-      );
+      router.push(mockExamResultsHref(String(practice.taskId), browserAttemptId));
       resetSpeakingTimers();
     }
   };
@@ -514,7 +516,7 @@ const SpeakingExamView = ({
             isRecording={isRecording}
             errorAccessingMicrophone={errorAccessingMicrophone}
             needsUserInteraction={needsUserInteraction}
-            resultHref={`/exams/exam_${practice.taskId}/results?attemptId=${searchParams.get("attemptId")}`}
+            resultHref={mockExamResultsHref(String(practice.taskId), browserAttemptId)}
             onLockedAction={() => router.push("/pricing")}
             onStartRecording={() => {
               setNeedsUserInteraction(false);
@@ -568,7 +570,7 @@ const SpeakingExamView = ({
                 <p className="text-[16px] font-bold text-[#212E42] mb-4">
                   Evaluation Complete!
                 </p>
-                <a href={`/exams/exam_${practice.taskId}/results?attemptId=${searchParams.get("attemptId")}`}>
+                <a href={mockExamResultsHref(String(practice.taskId), browserAttemptId)}>
                   <button className="bg-[#4A7DFF] text-white flex items-center rounded-[24px] px-[24px] h-[40px] cursor-pointer ">
                     View Results
                   </button>

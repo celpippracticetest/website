@@ -58,8 +58,10 @@ DialogContent.displayName = DialogPrimitive.Content.displayName
  */
 const DialogDrawerContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
+    closeButtonClassName?: string;
+  }
+>(({ className, children, closeButtonClassName, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay className="bg-black/50" />
     <DialogPrimitive.Content
@@ -74,7 +76,12 @@ const DialogDrawerContent = React.forwardRef<
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-3 top-3 z-10 rounded-full p-2 opacity-80 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 sm:right-4 sm:top-4">
+      <DialogPrimitive.Close
+        className={cn(
+          "absolute right-3 top-3 z-10 rounded-full p-2 opacity-80 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 sm:right-4 sm:top-4",
+          closeButtonClassName
+        )}
+      >
         <Close className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>

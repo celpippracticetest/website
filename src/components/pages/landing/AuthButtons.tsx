@@ -1,5 +1,4 @@
 "use client";
-import { Button } from "@/components/v2/Button";
 import Link from "next/link";
 
 import { useState, useEffect, useRef } from "react";
@@ -8,7 +7,7 @@ import { useHasEverPurchased } from "@/hooks/useHasEverPurchased";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { useRouter } from "next/navigation";
 import { signOutWebSession } from "@/lib/auth/client-sign-out";
-
+import { cn } from "@/lib/utils";
 const AuthButtons = () => {
   type ChallengeStatus = {
     active: boolean;
@@ -70,7 +69,7 @@ const AuthButtons = () => {
   return (
     <>
       {isSignedIn && (
-        <div className="relative mr-[24px] flex items-center" ref={dropdownRef}>
+        <div className="relative mr-4 flex h-10 items-center" ref={dropdownRef}>
           <button
             onClick={() => setUserDropDownOpen(!isUserDropDownOpen)}
             className="cursor-pointer w-10 h-10"
@@ -89,7 +88,7 @@ const AuthButtons = () => {
           </button>
 
           {isUserDropDownOpen && (
-            <div className="absolute right-0 z-[100] mt-2 w-56 top-[48px] rounded-md bg-white ring-1 shadow-lg ring-black/5">
+            <div className="absolute right-0 top-full z-[100] mt-2 w-56 rounded-md bg-white ring-1 shadow-lg ring-black/5">
               <div className="py-1">
                 {challengeStatus?.active && (
                   <div className="mx-2 mb-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">
@@ -143,20 +142,26 @@ const AuthButtons = () => {
         </div>
       )}
       {!isSignedIn && (
-        <>
-          <Button size="sm" className="max-[744px]:flex min-[744px]:hidden" href="/sign-in">
-            <span id="sign-up-button">Sign Up</span>
-          </Button>
-          <Button size="md" className="max-[744px]:hidden min-[744px]:flex" href="/sign-in">
-            <span id="sign-up-button" className="flex">
-              Sign Up
-              <span className="mx-1">/</span>
-              Login
+        <Link
+          href="/sign-in"
+          id="sign-up-button"
+          className={cn(
+            "inline-flex h-10 min-h-10 items-center justify-center rounded-full border border-slate-200/90 bg-white/90 font-medium text-slate-700 shadow-none ring-offset-background transition-colors",
+            "hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40 focus-visible:ring-offset-2",
+            "px-4 text-sm max-[744px]:gap-0 min-[744px]:gap-1 min-[744px]:px-5"
+          )}
+        >
+          <span className="max-[744px]:inline min-[744px]:hidden">Sign in</span>
+          <span className="hidden items-center gap-1.5 min-[744px]:inline-flex">
+            <span>Sign up</span>
+            <span className="text-slate-400" aria-hidden>
+              /
             </span>
-          </Button>
-        </>
-      )}
-    </>
+            <span>Log in</span>
+          </span>
+        </Link>
+      )}    </>
   );
 };
 

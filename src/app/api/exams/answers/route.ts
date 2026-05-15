@@ -7,6 +7,7 @@ import { TExamPartSchemaDto } from "@/models/examParts.model";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 import { hasMockExamAccess } from "@/lib/subscriptionAccess";
 import { getFirstReadyMockExamId } from "@/lib/getFirstReadyMockExam";
+import { sanitizeMockExamAttemptIdParam } from "@/lib/mockExamAttemptId";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
       type: examPart.type,
       examId: examPart.examId.toString(),
       partId: examPart.partId,
-      attemptId: parseResult.data.attemptId,
+      attemptId: sanitizeMockExamAttemptIdParam(parseResult.data.attemptId ?? null),
       createdAt: new Date(),
       updatedAt: new Date(),
     });

@@ -43,6 +43,7 @@ import {
   getMockExamPartsForSection,
   type PracticeSectionItem,
 } from "./mockExamShared";
+import { sanitizeMockExamAttemptIdParam } from "@/lib/mockExamAttemptId";
 
 interface WritingExamViewProps {
   practice: TPracticeDto;
@@ -84,6 +85,7 @@ const WritingExamView = ({
   const router = useRouter();
   const searchParams = useSearchParams();
   const section = searchParams.get("section");
+  const browserAttemptId = sanitizeMockExamAttemptIdParam(searchParams.get("attemptId"));
   const [page, setPage] = useState(partId == 11 ? "description" : "question");
   const [passageIndex] = useState(0);
   const [time, setTime] = useState(1620);
@@ -153,10 +155,10 @@ const WritingExamView = ({
   useEffect(() => {
     // Log mock exam started when component mounts
     if (user && practice.taskId) {
-      const attemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
+      const attemptId = browserAttemptId || `mock_${practice.taskId}_${Date.now()}`;
       ActivityLogger.mockStarted(attemptId, practice.taskId.toString());
     }
-  }, [user, practice.taskId]);
+  }, [user, practice.taskId, browserAttemptId]);
 
   useEffect(() => {
     if (isSubmit) {
@@ -172,7 +174,7 @@ const WritingExamView = ({
         examId: practice.taskId,
         partId,
         text,
-        attemptId: searchParams.get("attemptId") || undefined,
+        attemptId: browserAttemptId,
       };
 
       // Simulate progress bar increment
@@ -197,7 +199,7 @@ const WritingExamView = ({
         const result = await response.json();
 
         // Log mock exam part completed
-        const attemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
+        const attemptId = browserAttemptId || `mock_${practice.taskId}_${Date.now()}`;
         await ActivityLogger.mockCompleted(
           attemptId,
           practice.taskId.toString(),
@@ -276,9 +278,7 @@ const WritingExamView = ({
   }, []);
   const buildFinalQuery = () => {
     const params = new URLSearchParams();
-    const attemptId = searchParams.get("attemptId");
-
-    if (attemptId) params.set("attemptId", attemptId);
+    if (browserAttemptId) params.set("attemptId", browserAttemptId);
     if (section) params.set("section", section);
 
     const query = params.toString();
@@ -608,8 +608,7 @@ const WritingExamView = ({
                             className="mt-4 bg-[#4A7DFF] text-white rounded-full px-6 py-2"
                             onClick={() => {
                               const query = section ? `?section=${section}` : "";
-                              const attemptId = searchParams.get("attemptId");
-                              const attemptQuery = attemptId ? `attemptId=${attemptId}` : "";
+                              const attemptQuery = browserAttemptId ? `attemptId=${browserAttemptId}` : "";
                               const finalQuery = query
                                 ? (attemptQuery ? `?${attemptQuery}&${query.replace("?", "")}` : query)
                                 : (attemptQuery ? `?${attemptQuery}` : "");
@@ -668,8 +667,7 @@ const WritingExamView = ({
           <ContinueExamModal
             onContinue={() => {
               setShowContinueModal(false);
-              const attemptId = searchParams.get("attemptId");
-              const attemptQuery = attemptId ? `&attemptId=${attemptId}` : "";
+              const attemptQuery = browserAttemptId ? `&attemptId=${browserAttemptId}` : "";
               router.push(
                 `/exams/exam_${practice.taskId}/part13?section=speaking${attemptQuery}`
               );

@@ -2,20 +2,27 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
-import Check from "@mui/icons-material/Check";
+import Bolt from "@mui/icons-material/Bolt";
+import CheckCircle from "@mui/icons-material/CheckCircle";
 import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
 import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
 import AutoAwesome from "@mui/icons-material/AutoAwesome";
 import Close from "@mui/icons-material/Close";
+import Diamond from "@mui/icons-material/Diamond";
+import Groups from "@mui/icons-material/Groups";
+import Shield from "@mui/icons-material/Shield";
 import Star from "@mui/icons-material/Star";
+import Timer from "@mui/icons-material/Timer";
+import TrendingUp from "@mui/icons-material/TrendingUp";
 import SvgDiamond from "@/components/icons/Diamond";
+import { cn } from "@/lib/utils";
 import { useCheckoutAttributionPayload } from "@/components/analytics/CheckoutAttributionFields";
 import { mergePendingGa4IntoAttribution } from "@/lib/ga4BrowserIds";
 import {
   pricingFaqs,
-  pricingHeroStats,
   pricingTestimonials,
 } from "@/components/pages/pricing/pricingContent";
 import { Box } from "@/components/ui/Box";
@@ -36,13 +43,37 @@ import type { PricingAbLayout } from "@/lib/pricingAbTest";
 import type { DurationGroupKey, PricingFaq, SerializedPlan } from "@/types/pricing";
 const avatarSources = ["Carlos.png", "Li.png", "Tatiana.png"];
 
-const PRICING_TILE_UNLOCK_FEATURES = [
-  "All Mock Exams",
-  "All Sample Questions",
-  "Unlimited AI scoring",
-  "CELPIP Courses",
-  "CELPIP Vocabulary Bundles",
-] as const;
+const PLAN_CARD_VISUAL: Record<
+  DurationGroupKey,
+  { color: string; Icon: typeof Bolt }
+> = {
+  weekly: { color: "#64748B", Icon: Bolt },
+  monthly: { color: "#3B82F6", Icon: Star },
+  threeMonth: { color: "#8B5CF6", Icon: Diamond },
+  yearly: { color: "#0D9488", Icon: TrendingUp },
+};
+
+function approxDaysForDurationKey(key: DurationGroupKey): number {
+  switch (key) {
+    case "weekly":
+      return 7;
+    case "monthly":
+      return 30;
+    case "threeMonth":
+      return 90;
+    case "yearly":
+      return 365;
+    default:
+      return 30;
+  }
+}
+
+function perDayCadLabel(plan: SerializedPlan, durationKey: DurationGroupKey): string {
+  const total = parsePrice(plan.price);
+  const days = approxDaysForDurationKey(durationKey);
+  if (!Number.isFinite(total) || days <= 0) return "—";
+  return (total / days).toFixed(2);
+}
 
 type PersonalizedRecommendation = {
   planType: DurationGroupKey;
@@ -56,31 +87,6 @@ type GroupedPlanItem = {
   index: number;
   stableId: string;
 };
-
-function pricingStyleOnePriceCell(
-  item: GroupedPlanItem | null | undefined,
-  align: "center" | "start" = "center"
-) {
-  if (!item?.plan) {
-    return <span className="text-slate-400">—</span>;
-  }
-  const plan = item.plan;
-  const cycle = formatBillingCycle(plan.billingInterval, plan.billingIntervalCount);
-  return (
-    <div
-      className={`flex min-w-0 flex-col gap-1 py-1 ${align === "center" ? "items-center" : "items-start"}`}
-    >
-      <span className="whitespace-nowrap text-lg font-bold text-blue-950">
-        CA$ {formatPlanCadPrice(plan.price)}
-      </span>
-      {cycle ? (
-        <span className="whitespace-nowrap text-[11px] font-medium text-slate-500">
-          per {cycle}
-        </span>
-      ) : null}
-    </div>
-  );
-}
 
 type PricingPlanSection = {
   key: DurationGroupKey;
@@ -192,6 +198,11 @@ function PricingPlanCheckoutTile({
   );
 
   const emphasisThreeMonth = section.key === "threeMonth";
+  const visual = PLAN_CARD_VISUAL[section.key] ?? PLAN_CARD_VISUAL.monthly;
+  const IconComp = visual.Icon;
+  const perDay = perDayCadLabel(p, section.key);
+  const cycle = formatBillingCycle(p.billingInterval, p.billingIntervalCount);
+  const isPopular = emphasisThreeMonth;
 
   return (
     <button
@@ -199,51 +210,71 @@ function PricingPlanCheckoutTile({
       id={isRecommended ? "recommended-plan" : undefined}
       onClick={onCheckout}
       disabled={!checkoutAction}
-      aria-label={`upgrade to pro, ${section.title}`}
-      className={`relative flex h-full min-h-0 w-full min-w-0 flex-col gap-4 rounded-xl border px-3 py-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#635BFF] focus-visible:ring-offset-2 sm:px-4 sm:py-4 ${
-        isRecommended ? "scroll-mt-24 md:scroll-mt-28" : ""
-      } ${
-        emphasisThreeMonth
-          ? "border-amber-300 bg-amber-50/70 hover:border-amber-400 hover:bg-amber-50"
-          : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white"
-      } disabled:cursor-not-allowed disabled:opacity-50`}
+      aria-label={`Upgrade to Plus, ${section.title}`}
+      className={cn(
+        "relative flex h-full min-h-[320px] w-full min-w-0 flex-col rounded-2xl border bg-white p-6 text-left shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B5CF6] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        isRecommended && "scroll-mt-24 md:scroll-mt-28",
+        isPopular
+          ? "z-[2] border-2 border-[#8B5CF6] shadow-[0_20px_60px_rgba(139,92,246,0.15)] md:scale-[1.02] md:hover:scale-[1.03]"
+          : "border-slate-200 hover:-translate-y-1 hover:border-slate-300 hover:shadow-lg",
+      )}
     >
+      {isPopular ? (
+        <span className="pointer-events-none absolute -top-3 left-1/2 z-[3] flex -translate-x-1/2 items-center gap-1 rounded-full bg-[#8B5CF6] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-wider text-white shadow-md">
+          <AutoAwesome sx={{ fontSize: 14 }} aria-hidden />
+          Most popular
+        </span>
+      ) : null}
       {savingsBadge ? (
         <span
-          className="pointer-events-none absolute -right-1 -top-2 z-[5] max-w-[min(100%,12rem)] truncate rounded-full border border-emerald-200/90 bg-emerald-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-800 shadow-sm ring-2 ring-white sm:text-[10px]"
+          className={cn(
+            "pointer-events-none absolute z-[4] max-w-[11rem] truncate rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[0.65rem] font-bold uppercase tracking-wide text-emerald-800 shadow-sm ring-2 ring-white",
+            isPopular ? "right-4 top-14" : "right-3 top-3",
+          )}
           title={savingsBadge}
         >
           {savingsBadge}
         </span>
       ) : null}
+
       <div
-        className={`flex min-h-0 flex-1 flex-col pt-0.5 ${savingsBadge ? "pr-1 sm:pr-[5.5rem]" : ""}`}
+        className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl"
+        style={{
+          backgroundColor: `${visual.color}14`,
+          color: visual.color,
+        }}
       >
-        <span className="text-sm font-semibold text-blue-950 sm:text-[15px]">{section.title}</span>
-        <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-          {section.eyebrow}
-        </span>
-        <div className="mt-3 border-t border-slate-200/80 pt-3">
-          {pricingStyleOnePriceCell(item, "start")}
-        </div>
-        <div className="mt-2 min-w-0 text-xs leading-snug text-slate-600">
-          <p className="whitespace-nowrap font-semibold text-slate-700">Unlock access to:</p>
-          <ul className="mt-1 space-y-0.5">
-            {PRICING_TILE_UNLOCK_FEATURES.map((feature) => (
-              <li key={feature} className="flex min-w-0 items-center gap-1.5">
-                <Check
-                  className="size-3 shrink-0 text-emerald-600"
-                  strokeWidth={2.5}
-                  aria-hidden
-                />
-                <span className="min-w-0 whitespace-nowrap">{feature}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <IconComp sx={{ fontSize: 26 }} aria-hidden />
       </div>
-      <span className="flex h-10 w-full shrink-0 items-center justify-center rounded-full bg-[#635BFF] text-sm font-semibold text-white shadow-sm">
-        upgrade to pro
+
+      <h3 className="text-lg font-bold text-slate-900">{section.title}</h3>
+      <p className="text-sm text-slate-500">{section.eyebrow}</p>
+
+      <div className="mt-5 flex flex-wrap items-baseline gap-1">
+        <span className="text-sm font-normal text-slate-500">CA$</span>
+        <span className="text-3xl font-extrabold leading-none text-[#1B2B5A]">
+          {formatPlanCadPrice(p.price)}
+        </span>
+      </div>
+      {cycle ? (
+        <p className="mt-1 text-sm text-slate-500">per {cycle}</p>
+      ) : null}
+
+      <span className="mt-3 inline-flex w-fit rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+        {perDay === "—" ? "Per-day estimate unavailable" : `Only CA$${perDay}/day`}
+      </span>
+
+      <p className="mt-4 flex-1 text-sm leading-relaxed text-slate-600">{section.summary}</p>
+
+      <span
+        className={cn(
+          "mt-6 flex w-full shrink-0 items-center justify-center rounded-full py-3.5 text-sm font-bold text-white transition-shadow",
+          isPopular
+            ? "bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] shadow-[0_4px_14px_rgba(139,92,246,0.35)] hover:shadow-[0_6px_20px_rgba(139,92,246,0.4)]"
+            : "bg-gradient-to-br from-[#1B2B5A] to-[#2E4494] shadow-[0_4px_14px_rgba(27,43,90,0.28)] hover:shadow-[0_6px_20px_rgba(27,43,90,0.35)]",
+        )}
+      >
+        {isPopular ? "Get Best Value" : "Upgrade to Plus"}
       </span>
     </button>
   );
@@ -387,6 +418,46 @@ function buildPersonalizedRecommendation(
   };
 }
 
+function PricingUrgencyBanner() {
+  const [count, setCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/analytics/live-stats");
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          stats?: { recentSignups?: number };
+        };
+        if (!cancelled && data.stats?.recentSignups != null) {
+          setCount(data.stats.recentSignups);
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+    void load();
+    const id = setInterval(load, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
+
+  const display = count != null ? count.toLocaleString() : "127";
+
+  return (
+    <div className="mb-6 flex flex-col items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-center shadow-sm sm:flex-row sm:text-left">
+      <Groups sx={{ color: "#D97706", fontSize: 22 }} className="shrink-0" aria-hidden />
+      <p className="text-sm font-semibold text-amber-900">
+        <span className="font-extrabold">{display}</span> people upgraded to Plus in the
+        last 24 hours
+      </p>
+    </div>
+  );
+}
+
 function FAQItem({ question, answer }: PricingFaq) {
   const [isOpen, setIsOpen] = useState(false);
   const { faqClick } = useEngagementTracking();
@@ -400,7 +471,7 @@ function FAQItem({ question, answer }: PricingFaq) {
   };
 
   return (
-    <Box className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+    <Box className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-colors hover:border-slate-300">
       <button
         onClick={handleToggle}
         className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left md:px-5"
@@ -695,51 +766,51 @@ export default function PricingPageClient({
 
   return (
     <Box
-      className={`flex-1 overflow-y-auto bg-[linear-gradient(180deg,_#F6F9FF_0%,_#FFFFFF_35%,_#F9FBFF_100%)] px-4 py-0 md:px-8 lg:px-10${
-        stickyCtaEntry ? " pb-24 md:pb-0" : ""
-      }`}
+      className={cn(
+        "flex-1 overflow-y-auto bg-[#F4F7FF] px-4 py-0 md:px-8 lg:px-10",
+        stickyCtaEntry ? "pb-24 md:pb-0" : "",
+      )}
     >
+      <section className="bg-[linear-gradient(180deg,#FAFBFF_0%,#EEF2FF_100%)] pb-10 pt-10 text-center md:pb-12 md:pt-14">
+        <div className="mx-auto max-w-3xl px-4 md:px-8">
+          <div className="mb-4 flex items-center justify-center gap-2">
+            <SvgDiamond className="-rotate-12 text-[#2563EB]" aria-hidden />
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-800">
+              Simple, transparent pricing
+            </span>
+          </div>
+          <h1 className="text-balance text-3xl font-extrabold leading-tight text-slate-900 md:text-5xl">
+            Invest in Your{" "}
+            <span className="text-[#2563EB]">Canadian Future</span>
+          </h1>
+          <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-slate-600 md:text-lg">
+            One full-access tier. Pick the timeline that fits your exam date. Every
+            plan includes all Plus features — only the billing period changes. Each
+            Subscriber plan includes up to 2 devices; purchase another subscription
+            for each additional device.
+          </p>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap">
+            <div className="flex items-center gap-2">
+              <AvatarStack />
+              <span className="text-sm font-medium text-slate-600">
+                Trusted by <strong>70,000+</strong>
+              </span>
+            </div>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800">
+              <Shield sx={{ fontSize: 16 }} aria-hidden />
+              48-hour money-back guarantee
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-900">
+              <Timer sx={{ fontSize: 16 }} aria-hidden />
+              Cancel anytime
+            </span>
+          </div>
+        </div>
+      </section>
+
       <Box className="mx-auto w-full max-w-6xl">
-        {!isSignedIn && (
-          <Box className="rounded-[32px] border border-blue-100 bg-white px-5 py-6 shadow-[0_20px_60px_rgba(74,125,255,0.08)] md:px-8 md:py-8">
-            <Box className="mx-auto max-w-4xl text-center">
-              <Box className="mb-4 flex items-center justify-center gap-2">
-                <SvgDiamond className="-rotate-30" />
-                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-blue-700">
-                  Simple pricing
-                </span>
-              </Box>
-              <h1 className="text-3xl font-semibold leading-tight text-blue-950 md:text-5xl">
-                Plus plans built around your CELPIP timeline
-              </h1>
-              <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-600 md:text-base">
-                Pick the billing period that fits your exam date. Plus includes mock
-                exams, full exam simulation, AI feedback, and the full question bank.
-                Each Subscriber plan includes up to 2 devices. If you need more than
-                2 devices, get another subscription of the same plan for each
-                additional device.
-              </p>
-            </Box>
-
-            <Box className="mt-6 flex flex-col gap-2.5 sm:flex-row sm:flex-nowrap sm:items-stretch sm:justify-center sm:gap-3">
-              <Box className="flex min-h-[44px] w-full flex-row items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-center text-sm font-medium leading-snug text-slate-700 sm:w-auto sm:min-h-[48px] sm:rounded-full sm:py-2 sm:whitespace-nowrap">
-                <AvatarStack />
-                <span className="text-pretty sm:whitespace-nowrap">Trusted by 70k+ test-takers</span>
-              </Box>
-              {pricingHeroStats.slice(1).map((stat) => (
-                <Box
-                  key={stat}
-                  className="flex min-h-[44px] w-full items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-center text-sm font-medium leading-snug text-slate-700 sm:w-auto sm:min-h-[52px] sm:rounded-full sm:py-2 sm:whitespace-nowrap"
-                >
-                  {stat}
-                </Box>
-              ))}
-            </Box>
-          </Box>
-        )}
-
         {personalizedRecommendation && recommendedPlanEntry && (
-          <Box className="mt-6 rounded-[24px] border border-blue-200 bg-[linear-gradient(90deg,_rgba(74,125,255,0.08)_0%,_rgba(247,157,101,0.08)_100%)] px-5 py-5 shadow-sm">
+          <Box className="mt-8 rounded-[24px] border border-blue-200 bg-[linear-gradient(90deg,_rgba(74,125,255,0.08)_0%,_rgba(247,157,101,0.08)_100%)] px-5 py-5 shadow-sm">
             <Box className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <Box>
                 <p className="text-sm font-semibold uppercase tracking-[0.08em] text-blue-700">
@@ -800,105 +871,127 @@ export default function PricingPageClient({
         )}
 
         {groupedPlans.length > 0 && (
-          <Box
-            id="pricing-style-one"
-            className={`mt-8 rounded-[28px] border bg-white p-5 shadow-sm md:p-8 ${
-              recommendedSection && personalizedRecommendation
-                ? "border-blue-200 shadow-[0_16px_40px_rgba(117,156,255,0.10)]"
-                : "border-slate-200"
-            }`}
-          >
-            <Box className="flex min-w-0 flex-col">
-              <p
-                id="pricing-style-one-duration-label"
-                className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500"
-              >
-                Choose billing period
-              </p>
-              <Box
-                className={`mt-3 grid items-stretch gap-2 sm:gap-3 ${styleOneDurationButtonGridClass}`}
-                role="group"
-                aria-labelledby="pricing-style-one-duration-label"
-              >
-                {durationCheckoutTiles}
-              </Box>
-            </Box>
-          </Box>
+          <div id="pricing-style-one" className="relative z-[1] -mt-6 mb-10 md:-mt-8">
+            <PricingUrgencyBanner />
+            <div
+              className={cn("grid items-stretch gap-6", styleOneDurationButtonGridClass)}
+              role="group"
+              aria-label="Choose billing period"
+            >
+              {durationCheckoutTiles}
+            </div>
+          </div>
         )}
 
-        <Box
+      </Box>
+
+        <section
           id="whats-in-plus"
-          className="mt-12 rounded-[28px] border border-blue-100 bg-white p-5 shadow-sm md:p-8"
+          className="mt-16 border-t border-slate-200 bg-white py-14 md:py-16"
         >
-          <Box className="mx-auto max-w-3xl text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.08em] text-blue-700">
+          <div className="mx-auto max-w-3xl px-4 text-center md:px-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-blue-700">
               One full-access tier
             </p>
-            <h2 className="mt-2 text-2xl font-semibold text-blue-950 md:text-3xl">
+            <h2 className="mt-2 text-3xl font-extrabold text-slate-900 md:text-4xl">
               Everything in Plus
             </h2>
-            <p className="mt-3 text-sm leading-6 text-slate-600 md:text-base">
-              Every paid timeline includes the same features—only the billing period
+            <p className="mt-3 text-base leading-relaxed text-slate-600 md:text-lg">
+              Every paid timeline includes the same features — only the billing period
               changes. Pick Weekly, Monthly, 3-Month, or Yearly based on how long you
               want to prepare.
             </p>
-          </Box>
+          </div>
+          <div className="mx-auto mt-10 grid max-w-3xl grid-cols-1 gap-x-8 gap-y-3 px-4 sm:grid-cols-2 md:px-8">
+            {PRICING_PLUS_FEATURE_LABELS.map((label) => (
+              <div key={label} className="flex items-center gap-2.5">
+                <CheckCircle sx={{ color: "#10B981", fontSize: 22 }} aria-hidden />
+                <span className="text-[15px] font-medium text-slate-800">{label}</span>
+              </div>
+            ))}
+          </div>
+        </section>
 
-          <Box className="mx-auto mt-6 max-w-3xl rounded-2xl border border-amber-200/70 bg-[linear-gradient(180deg,_rgba(255,248,235,0.85)_0%,_#FFFFFF_50%)] px-4 py-4 md:mt-8 md:px-5 md:py-5">
-            <p className="text-center text-xs font-semibold uppercase tracking-[0.08em] text-amber-800 md:text-sm">
-              Plus includes
-            </p>
-            <ul className="mt-4 grid gap-x-6 gap-y-2 sm:grid-cols-2 sm:gap-y-2.5 md:mt-5">
-              {PRICING_PLUS_FEATURE_LABELS.map((label) => (
-                <li key={label} className="flex items-start gap-2.5">
-                  <Check
-                    className="mt-0.5 size-4 shrink-0 text-emerald-600 sm:size-[1.125rem]"
-                    strokeWidth={2.5}
-                    aria-hidden
-                  />
-                  <span className="text-sm font-medium leading-snug text-slate-800">
-                    {label}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </Box>
-        </Box>
-
-        <Box className="mt-12 rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-          <Box className="max-w-md">
-            <p className="text-sm font-semibold uppercase tracking-[0.08em] text-blue-700">
-              Social proof
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold text-blue-950">
-              Trusted by CELPIP students
+        <section className="border-t border-slate-200 bg-[#F4F7FF] py-12 md:py-16">
+          <div className="mx-auto max-w-lg rounded-3xl border border-slate-200 bg-white px-6 py-8 text-center shadow-sm md:px-10 md:py-10">
+            <Shield
+              sx={{ fontSize: 48, color: "#10B981" }}
+              className="mx-auto mb-4"
+              aria-hidden
+            />
+            <h2 className="text-2xl font-bold text-slate-900 md:text-3xl">
+              48-Hour Money-Back Guarantee
             </h2>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Students use these practice tools to build familiarity,
-              confidence, and consistency before test day.
+            <p className="mt-3 text-base leading-relaxed text-slate-600">
+              Not satisfied? Request a full refund within 48 hours of your first
+              purchase when usage stays within our published caps. See our{" "}
+              <Link href="/refund-policy" className="font-semibold text-blue-700 underline underline-offset-2">
+                Refund Policy
+              </Link>{" "}
+              for full terms.
             </p>
-          </Box>
-          <Box className="mt-6 grid gap-4 lg:grid-cols-4">
-            {pricingTestimonials.map((testimonial) => (
-              <TestimonialCard key={testimonial.name} {...testimonial} />
-            ))}
-          </Box>
-        </Box>
+          </div>
+        </section>
 
-        <Box className="mt-12 pb-16">
-          <Box className="mx-auto max-w-3xl text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.08em] text-blue-700">
-              Common questions
+        <section className="border-t border-slate-200 bg-[linear-gradient(180deg,#F8FAFC_0%,#EEF2FF_100%)] py-14 md:py-16">
+          <div className="mx-auto max-w-6xl px-4 md:px-8">
+            <div className="max-w-xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-amber-800">
+                Success stories
+              </p>
+              <h2 className="mt-2 text-2xl font-extrabold text-slate-900 md:text-3xl">
+                Trusted by CELPIP students
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-slate-600 md:text-base">
+                Students use these practice tools to build familiarity, confidence, and
+                consistency before test day.
+              </p>
+            </div>
+            <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+              {pricingTestimonials.map((testimonial) => (
+                <TestimonialCard key={testimonial.name} {...testimonial} />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="border-t border-slate-200 bg-white py-14 md:py-16">
+          <div className="mx-auto max-w-3xl px-4 md:px-8">
+            <div className="mb-10 text-center">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                Common questions
+              </p>
+              <h2 className="mt-2 text-3xl font-extrabold text-slate-900 md:text-4xl">
+                Frequently Asked Questions
+              </h2>
+              <p className="mt-2 text-slate-600">
+                Everything you need to know before getting started.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              {pricingFaqs.map((faq) => (
+                <FAQItem key={faq.question} {...faq} />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-gradient-to-br from-[#1B2B5A] via-[#2E4494] to-[#1B2B5A] py-14 text-center md:py-20">
+          <div className="mx-auto max-w-lg px-4 md:px-8">
+            <h2 className="text-3xl font-extrabold text-white md:text-4xl">
+              Start Practicing Today
+            </h2>
+            <p className="mt-4 text-base text-white/75 md:text-lg">
+              Join thousands who are already improving their CELPIP scores.
             </p>
-            <h2 className="mt-2 text-2xl font-semibold text-blue-950">FAQs</h2>
-          </Box>
-          <Box className="mt-6 grid gap-3">
-            {pricingFaqs.map((faq) => (
-              <FAQItem key={faq.question} {...faq} />
-            ))}
-          </Box>
-        </Box>
-      </Box>
+            <Link
+              href="/practice-overview"
+              className="mt-8 inline-flex items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-300 px-8 py-3.5 text-base font-bold text-[#1B2B5A] shadow-[0_4px_14px_rgba(245,158,11,0.4)] transition-shadow hover:shadow-[0_6px_20px_rgba(245,158,11,0.45)]"
+            >
+              Start Free — Upgrade Later
+            </Link>
+          </div>
+        </section>
 
       <AnimatePresence>
         {stickyCtaEntry && (

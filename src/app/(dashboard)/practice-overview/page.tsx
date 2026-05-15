@@ -7,6 +7,11 @@ import { TTaskSchemaDto } from "@/models/tasks.model";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { Box, Skeleton, Stack, Typography } from "@mui/material";
 
+const practiceOverviewPageBg =
+  "linear-gradient(135deg, #FAFBFF 0%, #EEF2FF 50%, #F8FAFC 100%)";
+const practiceOverviewNavy = "#1B2B5A";
+const practiceOverviewMuted = "#475569";
+
 interface TasksList {
   speaking: TTaskSchemaDto[];
   listening: TTaskSchemaDto[];
@@ -16,7 +21,12 @@ interface TasksList {
 
 const PracticeSkeletonLoader = () => (
   <Stack spacing={3} sx={{ width: 1, maxWidth: 1200, alignSelf: "flex-end", p: 3 }}>
-    <Skeleton variant="rounded" height={48} width={256} sx={{ bgcolor: "grey.300" }} />
+    <Skeleton
+      variant="rounded"
+      height={48}
+      width={256}
+      sx={{ bgcolor: "rgba(15, 23, 42, 0.08)" }}
+    />
     <Box
       sx={{
         display: "grid",
@@ -29,10 +39,11 @@ const PracticeSkeletonLoader = () => (
           key={i}
           spacing={1.5}
           sx={{
-            bgcolor: "background.paper",
+            bgcolor: "rgba(255, 255, 255, 0.85)",
             p: 3,
-            borderRadius: 2,
-            boxShadow: 1,
+            borderRadius: 3,
+            border: "1px solid rgba(27, 43, 90, 0.10)",
+            boxShadow: "0 12px 36px rgba(15, 23, 42, 0.06)",
           }}
         >
           <Skeleton variant="rounded" height={24} width="75%" />
@@ -81,7 +92,7 @@ const DashboardApp = () => {
   }, []);
 
   const bodySx = {
-    color: "#526071",
+    color: practiceOverviewMuted,
     fontSize: { xs: 15, sm: 16 },
     lineHeight: 1.625,
     mt: 2,
@@ -96,6 +107,8 @@ const DashboardApp = () => {
         width: 1,
         alignItems: "flex-end",
         mb: "120px",
+        background: practiceOverviewPageBg,
+        minHeight: "100%",
       }}
     >
       <Typography
@@ -123,9 +136,10 @@ const DashboardApp = () => {
           <Typography
             component="h2"
             sx={{
-              fontWeight: 700,
-              color: "#37465C",
+              fontWeight: 800,
+              color: practiceOverviewNavy,
               fontSize: { xs: 28, sm: 34 },
+              letterSpacing: "-0.02em",
             }}
           >
             CELPIP Practice Test — By Skill

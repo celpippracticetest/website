@@ -29,6 +29,10 @@ import {
 } from "./components/useExamViewMode";
 import { trackCTAClick, trackModal } from "@/lib/gtm";
 import { Button } from "@/components/ui/button";
+import {
+  mockExamAttemptGroupKey,
+  sanitizeMockExamAttemptIdParam,
+} from "@/lib/mockExamAttemptId";
 
 function scaleToBand(weightedPercent: number): number {
   if (isNaN(weightedPercent)) return 0;
@@ -50,12 +54,16 @@ const ResultExamView = ({
 }) => {
   const route = useRouter();
   const searchParams = useSearchParams();
-  const currentAttemptId = searchParams.get("attemptId") === "null" ? null : searchParams.get("attemptId");
+  const rawAttemptFromUrl = searchParams.get("attemptId");
+  const currentAttemptFromUrl =
+    rawAttemptFromUrl === "legacy"
+      ? "legacy"
+      : sanitizeMockExamAttemptIdParam(rawAttemptFromUrl);
 
   const attempts = useMemo(() => {
     const attemptMap = new Map<string, Date>();
     [...allAnswers, ...allSpeakingAndWritingAnswers].forEach((a) => {
-      const id = a.attemptId || "legacy";
+      const id = mockExamAttemptGroupKey(a.attemptId);
       const date = a.createdAt ? new Date(a.createdAt) : new Date(0);
       if (!attemptMap.has(id) || date > attemptMap.get(id)!) {
         attemptMap.set(id, date);
@@ -68,20 +76,25 @@ const ResultExamView = ({
   }, [allAnswers, allSpeakingAndWritingAnswers]);
 
   const selectedAttemptId = useMemo(() => {
-    if (currentAttemptId && attempts.some((a) => a.id === currentAttemptId)) {
-      return currentAttemptId;
+    if (
+      currentAttemptFromUrl !== undefined &&
+      attempts.some((a) => a.id === currentAttemptFromUrl)
+    ) {
+      return currentAttemptFromUrl;
     }
     return attempts[0]?.id;
-  }, [currentAttemptId, attempts]);
+  }, [currentAttemptFromUrl, attempts]);
 
   const answers = useMemo(() => {
     if (!selectedAttemptId) return allAnswers;
-    return allAnswers.filter((a) => (a.attemptId || "legacy") === selectedAttemptId);
+    return allAnswers.filter((a) => mockExamAttemptGroupKey(a.attemptId) === selectedAttemptId);
   }, [allAnswers, selectedAttemptId]);
 
   const speakingAndWritingAnswers = useMemo(() => {
     if (!selectedAttemptId) return allSpeakingAndWritingAnswers;
-    return allSpeakingAndWritingAnswers.filter((a) => (a.attemptId || "legacy") === selectedAttemptId);
+    return allSpeakingAndWritingAnswers.filter(
+      (a) => mockExamAttemptGroupKey(a.attemptId) === selectedAttemptId
+    );
   }, [allSpeakingAndWritingAnswers, selectedAttemptId]);
 
   const { user, isLoaded } = useHybridWebUser();
@@ -323,7 +336,9 @@ const ResultExamView = ({
             <Select
               value={selectedAttemptId || ""}
               onValueChange={(val) => {
-                route.push(`/exams/exam_${exams.id}/results?attemptId=${val}`);
+                route.push(
+                  `/exams/exam_${exams.id}/results?attemptId=${encodeURIComponent(val)}`
+                );
               }}
             >
               <SelectTrigger className="w-[200px] h-[36px] bg-white border-[#D5D6D8]">

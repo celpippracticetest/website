@@ -55,8 +55,9 @@ export type ButtonProps = ButtonLinkProps | ButtonButtonProps;
 const Button = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonProps>(
   ({ className, variant, size, round, asChild = false, href, children, ...props }, ref) => {
     const classes = cn(
-      v2ButtonVariants({ variant, size, round, className }),
-      round && round !== "none" ? "shadow-[2.67px_2.67px_0_0_rgba(117,156,255,1)]" : undefined
+      v2ButtonVariants({ variant, size, round }),
+      round && round !== "none" ? "shadow-[2.67px_2.67px_0_0_rgba(117,156,255,1)]" : undefined,
+      className,
     );
 
     if (asChild) {

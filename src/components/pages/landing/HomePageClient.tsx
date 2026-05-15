@@ -4,14 +4,16 @@ import { ErrorBoundary } from "react-error-boundary";
 import dynamic from "next/dynamic";
 import Practice from "./Practice";
 import FAQ from "./FAQ";
-import {
-  HomeCelpipVsIeltsBand,
-  HomeHowItWorks,
-  HomeStatsTrustStrip,
-  HomeThreePillars,
-} from "./HomeConversionSections";
+import { HomeCelpipVsIeltsBand } from "./HomeConversionSections";
 import { useChunkErrorHandler } from "@/hooks/useChunkErrorHandler";
 import OnlineUsersCount from "@/components/analytics/OnlineUsersCount";
+import {
+  HomeSocialProofBar,
+  HomeFeaturesSection,
+  HomeHowItWorksSection,
+  HomeTestimonialsSection,
+  HomeCtaBanner,
+} from "./home";
 
 const Hero = dynamic(() => import("./Hero"), { ssr: true });
 const Comments = dynamic(() => import("./Comments"), { ssr: false });
@@ -48,22 +50,23 @@ export default function HomePageClient() {
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div className="bg-[#F4F7FF]">
         <Hero />
-        <HomeStatsTrustStrip />
-        <HomeThreePillars />
+        <HomeSocialProofBar />
+        <HomeFeaturesSection />
         <UserResponseReview />
-        <div className="flex flex-col mt-[40px] screen744:!mt-[80px] screen1280:!mt-[104px] max-w-[1440px] mx-auto justify-center w-full">
-          <div className="flex justify-center px-[16px]">
+        <HomeHowItWorksSection />
+        <HomeTestimonialsSection />
+        <div className="flex flex-col mt-10 screen744:mt-16 screen1280:mt-20 max-w-[1440px] mx-auto justify-center w-full">
+          <div className="flex justify-center px-4 screen744:px-6">
             <div className="max-w-[1160px] w-full">
               <OnlineUsersCount variant="marketing" className="w-full" />
             </div>
           </div>
         </div>
-        <HomeHowItWorks />
         <Comments />
         <HomeCelpipVsIeltsBand />
         <Practice />
-        {/* <Blog /> */}
         <FAQ />
+        <HomeCtaBanner />
         <FloatingChatIcon autoOpen={false} />
       </div>
     </ErrorBoundary>

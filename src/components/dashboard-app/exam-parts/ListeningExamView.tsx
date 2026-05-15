@@ -48,6 +48,7 @@ import {
   getMockExamPartsForSection,
   type PracticeSectionItem,
 } from "./mockExamShared";
+import { sanitizeMockExamAttemptIdParam } from "@/lib/mockExamAttemptId";
 
 interface ListeningExamViewProps {
   practice: TPracticeDto;
@@ -108,7 +109,7 @@ const ListeningExamView = (props: ListeningExamViewProps) => {
   const { user, isLoaded } = useHybridWebUser();
   const searchParams = useSearchParams();
   const section = searchParams.get("section");
-  const attemptId = searchParams.get("attemptId");
+  const attemptId = sanitizeMockExamAttemptIdParam(searchParams.get("attemptId"));
   const { addPoints } = useLeaguePoints();
   const {
     isModalOpen,
@@ -201,7 +202,7 @@ const ListeningExamView = (props: ListeningExamViewProps) => {
   useEffect(() => {
     // Log mock exam started when component mounts
     if (user && practice.taskId) {
-      const loggerAttemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
+      const loggerAttemptId = attemptId || `mock_${practice.taskId}_${Date.now()}`;
       ActivityLogger.mockStarted(loggerAttemptId, practice.taskId.toString());
     }
   }, [user, practice.taskId, searchParams]);

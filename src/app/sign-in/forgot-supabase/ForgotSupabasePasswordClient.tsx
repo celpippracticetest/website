@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useState } from "react";
+import { AuthMarketingShell } from "@/components/auth/AuthPageChrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,9 +40,9 @@ export default function ForgotSupabasePasswordClient() {
   }, [email]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="text-center text-xl font-semibold text-slate-900">
+    <AuthMarketingShell>
+      <div className="rounded-3xl border border-slate-200/90 bg-white p-8 shadow-lg">
+        <h1 className="text-center text-xl font-extrabold text-[#1B2B5A]">
           Reset password
         </h1>
         <p className="mt-2 text-center text-sm text-slate-600">
@@ -79,7 +80,7 @@ export default function ForgotSupabasePasswordClient() {
             <Button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+              className="w-full rounded-xl bg-[linear-gradient(135deg,#1E3A8A_0%,#2563EB_55%,#3B82F6_100%)] font-semibold text-white shadow-md hover:opacity-[0.96]"
             >
               {submitting ? "Please wait…" : "Send reset link"}
             </Button>
@@ -92,6 +93,6 @@ export default function ForgotSupabasePasswordClient() {
           </Link>
         </p>
       </div>
-    </div>
+    </AuthMarketingShell>
   );
 }

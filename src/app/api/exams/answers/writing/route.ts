@@ -9,6 +9,7 @@ import { ExamPartsRepository } from "@/repositories/examParts.repo";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 import { hasMockExamAccess } from "@/lib/subscriptionAccess";
 import { getFirstReadyMockExamId } from "@/lib/getFirstReadyMockExam";
+import { sanitizeMockExamAttemptIdParam } from "@/lib/mockExamAttemptId";
 
 export const POST = async function (req: NextRequest) {
   const body = await req.json();
@@ -434,7 +435,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
         overalScore: parsedResult.overall,
         type: "WRITING",
         result: parsedResult,
-        attemptId: answerBody.attemptId,
+        attemptId: sanitizeMockExamAttemptIdParam(answerBody.attemptId ?? null),
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -500,7 +501,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
             betterVersion: "",
             grammarMistakes: [],
           },
-      attemptId: answerBody.attemptId,
+      attemptId: sanitizeMockExamAttemptIdParam(answerBody.attemptId ?? null),
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -536,8 +537,11 @@ export const GET = async function (req: NextRequest) {
   if (!user) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
-  const attemptId = req.nextUrl.searchParams.get("attemptId");
-  const filterAttemptId = attemptId === "legacy" ? null : (attemptId || undefined);
+  const rawAttempt = req.nextUrl.searchParams.get("attemptId");
+  const filterAttemptId =
+    rawAttempt === "legacy"
+      ? null
+      : sanitizeMockExamAttemptIdParam(rawAttempt) ?? undefined;
   const answerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
   const answers = await answerRepo.getAllWritingAnswers(
     { userId: user.id, examId, partId: parseInt(partId), type: "WRITING", attemptId: filterAttemptId as any },

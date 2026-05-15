@@ -25,6 +25,11 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { categoryToSkillRoute, practicePath } from "@/lib/practiceRoutes";
 
+const practiceNavy = "#1B2B5A";
+const practiceMuted = "#475569";
+const practicePrimaryGradient =
+  "linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #3B82F6 100%)";
+
 interface PracticeSection {
   title: string;
   iconColor: string;
@@ -176,15 +181,16 @@ const PracticeOverview = ({
   const taskCardSx = {
     position: "relative" as const,
     cursor: "pointer",
-    borderRadius: 2,
+    borderRadius: 3,
     p: 2.5,
-    bgcolor: "background.paper",
-    boxShadow: 1,
-    border: "1px solid transparent",
-    transition: "box-shadow 0.2s, border-color 0.2s",
+    bgcolor: "#FFFFFF",
+    boxShadow: "0 12px 36px rgba(15, 23, 42, 0.06)",
+    border: "1px solid rgba(27, 43, 90, 0.10)",
+    transition: "box-shadow 0.2s, border-color 0.2s, transform 0.2s",
     "&:hover": {
-      boxShadow: 3,
-      borderColor: "rgba(13, 170, 148, 0.2)",
+      boxShadow: "0 20px 48px rgba(15, 23, 42, 0.10)",
+      borderColor: "rgba(37, 99, 235, 0.28)",
+      transform: "translateY(-1px)",
     },
   };
 
@@ -195,7 +201,7 @@ const PracticeOverview = ({
         flexDirection: "column",
         width: 1,
         px: { xs: 2, xl: 5 },
-        bgcolor: "#F4F7FF",
+        bgcolor: "transparent",
         py: { xs: 9, xl: 12 },
         gap: 3,
       }}
@@ -203,8 +209,8 @@ const PracticeOverview = ({
       <Typography
         sx={{
           fontSize: 18,
-          color: "#37465C",
-          fontWeight: 600,
+          color: practiceNavy,
+          fontWeight: 700,
           display: "block",
           "@media (min-width: 1280px)": { display: "none" },
         }}
@@ -217,9 +223,11 @@ const PracticeOverview = ({
         elevation={0}
         aria-label="PrepHere CELPIP promotion"
         sx={{
-          borderRadius: 2,
-          border: "1px solid rgba(49, 107, 255, 0.22)",
-          background: "linear-gradient(135deg, #FFFFFF 0%, #E8EFFF 100%)",
+          borderRadius: 3,
+          border: "1px solid rgba(27, 43, 90, 0.10)",
+          background:
+            "linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(238, 242, 255, 0.95) 100%)",
+          boxShadow: "0 12px 40px rgba(15, 23, 42, 0.06)",
           p: { xs: 2.5, md: 3 },
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
@@ -229,14 +237,14 @@ const PracticeOverview = ({
         }}
       >
         <Stack spacing={0.75} sx={{ minWidth: 0 }}>
-          <Typography sx={{ fontWeight: 700, fontSize: { xs: 16, md: 17 }, color: "#212E42" }}>
+          <Typography sx={{ fontWeight: 800, fontSize: { xs: 16, md: 17 }, color: practiceNavy }}>
             Improve your CLB for free on PrepHere
           </Typography>
-          <Typography sx={{ fontSize: { xs: 14, md: 15 }, color: "#64748B", lineHeight: 1.55 }}>
+          <Typography sx={{ fontSize: { xs: 14, md: 15 }, color: practiceMuted, lineHeight: 1.55 }}>
             Use{" "}
             <Box
               component="span"
-              sx={{ color: "#316BFF", fontWeight: 600, wordBreak: "break-all" }}
+              sx={{ color: "#2563EB", fontWeight: 600, wordBreak: "break-all" }}
             >
               PrepHere.ai/celpip
             </Box>{" "}
@@ -253,15 +261,16 @@ const PracticeOverview = ({
           sx={{
             flexShrink: 0,
             alignSelf: { xs: "stretch", sm: "center" },
-            bgcolor: "#316BFF",
+            background: practicePrimaryGradient,
             color: "#fff",
             textTransform: "none",
-            fontWeight: 600,
+            fontWeight: 700,
             fontSize: 15,
             py: 1.25,
             px: 2.5,
             boxShadow: "none",
-            "&:hover": { bgcolor: "#2558e6", boxShadow: "none" },
+            borderRadius: 999,
+            "&:hover": { opacity: 0.96, boxShadow: "none" },
           }}
         >
           Open PrepHere — free
@@ -296,7 +305,7 @@ const PracticeOverview = ({
                 >
                   {section.icon}
                 </Box>
-                <Typography sx={{ fontSize: 20, fontWeight: 700, color: section.iconColor }}>
+                <Typography sx={{ fontSize: 20, fontWeight: 800, color: practiceNavy }}>
                   {section.title}
                 </Typography>
               </Stack>
@@ -310,7 +319,7 @@ const PracticeOverview = ({
                       if (!task?.id) return;
                       setSelectedTask(task);
                     }}
-                    sx={{ ...taskCardSx, borderRadius: 2 }}
+                    sx={{ ...taskCardSx, borderRadius: 3 }}
                   >
                     {selectedTask?.id === task?.id && (
                       <Box
@@ -318,7 +327,7 @@ const PracticeOverview = ({
                           position: "absolute",
                           inset: 0,
                           bgcolor: "rgba(255,255,255,0.8)",
-                          borderRadius: 2,
+                          borderRadius: 3,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -342,7 +351,7 @@ const PracticeOverview = ({
                     />
                     <Typography
                       sx={{
-                        color: "#212E42",
+                        color: practiceNavy,
                         fontWeight: 700,
                         fontSize: 18,
                         lineHeight: 1.35,
@@ -371,10 +380,11 @@ const PracticeOverview = ({
                 key={section.title}
                 elevation={0}
                 sx={{
-                  borderRadius: 2,
-                  border: "1px solid #E5E7EB",
-                  boxShadow: 1,
+                  borderRadius: 3,
+                  border: "1px solid rgba(27, 43, 90, 0.10)",
+                  boxShadow: "0 12px 36px rgba(15, 23, 42, 0.06)",
                   overflow: "hidden",
+                  bgcolor: "#FFFFFF",
                 }}
               >
                 <Box
@@ -385,7 +395,7 @@ const PracticeOverview = ({
                     justifyContent: "space-between",
                     p: 2,
                     cursor: "pointer",
-                    "&:hover": { bgcolor: "grey.50" },
+                    "&:hover": { bgcolor: "rgba(248, 250, 252, 0.95)" },
                   }}
                 >
                   <Stack direction="row" alignItems="center" spacing={2}>
@@ -406,20 +416,20 @@ const PracticeOverview = ({
                     <Typography
                       sx={{
                         fontSize: { xs: 18, xl: 22 },
-                        color: "#212E42",
-                        fontWeight: 600,
+                        color: practiceNavy,
+                        fontWeight: 700,
                       }}
                     >
                       {section.title}
                     </Typography>
                   </Stack>
-                  <Box sx={{ color: "#37465C" }}>
+                  <Box sx={{ color: practiceMuted }}>
                     {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                   </Box>
                 </Box>
 
                 <Collapse in={isExpanded}>
-                  <Box sx={{ borderTop: "1px solid #E5E7EB" }}>
+                  <Box sx={{ borderTop: "1px solid rgba(27, 43, 90, 0.08)" }}>
                     <Box sx={{ bgcolor: section.iconBg, p: { xs: 2, xl: 3 } }}>
                       <Box
                         sx={{
@@ -480,7 +490,7 @@ const PracticeOverview = ({
                             />
                             <Typography
                               sx={{
-                                color: "#212E42",
+                                color: practiceNavy,
                                 fontWeight: 700,
                                 fontSize: { xs: 18, xl: 22 },
                                 lineHeight: 1.25,
@@ -495,7 +505,7 @@ const PracticeOverview = ({
                               spacing={1}
                               sx={{
                                 mt: "auto",
-                                color: "#316BFF",
+                                color: "#2563EB",
                                 fontWeight: 600,
                                 fontSize: { xs: 14, xl: 16 },
                               }}

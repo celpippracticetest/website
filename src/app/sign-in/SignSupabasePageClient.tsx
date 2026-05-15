@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  AuthLoadingCard,
+  AuthMarketingShell,
+} from "@/components/auth/AuthPageChrome";
 import { SupabaseAuthForm } from "@/components/auth/SupabaseAuthForm";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -128,28 +132,16 @@ export default function SignSupabasePageClient() {
   }, [forceShowForm, redirectAfterAuth, router]);
 
   if (!ready) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-          <p className="text-center text-sm text-slate-600">Loading…</p>
-        </div>
-      </div>
-    );
+    return <AuthLoadingCard />;
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
-      <div className="w-full max-w-md">
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-slate-900">Welcome to CELPIP</h1>
-          <p className="mt-1 text-sm text-slate-500">Sign in or create a free account to start practising.</p>
-        </div>
-        <SupabaseAuthForm
-          initialMode={initialMode as "sign-in" | "sign-up"}
-          redirectAfterAuth={redirectAfterAuth}
-          showLegacyAuthHint={showLegacyAuthHint}
-        />
-      </div>
-    </div>
+    <AuthMarketingShell>
+      <SupabaseAuthForm
+        initialMode={initialMode as "sign-in" | "sign-up"}
+        redirectAfterAuth={redirectAfterAuth}
+        showLegacyAuthHint={showLegacyAuthHint}
+      />
+    </AuthMarketingShell>
   );
 }

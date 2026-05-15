@@ -1,5 +1,8 @@
 import { Box, Skeleton, Typography } from "@mui/material";
 
+const examOverviewPageBg =
+  "linear-gradient(135deg, #FAFBFF 0%, #EEF2FF 50%, #F8FAFC 100%)";
+
 /** Immediate shell for FCP while server data loads (exam list + optional progress). */
 export default function ExamOverviewLoading() {
   return (
@@ -8,7 +11,7 @@ export default function ExamOverviewLoading() {
       sx={{
         width: "100%",
         minHeight: "100vh",
-        bgcolor: "#F2F6FF",
+        background: examOverviewPageBg,
         py: { xs: 3, md: 4 },
         px: { xs: 2, md: 3 },
       }}
@@ -18,7 +21,7 @@ export default function ExamOverviewLoading() {
           component="h1"
           sx={{
             fontWeight: 800,
-            color: "#37465C",
+            color: "#1B2B5A",
             fontSize: { xs: "1.75rem", md: "2rem" },
             lineHeight: 1.2,
             mb: 2,
@@ -26,7 +29,7 @@ export default function ExamOverviewLoading() {
         >
           CELPIP Mock Exams
         </Typography>
-        <Typography sx={{ color: "#526071", fontSize: "1rem", mb: 3, maxWidth: 760 }}>
+        <Typography sx={{ color: "#475569", fontSize: "1rem", mb: 3, maxWidth: 760 }}>
           Loading practice exams…
         </Typography>
         <Skeleton variant="rounded" height={112} sx={{ borderRadius: 3, mb: 2 }} />

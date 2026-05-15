@@ -834,21 +834,6 @@
                                     {
                                         "type": "TEMPLATE",
                                         "key": "parameter",
-                                        "value": "transport_url"
-                                    },
-                                    {
-                                        "type": "TEMPLATE",
-                                        "key": "parameterValue",
-                                        "value": "https://server-side-tagging-preview-dfkzt45itq-uc.a.run.app"
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "MAP",
-                                "map": [
-                                    {
-                                        "type": "TEMPLATE",
-                                        "key": "parameter",
                                         "value": "send_page_view"
                                     },
                                     {

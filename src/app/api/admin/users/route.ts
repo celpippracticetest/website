@@ -1,6 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
 import client from "@/lib/appDocumentsClient";
+import { getSql } from "@/lib/pg/pool";
+import {
+  listAdminUsersFromUserProfiles,
+  listAdminUsersFromUsersDocuments,
+  normalizeAdminUsersPageLimit,
+  userProfilesTableExists,
+} from "@/lib/admin/adminUsersDataSource";
+
+export const maxDuration = 120;
+
+const ADMIN_USERS_SORT_FIELDS = new Set([
+  "lastActivity",
+  "createdAt",
+  "totalActivities",
+  "riskScore",
+  "plan",
+  "totalSpend",
+]);
+
+function normalizeAdminSortBy(raw: string | null): string {
+  const v = (raw || "lastActivity").trim();
+  return ADMIN_USERS_SORT_FIELDS.has(v) ? v : "lastActivity";
+}
 
 function toDate(value: unknown): Date | null {
   if (!value) return null;
@@ -26,11 +49,55 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search");
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "20");
-    const sortBy = searchParams.get("sortBy") || "lastActivity";
-    const sortOrder = searchParams.get("sortOrder") || "desc";
-    const subscriptionStatus = searchParams.get("subscriptionStatus");
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
+    const limit = normalizeAdminUsersPageLimit(searchParams.get("limit"));
+    const sortBy = normalizeAdminSortBy(searchParams.get("sortBy"));
+    const sortOrderRaw = (searchParams.get("sortOrder") || "desc").toLowerCase();
+    const sortOrder: "asc" | "desc" =
+      sortOrderRaw === "asc" || sortOrderRaw === "desc" ? sortOrderRaw : "desc";
+    const subscriptionStatus = searchParams.get("subscriptionStatus") || "all";
+
+    try {
+      const sql = getSql();
+      const hasProfiles = await userProfilesTableExists(sql);
+      const { rows: lightweightRows, totalCount } = hasProfiles
+        ? await listAdminUsersFromUserProfiles(sql, {
+            search: search || "",
+            page,
+            limit,
+            sortBy,
+            sortOrder,
+            subscriptionStatus,
+          })
+        : await listAdminUsersFromUsersDocuments(sql, {
+            search: search || "",
+            page,
+            limit,
+            sortBy,
+            sortOrder,
+            subscriptionStatus,
+          });
+
+      const formattedUsers = lightweightRows.map((user: any) =>
+        formatAdminUserResponse(user)
+      );
+
+      return NextResponse.json({
+        users: formattedUsers,
+        pagination: {
+          page,
+          limit,
+          totalCount,
+          totalPages: Math.ceil(totalCount / limit),
+        },
+        listMode: hasProfiles ? "profiles_sql" : "users_documents_sql",
+      });
+    } catch (e) {
+      console.warn(
+        "[admin/users] Supabase/SQL paginated list unavailable; falling back to in-process aggregate (loads all activity docs):",
+        e instanceof Error ? e.message : e
+      );
+    }
 
     const db = client.db();
     const userActivityCollection = db.collection("useractivities");
@@ -297,21 +364,36 @@ export async function GET(request: NextRequest) {
             $reduce: {
               input: "$ipAddresses",
               initialValue: [],
-              in: { $setUnion: ["$$value", { $ifNull: ["$$this", []] }] },
+              in: {
+                $setUnion: [
+                  "$$value",
+                  { $cond: [{ $isArray: "$$this" }, "$$this", []] },
+                ],
+              },
             },
           },
           userAgents: {
             $reduce: {
               input: "$userAgents",
               initialValue: [],
-              in: { $setUnion: ["$$value", { $ifNull: ["$$this", []] }] },
+              in: {
+                $setUnion: [
+                  "$$value",
+                  { $cond: [{ $isArray: "$$this" }, "$$this", []] },
+                ],
+              },
             },
           },
           subscriptionHistory: {
             $reduce: {
               input: "$subscriptionHistory",
               initialValue: [],
-              in: { $setUnion: ["$$value", { $ifNull: ["$$this", []] }] },
+              in: {
+                $setUnion: [
+                  "$$value",
+                  { $cond: [{ $isArray: "$$this" }, "$$this", []] },
+                ],
+              },
             },
           },
           // Ensure defaults
@@ -356,107 +438,7 @@ export async function GET(request: NextRequest) {
     const data = facet.data || [];
     const totalCount = facet.metadata?.[0]?.total || 0;
 
-    // Format Response
-    const formattedUsers = data.map((user: any) => {
-      // Calculate subscription details
-      const subHistory = (user.subscriptionHistory || []).sort(
-        (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()
-      );
-      
-      let subscriptionStatus = "never";
-      let subscriptionDurationDays = 0;
-      let subscriptionStartDate: Date | null = null;
-      let subscriptionEndDate: Date | null = null;
-
-      const isPremium = user.plan === "plus";
-      const planCancelled = Boolean(user.planCancelled);
-
-      const persistedStartDate = toDate(user.subscriptionStartDate);
-      const persistedEndDate = toDate(user.subscriptionEndDate);
-      const persistedDurationDays = Number(user.subscriptionDurationDays || 0);
-      const purchaseDate = toDate(user.publicMetadataPurchaseDate);
-
-      const latestStartEvent = [...subHistory]
-        .reverse()
-        .find((e: any) => e.type === "subscription_created");
-
-      const latestStartDate =
-        toDate(latestStartEvent?.date) || persistedStartDate || purchaseDate;
-
-      const firstCancellationAfterLatestStart = latestStartDate
-        ? subHistory.find(
-            (e: any) =>
-              e.type === "subscription_cancelled" &&
-              new Date(e.date).getTime() > latestStartDate.getTime()
-          )
-        : null;
-
-      if (isPremium) {
-        subscriptionStatus = "active";
-        if (latestStartDate) {
-          subscriptionStartDate = latestStartDate;
-          if (planCancelled && persistedDurationDays > 0) {
-            // Frozen on the day cancellation was requested.
-            subscriptionDurationDays = persistedDurationDays;
-            subscriptionEndDate = persistedEndDate;
-          } else {
-            subscriptionDurationDays = diffDays(latestStartDate, new Date());
-          }
-        }
-      } else {
-        if (latestStartDate) {
-          subscriptionStatus = "unsubscribed";
-          subscriptionStartDate = latestStartDate;
-
-          if (persistedDurationDays > 0 && persistedEndDate) {
-            subscriptionDurationDays = persistedDurationDays;
-            subscriptionEndDate = persistedEndDate;
-          } else if (firstCancellationAfterLatestStart) {
-            const cancellationDate = toDate(firstCancellationAfterLatestStart.date);
-            if (cancellationDate) {
-              subscriptionEndDate = cancellationDate;
-              subscriptionDurationDays = diffDays(latestStartDate, cancellationDate);
-            }
-          } else {
-            subscriptionDurationDays = diffDays(latestStartDate, new Date());
-          }
-        }
-      }
-
-      return {
-      userId: user._id,
-      email: user.email ?? null,
-      lastActivity: user.lastActivity || null,
-      firstActivity: user.firstActivity || user.createdAt || null,
-      totalActivities: user.totalActivities || 0,
-      uniqueIpAddresses: user.uniqueIpAddressesCount || 0,
-      uniqueUserAgents: user.uniqueUserAgentsCount || 0,
-      totalTokens: user.totalTokens || 0,
-      practiceAttempts: user.practiceAttempts || 0,
-      practiceCompletions: user.practiceCompletions || 0,
-      mockAttempts: user.mockAttempts || 0,
-      mockCompletions: user.mockCompletions || 0,
-      paymentEvents: user.paymentEvents || 0,
-      disputeEvents: user.disputeEvents || 0,
-      riskScore: calculateRiskScoreGrouped(user),
-      ipAddresses: (user.ipAddresses || []).slice(0, 5),
-      userAgents: (user.userAgents || []).slice(0, 3),
-      plan: user.plan,
-      planType: user.planType || null,
-      purchaseAmount: user.purchaseAmount || 0,
-      purchaseCurrency: user.purchaseCurrency || "CAD",
-      totalSpend: user.totalSpend || 0,
-      utm_source: user.utm_source || null,
-      utm_medium: user.utm_medium || null,
-      utm_campaign: user.utm_campaign || null,
-      gclid: user.gclid || null,
-      subscriptionStatus,
-      subscriptionDurationDays,
-      subscriptionStartDate: subscriptionStartDate
-        ? subscriptionStartDate.toISOString()
-        : null,
-      subscriptionEndDate: subscriptionEndDate ? subscriptionEndDate.toISOString() : null,
-    }});
+    const formattedUsers = data.map((user: any) => formatAdminUserResponse(user));
 
     return NextResponse.json({
       users: formattedUsers,
@@ -466,14 +448,126 @@ export async function GET(request: NextRequest) {
         totalCount,
         totalPages: Math.ceil(totalCount / limit),
       },
+      listMode: "activity_aggregate",
     });
   } catch (error) {
     console.error("Error fetching users:", error);
     return NextResponse.json(
-      { error: "Failed to fetch users" },
+      {
+        error: "Failed to fetch users",
+        detail:
+          process.env.NODE_ENV === "development"
+            ? error instanceof Error
+              ? error.message
+              : String(error)
+            : undefined,
+      },
       { status: 500 }
     );
   }
+}
+
+function formatAdminUserResponse(user: Record<string, any>) {
+  const subHistory = (user.subscriptionHistory || [])
+    .filter((e: unknown) => e && typeof e === "object" && "date" in (e as object))
+    .sort(
+      (a: any, b: any) =>
+        new Date(String(a.date)).getTime() - new Date(String(b.date)).getTime()
+    );
+
+  let subscriptionStatusOut = "never";
+  let subscriptionDurationDays = 0;
+  let subscriptionStartDate: Date | null = null;
+  let subscriptionEndDate: Date | null = null;
+
+  const isPremium = user.plan === "plus";
+  const planCancelled = Boolean(user.planCancelled);
+
+  const persistedStartDate = toDate(user.subscriptionStartDate);
+  const persistedEndDate = toDate(user.subscriptionEndDate);
+  const persistedDurationDays = Number(user.subscriptionDurationDays || 0);
+  const purchaseDate = toDate(user.publicMetadataPurchaseDate);
+
+  const latestStartEvent = [...subHistory]
+    .reverse()
+    .find((e: any) => e.type === "subscription_created");
+
+  const latestStartDate =
+    toDate(latestStartEvent?.date) || persistedStartDate || purchaseDate;
+
+  const firstCancellationAfterLatestStart = latestStartDate
+    ? subHistory.find(
+        (e: any) =>
+          e.type === "subscription_cancelled" &&
+          new Date(String(e.date)).getTime() > latestStartDate.getTime()
+      )
+    : null;
+
+  if (isPremium) {
+    subscriptionStatusOut = "active";
+    if (latestStartDate) {
+      subscriptionStartDate = latestStartDate;
+      if (planCancelled && persistedDurationDays > 0) {
+        subscriptionDurationDays = persistedDurationDays;
+        subscriptionEndDate = persistedEndDate;
+      } else {
+        subscriptionDurationDays = diffDays(latestStartDate, new Date());
+      }
+    }
+  } else {
+    if (latestStartDate) {
+      subscriptionStatusOut = "unsubscribed";
+      subscriptionStartDate = latestStartDate;
+
+      if (persistedDurationDays > 0 && persistedEndDate) {
+        subscriptionDurationDays = persistedDurationDays;
+        subscriptionEndDate = persistedEndDate;
+      } else if (firstCancellationAfterLatestStart) {
+        const cancellationDate = toDate(firstCancellationAfterLatestStart.date);
+        if (cancellationDate) {
+          subscriptionEndDate = cancellationDate;
+          subscriptionDurationDays = diffDays(latestStartDate, cancellationDate);
+        }
+      } else {
+        subscriptionDurationDays = diffDays(latestStartDate, new Date());
+      }
+    }
+  }
+
+  return {
+    userId: user._id,
+    email: user.email ?? null,
+    lastActivity: user.lastActivity || null,
+    firstActivity: user.firstActivity || user.createdAt || null,
+    totalActivities: user.totalActivities || 0,
+    uniqueIpAddresses: user.uniqueIpAddressesCount || 0,
+    uniqueUserAgents: user.uniqueUserAgentsCount || 0,
+    totalTokens: user.totalTokens || 0,
+    practiceAttempts: user.practiceAttempts || 0,
+    practiceCompletions: user.practiceCompletions || 0,
+    mockAttempts: user.mockAttempts || 0,
+    mockCompletions: user.mockCompletions || 0,
+    paymentEvents: user.paymentEvents || 0,
+    disputeEvents: user.disputeEvents || 0,
+    riskScore: calculateRiskScoreGrouped(user),
+    ipAddresses: (user.ipAddresses || []).slice(0, 5),
+    userAgents: (user.userAgents || []).slice(0, 3),
+    plan: user.plan,
+    planType: user.planType || null,
+    purchaseAmount: user.purchaseAmount || 0,
+    purchaseCurrency: user.purchaseCurrency || "CAD",
+    totalSpend: user.totalSpend || 0,
+    utm_source: user.utm_source || null,
+    utm_medium: user.utm_medium || null,
+    utm_campaign: user.utm_campaign || null,
+    gclid: user.gclid || null,
+    subscriptionStatus: subscriptionStatusOut,
+    subscriptionDurationDays,
+    subscriptionStartDate: subscriptionStartDate
+      ? subscriptionStartDate.toISOString()
+      : null,
+    subscriptionEndDate: subscriptionEndDate ? subscriptionEndDate.toISOString() : null,
+  };
 }
 
 function calculateRiskScoreGrouped(user: Record<string, unknown>): number {

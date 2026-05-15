@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import Link from "next/link";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import SvgChevronDown from "../../icons/ChevronDown";
 import { useEngagementTracking } from "@/hooks/useTracking";
 
@@ -98,51 +100,84 @@ const FAQ = () => {
         <section
             id="faq"
             aria-labelledby="faq-heading"
-            className="mt-[80px] screen1280:!mt-[104px] mb-[80px] max-w-[1440px] mx-auto px-[20px] screen1280:!px-[40px] scroll-mt-24"
+            className="border-t border-slate-200 bg-white py-14 screen744:py-20 scroll-mt-24"
         >
-            <h2
-                id="faq-heading"
-                className="text-center text-[24px] screen744:!text-[32px] font-medium text-text1 mb-[40px]"
-            >
-                FAQs
-            </h2>
-
-            <div className="flex flex-col gap-[16px]">
-                {faqs.map((faq, index) => (
-                    <div
-                        key={index}
-                        className="border border-[#E0E0E0] rounded-[16px] overflow-hidden bg-[#F8F9FC]"
+            <div className="mx-auto max-w-[720px] px-4 screen744:px-8">
+                <div className="mb-10 text-center screen744:mb-12">
+                    <span className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                        <HelpOutlineIcon sx={{ fontSize: 16 }} aria-hidden />
+                        Common Questions
+                    </span>
+                    <h2
+                        id="faq-heading"
+                        className="text-balance text-3xl font-extrabold text-slate-900 screen744:text-4xl"
                     >
-                        <button
-                            onClick={() => toggleAccordion(index, faq.question)}
-                            className="w-full flex justify-between items-center p-[24px] text-left bg-[#F8F9FC] hover:bg-[#F1F3F9] transition-colors"
-                            aria-expanded={openIndex === index}
-                        >
-                            <span className="text-[16px] screen744:!text-[18px] font-medium text-text1 pr-[16px]">
-                                {faq.question}
-                            </span>
-                            <span
-                                className={`transform transition-transform duration-300 min-w-[20px] ${openIndex === index ? "rotate-180" : ""
-                                    }`}
-                            >
-                                <SvgChevronDown />
-                            </span>
-                        </button>
+                        Frequently Asked Questions
+                    </h2>
+                    <p className="mt-2 text-base text-slate-600">
+                        Everything you need to know before getting started.
+                    </p>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                    {faqs.map((faq, index) => (
                         <div
-                            className={`grid transition-all duration-300 ease-in-out ${openIndex === index
-                                ? "grid-rows-[1fr] opacity-100"
-                                : "grid-rows-[0fr] opacity-0"
+                            key={index}
+                            className={`overflow-hidden rounded-xl border bg-white transition-shadow ${openIndex === index
+                                ? "border-blue-200 shadow-[0_4px_12px_rgba(59,130,246,0.08)]"
+                                : "border-slate-200"
                                 }`}
                         >
-                            <div className="overflow-hidden">
-                                <div
-                                    className="p-[24px] pt-0 text-[16px] text-[#5F6D7E] leading-[24px]"
-                                    dangerouslySetInnerHTML={{ __html: faq.answer }}
-                                />
+                            <button
+                                type="button"
+                                onClick={() => toggleAccordion(index, faq.question)}
+                                className="flex w-full items-center justify-between gap-4 p-5 text-left transition-colors hover:bg-slate-50/80"
+                                aria-expanded={openIndex === index}
+                            >
+                                <span className="text-[15px] font-semibold leading-snug text-slate-900 screen744:text-[16px]">
+                                    {faq.question}
+                                </span>
+                                <span
+                                    className={`flex shrink-0 transform text-slate-500 transition-transform duration-300 ${openIndex === index ? "rotate-180" : ""
+                                        }`}
+                                >
+                                    <SvgChevronDown />
+                                </span>
+                            </button>
+                            <div
+                                className={`grid transition-all duration-300 ease-in-out ${openIndex === index
+                                    ? "grid-rows-[1fr] opacity-100"
+                                    : "grid-rows-[0fr] opacity-0"
+                                    }`}
+                            >
+                                <div className="overflow-hidden">
+                                    <div
+                                        className="border-t border-slate-100 px-5 pb-5 pt-0 text-[15px] leading-relaxed text-slate-600"
+                                        dangerouslySetInnerHTML={{ __html: faq.answer }}
+                                    />
+                                </div>
                             </div>
                         </div>
+                    ))}
+                </div>
+
+                <div className="mt-10 text-center">
+                    <p className="mb-4 text-base text-slate-600">Still have questions?</p>
+                    <div className="flex flex-col items-stretch justify-center gap-3 screen744:flex-row screen744:justify-center">
+                        <Link
+                            href="/contact-us"
+                            className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-800 transition-colors hover:border-slate-400 hover:bg-slate-50"
+                        >
+                            Contact Us
+                        </Link>
+                        <Link
+                            href="/practice-overview"
+                            className="inline-flex items-center justify-center rounded-full bg-gradient-to-br from-[#1B2B5A] to-[#2E4494] px-6 py-3 text-sm font-semibold text-white shadow-md transition-shadow hover:shadow-lg"
+                        >
+                            Try It Free
+                        </Link>
                     </div>
-                ))}
+                </div>
             </div>
         </section>
     );

@@ -11,7 +11,9 @@ export default function PublicPageShell({
   return (
     <div className="bg-[#F4F7FF] min-h-screen flex flex-col">
       <TopHeader />
-      <main className="flex-grow pb-10">{children}</main>
+      <main className="flex-grow pb-10 pt-[88px] screen744:pt-[96px]">
+        {children}
+      </main>
     </div>
   );
 }

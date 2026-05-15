@@ -9,6 +9,7 @@ import { SYSTEM_PROPMTS } from "./systemPrompts";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 import { hasMockExamAccess } from "@/lib/subscriptionAccess";
 import { getFirstReadyMockExamId } from "@/lib/getFirstReadyMockExam";
+import { sanitizeMockExamAttemptIdParam } from "@/lib/mockExamAttemptId";
 
 /**
  * Wraps a promise with a timeout.
@@ -100,6 +101,7 @@ export const POST = async function (req: Request) {
     const examId = formData.get("examId") as string;
     const partId = formData.get("partId") as string;
     const attemptId = formData.get("attemptId") as string;
+    const normalizedAttemptId = sanitizeMockExamAttemptIdParam(attemptId ?? null);
 
     const examPart = await examPartRepo.findExamPartByExamIdAndPartId(
       examId,
@@ -423,7 +425,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
         overalScore: contentInput.overall,
         type: "SPEAKING",
         result: contentInput,
-        attemptId: attemptId || undefined,
+        attemptId: normalizedAttemptId,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -490,7 +492,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
         betterVersion: "",
         grammarMistakes: [],
       },
-      attemptId: attemptId || undefined,
+      attemptId: normalizedAttemptId,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -530,8 +532,11 @@ export const GET = async function (req: NextRequest) {
   if (!user) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
-  const attemptId = req.nextUrl.searchParams.get("attemptId");
-  const filterAttemptId = attemptId === "legacy" ? null : (attemptId || undefined);
+  const rawAttempt = req.nextUrl.searchParams.get("attemptId");
+  const filterAttemptId =
+    rawAttempt === "legacy"
+      ? null
+      : sanitizeMockExamAttemptIdParam(rawAttempt) ?? undefined;
   const answerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
   const answers = await answerRepo.getAllWritingAnswers(
     { userId: user.id, examId, partId: parseInt(partId), type: "SPEAKING", attemptId: filterAttemptId as any },
