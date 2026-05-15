@@ -8,7 +8,7 @@ export default function AccountSharingNoticeClient() {
   const router = useRouter();
   const code = searchParams.get("code");
   const allowAddDevice = searchParams.get("allowAddDevice") === "1";
-  const currentPlan = searchParams.get("currentPlan") || "premium";
+  const currentPlan = searchParams.get("currentPlan") || "plus";
   const message =
     searchParams.get("message") ||
     "We detected access behavior that is not allowed for this plan.";

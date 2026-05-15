@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       userId,
       currentSessionId: authContext?.sessionId,
       publicMetadata: (user?.publicMetadata ?? {}) as Record<string, unknown>,
-      currentPlan: plan ?? "premium",
+      currentPlan: plan ?? "plus",
       user: user ?? null,
     });
     if (!deviceCheck.allowed) {

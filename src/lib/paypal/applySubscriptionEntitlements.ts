@@ -36,7 +36,7 @@ export async function applyPayPalSubscriptionEntitlements(params: {
       planExpiresAt: null,
       hasEverPurchased: true,
       purchaseDate: new Date().toISOString(),
-      plan: planNameIndicatesPremiumPlus(params.planDisplayName) ? "pro" : "premium",
+      plan: planNameIndicatesPremiumPlus(params.planDisplayName) ? "pro" : "plus",
       planType: params.planDisplayName,
       purchaseAmount: params.purchaseAmount,
       purchaseCurrency: params.purchaseCurrency.toUpperCase(),

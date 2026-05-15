@@ -56,7 +56,7 @@ function parseProductPlanMap(): Record<string, string> {
 
 /**
  * Maps App Store / Play product id to plan (`premium` | `pro` | …).
- * Override with env `MOBILE_IAP_PRODUCT_PLAN_JSON` e.g. `{"celpip_premium_monthly":"premium"}`.
+ * Override with env `MOBILE_IAP_PRODUCT_PLAN_JSON` e.g. `{"celpip_premium_monthly":"plus"}`.
  */
 export function resolvePlanFromMobileProductId(productId: string): string {
   const map = parseProductPlanMap();
@@ -64,7 +64,7 @@ export function resolvePlanFromMobileProductId(productId: string): string {
   if (typeof mapped === "string" && mapped.trim()) {
     return mapped.trim();
   }
-  return planNameIndicatesPremiumPlus(productId) ? "pro" : "premium";
+  return planNameIndicatesPremiumPlus(productId) ? "pro" : "plus";
 }
 
 async function syncUserPlanToUserDocument(args: {

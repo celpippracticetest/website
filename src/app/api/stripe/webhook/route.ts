@@ -434,7 +434,7 @@ async function handleReferralRewards(
         amount: rewardAmount,
         status: "confirmed",
         checkoutId: session.id,
-        planPurchased: metadata.plan_name || "premium",
+        planPurchased: metadata.plan_name || "plus",
         purchaseAmount: amountTotal / 100,
         purchaseDate: new Date(),
       });
@@ -712,7 +712,7 @@ export async function POST(req: Request) {
             // Mark that user has made a purchase (no more discounts)
             hasEverPurchased: true,
             purchaseDate: new Date().toISOString(),
-            plan: planNameIndicatesPremiumPlus(metadata.plan_name) ? "pro" : "premium",
+            plan: planNameIndicatesPremiumPlus(metadata.plan_name) ? "pro" : "plus",
             planType: metadata.plan_name,
             purchaseAmount: (session.amount_total || 0) / 100,
             purchaseCurrency: (session.currency || "cad").toUpperCase(),
@@ -745,7 +745,7 @@ export async function POST(req: Request) {
             planExpiresAt: null,
             hasEverPurchased: true,
             purchaseDate: new Date().toISOString(),
-            plan: planNameIndicatesPremiumPlus(metadata.plan_name) ? "pro" : "premium",
+            plan: planNameIndicatesPremiumPlus(metadata.plan_name) ? "pro" : "plus",
             planType: metadata.plan_name,
             purchaseAmount: (session.amount_total || 0) / 100,
             purchaseCurrency: (session.currency || "cad").toUpperCase(),
@@ -1013,7 +1013,7 @@ export async function POST(req: Request) {
               const tier = getAccessTierKey(serialized);
               planType = planEntity.title;
               if (tier === "premiumPlus") plan = "pro";
-              else if (tier === "premium") plan = "premium";
+              else if (tier === "premium") plan = "plus";
             }
 
             if (
@@ -1022,7 +1022,7 @@ export async function POST(req: Request) {
               metadata.plan_name.trim()
             ) {
               planType = metadata.plan_name;
-              plan = planNameIndicatesPremiumPlus(metadata.plan_name) ? "pro" : "premium";
+              plan = planNameIndicatesPremiumPlus(metadata.plan_name) ? "pro" : "plus";
             }
 
             if (plan) {

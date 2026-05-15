@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
     }
 
     const supabaseUserId = row.supabase_user_id as string;
-    const trackedPlan = (row.plan as string | null) ?? "premium";
+    const trackedPlan = (row.plan as string | null) ?? "plus";
 
     if (REVOKE_NOTIFICATION_TYPES.has(notificationType)) {
       await downgradeUserPlan(supabaseUserId);

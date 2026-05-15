@@ -35,6 +35,17 @@ type MigratePremiumToPlusResult = {
     updated?: number;
     capped?: boolean;
     maxUpdates?: number | null;
+    auth?: { scanned?: number; updated?: number; capped?: boolean; maxUpdates?: number | null };
+    postgres?: {
+        matched?: number;
+        updated?: number;
+        wouldUpdate?: number;
+    };
+    mongoUsers?: {
+        matched?: number;
+        updated?: number;
+        wouldUpdate?: number;
+    };
     errorCount?: number;
     errors?: string[];
     error?: string;
@@ -508,17 +519,21 @@ const PlansPage = () => {
                                 Legacy Premium → Premium Plus
                             </h2>
                             <p className="mt-1 max-w-2xl text-sm text-gray-600">
-                                Users who still have{" "}
+                                Updates{" "}
+                                <strong className="font-semibold">Supabase Auth</strong> (plan in
+                                metadata), <strong className="font-semibold">Postgres</strong>{" "}
+                                <code className="rounded bg-white/90 px-1 py-0.5 text-xs">user_profiles</code>{" "}
+                                when deployed, and <strong className="font-semibold">app_documents</strong>{" "}
+                                <code className="rounded bg-white/90 px-1 py-0.5 text-xs">users</code> rows
+                                where{" "}
                                 <code className="rounded bg-white/90 px-1 py-0.5 text-xs">
-                                    {`publicMetadata.plan = 'premium'`}
+                                    {`plan / publicMetadata.plan = 'premium'`}
                                 </code>{" "}
-                                from the single-tier era are updated to{" "}
-                                <code className="rounded bg-white/90 px-1 py-0.5 text-xs">plus</code>{" "}
-                                (same access as Premium Plus). Runs in batches. Use{" "}
-                                <strong className="font-semibold">Dry run</strong> first (no writes), then
-                                optionally set <strong className="font-semibold">Max updates</strong> to{" "}
-                                <code className="rounded bg-white/90 px-1 py-0.5 text-xs">1</code> for a live
-                                canary before running the full migration.
+                                → <code className="rounded bg-white/90 px-1 py-0.5 text-xs">plus</code>.
+                                Auth runs in batches.{" "}
+                                <strong className="font-semibold">Max updates</strong> caps the Auth pass
+                                only; Postgres and document store still run in full unless you disable them via
+                                the API. Use <strong className="font-semibold">Dry run</strong> first.
                             </p>
                         </div>
                     </div>
@@ -593,8 +608,22 @@ const PlansPage = () => {
                                     {migrateResult.scanned ?? "—"}
                                 </li>
                                 <li>
-                                    <span className="font-medium">Would update / updated:</span>{" "}
+                                    <span className="font-medium">Auth (premium → plus, would / did):</span>{" "}
                                     {migrateResult.updated ?? "—"}
+                                </li>
+                                <li>
+                                    <span className="font-medium">Postgres user_profiles (matched / updated):</span>{" "}
+                                    {migrateResult.postgres?.matched ?? "—"} /{" "}
+                                    {migrateResult.dryRun
+                                        ? migrateResult.postgres?.wouldUpdate ?? "—"
+                                        : migrateResult.postgres?.updated ?? "—"}
+                                </li>
+                                <li>
+                                    <span className="font-medium">App documents users (matched / updated):</span>{" "}
+                                    {migrateResult.mongoUsers?.matched ?? "—"} /{" "}
+                                    {migrateResult.dryRun
+                                        ? migrateResult.mongoUsers?.wouldUpdate ?? "—"
+                                        : migrateResult.mongoUsers?.updated ?? "—"}
                                 </li>
                                 {migrateResult.capped ? (
                                     <li className="text-amber-800">

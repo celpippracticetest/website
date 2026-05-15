@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
       ...(user.publicMetadata as Record<string, unknown>),
       deviceSeatAddons: nextAddons,
       deviceSeatAddonUpdatedAt: new Date().toISOString(),
-      deviceSeatAddonPlan: plan ?? "premium",
+      deviceSeatAddonPlan: plan ?? "plus",
       deviceSeatChargeMode: "stripe_quantity",
     };
 
@@ -134,10 +134,10 @@ export async function POST(req: NextRequest) {
       seatsAdded: seatsToAdd,
       deviceSeatAddons: nextAddons,
       allowedDevices,
-      currentPlan: plan ?? "premium",
+      currentPlan: plan ?? "plus",
       message:
         `Added and billed ${seatsToAdd} extra ${seatsToAdd === 1 ? "device" : "devices"} ` +
-        `on your ${plan ?? "premium"} plan.`,
+        `on your ${plan ?? "plus"} plan.`,
     });
   } catch (error) {
     captureException(error, {

@@ -186,11 +186,11 @@ export default async function UserProfilePage() {
         lower.includes("premium plus") ||
         /\bpro\b/.test(lower)
           ? "pro"
-          : "premium";
+          : "plus";
       const currentPlan = normalizePlan(appUserRecord.publicMetadata?.plan as string);
       const alreadyPlusTier = currentPlan === "pro" || currentPlan === "plus";
       const shouldBePlan =
-        alreadyPlusTier && fromStripe === "premium"
+        alreadyPlusTier && fromStripe === "plus"
           ? currentPlan === "plus"
             ? "plus"
             : "pro"
