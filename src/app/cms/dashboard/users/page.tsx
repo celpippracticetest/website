@@ -10,6 +10,7 @@ import Schedule from "@mui/icons-material/Schedule";
 import Refresh from "@mui/icons-material/Refresh";
 import Close from "@mui/icons-material/Close";
 import Logout from "@mui/icons-material/Logout";
+import WorkspacePremium from "@mui/icons-material/WorkspacePremium";
 import People from "@mui/icons-material/People";
 import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
 import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
@@ -105,6 +106,9 @@ export default function UsersPage() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [canceling, setCanceling] = useState(false);
+  const [grantPlusDialogOpen, setGrantPlusDialogOpen] = useState(false);
+  const [selectedGrantUser, setSelectedGrantUser] = useState<User | null>(null);
+  const [grantingPlus, setGrantingPlus] = useState(false);
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
   const [selectedRevokeUser, setSelectedRevokeUser] = useState<User | null>(null);
   const [revoking, setRevoking] = useState(false);
@@ -239,6 +243,48 @@ export default function UsersPage() {
     if (!canceling) {
       setCancelDialogOpen(false);
       setSelectedUser(null);
+    }
+  };
+
+  const handleGrantPlusClick = (user: User) => {
+    setSelectedGrantUser(user);
+    setGrantPlusDialogOpen(true);
+  };
+
+  const handleGrantPlusDialogClose = () => {
+    if (!grantingPlus) {
+      setGrantPlusDialogOpen(false);
+      setSelectedGrantUser(null);
+    }
+  };
+
+  const handleGrantPlusConfirm = async () => {
+    if (!selectedGrantUser) return;
+
+    setGrantingPlus(true);
+    try {
+      const response = await fetch(
+        `/api/admin/users/${selectedGrantUser.userId}/grant-plus`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ planType: "Admin Grant" }),
+        }
+      );
+
+      if (response.ok) {
+        await fetchUsers();
+        setGrantPlusDialogOpen(false);
+        setSelectedGrantUser(null);
+      } else {
+        const data = await response.json();
+        alert(`Failed to grant Plus plan: ${data.error || "Unknown error"}`);
+      }
+    } catch (error) {
+      console.error("Error granting Plus plan:", error);
+      alert("Failed to grant Plus plan. Please try again.");
+    } finally {
+      setGrantingPlus(false);
     }
   };
 
@@ -696,6 +742,17 @@ export default function UsersPage() {
                               <Logout className="w-4 h-4 text-orange-600" />
                             </IconButton>
                           </Tooltip>
+                          {user.plan !== "plus" && (
+                            <Tooltip title="Grant Plus plan">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleGrantPlusClick(user)}
+                                disabled={grantingPlus}
+                              >
+                                <WorkspacePremium className="w-4 h-4 text-amber-600" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                           {user.subscriptionStatus === "active" &&
                             user.plan === "plus" && (
                               <Tooltip title="Cancel Subscription">
@@ -1051,6 +1108,49 @@ export default function UsersPage() {
           </>
         )}
       </Paper>
+
+      {/* Grant Plus Confirmation Dialog */}
+      <Dialog
+        open={grantPlusDialogOpen}
+        onClose={handleGrantPlusDialogClose}
+        aria-labelledby="grant-plus-dialog-title"
+        aria-describedby="grant-plus-dialog-description"
+      >
+        <DialogTitle id="grant-plus-dialog-title">
+          Grant Plus Plan
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="grant-plus-dialog-description">
+            Grant Plus access to{" "}
+            <strong>{selectedGrantUser?.email || selectedGrantUser?.userId}</strong>?
+            <br />
+            <br />
+            This will:
+            <ul style={{ marginTop: "8px", paddingLeft: "20px" }}>
+              <li>Update the user&apos;s plan to &quot;plus&quot; in auth metadata</li>
+              <li>Update the user&apos;s plan in the database</li>
+              <li>Not create a Stripe subscription or charge the user</li>
+            </ul>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleGrantPlusDialogClose}
+            disabled={grantingPlus}
+            color="inherit"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleGrantPlusConfirm}
+            disabled={grantingPlus}
+            color="primary"
+            variant="contained"
+          >
+            {grantingPlus ? "Granting..." : "Grant Plus"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Cancel Subscription Confirmation Dialog */}
       <Dialog
