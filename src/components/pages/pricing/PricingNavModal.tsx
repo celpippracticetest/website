@@ -38,7 +38,6 @@ import { cn } from "@/lib/utils";
 import { mergePendingGa4IntoAttribution } from "@/lib/ga4BrowserIds";
 import {
   buildOriginalPriceFromWeeklyMap,
-  formatBillingCycle,
   formatPlanCadPrice,
   getDurationGroupKey,
   getStablePlanId,
@@ -156,11 +155,6 @@ export type PricingNavModalProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-function perBillingLabel(plan: SerializedPlan): string {
-  const c = formatBillingCycle(plan.billingInterval, plan.billingIntervalCount);
-  return c ? `per ${c}` : "per billing period";
-}
-
 function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
   const router = useRouter();
   const { isSignedIn, isLoaded: authLoaded } = useHybridWebUser();
@@ -269,7 +263,7 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
       <DialogDrawerContent
         closeButtonClassName="text-white opacity-90 hover:bg-white/15 hover:opacity-100 [&_svg]:text-white"
         className={cn(
-          "w-[calc(100%-0.5rem)] !max-w-[min(100%,480px)] border-slate-200/90 bg-[#FAFBFF] p-0 sm:w-[calc(100%-0.75rem)]"
+          "left-0 w-full max-w-none translate-x-0 border-slate-200/90 bg-[#FAFBFF] p-0"
         )}
       >
         <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
@@ -452,9 +446,13 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
             <Box
               sx={{
                 display: "grid",
-                gridTemplateColumns: "1fr",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  md: `repeat(${sortedPlans.length}, minmax(0, 1fr))`,
+                },
                 gap: { xs: 0.75, sm: 1.25 },
                 mb: { xs: 1.25, sm: 2 },
+                alignItems: "stretch",
               }}
             >
               {sortedPlans.map((plan, planIndex) => {
@@ -489,6 +487,10 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
                       borderColor: isRec ? alpha("#F59E0B", 0.55) : "divider",
                       backgroundColor: "#fff",
                       position: "relative",
+                      height: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      minWidth: 0,
                       transition: "box-shadow 0.2s ease, border-color 0.2s ease",
                       boxShadow: isRec
                         ? "0 4px 18px rgba(245, 158, 11, 0.12)"
@@ -569,15 +571,6 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
                       >
                         CA${formatPlanCadPrice(plan.price)}
                       </Typography>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        component="span"
-                        sx={{ fontSize: { xs: "0.65rem", sm: "0.7rem" } }}
-                      >
-                        {" "}
-                        · {perBillingLabel(plan)}
-                      </Typography>
                     </Stack>
 
                     <Box
@@ -624,7 +617,7 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
                       startIcon={<BoltIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />}
                       onClick={() => onUpgradePlan(plan.stripePriceId)}
                       sx={{
-                        mt: { xs: 1, sm: 1.5 },
+                        mt: { xs: 1, sm: 1.5, md: "auto" },
                         py: { xs: 0.55, sm: 1.1 },
                         fontSize: { xs: "0.72rem", sm: "0.8rem" },
                         fontWeight: 700,
@@ -651,11 +644,14 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
                             }),
                       }}
                     >
-                      <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+                      <Box component="span" sx={{ display: { xs: "none", sm: "inline", md: "none" } }}>
                         Get Plus — {headline} (CA${formatPlanCadPrice(plan.price)})
                       </Box>
                       <Box component="span" sx={{ display: { xs: "inline", sm: "none" } }}>
                         Get Plus · {headline} · CA${formatPlanCadPrice(plan.price)}
+                      </Box>
+                      <Box component="span" sx={{ display: { xs: "none", md: "inline" } }}>
+                        Get Plus · CA${formatPlanCadPrice(plan.price)}
                       </Box>
                     </Button>
                   </Paper>

@@ -200,6 +200,7 @@ function HomePricingPlansModalInner({ open, onOpenChange }: HomePricingPlansModa
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogDrawerContent
         className={cn(
+          "left-0 w-full max-w-none translate-x-0",
           "max-h-[min(90dvh,880px)] min-h-0 border-outline bg-white",
           "flex flex-col gap-0 overflow-hidden"
         )}
