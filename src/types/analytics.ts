@@ -11,7 +11,7 @@ export interface PageViewEvent extends GTMEvent {
   page_path: string;
   page_title: string;
   user_id?: string;
-  user_plan?: "free" | "premium";
+  user_plan?: "free" | "plus";
   user_authenticated?: boolean;
 }
 

@@ -80,7 +80,7 @@ export async function GET() {
     // Get sample premium users to check their dates
     const premiumUsers = await db
       .collection("users")
-      .find({ plan: { $in: ["premium", "Premium"] } })
+      .find({ plan: { $in: ["plus", "Plus"] } })
       .limit(5)
       .toArray();
 

@@ -13,11 +13,7 @@ import {
   getDurationGroupKeyFromStripeRecurring,
 } from "@/lib/pricing";
 import { toSerializedPlan } from "@/lib/planSerialization";
-import {
-  hasPaidPracticeAccess,
-  hasPremiumPlusAccess,
-  normalizePlan,
-} from "@/lib/subscriptionAccess";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { syncUserPlanPublicMetadata } from "@/lib/syncUserPlanPublicMetadata";
 
 export async function POST() {
@@ -35,15 +31,8 @@ export async function POST() {
 
     if (!hasPaidPracticeAccess(plan, purchaseDate)) {
       return NextResponse.json(
-        { error: "Upgrade is only available for Premium subscribers." },
+        { error: "Upgrade is only available for active subscribers." },
         { status: 403 }
-      );
-    }
-
-    if (hasPremiumPlusAccess(plan, purchaseDate)) {
-      return NextResponse.json(
-        { error: "You already have Premium Plus access." },
-        { status: 400 }
       );
     }
 
@@ -127,21 +116,20 @@ export async function POST() {
     const currentTier = currentDoc
       ? getAccessTierKey(toSerializedPlan(currentDoc))
       : null;
-    if (currentDoc) {
-      if (currentTier !== "premium") {
-        return NextResponse.json(
-          {
-            error:
-              "Your current plan is not eligible for this upgrade path. Use the pricing page instead.",
-          },
-          { status: 400 }
-        );
-      }
-    } else if (normalizePlan(plan) !== "premium") {
+    if (currentDoc && currentTier === "premiumPlus") {
       return NextResponse.json(
         {
           error:
-            "Could not verify your current plan. Please upgrade from the pricing page.",
+            "You are already on the highest catalog tier for this billing period. Manage your plan from your profile.",
+        },
+        { status: 400 }
+      );
+    }
+    if (currentDoc && currentTier !== "premium") {
+      return NextResponse.json(
+        {
+          error:
+            "Your current plan is not eligible for this upgrade path. Use the pricing page instead.",
         },
         { status: 400 }
       );
@@ -183,9 +171,8 @@ export async function POST() {
     });
 
     // Stripe webhooks can lag; exams UI calls `user.reload()` and needs auth metadata updated now.
-    // Same mapping as `customer.subscription.updated` in the Stripe webhook (`premiumPlus` → `pro`).
     await syncUserPlanPublicMetadata(userId, {
-      plan: "pro",
+      plan: "plus",
       planType: String(target.title ?? ""),
       planCancelled: false,
       planExpiresAt: null,

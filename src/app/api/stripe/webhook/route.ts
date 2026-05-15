@@ -14,7 +14,6 @@ import { toSerializedPlan } from "@/lib/planSerialization";
 import type { Plan } from "@/models/plans.model";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
 import { findOrCreateWebUserByEmail } from "@/lib/guestCheckoutAuth";
-import { planNameIndicatesPremiumPlus } from "@/lib/subscriptionAccess";
 import { persistStripeCustomerIdForUser } from "@/lib/resolveStripeCustomerId";
 import { recordPartnerCommissionForSubscriber } from "@/lib/partner/recordPartnerCommissionForSubscriber";
 import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
@@ -712,7 +711,7 @@ export async function POST(req: Request) {
             // Mark that user has made a purchase (no more discounts)
             hasEverPurchased: true,
             purchaseDate: new Date().toISOString(),
-            plan: planNameIndicatesPremiumPlus(metadata.plan_name) ? "pro" : "plus",
+            plan: "plus",
             planType: metadata.plan_name,
             purchaseAmount: (session.amount_total || 0) / 100,
             purchaseCurrency: (session.currency || "cad").toUpperCase(),
@@ -745,7 +744,7 @@ export async function POST(req: Request) {
             planExpiresAt: null,
             hasEverPurchased: true,
             purchaseDate: new Date().toISOString(),
-            plan: planNameIndicatesPremiumPlus(metadata.plan_name) ? "pro" : "plus",
+            plan: "plus",
             planType: metadata.plan_name,
             purchaseAmount: (session.amount_total || 0) / 100,
             purchaseCurrency: (session.currency || "cad").toUpperCase(),
@@ -1012,8 +1011,7 @@ export async function POST(req: Request) {
               const serialized = toSerializedPlan(planEntity);
               const tier = getAccessTierKey(serialized);
               planType = planEntity.title;
-              if (tier === "premiumPlus") plan = "pro";
-              else if (tier === "premium") plan = "plus";
+              if (tier === "premiumPlus" || tier === "premium") plan = "plus";
             }
 
             if (
@@ -1022,7 +1020,7 @@ export async function POST(req: Request) {
               metadata.plan_name.trim()
             ) {
               planType = metadata.plan_name;
-              plan = planNameIndicatesPremiumPlus(metadata.plan_name) ? "pro" : "plus";
+              plan = "plus";
             }
 
             if (plan) {

@@ -141,7 +141,7 @@ async function getCandidates(limit: number): Promise<Candidate[]> {
           },
           lastActivityAt: { $arrayElemAt: ["$activitySummary.lastActivityAt", 0] },
           isSubscribed: {
-            $in: ["$plan", ["premium", "pro", "plus", "enterprise"]],
+            $in: ["$plan", ["plus"]],
           },
         },
       },

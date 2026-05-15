@@ -542,10 +542,7 @@ function resolveSubscriptionEndDate(user: any, now: Date, startDate: Date): Date
 
   const plan = String(user?.plan || "free").toLowerCase();
   const isActivePlan =
-    plan === "premium" ||
-    plan === "pro" ||
-    plan === "plus" ||
-    plan === "enterprise";
+    plan === "plus";
   if (isActivePlan) return now;
 
   const persistedDuration = Number(user?.subscriptionDurationDays || 0);
@@ -639,7 +636,7 @@ export async function GET(request: NextRequest) {
             $or: [
               { subscriptionStartDate: { $exists: true, $ne: null } },
               { "publicMetadata.purchaseDate": { $exists: true, $ne: null } },
-              { plan: { $in: ["premium", "pro", "plus", "enterprise"] } },
+              { plan: "plus" },
             ],
           },
           {

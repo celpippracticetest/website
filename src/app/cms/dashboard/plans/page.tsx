@@ -572,8 +572,8 @@ const PlansPage = () => {
                                 const cap = Number.parseInt(migrateMaxUpdates.trim(), 10);
                                 const limitMsg =
                                     Number.isFinite(cap) && cap > 0
-                                        ? `Update at most ${cap} user(s) with plan "premium" to "plus"?`
-                                        : "Update all users with plan \"premium\" to \"plus\"?";
+                                        ? `Update at most ${cap} user(s) with legacy paid plan to "plus"?`
+                                        : "Update all users with legacy paid plan (premium / pro / enterprise) to \"plus\"?";
                                 if (
                                     !confirm(
                                         `${limitMsg} This cannot be undone from here (restore manually in auth metadata if needed).`,

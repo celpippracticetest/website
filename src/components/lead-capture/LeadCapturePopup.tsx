@@ -113,10 +113,7 @@ export default function LeadCapturePopup() {
     (list: LeadCaptureConfig[]) => {
       const plan = String((user?.publicMetadata as any)?.plan || "free").toLowerCase();
       const isPremium =
-        plan === "premium" ||
-        plan === "pro" ||
-        plan === "plus" ||
-        plan === "enterprise";
+        plan === "plus";
       const wasPremiumByFlag = Boolean(
         (user?.publicMetadata as any)?.wasPremium ||
         (user?.publicMetadata as any)?.everPremium ||

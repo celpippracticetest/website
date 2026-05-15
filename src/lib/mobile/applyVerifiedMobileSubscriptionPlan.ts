@@ -4,7 +4,6 @@ import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-brid
 import documentsClient from "@/lib/appDocumentsClient";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { logger } from "@/lib/sentry-logger";
-import { planNameIndicatesPremiumPlus } from "@/lib/subscriptionAccess";
 
 /** Upserts a Google Play purchase token → user mapping for RTDN lookups. */
 export async function trackGooglePlayPurchaseToken(args: {
@@ -55,8 +54,9 @@ function parseProductPlanMap(): Record<string, string> {
 }
 
 /**
- * Maps App Store / Play product id to plan (`premium` | `pro` | …).
+ * Maps App Store / Play product id to `publicMetadata.plan`.
  * Override with env `MOBILE_IAP_PRODUCT_PLAN_JSON` e.g. `{"celpip_premium_monthly":"plus"}`.
+ * Default: all paid mobile subscriptions use `plus`.
  */
 export function resolvePlanFromMobileProductId(productId: string): string {
   const map = parseProductPlanMap();
@@ -64,7 +64,7 @@ export function resolvePlanFromMobileProductId(productId: string): string {
   if (typeof mapped === "string" && mapped.trim()) {
     return mapped.trim();
   }
-  return planNameIndicatesPremiumPlus(productId) ? "pro" : "plus";
+  return "plus";
 }
 
 async function syncUserPlanToUserDocument(args: {

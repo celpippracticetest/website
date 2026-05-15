@@ -40,8 +40,8 @@ export type ResolvedSuccessUpgrade = SuccessUpgradeOfferForClient & {
   firstPeriodCents: number;
   discountOffCents: number;
   currency: string;
-  /** `publicMetadata.plan` — app treats `pro` and `plus` as top access tiers. */
-  webPlanKey: "pro" | "plus";
+  /** `publicMetadata.plan` — paid upgrades always use `plus`. */
+  webPlanKey: "plus";
 };
 
 function billingPlanPhrase(template: PlanTemplate): string {
@@ -226,8 +226,7 @@ export async function resolveSuccessUpgradeOfferFromSourcePrice(
     firstPeriodCents,
     discountOffCents,
     currency,
-    webPlanKey:
-      targetTemplate.accessTier === "premiumPlus" ? "pro" : "plus",
+    webPlanKey: "plus",
   };
 }
 

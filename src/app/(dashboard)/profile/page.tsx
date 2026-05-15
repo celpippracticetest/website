@@ -180,22 +180,8 @@ export default async function UserProfilePage() {
     // Only sync public plan metadata when we resolved the user via the admin API (legacy external ids)
     if (appUserRecord && subscriptionData) {
       const client = await appUserAdmin();
-      const lower = (subscriptionData.planName ?? "").toLowerCase();
-      const fromStripe =
-        /\bplus\b/.test(lower) ||
-        lower.includes("premium plus") ||
-        /\bpro\b/.test(lower)
-          ? "pro"
-          : "plus";
-      const currentPlan = normalizePlan(appUserRecord.publicMetadata?.plan as string);
-      const alreadyPlusTier = currentPlan === "pro" || currentPlan === "plus";
-      const shouldBePlan =
-        alreadyPlusTier && fromStripe === "plus"
-          ? currentPlan === "plus"
-            ? "plus"
-            : "pro"
-          : fromStripe;
-      if (appUserRecord.publicMetadata.plan !== shouldBePlan) {
+      const shouldBePlan = "plus";
+      if (normalizePlan(appUserRecord.publicMetadata.plan as string) !== shouldBePlan) {
         await client.users.updateUserMetadata(userId, {
           publicMetadata: {
             ...appUserRecord.publicMetadata,

@@ -49,13 +49,10 @@ export function generateLinkTokenSecret(): string {
 export function telegramPlanDisplayName(plan: string): string {
   const n = plan.trim().toLowerCase();
   switch (n) {
-    case "enterprise":
-      return "Enterprise";
-    case "pro":
     case "plus":
-      return "Premium Plus";
-    case "premium":
-      return "Premium";
+      return "Plus";
+    case "free":
+      return "Free";
     default:
       return "Free";
   }

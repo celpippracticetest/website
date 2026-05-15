@@ -35,9 +35,7 @@ export async function getSubscriptionMetrics(
     // ALWAYS show current snapshot of ALL users by plan
     // (Not filtered by period - this shows your entire user base)
     const activeSubs = await db.collection("users").countDocuments({
-      plan: {
-        $in: ["premium", "pro", "plus", "Premium", "Pro", "Plus"],
-      },
+      plan: { $in: ["plus", "Plus"] },
     });
 
     // Get current plan distribution for ALL users
@@ -55,29 +53,27 @@ export async function getSubscriptionMetrics(
     };
 
     planBreakdown.forEach((item: any) => {
-      const plan = item._id?.toLowerCase();
+      const plan = String(item._id ?? "").toLowerCase();
       if (plan === "free") byPlan.free = item.count;
-      else if (plan === "premium") byPlan.premium = item.count;
-      else if (plan === "pro" || plan === "plus") byPlan.pro += item.count;
+      else if (
+        plan === "plus" ||
+        plan === "premium" ||
+        plan === "pro" ||
+        plan === "enterprise"
+      ) {
+        byPlan.pro += item.count;
+      }
     });
 
-    // Count NEW premium/pro users in the period
-    // Only count users who have publicMetadata.purchaseDate in the range
     const startDateStr = startDate.toISOString();
     const endDateStr = endDate.toISOString();
 
-    const newPremiumInPeriod = await db.collection("users").countDocuments({
-      plan: { $in: ["premium", "Premium"] },
+    const newPlusInPeriod = await db.collection("users").countDocuments({
+      plan: { $in: ["plus", "Plus"] },
       "publicMetadata.purchaseDate": { $gte: startDateStr, $lte: endDateStr },
     });
 
-    const newProInPeriod = await db.collection("users").countDocuments({
-      plan: { $in: ["pro", "Pro", "plus", "Plus"] },
-      "publicMetadata.purchaseDate": { $gte: startDateStr, $lte: endDateStr },
-    });
-
-    console.log("[SubscriptionMetrics] New premium in period:", newPremiumInPeriod);
-    console.log("[SubscriptionMetrics] New pro in period:", newProInPeriod);
+    console.log("[SubscriptionMetrics] New plus in period:", newPlusInPeriod);
 
     // Calculate churn rate: cancelled / (active + cancelled) in period
     const totalRelevant = activeSubs + cancelled;
@@ -106,8 +102,8 @@ export async function getSubscriptionMetrics(
       activeSubscriptions: activeSubs,
       cancelledSubscriptions: cancelled,
       byPlan,
-      newPremiumInPeriod: isRealtime ? 0 : newPremiumInPeriod,
-      newProInPeriod: isRealtime ? 0 : newProInPeriod,
+      newPremiumInPeriod: 0,
+      newProInPeriod: isRealtime ? 0 : newPlusInPeriod,
       churnRate: isRealtime ? 0 : parseFloat(churnRate.toFixed(2)),
       conversionRate: isRealtime ? 0 : parseFloat(conversionRate.toFixed(2)),
     };

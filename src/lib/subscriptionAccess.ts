@@ -3,8 +3,8 @@ export function normalizePlan(plan: string | null | undefined) {
 }
 
 /**
- * Infer Premium Plus tier from Stripe/CMS product display names.
- * Matches legacy "pro" in the name and explicit "Plus" (e.g. "Premium Plus") — same tier as `publicMetadata.plan` `pro` / `plus`.
+ * Heuristic on Stripe/CMS **product titles** (not user `publicMetadata.plan`).
+ * Used when inferring display/upgrades from plan names.
  */
 export function planNameIndicatesPremiumPlus(planName: string | null | undefined) {
   const lower = (planName || "").trim().toLowerCase();
@@ -12,57 +12,20 @@ export function planNameIndicatesPremiumPlus(planName: string | null | undefined
   return lower.includes("pro") || /\bplus\b/.test(lower);
 }
 
-const PREMIUM_PLUS_GRANDFATHER_CUTOFF = new Date("2026-03-24T00:00:00.000Z");
-
-function parsePurchaseDate(purchaseDate: unknown) {
-  if (!purchaseDate) return null;
-  const date =
-    purchaseDate instanceof Date ? purchaseDate : new Date(String(purchaseDate));
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function isGrandfatheredPremium(
-  plan: string | null | undefined,
-  purchaseDate?: unknown
-) {
-  if (normalizePlan(plan) !== "premium") {
-    return false;
-  }
-
-  const parsedPurchaseDate = parsePurchaseDate(purchaseDate);
-
-  // Treat legacy premium users without a recorded purchase date as full-access.
-  if (!parsedPurchaseDate) {
-    return true;
-  }
-
-  return parsedPurchaseDate < PREMIUM_PLUS_GRANDFATHER_CUTOFF;
-}
-
+/** Paid subscriber: only `plus` is stored after migration (legacy `premium` / `pro` / `enterprise` normalized in DB). */
 export function hasPaidPracticeAccess(
-  plan: string | null | undefined,
-  purchaseDate?: unknown
-) {
-  const normalizedPlan = normalizePlan(plan);
-  return (
-    isGrandfatheredPremium(plan, purchaseDate) ||
-    normalizedPlan === "premium" ||
-    normalizedPlan === "pro" ||
-    normalizedPlan === "plus" ||
-    normalizedPlan === "enterprise"
-  );
-}
-
-export function hasPremiumPlusAccess(
   plan: string | null | undefined,
   _purchaseDate?: unknown
 ) {
-  const normalizedPlan = normalizePlan(plan);
-  return (
-    normalizedPlan === "pro" ||
-    normalizedPlan === "plus" ||
-    normalizedPlan === "enterprise"
-  );
+  return normalizePlan(plan) === "plus";
+}
+
+/** Same as {@link hasPaidPracticeAccess} — kept for call sites that distinguish “full library” gating. */
+export function hasPremiumPlusAccess(
+  plan: string | null | undefined,
+  purchaseDate?: unknown
+) {
+  return hasPaidPracticeAccess(plan, purchaseDate);
 }
 
 /**
@@ -130,8 +93,8 @@ export function isMockExamUnlockedViaPurchase(
 }
 
 /**
- * Full mock exam access for any paid practice tier (Premium, Plus/Pro, Enterprise),
- * or for exams bought à la carte. `firstReadyExamId` is kept for call-site compatibility.
+ * Full mock exam access for paid `plus`, or per-exam purchase.
+ * `firstReadyExamId` is kept for call-site compatibility.
  */
 export function hasMockExamAccess(
   plan: string | null | undefined,
@@ -150,8 +113,6 @@ export function hasMockExamAccess(
 
 /**
  * Stripe / checkout plan titles shown in profile and change-plan.
- * When `preserveLegacyPremiumWord` is true, only renames "Premium Plus" / "Pro" style phrases
- * so grandfathered `plan: "premium"` rows can still read "Premium" if Stripe used that word alone.
  */
 export function formatSubscriptionLabelForDisplay(
   raw: string | null | undefined,
@@ -169,28 +130,21 @@ export function formatSubscriptionLabelForDisplay(
 
 export function getSubscriptionDisplayName(
   plan: string | null | undefined,
-  purchaseDate?: unknown,
+  _purchaseDate?: unknown,
   currentName?: string | null
 ) {
   const normalizedPlan = normalizePlan(plan);
   const trimmedName = (currentName || "").trim();
-  const hasPlusAccess = hasPremiumPlusAccess(plan, purchaseDate);
+  const paid = normalizedPlan === "plus";
 
   if (trimmedName) {
-    if (hasPlusAccess) {
+    if (paid) {
       return formatSubscriptionLabelForDisplay(trimmedName) || "Plus";
     }
-
-    if (normalizedPlan === "premium") {
-      return formatSubscriptionLabelForDisplay(trimmedName, true) || trimmedName;
-    }
-
     return trimmedName;
   }
 
-  if (normalizedPlan === "enterprise") return "Enterprise";
-  if (hasPlusAccess) return "Plus";
-  if (normalizedPlan === "premium") return "Premium";
+  if (paid) return "Plus";
   if (normalizedPlan === "free") return "Free";
   return "Free";
 }

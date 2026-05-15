@@ -4,8 +4,14 @@ import documentsClient from "@/lib/appDocumentsClient";
 import { getSql } from "@/lib/pg/pool";
 import { syncUserPlanPublicMetadata } from "@/lib/syncUserPlanPublicMetadata";
 
+function shouldMigrateAuthPlanToPlus(plan: unknown): boolean {
+  if (typeof plan !== "string") return false;
+  const p = plan.trim().toLowerCase();
+  return p === "premium" || p === "pro" || p === "enterprise";
+}
+
 /**
- * Migration: plan key "premium" → "plus" across Supabase Auth, Postgres `user_profiles`,
+ * Migration: legacy paid plan keys (`premium`, `pro`, `enterprise`) → `plus` across Supabase Auth, Postgres `user_profiles`,
  * and `app_documents` `users` rows (mirrors `syncUserPlanPublicMetadata` + SQL migration).
  *
  * Admin-only. Body:
@@ -14,7 +20,7 @@ import { syncUserPlanPublicMetadata } from "@/lib/syncUserPlanPublicMetadata";
  * - `batchSize` / `maxBatches` — Auth user list paging.
  * - `syncAuth` (default true) — Supabase Auth + per-user Mongo mirror via `syncUserPlanPublicMetadata`.
  * - `syncPostgresProfiles` (default true) — `UPDATE public.user_profiles …` when `DATABASE_URL` works.
- * - `syncDocumentUsers` (default true) — `users` collection bulk `$set` for remaining `premium` rows.
+ * - `syncDocumentUsers` (default true) — `users` collection bulk `$set` for matching rows.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -54,7 +60,7 @@ export async function POST(request: NextRequest) {
         for (const user of users) {
           scanned++;
           const plan = user.publicMetadata?.plan;
-          if (typeof plan !== "string" || plan.toLowerCase() !== "premium") {
+          if (!shouldMigrateAuthPlanToPlus(plan)) {
             continue;
           }
           if (dryRun) {
@@ -94,8 +100,8 @@ export async function POST(request: NextRequest) {
         const countRows = await sql<{ c: number }[]>`
           SELECT count(*)::int AS c
           FROM public.user_profiles
-          WHERE lower(trim(coalesce(plan, ''))) = 'premium'
-             OR lower(trim(coalesce(public_metadata ->> 'plan', ''))) = 'premium'
+          WHERE lower(trim(coalesce(plan, ''))) IN ('premium', 'pro', 'enterprise')
+             OR lower(trim(coalesce(public_metadata ->> 'plan', ''))) IN ('premium', 'pro', 'enterprise')
         `;
         postgresMatched = countRows[0]?.c ?? 0;
 
@@ -107,8 +113,8 @@ export async function POST(request: NextRequest) {
               public_metadata = coalesce(public_metadata::jsonb, '{}'::jsonb)
                 || jsonb_build_object('plan', 'plus'),
               updated_at = now()
-            WHERE lower(trim(coalesce(plan, ''))) = 'premium'
-               OR lower(trim(coalesce(public_metadata ->> 'plan', ''))) = 'premium'
+            WHERE lower(trim(coalesce(plan, ''))) IN ('premium', 'pro', 'enterprise')
+               OR lower(trim(coalesce(public_metadata ->> 'plan', ''))) IN ('premium', 'pro', 'enterprise')
             RETURNING id
           `;
           postgresUpdated = updatedRows.length;
@@ -127,8 +133,16 @@ export async function POST(request: NextRequest) {
         const coll = db.collection("users");
         const filter = {
           $or: [
-            { plan: { $in: ["premium", "Premium"] } },
-            { "publicMetadata.plan": { $in: ["premium", "Premium"] } },
+            {
+              plan: {
+                $in: ["premium", "Premium", "pro", "Pro", "enterprise", "Enterprise"],
+              },
+            },
+            {
+              "publicMetadata.plan": {
+                $in: ["premium", "Premium", "pro", "Pro", "enterprise", "Enterprise"],
+              },
+            },
           ],
         };
         mongoMatched = await coll.countDocuments(filter);

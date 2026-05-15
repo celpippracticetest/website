@@ -7,7 +7,7 @@ declare global {
   interface CustomJwtSessionClaims {
     metadata: {
       roles?: Roles[]
-      plan: "free" | "premium" | "plus" | "pro" | "enterprise"
+      plan: "free" | "plus"
       celloToken?: string
       /** ISO string from Clerk publicMetadata (subscription / purchase time). */
       purchaseDate?: string

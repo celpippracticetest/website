@@ -1,7 +1,6 @@
 import { appUserAdmin } from "@/lib/auth/server-auth";
 import { getDb } from "@/lib/appDocumentsClient";
 import { logger, captureException } from "@/lib/sentry-logger";
-import { planNameIndicatesPremiumPlus } from "@/lib/subscriptionAccess";
 import { recordPartnerCommissionForSubscriber } from "@/lib/partner/recordPartnerCommissionForSubscriber";
 import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
 import {
@@ -36,7 +35,7 @@ export async function applyPayPalSubscriptionEntitlements(params: {
       planExpiresAt: null,
       hasEverPurchased: true,
       purchaseDate: new Date().toISOString(),
-      plan: planNameIndicatesPremiumPlus(params.planDisplayName) ? "pro" : "plus",
+      plan: "plus",
       planType: params.planDisplayName,
       purchaseAmount: params.purchaseAmount,
       purchaseCurrency: params.purchaseCurrency.toUpperCase(),
