@@ -502,6 +502,9 @@ const ResultExamView = ({
                     key={11 + index}
                     examPart={examParts.find((e) => e.partId == index + 11)}
                     attemptId={selectedAttemptId}
+                    initialAnswer={speakingAndWritingAnswers.find(
+                      (a) => a.partId === index + 11
+                    )}
                   />
                 ))}
               </div>
@@ -532,6 +535,9 @@ const ResultExamView = ({
                     key={13 + index}
                     examPart={examParts.find((e) => e.partId == index + 13)}
                     attemptId={selectedAttemptId}
+                    initialAnswer={speakingAndWritingAnswers.find(
+                      (a) => a.partId === index + 13
+                    )}
                   />
                 ))}
               </div>

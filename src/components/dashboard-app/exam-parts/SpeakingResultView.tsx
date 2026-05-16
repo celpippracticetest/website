@@ -12,11 +12,15 @@ import { PRACTICE_PARTS } from "@/constants";
 const SpeakingResultView = ({
   examPart,
   attemptId,
+  initialAnswer,
 }: {
   examPart: TExamPartSchemaDto | undefined;
   attemptId?: string | null;
+  initialAnswer?: TWritingAnswerDto | null;
 }) => {
-  const [answer, setAnswer] = React.useState<TWritingAnswerDto | null>(null);
+  const [answer, setAnswer] = React.useState<TWritingAnswerDto | null>(
+    initialAnswer ?? null
+  );
   const [showMoreMistake, setShowMoreMistake] = React.useState(false);
   const [showMoreBetterVersion, setShowMoreBetterVersion] =
     React.useState(false);
@@ -51,6 +55,10 @@ const SpeakingResultView = ({
       console.error("Error fetching answer:", error);
     }
   };
+  React.useEffect(() => {
+    setAnswer(initialAnswer ?? null);
+  }, [initialAnswer]);
+
   React.useEffect(() => {
     fetchUsersAnswer();
   }, [examPart?.examId, examPart?.partId, attemptId]);

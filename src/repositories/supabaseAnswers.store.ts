@@ -700,10 +700,15 @@ export async function supabaseGetAllWritingAnswers(
 
   const skip = page * limit;
   const userIdVal = typeof filter.userId === "string" ? filter.userId : null;
-  const examNorm = normalizeExamIdForStorage(
-    typeof filter.examId === "string" ? filter.examId : undefined
-  );
+  const examRaw =
+    typeof filter.examId === "string" ? filter.examId : undefined;
+  const examVariants = examRaw ? examIdMatchList([examRaw]) : [];
   const typeVal = typeof filter.type === "string" ? filter.type.toUpperCase() : null;
+  const partIdVal = typeof filter.partId === "number" ? filter.partId : null;
+  const practiceIdVal =
+    typeof filter.practiceId === "string" && filter.practiceId.length > 0
+      ? filter.practiceId
+      : null;
 
   let q = admin
     .from("answers")
@@ -712,7 +717,16 @@ export async function supabaseGetAllWritingAnswers(
     .order("created_at", { ascending: false });
 
   if (userIdVal) q = q.eq("user_id", userIdVal);
-  if (examNorm) q = q.eq("exam_id", examNorm);
+  if (examVariants.length === 1) {
+    q = q.eq("exam_id", examVariants[0]);
+  } else if (examVariants.length > 1) {
+    q = q.in("exam_id", examVariants);
+  }
+  if (partIdVal != null) q = q.eq("part_id", partIdVal);
+  if (practiceIdVal) q = q.eq("practice_id", practiceIdVal);
+  if ("attemptId" in filter) {
+    q = q.eq("attempt_key", attemptKeyFromDto(filter.attemptId));
+  }
 
   const { data, error, count } = await q.range(skip, skip + limit - 1);
 

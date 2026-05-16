@@ -297,9 +297,29 @@ export class WritingAndSpeakingAnswerRepository {
       hasNextPage?: boolean;
     };
     const answers = row.items ?? [];
+    const legacyItems = answers.map((answer) => this.convertFromEntity(answer));
+
+    if (shouldPersistAnswersInSupabase()) {
+      const sb = await supabaseGetAllWritingAnswers(
+        sanitizedFilter as Partial<TWritingAnswerDto>,
+        0,
+        20_000
+      );
+      const merged = mergeWritingPreferSupabase(legacyItems, sb.items);
+      const totalMerged = merged.length;
+      const slice = merged.slice(skip, skip + limit);
+      const totalPages = limit > 0 ? Math.ceil(totalMerged / limit) : 0;
+      return {
+        items: slice,
+        page,
+        totalItems: totalMerged,
+        totalPages,
+        hasNextPage: skip + slice.length < totalMerged,
+      };
+    }
 
     return {
-      items: answers.map((answer) => this.convertFromEntity(answer)),
+      items: legacyItems,
       page,
       totalItems: row.totalItems ?? 0,
       totalPages: row.totalPages ?? 0,
