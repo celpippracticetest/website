@@ -47,7 +47,10 @@ import {
   getMockExamPartsForSection,
   type PracticeSectionItem,
 } from "./mockExamShared";
-import { sanitizeMockExamAttemptIdParam } from "@/lib/mockExamAttemptId";
+import {
+  mockExamSectionResultsHref,
+  sanitizeMockExamAttemptIdParam,
+} from "@/lib/mockExamAttemptId";
 
 interface ReadingExamViewProps {
   practice: TPracticeDto;
@@ -784,6 +787,17 @@ const ReadingExamView = ({
       />
       {showContinueModal && (
         <ContinueExamModal
+          completedSectionName="Reading"
+          onViewResults={() => {
+            setShowContinueModal(false);
+            router.push(
+              mockExamSectionResultsHref(
+                String(practice.taskId),
+                "reading",
+                searchParams.get("attemptId")
+              )
+            );
+          }}
           onContinue={() => {
             setShowContinueModal(false);
             const params = new URLSearchParams();

@@ -31,7 +31,10 @@ import { trackCTAClick, trackModal } from "@/lib/gtm";
 import { Button } from "@/components/ui/button";
 import {
   mockExamAttemptGroupKey,
+  mockExamContinueToSectionHref,
+  parseMockExamSkillSection,
   sanitizeMockExamAttemptIdParam,
+  type MockExamSkillSection,
 } from "@/lib/mockExamAttemptId";
 
 function scaleToBand(weightedPercent: number): number {
@@ -209,7 +212,31 @@ const ResultExamView = ({
   };
 
   const incompleteSections = getIncompleteSections();
-  const [showIncompleteModal, setShowIncompleteModal] = useState(incompleteSections.length > 0);
+  const sectionFromUrl = parseMockExamSkillSection(searchParams.get("section"));
+  const continueSection = parseMockExamSkillSection(searchParams.get("continue"));
+  const continueHref =
+    continueSection && exams?.id
+      ? mockExamContinueToSectionHref(
+          String(exams.id),
+          continueSection,
+          selectedAttemptId === "legacy" ? undefined : selectedAttemptId
+        )
+      : null;
+  const continueSectionLabel =
+    continueSection &&
+    continueSection.charAt(0).toUpperCase() + continueSection.slice(1);
+  const [showIncompleteModal, setShowIncompleteModal] = useState(
+    incompleteSections.length > 0 && !continueSection
+  );
+  const [activeTab, setActiveTab] = useState<MockExamSkillSection>(
+    sectionFromUrl ?? "listening"
+  );
+
+  useEffect(() => {
+    if (sectionFromUrl) {
+      setActiveTab(sectionFromUrl);
+    }
+  }, [sectionFromUrl]);
 
   const listeningAverage = (() => {
     const average = Array.from({ length: 6 })
@@ -389,8 +416,28 @@ const ResultExamView = ({
         </div>
       )}
 
+      {continueHref && continueSectionLabel && (
+        <div className="mx-[16px] screen744:!mx-[24px] mt-[16px] rounded-[12px] border border-[#C7D6F8] bg-[#F2F6FF] px-[16px] py-[14px] screen744:!px-[20px] flex flex-col gap-[10px] screen744:!flex-row screen744:!items-center screen744:!justify-between">
+          <p className="text-[14px] text-[#37465C]">
+            Ready for the next section? Continue to{" "}
+            <strong>{continueSectionLabel}</strong> when you are done reviewing.
+          </p>
+          <Button
+            type="button"
+            className="h-10 shrink-0 rounded-full bg-[#4A7DFF] px-5 font-bold text-white hover:bg-[#3A6DEB]"
+            onClick={() => route.push(continueHref)}
+          >
+            Continue to {continueSectionLabel}
+          </Button>
+        </div>
+      )}
+
       <div className="px-[16px] screen744:!px-[24px] mt-[24px]">
-        <Tabs defaultValue="listening" className="w-full pb-[100px] ">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as MockExamSkillSection)}
+          className="w-full pb-[100px] "
+        >
           <TabsList className="screen744:!grid grid-cols-4 flex justify-start shrink-0 overflow-x-auto px-[8px] w-full gap-[0]">
             <TabsTrigger
               className="max-w-[160px]  screen744:!max-w-full shrink-0"

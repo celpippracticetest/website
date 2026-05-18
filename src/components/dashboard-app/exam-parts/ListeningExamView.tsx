@@ -48,7 +48,10 @@ import {
   getMockExamPartsForSection,
   type PracticeSectionItem,
 } from "./mockExamShared";
-import { sanitizeMockExamAttemptIdParam } from "@/lib/mockExamAttemptId";
+import {
+  mockExamSectionResultsHref,
+  sanitizeMockExamAttemptIdParam,
+} from "@/lib/mockExamAttemptId";
 
 interface ListeningExamViewProps {
   practice: TPracticeDto;
@@ -882,6 +885,17 @@ const ListeningExamView = (props: ListeningExamViewProps) => {
       />
       {showContinueModal && (
         <ContinueExamModal
+          completedSectionName="Listening"
+          onViewResults={() => {
+            setShowContinueModal(false);
+            router.push(
+              mockExamSectionResultsHref(
+                String(practice.taskId),
+                "listening",
+                attemptId
+              )
+            );
+          }}
           onContinue={() => {
             setShowContinueModal(false);
             router.push(
