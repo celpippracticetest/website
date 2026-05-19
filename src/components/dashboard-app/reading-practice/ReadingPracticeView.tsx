@@ -21,9 +21,9 @@ import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle"
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import SvgCircle from "@/components/icons/Circle";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
-import { ActivityLogger } from "@/lib/userActivity";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
+import { runPracticeSubmitSideEffects } from "@/lib/practiceSubmitSideEffects";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import StatBadge from "@/components/shared/StatBadge";
@@ -164,23 +164,17 @@ const ReadingPracticeView = ({
 
           if (response.ok) {
             const result = await response.json();
-            // Log practice completed
-            const attemptId = `practice_${practice.id}_${Date.now()}`;
-            await ActivityLogger.practiceCompleted(
-              attemptId,
-              practice.id,
-              "Reading",
-              result.overall,
+            runPracticeSubmitSideEffects({
+              practiceId: practice.id,
+              skill: "Reading",
+              overallScore: result.overall ?? 0,
               result,
-              time
-            );
-
-            // Check for trophy achievements
-            await checkTrophyAchievements(
-              10,
-              "practiceSessions",
-              `${Math.floor(time / 60)}:${time % 60}`
-            );
+              durationSeconds: time,
+              pointsAwarded,
+              addPoints,
+              checkTrophyAchievements,
+              onPointsAwarded: () => setPointsAwarded(true),
+            });
           }
         } catch (error) {
           // Optionally handle error
@@ -417,7 +411,7 @@ const ReadingPracticeView = ({
                     setTime(30);
                     if (Object.keys(selectedAnswers).length > 0 && user) {
                       try {
-                        await fetch("/api/answers", {
+                        const saveRes = await fetch("/api/answers", {
                           method: "POST",
                           credentials: "include",
                           headers: { "Content-Type": "application/json" },
@@ -427,32 +421,18 @@ const ReadingPracticeView = ({
                           }),
                         });
 
-                        if (!pointsAwarded) {
-                          console.log("Reading practice: Adding league points on Next click...");
-
-                          const attemptId = `practice_${practice.id}_${Date.now()}`;
-                          await ActivityLogger.practiceCompleted(
-                            attemptId,
-                            practice.id,
-                            "Reading",
-                            100,
-                            { overall: 100 },
-                            time
-                          );
-
-                          const pointsResult = await addPoints(
-                            10,
-                            "practiceSessions",
-                            `${Math.floor(time / 60)} minutes`
-                          );
-                          console.log("Reading practice: Points result:", pointsResult);
-                          setPointsAwarded(true);
-
-                          await checkTrophyAchievements(
-                            10,
-                            "practiceSessions",
-                            `${Math.floor(time / 60)}:${time % 60}`
-                          );
+                        if (saveRes.ok && !pointsAwarded) {
+                          runPracticeSubmitSideEffects({
+                            practiceId: practice.id,
+                            skill: "Reading",
+                            overallScore: 100,
+                            result: { overall: 100 },
+                            durationSeconds: time,
+                            pointsAwarded,
+                            addPoints,
+                            checkTrophyAchievements,
+                            onPointsAwarded: () => setPointsAwarded(true),
+                          });
                         }
                       } catch (err) {
                         console.error(

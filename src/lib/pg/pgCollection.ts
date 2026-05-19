@@ -71,6 +71,74 @@ function maxScan(): number {
   return Number(process.env.APP_DOCUMENTS_MAX_SCAN || 2_000_000);
 }
 
+type PartitionBodyRow = { mongo_id: string; body: unknown };
+
+const globalForAppDocCache = globalThis as typeof globalThis & {
+  __appDocPartitionBodies?: Map<
+    string,
+    { expiresAt: number; rows: PartitionBodyRow[] }
+  >;
+};
+
+/** TTL for full-partition reads (`WHERE collection = $1`). Set `0` to disable. */
+function appDocumentsReadCacheTtlMs(): number {
+  const raw = process.env.APP_DOCUMENTS_READ_CACHE_TTL_SEC?.trim();
+  if (raw === "0") return 0;
+  if (raw) {
+    const n = Number(raw);
+    if (Number.isFinite(n) && n >= 0) return n * 1000;
+  }
+  return 120_000;
+}
+
+function partitionBodyCache(): Map<
+  string,
+  { expiresAt: number; rows: PartitionBodyRow[] }
+> {
+  if (!globalForAppDocCache.__appDocPartitionBodies) {
+    globalForAppDocCache.__appDocPartitionBodies = new Map();
+  }
+  return globalForAppDocCache.__appDocPartitionBodies;
+}
+
+function invalidatePartitionBodyCache(collectionKey: string): void {
+  partitionBodyCache().delete(collectionKey);
+}
+
+function mapSqlRowsToPartitionBodies(rows: unknown[]): PartitionBodyRow[] {
+  const out: PartitionBodyRow[] = [];
+  for (const r of rows) {
+    if (r == null || typeof r !== "object") continue;
+    const row = r as { mongo_id?: unknown; body?: unknown };
+    if (typeof row.mongo_id !== "string") continue;
+    out.push({ mongo_id: row.mongo_id, body: row.body });
+  }
+  return out;
+}
+
+async function loadPartitionBodies(
+  sql: Sql,
+  collectionKey: string
+): Promise<PartitionBodyRow[]> {
+  const ttl = appDocumentsReadCacheTtlMs();
+  const cache = partitionBodyCache();
+  if (ttl > 0) {
+    const hit = cache.get(collectionKey);
+    if (hit && hit.expiresAt > Date.now()) {
+      return hit.rows;
+    }
+  }
+
+  const rows = await sql`
+    SELECT mongo_id, body FROM app_documents WHERE collection = ${collectionKey}
+  `;
+  const mapped = mapSqlRowsToPartitionBodies(rows);
+  if (ttl > 0) {
+    cache.set(collectionKey, { expiresAt: Date.now() + ttl, rows: mapped });
+  }
+  return mapped;
+}
+
 async function countAppDocumentsByCollection(sql: Sql, collectionKey: string): Promise<number> {
   const rows = await sql`
     SELECT COUNT(*)::int AS c FROM app_documents WHERE collection = ${collectionKey}
@@ -254,17 +322,8 @@ export class PgCollection<T extends AppDoc = AppDoc> {
   /** Fast path for `PgFindCursor` when the filter is empty. */
   async scanRawDocuments(rowLimit: number): Promise<{ mongo_id: string; body: unknown }[]> {
     const key = await this.resolvePhysicalCollectionKey();
-    const rows = await this.sql`
-      SELECT mongo_id, body FROM app_documents WHERE collection = ${key} LIMIT ${rowLimit}
-    `;
-    const out: { mongo_id: string; body: unknown }[] = [];
-    for (const r of rows) {
-      if (r == null || typeof r !== "object") continue;
-      const row = r as { mongo_id?: unknown; body?: unknown };
-      if (typeof row.mongo_id !== "string") continue;
-      out.push({ mongo_id: row.mongo_id, body: row.body });
-    }
-    return out;
+    const rows = await loadPartitionBodies(this.sql, key);
+    return rows.slice(0, rowLimit);
   }
 
   private async countAll(): Promise<number> {
@@ -287,10 +346,8 @@ export class PgCollection<T extends AppDoc = AppDoc> {
         `Refusing to load "${collectionKey}" for aggregation join ($lookup / $unionWith / …): ${n} rows exceeds APP_DOCUMENTS_MAX_SCAN=${maxScan()}.`
       );
     }
-    const rows = await this.sql`
-      SELECT mongo_id, body FROM app_documents WHERE collection = ${collectionKey}
-    `;
-    return mapRowsToAppDocs(rows);
+    const rows = await loadPartitionBodies(this.sql, collectionKey);
+    return mapRowsToAppDocs(rows as unknown[]);
   }
 
   async findDocuments(filter: Record<string, unknown>): Promise<T[]> {
@@ -318,11 +375,9 @@ export class PgCollection<T extends AppDoc = AppDoc> {
       return mapRowsToAppDocs<T>(rows);
     }
 
-    const rows = await this.sql`
-      SELECT mongo_id, body FROM app_documents WHERE collection = ${phys}
-    `;
+    const rows = await loadPartitionBodies(this.sql, phys);
     const q = new Query(filter);
-    return mapRowsToAppDocs<T>(rows).filter((doc) => q.test(doc as never));
+    return mapRowsToAppDocs<T>(rows as unknown[]).filter((doc) => q.test(doc as never));
   }
 
   find<T extends AppDoc = AppDoc>(
@@ -360,6 +415,7 @@ export class PgCollection<T extends AppDoc = AppDoc> {
           now()
         )
       `;
+      invalidatePartitionBodyCache(phys);
     } catch (e: unknown) {
       if (isPgUniqueViolation(e)) {
         const err = new Error("E11000 duplicate key error") as Error & { code: number };
@@ -418,6 +474,7 @@ export class PgCollection<T extends AppDoc = AppDoc> {
       SET body = ${bodySerialized as object}, updated_at = now()
       WHERE collection = ${phys} AND mongo_id = ${id}
     `;
+    invalidatePartitionBodyCache(phys);
     return { acknowledged: true, matchedCount: 1, modifiedCount: 1 };
   }
 
@@ -473,6 +530,9 @@ export class PgCollection<T extends AppDoc = AppDoc> {
       `;
       modified++;
     }
+    if (modified > 0) {
+      invalidatePartitionBodyCache(phys);
+    }
     return {
       acknowledged: true,
       matchedCount: targets.length,
@@ -489,6 +549,7 @@ export class PgCollection<T extends AppDoc = AppDoc> {
     await this.sql`
       DELETE FROM app_documents WHERE collection = ${phys} AND mongo_id = ${id}
     `;
+    invalidatePartitionBodyCache(phys);
     return { acknowledged: true, deletedCount: 1 };
   }
 
@@ -502,6 +563,9 @@ export class PgCollection<T extends AppDoc = AppDoc> {
         DELETE FROM app_documents WHERE collection = ${phys} AND mongo_id = ${id}
       `;
       n++;
+    }
+    if (n > 0) {
+      invalidatePartitionBodyCache(phys);
     }
     return { acknowledged: true, deletedCount: n };
   }
@@ -577,10 +641,8 @@ export class PgCollection<T extends AppDoc = AppDoc> {
           `Aggregate on "${this.collectionKey}" needs ${n} documents (budget ${budget}). Raise APP_AGGREGATE_DOC_BUDGET after sizing RAM, or narrow the pipeline.`
         );
       }
-      const rows = await this.sql`
-        SELECT mongo_id, body FROM app_documents WHERE collection = ${baseKey}
-      `;
-      const docs = mapRowsToAppDocs(rows);
+      const rows = await loadPartitionBodies(this.sql, baseKey);
+      const docs = mapRowsToAppDocs(rows as unknown[]);
       return mingoAggregate(docs, pipeline as never[], {
         collectionResolver: (name: string) => preload.get(name) ?? [],
       });

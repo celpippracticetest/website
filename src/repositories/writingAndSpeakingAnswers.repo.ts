@@ -77,7 +77,7 @@ export class WritingAndSpeakingAnswerRepository {
     practiceIds: string[],
     userId: string
   ): Promise<string[]> {
-    const answers = await this.getAnswerCollection()
+    const legacyPromise = this.getAnswerCollection()
       .find({
         practiceId: { $in: practiceIds },
         userId: userId,
@@ -85,20 +85,27 @@ export class WritingAndSpeakingAnswerRepository {
       .project({ practiceId: 1 })
       .toArray();
 
+    if (shouldPersistAnswersInSupabase()) {
+      const [answers, fromSb] = await Promise.all([
+        legacyPromise,
+        supabaseFindPracticeIdsWithWritingAnswers(practiceIds, userId),
+      ]);
+      const uniqueAnswers = Array.from(
+        new Map(answers.map((a) => [a.practiceId, a])).values()
+      );
+      const legacy = uniqueAnswers
+        .map((a) => String(a.practiceId ?? ""))
+        .filter((id) => id.length > 0);
+      return [...new Set([...legacy, ...fromSb])];
+    }
+
+    const answers = await legacyPromise;
     const uniqueAnswers = Array.from(
-      new Map(answers.map(a => [a.practiceId, a])).values()
+      new Map(answers.map((a) => [a.practiceId, a])).values()
     );
-    const legacy = uniqueAnswers
+    return uniqueAnswers
       .map((a) => String(a.practiceId ?? ""))
       .filter((id) => id.length > 0);
-    if (shouldPersistAnswersInSupabase()) {
-      const merged = new Set([
-        ...legacy,
-        ...(await supabaseFindPracticeIdsWithWritingAnswers(practiceIds, userId)),
-      ]);
-      return [...merged];
-    }
-    return legacy;
   }
   async createAnswer(dto: Omit<TWritingAnswerDto, "id">): Promise<TWritingAnswerDto> {
     if (shouldPersistAnswersInSupabase()) {
@@ -167,6 +174,54 @@ export class WritingAndSpeakingAnswerRepository {
     const examOid = examIdAsObjectId(sanitizedFilter.examId);
     const typeVal = typeof sanitizedFilter.type === "string" ? sanitizedFilter.type : null;
     const keys = Object.keys(sanitizedFilter);
+    const practiceIdVal =
+      typeof sanitizedFilter.practiceId === "string" &&
+      sanitizedFilter.practiceId.length > 0
+        ? sanitizedFilter.practiceId
+        : null;
+
+    // Practice history: narrow query + bounded Supabase fetch (avoid 20k-row merge).
+    if (userIdVal && practiceIdVal && typeVal && keys.length === 3) {
+      const q = { userId: userIdVal, practiceId: practiceIdVal, type: typeVal };
+      const [totalItems, raw] = await Promise.all([
+        coll.countDocuments(q),
+        coll
+          .find(q)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .toArray(),
+      ]);
+      const legacyItems = raw.map((a) => this.convertFromEntity(a));
+      if (shouldPersistAnswersInSupabase()) {
+        const wsType = typeVal === "SPEAKING" ? "SPEAKING" : "WRITING";
+        const sb = await supabaseGetAllWritingAnswers(
+          { userId: userIdVal, practiceId: practiceIdVal, type: wsType },
+          page,
+          limit
+        );
+        const merged = mergeWritingPreferSupabase(legacyItems, sb.items);
+        const totalMerged = merged.length;
+        const slice = merged.slice(skip, skip + limit);
+        const totalPages = limit > 0 ? Math.ceil(totalMerged / limit) : 0;
+        return {
+          items: slice,
+          page,
+          totalItems: totalMerged,
+          totalPages,
+          hasNextPage: skip + slice.length < totalMerged,
+        };
+      }
+      const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 0;
+      return {
+        items: legacyItems,
+        page,
+        totalItems,
+        totalPages,
+        hasNextPage: skip + raw.length < totalItems,
+      };
+    }
+
     if (
       userIdVal &&
       examOid &&
@@ -191,8 +246,8 @@ export class WritingAndSpeakingAnswerRepository {
               examId: normalizeExamIdForStorage(String(sanitizedFilter.examId)),
               type: wsType,
             },
-            0,
-            20_000
+            page,
+            Math.max(limit, skip + limit)
           );
         const merged = mergeWritingPreferSupabase(legacyItems, sb.items);
         const totalMerged = merged.length;
@@ -302,8 +357,8 @@ export class WritingAndSpeakingAnswerRepository {
     if (shouldPersistAnswersInSupabase()) {
       const sb = await supabaseGetAllWritingAnswers(
         sanitizedFilter as Partial<TWritingAnswerDto>,
-        0,
-        20_000
+        page,
+        Math.max(limit, skip + limit)
       );
       const merged = mergeWritingPreferSupabase(legacyItems, sb.items);
       const totalMerged = merged.length;

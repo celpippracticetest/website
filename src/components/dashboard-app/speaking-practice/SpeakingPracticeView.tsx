@@ -21,6 +21,8 @@ import { SupabaseAuthForm } from "@/components/auth/SupabaseAuthForm";
 import SvgRecording from "@/components/icons/Recording";
 import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
+import { runPracticeSubmitSideEffects } from "@/lib/practiceSubmitSideEffects";
+import { startPracticeSubmitProgress } from "@/lib/practiceSubmitProgress";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import StatBadge from "@/components/shared/StatBadge";
@@ -357,76 +359,46 @@ const SpeakingPracticeView = ({
         const formData = new FormData();
         formData.append("audio", blob, "recording.m4a");
         formData.append("practiceId", selectedPracticeId ?? "");
-        const progressInterval = setInterval(() => {
-          setProgressBar((prev) => (prev < 100 ? prev + 1 : prev));
-        }, 320); // Increment every 300ms to reach 100 in ~30s
+        const stopProgress = startPracticeSubmitProgress(setProgressBar);
 
         fetch("/api/answers/speaking", {
           method: "POST",
+          credentials: "include",
           body: formData,
         })
           .then((response) => {
-            clearInterval(progressInterval);
-            setProgressBar(100);
+            stopProgress();
             if (!response.ok) {
               throw new Error("Failed to upload audio");
             }
             return response.json();
           })
-          .then(async (data) => {
-            // Log practice completed
-            const attemptId = `practice_${practice.id}_${Date.now()}`;
-            await ActivityLogger.practiceCompleted(
-              attemptId,
-              practice.id,
-              "Speaking",
-              data.overall,
-              data,
-              recordingTime
-            );
-
-            // Add league points for practice completion (only once)
-            if (!pointsAwarded) {
-              await addPoints(
-                10,
-                "practiceSessions",
-                `${Math.floor(recordingTime / 60)} minutes`
-              );
-              setPointsAwarded(true);
-            }
-
-            // Log AI feedback generation
-            if (data.usage) {
-              await ActivityLogger.aiFeedbackGenerated(
-                "practice",
-                "Speaking",
-                data.usage.prompt_tokens || 0,
-                data.usage.completion_tokens || 0,
-                attemptId
-              );
-
-              // Add league points for AI feedback (only once)
-              if (!aiFeedbackPointsAwarded) {
-                await addPoints(5, "aiFeedback");
-                setAiFeedbackPointsAwarded(true);
-              }
-            }
-
-            // Check for trophy achievements
-            await checkTrophyAchievements(
-              10,
-              "practiceSessions",
-              `${Math.floor(recordingTime / 60)}:${recordingTime % 60}`
-            );
-
+          .then((data) => {
+            setProgressBar(100);
             setIsSubmit(false);
             onAnswerButtonClick(practice, data);
+
+            runPracticeSubmitSideEffects({
+              practiceId: practice.id,
+              skill: "Speaking",
+              overallScore: data.overall ?? data.overalScore ?? 0,
+              result: data,
+              durationSeconds: recordingTime,
+              usage: data.usage,
+              pointsAwarded,
+              aiFeedbackPointsAwarded,
+              addPoints,
+              checkTrophyAchievements,
+              onPointsAwarded: () => setPointsAwarded(true),
+              onAiFeedbackPointsAwarded: () => setAiFeedbackPointsAwarded(true),
+            });
           })
           .catch((error) => {
             console.error("Error uploading audio:", error);
+            stopProgress();
           })
           .finally(() => {
-            setTimeout(() => setProgressBar(0), 1000);
+            setTimeout(() => setProgressBar(0), 600);
           });
         mediaRecorderRef.current?.stream
           .getTracks()

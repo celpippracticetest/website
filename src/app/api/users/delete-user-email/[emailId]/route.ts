@@ -3,12 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { emailId: string } }
+  { params }: { params: Promise<{ emailId: string }> }
 ) {
   try {
     const { userId } = await auth();
 
-    const { emailId } = params;
+    const { emailId } = await params;
 
     if (!userId || !emailId) {
       return NextResponse.json(

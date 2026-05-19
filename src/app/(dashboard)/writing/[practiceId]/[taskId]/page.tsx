@@ -57,26 +57,28 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function WritingPracticeSubPage({ params }: PageProps) {
   const { practiceId, taskId } = await params;
   const taskRepo = new TaskRepository(documentsClient);
-  const task: TTaskSchemaDto | null = await taskRepo.findTaskById(taskId);
+  const practiceRepo = new PracticeRepository(documentsClient);
+
+  const [task, practices, selectedPractice, hybridUser] = await Promise.all([
+    taskRepo.findTaskById(taskId),
+    practiceRepo.getAllPractice(
+      {
+        type: "WRITING",
+        taskId: new ObjectId(taskId) as unknown as string,
+      },
+      0,
+      200
+    ),
+    practiceRepo.findPractice(practiceId),
+    getHybridCurrentUser(),
+  ]);
+
   if (!task) {
     redirect("/practice-overview", RedirectType.replace);
   }
-
-  const practiceRepo = new PracticeRepository(documentsClient);
-  const practices = await practiceRepo.getAllPractice(
-    {
-      type: "WRITING",
-      taskId: new ObjectId(taskId) as unknown as string,
-    },
-    0,
-    200
-  );
-  const selectedPractice = await practiceRepo.findPractice(practiceId);
   if (!selectedPractice) {
     redirect("/practice-overview", RedirectType.replace);
   }
-
-  const hybridUser = await getHybridCurrentUser();
   const user = hybridUser?.user ?? null;
   if (
     !hasPaidPracticeAccess(

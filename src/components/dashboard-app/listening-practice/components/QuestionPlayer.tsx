@@ -161,7 +161,7 @@ export default function QuestionPlayer({
           lineHeight: "20px",
         }}
       >
-        <audio ref={audioRef} src={audioUrl} preload="metadata" />
+        <audio ref={audioRef} src={audioUrl} preload="auto" />
         <div className="boxIcon" style={{ display: "flex", alignItems: "center" }}>
           <em
             className="VolumeIcon"
@@ -289,7 +289,7 @@ export default function QuestionPlayer({
           </div>
         </div>
       )}
-      <audio ref={audioRef} src={audioUrl} preload="metadata" />
+      <audio ref={audioRef} src={audioUrl} preload="auto" />
       <button onClick={togglePlay} className="btn-play order-1 shrink-0">
         {isPlaying ? <SvgPause /> : <SvgTrianglePlay />}
       </button>

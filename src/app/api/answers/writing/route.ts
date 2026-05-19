@@ -7,11 +7,22 @@ import { TaskRepository } from "@/repositories/tasks.repo";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import {
+  OPENROUTER_EVAL_MAX_TOKENS,
+  OPENROUTER_EVAL_PROVIDER,
+  OPENROUTER_EVAL_TEMPERATURE,
+  resolveOpenRouterEvalModel,
+} from "@/lib/openrouterEvaluation";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export const POST = async function (req: NextRequest) {
-  const body = await req.json();
+  const [body, authContext] = await Promise.all([
+    req.json(),
+    getAuthenticatedRequestContext(req),
+  ]);
   const answersParser = WritingAnswerRequestSchema.safeParse(body);
-  const authContext = await getAuthenticatedRequestContext(req);
   const user = authContext?.user;
   if (!user) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
@@ -29,7 +40,7 @@ export const POST = async function (req: NextRequest) {
       const prevAnswer = await answerRepo.getAllWritingAnswers(
         { userId: user.id, practiceId: answerBody.practiceId, type: "WRITING" },
         0,
-        100
+        3
       );
       if (prevAnswer.items.length > 2) {
         return NextResponse.json(
@@ -45,6 +56,7 @@ export const POST = async function (req: NextRequest) {
       );
     }
     const practiceRepo = new PracticeRepository(documentsClient);
+    const taskRepo = new TaskRepository(documentsClient);
     const practice = await practiceRepo.findPractice(answerBody.practiceId);
     if (!practice || practice.taskId === undefined) {
       return NextResponse.json(
@@ -52,9 +64,8 @@ export const POST = async function (req: NextRequest) {
         { status: 404 }
       );
     }
-    const taskRepo = new TaskRepository(documentsClient);
     const task: TTaskSchemaDto | null = await taskRepo.findTaskById(
-      practice?.taskId ?? ""
+      practice.taskId ?? ""
     );
     if (!task) {
       return NextResponse.json({ message: "Task not found" }, { status: 404 });
@@ -78,9 +89,7 @@ export const POST = async function (req: NextRequest) {
     // Determine which model to use
     // Set OPENROUTER_MODEL in your environment variables to override
     // Examples: "qwen/qwen3-next-80b-a3b-instruct" or "anthropic/claude-3-7-sonnet-20250219"
-    const modelToUse = process.env.OPENROUTER_MODEL ;
-    
-    console.log("Using model:", modelToUse);
+    const modelToUse = resolveOpenRouterEvalModel();
 
     // Enhance system prompt for models that don't support tool calling well
     const isQwen = modelToUse?.includes('qwen');
@@ -113,13 +122,9 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
         },
         body: JSON.stringify({
           model: modelToUse,
-          max_tokens: 20000,
-          temperature: 1,
-          // Force specific providers that work well with Qwen
-          provider: {
-            order: ["DeepInfra", "Together", "Fireworks"],
-            ignore: ["Hyperbolic"], // This provider doesn't respond properly
-          },
+          max_tokens: OPENROUTER_EVAL_MAX_TOKENS,
+          temperature: OPENROUTER_EVAL_TEMPERATURE,
+          provider: OPENROUTER_EVAL_PROVIDER,
           messages: [
             {
               role: "system",

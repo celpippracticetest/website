@@ -3,9 +3,11 @@
 import { useEffect, useRef } from "react";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 
+const HEARTBEAT_INTERVAL_MS = 120_000;
+
 /**
  * ActiveUsersTracker Component
- * Sends heartbeat every 30 seconds to track user activity
+ * Sends heartbeat periodically to track user activity
  * and sends event to Google Analytics
  */
 export default function ActiveUsersTracker() {
@@ -43,30 +45,30 @@ export default function ActiveUsersTracker() {
 
     const sessionId = sessionIdRef.current;
 
-    // Send initial heartbeat
-    sendHeartbeat(sessionId);
-
-    // Send heartbeat every 30 seconds
-    heartbeatIntervalRef.current = setInterval(() => {
-      sendHeartbeat(sessionId);
-    }, 30000); // 30 seconds
-
-    // Cleanup on unmount - mark user as offline
-    return () => {
+    const startHeartbeatInterval = () => {
       if (heartbeatIntervalRef.current) {
         clearInterval(heartbeatIntervalRef.current);
       }
-      markOffline(sessionId);
+      heartbeatIntervalRef.current = setInterval(() => {
+        if (document.visibilityState !== "visible") return;
+        sendHeartbeat(sessionId);
+      }, HEARTBEAT_INTERVAL_MS);
     };
-  }, [isBotClient, userId]);
 
-  // Handle visibility change - send heartbeat when tab becomes visible
-  useEffect(() => {
-    if (isBotClient) return;
+    if (document.visibilityState === "visible") {
+      sendHeartbeat(sessionId);
+      startHeartbeatInterval();
+    }
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        sendHeartbeat(sessionIdRef.current);
+        sendHeartbeat(sessionId);
+        startHeartbeatInterval();
+        return;
+      }
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
+        heartbeatIntervalRef.current = null;
       }
     };
 
@@ -74,8 +76,12 @@ export default function ActiveUsersTracker() {
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
+      }
+      markOffline(sessionId);
     };
-  }, [isBotClient]);
+  }, [isBotClient, userId]);
 
   const sendHeartbeat = async (sessionId: string) => {
     try {

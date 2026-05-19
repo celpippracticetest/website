@@ -20,8 +20,8 @@ import LoginModal from "@/components/modal/LoginModal";
 import { SupabaseAuthForm } from "@/components/auth/SupabaseAuthForm";
 import SvgChevronRight from "@/components/icons/ChevronRight";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
-import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
+import { runPracticeSubmitSideEffects } from "@/lib/practiceSubmitSideEffects";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import StatBadge from "@/components/shared/StatBadge";
@@ -192,36 +192,17 @@ const ListeningPracticeView = ({
 
           if (response.ok) {
             const result = await response.json();
-            // Log practice completed
-            const attemptId = `practice_${practice.id}_${Date.now()}`;
-            await ActivityLogger.practiceCompleted(
-              attemptId,
-              practice.id,
-              "Listening",
-              result.overall,
+            runPracticeSubmitSideEffects({
+              practiceId: practice.id,
+              skill: "Listening",
+              overallScore: result.overall ?? 0,
               result,
-              time
-            );
-
-            // Add league points (only once) and confirm success
-            if (!pointsAwarded) {
-              const res = await addPoints(
-                10,
-                "practiceSessions",
-                `${Math.floor(time / 60)} minutes`
-              );
-              if (res && (res as any).success) {
-                setPointsAwarded(true);
-                // Check for trophy achievements only after success
-                await checkTrophyAchievements(
-                  10,
-                  "practiceSessions",
-                  `${Math.floor(time / 60)}:${time % 60}`
-                );
-              } else {
-                console.warn("addPoints failed; skipping trophy check and award flag");
-              }
-            }
+              durationSeconds: time,
+              pointsAwarded,
+              addPoints,
+              checkTrophyAchievements,
+              onPointsAwarded: () => setPointsAwarded(true),
+            });
           }
         } catch (error) {
           // Optionally handle error

@@ -99,17 +99,13 @@ export type HybridAuthSource = "supabase" | null;
 async function resolveFreshSupabaseUser(
   supabase: NonNullable<ReturnType<typeof createBrowserSupabaseClient>>
 ): Promise<SupabaseAuthUser | null> {
-  const { data: sessionData } = await supabase.auth.getSession();
-  if (!sessionData.session) {
-    return null;
-  }
-
   const { data: userData, error } = await supabase.auth.getUser();
   if (!error && userData.user) {
     return userData.user;
   }
 
-  return sessionData.session.user;
+  const { data: sessionData } = await supabase.auth.getSession();
+  return sessionData.session?.user ?? null;
 }
 
 export function useHybridWebUser() {

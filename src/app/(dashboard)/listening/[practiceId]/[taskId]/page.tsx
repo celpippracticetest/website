@@ -58,26 +58,29 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function ListeningPracticeSubPage({ params }: PageProps) {
   const { practiceId, taskId } = await params;
   const taskRepo = new TaskRepository(documentsClient);
-  const task: TTaskSchemaDto | null = await taskRepo.findTaskById(taskId);
+  const practiceRepo = new PracticeRepository(documentsClient);
+
+  const [task, practices, selectedPracticeRaw, hybridUser] = await Promise.all([
+    taskRepo.findTaskById(taskId),
+    practiceRepo.getAllPractice(
+      {
+        type: "LISTENING",
+        taskId: new ObjectId(taskId) as unknown as string,
+      },
+      0,
+      200
+    ),
+    practiceRepo.findPractice(practiceId),
+    getHybridCurrentUser(),
+  ]);
+
   if (!task) {
     redirect("/practice-overview", RedirectType.replace);
   }
-
-  const practiceRepo = new PracticeRepository(documentsClient);
-  const practices = await practiceRepo.getAllPractice(
-    {
-      type: "LISTENING",
-      taskId: new ObjectId(taskId) as unknown as string,
-    },
-    0,
-    200
-  );
-  let selectedPractice = await practiceRepo.findPractice(practiceId);
+  let selectedPractice = selectedPracticeRaw;
   if (!selectedPractice) {
     redirect("/practice-overview", RedirectType.replace);
   }
-
-  const hybridUser = await getHybridCurrentUser();
   const user = hybridUser?.user ?? null;
   if (
     !hasPaidPracticeAccess(
@@ -95,15 +98,13 @@ export default async function ListeningPracticeSubPage({ params }: PageProps) {
   let answers: TListeningAndReadingAnswerDto | null = null;
   let completedPractice: string[] = [];
   if (user) {
-    const listeningAndReadingAnswerRepo = new ListeningAndReadingAnswerRepository(documentsClient);
-    answers = await listeningAndReadingAnswerRepo.findAnswerByPracticeAndUser(
-      practiceId,
-      user.id
+    const listeningAndReadingAnswerRepo = new ListeningAndReadingAnswerRepository(
+      documentsClient
     );
-    completedPractice = await listeningAndReadingAnswerRepo.findAllTaskIdsByTaskAndUser(
-      task.id,
-      user.id
-    );
+    [answers, completedPractice] = await Promise.all([
+      listeningAndReadingAnswerRepo.findAnswerByPracticeAndUser(practiceId, user.id),
+      listeningAndReadingAnswerRepo.findAllTaskIdsByTaskAndUser(task.id, user.id),
+    ]);
   }
 
   const strategyBodySx = {

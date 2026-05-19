@@ -8,6 +8,15 @@ import { TPracticeDto } from "@/models/practice.model";
 import { TaskRepository } from "@/repositories/tasks.repo";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
+import {
+  OPENROUTER_EVAL_MAX_TOKENS,
+  OPENROUTER_EVAL_PROVIDER,
+  OPENROUTER_EVAL_TEMPERATURE,
+  resolveOpenRouterEvalModel,
+} from "@/lib/openrouterEvaluation";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
@@ -163,13 +172,14 @@ const uniqLower = (arr: string[]) => {
 // =============== Route: POST ===============
 export const POST = async function (req: Request) {
   try {
-    const authContext = await getAuthenticatedRequestContext(req);
+    const [authContext, formData] = await Promise.all([
+      getAuthenticatedRequestContext(req),
+      req.formData(),
+    ]);
     const user = authContext?.user;
     if (!user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
-
-    const formData = await req.formData();
     const audioFile = formData.get("audio");
     if (!(audioFile instanceof File)) {
       return NextResponse.json(
@@ -321,8 +331,7 @@ If the response is off-topic (i.e., does not address any topic above), sharply r
     }
 
     // Determine which model to use
-    const modelToUse = process.env.OPENROUTER_MODEL ;
-    console.log("Using model:", modelToUse);
+    const modelToUse = resolveOpenRouterEvalModel();
 
     // Enhance system prompt for models that don't support tool calling well
     const isQwen = modelToUse?.includes('qwen');
@@ -353,13 +362,9 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
           },
           body: JSON.stringify({
             model: modelToUse,
-            max_tokens: 20000,
-            temperature: 1,
-            // Force specific providers that work well
-            provider: {
-              order: ["DeepInfra", "Together", "Fireworks"],
-              ignore: ["Hyperbolic"],
-            },
+            max_tokens: OPENROUTER_EVAL_MAX_TOKENS,
+            temperature: OPENROUTER_EVAL_TEMPERATURE,
+            provider: OPENROUTER_EVAL_PROVIDER,
             messages: [
               {
                 role: "system",

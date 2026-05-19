@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
 import { isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import client from "@/lib/appDocumentsClient";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
@@ -6,6 +7,8 @@ import { PracticeRepository } from "@/repositories/practice.repo";
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
 import { supabaseListAllAnswersForUser } from "@/repositories/supabaseAnswers.store";
 import { matchUsersCollectionByWebUserIds } from "@/lib/users/userDocumentIdentity";
+
+const USER_SCORES_CACHE_SECONDS = 60;
 
 type ObjectiveAnswerRecord = Record<string, string>;
 type ObjectiveQuestion = {
@@ -107,34 +110,58 @@ export async function GET(request: NextRequest) {
       intent?: { targetScore?: unknown };
     } | null;
 
-    // Get answers from the answers collection
-    const answersCollection = db.collection("answers");
+    const loadAnswersForUser = unstable_cache(
+      async (userId: string) => {
+        if (isSupabaseAdminConfigured()) {
+          const fromSb = await supabaseListAllAnswersForUser(userId);
+          const sbKeys = new Set(fromSb.map((r) => userScoreAnswerKey(r)));
+          const legacyOnly = await db
+            .collection("answers")
+            .find({ userId })
+            .sort({ createdAt: -1 })
+            .project({
+              type: 1,
+              practiceId: 1,
+              examId: 1,
+              partId: 1,
+              answers: 1,
+              text: 1,
+              audioUrl: 1,
+              overalScore: 1,
+              result: 1,
+              createdAt: 1,
+            })
+            .limit(500)
+            .toArray();
+          const legacyDocs = legacyOnly.filter(
+            (doc): doc is Record<string, unknown> =>
+              doc != null &&
+              typeof doc === "object" &&
+              !sbKeys.has(userScoreAnswerKey(doc as Record<string, unknown>))
+          );
+          return [...fromSb, ...legacyDocs].sort((a, b) => {
+            const ta = new Date(String(a.createdAt ?? 0)).getTime();
+            const tb = new Date(String(b.createdAt ?? 0)).getTime();
+            return tb - ta;
+          });
+        }
 
-    // Get all answers for the user
-    const allAnswersRaw = await answersCollection
-      .find({ userId: user.id })
-      .sort({ createdAt: -1 })
-      .toArray();
+        const answersCollection = db.collection("answers");
+        const allAnswersRaw = await answersCollection
+          .find({ userId })
+          .sort({ createdAt: -1 })
+          .toArray();
 
-    let mergedDocList: Record<string, unknown>[] = allAnswersRaw.filter(
-      (doc): doc is Record<string, unknown> => doc != null && typeof doc === "object"
+        return allAnswersRaw.filter(
+          (doc): doc is Record<string, unknown> =>
+            doc != null && typeof doc === "object"
+        );
+      },
+      ["user-scores-answers"],
+      { revalidate: USER_SCORES_CACHE_SECONDS }
     );
 
-    if (isSupabaseAdminConfigured()) {
-      const fromSb = await supabaseListAllAnswersForUser(user.id);
-      const sbKeys = new Set(fromSb.map((r) => userScoreAnswerKey(r)));
-      mergedDocList = [
-        ...fromSb,
-        ...mergedDocList.filter((r) => !sbKeys.has(userScoreAnswerKey(r))),
-      ];
-      mergedDocList.sort((a, b) => {
-        const ta = new Date(String(a.createdAt ?? 0)).getTime();
-        const tb = new Date(String(b.createdAt ?? 0)).getTime();
-        return tb - ta;
-      });
-    }
-
-    const allAnswers = mergedDocList;
+    const allAnswers = await loadAnswersForUser(user.id);
 
     // Separate answers by type
     const writingAnswers = allAnswers.filter(

@@ -29,6 +29,8 @@ import SvgArrowRight from "@/components/icons/ArrowRight";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
+import { runPracticeSubmitSideEffects } from "@/lib/practiceSubmitSideEffects";
+import { startPracticeSubmitProgress } from "@/lib/practiceSubmitProgress";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import StatBadge from "@/components/shared/StatBadge";
@@ -214,89 +216,48 @@ const WritingPracticeView = ({
   }, [practice?.id, isSignedIn]);
 
   const submitAnswer = async () => {
+    const stopProgress = startPracticeSubmitProgress(setProgressBar);
     try {
-      setProgressBar(0); // Start loading
-      const url = "/api/answers/writing";
-      const requestData = {
-        practiceId: practice.id,
-        text,
-        attemptId: browserAttemptId,
-      };
-
-      // Simulate progress bar increment
-      const progressInterval = setInterval(() => {
-        setProgressBar((prev) => (prev < 100 ? prev + 1 : prev));
-      }, 300); // Increment every 300ms to reach 100 in ~30s
-
-      const response = await fetch(url, {
+      const response = await fetch("/api/answers/writing", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestData),
+        body: JSON.stringify({
+          practiceId: practice.id,
+          text,
+          attemptId: browserAttemptId,
+        }),
       });
-
-      clearInterval(progressInterval); // Stop progress increment
 
       if (!response.ok) {
         throw new Error("Network response was not ok.");
       }
-      setProgressBar(100);
+
       const result = await response.json();
+      setProgressBar(100);
+      onAnswerButtonClick(practice, result);
 
-      // Log practice completed
-      const logAttemptId = `practice_${practice.id}_${Date.now()}`;
-      await ActivityLogger.practiceCompleted(
-        logAttemptId,
-        practice.id,
-        "Writing",
-        result.overall,
+      runPracticeSubmitSideEffects({
+        practiceId: practice.id,
+        skill: "Writing",
+        overallScore: result.overall ?? result.overalScore ?? 0,
         result,
-        time
-      );
+        durationSeconds: time,
+        usage: result.usage,
+        pointsAwarded,
+        addPoints,
+        checkTrophyAchievements,
+        onPointsAwarded: () => setPointsAwarded(true),
+        onAiFeedbackPointsAwarded: () => {},
+      });
 
-      // Add league points for practice completion (only once)
-      if (!pointsAwarded) {
-        await addPoints(
-          10,
-          "practiceSessions",
-          `${Math.floor(time / 60)} minutes`
-        );
-        setPointsAwarded(true);
-      }
-
-      // Log AI feedback generation
-      if (result.usage) {
-        await ActivityLogger.aiFeedbackGenerated(
-          "practice",
-          "Writing",
-          result.usage.prompt_tokens || 0,
-          result.usage.completion_tokens || 0,
-          logAttemptId
-        );
-
-        // Add league points for AI feedback
-        await addPoints(5, "aiFeedback");
-      }
-
-      // Check for trophy achievements
-      await checkTrophyAchievements(
-        10,
-        "practiceSessions",
-        `${Math.floor(time / 60)}:${time % 60}`
-      );
-
-      // Allow trophy modal to render before navigation to results
-      setTimeout(() => {
-        onAnswerButtonClick(practice, result);
-      }, 800);
-      setProgressBar(0);
       setTryToSubmit(false);
       setIsSubmit(false);
     } catch (error) {
       console.error("Error submitting answer:", error);
     } finally {
-      setProgressBar(100); // Ensure progress bar reaches 100
-      setTimeout(() => setProgressBar(0), 1000); // Reset progress bar after a short delay
+      stopProgress();
+      setTimeout(() => setProgressBar(0), 600);
     }
   };
   // Reset draft and in-task state only when the user switches practice — not when

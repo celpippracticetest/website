@@ -227,18 +227,15 @@ export async function supabaseFindAllTaskIdsByTaskAndUser(
 
   const { data, error } = await admin
     .from("answers")
-    .select("practice_id, task_id")
-    .eq("user_id", userId);
+    .select("practice_id")
+    .eq("user_id", userId)
+    .eq("task_id", wantHex);
 
   if (error || !data?.length) return [];
 
   const out: string[] = [];
-  for (const row of data as Pick<AnswerRow, "practice_id" | "task_id">[]) {
-    if (row.practice_id == null || row.practice_id === "") continue;
-    const tid = optionalIdString(row.task_id);
-    if (tid === wantHex && row.practice_id) {
-      out.push(row.practice_id);
-    }
+  for (const row of data as Pick<AnswerRow, "practice_id">[]) {
+    if (row.practice_id) out.push(row.practice_id);
   }
   return out;
 }
@@ -534,7 +531,9 @@ export async function supabaseListAllAnswersForUser(
 
   const { data, error } = await admin
     .from("answers")
-    .select("*")
+    .select(
+      "user_id, type, practice_id, exam_id, part_id, answers, text, audio_url, overall_score, result, created_at"
+    )
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
