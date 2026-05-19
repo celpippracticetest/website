@@ -1,54 +1,159 @@
 "use client";
 
-import FormatQuoteIcon from "@mui/icons-material/FormatQuote";
-import VerifiedIcon from "@mui/icons-material/Verified";
-import Rating from "@mui/material/Rating";
+import dynamic from "next/dynamic";
+import Image from "next/image";
+import { useEffect, useState } from "react";
+import { useInView } from "react-intersection-observer";
+import { JsonLd } from "@/components/seo/JsonLd";
 
-const testimonials = [
+const Svg5Star = dynamic(() => import("../../../icons/5Star"), { ssr: false });
+
+const studentReviews = [
   {
-    name: "Ravi M.",
-    avatar: "https://i.pravatar.cc/128?u=celpip-t1",
-    role: "Express Entry Applicant",
-    score: "CLB 9",
-    quote:
+    name: "Ravi",
+    comment:
       "The timed practice tests were identical to the real test. That practice enabled me to manage stress and finish each section within the allotted time.",
-    rating: 5,
+    source: "bear_student.png",
   },
   {
-    name: "Tatiana K.",
-    avatar: "https://i.pravatar.cc/128?u=celpip-t2",
-    role: "PNP Applicant",
-    score: "CLB 8",
-    quote:
+    name: "Tatiana",
+    comment:
       "Simple and efficient. Practiced for a month and improved in all 4 areas. Having the dashboard tracking my progress was a lovely addition.",
-    rating: 5,
+    source: "Tatiana.png",
   },
   {
-    name: "Carlos R.",
-    avatar: "https://i.pravatar.cc/128?u=celpip-t3",
-    role: "Citizenship Applicant",
-    score: "CLB 9 (all sections)",
-    quote:
-      "Practice in speaking and getting instant feedback increased my confidence level. I cleared with 9 in all sections!",
-    rating: 5,
+    name: "Carlos",
+    comment:
+      "CELPIPPRACTICETEST.com made my practice a revolutionary process. Practice in speaking and getting instant feedback increased my confidence level. I cleared with 9 in all sections!",
+    source: "Carlos.png",
   },
   {
-    name: "Ahmed S.",
-    avatar: "https://i.pravatar.cc/128?u=celpip-t4",
-    role: "Healthcare Worker",
-    score: "CLB 9 Writing",
-    quote:
-      "I finally got CLB 9 in writing after doing 2 weeks of practice tests. The AI feedback was exactly what I needed to improve structure and coherence.",
-    rating: 5,
+    name: "Admad",
+    comment:
+      "I finally got CLB 9 in writing after doing 2 weeks of practice tests at CELPIPPRACTICETEST.com. The AI feedback was exactly what I needed to improve structure and coherence. I highly recommend it!",
+    source: "Ahmed.png",
   },
-];
+  {
+    name: "Sofia",
+    comment:
+      "I adored the way the feedback was individualized. It pointed out my weak points in writing and speaking, and I could notice clear improvement week by week.",
+    source: "bear_student_tablet.png",
+  },
+  {
+    name: "Lie",
+    comment:
+      "The practice of speaking on this website is amazing. I practiced and listened to the high-score examples. It was so helpful.",
+    source: "Li.png",
+  },
+  {
+    name: "Mark",
+    comment:
+      "Honestly, the variety of practice questions kept me engaged. I enjoyed it and never got bored, and on the day of the test, everything was comfortable and familiar.",
+    source: "bear.png",
+  },
+  {
+    name: "Dalia",
+    comment:
+      "So many useful tips that I learned from the reading section. Mock tests are challenging but true to life. Assisted to calm down fears.",
+    source: "Dalia.png",
+  },
+] as const;
+
+function ReviewCard({
+  person,
+  index,
+  animate,
+  variant,
+}: {
+  person: (typeof studentReviews)[number];
+  index: number;
+  animate: boolean;
+  variant: "mobile" | "desktop";
+}) {
+  const baseAnimate = animate
+    ? "translate-x-0 translate-y-0 opacity-100"
+    : variant === "mobile"
+      ? "-translate-x-full opacity-0"
+      : "translate-y-10 opacity-0";
+
+  const sizeClasses =
+    variant === "mobile"
+      ? "min-w-[280px] max-w-[316px] h-[230px]"
+      : "h-[200px] w-full screen1280:h-[235px]";
+
+  return (
+    <article
+      role="article"
+      style={{ transitionDelay: `${index * 40}ms` }}
+      className={`flex flex-col flex-shrink-0 bg-white p-4 shadow-[2px_2px_8px_0px_#212E4214] transition-all duration-300 ease-out hover:!shadow-[0px_10px_35px_0px_#212E421A] rounded-3xl ${sizeClasses} ${baseAnimate} transform`}
+    >
+      <div className="flex h-14 gap-2.5">
+        <Image
+          src={`/images/${person.source}`}
+          alt={`Photo of ${person.name}`}
+          width={48}
+          height={48}
+        />
+        <div className="flex flex-col gap-2">
+          <h3 className="text-lg font-medium text-text1 screen1280:text-xl">
+            {person.name}
+          </h3>
+          <span>
+            <Svg5Star />
+          </span>
+        </div>
+      </div>
+      <p className="mt-4 text-xs font-normal leading-[18px] text-text2 screen1280:text-base screen1280:leading-[23px]">
+        {person.comment}
+      </p>
+    </article>
+  );
+}
 
 export function HomeTestimonialsSection() {
+  const [animate, setAnimate] = useState(false);
+  const { ref: sectionRef, inView } = useInView({
+    threshold: 0,
+    rootMargin: "0px 0px 120px 0px",
+  });
+
+  const reviewsSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: "CELPIP Practice Test Platform",
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: "5",
+      reviewCount: studentReviews.length.toString(),
+    },
+    review: studentReviews.map((person) => ({
+      "@type": "Review",
+      author: {
+        "@type": "Person",
+        name: person.name,
+      },
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: "5",
+      },
+      reviewBody: person.comment,
+    })),
+  };
+
+  useEffect(() => {
+    if (inView) {
+      const timer = setTimeout(() => setAnimate(true), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [inView]);
+
   return (
     <section
+      ref={sectionRef}
       aria-labelledby="testimonials-heading"
       className="bg-[linear-gradient(180deg,#F8FAFC_0%,#EEF2FF_100%)] py-14 screen744:py-20"
     >
+      <JsonLd data={reviewsSchema} />
       <div className="mx-auto max-w-[1200px] px-4 screen744:px-8">
         <div className="mx-auto mb-10 max-w-2xl text-center screen744:mb-14">
           <span className="mb-3 inline-block rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">
@@ -66,48 +171,27 @@ export function HomeTestimonialsSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 screen744:grid-cols-2 screen1280:grid-cols-4">
-          {testimonials.map((t) => (
-            <article
-              key={t.name}
-              className="flex h-full flex-col rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-md"
-            >
-              <FormatQuoteIcon
-                sx={{ fontSize: 32, color: "#93C5FD", opacity: 0.7 }}
-                aria-hidden
-              />
-              <Rating
-                value={t.rating}
-                readOnly
-                size="small"
-                sx={{ my: 1.5 }}
-              />
-              <p className="mb-4 min-h-[6.5rem] flex-1 text-sm leading-relaxed text-slate-600">
-                &ldquo;{t.quote}&rdquo;
-              </p>
-              <div className="mt-auto flex items-center gap-3 border-t border-slate-100 pt-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={t.avatar}
-                  alt={t.name}
-                  width={40}
-                  height={40}
-                  className="h-10 w-10 rounded-full object-cover"
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1">
-                    <span className="truncate text-sm font-semibold text-slate-900">
-                      {t.name}
-                    </span>
-                    <VerifiedIcon sx={{ fontSize: 14, color: "#3B82F6" }} aria-hidden />
-                  </div>
-                  <p className="truncate text-xs text-slate-500">{t.role}</p>
-                </div>
-              </div>
-              <span className="mt-3 inline-flex w-fit rounded-full bg-emerald-50 px-2.5 py-1 text-[0.7rem] font-bold text-emerald-700">
-                {t.score}
-              </span>
-            </article>
+        <div className="flex w-full gap-4 overflow-x-auto px-1 pb-1 scrollbar-none screen744:hidden">
+          {studentReviews.map((person, index) => (
+            <ReviewCard
+              key={person.name}
+              person={person}
+              index={index}
+              animate={animate}
+              variant="mobile"
+            />
+          ))}
+        </div>
+
+        <div className="hidden w-full grid-cols-2 gap-4 screen744:grid screen1280:grid-cols-3 screen1280:gap-6">
+          {studentReviews.map((person, index) => (
+            <ReviewCard
+              key={person.name}
+              person={person}
+              index={index}
+              animate={animate}
+              variant="desktop"
+            />
           ))}
         </div>
       </div>

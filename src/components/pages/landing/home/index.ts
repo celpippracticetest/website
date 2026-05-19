@@ -1,4 +1,3 @@
-export { HomeSocialProofBar } from "./HomeSocialProofBar";
 export { HomeFeaturesSection } from "./HomeFeaturesSection";
 export { HomeHowItWorksSection } from "./HomeHowItWorksSection";
 export { HomeTestimonialsSection } from "./HomeTestimonialsSection";

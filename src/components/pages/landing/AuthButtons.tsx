@@ -146,20 +146,13 @@ const AuthButtons = () => {
           href="/sign-in"
           id="sign-up-button"
           className={cn(
-            "inline-flex h-10 min-h-10 items-center justify-center rounded-full border border-slate-200/90 bg-white/90 font-medium text-slate-700 shadow-none ring-offset-background transition-colors",
+            "inline-flex h-10 min-h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-slate-200/90 bg-white/90 font-medium text-slate-700 shadow-none ring-offset-background transition-colors",
             "hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40 focus-visible:ring-offset-2",
-            "px-4 text-sm max-[744px]:gap-0 min-[744px]:gap-1 min-[744px]:px-5"
+            "px-4 text-sm min-[744px]:px-5"
           )}
         >
-          <span className="max-[744px]:inline min-[744px]:hidden">Sign in</span>
-          <span className="hidden items-center gap-1.5 min-[744px]:inline-flex">
-            <span>Sign up</span>
-            <span className="text-slate-400" aria-hidden>
-              /
-            </span>
-            <span>Log in</span>
-          </span>
+          Get started
         </Link>
       )}    </>
   );

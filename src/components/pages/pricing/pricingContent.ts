@@ -19,6 +19,19 @@ export const pricingUpgradeOfferTitle = "Join CELPIP Practice Plus";
 export const pricingUpgradeOfferBody =
   "Pick the billing period that fits your exam date. Plus includes mock exams, full exam simulation, AI feedback, and the full question bank — the same live catalog as our pricing page. Try free practice first — no credit card required.";
 
+/** Short bullets for upgrade modal headers (navbar, landing). */
+export const pricingUpgradeModalHeaderBullets = [
+  "60 full mock exams",
+  "3,000+ practice questions",
+] as const;
+
+/** Compact value props shown once below plan CTAs in modals. */
+export const pricingUpgradeModalHighlights = [
+  "60 full mock exams",
+  "Instant AI feedback",
+  "3,000+ practice questions",
+] as const;
+
 /** Matches checkout tiles / pricing page “Unlock access to” list heading. */
 export const pricingUpgradeUnlockHeading = "Unlock access to:";
 

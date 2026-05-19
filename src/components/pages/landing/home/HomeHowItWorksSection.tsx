@@ -25,7 +25,7 @@ const steps = [
     title: "Review, Compare, Repeat",
     description:
       "Read explanations, compare to sample answers, and track progress so each session targets your weakest spots.",
-    color: "#10B981",
+    color: "#F59E0B",
   },
 ] as const;
 
@@ -74,7 +74,7 @@ export function HomeHowItWorksSection() {
     >
       <div className="mx-auto max-w-[1200px] px-4 screen744:px-8">
         <div className="mx-auto mb-10 max-w-2xl text-center screen744:mb-14">
-          <span className="mb-3 inline-block rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
+          <span className="mb-3 inline-block rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
             Simple Process
           </span>
           <h2
@@ -82,7 +82,7 @@ export function HomeHowItWorksSection() {
             className="text-balance text-3xl font-extrabold text-slate-900 screen744:text-4xl"
           >
             Start Improving in{" "}
-            <span className="text-emerald-600">3 Minutes</span>
+            <span className="text-[#F59E0B]">3 Minutes</span>
           </h2>
           <p className="mt-3 text-base text-slate-600 screen744:text-lg">
             No appointments, no setup. Just structured practice and feedback when

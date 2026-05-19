@@ -1,19 +1,10 @@
 "use client";
 
-import AllInclusiveIcon from "@mui/icons-material/AllInclusive";
 import BoltIcon from "@mui/icons-material/Bolt";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import DevicesIcon from "@mui/icons-material/Devices";
-import ShieldIcon from "@mui/icons-material/Shield";
-import StarIcon from "@mui/icons-material/Star";
-import TimerIcon from "@mui/icons-material/Timer";
 import WorkspacePremiumIcon from "@mui/icons-material/WorkspacePremium";
 import {
-  Avatar,
-  AvatarGroup,
   Box,
   Button,
-  Chip,
   Paper,
   Stack,
   Typography,
@@ -23,10 +14,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useCheckoutAttributionPayload } from "@/components/analytics/CheckoutAttributionFields";
+import { PricingUpgradeModalHeaderList } from "@/components/pages/pricing/PricingUpgradeModalHeaderList";
 import {
-  pricingTestimonials,
+  pricingUpgradeModalHighlights,
   pricingUpgradeOfferTitle,
-  pricingUpgradeOfferTrustLine,
 } from "@/components/pages/pricing/pricingContent";
 import {
   Dialog,
@@ -39,19 +30,12 @@ import { mergePendingGa4IntoAttribution } from "@/lib/ga4BrowserIds";
 import {
   buildOriginalPriceFromWeeklyMap,
   formatPlanCadPrice,
-  getDurationGroupKey,
   getStablePlanId,
-  isMonthlyPlan,
   isThreeMonthPlan,
-  isWeeklyPlan,
-  isYearlyPlan,
   parsePrice,
-  PRICING_PLUS_FEATURE_LABELS,
 } from "@/lib/pricing";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import type { SerializedPlan } from "@/types/pricing";
-
-const GOOGLE_REVIEWS_URL = process.env.NEXT_PUBLIC_GOOGLE_REVIEWS_URL?.trim();
 
 function planBillingHeadline(plan: SerializedPlan): string {
   const interval = plan.billingInterval;
@@ -69,59 +53,10 @@ function planBillingHeadline(plan: SerializedPlan): string {
   return `${count} ${interval}s`;
 }
 
-function planSubtitle(plan: SerializedPlan): string {
-  const t = plan.type?.trim();
-  if (t) return t;
-  const g = getDurationGroupKey(plan);
-  if (g === "weekly") return "Short sprint";
-  if (g === "monthly") return "Most flexible";
-  if (g === "threeMonth") return "Best value";
-  if (g === "yearly") return "Long prep";
-  return "CELPIP Plus";
-}
+const PLAN_ACCENT_BLUE = "#2563EB";
 
-function accentForPlan(plan: SerializedPlan): string {
-  const g = getDurationGroupKey(plan);
-  if (g === "weekly") return "#64748B";
-  if (g === "monthly") return "#3B82F6";
-  if (g === "threeMonth" || g === "yearly") return "#1B2B5A";
-  return "#2563EB";
-}
-
-function approximateDaysInPlan(plan: SerializedPlan): number {
-  if (isWeeklyPlan(plan)) return 7;
-  if (isMonthlyPlan(plan)) return 30;
-  if (isThreeMonthPlan(plan)) return 90;
-  if (isYearlyPlan(plan)) return 365;
-  const iv = plan.billingInterval;
-  const c =
-    plan.billingIntervalCount && plan.billingIntervalCount > 0 ? plan.billingIntervalCount : 1;
-  if (iv === "day") return c;
-  if (iv === "week") return 7 * c;
-  if (iv === "month") return 30 * c;
-  if (iv === "year") return 365 * c;
-  return 30;
-}
-
-function cadPerDay(plan: SerializedPlan, priceNum: number): string {
-  const days = Math.max(1, approximateDaysInPlan(plan));
-  return (priceNum / days).toFixed(2);
-}
-
-function isPopularPlanFromCms(plan: SerializedPlan): boolean {
-  if (plan.iconType === "PopularPlan") return true;
-  const t = `${plan.type} ${plan.title}`.toLowerCase();
-  return (
-    /\bpopular\b/.test(t) ||
-    /\bbest seller\b/.test(t) ||
-    /\bbest value\b/.test(t) ||
-    /\bmost popular\b/.test(t)
-  );
-}
-
-function isPopularPlan(plan: SerializedPlan): boolean {
-  if (isThreeMonthPlan(plan) || plan.iconType === "BestValuePlan") return false;
-  return isPopularPlanFromCms(plan);
+function accentForPlan(_plan: SerializedPlan): string {
+  return PLAN_ACCENT_BLUE;
 }
 
 function planListDiscountPercent(currentPrice: number, wasPrice: number): number | null {
@@ -261,510 +196,236 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogDrawerContent
-        closeButtonClassName="text-white opacity-90 hover:bg-white/15 hover:opacity-100 [&_svg]:text-white"
         className={cn(
-          "left-0 w-full max-w-none translate-x-0 border-slate-200/90 bg-[#FAFBFF] p-0"
+          "left-0 flex w-full max-w-none translate-x-0 flex-col border-slate-200/90 bg-[#FAFBFF] p-0"
         )}
       >
         <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
-          <div className="shrink-0 bg-gradient-to-br from-[#1B2B5A] via-[#2E4494] to-[#3B5998] px-3 pb-3 pt-1.5 sm:px-6 sm:pb-5 sm:pt-2">
+          <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]">
+          <header className="border-b border-slate-200/80 px-4 pb-4 pr-12 pt-2 sm:px-6 sm:pb-5 sm:pr-6">
             <div
-              className="mx-auto mb-2 h-1 w-10 shrink-0 rounded-full bg-white/35 sm:mb-3.5"
+              className="mx-auto mb-3 h-1 w-10 shrink-0 rounded-full bg-slate-300/90"
               aria-hidden
             />
-            <Box
-              sx={{
-                position: "relative",
-                pr: 10,
-              }}
-            >
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: { xs: 0.5, sm: 0.75 } }}>
-                <WorkspacePremiumIcon
-                  sx={{ color: "#FCD34D", fontSize: { xs: 20, sm: 22 } }}
-                />
-                <DialogTitle className="border-0 p-0 text-[0.95rem] font-bold leading-tight tracking-normal text-white shadow-none sm:text-lg">
-                  {pricingUpgradeOfferTitle}
-                </DialogTitle>
-              </Stack>
-
-              <DialogDescription className="mb-2 mt-0 text-[11px] font-normal leading-snug text-white/78 sm:mb-3 sm:text-sm">
-                One plan, every feature. Pick the billing period that matches your exam timeline.
-              </DialogDescription>
-
-              <Stack
-                direction="row"
-                spacing={1.25}
-                alignItems="center"
-                flexWrap="wrap"
-                useFlexGap
-                sx={{
-                  display: { xs: "none", sm: "flex" },
-                  p: 1.25,
-                  borderRadius: 2,
-                  backgroundColor: "rgba(255,255,255,0.08)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                }}
-              >
-                <AvatarGroup
-                  max={4}
-                  sx={{
-                    "& .MuiAvatar-root": {
-                      width: 28,
-                      height: 28,
-                      fontSize: "0.7rem",
-                      border: "2px solid rgba(255,255,255,0.2)",
-                    },
-                  }}
-                >
-                  {pricingTestimonials.slice(0, 4).map((t) => (
-                    <Avatar key={t.name} src={`/images/${t.source}`} alt="" />
-                  ))}
-                </AvatarGroup>
-                <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.85)", fontWeight: 500 }}>
-                  <Box component="strong" sx={{ color: "#FCD34D" }}>
-                    {signupDisplay}
-                  </Box>{" "}
-                  people joined in the last 24 hours · {pricingUpgradeOfferTrustLine}
-                </Typography>
-                {GOOGLE_REVIEWS_URL ? (
-                  <Chip
-                    component="a"
-                    href={GOOGLE_REVIEWS_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    clickable
-                    icon={<StarIcon sx={{ fontSize: 12, color: "#FCD34D !important" }} />}
-                    label="Read reviews"
-                    size="small"
-                    sx={{
-                      backgroundColor: "rgba(252,211,77,0.15)",
-                      color: "#FCD34D",
-                      fontWeight: 600,
-                      fontSize: "0.65rem",
-                      height: 24,
-                    }}
-                  />
-                ) : (
-                  <Chip
-                    icon={<StarIcon sx={{ fontSize: 12, color: "#FCD34D !important" }} />}
-                    label="4.9/5 rating"
-                    size="small"
-                    sx={{
-                      backgroundColor: "rgba(252,211,77,0.15)",
-                      color: "#FCD34D",
-                      fontWeight: 600,
-                      fontSize: "0.65rem",
-                      height: 24,
-                    }}
-                  />
-                )}
-              </Stack>
-
-              <Stack
-                direction="row"
-                spacing={1}
-                alignItems="center"
-                justifyContent="space-between"
-                sx={{
-                  display: { xs: "flex", sm: "none" },
-                  py: 0.75,
-                  px: 1,
-                  borderRadius: 2,
-                  backgroundColor: "rgba(255,255,255,0.08)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                }}
-              >
-                <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.88)", fontWeight: 600, fontSize: "0.7rem" }}>
-                  <Box component="span" sx={{ color: "#FCD34D" }}>
-                    {signupDisplay}+
-                  </Box>{" "}
-                  joined today
-                </Typography>
-                {GOOGLE_REVIEWS_URL ? (
-                  <Chip
-                    component="a"
-                    href={GOOGLE_REVIEWS_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    clickable
-                    icon={<StarIcon sx={{ fontSize: 11, color: "#FCD34D !important" }} />}
-                    label="Reviews"
-                    size="small"
-                    sx={{
-                      backgroundColor: "rgba(252,211,77,0.15)",
-                      color: "#FCD34D",
-                      fontWeight: 600,
-                      fontSize: "0.6rem",
-                      height: 22,
-                    }}
-                  />
-                ) : (
-                  <Chip
-                    icon={<StarIcon sx={{ fontSize: 11, color: "#FCD34D !important" }} />}
-                    label="4.9★"
-                    size="small"
-                    sx={{
-                      backgroundColor: "rgba(252,211,77,0.15)",
-                      color: "#FCD34D",
-                      fontWeight: 600,
-                      fontSize: "0.6rem",
-                      height: 22,
-                    }}
-                  />
-                )}
-              </Stack>
-            </Box>
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain px-2 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 sm:px-4 sm:pb-6 sm:pt-3">
-        {loading && (
-          <Typography sx={{ py: 4, textAlign: "center", color: "text.secondary" }}>
-            Loading plans…
-          </Typography>
-        )}
-
-        {!loading && loadError && (
-          <Typography sx={{ py: 3, textAlign: "center", color: "text.secondary" }}>
-            Plans could not be loaded.{" "}
-            <Button component={Link} href="/pricing" size="small" onClick={() => onOpenChange(false)}>
-              Open pricing page
-            </Button>
-          </Typography>
-        )}
-
-        {!loading && !loadError && sortedPlans.length === 0 && (
-          <Typography sx={{ py: 3, textAlign: "center", color: "text.secondary" }}>
-            No active plans right now.{" "}
-            <Button component={Link} href="/pricing" size="small" onClick={() => onOpenChange(false)}>
-              View pricing
-            </Button>
-          </Typography>
-        )}
-
-        {!loading && !loadError && sortedPlans.length > 0 && (
-          <>
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  md: `repeat(${sortedPlans.length}, minmax(0, 1fr))`,
-                },
-                gap: { xs: 0.75, sm: 1.25 },
-                mb: { xs: 1.25, sm: 2 },
-                alignItems: "stretch",
-              }}
-            >
-              {sortedPlans.map((plan, planIndex) => {
-                const stableId = getStablePlanId(plan, planIndex);
-                const accent = accentForPlan(plan);
-                const headline = planBillingHeadline(plan);
-                const subtitle = planSubtitle(plan);
-                const priceNum = parsePrice(plan.price);
-                const perDay = cadPerDay(plan, priceNum);
-                const { show: showWas, amountStr: wasAmountStr } = resolveWasPriceForPlan(
-                  plan,
-                  planIndex,
-                  weeklyBaselineWasByPlanId
-                );
-                const wasNumeric = showWas ? parsePrice(wasAmountStr) : 0;
-                const discountPct = planListDiscountPercent(priceNum, wasNumeric);
-                const isRec = isThreeMonthPlan(plan) || plan.iconType === "BestValuePlan";
-                const isPop = isPopularPlan(plan);
-                let badge: string | null = isRec ? "BEST VALUE" : isPop ? "MOST POPULAR" : null;
-                if (isWeeklyPlan(plan) && badge === "MOST POPULAR") {
-                  badge = "SHORT SPRINT";
-                }
-
-                return (
-                  <Paper
-                    key={stableId}
-                    elevation={0}
-                    sx={{
-                      p: { xs: 1, sm: 1.75 },
-                      borderRadius: 2,
-                      border: "2px solid",
-                      borderColor: isRec ? alpha("#F59E0B", 0.55) : "divider",
-                      backgroundColor: "#fff",
-                      position: "relative",
-                      height: "100%",
-                      display: "flex",
-                      flexDirection: "column",
-                      minWidth: 0,
-                      transition: "box-shadow 0.2s ease, border-color 0.2s ease",
-                      boxShadow: isRec
-                        ? "0 4px 18px rgba(245, 158, 11, 0.12)"
-                        : "0 1px 3px rgba(0,0,0,0.04)",
-                      "&:hover": {
-                        borderColor: accent,
-                        boxShadow: `0 4px 14px ${alpha(accent, 0.14)}`,
-                      },
-                    }}
-                  >
-                    {badge ? (
-                      <Chip
-                        label={badge}
-                        size="small"
-                        sx={{
-                          position: "absolute",
-                          top: { xs: -10, sm: -12 },
-                          left: "50%",
-                          transform: "translateX(-50%)",
-                          backgroundColor: isRec ? "#F59E0B" : accent,
-                          color: isRec ? "#1B2B5A" : "#fff",
-                          fontWeight: 700,
-                          fontSize: { xs: "0.55rem", sm: "0.6rem" },
-                          height: { xs: 20, sm: 22 },
-                          letterSpacing: "0.05em",
-                        }}
-                      />
-                    ) : null}
-
-                    <Typography
-                      variant="overline"
-                      sx={{
-                        color: accent,
-                        fontWeight: 700,
-                        letterSpacing: "0.04em",
-                        fontSize: { xs: "0.6rem", sm: "0.65rem" },
-                        lineHeight: 1.2,
-                      }}
-                    >
-                      {headline}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      display="block"
-                      sx={{
-                        color: "text.secondary",
-                        mb: { xs: 0.35, sm: 1 },
-                        fontSize: { xs: "0.65rem", sm: "0.7rem" },
-                        lineHeight: 1.25,
-                      }}
-                    >
-                      {subtitle}
-                    </Typography>
-
-                    <Stack direction="row" alignItems="baseline" spacing={0.5} flexWrap="wrap" useFlexGap>
-                      {showWas ? (
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            textDecoration: "line-through",
-                            color: "error.main",
-                            fontWeight: 600,
-                            mr: 0.5,
-                            fontSize: { xs: "0.65rem", sm: "0.75rem" },
-                          }}
-                        >
-                          Was CA${formatPlanCadPrice(wasAmountStr)}
-                        </Typography>
-                      ) : null}
-                      <Typography
-                        variant="h6"
-                        sx={{
-                          fontWeight: 800,
-                          color: accent,
-                          fontSize: { xs: "1.05rem", sm: "1.25rem" },
-                          lineHeight: 1.2,
-                        }}
-                      >
-                        CA${formatPlanCadPrice(plan.price)}
-                      </Typography>
-                    </Stack>
-
-                    <Box
-                      sx={{
-                        mt: { xs: 0.5, sm: 1 },
-                        py: { xs: 0.35, sm: 0.75 },
-                        px: { xs: 0.5, sm: 0.75 },
-                        borderRadius: 1.25,
-                        backgroundColor: isRec ? alpha(accent, 0.08) : "#F8FAFC",
-                        textAlign: "center",
-                      }}
-                    >
-                      <Typography
-                        variant="caption"
-                        fontWeight={600}
-                        color={accent}
-                        sx={{ fontSize: { xs: "0.65rem", sm: "0.7rem" } }}
-                      >
-                        CA${perDay}/day
-                      </Typography>
-                    </Box>
-
-                    {discountPct != null ? (
-                      <Chip
-                        label={`Save ${discountPct}%`}
-                        size="small"
-                        sx={{
-                          mt: { xs: 0.75, sm: 1.25 },
-                          backgroundColor: "#ECFDF5",
-                          color: "#059669",
-                          fontWeight: 700,
-                          fontSize: { xs: "0.65rem", sm: "0.7rem" },
-                          height: { xs: 24, sm: 28 },
-                          width: "100%",
-                        }}
-                      />
-                    ) : null}
-
-                    <Button
-                      variant="contained"
-                      fullWidth
-                      size="small"
-                      disabled={!plan.stripePriceId || !authLoaded}
-                      startIcon={<BoltIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />}
-                      onClick={() => onUpgradePlan(plan.stripePriceId)}
-                      sx={{
-                        mt: { xs: 1, sm: 1.5, md: "auto" },
-                        py: { xs: 0.55, sm: 1.1 },
-                        fontSize: { xs: "0.72rem", sm: "0.8rem" },
-                        fontWeight: 700,
-                        borderRadius: 2,
-                        textTransform: "none",
-                        boxShadow: "none",
-                        lineHeight: 1.25,
-                        ...(isRec
-                          ? {
-                              background: "linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)",
-                              color: "#1B2B5A",
-                              "&:hover": {
-                                background: "linear-gradient(135deg, #D97706 0%, #F59E0B 100%)",
-                                boxShadow: "none",
-                              },
-                            }
-                          : {
-                              background: `linear-gradient(135deg, ${accent} 0%, ${alpha(accent, 0.88)} 100%)`,
-                              color: "#fff",
-                              "&:hover": {
-                                background: `linear-gradient(135deg, ${alpha(accent, 0.92)} 0%, ${alpha(accent, 0.78)} 100%)`,
-                                boxShadow: "none",
-                              },
-                            }),
-                      }}
-                    >
-                      <Box component="span" sx={{ display: { xs: "none", sm: "inline", md: "none" } }}>
-                        Get Plus — {headline} (CA${formatPlanCadPrice(plan.price)})
-                      </Box>
-                      <Box component="span" sx={{ display: { xs: "inline", sm: "none" } }}>
-                        Get Plus · {headline} · CA${formatPlanCadPrice(plan.price)}
-                      </Box>
-                      <Box component="span" sx={{ display: { xs: "none", md: "inline" } }}>
-                        Get Plus · CA${formatPlanCadPrice(plan.price)}
-                      </Box>
-                    </Button>
-                  </Paper>
-                );
-              })}
-            </Box>
-
-            <Paper
-              elevation={0}
-              sx={{
-                p: { xs: 1, sm: 1.75 },
-                borderRadius: 2,
-                border: "1px solid",
-                borderColor: "divider",
-                backgroundColor: "white",
-                mb: { xs: 1.25, sm: 2 },
-              }}
-            >
-              <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: { xs: 0.75, sm: 1.25 } }}>
-                <AllInclusiveIcon sx={{ fontSize: { xs: 14, sm: 16 }, color: "#2563EB" }} />
-                <Typography
-                  variant="caption"
-                  fontWeight={700}
-                  sx={{ textTransform: "uppercase", letterSpacing: "0.04em", fontSize: { xs: "0.65rem", sm: "0.75rem" } }}
-                >
-                  Everything included:
-                </Typography>
-              </Stack>
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr",
-                  gap: { xs: 0.5, sm: 0.75 },
-                }}
-              >
-                {PRICING_PLUS_FEATURE_LABELS.map((label) => (
-                  <Stack direction="row" spacing={0.75} alignItems="flex-start" key={label}>
-                    <CheckCircleIcon
-                      sx={{ fontSize: { xs: 14, sm: 16 }, color: "#10B981", flexShrink: 0, mt: "2px" }}
-                    />
-                    <Typography
-                      variant="caption"
-                      fontWeight={500}
-                      sx={{ lineHeight: 1.35, fontSize: { xs: "0.68rem", sm: "0.75rem" } }}
-                    >
-                      {label}
-                    </Typography>
-                  </Stack>
-                ))}
-              </Box>
-            </Paper>
-
-            <Stack
-              direction="column"
-              spacing={{ xs: 0.5, sm: 1 }}
-              justifyContent="center"
-              alignItems="stretch"
-              sx={{
-                p: { xs: 1, sm: 1.25 },
-                borderRadius: 2,
-                backgroundColor: "#F0FDF4",
-                border: "1px solid #BBF7D0",
-                mb: { xs: 1, sm: 1.5 },
-              }}
-            >
-              <Stack direction="row" spacing={0.75} alignItems="center">
-                <ShieldIcon sx={{ fontSize: { xs: 14, sm: 16 }, color: "#059669", flexShrink: 0 }} />
-                <Typography variant="caption" fontWeight={600} color="#059669" sx={{ fontSize: { xs: "0.68rem", sm: "0.75rem" } }}>
-                  48-hour money-back guarantee
-                </Typography>
-              </Stack>
-              <Stack direction="row" spacing={0.75} alignItems="center">
-                <DevicesIcon sx={{ fontSize: { xs: 14, sm: 16 }, color: "#059669", flexShrink: 0 }} />
-                <Typography variant="caption" fontWeight={600} color="#059669" sx={{ fontSize: { xs: "0.68rem", sm: "0.75rem" } }}>
-                  Use on 2 devices
-                </Typography>
-              </Stack>
-              <Stack direction="row" spacing={0.75} alignItems="center">
-                <TimerIcon sx={{ fontSize: { xs: 14, sm: 16 }, color: "#059669", flexShrink: 0 }} />
-                <Typography variant="caption" fontWeight={600} color="#059669" sx={{ fontSize: { xs: "0.68rem", sm: "0.75rem" } }}>
-                  Cancel anytime
-                </Typography>
-              </Stack>
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
+              <WorkspacePremiumIcon sx={{ color: "#1B2B5A", fontSize: 22 }} />
+              <DialogTitle className="border-0 p-0 text-lg font-bold leading-tight text-[#1B2B5A] shadow-none sm:text-xl">
+                {pricingUpgradeOfferTitle}
+              </DialogTitle>
             </Stack>
 
-            <Box sx={{ textAlign: "center", mb: 0.5 }}>
-              <Button
-                component={Link}
-                href="/pricing"
-                size="small"
-                onClick={() => onOpenChange(false)}
-                sx={{ color: "text.secondary", fontWeight: 500 }}
-              >
-                View all plans &amp; FAQs
-              </Button>
-            </Box>
+            <DialogDescription asChild>
+              <PricingUpgradeModalHeaderList signupDisplay={signupDisplay} />
+            </DialogDescription>
+          </header>
 
-            <Box sx={{ textAlign: "center", mt: 1 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: "block" }}>
-                Not ready to commit?
+          <div className="px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-6 sm:pt-4">
+            {loading && (
+              <Typography sx={{ py: 4, textAlign: "center", color: "text.secondary" }}>
+                Loading plans…
               </Typography>
-              <Button
-                component={Link}
-                href="/practice-overview"
-                onClick={() => onOpenChange(false)}
-                size="small"
-                sx={{ color: "text.secondary", fontWeight: 500, textDecoration: "underline" }}
-              >
-                Continue with free practice →
-              </Button>
-            </Box>
-          </>
-        )}
+            )}
+
+            {!loading && loadError && (
+              <Typography sx={{ py: 3, textAlign: "center", color: "text.secondary" }}>
+                Plans could not be loaded.{" "}
+                <Button component={Link} href="/pricing" size="small" onClick={() => onOpenChange(false)}>
+                  Open pricing page
+                </Button>
+              </Typography>
+            )}
+
+            {!loading && !loadError && sortedPlans.length === 0 && (
+              <Typography sx={{ py: 3, textAlign: "center", color: "text.secondary" }}>
+                No active plans right now.{" "}
+                <Button component={Link} href="/pricing" size="small" onClick={() => onOpenChange(false)}>
+                  View pricing
+                </Button>
+              </Typography>
+            )}
+
+            {!loading && !loadError && sortedPlans.length > 0 && (
+              <>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: {
+                      xs: "1fr",
+                      sm: `repeat(${Math.min(sortedPlans.length, 2)}, minmax(0, 1fr))`,
+                      md: `repeat(${sortedPlans.length}, minmax(0, 1fr))`,
+                    },
+                    gap: 1.25,
+                    mb: 2,
+                    alignItems: "stretch",
+                  }}
+                >
+                  {sortedPlans.map((plan, planIndex) => {
+                    const stableId = getStablePlanId(plan, planIndex);
+                    const accent = accentForPlan(plan);
+                    const headline = planBillingHeadline(plan);
+                    const { show: showWas, amountStr: wasAmountStr } = resolveWasPriceForPlan(
+                      plan,
+                      planIndex,
+                      weeklyBaselineWasByPlanId
+                    );
+                    const wasNumeric = showWas ? parsePrice(wasAmountStr) : 0;
+                    const priceNum = parsePrice(plan.price);
+                    const discountPct = planListDiscountPercent(priceNum, wasNumeric);
+                    const isRec = isThreeMonthPlan(plan) || plan.iconType === "BestValuePlan";
+
+                    return (
+                      <Paper
+                        key={stableId}
+                        elevation={0}
+                        sx={{
+                          p: 1.5,
+                          borderRadius: 2.5,
+                          border: "2px solid",
+                          borderColor: isRec
+                            ? alpha(PLAN_ACCENT_BLUE, 0.55)
+                            : alpha(PLAN_ACCENT_BLUE, 0.28),
+                          backgroundColor: alpha(PLAN_ACCENT_BLUE, 0.04),
+                          position: "relative",
+                          display: "flex",
+                          flexDirection: "column",
+                          minWidth: 0,
+                          boxShadow: isRec
+                            ? `0 6px 20px ${alpha(PLAN_ACCENT_BLUE, 0.18)}`
+                            : `0 1px 2px ${alpha(PLAN_ACCENT_BLUE, 0.08)}`,
+                        }}
+                      >
+                        <Stack
+                          direction="row"
+                          alignItems="flex-end"
+                          justifyContent="space-between"
+                          spacing={1}
+                          sx={{ mb: 1.25, minHeight: 44 }}
+                        >
+                          <Box>
+                            <Typography
+                              variant="subtitle2"
+                              sx={{ fontWeight: 800, color: "text.primary", lineHeight: 1.2 }}
+                            >
+                              {headline}
+                            </Typography>
+                            {discountPct != null ? (
+                              <Typography variant="caption" sx={{ color: "#059669", fontWeight: 700 }}>
+                                Save {discountPct}%
+                              </Typography>
+                            ) : null}
+                          </Box>
+                          <Box sx={{ textAlign: "right" }}>
+                            {showWas ? (
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  display: "block",
+                                  textDecoration: "line-through",
+                                  color: "text.disabled",
+                                  fontWeight: 500,
+                                }}
+                              >
+                                CA${formatPlanCadPrice(wasAmountStr)}
+                              </Typography>
+                            ) : null}
+                            <Typography
+                              variant="h6"
+                              sx={{ fontWeight: 800, color: accent, lineHeight: 1.1 }}
+                            >
+                              CA${formatPlanCadPrice(plan.price)}
+                            </Typography>
+                          </Box>
+                        </Stack>
+
+                        <Button
+                          variant="contained"
+                          fullWidth
+                          size="medium"
+                          disabled={!plan.stripePriceId || !authLoaded}
+                          startIcon={<BoltIcon sx={{ fontSize: 18 }} />}
+                          onClick={() => onUpgradePlan(plan.stripePriceId)}
+                          sx={{
+                            py: 1.15,
+                            fontSize: "0.9rem",
+                            fontWeight: 700,
+                            borderRadius: 2,
+                            textTransform: "none",
+                            boxShadow: "none",
+                            background: `linear-gradient(135deg, ${accent} 0%, ${alpha(accent, 0.88)} 100%)`,
+                            color: "#fff",
+                            "&:hover": {
+                              background: `linear-gradient(135deg, ${alpha(accent, 0.92)} 0%, ${alpha(accent, 0.78)} 100%)`,
+                            },
+                          }}
+                        >
+                          Subscribe
+                        </Button>
+                      </Paper>
+                    );
+                  })}
+                </Box>
+
+                <Typography
+                  variant="caption"
+                  component="p"
+                  sx={{
+                    textAlign: "center",
+                    color: "text.secondary",
+                    mb: 1.5,
+                    px: 1,
+                    lineHeight: 1.5,
+                    fontSize: "0.75rem",
+                  }}
+                >
+                  {pricingUpgradeModalHighlights.join(" · ")}
+                </Typography>
+
+                <Typography
+                  variant="caption"
+                  component="p"
+                  sx={{
+                    textAlign: "center",
+                    color: "#059669",
+                    fontWeight: 600,
+                    mb: 2,
+                    fontSize: "0.72rem",
+                  }}
+                >
+                  48-hour money-back guarantee · 2 devices · Cancel anytime
+                </Typography>
+
+                <Box sx={{ textAlign: "center" }}>
+                  <Button
+                    component={Link}
+                    href="/pricing"
+                    size="small"
+                    onClick={() => onOpenChange(false)}
+                    sx={{ color: "text.secondary", fontWeight: 500, textTransform: "none" }}
+                  >
+                    Compare plans &amp; FAQs
+                  </Button>
+                  <Typography variant="caption" display="block" sx={{ mt: 0.5, color: "text.disabled" }}>
+                    <Button
+                      component={Link}
+                      href="/practice-overview"
+                      onClick={() => onOpenChange(false)}
+                      size="small"
+                      sx={{
+                        color: "text.secondary",
+                        fontWeight: 500,
+                        textTransform: "none",
+                        minWidth: 0,
+                        p: 0,
+                        fontSize: "inherit",
+                      }}
+                    >
+                      Continue with free practice
+                    </Button>
+                  </Typography>
+                </Box>
+              </>
+            )}
+          </div>
           </div>
         </div>
       </DialogDrawerContent>

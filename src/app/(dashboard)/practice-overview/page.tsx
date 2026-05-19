@@ -20,7 +20,7 @@ interface TasksList {
 }
 
 const PracticeSkeletonLoader = () => (
-  <Stack spacing={3} sx={{ width: 1, maxWidth: 1200, alignSelf: "flex-end", p: 3 }}>
+  <Stack spacing={3} sx={{ width: 1, maxWidth: 1200, alignSelf: "flex-end", px: 2, pt: 2, pb: 3 }}>
     <Skeleton
       variant="rounded"
       height={48}
@@ -128,6 +128,7 @@ const DashboardApp = () => {
         CELPIP Practice Test — Skill Overview & Sample Tasks
       </Typography>
       <PendingDiagnosticBanner />
+      {isLoading ? <PracticeSkeletonLoader /> : <PracticeOverview tasks={tasks} />}
       {!isSignedIn && (
         <Box
           component="section"
@@ -169,7 +170,6 @@ const DashboardApp = () => {
           </Typography>
         </Box>
       )}
-      {isLoading ? <PracticeSkeletonLoader /> : <PracticeOverview tasks={tasks} />}
     </Box>
   );
 };

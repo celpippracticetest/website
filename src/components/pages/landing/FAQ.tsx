@@ -1,6 +1,4 @@
 import React, { useState } from "react";
-import Link from "next/link";
-import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import SvgChevronDown from "../../icons/ChevronDown";
 import { useEngagementTracking } from "@/hooks/useTracking";
 
@@ -100,59 +98,46 @@ const FAQ = () => {
         <section
             id="faq"
             aria-labelledby="faq-heading"
-            className="border-t border-slate-200 bg-white py-14 screen744:py-20 scroll-mt-24"
+            className="border-t border-slate-200 bg-white py-12 screen744:py-16 scroll-mt-24"
         >
-            <div className="mx-auto max-w-[720px] px-4 screen744:px-8">
-                <div className="mb-10 text-center screen744:mb-12">
-                    <span className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                        <HelpOutlineIcon sx={{ fontSize: 16 }} aria-hidden />
-                        Common Questions
-                    </span>
-                    <h2
-                        id="faq-heading"
-                        className="text-balance text-3xl font-extrabold text-slate-900 screen744:text-4xl"
-                    >
-                        Frequently Asked Questions
-                    </h2>
-                    <p className="mt-2 text-base text-slate-600">
-                        Everything you need to know before getting started.
-                    </p>
-                </div>
+            <div className="mx-auto max-w-[1120px] px-4 screen744:px-8">
+                <h2
+                    id="faq-heading"
+                    className="mb-8 text-center text-2xl font-bold text-slate-900 screen744:mb-10 screen744:text-3xl"
+                >
+                    FAQ
+                </h2>
 
-                <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-1 gap-3 screen744:grid-cols-2 screen744:gap-4">
                     {faqs.map((faq, index) => (
                         <div
                             key={index}
-                            className={`overflow-hidden rounded-xl border bg-white transition-shadow ${openIndex === index
-                                ? "border-blue-200 shadow-[0_4px_12px_rgba(59,130,246,0.08)]"
-                                : "border-slate-200"
-                                }`}
+                            className={`overflow-hidden rounded-lg border bg-white ${openIndex === index ? "border-slate-300" : "border-slate-200"}`}
                         >
                             <button
                                 type="button"
                                 onClick={() => toggleAccordion(index, faq.question)}
-                                className="flex w-full items-center justify-between gap-4 p-5 text-left transition-colors hover:bg-slate-50/80"
+                                className="flex w-full items-start justify-between gap-3 p-4 text-left hover:bg-slate-50/60"
                                 aria-expanded={openIndex === index}
                             >
-                                <span className="text-[15px] font-semibold leading-snug text-slate-900 screen744:text-[16px]">
+                                <span className="text-sm font-semibold leading-snug text-slate-900">
                                     {faq.question}
                                 </span>
                                 <span
-                                    className={`flex shrink-0 transform text-slate-500 transition-transform duration-300 ${openIndex === index ? "rotate-180" : ""
-                                        }`}
+                                    className={`mt-0.5 flex shrink-0 text-slate-400 transition-transform duration-200 ${openIndex === index ? "rotate-180" : ""}`}
                                 >
                                     <SvgChevronDown />
                                 </span>
                             </button>
                             <div
-                                className={`grid transition-all duration-300 ease-in-out ${openIndex === index
+                                className={`grid transition-all duration-200 ease-in-out ${openIndex === index
                                     ? "grid-rows-[1fr] opacity-100"
                                     : "grid-rows-[0fr] opacity-0"
                                     }`}
                             >
                                 <div className="overflow-hidden">
                                     <div
-                                        className="border-t border-slate-100 px-5 pb-5 pt-0 text-[15px] leading-relaxed text-slate-600"
+                                        className="border-t border-slate-100 px-4 pb-4 text-sm leading-relaxed text-slate-600"
                                         dangerouslySetInnerHTML={{ __html: faq.answer }}
                                     />
                                 </div>
@@ -161,23 +146,6 @@ const FAQ = () => {
                     ))}
                 </div>
 
-                <div className="mt-10 text-center">
-                    <p className="mb-4 text-base text-slate-600">Still have questions?</p>
-                    <div className="flex flex-col items-stretch justify-center gap-3 screen744:flex-row screen744:justify-center">
-                        <Link
-                            href="/contact-us"
-                            className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-800 transition-colors hover:border-slate-400 hover:bg-slate-50"
-                        >
-                            Contact Us
-                        </Link>
-                        <Link
-                            href="/practice-overview"
-                            className="inline-flex items-center justify-center rounded-full bg-gradient-to-br from-[#1B2B5A] to-[#2E4494] px-6 py-3 text-sm font-semibold text-white shadow-md transition-shadow hover:shadow-lg"
-                        >
-                            Try It Free
-                        </Link>
-                    </div>
-                </div>
             </div>
         </section>
     );

@@ -116,100 +116,38 @@ const ExamsPage = async () => {
             <Paper
               elevation={0}
               sx={{
-                overflow: "hidden",
-                borderRadius: "28px",
-                border: "1px solid rgba(27, 43, 90, 0.10)",
-                background:
-                  "linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(13, 170, 148, 0.09))",
+                mb: { xs: 3, md: 4 },
+                px: { xs: 3, md: 4 },
+                py: { xs: 3, md: 3.5 },
+                borderRadius: "16px",
+                border: "1px solid rgba(27, 43, 90, 0.08)",
+                backgroundColor: "#FFFFFF",
               }}
             >
-              <Box
-                sx={{
-                  px: { xs: 3, md: 6 },
-                  py: { xs: 4, md: 6 },
-                  background:
-                    "linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.96))",
-                }}
-              >
-                <Stack spacing={2.5} alignItems="center" textAlign="center">
-                  <Box
-                    sx={{
-                      px: 1.75,
-                      py: 0.75,
-                      borderRadius: "999px",
-                      backgroundColor: "rgba(37, 99, 235, 0.10)",
-                      color: "#2563EB",
-                      fontSize: "0.8125rem",
-                      fontWeight: 700,
-                      letterSpacing: "0.02em",
-                    }}
-                  >
-                    Full-length CELPIP preparation
-                  </Box>
-                  <Typography
-                    component="h1"
-                    sx={{
-                      maxWidth: "940px",
-                      fontSize: { xs: "2rem", md: "3rem" },
-                      lineHeight: { xs: 1.2, md: 1.15 },
-                      fontWeight: 800,
-                      color: examOverviewNavy,
-                    }}
-                  >
-                    CELPIP Mock Test Online — Full-Length Practice Exams
-                  </Typography>
-                  <Typography
-                    sx={{
-                      maxWidth: "820px",
-                      fontSize: { xs: "1.05rem", md: "1.35rem" },
-                      lineHeight: 1.6,
-                      fontWeight: 600,
-                      color: examOverviewMuted,
-                    }}
-                  >
-                    Prepare for the CELPIP exam with realistic full-length practice tests in the
-                    official test format.
-                  </Typography>
-                  <Typography
-                    sx={{
-                      maxWidth: "920px",
-                      fontSize: { xs: "0.98rem", md: "1.05rem" },
-                      lineHeight: 1.85,
-                      color: "#64748B",
-                    }}
-                  >
-                    Practice with full mock exams designed to mirror the real exam structure. Each
-                    test includes listening, reading, writing, and speaking sections with authentic
-                    timing so you can build confidence before test day.
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      justifyContent: "center",
-                      gap: 1.25,
-                    }}
-                  >
-                    {["Listening", "Reading", "Writing", "Speaking"].map((label) => (
-                      <Box
-                        key={label}
-                        sx={{
-                          px: 1.75,
-                          py: 0.9,
-                          borderRadius: "999px",
-                          backgroundColor: "#FFFFFF",
-                          border: "1px solid rgba(27, 43, 90, 0.10)",
-                          color: examOverviewMuted,
-                          fontSize: "0.8125rem",
-                          fontWeight: 700,
-                        }}
-                      >
-                        {label}
-                      </Box>
-                    ))}
-                  </Box>
-                </Stack>
-              </Box>
+              <Stack spacing={1}>
+                <Typography
+                  component="h1"
+                  sx={{
+                    fontSize: { xs: "1.75rem", md: "2rem" },
+                    lineHeight: 1.2,
+                    fontWeight: 800,
+                    color: examOverviewNavy,
+                  }}
+                >
+                  CELPIP Mock Exams
+                </Typography>
+                <Typography
+                  sx={{
+                    maxWidth: "640px",
+                    fontSize: "1rem",
+                    lineHeight: 1.6,
+                    color: examOverviewMuted,
+                  }}
+                >
+                  Full-length practice tests with official-style timing for Listening, Reading,
+                  Writing, and Speaking.
+                </Typography>
+              </Stack>
             </Paper>
           </Box>
         ) : (

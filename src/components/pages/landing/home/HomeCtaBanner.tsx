@@ -11,19 +11,10 @@ export function HomeCtaBanner() {
   return (
     <section
       aria-labelledby="cta-banner-heading"
-      className="relative overflow-hidden bg-gradient-to-br from-[#1B2B5A] via-[#2E4494] to-[#1B2B5A] py-14 screen744:py-20"
+      className="relative overflow-hidden border-y border-slate-200/80 bg-slate-800 py-14 screen744:py-20"
     >
-      <div
-        className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-blue-500/10"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-amber-400/10"
-        aria-hidden
-      />
-
       <div className="relative z-[1] mx-auto max-w-[640px] px-4 text-center screen744:px-8">
-        <span className="mb-4 inline-block rounded-full border border-amber-400/30 bg-amber-400/15 px-3 py-1 text-xs font-semibold text-amber-200">
+        <span className="mb-4 inline-block rounded-full border border-slate-500/50 bg-slate-700/80 px-3 py-1 text-xs font-semibold text-slate-200">
           Your exam date is approaching
         </span>
         <h2
@@ -32,7 +23,7 @@ export function HomeCtaBanner() {
         >
           Ready to Hit Your Target Score?
         </h2>
-        <p className="mx-auto mt-4 max-w-[500px] text-base text-white/75 screen744:text-lg">
+        <p className="mx-auto mt-4 max-w-[500px] text-base text-slate-300 screen744:text-lg">
           Start practicing now with instant AI feedback. Most users see improvement
           within their first week.
         </p>
@@ -48,7 +39,7 @@ export function HomeCtaBanner() {
           </Link>
           <Link
             href="/pricing"
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-white/30 bg-transparent px-6 py-3.5 text-base font-semibold text-white transition-colors hover:border-white/50 hover:bg-white/5"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-500 bg-transparent px-6 py-3.5 text-base font-semibold text-slate-100 transition-colors hover:border-slate-400 hover:bg-slate-700/50"
             onClick={() => trackCTA("View Pricing", "home_cta_banner_secondary")}
           >
             <LockOpenIcon sx={{ fontSize: 20 }} aria-hidden />
@@ -56,7 +47,7 @@ export function HomeCtaBanner() {
           </Link>
         </div>
 
-        <p className="mt-6 text-sm text-white/60">
+        <p className="mt-6 text-sm text-slate-400">
           No credit card required • Cancel anytime • 48-hour refund guarantee
         </p>
       </div>

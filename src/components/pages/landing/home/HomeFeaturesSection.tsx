@@ -75,10 +75,6 @@ export function HomeFeaturesSection() {
             One Platform. All Four Skills.{" "}
             <span className="text-[#2563EB]">Real Results.</span>
           </h2>
-          <p className="mt-3 text-base text-slate-600 screen744:text-lg">
-            Mock exams, instant AI scoring, and clear explanations — so you spend
-            less time searching and more time improving.
-          </p>
         </div>
 
         <div className="grid grid-cols-1 gap-5 screen744:grid-cols-2">

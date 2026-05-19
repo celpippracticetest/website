@@ -202,7 +202,8 @@ const PracticeOverview = ({
         width: 1,
         px: { xs: 2, xl: 5 },
         bgcolor: "transparent",
-        py: { xs: 9, xl: 12 },
+        pt: { xs: 2, xl: 3 },
+        pb: { xs: 9, xl: 12 },
         gap: 3,
       }}
     >
@@ -217,65 +218,6 @@ const PracticeOverview = ({
       >
         Practices
       </Typography>
-
-      <Paper
-        component="section"
-        elevation={0}
-        aria-label="PrepHere CELPIP promotion"
-        sx={{
-          borderRadius: 3,
-          border: "1px solid rgba(27, 43, 90, 0.10)",
-          background:
-            "linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(238, 242, 255, 0.95) 100%)",
-          boxShadow: "0 12px 40px rgba(15, 23, 42, 0.06)",
-          p: { xs: 2.5, md: 3 },
-          display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
-          alignItems: { xs: "stretch", sm: "center" },
-          justifyContent: "space-between",
-          gap: 2,
-        }}
-      >
-        <Stack spacing={0.75} sx={{ minWidth: 0 }}>
-          <Typography sx={{ fontWeight: 800, fontSize: { xs: 16, md: 17 }, color: practiceNavy }}>
-            Improve your CLB for free on PrepHere
-          </Typography>
-          <Typography sx={{ fontSize: { xs: 14, md: 15 }, color: practiceMuted, lineHeight: 1.55 }}>
-            Use{" "}
-            <Box
-              component="span"
-              sx={{ color: "#2563EB", fontWeight: 600, wordBreak: "break-all" }}
-            >
-              PrepHere.ai/celpip
-            </Box>{" "}
-            to practice and build the skills that support a higher Canadian Language Benchmark
-            score—designed for learning and CLB growth, not a replacement for the official exam.
-          </Typography>
-        </Stack>
-        <Button
-          component="a"
-          href="https://PrepHere.ai/celpip"
-          target="_blank"
-          rel="noopener noreferrer"
-          variant="contained"
-          sx={{
-            flexShrink: 0,
-            alignSelf: { xs: "stretch", sm: "center" },
-            background: practicePrimaryGradient,
-            color: "#fff",
-            textTransform: "none",
-            fontWeight: 700,
-            fontSize: 15,
-            py: 1.25,
-            px: 2.5,
-            boxShadow: "none",
-            borderRadius: 999,
-            "&:hover": { opacity: 0.96, boxShadow: "none" },
-          }}
-        >
-          Open PrepHere — free
-        </Button>
-      </Paper>
 
       <Box
         sx={{
@@ -526,6 +468,65 @@ const PracticeOverview = ({
             );
           })}
       </Stack>
+
+      <Paper
+        component="section"
+        elevation={0}
+        aria-label="PrepHere CELPIP promotion"
+        sx={{
+          borderRadius: 3,
+          border: "1px solid rgba(27, 43, 90, 0.10)",
+          background:
+            "linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(238, 242, 255, 0.95) 100%)",
+          boxShadow: "0 12px 40px rgba(15, 23, 42, 0.06)",
+          p: { xs: 2.5, md: 3 },
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
+          alignItems: { xs: "stretch", sm: "center" },
+          justifyContent: "space-between",
+          gap: 2,
+        }}
+      >
+        <Stack spacing={0.75} sx={{ minWidth: 0 }}>
+          <Typography sx={{ fontWeight: 800, fontSize: { xs: 16, md: 17 }, color: practiceNavy }}>
+            Improve your CLB for free on PrepHere
+          </Typography>
+          <Typography sx={{ fontSize: { xs: 14, md: 15 }, color: practiceMuted, lineHeight: 1.55 }}>
+            Use{" "}
+            <Box
+              component="span"
+              sx={{ color: "#2563EB", fontWeight: 600, wordBreak: "break-all" }}
+            >
+              PrepHere.ai/celpip
+            </Box>{" "}
+            to practice and build the skills that support a higher Canadian Language Benchmark
+            score—designed for learning and CLB growth, not a replacement for the official exam.
+          </Typography>
+        </Stack>
+        <Button
+          component="a"
+          href="https://PrepHere.ai/celpip"
+          target="_blank"
+          rel="noopener noreferrer"
+          variant="contained"
+          sx={{
+            flexShrink: 0,
+            alignSelf: { xs: "stretch", sm: "center" },
+            background: practicePrimaryGradient,
+            color: "#fff",
+            textTransform: "none",
+            fontWeight: 700,
+            fontSize: 15,
+            py: 1.25,
+            px: 2.5,
+            boxShadow: "none",
+            borderRadius: 999,
+            "&:hover": { opacity: 0.96, boxShadow: "none" },
+          }}
+        >
+          Open PrepHere — free
+        </Button>
+      </Paper>
     </Box>
   );
 };
