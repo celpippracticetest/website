@@ -95,6 +95,23 @@ function bridgeUserFromSupabase(u: SupabaseAuthUser) {
 
 export type HybridAuthSource = "supabase" | null;
 
+/** Prefer `getUser()` so plan/app_metadata match the server after checkout webhooks. */
+async function resolveFreshSupabaseUser(
+  supabase: NonNullable<ReturnType<typeof createBrowserSupabaseClient>>
+): Promise<SupabaseAuthUser | null> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData.session) {
+    return null;
+  }
+
+  const { data: userData, error } = await supabase.auth.getUser();
+  if (!error && userData.user) {
+    return userData.user;
+  }
+
+  return sessionData.session.user;
+}
+
 export function useHybridWebUser() {
   const [supabaseUser, setSupabaseUser] = useState<SupabaseAuthUser | null | undefined>(
     undefined
@@ -109,13 +126,11 @@ export function useHybridWebUser() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSupabaseUser(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange(() => {
+      void resolveFreshSupabaseUser(supabase).then(setSupabaseUser);
     });
 
-    void supabase.auth.getSession().then(({ data }) => {
-      setSupabaseUser(data.session?.user ?? null);
-    });
+    void resolveFreshSupabaseUser(supabase).then(setSupabaseUser);
 
     return () => {
       subscription.unsubscribe();
