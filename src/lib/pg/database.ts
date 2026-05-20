@@ -1,5 +1,6 @@
 import type { Sql } from "postgres";
 import { PgLeagueGroupsCollection } from "./leagueGroupsCollection";
+import { PgUsersCollection } from "./usersCollection";
 import { PgLeagueSeasonsCollection } from "./leagueSeasonsCollection";
 import { PgLeaguesCollection } from "./leaguesCollection";
 import { PgCollection, type AppDoc } from "./pgCollection";
@@ -33,6 +34,9 @@ export class PgDatabase {
     }
     if (name === "user_league_points") {
       return new PgUserLeaguePointsCollection<T>(this.sql) as unknown as PgCollection<T>;
+    }
+    if (name === "users") {
+      return new PgUsersCollection<T>(this.sql) as unknown as PgCollection<T>;
     }
     return new PgCollection<T>(this.sql, key);
   }

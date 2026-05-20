@@ -76,7 +76,7 @@ export const DEFAULT_MONGO_PG_SYNC_COLLECTIONS: readonly string[] = [
   // "user_league_points" — relational `public.user_league_points` (migration 20260519163000).
   "userwords",
   "userwordstudyactivities",
-  "users",
+  // "users" — relational `public.user_profiles` (migration 20260520130000).
   "withdrawalRequests",
   "worddetails",
 ].sort((a, b) => a.localeCompare(b));
