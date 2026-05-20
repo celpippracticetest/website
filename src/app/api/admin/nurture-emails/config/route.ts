@@ -88,7 +88,8 @@ export async function PATCH(request: NextRequest) {
       { upsert: true }
     );
 
-    return NextResponse.json({ ok: true, data: parsed.data }, { status: 200 });
+    const resolved = buildNurtureEmailConfigWithDefaults(parsed.data);
+    return NextResponse.json({ ok: true, data: resolved }, { status: 200 });
   } catch (error) {
     console.error("[admin nurture email config] PATCH failed:", error);
     return NextResponse.json({ ok: false, error: "Failed to save config." }, { status: 500 });

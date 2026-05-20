@@ -1,6 +1,7 @@
 import { auth, currentUser, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { getResendClient, sendResendHtmlEmail } from "@/lib/email/resend-client";
+import { renderNurtureEmail, sampleNurtureMergeFields } from "@/lib/nurture-email/merge-fields";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -10,6 +11,7 @@ const BodySchema = z.object({
   to: z.string().trim().email(),
   subject: z.string().trim().min(1).max(200),
   bodyHtml: z.string().trim().min(1).max(500_000),
+  htmlBody: z.string().trim().min(1).max(500_000).optional(),
 });
 
 async function ensureAdmin() {
@@ -54,12 +56,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { to, subject, bodyHtml } = parsed.data;
+    const { to, subject } = parsed.data;
+    const htmlBody = parsed.data.htmlBody ?? parsed.data.bodyHtml;
+    const mergeFields = sampleNurtureMergeFields();
+    const rendered = renderNurtureEmail(subject, htmlBody, mergeFields);
 
     const result = await sendResendHtmlEmail({
       to,
-      subject: `[TEST] ${subject}`,
-      html: bodyHtml,
+      subject: `[TEST] ${rendered.subject}`,
+      html: rendered.html,
     });
 
     return NextResponse.json({ ok: true, resendId: result.id ?? null }, { status: 200 });
