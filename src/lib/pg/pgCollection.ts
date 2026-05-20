@@ -129,8 +129,13 @@ async function loadPartitionBodies(
     }
   }
 
+  // ORDER BY mongo_id steers the planner to app_documents_pkey; bare
+  // `WHERE collection = $1` can pick a partial index (e.g. useractivities_user) and scan far slower.
   const rows = await sql`
-    SELECT mongo_id, body FROM app_documents WHERE collection = ${collectionKey}
+    SELECT mongo_id, body
+    FROM app_documents
+    WHERE collection = ${collectionKey}
+    ORDER BY mongo_id
   `;
   const mapped = mapSqlRowsToPartitionBodies(rows);
   if (ttl > 0) {
@@ -322,8 +327,14 @@ export class PgCollection<T extends AppDoc = AppDoc> {
   /** Fast path for `PgFindCursor` when the filter is empty. */
   async scanRawDocuments(rowLimit: number): Promise<{ mongo_id: string; body: unknown }[]> {
     const key = await this.resolvePhysicalCollectionKey();
-    const rows = await loadPartitionBodies(this.sql, key);
-    return rows.slice(0, rowLimit);
+    const rows = await this.sql`
+      SELECT mongo_id, body
+      FROM app_documents
+      WHERE collection = ${key}
+      ORDER BY mongo_id
+      LIMIT ${rowLimit}
+    `;
+    return mapSqlRowsToPartitionBodies(rows);
   }
 
   private async countAll(): Promise<number> {
