@@ -28,6 +28,7 @@ import StatBadge from "@/components/shared/StatBadge";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { practicePath } from "@/lib/practiceRoutes";
+import { ActivityLogger } from "@/lib/userActivity";
 
 interface ListeningPracticeViewProps {
   practice: TPracticeDto;
@@ -163,11 +164,11 @@ const ListeningPracticeView = ({
     // Log practice started
     if (user && selectedPracticeId) {
       const attemptId = `practice_${selectedPracticeId}_${Date.now()}`;
-      ActivityLogger.practiceStarted(
+      void ActivityLogger.practiceStarted(
         attemptId,
         selectedPracticeId,
         "Listening"
-      );
+      ).catch(() => {});
     }
   }, [selectedPracticeId, user]);
 

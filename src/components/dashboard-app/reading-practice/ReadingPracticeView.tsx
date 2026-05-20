@@ -28,6 +28,7 @@ import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import StatBadge from "@/components/shared/StatBadge";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
+import { ActivityLogger } from "@/lib/userActivity";
 import { practicePath } from "@/lib/practiceRoutes";
 
 interface ReadingPracticeViewProps {
@@ -143,7 +144,9 @@ const ReadingPracticeView = ({
     // Log practice started
     if (user && selectedPracticeId) {
       const attemptId = `practice_${selectedPracticeId}_${Date.now()}`;
-      ActivityLogger.practiceStarted(attemptId, selectedPracticeId, "Reading");
+      void ActivityLogger.practiceStarted(attemptId, selectedPracticeId, "Reading").catch(
+        () => {}
+      );
     }
   }, [selectedPracticeId, user]);
   useEffect(() => {

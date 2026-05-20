@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { useOnlineUsersLiveStat } from "@/hooks/useRecentSignupsLiveStat";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -46,34 +47,7 @@ function HeaderOnlineBadge({
   className?: string;
   variant?: "default" | "onNavy";
 }) {
-  const [online, setOnline] = useState<number | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const res = await fetch("/api/analytics/live-stats");
-        if (!res.ok) return;
-        const data = (await res.json()) as {
-          stats?: { onlineUsers?: number };
-        };
-        if (!cancelled && typeof data.stats?.onlineUsers === "number") {
-          setOnline(data.stats.onlineUsers);
-        }
-      } catch {
-        /* ignore */
-      }
-    };
-    void load();
-    const id = setInterval(load, 30_000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, []);
-
-  const display =
-    online != null ? online.toLocaleString() : "4,100";
+  const { display } = useOnlineUsersLiveStat("4,100");
   const label = compact
     ? `${display}+ practicing right now`
     : `${display}+ online now`;

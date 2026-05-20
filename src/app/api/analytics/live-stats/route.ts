@@ -84,9 +84,10 @@ export async function GET() {
     yesterday.setDate(yesterday.getDate() - 1);
     const dateFmt = (d: Date) => d.toISOString().slice(0, 10);
 
-    let activeUsersNow = 0;
-    let totalUsers24h = 0;
+    let activeUsersNow: number | null = null;
+    let totalUsers24h: number | null = null;
     let newUsers24h: number | null = null;
+    let totalPracticingFromGa4: number | null = null;
     const warnings: string[] = [];
 
     try {
@@ -94,9 +95,13 @@ export async function GET() {
         property: propertyId,
         metrics: [{ name: "activeUsers" }],
       });
-      activeUsersNow = parseInt(
-        realtimeResponse.rows?.[0]?.metricValues?.[0]?.value || "0",
+      const parsedRealtime = parseInt(
+        realtimeResponse.rows?.[0]?.metricValues?.[0]?.value ?? "",
+        10,
       );
+      if (Number.isFinite(parsedRealtime)) {
+        activeUsersNow = parsedRealtime;
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.warn("[GA4] Realtime report failed:", msg);
@@ -114,10 +119,13 @@ export async function GET() {
         ],
         metrics: [{ name: "totalUsers" }, { name: "newUsers" }],
       });
-      totalUsers24h = parseInt(
-        last24HoursResponse.rows?.[0]?.metricValues?.[0]?.value || "0",
+      const parsedTotalUsers = parseInt(
+        last24HoursResponse.rows?.[0]?.metricValues?.[0]?.value ?? "",
         10,
       );
+      if (Number.isFinite(parsedTotalUsers)) {
+        totalUsers24h = parsedTotalUsers;
+      }
       const parsedNewUsers = parseInt(
         last24HoursResponse.rows?.[0]?.metricValues?.[1]?.value ?? "",
         10,
@@ -138,8 +146,6 @@ export async function GET() {
     let writingCount = 0;
     let listeningCount = 0;
     let readingCount = 0;
-    let totalPracticingFromGa4 = 0;
-
     try {
       const [practiceEventsResponse] = await analyticsDataClient.runReport({
         property: propertyId,
@@ -237,14 +243,13 @@ export async function GET() {
         Reading: 0,
       };
 
-    const totalPracticing = totalPracticingFromGa4;
+    const totalPracticing = totalPracticingFromGa4 ?? 0;
 
-    // Headline "online" figure: prefer GA realtime, then 24h users, then at least practice volume
-    const calculatedActiveUsers = Math.max(
-      activeUsersNow,
-      totalUsers24h,
-      totalPracticing,
+    const onlineCandidates = [activeUsersNow, totalUsers24h, totalPracticingFromGa4].filter(
+      (n): n is number => n !== null && Number.isFinite(n) && n > 0
     );
+    const onlineUsers =
+      onlineCandidates.length > 0 ? Math.max(...onlineCandidates) : null;
 
     console.log("[GA4 Live Stats - service_account]", {
       activeUsersNow,
@@ -252,7 +257,7 @@ export async function GET() {
       newUsers24h,
       totalPracticing,
       skillBreakdown,
-      calculatedActiveUsers,
+      onlineUsers,
     });
 
     // Private key format error: return clear 503 so user can fix ANALYTICS_PRIVATE_KEY
@@ -288,7 +293,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       stats: {
-        onlineUsers: calculatedActiveUsers,
+        ...(onlineUsers !== null ? { onlineUsers } : {}),
         ...(newUsers24h !== null ? { recentSignups: newUsers24h } : {}),
         practicingUsers: totalPracticing,
         recentPractices: totalPracticing,
