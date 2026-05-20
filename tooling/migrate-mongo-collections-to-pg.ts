@@ -38,9 +38,9 @@ export const DEFAULT_MONGO_PG_SYNC_COLLECTIONS: readonly string[] = [
   "leadCaptureConfig",
   "leadCaptureLeads",
   "league_group_counters",
-  "league_groups",
+  // "league_groups" — relational `public.league_groups` (see migration 20260519160000).
   "league_raffle_winners",
-  "league_seasons",
+  // "leagues" / "league_seasons" — relational tables (migration 20260519164000).
   "marketing_assets",
   "messageCounts",
   "onboarding",
@@ -66,14 +66,14 @@ export const DEFAULT_MONGO_PG_SYNC_COLLECTIONS: readonly string[] = [
   "stripe_subscriptions",
   "stripe_sync_state",
   "tasks",
-  "user_activity",
+  // "user_activity" — relational `public.user_activity` (see migration 20260519161000).
   "user_attribution_events",
-  "user_learning_events",
+  // "user_learning_events" — relational `public.user_learning_events` (migration 20260519162000).
   "useractivities",
   "useractivityreminderdispatchlocks",
   "useractivityreminderstats",
   "useractivityreminders",
-  "user_league_points",
+  // "user_league_points" — relational `public.user_league_points` (migration 20260519163000).
   "userwords",
   "userwordstudyactivities",
   "users",

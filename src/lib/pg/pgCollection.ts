@@ -71,6 +71,11 @@ function maxScan(): number {
   return Number(process.env.APP_DOCUMENTS_MAX_SCAN || 2_000_000);
 }
 
+/** True when `documentFilterToSql` produced an unscoped partition read. */
+function isCollectionOnlySqlClause(clause: string): boolean {
+  return clause.replace(/\s+/g, " ").trim() === "collection = $1";
+}
+
 type PartitionBodyRow = { mongo_id: string; body: unknown };
 
 const globalForAppDocCache = globalThis as typeof globalThis & {
@@ -368,7 +373,7 @@ export class PgCollection<T extends AppDoc = AppDoc> {
     // (e.g. answers by practiceId + userId). Unscoped `collection = $1` still needs the guard.
     const needsPartitionWideGuard =
       sqlParts == null ||
-      sqlParts.clause.replace(/\s+/g, " ").trim() === "collection = $1";
+      isCollectionOnlySqlClause(sqlParts.clause);
     if (needsPartitionWideGuard) {
       const n = await this.countAll();
       if (n > maxScan()) {
@@ -379,8 +384,12 @@ export class PgCollection<T extends AppDoc = AppDoc> {
     }
 
     if (sqlParts) {
+      if (isCollectionOnlySqlClause(sqlParts.clause)) {
+        const rows = await loadPartitionBodies(this.sql, phys);
+        return mapRowsToAppDocs<T>(rows);
+      }
       const rows = await this.sql.unsafe(
-        `SELECT mongo_id, body FROM app_documents WHERE ${sqlParts.clause}`,
+        `SELECT mongo_id, body FROM app_documents WHERE ${sqlParts.clause} ORDER BY mongo_id`,
         sqlParts.params as never[]
       );
       return mapRowsToAppDocs<T>(rows);
