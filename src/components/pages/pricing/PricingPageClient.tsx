@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useRecentSignupsLiveStat } from "@/hooks/useRecentSignupsLiveStat";
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
@@ -419,33 +420,7 @@ function buildPersonalizedRecommendation(
 }
 
 function PricingUrgencyBanner() {
-  const [count, setCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const res = await fetch("/api/analytics/live-stats");
-        if (!res.ok) return;
-        const data = (await res.json()) as {
-          stats?: { recentSignups?: number };
-        };
-        if (!cancelled && data.stats?.recentSignups != null) {
-          setCount(data.stats.recentSignups);
-        }
-      } catch {
-        /* ignore */
-      }
-    };
-    void load();
-    const id = setInterval(load, 30_000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, []);
-
-  const display = count != null ? count.toLocaleString() : "127";
+  const { display } = useRecentSignupsLiveStat("127");
 
   return (
     <div className="mb-6 flex flex-col items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-center shadow-sm sm:flex-row sm:text-left">

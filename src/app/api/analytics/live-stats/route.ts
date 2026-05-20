@@ -86,7 +86,7 @@ export async function GET() {
 
     let activeUsersNow = 0;
     let totalUsers24h = 0;
-    let newUsers24h = 0;
+    let newUsers24h: number | null = null;
     const warnings: string[] = [];
 
     try {
@@ -116,10 +116,15 @@ export async function GET() {
       });
       totalUsers24h = parseInt(
         last24HoursResponse.rows?.[0]?.metricValues?.[0]?.value || "0",
+        10,
       );
-      newUsers24h = parseInt(
-        last24HoursResponse.rows?.[0]?.metricValues?.[1]?.value || "0",
+      const parsedNewUsers = parseInt(
+        last24HoursResponse.rows?.[0]?.metricValues?.[1]?.value ?? "",
+        10,
       );
+      if (Number.isFinite(parsedNewUsers)) {
+        newUsers24h = parsedNewUsers;
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.warn("[GA4] 24h report failed:", msg);
@@ -284,7 +289,7 @@ export async function GET() {
       success: true,
       stats: {
         onlineUsers: calculatedActiveUsers,
-        recentSignups: newUsers24h,
+        ...(newUsers24h !== null ? { recentSignups: newUsers24h } : {}),
         practicingUsers: totalPracticing,
         recentPractices: totalPracticing,
         skillBreakdown,

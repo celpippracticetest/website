@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useRecentSignupsLiveStat } from "@/hooks/useRecentSignupsLiveStat";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { useEventTracker } from "@/hooks/useTracking";
 
@@ -30,33 +30,7 @@ const steps = [
 ] as const;
 
 function JoinedTodayMicrocopy() {
-  const [count, setCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const res = await fetch("/api/analytics/live-stats");
-        if (!res.ok) return;
-        const data = (await res.json()) as {
-          stats?: { recentSignups?: number };
-        };
-        if (!cancelled && data.stats?.recentSignups != null) {
-          setCount(data.stats.recentSignups);
-        }
-      } catch {
-        /* ignore */
-      }
-    };
-    void load();
-    const id = setInterval(load, 30_000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, []);
-
-  const display = count != null ? count.toLocaleString() : "3,358";
+  const { display } = useRecentSignupsLiveStat("3,358");
   return (
     <p className="mt-3 text-sm text-slate-500">
       Join {display} people who started today

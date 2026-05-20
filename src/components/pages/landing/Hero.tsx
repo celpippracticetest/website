@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import VerifiedIcon from "@mui/icons-material/Verified";
@@ -14,6 +14,7 @@ import { SvgLearning } from "@/components/icons";
 import SvgWord from "@/components/icons/Word";
 import { cn } from "@/lib/utils";
 import { useHomepageCta } from "@/hooks/useHomepageCta";
+import { useRecentSignupsLiveStat } from "@/hooks/useRecentSignupsLiveStat";
 import { PricingUpgradeModalHeaderList } from "@/components/pages/pricing/PricingUpgradeModalHeaderList";
 import SvgPlus from "../../icons/Plus";
 import SvgArrowRight from "../../icons/ArrowRight";
@@ -88,37 +89,7 @@ const AVATAR_SRCS = [1, 2, 3, 4, 5].map(
   (i) => `https://i.pravatar.cc/128?u=celpip-hero-${i}`,
 );
 
-function HeroJoinedToday() {
-  const [count, setCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      try {
-        const res = await fetch("/api/analytics/live-stats");
-        if (!res.ok) return;
-        const data = (await res.json()) as {
-          stats?: { recentSignups?: number };
-        };
-        if (!cancelled && data.stats?.recentSignups != null) {
-          setCount(data.stats.recentSignups);
-        }
-      } catch {
-        /* keep fallback */
-      }
-    };
-
-    void load();
-    const id = setInterval(load, 30_000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, []);
-
-  const display = count != null ? count.toLocaleString() : "3,358";
-
+function HeroJoinedToday({ display }: { display: string }) {
   return (
     <div className="mt-6 flex items-center justify-center gap-2 rounded-xl bg-[#F4F7FF] px-4 py-3">
       <span className="relative flex h-2 w-2">
@@ -138,26 +109,7 @@ const Hero = () => {
     (state) => state,
   );
   const { href, label, shortLabel, trackClick } = useHomepageCta();
-  const [recentSignups, setRecentSignups] = useState<number | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    void fetch("/api/analytics/live-stats")
-      .then(async (r) => {
-        if (!r.ok) return;
-        const data = (await r.json()) as { stats?: { recentSignups?: number } };
-        if (!cancelled && data.stats?.recentSignups != null) {
-          setRecentSignups(data.stats.recentSignups);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const signupDisplay =
-    recentSignups != null ? recentSignups.toLocaleString() : "3,358";
+  const { display: signupDisplay } = useRecentSignupsLiveStat("3,358");
 
   useEffect(() => {
     const onScroll = () => {
@@ -304,7 +256,7 @@ const Hero = () => {
                   ))}
                 </div>
 
-                <HeroJoinedToday />
+                <HeroJoinedToday display={signupDisplay} />
               </div>
             </div>
           </div>

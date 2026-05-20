@@ -35,6 +35,7 @@ import {
   parsePrice,
 } from "@/lib/pricing";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { useRecentSignupsLiveStat } from "@/hooks/useRecentSignupsLiveStat";
 import type { SerializedPlan } from "@/types/pricing";
 
 function planBillingHeadline(plan: SerializedPlan): string {
@@ -98,7 +99,7 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
   const [catalogPlans, setCatalogPlans] = useState<SerializedPlan[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
-  const [recentSignups, setRecentSignups] = useState<number | null>(null);
+  const { display: signupDisplay } = useRecentSignupsLiveStat("127", { enabled: open });
 
   const submitSignedInStripeCheckout = useCallback(
     (stripePriceId: string) => {
@@ -161,23 +162,6 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
     };
   }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    void fetch("/api/analytics/live-stats")
-      .then(async (r) => {
-        if (!r.ok) return;
-        const data = (await r.json()) as { stats?: { recentSignups?: number } };
-        if (!cancelled && data.stats?.recentSignups != null) {
-          setRecentSignups(data.stats.recentSignups);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [open]);
-
   const sortedPlans = useMemo(() => {
     return [...catalogPlans].sort((a, b) => {
       const oa = a.order ?? Number.MAX_SAFE_INTEGER;
@@ -190,8 +174,6 @@ function PricingNavModalInner({ open, onOpenChange }: PricingNavModalProps) {
     () => buildOriginalPriceFromWeeklyMap(sortedPlans),
     [sortedPlans]
   );
-
-  const signupDisplay = recentSignups != null ? recentSignups.toLocaleString() : "127";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

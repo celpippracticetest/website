@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRecentSignupsLiveStat } from "@/hooks/useRecentSignupsLiveStat";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import StarIcon from "@mui/icons-material/Star";
 
@@ -16,33 +16,7 @@ export const AUTH_PAGE_BACKGROUND_CLASS =
   "min-h-screen bg-[linear-gradient(135deg,#FAFBFF_0%,#EEF2FF_50%,#F8FAFC_100%)]";
 
 export function AuthLiveJoinedBanner() {
-  const [count, setCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const res = await fetch("/api/analytics/live-stats");
-        if (!res.ok) return;
-        const data = (await res.json()) as {
-          stats?: { recentSignups?: number };
-        };
-        if (!cancelled && data.stats?.recentSignups != null) {
-          setCount(data.stats.recentSignups);
-        }
-      } catch {
-        /* ignore */
-      }
-    };
-    void load();
-    const id = setInterval(load, 30_000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, []);
-
-  const display = count != null ? count.toLocaleString() : "3,358";
+  const { display } = useRecentSignupsLiveStat("3,358");
 
   return (
     <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-center">
