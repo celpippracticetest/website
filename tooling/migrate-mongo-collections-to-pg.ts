@@ -69,7 +69,7 @@ export const DEFAULT_MONGO_PG_SYNC_COLLECTIONS: readonly string[] = [
   // "user_activity" — relational `public.user_activity` (see migration 20260519161000).
   "user_attribution_events",
   // "user_learning_events" — relational `public.user_learning_events` (migration 20260519162000).
-  "useractivities",
+  // "useractivities" — relational `public.user_activities` (migration 20260520131000).
   "useractivityreminderdispatchlocks",
   "useractivityreminderstats",
   "useractivityreminders",

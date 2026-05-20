@@ -11,7 +11,12 @@ import {
   type AppDoc,
 } from "./document";
 import type { SqlParts } from "./whereBuilder";
-import { PgAggregateCursor, PgFindCursor } from "./pgCollection";
+import {
+  collectJoinCollectionShortNames,
+  PgAggregateCursor,
+  PgFindCursor,
+} from "./pgCollection";
+import { loadUserActivitiesForAggregateJoin } from "./userActivitiesCollection";
 
 const OID_HEX = /^[a-f0-9]{24}$/i;
 const UUID_RE =
@@ -670,6 +675,14 @@ export class PgUsersCollection<T extends AppDoc = AppDoc> {
 
   aggregate(pipeline: object[], _options?: { allowDiskUse?: boolean }): PgAggregateCursor {
     return new PgAggregateCursor(async () => {
+      const joinShortNames = collectJoinCollectionShortNames(pipeline);
+      const preload = new Map<string, AppDoc[]>();
+      for (const short of joinShortNames) {
+        if (short === "useractivities") {
+          preload.set(short, await loadUserActivitiesForAggregateJoin(this.sql));
+        }
+      }
+
       const n = await this.countAll();
       const budget = Number(process.env.APP_AGGREGATE_DOC_BUDGET || maxScan());
       if (n > budget) {
@@ -683,7 +696,7 @@ export class PgUsersCollection<T extends AppDoc = AppDoc> {
       );
       const docs = mapRowsToDocs(rows);
       return mingoAggregate(docs, pipeline as never[], {
-        collectionResolver: () => [],
+        collectionResolver: (name: string) => preload.get(name) ?? [],
       });
     });
   }

@@ -252,7 +252,7 @@ export async function resolveAppDocumentsPartitionKey(sql: Sql, logical: string)
 }
 
 /** Collect short collection names referenced by stages that need `collectionResolver` in mingo. */
-function collectJoinCollectionShortNames(pipeline: unknown): Set<string> {
+export function collectJoinCollectionShortNames(pipeline: unknown): Set<string> {
   const names = new Set<string>();
   function add(n: unknown) {
     if (typeof n === "string" && n.length > 0) names.add(n);
@@ -650,6 +650,13 @@ export class PgCollection<T extends AppDoc = AppDoc> {
       const joinShortNames = collectJoinCollectionShortNames(pipeline);
       const preload = new Map<string, AppDoc[]>();
       for (const short of joinShortNames) {
+        if (short === "useractivities") {
+          const { loadUserActivitiesForAggregateJoin } = await import(
+            "./userActivitiesCollection"
+          );
+          preload.set(short, await loadUserActivitiesForAggregateJoin(this.sql));
+          continue;
+        }
         const key = await resolveAppDocumentsPartitionKey(this.sql, short);
         preload.set(short, await this.loadAllDocumentsForCollectionKey(key));
       }

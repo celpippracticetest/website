@@ -5,6 +5,7 @@ import { PgLeagueSeasonsCollection } from "./leagueSeasonsCollection";
 import { PgLeaguesCollection } from "./leaguesCollection";
 import { PgCollection, type AppDoc } from "./pgCollection";
 import { PgUserActivityCollection } from "./userActivityCollection";
+import { PgUserActivitiesCollection } from "./userActivitiesCollection";
 import { PgUserLearningEventsCollection } from "./userLearningEventsCollection";
 import { PgUserLeaguePointsCollection } from "./userLeaguePointsCollection";
 
@@ -28,6 +29,9 @@ export class PgDatabase {
     }
     if (name === "user_activity") {
       return new PgUserActivityCollection<T>(this.sql) as unknown as PgCollection<T>;
+    }
+    if (name === "useractivities") {
+      return new PgUserActivitiesCollection<T>(this.sql) as unknown as PgCollection<T>;
     }
     if (name === "user_learning_events") {
       return new PgUserLearningEventsCollection<T>(this.sql) as unknown as PgCollection<T>;

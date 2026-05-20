@@ -7,7 +7,6 @@ import {
   emailsFromAuthUser,
   resolveStripeCustomerId,
 } from "@/lib/resolveStripeCustomerId";
-import { resolveAppDocumentsPartitionKey } from "@/lib/pg/pgCollection";
 import { getSql } from "@/lib/pg/pool";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -96,55 +95,13 @@ export async function GET(request: NextRequest) {
     const [tokenTotals, subscription] = await Promise.all([
       (async () => {
         try {
-          /**
-           * Avoid `collection("useractivities").aggregate(...)`: the PG document layer loads the
-           * entire partition before `$match`, which hits statement timeouts at scale.
-           */
           const sql = getSql();
-          const phys = await resolveAppDocumentsPartitionKey(sql, "useractivities");
           const rows = await sql`
             SELECT
-              COALESCE(
-                SUM(
-                  COALESCE(
-                    NULLIF(
-                      TRIM(
-                        COALESCE(
-                          body->>'llmTokensPrompt',
-                          body->'llmTokensPrompt'->>'$numberInt',
-                          body->'llmTokensPrompt'->>'$numberLong',
-                          body->'llmTokensPrompt'->>'$numberDouble'
-                        )
-                      ),
-                      ''
-                    ),
-                    '0'
-                  )::numeric
-                ),
-                0
-              ) AS prompt,
-              COALESCE(
-                SUM(
-                  COALESCE(
-                    NULLIF(
-                      TRIM(
-                        COALESCE(
-                          body->>'llmTokensCompletion',
-                          body->'llmTokensCompletion'->>'$numberInt',
-                          body->'llmTokensCompletion'->>'$numberLong',
-                          body->'llmTokensCompletion'->>'$numberDouble'
-                        )
-                      ),
-                      ''
-                    ),
-                    '0'
-                  )::numeric
-                ),
-                0
-              ) AS completion
-            FROM app_documents
-            WHERE collection = ${phys}
-              AND body->>'userId' = ${userId}
+              COALESCE(SUM(COALESCE(llm_tokens_prompt, 0)), 0) AS prompt,
+              COALESCE(SUM(COALESCE(llm_tokens_completion, 0)), 0) AS completion
+            FROM public.user_activities
+            WHERE user_id = ${userId}
           `;
           const row = rows[0] as { prompt?: unknown; completion?: unknown } | undefined;
           const n = (v: unknown) => {
