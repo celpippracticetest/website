@@ -62,7 +62,7 @@ const FALLBACK_CONFIG: LeadCaptureConfig = {
     showToWasPremium: true,
   },
   frequencyCapDays: 30,
-  isEnabled: true,
+  isEnabled: false,
 };
 
 function getStorageKey(campaignId: string) {

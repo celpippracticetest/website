@@ -319,14 +319,22 @@ export default async function middleware(req: NextRequest) {
   }
 
   if (webStableId && !sessionClaims?.metadata.roles) {
-    const client = await appUserAdmin();
-    const existingPlan = (sessionClaims?.metadata as any)?.plan;
-    await client.users.updateUserMetadata(webStableId, {
-      publicMetadata: {
-        roles: ["user"],
-        plan: existingPlan || "free",
-      },
-    });
+    try {
+      const client = await appUserAdmin();
+      const existingPlan = (sessionClaims?.metadata as any)?.plan;
+      await client.users.updateUserMetadata(webStableId, {
+        publicMetadata: {
+          roles: ["user"],
+          plan: existingPlan || "free",
+        },
+      });
+    } catch (error) {
+      captureException(error, {
+        component: "middleware",
+        action: "bootstrap_user_roles",
+        userId: webStableId,
+      });
+    }
   }
 
   // Create referral code when user becomes premium
@@ -412,6 +420,7 @@ export default async function middleware(req: NextRequest) {
     const hasCompletedOnboarding = (sessionClaims?.metadata as any)
       ?.onboardingCompleted;
     if (!hasCompletedOnboarding) {
+      try {
       const client = await appUserAdmin();
 
       const referralCode = req.cookies.get("pendingReferralCode")?.value;
@@ -597,6 +606,13 @@ export default async function middleware(req: NextRequest) {
             ...sessionClaims?.metadata,
             onboardingCompleted: true,
           },
+        });
+      }
+      } catch (error) {
+        captureException(error, {
+          component: "middleware",
+          action: "practice_overview_onboarding_bootstrap",
+          userId: webStableId,
         });
       }
     }

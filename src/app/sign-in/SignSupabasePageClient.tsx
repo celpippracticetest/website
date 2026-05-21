@@ -5,6 +5,7 @@ import {
   AuthMarketingShell,
 } from "@/components/auth/AuthPageChrome";
 import { SupabaseAuthForm } from "@/components/auth/SupabaseAuthForm";
+import { navigateAfterWebAuth } from "@/lib/auth/post-auth-redirect";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -115,8 +116,8 @@ export default function SignSupabasePageClient() {
         if (data.session?.user) {
           void saveAttribution();
           const dest = redirectAfterAuth ?? "/practice-overview";
-          if (dest.startsWith("/api/")) window.location.assign(dest);
-          else router.replace(dest);
+          navigateAfterWebAuth(dest);
+          return;
         }
         setReady(true);
       })

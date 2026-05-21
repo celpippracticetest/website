@@ -1,5 +1,4 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /** Handles Supabase Auth callbacks: Google OAuth (PKCE), magic links, and password recovery links. */
@@ -11,7 +10,9 @@ export async function GET(request: NextRequest) {
 
   /** Where to send the user after a successful auth exchange. Must be same-origin. */
   const rawNext = searchParams.get("next") ?? "/practice-overview";
-  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/practice-overview";
+  const next =
+    rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/practice-overview";
+  const successUrl = new URL(next, origin);
 
   if (errorParam) {
     const msg = encodeURIComponent(errorDescription ?? errorParam);
@@ -26,15 +27,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${origin}/sign-in?error=supabase_not_configured`);
     }
 
-    const cookieStore = await cookies();
+    // Session cookies must be written onto the redirect response (not only `cookies()`).
+    const response = NextResponse.redirect(successUrl);
+
     const supabase = createServerClient(url, anonKey, {
       cookies: {
         getAll() {
-          return cookieStore.getAll();
+          return request.cookies.getAll();
         },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+        setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
           for (const { name, value, options } of cookiesToSet) {
-            cookieStore.set(name, value, options);
+            response.cookies.set(name, value, options);
           }
         },
       },
@@ -42,11 +45,13 @@ export async function GET(request: NextRequest) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      return response;
     }
 
     console.error("[auth/callback] exchangeCodeForSession failed:", error.message);
-    return NextResponse.redirect(`${origin}/sign-in?error=${encodeURIComponent(error.message)}`);
+    return NextResponse.redirect(
+      `${origin}/sign-in?error=${encodeURIComponent(error.message)}`,
+    );
   }
 
   return NextResponse.redirect(`${origin}/sign-in`);

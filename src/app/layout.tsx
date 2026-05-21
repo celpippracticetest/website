@@ -9,7 +9,7 @@ import CrispChat from "@/components/CrispChat";
 import CrispLoader from "@/components/CrispLoader";
 import CrispUserSync from "@/components/CrispUserSync";
 import AuthGtmTracker from "@/components/analytics/AuthGtmTracker";
-import { LazyLeadCapturePopup, LazyPromotionManager } from "@/components/LazyComponents";
+import { LazyPromotionManager } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ActiveUsersTracker from "@/components/analytics/ActiveUsersTracker";
@@ -316,8 +316,6 @@ export default async function RootLayout({
             <PageViewTracker />
             {process.env.NODE_ENV === "production" && <RedditPixelTracker />}
           </Suspense>
-          <LazyLeadCapturePopup />
-
           {enableClarity && (
             <Script
               id="ms-clarity"

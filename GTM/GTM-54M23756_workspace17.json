@@ -643,7 +643,7 @@
                     {
                         "type": "TEMPLATE",
                         "key": "html",
-                        "value": "<script>(function(){var w=window;w.uetq=w.uetq||[];var v={{DLV - uet value}};var cur={{DLV - uet currency}};var n=Number(v);if(v===\"\"||v===void 0||v===null||isNaN(n))n=0;w.uetq.push(\"event\",\"\",{\"event_action\":\"purchase\",\"revenue_value\":n,\"currency\":String(cur||\"CAD\")});})();</script>"
+                        "value": "<script>(function(){var w=window;w.uetq=w.uetq||[];var v={{DLV - uet value}};var cur={{DLV - uet currency}};var n=Number(v);if(v===\"\"||v===void 0||v===null||isNaN(n))n=0;var c=String(cur||\"CAD\").toUpperCase();w.uetq.push(\"event\",\"purchase\",{\"revenue_value\":n,\"currency\":c});})();</script>"
                     },
                     {
                         "type": "BOOLEAN",
@@ -656,7 +656,6 @@
                     "50"
                 ],
                 "tagFiringOption": "ONCE_PER_EVENT",
-                "paused": true,
                 "monitoringMetadata": {
                     "type": "MAP"
                 },
@@ -703,6 +702,21 @@
                         "value": "uetq"
                     },
                     {
+                        "type": "BOOLEAN",
+                        "key": "c_storeConvTrackCookies",
+                        "value": "true"
+                    },
+                    {
+                        "type": "BOOLEAN",
+                        "key": "c_consentUpdates",
+                        "value": "true"
+                    },
+                    {
+                        "type": "BOOLEAN",
+                        "key": "c_enableAutoSpaTracking",
+                        "value": "true"
+                    },
+                    {
                         "type": "TEMPLATE",
                         "key": "eventType",
                         "value": "PAGE_LOAD"
@@ -742,6 +756,9 @@
                 "fingerprint": "1777402612628",
                 "firingTriggerId": [
                     "7"
+                ],
+                "blockingTriggerId": [
+                    "50"
                 ],
                 "tagFiringOption": "ONCE_PER_EVENT",
                 "consentSettings": {

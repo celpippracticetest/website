@@ -30,7 +30,7 @@ const DEFAULT_POPUP_CONFIG: TLeadCapturePublicConfig = {
     showToWasPremium: true,
   },
   frequencyCapDays: 30,
-  isEnabled: true,
+  isEnabled: false,
 };
 
 export class LeadCaptureConfigRepository {

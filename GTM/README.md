@@ -79,6 +79,19 @@ Use **Consent Mode** so these tags respect `ad_storage` / `ad_user_data` after y
    - **`InitiateCheckout`** (optional) — trigger on `begin_checkout`.
 3. **Enhanced matching / Conversions API** — optional; browser pixel alone is what most teams start with. If you use **`ads_enhanced_conversion`**, you can add a **parallel Meta tag** on that same event for hashed user data (policy + implementation heavy).
 
+### Microsoft Advertising (Bing UET)
+
+Container export: [`GTM-54M23756_workspace17.json`](./GTM-54M23756_workspace17.json).
+
+| Tag                                                    | Role                                                                                                                              |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Base Tag (UET 187248793)**                           | Page load + SPA tracking (`187248793` only — do not unpause the old `187239463` base).                                            |
+| **CPT - Microsoft UET - custom (purchase)**            | Fires on `purchase` with `revenue_value` / `currency` from `{{DLV - uet value}}` / `{{DLV - uet currency}}`.                      |
+| **CPT - GA4 Event - ecommerce mirror (Microsoft UET)** | Mirrors `begin_checkout`, `refund`, etc. **Blocking trigger:** `CPT - CE purchase (UET)` so purchase is not sent without revenue. |
+| **CPT - GA4 Event - sign_up (Microsoft UET)**          | `sign_up` custom event.                                                                                                           |
+
+After import, **Preview** a test `purchase` in GTM and confirm UET Tag Helper shows `purchase` with revenue (not a duplicate zero-value custom event).
+
 ### Reddit Ads
 
 The **Reddit pixel is already loaded in the app** in production ([`RedditPixelTracker.tsx`](../src/components/analytics/RedditPixelTracker.tsx)): **init**, **PageVisit** on route changes, and **`gtm.ts`** calls **`rdt('track','SignUp')`** / **`Purchase`** with value/currency/transaction id when those fire.

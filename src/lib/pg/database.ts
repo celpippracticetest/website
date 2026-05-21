@@ -1,4 +1,5 @@
 import type { Sql } from "postgres";
+import { PgAnswersCollection } from "./answersCollection";
 import { PgStripeSubscriptionsCollection } from "./stripeSubscriptionsCollection";
 import { PgLeagueGroupsCollection } from "./leagueGroupsCollection";
 import { PgUsersCollection } from "./usersCollection";
@@ -42,6 +43,9 @@ export class PgDatabase {
     }
     if (name === "users") {
       return new PgUsersCollection<T>(this.sql) as unknown as PgCollection<T>;
+    }
+    if (name === "answers") {
+      return new PgAnswersCollection<T>(this.sql) as unknown as PgCollection<T>;
     }
     if (name === "stripe_subscriptions") {
       return new PgStripeSubscriptionsCollection<T>(this.sql) as unknown as PgCollection<T>;

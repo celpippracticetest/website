@@ -4,12 +4,12 @@ import BoltIcon from "@mui/icons-material/Bolt";
 import ShieldIcon from "@mui/icons-material/Shield";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { AuthLiveJoinedBanner } from "@/components/auth/AuthPageChrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { navigateAfterWebAuth } from "@/lib/auth/post-auth-redirect";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { cn } from "@/lib/utils";
 
@@ -79,7 +79,6 @@ export function SupabaseAuthForm({
   redirectAfterAuth?: string;
   showLegacyAuthHint?: boolean;
 }) {
-  const router = useRouter();
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [emailMethod, setEmailMethod] = useState<EmailMethod>("password");
 
@@ -167,8 +166,7 @@ export function SupabaseAuthForm({
           });
           if (signErr) { setError(signErr.message); return; }
           if (data.session) {
-            if (dest.startsWith("/api/")) window.location.assign(dest);
-            else { router.push(dest); router.refresh(); }
+            navigateAfterWebAuth(dest);
             return;
           }
           setNotice("Almost there! Check your inbox and click the confirmation link, then sign in.");
@@ -185,13 +183,12 @@ export function SupabaseAuthForm({
           password,
         });
         if (signErr) { setError(signErr.message); return; }
-        if (dest.startsWith("/api/")) window.location.assign(dest);
-        else { router.push(dest); router.refresh(); }
+        navigateAfterWebAuth(dest);
       } finally {
         setSubmitting(false);
       }
     },
-    [email, password, confirm, mode, dest, router]
+    [email, password, confirm, mode, dest]
   );
 
   const handleForgotPassword = useCallback(async () => {

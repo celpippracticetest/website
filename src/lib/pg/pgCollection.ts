@@ -673,6 +673,11 @@ export class PgCollection<T extends AppDoc = AppDoc> {
           preload.set(short, await loadUserActivitiesForAggregateJoin(this.sql));
           continue;
         }
+        if (short === "answers") {
+          const { loadAnswersForAggregateJoin } = await import("./answersCollection");
+          preload.set(short, await loadAnswersForAggregateJoin(this.sql));
+          continue;
+        }
         if (short === "stripe_subscriptions") {
           const { loadStripeSubscriptionsForAggregateJoin } = await import(
             "./stripeSubscriptionsCollection"
