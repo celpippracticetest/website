@@ -63,7 +63,7 @@ export const DEFAULT_MONGO_PG_SYNC_COLLECTIONS: readonly string[] = [
   "stripe_customers",
   "stripe_invoices",
   "stripe_prices",
-  "stripe_subscriptions",
+  // "stripe_subscriptions" — relational `public.stripe_subscriptions` (migration 20260521140000).
   "stripe_sync_state",
   "tasks",
   // "user_activity" — relational `public.user_activity` (see migration 20260519161000).

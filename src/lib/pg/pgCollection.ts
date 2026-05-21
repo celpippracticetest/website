@@ -156,6 +156,22 @@ async function countAppDocumentsByCollection(sql: Sql, collectionKey: string): P
   return rows[0]?.c ?? 0;
 }
 
+/** Load an `app_documents` partition for mingo `$lookup` / `$unionWith` joins. */
+export async function loadAppDocumentsJoinCollection(
+  sql: Sql,
+  logicalShortName: string
+): Promise<AppDoc[]> {
+  const key = await resolveAppDocumentsPartitionKey(sql, logicalShortName);
+  const n = await countAppDocumentsByCollection(sql, key);
+  if (n > maxScan()) {
+    throw new Error(
+      `Refusing to load "${key}" for aggregation join: ${n} rows exceeds APP_DOCUMENTS_MAX_SCAN=${maxScan()}.`
+    );
+  }
+  const rows = await loadPartitionBodies(sql, key);
+  return mapRowsToAppDocs(rows as unknown[]);
+}
+
 /** `prod.practices` → `practices` only when the prefix matches `env` and the rest is a single segment. */
 function bareCollectionAfterEnvPrefix(prefixedLogical: string, env: string): string | null {
   const p = `${env}.`;
@@ -655,6 +671,18 @@ export class PgCollection<T extends AppDoc = AppDoc> {
             "./userActivitiesCollection"
           );
           preload.set(short, await loadUserActivitiesForAggregateJoin(this.sql));
+          continue;
+        }
+        if (short === "stripe_subscriptions") {
+          const { loadStripeSubscriptionsForAggregateJoin } = await import(
+            "./stripeSubscriptionsCollection"
+          );
+          preload.set(short, await loadStripeSubscriptionsForAggregateJoin(this.sql));
+          continue;
+        }
+        if (short === "users") {
+          const { loadUserProfilesForAggregateJoin } = await import("./usersCollection");
+          preload.set(short, await loadUserProfilesForAggregateJoin(this.sql));
           continue;
         }
         const key = await resolveAppDocumentsPartitionKey(this.sql, short);

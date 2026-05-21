@@ -426,6 +426,23 @@ export function usersFilterToSql(filter: Record<string, unknown>): SqlParts | nu
   return { clause: parts.join(" AND "), params };
 }
 
+/** Full `user_profiles` preload for mingo `$lookup` from other aggregates. */
+export async function loadUserProfilesForAggregateJoin(sql: Sql): Promise<AppDoc[]> {
+  const rows = await sql`SELECT COUNT(*)::int AS c FROM public.user_profiles`;
+  const n = rows[0]?.c ?? 0;
+  const budget = Number(process.env.APP_AGGREGATE_DOC_BUDGET || maxScan());
+  if (n > budget) {
+    throw new Error(
+      `users $lookup preload needs ${n} rows (budget ${budget}). Raise APP_AGGREGATE_DOC_BUDGET after sizing RAM.`
+    );
+  }
+  const all = await sql.unsafe(
+    `SELECT ${USER_PROFILE_COLUMNS} FROM public.user_profiles ORDER BY app_document_mongo_id`,
+    []
+  );
+  return mapRowsToDocs(all);
+}
+
 function isPgUniqueViolation(e: unknown): boolean {
   return Boolean(
     e &&
@@ -680,6 +697,11 @@ export class PgUsersCollection<T extends AppDoc = AppDoc> {
       for (const short of joinShortNames) {
         if (short === "useractivities") {
           preload.set(short, await loadUserActivitiesForAggregateJoin(this.sql));
+        } else if (short === "stripe_subscriptions") {
+          const { loadStripeSubscriptionsForAggregateJoin } = await import(
+            "./stripeSubscriptionsCollection"
+          );
+          preload.set(short, await loadStripeSubscriptionsForAggregateJoin(this.sql));
         }
       }
 
