@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
 import { requireAuthenticatedRequest } from "@/lib/auth/request-auth";
+import {
+  safeStripePriceId,
+  safeStripeProductId,
+} from "@/lib/checkoutCancelUrl";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
 import { stripeCheckoutPaymentMethodParams } from "@/lib/stripeCheckoutPaymentMethods";
@@ -225,6 +229,44 @@ function readStringValue(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+/** Same resolution as `/api/checkout_session` — plans API sends Stripe Price ids (`price_…`). */
+async function resolveCheckoutPriceAndProduct(stripeLineId: string): Promise<{
+  price: Stripe.Price;
+  product: Stripe.Product;
+}> {
+  const priceId = safeStripePriceId(stripeLineId);
+  if (priceId) {
+    const price = await stripe.prices.retrieve(priceId, {
+      expand: ["product"],
+    });
+    const productRef = price.product;
+    const productId =
+      typeof productRef === "string" ? productRef : productRef.id;
+    const product = await stripe.products.retrieve(productId);
+    return { price, product };
+  }
+
+  const productId = safeStripeProductId(stripeLineId);
+  if (!productId) {
+    throw new Error("Invalid Stripe price or product ID.");
+  }
+
+  const product = await stripe.products.retrieve(productId, {
+    expand: ["default_price"],
+  });
+  const defaultPrice = product.default_price;
+  if (!defaultPrice) {
+    throw new Error("Selected product does not have a default price.");
+  }
+
+  const price =
+    typeof defaultPrice === "string"
+      ? await stripe.prices.retrieve(defaultPrice)
+      : (defaultPrice as Stripe.Price);
+
+  return { price, product };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { user, userId, mobileAuthKind, supabaseAuthUserId } =
@@ -234,12 +276,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const productId =
-      typeof body?.productId === "string" ? body.productId.trim() : "";
+    const stripeLineId = [
+      typeof body?.priceId === "string" ? body.priceId.trim() : "",
+      typeof body?.productId === "string" ? body.productId.trim() : "",
+    ].find((id) => id.length > 0);
 
-    if (!productId) {
+    if (!stripeLineId) {
       return NextResponse.json(
-        { error: "Product ID is required." },
+        { error: "Stripe price or product ID is required." },
         { status: 400 }
       );
     }
@@ -252,22 +296,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const product = await stripe.products.retrieve(productId, {
-      expand: ["default_price"],
-    });
-    const defaultPrice = product.default_price;
-
-    if (!defaultPrice) {
-      return NextResponse.json(
-        { error: "Selected product does not have a default price." },
-        { status: 400 }
-      );
-    }
-
-    const price =
-      typeof defaultPrice === "string"
-        ? await stripe.prices.retrieve(defaultPrice)
-        : (defaultPrice as Stripe.Price);
+    const { price, product } = await resolveCheckoutPriceAndProduct(stripeLineId);
     const mode = price.recurring ? "subscription" : "payment";
     const publicMetadata = (user.publicMetadata ?? {}) as UserMetadata;
     const firstTouch =
