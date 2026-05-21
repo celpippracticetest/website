@@ -10,6 +10,7 @@ import { AuthLiveJoinedBanner } from "@/components/auth/AuthPageChrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { signUpOrSignInWithPassword } from "@/lib/auth/sign-up-or-sign-in";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { cn } from "@/lib/utils";
 
@@ -57,15 +58,15 @@ export function CustomSupabaseSignUpForm({
       }
       setSubmitting(true);
       try {
-        const { data, error: signErr } = await supabase.auth.signUp({
-          email: email.trim(),
+        const result = await signUpOrSignInWithPassword(supabase, {
+          email,
           password,
         });
-        if (signErr) {
-          setError(formatSupabaseAuthError(signErr.message));
+        if (!result.ok) {
+          setError(formatSupabaseAuthError(result.message));
           return;
         }
-        if (data.session) {
+        if (result.session) {
           router.push("/practice-overview");
           router.refresh();
           return;

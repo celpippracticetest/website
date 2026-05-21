@@ -135,20 +135,30 @@ export default function AttributionTracker() {
     const payloadSignature = JSON.stringify(payload);
     if (sessionStorage.getItem(sessionDedupeKey) === payloadSignature) return;
 
+    const controller = new AbortController();
+
     fetch("/api/users/update-attribution", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+      credentials: "include",
+      signal: controller.signal,
     })
       .then((response) => {
         if (!response.ok) return;
         sessionStorage.setItem(sessionDedupeKey, payloadSignature);
       })
       .catch((error) => {
-        if (process.env.NODE_ENV === "development") {
+        if (controller.signal.aborted) return;
+        const isBenign =
+          error instanceof TypeError ||
+          (error instanceof DOMException && error.name === "AbortError");
+        if (process.env.NODE_ENV === "development" && !isBenign) {
           console.warn("[Attribution] Failed to update attribution", error);
         }
       });
+
+    return () => controller.abort();
   }, [isSignedIn, userId, pathname, searchParams]);
 
   return null;

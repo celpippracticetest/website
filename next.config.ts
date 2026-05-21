@@ -200,14 +200,11 @@ const nextConfig: NextConfig = {
 
   // Security Headers
   headers: async () => {
+    const isDev = process.env.NODE_ENV === "development";
     const globalHeaders = [
       {
         key: "X-DNS-Prefetch-Control",
         value: "on",
-      },
-      {
-        key: "Strict-Transport-Security",
-        value: "max-age=63072000; includeSubDomains; preload",
       },
       {
         key: "X-Frame-Options",
@@ -226,6 +223,14 @@ const nextConfig: NextConfig = {
         value: "frame-ancestors 'self';",
       },
     ];
+
+    // HSTS on localhost breaks http://localhost:3001 after OAuth (Chrome → https → error page).
+    if (!isDev) {
+      globalHeaders.splice(1, 0, {
+        key: "Strict-Transport-Security",
+        value: "max-age=63072000; includeSubDomains; preload",
+      });
+    }
 
     if (process.env.VERCEL_ENV === "preview") {
       globalHeaders.push({

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { navigateAfterWebAuth } from "@/lib/auth/post-auth-redirect";
+import { signUpOrSignInWithPassword } from "@/lib/auth/sign-up-or-sign-in";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { cn } from "@/lib/utils";
 
@@ -157,15 +158,18 @@ export function SupabaseAuthForm({
         if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
         setSubmitting(true);
         try {
-          const { data, error: signErr } = await supabase.auth.signUp({
-            email: email.trim(),
+          const result = await signUpOrSignInWithPassword(supabase, {
+            email,
             password,
-            options: {
+            signUpOptions: {
               emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(dest)}`,
             },
           });
-          if (signErr) { setError(signErr.message); return; }
-          if (data.session) {
+          if (!result.ok) {
+            setError(result.message);
+            return;
+          }
+          if (result.session) {
             navigateAfterWebAuth(dest);
             return;
           }

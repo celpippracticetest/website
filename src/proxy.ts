@@ -76,7 +76,7 @@ const PRACTICE_HUB_PATHS = new Set([
 const REFERRAL_CREATE_COOLDOWN_COOKIE = "referralCodeCreateCooldown";
 const REFERRAL_CREATE_COOLDOWN_SECONDS = 60;
 
-export default async function middleware(req: NextRequest) {
+export default async function proxy(req: NextRequest) {
   let setReferralCreateCooldown = false;
   let clearPendingReferralCookie = false;
 

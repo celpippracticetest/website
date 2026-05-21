@@ -16,10 +16,10 @@ import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
 import { findOrCreateWebUserByEmail } from "@/lib/guestCheckoutAuth";
 import { persistStripeCustomerIdForUser } from "@/lib/resolveStripeCustomerId";
 import { recordPartnerCommissionForSubscriber } from "@/lib/partner/recordPartnerCommissionForSubscriber";
-import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
 import {
   matchUsersCollectionByWebUserIds,
-  supabaseAuthUserIdFieldsOnUserDoc,
+  usersCollectionEmailSetFromAuthUser,
+  usersCollectionSetOnInsertFromAuthUser,
 } from "@/lib/users/userDocumentIdentity";
 import {
   sendGa4Events,
@@ -302,16 +302,13 @@ async function updateUserPublicMetadata(
         updateDoc.hasEverPurchased = newFields.hasEverPurchased;
       }
 
+      Object.assign(updateDoc, usersCollectionEmailSetFromAuthUser(user));
+
       await usersCollection.updateOne(
         matchUsersCollectionByWebUserIds(userId),
         {
           $set: updateDoc,
-          $setOnInsert: {
-            createdAt: new Date(),
-            ...(isLikelySupabaseAuthUserId(userId)
-              ? supabaseAuthUserIdFieldsOnUserDoc(userId)
-              : { clerkUserId: userId }),
-          },
+          $setOnInsert: usersCollectionSetOnInsertFromAuthUser(userId, user),
         },
         { upsert: true } // Upsert just in case, though user should exist
       );

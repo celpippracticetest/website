@@ -161,8 +161,11 @@ export default function NurtureEmailConfigPage() {
               )
               .join(" · ")
           : "";
+        const hint = payload?.hint ? ` ${payload.hint}` : "";
         setMessage(
-          [payload?.error || "Test send failed.", issueHint].filter(Boolean).join(" — ")
+          [payload?.error || "Test send failed.", payload?.code, issueHint, hint]
+            .filter(Boolean)
+            .join(" — ")
         );
         return;
       }

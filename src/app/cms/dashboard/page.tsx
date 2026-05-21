@@ -39,14 +39,15 @@ function coerceRefundCreatedAt(value: unknown): Date | string {
 export default async function CMSDashboard({
   searchParams,
 }: Readonly<{
-  searchParams: {
+  searchParams: Promise<{
     tab?: string;
     page?: string;
     limit?: string;
     challenge_page?: string;
     challenge_limit?: string;
-  };
+  }>;
 }>) {
+  const sp = await searchParams;
   const tabs = [
     { key: "overview", label: "Overview" },
     { key: "exams", label: "Exams" },
@@ -54,15 +55,15 @@ export default async function CMSDashboard({
     { key: "reports", label: "Reports" },
     { key: "settings", label: "Settings" },
   ] as const;
-  const tabParam = (searchParams?.tab || "overview").toLowerCase();
+  const tabParam = (sp.tab || "overview").toLowerCase();
   const normalizedTab = tabParam;
   const tab = tabs.some((t) => t.key === normalizedTab)
     ? normalizedTab
     : "overview";
 
   // Pagination parameters
-  const page = parseInt(searchParams?.page || "1");
-  const limit = parseInt(searchParams?.limit || "100"); // 100 records per page
+  const page = parseInt(sp.page || "1");
+  const limit = parseInt(sp.limit || "100"); // 100 records per page
 
   if (tabParam === "onboarding" || tabParam === "onboarding-new") {
     redirect(`/cms/dashboard/onboarding?page=${page}&limit=${limit}`);
@@ -74,10 +75,10 @@ export default async function CMSDashboard({
     rows: ChallengeAcceptanceRow[];
     activeCount: number;
   } = { total: 0, rows: [], activeCount: 0 };
-  const challengePage = Math.max(1, parseInt(searchParams?.challenge_page || "1", 10) || 1);
+  const challengePage = Math.max(1, parseInt(sp.challenge_page || "1", 10) || 1);
   const challengeLimit = Math.min(
     100,
-    Math.max(1, parseInt(searchParams?.challenge_limit || "25", 10) || 25),
+    Math.max(1, parseInt(sp.challenge_limit || "25", 10) || 25),
   );
 
   if (tab === "overview") {

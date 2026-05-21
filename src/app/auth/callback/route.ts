@@ -1,3 +1,4 @@
+import { expireSupersededAuthCookiesOnResponse } from "@/lib/auth/expire-superseded-auth-cookies";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest) {
 
     // Session cookies must be written onto the redirect response (not only `cookies()`).
     const response = NextResponse.redirect(successUrl);
+    const freshCookieNames = new Set<string>();
 
     const supabase = createServerClient(url, anonKey, {
       cookies: {
@@ -37,6 +39,7 @@ export async function GET(request: NextRequest) {
         },
         setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
           for (const { name, value, options } of cookiesToSet) {
+            freshCookieNames.add(name);
             response.cookies.set(name, value, options);
           }
         },
@@ -45,6 +48,7 @@ export async function GET(request: NextRequest) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      expireSupersededAuthCookiesOnResponse(request, response, freshCookieNames);
       return response;
     }
 

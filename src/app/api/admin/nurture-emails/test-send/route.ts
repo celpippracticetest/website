@@ -1,6 +1,11 @@
-import { auth, currentUser, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
+import { ensureAdminApi } from "@/lib/auth/ensure-admin-api";
 import { NextRequest, NextResponse } from "next/server";
-import { getResendClient, sendResendHtmlEmail } from "@/lib/email/resend-client";
+import {
+  getResendClient,
+  ResendSendError,
+  resolveResendFromAddress,
+  sendResendHtmlEmail,
+} from "@/lib/email/resend-client";
 import { renderNurtureEmail, sampleNurtureMergeFields } from "@/lib/nurture-email/merge-fields";
 import { z } from "zod";
 
@@ -20,35 +25,25 @@ const BodySchema = z
     path: ["htmlBody"],
   });
 
-async function ensureAdmin() {
-  const user = await currentUser();
-  if (!user) {
-    return {
-      ok: false as const,
-      response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
-    };
-  }
-
-  const authenticate = await auth();
-  const isAdmin = sessionClaimsHasAdminRole(authenticate.sessionClaims);
-  if (!isAdmin) {
-    return {
-      ok: false as const,
-      response: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
-    };
-  }
-
-  return { ok: true as const };
-}
-
 export async function POST(request: NextRequest) {
   try {
-    const admin = await ensureAdmin();
+    const admin = await ensureAdminApi(request);
     if (!admin.ok) return admin.response;
 
     if (!getResendClient()) {
       return NextResponse.json(
         { ok: false, error: "RESEND_API_KEY is not configured on the server." },
+        { status: 400 }
+      );
+    }
+
+    const from = resolveResendFromAddress();
+    if (!from) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Set RESEND_FROM_EMAIL or FROM_EMAIL to a Resend-verified sender.",
+        },
         { status: 400 }
       );
     }
@@ -70,6 +65,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
     const mergeFields = sampleNurtureMergeFields();
     const rendered = renderNurtureEmail(subject, htmlBody, mergeFields);
 
@@ -82,6 +78,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, resendId: result.id ?? null }, { status: 200 });
   } catch (error) {
     console.error("[admin nurture-emails test-send] failed:", error);
+
+    if (error instanceof ResendSendError) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: error.message,
+          code: error.code ?? null,
+          hint:
+            error.code === "validation_error"
+              ? "Check RESEND_FROM_EMAIL / FROM_EMAIL matches a verified domain in Resend."
+              : undefined,
+        },
+        { status: 502 }
+      );
+    }
+
     const message = error instanceof Error ? error.message : "Failed to send test email.";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }

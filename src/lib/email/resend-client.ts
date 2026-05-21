@@ -34,12 +34,58 @@ export function getResendClient(): Resend | null {
   return new Resend(key);
 }
 
+function stripEnvQuotes(value: string): string {
+  const s = value.trim();
+  if (
+    (s.startsWith('"') && s.endsWith('"')) ||
+    (s.startsWith("'") && s.endsWith("'"))
+  ) {
+    return s.slice(1, -1).trim();
+  }
+  return s;
+}
+
+/** Extract bare email from `Name <email@domain.com>` if needed. */
+function extractBareEmail(value: string): string | null {
+  const s = stripEnvQuotes(value);
+  const angle = s.match(/<([^>]+)>/);
+  if (angle?.[1]) return angle[1].trim();
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) return s;
+  return null;
+}
+
+/**
+ * Resend-verified sender. Prefers a full `Name <email>` from FROM_EMAIL; otherwise
+ * wraps RESEND_FROM_EMAIL (bare) as `CELPIP Practice <email>`.
+ */
 export function resolveResendFromAddress(): string {
-  return (
-    process.env.RESEND_FROM_EMAIL?.trim() ||
-    process.env.FROM_EMAIL?.trim() ||
-    ""
-  );
+  const fromEmail = stripEnvQuotes(process.env.FROM_EMAIL ?? "");
+  const resendEmail = stripEnvQuotes(process.env.RESEND_FROM_EMAIL ?? "");
+
+  if (fromEmail.includes("<")) return fromEmail;
+  if (resendEmail.includes("<")) return resendEmail;
+
+  const bare =
+    extractBareEmail(resendEmail) ||
+    extractBareEmail(fromEmail) ||
+    resendEmail ||
+    fromEmail;
+
+  if (bare) {
+    return `CELPIP Practice <${bare}>`;
+  }
+
+  return "";
+}
+
+export class ResendSendError extends Error {
+  code?: string;
+
+  constructor(message: string, code?: string) {
+    super(message);
+    this.name = "ResendSendError";
+    this.code = code;
+  }
 }
 
 export async function sendResendHtmlEmail(opts: {
@@ -50,25 +96,36 @@ export async function sendResendHtmlEmail(opts: {
 }): Promise<{ id?: string }> {
   const resend = getResendClient();
   if (!resend) {
-    throw new Error("RESEND_API_KEY is not configured");
+    throw new ResendSendError("RESEND_API_KEY is not configured");
   }
   const from = opts.from?.trim() || resolveResendFromAddress();
   if (!from) {
-    throw new Error("Set RESEND_FROM_EMAIL or FROM_EMAIL to a Resend-verified sender");
+    throw new ResendSendError(
+      "Set RESEND_FROM_EMAIL or FROM_EMAIL to a Resend-verified sender"
+    );
   }
 
   const to = Array.isArray(opts.to) ? opts.to : [opts.to];
+  const html = opts.html.replace(/\0/g, "");
+  const subject = opts.subject.trim().slice(0, 900);
+
   const { data, error } = await resend.emails.send({
     from,
     to,
-    subject: opts.subject,
-    html: opts.html,
+    subject,
+    html,
   });
 
   if (error) {
-    throw new Error(error.message);
+    throw new ResendSendError(
+      error.message || "Resend rejected the email",
+      error.name
+    );
   }
-  return { id: data?.id };
+  if (!data?.id) {
+    throw new ResendSendError("Resend returned no message id");
+  }
+  return { id: data.id };
 }
 
 export type ResendAudienceOption = { id: string; name: string };

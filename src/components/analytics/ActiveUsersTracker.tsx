@@ -93,9 +93,6 @@ export default function ActiveUsersTracker() {
       if (response.ok) {
         hasLoggedFetchFailureRef.current = false;
       }
-      if (!response.ok && process.env.NODE_ENV === "development") {
-        console.warn("Heartbeat request was not successful");
-      }
     } catch (error) {
       logFetchFailure("Failed to send heartbeat:", error);
     }
@@ -112,11 +109,9 @@ export default function ActiveUsersTracker() {
       if (response.ok) {
         hasLoggedFetchFailureRef.current = false;
       }
-      if (!response.ok && process.env.NODE_ENV === "development") {
-        console.warn("Offline heartbeat request was not successful");
-      }
-    } catch (error) {
-      logFetchFailure("Failed to mark offline:", error);
+      // Best-effort on tab close / route change; failures are expected and harmless.
+    } catch {
+      // Ignore — request is often aborted during navigation.
     }
   };
 
