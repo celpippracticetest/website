@@ -8,6 +8,7 @@ import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import { ObjectId } from "bson";
 import { redirect, RedirectType } from "next/navigation";
 import type { Metadata } from "next";
+import { cache } from "react";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { Box, Typography } from "@mui/material";
 import { PracticeSubChrome } from "@/components/practice-seo/PracticeSubChrome";
@@ -22,12 +23,21 @@ type PageProps = {
   params: Promise<{ practiceId: string; taskId: string }>;
 };
 
+const loadSpeakingTaskAndPractice = cache(
+  async (practiceId: string, taskId: string) => {
+    const taskRepo = new TaskRepository(documentsClient);
+    const practiceRepo = new PracticeRepository(documentsClient);
+    const [task, practice] = await Promise.all([
+      taskRepo.findTaskById(taskId),
+      practiceRepo.findPractice(practiceId),
+    ]);
+    return { task, practice };
+  }
+);
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { practiceId, taskId } = await params;
-  const taskRepo = new TaskRepository(documentsClient);
-  const practiceRepo = new PracticeRepository(documentsClient);
-  const task = await taskRepo.findTaskById(taskId);
-  const practice = await practiceRepo.findPractice(practiceId);
+  const { task, practice } = await loadSpeakingTaskAndPractice(practiceId, taskId);
   if (!task || !practice) {
     return { title: "Speaking practice" };
   }
@@ -56,11 +66,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function SpeakingPracticeSubPage({ params }: PageProps) {
   const { practiceId, taskId } = await params;
-  const taskRepo = new TaskRepository(documentsClient);
   const practiceRepo = new PracticeRepository(documentsClient);
 
-  const [task, practices, selectedPractice, hybridUser] = await Promise.all([
-    taskRepo.findTaskById(taskId),
+  const [{ task, practice: selectedPractice }, practices, hybridUser] =
+    await Promise.all([
+    loadSpeakingTaskAndPractice(practiceId, taskId),
     practiceRepo.getPracticeNavList(
       {
         type: "SPEAKING",
@@ -69,7 +79,6 @@ export default async function SpeakingPracticeSubPage({ params }: PageProps) {
       0,
       200
     ),
-    practiceRepo.findPractice(practiceId),
     getHybridCurrentUser(),
   ]);
 
@@ -102,15 +111,26 @@ export default async function SpeakingPracticeSubPage({ params }: PageProps) {
   let initialSpeakingAnswers: Awaited<
     ReturnType<WritingAndSpeakingAnswerRepository["getAllWritingAnswers"]>
   >["items"] = [];
+  const initialAuth = user
+    ? {
+        isSignedIn: true as const,
+        plan: (user.publicMetadata.plan as string | undefined) ?? "free",
+        purchaseDate: user.publicMetadata.purchaseDate as string | undefined,
+      }
+    : { isSignedIn: false as const, plan: "free" as const };
+
   if (user) {
     const writingAnswerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
-    const practiceIds = practices.items.map((p) => p.id);
     const [completed, answersPage] = await Promise.all([
-      writingAnswerRepo.findAnswersByPracticeIdsAndUser(practiceIds, user.id),
+      writingAnswerRepo.findCompletedPracticeIdsByTaskAndUser(
+        taskId,
+        user.id,
+        "SPEAKING"
+      ),
       writingAnswerRepo.getAllWritingAnswers(
         { userId: user.id, practiceId, type: "SPEAKING" },
         0,
-        100
+        30
       ),
     ]);
     completedPracticeId = completed;
@@ -144,6 +164,7 @@ export default async function SpeakingPracticeSubPage({ params }: PageProps) {
             task={task}
             completedPracticeId={completedPracticeId}
             initialSpeakingAnswers={initialSpeakingAnswers}
+            initialAuth={initialAuth}
             routePracticeId={practiceId}
             routeTaskId={taskId}
           />

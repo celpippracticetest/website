@@ -120,15 +120,27 @@ export function useHybridWebUser() {
       return;
     }
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      void resolveFreshSupabaseUser(supabase).then(setSupabaseUser);
+    let cancelled = false;
+    const applyUser = (user: SupabaseAuthUser | null) => {
+      if (!cancelled) setSupabaseUser(user);
+    };
+
+    // Local session first so practice UI is not blocked on a getUser() round-trip.
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      applyUser(session?.user ?? null);
     });
 
-    void resolveFreshSupabaseUser(supabase).then(setSupabaseUser);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      applyUser(session?.user ?? null);
+      void resolveFreshSupabaseUser(supabase).then(applyUser);
+    });
+
+    void resolveFreshSupabaseUser(supabase).then(applyUser);
 
     return () => {
+      cancelled = true;
       subscription.unsubscribe();
     };
   }, []);

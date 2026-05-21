@@ -33,6 +33,7 @@ import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributio
 import { StripeCheckoutDiscountBadge } from "@/components/checkout/StripeCheckoutDiscountBadge";
 import { getStripeCheckoutAutoDiscountLabel } from "@/lib/stripeCheckoutDiscountLabel";
 import { practicePath } from "@/lib/practiceRoutes";
+import type { SpeakingPracticeInitialAuth } from "./SpeakingPractice";
 
 interface SpeakingPracticeViewProps {
   practice: TPracticeDto;
@@ -50,6 +51,7 @@ interface SpeakingPracticeViewProps {
   onComplete: () => void;
   onUpgrade: () => void;
   onNextPractice: () => void;
+  initialAuth?: SpeakingPracticeInitialAuth;
 }
 
 const SpeakingPracticeView = ({
@@ -62,6 +64,7 @@ const SpeakingPracticeView = ({
   initialSpeakingAnswers,
   onBackClick,
   onAnswerButtonClick,
+  initialAuth,
 }: SpeakingPracticeViewProps) => {
   const practiceCount = usePracticeCount(task.id, practice.id, task.taskNumber);
   const preparationTime: { [key: string]: number } = {
@@ -91,14 +94,25 @@ const SpeakingPracticeView = ({
   const [pointsAwarded, setPointsAwarded] = useState(false);
   const [aiFeedbackPointsAwarded, setAiFeedbackPointsAwarded] = useState(false);
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
+  const authReady =
+    Boolean(initialAuth) ||
+    (isLoaded && (!user || user.publicMetadata?.plan !== undefined));
+  const effectivePlan =
+    (user?.publicMetadata?.plan as string | undefined) ??
+    initialAuth?.plan ??
+    "free";
+  const effectivePurchaseDate =
+    (user?.publicMetadata?.purchaseDate as string | undefined) ??
+    initialAuth?.purchaseDate;
+  const effectiveIsSignedIn = isLoaded ? isSignedIn : (initialAuth?.isSignedIn ?? false);
   const stripeCheckoutDiscountLabel = useMemo(
     () =>
-      isSignedIn &&
+      effectiveIsSignedIn &&
       quickSubscribeAction.includes("/api/checkout_session") &&
       !quickSubscribeAction.includes("/guest")
         ? getStripeCheckoutAutoDiscountLabel({ userPublicMetadata: user?.publicMetadata })
         : null,
-    [isSignedIn, quickSubscribeAction, user?.publicMetadata]
+    [effectiveIsSignedIn, quickSubscribeAction, user?.publicMetadata]
   );
   const { addPoints } = useLeaguePoints();
   const {
@@ -109,8 +123,8 @@ const SpeakingPracticeView = ({
     closeTrophy,
     checkTrophyAchievements,
   } = useTrophySystem();
-  const freeUser = user?.publicMetadata.plan == "free";
-  const noUser = isLoaded ? !isSignedIn : false;
+  const freeUser = effectivePlan === "free";
+  const noUser = authReady ? !effectiveIsSignedIn : false;
   const router = useRouter();
   const [isPlaying] = useState(false);
   const [page, setPage] = useState("question");
@@ -135,10 +149,7 @@ const SpeakingPracticeView = ({
   const shouldShowPractice: any =
     practice.isFree ||
     (!practice.isFree &&
-      hasPaidPracticeAccess(
-        user?.publicMetadata.plan as string | undefined,
-        user?.publicMetadata.purchaseDate as string | undefined
-      ));
+      hasPaidPracticeAccess(effectivePlan, effectivePurchaseDate));
   const [answers, setAnswers] = useState<any[]>(initialSpeakingAnswers ?? []);
   const [freeAttempts, setFreeAttempts] = useState<number | null>(3);
   const [errorAccessingMicrophone, setErrorAccessingMicrophone] =
@@ -158,7 +169,9 @@ const SpeakingPracticeView = ({
         if (!res.ok) return;
         const stripePriceId = data.plans?.find((plan) => plan.stripePriceId)?.stripePriceId;
         if (!stripePriceId || cancelled) return;
-        const checkoutBase = isSignedIn ? "/api/checkout_session" : "/api/checkout_session/guest";
+        const checkoutBase = effectiveIsSignedIn
+          ? "/api/checkout_session"
+          : "/api/checkout_session/guest";
         setQuickSubscribeAction(`${checkoutBase}?price=${encodeURIComponent(stripePriceId)}`);
       } catch {
         // Fall back to /pricing when quick checkout cannot be prepared.
@@ -168,7 +181,7 @@ const SpeakingPracticeView = ({
     return () => {
       cancelled = true;
     };
-  }, [isLoaded, isSignedIn]);
+  }, [authReady, effectiveIsSignedIn]);
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
     let recordingTimer: NodeJS.Timeout | null = null;
@@ -300,7 +313,7 @@ const SpeakingPracticeView = ({
   useEffect(() => {
     if (
       (user && !user.publicMetadata.plan) ||
-      (user && user.publicMetadata.plan === "free")
+      effectivePlan === "free"
     ) {
       setFreeAttempts(3 - answers.length > 0 ? 3 - answers.length : 0);
     } else {
@@ -441,7 +454,7 @@ const SpeakingPracticeView = ({
     setIsRecording(false);
   };
 
-  if (!isLoaded || (user && user.publicMetadata?.plan === undefined)) {
+  if (!authReady) {
     return (
       <div className="text-center py-10 text-gray-500 w-full">Loading...</div>
     );

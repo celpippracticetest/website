@@ -11,6 +11,7 @@ import {
   normalizeExamIdForStorage,
   supabaseCreateOrUpdateWritingAnswer,
   supabaseDeleteWritingAnswer,
+  supabaseFindCompletedPracticeIdsByTaskAndUser,
   supabaseFindPracticeIdsWithWritingAnswers,
   supabaseFindWritingAnswerById,
   supabaseGetAllWritingAnswers,
@@ -71,6 +72,37 @@ export class WritingAndSpeakingAnswerRepository {
     if (!HEX24.test(trimmed)) return null;
     const entity = await this.getAnswerCollection().findOne({ _id: new ObjectId(trimmed) });
     return entity ? this.convertFromEntity(entity) : null;
+  }
+
+  async findCompletedPracticeIdsByTaskAndUser(
+    taskId: string,
+    userId: string,
+    type: "SPEAKING" | "WRITING"
+  ): Promise<string[]> {
+    const wantHex =
+      typeof taskId === "string" && HEX24.test(taskId) ? taskId.toLowerCase() : null;
+    const legacyPromise = wantHex
+      ? this.getAnswerCollection()
+          .find({ userId, type, taskId: wantHex })
+          .project({ practiceId: 1 })
+          .toArray()
+      : Promise.resolve([]);
+
+    if (shouldPersistAnswersInSupabase()) {
+      const [answers, fromSb] = await Promise.all([
+        legacyPromise,
+        supabaseFindCompletedPracticeIdsByTaskAndUser(taskId, userId, type),
+      ]);
+      const legacy = answers
+        .map((a) => String(a.practiceId ?? ""))
+        .filter((id) => id.length > 0);
+      return [...new Set([...legacy, ...fromSb])];
+    }
+
+    const answers = await legacyPromise;
+    return answers
+      .map((a) => String(a.practiceId ?? ""))
+      .filter((id) => id.length > 0);
   }
 
   async findAnswersByPracticeIdsAndUser(

@@ -1,6 +1,6 @@
 "use client";
-import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import SpeakingPracticeView from "./SpeakingPracticeView";
 import { useListeningPracticeCompletion } from "./hooks/useListeningPracticeCompletion";
 import { TPracticeDto, TPracticeNavItem } from "@/models/practice.model";
 import { useSearchParams } from "next/navigation";
@@ -13,13 +13,11 @@ import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle"
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import type { TWritingAnswerDto } from "@/models/answer";
 
-const SpeakingPracticeView = dynamic(() => import("./SpeakingPracticeView"), {
-  loading: () => (
-    <div className="flex min-h-[420px] w-full items-center justify-center rounded-xl border border-[#D5D6D8] bg-white">
-      <div className="h-9 w-9 animate-spin rounded-full border-2 border-[#F27059] border-t-transparent" />
-    </div>
-  ),
-});
+export type SpeakingPracticeInitialAuth = {
+  isSignedIn: boolean;
+  plan: string;
+  purchaseDate?: string;
+};
 
 interface SpeakingPracticeProps {
   showHeader?: boolean;
@@ -31,6 +29,8 @@ interface SpeakingPracticeProps {
   /** When set (path-based URL), use these instead of search params and hide duplicate crumb row. */
   routePracticeId?: string;
   routeTaskId?: string;
+  /** Server-resolved auth so the client does not wait on Supabase getUser(). */
+  initialAuth?: SpeakingPracticeInitialAuth;
 }
 
 const SpeakingPractice = ({
@@ -42,6 +42,7 @@ const SpeakingPractice = ({
   initialSpeakingAnswers,
   routePracticeId,
   routeTaskId,
+  initialAuth,
 }: SpeakingPracticeProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -144,6 +145,7 @@ const SpeakingPractice = ({
         onNextPractice={() => handleNavigateToNextPractice(selectedPractice.id)}
         completedPractice={completedPracticeId}
         initialSpeakingAnswers={initialSpeakingAnswers}
+        initialAuth={initialAuth}
       />
       <SpeakingAnswerModal
         isAnswerModalOpen={isAnswerModalOpen}

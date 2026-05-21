@@ -810,6 +810,34 @@ export async function supabaseDeleteWritingAnswer(id: string): Promise<void> {
   await supabaseDeleteAnswer(id);
 }
 
+export async function supabaseFindCompletedPracticeIdsByTaskAndUser(
+  taskId: string,
+  userId: string,
+  type: "SPEAKING" | "WRITING"
+): Promise<string[]> {
+  const admin = getSupabaseAdmin();
+  if (!admin) return [];
+
+  const wantHex =
+    typeof taskId === "string" && HEX24.test(taskId) ? taskId.toLowerCase() : null;
+  if (!wantHex) return [];
+
+  const { data, error } = await admin
+    .from("answers")
+    .select("practice_id")
+    .eq("user_id", userId)
+    .eq("task_id", wantHex)
+    .eq("type", type);
+
+  if (error || !data?.length) return [];
+
+  const seen = new Set<string>();
+  for (const row of data as Pick<AnswerRow, "practice_id">[]) {
+    if (row.practice_id) seen.add(row.practice_id);
+  }
+  return [...seen];
+}
+
 export async function supabaseFindPracticeIdsWithWritingAnswers(
   practiceIds: string[],
   userId: string
