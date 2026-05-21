@@ -6,6 +6,7 @@ import {
   readLegacyImportedExternalUserId,
   readPracticePlanFromSupabaseUser,
 } from "@/lib/auth/supabase-user-plan";
+import { refreshSupabaseSessionUser } from "@/lib/auth/refresh-supabase-session-user";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 
 /**
@@ -95,19 +96,6 @@ function bridgeUserFromSupabase(u: SupabaseAuthUser) {
 
 export type HybridAuthSource = "supabase" | null;
 
-/** Prefer `getUser()` so plan/app_metadata match the server after checkout webhooks. */
-async function resolveFreshSupabaseUser(
-  supabase: NonNullable<ReturnType<typeof createBrowserSupabaseClient>>
-): Promise<SupabaseAuthUser | null> {
-  const { data: userData, error } = await supabase.auth.getUser();
-  if (!error && userData.user) {
-    return userData.user;
-  }
-
-  const { data: sessionData } = await supabase.auth.getSession();
-  return sessionData.session?.user ?? null;
-}
-
 export function useHybridWebUser() {
   const [supabaseUser, setSupabaseUser] = useState<SupabaseAuthUser | null | undefined>(
     undefined
@@ -121,23 +109,19 @@ export function useHybridWebUser() {
     }
 
     let cancelled = false;
-    const applyUser = (user: SupabaseAuthUser | null) => {
-      if (!cancelled) setSupabaseUser(user);
+    const loadUser = () => {
+      void refreshSupabaseSessionUser().then((user) => {
+        if (!cancelled) setSupabaseUser(user);
+      });
     };
 
-    // Local session first so practice UI is not blocked on a getUser() round-trip.
-    void supabase.auth.getSession().then(({ data: { session } }) => {
-      applyUser(session?.user ?? null);
-    });
+    loadUser();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      applyUser(session?.user ?? null);
-      void resolveFreshSupabaseUser(supabase).then(applyUser);
+    } = supabase.auth.onAuthStateChange(() => {
+      loadUser();
     });
-
-    void resolveFreshSupabaseUser(supabase).then(applyUser);
 
     return () => {
       cancelled = true;

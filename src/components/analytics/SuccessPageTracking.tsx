@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { refreshSupabaseSessionUser } from "@/lib/auth/refresh-supabase-session-user";
 import { useEcommerceTracking } from "@/hooks/useTracking";
 
 interface SuccessPageTrackingProps {
@@ -28,6 +29,10 @@ export default function SuccessPageTracking({
 }: SuccessPageTrackingProps) {
   const { purchase } = useEcommerceTracking();
   const hasTrackedRef = useRef(false);
+
+  useEffect(() => {
+    void refreshSupabaseSessionUser();
+  }, []);
 
   useEffect(() => {
     if (hasTrackedRef.current) return;
