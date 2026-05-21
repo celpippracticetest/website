@@ -154,7 +154,16 @@ export default function NurtureEmailConfigPage() {
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
-        setMessage(payload?.error || "Test send failed.");
+        const issueHint = Array.isArray(payload?.issues)
+          ? payload.issues
+              .map((i: { path?: string[]; message?: string }) =>
+                [i.path?.join("."), i.message].filter(Boolean).join(": ")
+              )
+              .join(" · ")
+          : "";
+        setMessage(
+          [payload?.error || "Test send failed.", issueHint].filter(Boolean).join(" — ")
+        );
         return;
       }
       setMessage(

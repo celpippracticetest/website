@@ -7,12 +7,18 @@ import { z } from "zod";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const BodySchema = z.object({
-  to: z.string().trim().email(),
-  subject: z.string().trim().min(1).max(200),
-  bodyHtml: z.string().trim().min(1).max(500_000),
-  htmlBody: z.string().trim().min(1).max(500_000).optional(),
-});
+const BodySchema = z
+  .object({
+    to: z.string().trim().email(),
+    subject: z.string().trim().min(1).max(200),
+    /** Legacy field name from older CMS builds */
+    bodyHtml: z.string().trim().min(1).max(500_000).optional(),
+    htmlBody: z.string().trim().min(1).max(500_000).optional(),
+  })
+  .refine((data) => Boolean(data.htmlBody?.trim() || data.bodyHtml?.trim()), {
+    message: "Email body (htmlBody) is required.",
+    path: ["htmlBody"],
+  });
 
 async function ensureAdmin() {
   const user = await currentUser();
@@ -57,7 +63,13 @@ export async function POST(request: NextRequest) {
     }
 
     const { to, subject } = parsed.data;
-    const htmlBody = parsed.data.htmlBody ?? parsed.data.bodyHtml;
+    const htmlBody = (parsed.data.htmlBody ?? parsed.data.bodyHtml)?.trim();
+    if (!htmlBody) {
+      return NextResponse.json(
+        { ok: false, error: "Email body (htmlBody) is required." },
+        { status: 400 }
+      );
+    }
     const mergeFields = sampleNurtureMergeFields();
     const rendered = renderNurtureEmail(subject, htmlBody, mergeFields);
 
