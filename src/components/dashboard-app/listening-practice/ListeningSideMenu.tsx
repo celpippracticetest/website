@@ -1,4 +1,4 @@
-import { TPracticeDto } from "@/models/practice.model";
+import { TPracticeDto, TPracticeNavItem } from "@/models/practice.model";
 import { Badge } from "@/components/ui/badge";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
@@ -17,7 +17,7 @@ const ListeningSideMenu = ({
 }: {
   practice: TPracticeDto;
   task: TTaskSchemaDto;
-  allPractices: TPracticeDto[];
+  allPractices: TPracticeNavItem[];
   completedPractice: string[];
   isPlaying: boolean;
   isCompleted: boolean;
@@ -30,7 +30,7 @@ const ListeningSideMenu = ({
   return (
     <aside className="sticky top-0 hidden bg-white screen1280:!h-[920px] overflow-auto screen1280:!flex shrink-0 border-[1px] border-[#D5D6D8] max-w-[305px] rounded-lg w-full flex-col items-center ">
       <div className="bg-white gap-[16px] overflow-y-auto  flex flex-col w-full [&::-webkit-scrollbar]:w-2 p-[16px] [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full  [&::-webkit-scrollbar-track]:bg-slate-100">
-        {allPractices.map((p: TPracticeDto, index: number) => (
+        {allPractices.map((p: TPracticeNavItem, index: number) => (
           <a
             key={index}
             className={`${

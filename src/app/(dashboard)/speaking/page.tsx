@@ -155,7 +155,7 @@ const SpeakingPage = async ({
   }
 
   const practiceRepo = new PracticeRepository(documentsClient);
-  const practices = await practiceRepo.getAllPractice(
+  const practices = await practiceRepo.getPracticeNavList(
     {
       type: "SPEAKING",
       taskId: new ObjectId(taskId) as unknown as string,

@@ -61,7 +61,7 @@ export default async function SpeakingPracticeSubPage({ params }: PageProps) {
 
   const [task, practices, selectedPractice, hybridUser] = await Promise.all([
     taskRepo.findTaskById(taskId),
-    practiceRepo.getAllPractice(
+    practiceRepo.getPracticeNavList(
       {
         type: "SPEAKING",
         taskId: new ObjectId(taskId) as unknown as string,
@@ -99,12 +99,22 @@ export default async function SpeakingPracticeSubPage({ params }: PageProps) {
   }
 
   let completedPracticeId: string[] = [];
+  let initialSpeakingAnswers: Awaited<
+    ReturnType<WritingAndSpeakingAnswerRepository["getAllWritingAnswers"]>
+  >["items"] = [];
   if (user) {
     const writingAnswerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
-    completedPracticeId = await writingAnswerRepo.findAnswersByPracticeIdsAndUser(
-      practices.items.map((p) => p.id),
-      user.id
-    );
+    const practiceIds = practices.items.map((p) => p.id);
+    const [completed, answersPage] = await Promise.all([
+      writingAnswerRepo.findAnswersByPracticeIdsAndUser(practiceIds, user.id),
+      writingAnswerRepo.getAllWritingAnswers(
+        { userId: user.id, practiceId, type: "SPEAKING" },
+        0,
+        100
+      ),
+    ]);
+    completedPracticeId = completed;
+    initialSpeakingAnswers = answersPage.items;
   }
 
   const strategyBodySx = {
@@ -133,6 +143,7 @@ export default async function SpeakingPracticeSubPage({ params }: PageProps) {
             selectedPractice={selectedPractice}
             task={task}
             completedPracticeId={completedPracticeId}
+            initialSpeakingAnswers={initialSpeakingAnswers}
             routePracticeId={practiceId}
             routeTaskId={taskId}
           />

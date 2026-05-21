@@ -6,14 +6,13 @@ import { matchUsersCollectionByWebUserIds } from "@/lib/users/userDocumentIdenti
 export async function GET(req: NextRequest) {
   try {
     const ctx = await getAuthenticatedRequestContext(req);
-    if (!ctx?.user) {
+    if (!ctx?.userId?.trim()) {
       return NextResponse.json({ active: false }, { status: 401 });
     }
-    const user = ctx.user;
 
     const db = await getDb();
     const userDoc = await db.collection("users").findOne(
-      matchUsersCollectionByWebUserIds(user.id, ctx.supabaseAuthUserId ?? ""),
+      matchUsersCollectionByWebUserIds(ctx.userId, ctx.supabaseAuthUserId ?? ""),
       {
         projection: {
           challenge: 1,
@@ -54,6 +53,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error("challenge-status error:", error);
-    return NextResponse.json({ active: false }, { status: 500 });
+    return NextResponse.json({ active: false });
   }
 }

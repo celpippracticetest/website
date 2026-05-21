@@ -1,23 +1,33 @@
 "use client";
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { useListeningPracticeCompletion } from "./hooks/useListeningPracticeCompletion";
-import { TPracticeDto } from "@/models/practice.model";
+import { TPracticeDto, TPracticeNavItem } from "@/models/practice.model";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
-import SpeakingPracticeView from "./SpeakingPracticeView";
 import SpeakingAnswerModal from "./AnswerModal";
 import ListeningTaskView from "../listening-practice/ListeningTaskView";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import type { TWritingAnswerDto } from "@/models/answer";
+
+const SpeakingPracticeView = dynamic(() => import("./SpeakingPracticeView"), {
+  loading: () => (
+    <div className="flex min-h-[420px] w-full items-center justify-center rounded-xl border border-[#D5D6D8] bg-white">
+      <div className="h-9 w-9 animate-spin rounded-full border-2 border-[#F27059] border-t-transparent" />
+    </div>
+  ),
+});
 
 interface SpeakingPracticeProps {
   showHeader?: boolean;
-  allPractices: TPracticeDto[];
+  allPractices: TPracticeNavItem[];
   selectedPractice: TPracticeDto | null;
   task: TTaskSchemaDto;
   completedPracticeId: string[];
+  initialSpeakingAnswers?: TWritingAnswerDto[];
   /** When set (path-based URL), use these instead of search params and hide duplicate crumb row. */
   routePracticeId?: string;
   routeTaskId?: string;
@@ -29,6 +39,7 @@ const SpeakingPractice = ({
   selectedPractice,
   task,
   completedPracticeId,
+  initialSpeakingAnswers,
   routePracticeId,
   routeTaskId,
 }: SpeakingPracticeProps) => {
@@ -132,6 +143,7 @@ const SpeakingPractice = ({
         onUpgrade={() => { }}
         onNextPractice={() => handleNavigateToNextPractice(selectedPractice.id)}
         completedPractice={completedPracticeId}
+        initialSpeakingAnswers={initialSpeakingAnswers}
       />
       <SpeakingAnswerModal
         isAnswerModalOpen={isAnswerModalOpen}

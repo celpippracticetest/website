@@ -5,7 +5,8 @@ import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
 import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
 import Close from "@mui/icons-material/Close";
 import ErrorOutline from "@mui/icons-material/ErrorOutline";
-import { TPracticeDto } from "@/models/practice.model";
+import { TPracticeDto, TPracticeNavItem } from "@/models/practice.model";
+import type { TWritingAnswerDto } from "@/models/answer";
 import ListeningSideMenu from "../listening-practice/ListeningSideMenu";
 import ListeningAnswerList from "./components/ListeningAnswers";
 import { TPassage } from "@/models/listenExam.model";
@@ -36,10 +37,11 @@ import { practicePath } from "@/lib/practiceRoutes";
 interface SpeakingPracticeViewProps {
   practice: TPracticeDto;
   task: TTaskSchemaDto;
-  allPractices: TPracticeDto[];
+  allPractices: TPracticeNavItem[];
   selectedPracticeId: string | null;
   selectedTaskId: string | null;
   completedPractice: string[];
+  initialSpeakingAnswers?: TWritingAnswerDto[];
   onAnswerButtonClick: (
     practice: TPracticeDto,
     result: Record<string, any>
@@ -57,6 +59,7 @@ const SpeakingPracticeView = ({
   selectedPracticeId,
   selectedTaskId,
   completedPractice,
+  initialSpeakingAnswers,
   onBackClick,
   onAnswerButtonClick,
 }: SpeakingPracticeViewProps) => {
@@ -136,7 +139,7 @@ const SpeakingPracticeView = ({
         user?.publicMetadata.plan as string | undefined,
         user?.publicMetadata.purchaseDate as string | undefined
       ));
-  const [answers, setAnswers] = useState<any[]>([]);
+  const [answers, setAnswers] = useState<any[]>(initialSpeakingAnswers ?? []);
   const [freeAttempts, setFreeAttempts] = useState<number | null>(3);
   const [errorAccessingMicrophone, setErrorAccessingMicrophone] =
     useState(false);
@@ -278,7 +281,11 @@ const SpeakingPracticeView = ({
     setTime(preparationTime[practice.taskId.toString()]);
     setRecordingTime(recordingTimePerTask[practice.taskId.toString()]);
 
-    fetchUsersAnswer();
+    if (!initialSpeakingAnswers?.length) {
+      fetchUsersAnswer();
+    } else {
+      setAnswers(initialSpeakingAnswers);
+    }
 
     // Log practice started
     if (user && selectedPracticeId) {

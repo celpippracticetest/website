@@ -1,6 +1,6 @@
 "use client";
 
-import TiptapBlogEditor from "@/components/dashboard-app/cms/TiptapBlogEditor";
+import { EmailBodyPreview, EmailHtmlBodyEditor } from "@/components/admin/EmailHtmlBodyEditor";
 import { Box } from "@/components/ui/Box";
 import {
   NURTURE_TRIGGER_TYPES,
@@ -117,12 +117,13 @@ export function NurtureStageCard({
                 />
               </label>
 
-              <Box className="z-10 flex w-full flex-col gap-1">
-                <span className="text-sm font-medium text-gray-700">Email body (HTML)</span>
-                <TiptapBlogEditor
-                  initialContent={stage.htmlBody}
-                  placeholder="Write conversion-focused copy. Use merge tags like {{first_name}} and {{pricing_url}}."
-                  onChange={({ html }) => onUpdate({ htmlBody: html })}
+              <Box className="flex w-full flex-col gap-1">
+                <span className="text-sm font-medium text-gray-700">Email body</span>
+                <EmailHtmlBodyEditor
+                  value={stage.htmlBody}
+                  onChange={(htmlBody) => onUpdate({ htmlBody })}
+                  subject={stage.subject}
+                  placeholder="Full HTML email. Use {{first_name}}, {{pricing_url}}, {{practice_url}}, {{listening_url}}."
                 />
               </Box>
 
@@ -184,6 +185,14 @@ export function NurtureStageCard({
               <p className="max-w-full truncate text-sm text-gray-600">
                 <span className="font-medium">Subject:</span> {stage.subject}
               </p>
+              <details className="mt-2">
+                <summary className="cursor-pointer text-xs font-medium text-blue-700 hover:underline">
+                  Show email preview
+                </summary>
+                <Box className="mt-2">
+                  <EmailBodyPreview value={stage.htmlBody} subject={stage.subject} compact />
+                </Box>
+              </details>
             </Box>
           )}
         </Box>

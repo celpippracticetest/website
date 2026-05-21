@@ -1,4 +1,10 @@
-import { PracticeDtoSchema, PracticeSchema, TPracticeDto, TPracticeSchema } from "@/models/practice.model";
+import {
+  PracticeDtoSchema,
+  PracticeSchema,
+  TPracticeDto,
+  TPracticeNavItem,
+  TPracticeSchema,
+} from "@/models/practice.model";
 import { ObjectId } from "bson";
 import type postgres from "postgres";
 import type { AppDocumentsClient } from "@/lib/pg/types";
@@ -283,6 +289,71 @@ export class PracticeRepository {
     const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 0;
     return {
       items: slice.map((practice) => rowToDto(practice)),
+      page,
+      totalItems,
+      totalPages,
+      hasNextPage: skip + slice.length < totalItems,
+    };
+  }
+
+  /** Navigation list without passages/instructions — much smaller payload than getAllPractice. */
+  async getPracticeNavList(
+    filter: Partial<TPracticeDto>,
+    page: number = 0,
+    limit: number = 200
+  ): Promise<{
+    items: TPracticeNavItem[];
+    hasNextPage: boolean;
+    page: number;
+    totalPages: number;
+    totalItems: number;
+  }> {
+    const skip = page * limit;
+    const sanitizedFilter = Object.fromEntries(
+      Object.entries(filter).filter(([, value]) => value !== undefined)
+    ) as Record<string, unknown>;
+    if (typeof sanitizedFilter.type === "string") {
+      sanitizedFilter.type = sanitizedFilter.type.toUpperCase();
+    }
+    if (sanitizedFilter.taskId != null) {
+      const hex = taskIdHexLoose(sanitizedFilter.taskId);
+      if (hex) sanitizedFilter.taskId = hex;
+    }
+
+    const where = practiceWhereSql(sanitizedFilter);
+    const sql = getSql();
+
+    const countRows = await sql<{ c: number }[]>`
+      SELECT COUNT(*)::int AS c FROM public.practices WHERE ${where}
+    `;
+    const totalItems = countRows[0]?.c ?? 0;
+
+    const slice = await sql<
+      {
+        mongo_id: string;
+        task_mongo_id: string;
+        name: string;
+        type: string;
+        is_free: boolean | null;
+      }[]
+    >`
+      SELECT mongo_id, task_mongo_id, name, type, is_free
+      FROM public.practices
+      WHERE ${where}
+      ORDER BY is_free DESC NULLS LAST, mongo_id ASC
+      OFFSET ${skip}
+      LIMIT ${limit}
+    `;
+
+    const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 0;
+    return {
+      items: slice.map((row) => ({
+        id: row.mongo_id,
+        taskId: row.task_mongo_id,
+        name: row.name,
+        type: row.type,
+        isFree: row.is_free ?? undefined,
+      })),
       page,
       totalItems,
       totalPages,

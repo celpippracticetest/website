@@ -48,6 +48,10 @@ const AuthButtons = () => {
     (async () => {
       try {
         const res = await fetch("/api/user/challenge-status", { method: "GET" });
+        if (!res.ok) {
+          if (!cancelled) setChallengeStatus({ active: false });
+          return;
+        }
         const data = (await res.json()) as ChallengeStatus;
         if (!cancelled) setChallengeStatus(data?.active ? data : { active: false });
       } catch {
