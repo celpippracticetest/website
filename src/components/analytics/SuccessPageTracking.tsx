@@ -31,7 +31,7 @@ export default function SuccessPageTracking({
   const hasTrackedRef = useRef(false);
 
   useEffect(() => {
-    void refreshSupabaseSessionUser();
+    void refreshSupabaseSessionUser({ force: true });
   }, []);
 
   useEffect(() => {

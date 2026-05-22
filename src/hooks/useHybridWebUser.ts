@@ -1,12 +1,11 @@
 "use client";
 
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import {
   readLegacyImportedExternalUserId,
   readPracticePlanFromSupabaseUser,
 } from "@/lib/auth/supabase-user-plan";
-import { refreshSupabaseSessionUser } from "@/lib/auth/refresh-supabase-session-user";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 
 /**
@@ -96,37 +95,63 @@ function bridgeUserFromSupabase(u: SupabaseAuthUser) {
 
 export type HybridAuthSource = "supabase" | null;
 
+type SharedAuthSnapshot = {
+  user: SupabaseAuthUser | null | undefined;
+};
+
+const sharedAuth: SharedAuthSnapshot = { user: undefined };
+const listeners = new Set<() => void>();
+let authListenerStarted = false;
+
+function emitAuthChange() {
+  for (const listener of listeners) {
+    listener();
+  }
+}
+
+function subscribeSharedAuth(listener: () => void) {
+  listeners.add(listener);
+  ensureSharedAuthListener();
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function getSharedAuthSnapshot() {
+  return sharedAuth.user;
+}
+
+function ensureSharedAuthListener() {
+  if (authListenerStarted) return;
+  authListenerStarted = true;
+
+  const supabase = createBrowserSupabaseClient();
+  if (!supabase) {
+    sharedAuth.user = null;
+    emitAuthChange();
+    return;
+  }
+
+  void supabase.auth.getUser().then(({ data, error }) => {
+    sharedAuth.user = !error && data.user ? data.user : null;
+    emitAuthChange();
+  });
+
+  supabase.auth.onAuthStateChange((_event, session) => {
+    sharedAuth.user = session?.user ?? null;
+    emitAuthChange();
+  });
+}
+
 export function useHybridWebUser() {
-  const [supabaseUser, setSupabaseUser] = useState<SupabaseAuthUser | null | undefined>(
-    undefined
+  const supabaseUser = useSyncExternalStore(
+    subscribeSharedAuth,
+    getSharedAuthSnapshot,
+    () => undefined as SupabaseAuthUser | null | undefined
   );
 
   useEffect(() => {
-    const supabase = createBrowserSupabaseClient();
-    if (!supabase) {
-      setSupabaseUser(null);
-      return;
-    }
-
-    let cancelled = false;
-    const loadUser = () => {
-      void refreshSupabaseSessionUser().then((user) => {
-        if (!cancelled) setSupabaseUser(user);
-      });
-    };
-
-    loadUser();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      loadUser();
-    });
-
-    return () => {
-      cancelled = true;
-      subscription.unsubscribe();
-    };
+    ensureSharedAuthListener();
   }, []);
 
   return useMemo(() => {
