@@ -4,7 +4,8 @@ import { useEffect } from "react";
 
 export default function PerformanceMonitor() {
   useEffect(() => {
-    if (process.env.NODE_ENV !== "production") return;
+    // Opt-in only — avoids flooding user consoles on production (web-vitals, long tasks).
+    if (process.env.NEXT_PUBLIC_PERF_DEBUG !== "true") return;
     const botUserAgentRegex =
       /bot|crawler|spider|googlebot|bingbot|slurp|duckduckbot|baiduspider|yandex/i;
     const isBotClient =
@@ -69,9 +70,8 @@ export default function PerformanceMonitor() {
       longTaskObserver = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
           const d = entry.duration as number;
-          // Avoid flooding the console: the Long Task threshold is 50ms, so sub‑120ms
-          // noise is mostly idle scheduling + third-party scripts (GTM, ads, etc.).
-          if (d > 120) {
+          // Long Task API threshold is 50ms; only surface clearly blocking work.
+          if (d > 250) {
             console.warn(`Long task detected: ${d.toFixed(1)}ms`, entry);
           }
         }

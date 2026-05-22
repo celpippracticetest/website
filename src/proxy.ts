@@ -629,6 +629,7 @@ export default async function proxy(req: NextRequest) {
     "POST:/api/practices/answers",
     "GET:/api/practices/answers",
     "POST:/api/answers",
+    "GET:/api/answers",
     "POST:/api/answers/writing",
     "GET:/api/answers/writing",
     "POST:/api/answers/speaking",

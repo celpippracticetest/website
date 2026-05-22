@@ -74,9 +74,7 @@ const ReadingPracticeView = ({
   const timerTime = practice.taskId === "67f168222f0ca7f9a751ed3d" ? 780 : 660;
   const router = useRouter();
 
-  // Reset pointsAwarded when practice changes
   useEffect(() => {
-    console.log("Reading practice: Resetting pointsAwarded for practice:", selectedPracticeId);
     setPointsAwarded(false);
   }, [selectedPracticeId]);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -114,32 +112,52 @@ const ReadingPracticeView = ({
     setPassageIndex(0);
     setQuestionIndex(0);
 
-    const fetchPreviousAnswers = async () => {
-      if (!user || !selectedPracticeId) return;
-      try {
-        const response = await fetch(
-          `/api/answers?practiceId=${selectedPracticeId}&userId=${user.id}&type=${practice.type}`,
-          { credentials: "include" }
-        );
-        if (response.ok) {
-          const data = await response.json();
-          if (data.answers) {
-            setSelectedAnswers(data.answers);
-            // Stay on questions so returning users can retake; use "View Answers & Score" for results.
-            setPage("question");
-            return;
-          }
-        }
+    const applySavedAnswers = (saved: Record<string, string> | null) => {
+      if (saved && Object.keys(saved).length > 0) {
+        setSelectedAnswers(saved);
+      } else {
         setSelectedAnswers({});
-        setPage("question");
-      } catch (error) {
-        console.error("Error fetching previous answers:", error);
-        setSelectedAnswers({});
-        setPage("question");
       }
+      setPage("question");
     };
 
-    fetchPreviousAnswers();
+    if (!user || !selectedPracticeId) {
+      applySavedAnswers(null);
+    } else {
+      const serverPracticeId = previousAnswer?.practiceId;
+      const useServerAnswer =
+        previousAnswer != null &&
+        serverPracticeId != null &&
+        serverPracticeId === selectedPracticeId;
+
+      if (useServerAnswer) {
+        const saved =
+          previousAnswer.answers && Object.keys(previousAnswer.answers).length > 0
+            ? previousAnswer.answers
+            : null;
+        applySavedAnswers(saved);
+      } else {
+        void (async () => {
+          try {
+            const response = await fetch(
+              `/api/answers?practiceId=${selectedPracticeId}&userId=${user.id}&type=${practice.type}`,
+              { credentials: "include" }
+            );
+            if (response.ok) {
+              const data = await response.json();
+              const raw = data.answers as Record<string, string> | undefined;
+              const saved =
+                raw && Object.keys(raw).length > 0 ? raw : null;
+              applySavedAnswers(saved);
+              return;
+            }
+            applySavedAnswers(null);
+          } catch {
+            applySavedAnswers(null);
+          }
+        })();
+      }
+    }
 
     // Log practice started
     if (user && selectedPracticeId) {
@@ -148,7 +166,7 @@ const ReadingPracticeView = ({
         () => {}
       );
     }
-  }, [selectedPracticeId, user]);
+  }, [selectedPracticeId, user, previousAnswer, practice.type]);
   useEffect(() => {
     if (page === "answer" && user) {
       const submitAnswers = async () => {
@@ -297,7 +315,11 @@ const ReadingPracticeView = ({
                               );
                               if (getRes.ok) {
                                 const json = await getRes.json();
-                                answersData = json.answers ?? null;
+                                const raw = json.answers as
+                                  | Record<string, string>
+                                  | undefined;
+                                answersData =
+                                  raw && Object.keys(raw).length > 0 ? raw : null;
                               }
                             } catch (err) {
                               console.error(

@@ -6,6 +6,7 @@ import { TPracticeDto } from "@/models/practice.model";
 import { useSearchParams } from "next/navigation";
 import WritingPracticeView from "./WritingPracticeView";
 import WritingAnswerModal from "./answerModal";
+import type { TWritingAnswerDto } from "@/models/answer";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import ListeningTaskView from "../listening-practice/ListeningTaskView";
 import { useRouter } from "nextjs-toploader/app";
@@ -19,6 +20,7 @@ interface WritingPracticeProps {
   selectedPractice: TPracticeDto | null;
   task: TTaskSchemaDto;
   completedPracticeId: string[];
+  initialWritingAnswers?: TWritingAnswerDto[];
   routePracticeId?: string;
   routeTaskId?: string;
 }
@@ -29,6 +31,7 @@ const WritingPractice = ({
   selectedPractice,
   task,
   completedPracticeId,
+  initialWritingAnswers = [],
   routePracticeId,
   routeTaskId,
 }: WritingPracticeProps) => {
@@ -112,6 +115,8 @@ const WritingPractice = ({
         onNextPractice={() => { }}
         task={task}
         completedPracticeId={completedPracticeId}
+        initialWritingAnswers={initialWritingAnswers}
+        routePracticeId={routePracticeId}
       />
       <WritingAnswerModal
         isAnswerModalOpen={isAnswerModalOpen}

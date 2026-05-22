@@ -71,6 +71,8 @@ interface WritingPracticeViewProps {
   onComplete: () => void;
   onUpgrade: () => void;
   onNextPractice: () => void;
+  initialWritingAnswers?: TWritingAnswerDto[];
+  routePracticeId?: string;
 }
 
 const WritingPracticeView = ({
@@ -82,6 +84,8 @@ const WritingPracticeView = ({
   completedPracticeId,
   onBackClick,
   onAnswerButtonClick,
+  initialWritingAnswers = [],
+  routePracticeId,
 }: WritingPracticeViewProps) => {
   const practiceCount = usePracticeCount(task.id, practice.id, task.taskNumber);
   const router = useRouter();
@@ -204,14 +208,14 @@ const WritingPracticeView = ({
       }
 
       if (!response.ok) {
-        console.error("Error fetching answer:", response.status);
+        setAnswers([]);
         return;
       }
 
       const data = await response.json();
       setAnswers(Array.isArray(data.items) ? data.items : []);
-    } catch (error) {
-      console.error("Error fetching answer:", error);
+    } catch {
+      setAnswers([]);
     }
   }, [practice?.id, isSignedIn]);
 
@@ -253,6 +257,7 @@ const WritingPracticeView = ({
 
       setTryToSubmit(false);
       setIsSubmit(false);
+      void fetchUsersAnswer();
     } catch (error) {
       console.error("Error submitting answer:", error);
     } finally {
@@ -272,7 +277,11 @@ const WritingPracticeView = ({
     setProgressBar(0);
     setIsSubmit(false);
 
-    void fetchUsersAnswer();
+    if (routePracticeId && practice.id === routePracticeId) {
+      setAnswers(initialWritingAnswers);
+    } else {
+      void fetchUsersAnswer();
+    }
 
     if (user && selectedPracticeId) {
       const practiceAttemptId = `practice_${selectedPracticeId}_${Date.now()}`;
@@ -283,11 +292,20 @@ const WritingPracticeView = ({
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally omit user/fetchUsersAnswer to avoid wiping the draft when auth hydrates
-  }, [selectedPracticeId, practice.id]);
+  }, [
+    selectedPracticeId,
+    practice.id,
+    routePracticeId,
+    initialWritingAnswers,
+    fetchUsersAnswer,
+  ]);
 
   useEffect(() => {
+    if (routePracticeId && practice.id === routePracticeId) {
+      return;
+    }
     void fetchUsersAnswer();
-  }, [fetchUsersAnswer]);
+  }, [fetchUsersAnswer, practice.id, routePracticeId]);
   // const {
   //   selectedAnswers,
   //   showResults,

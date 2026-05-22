@@ -113,8 +113,9 @@ export async function GET(req: NextRequest) {
       userId
     );
 
+    // No saved attempt yet — return empty answers (not 404) so clients can poll without console noise.
     if (!answer) {
-      return NextResponse.json({ message: "Answer not found" }, { status: 404 });
+      return NextResponse.json({ answers: {} });
     }
 
     return NextResponse.json({ answers: answer.answers });

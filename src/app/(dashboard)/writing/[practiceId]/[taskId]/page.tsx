@@ -1,5 +1,6 @@
 import WritingPractice from "@/components/dashboard-app/writing-practice/WritingPractice";
 import documentsClient from "@/lib/appDocumentsClient";
+import type { TWritingAnswerDto } from "@/models/answer";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { PracticeRepository } from "@/repositories/practice.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
@@ -99,12 +100,22 @@ export default async function WritingPracticeSubPage({ params }: PageProps) {
   }
 
   let completedPracticeId: string[] = [];
+  let initialWritingAnswers: TWritingAnswerDto[] = [];
   if (user) {
     const writingAnswerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
-    completedPracticeId = await writingAnswerRepo.findAnswersByPracticeIdsAndUser(
-      practices.items.map((p) => p.id),
-      user.id
-    );
+    const [completed, answersPage] = await Promise.all([
+      writingAnswerRepo.findAnswersByPracticeIdsAndUser(
+        practices.items.map((p) => p.id),
+        user.id
+      ),
+      writingAnswerRepo.getAllWritingAnswers(
+        { userId: user.id, practiceId, type: "WRITING" },
+        0,
+        100
+      ),
+    ]);
+    completedPracticeId = completed;
+    initialWritingAnswers = answersPage.items;
   }
 
   const strategyBodySx = {
@@ -133,6 +144,7 @@ export default async function WritingPracticeSubPage({ params }: PageProps) {
             selectedPractice={selectedPractice}
             task={task}
             completedPracticeId={completedPracticeId}
+            initialWritingAnswers={initialWritingAnswers}
             routePracticeId={practiceId}
             routeTaskId={taskId}
           />

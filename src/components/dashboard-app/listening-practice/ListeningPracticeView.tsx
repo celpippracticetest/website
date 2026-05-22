@@ -139,11 +139,13 @@ const ListeningPracticeView = ({
       if (!user || !selectedPracticeId) return;
       try {
         const response = await fetch(
-          `/api/answers?practiceId=${selectedPracticeId}&userId=${user.id}&type=LISTENING`
+          `/api/answers?practiceId=${selectedPracticeId}&userId=${user.id}&type=LISTENING`,
+          { credentials: "include" }
         );
         if (response.ok) {
           const data = await response.json();
-          if (data.answers) {
+          const saved = data.answers && Object.keys(data.answers).length > 0;
+          if (saved) {
             setSelectedAnswers(data.answers);
             // Keep instructions so returning users can retake; "See Result" still uses loaded answers.
             setPage("instructions");
