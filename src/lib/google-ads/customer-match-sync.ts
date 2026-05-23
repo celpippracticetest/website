@@ -60,6 +60,7 @@ export type CustomerMatchAudienceSyncResult = {
   key: AudienceKey;
   displayName: string;
   audienceId: string;
+  skippedUploadReason?: string;
   membersFound: number;
   membersUploaded: number;
   staleMembersRemoved: number;
@@ -220,8 +221,16 @@ async function dataManagerJson<T>(
   const response = await fetch(url, init);
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const message = payload?.error?.message || JSON.stringify(payload) || response.status;
-    throw new Error(`${action} failed: ${message}`);
+    const errorPayload = payload?.error ?? payload;
+    const message =
+      errorPayload?.message ||
+      errorPayload?.status ||
+      JSON.stringify(errorPayload) ||
+      response.status;
+    const details = Array.isArray(errorPayload?.details)
+      ? ` Details: ${JSON.stringify(errorPayload.details)}`
+      : "";
+    throw new Error(`${action} failed (${response.status}): ${message}${details}`);
   }
   return payload as T;
 }
@@ -310,7 +319,7 @@ async function findOrCreateAudience(
   }
 
   if (validateOnly) {
-    return { id: `validate-only-${audience.key}`, displayName: audience.displayName };
+    return { displayName: audience.displayName };
   }
 
   throw new Error(`Audience was created without an id: ${audience.displayName}`);
@@ -474,6 +483,22 @@ export async function syncGoogleAdsCustomerMatchAudiences(args: {
     const userList = await findOrCreateAudience(config, accessToken, audience, validateOnly);
     const audienceId = userList.id;
     if (!audienceId) {
+      if (validateOnly) {
+        results.push({
+          key: audience.key,
+          displayName: audience.displayName,
+          audienceId: "(would be created)",
+          skippedUploadReason:
+            "validateOnly checked audience creation, but upload validation requires an existing audience ID.",
+          membersFound: audience.memberHashes.length,
+          membersUploaded: 0,
+          staleMembersRemoved: 0,
+          ingestRequestIds: [],
+          removeRequestIds: [],
+        });
+        continue;
+      }
+
       throw new Error(`Missing audience id for ${audience.displayName}.`);
     }
 

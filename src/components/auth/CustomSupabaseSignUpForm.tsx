@@ -10,6 +10,10 @@ import { AuthLiveJoinedBanner } from "@/components/auth/AuthPageChrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  markPendingWebSignup,
+  trackWebSignUpCompleted,
+} from "@/lib/analytics/web-signup-tracking";
 import { signUpOrSignInWithPassword } from "@/lib/auth/sign-up-or-sign-in";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { cn } from "@/lib/utils";
@@ -67,9 +71,35 @@ export function CustomSupabaseSignUpForm({
           return;
         }
         if (result.session) {
+          if (result.isNewSignup) {
+            const { data: userData } = await supabase.auth.getUser();
+            const u = userData.user;
+            if (u) {
+              trackWebSignUpCompleted(
+                {
+                  id: u.id,
+                  primaryEmailAddress: u.email
+                    ? { emailAddress: u.email }
+                    : null,
+                  firstName:
+                    (u.user_metadata?.given_name as string | undefined) ??
+                    (u.user_metadata?.first_name as string | undefined) ??
+                    null,
+                  lastName:
+                    (u.user_metadata?.family_name as string | undefined) ??
+                    (u.user_metadata?.last_name as string | undefined) ??
+                    null,
+                },
+                "email"
+              );
+            }
+          }
           router.push("/practice-overview");
           router.refresh();
           return;
+        }
+        if (result.isNewSignup) {
+          markPendingWebSignup("email");
         }
         setNotice(
           "Check your email to confirm your address, then sign in here."

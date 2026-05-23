@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "google-ads:refresh-token": "node ./scripts/google-ads-refresh-token.js",
     "migrate:plans:billing-fields": "node ./scripts/migrate-plans-billing-fields.js",
     "migrate:onboarding:new-to-onboarding": "node ./scripts/migrate-onboarding-new-to-onboarding.js",

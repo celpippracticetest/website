@@ -9,6 +9,10 @@ import { AuthLiveJoinedBanner } from "@/components/auth/AuthPageChrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  markPendingWebSignup,
+  trackWebSignUpCompleted,
+} from "@/lib/analytics/web-signup-tracking";
 import { navigateAfterWebAuth } from "@/lib/auth/post-auth-redirect";
 import { signUpOrSignInWithPassword } from "@/lib/auth/sign-up-or-sign-in";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
@@ -103,6 +107,9 @@ export function SupabaseAuthForm({
 
   const handleGoogleSignIn = useCallback(async () => {
     setError(null);
+    if (mode === "sign-up") {
+      markPendingWebSignup("google");
+    }
     const supabase = createBrowserSupabaseClient();
     if (!supabase) { setError("Auth is not configured."); return; }
     const { error: oauthErr } = await supabase.auth.signInWithOAuth({
@@ -113,7 +120,7 @@ export function SupabaseAuthForm({
       },
     });
     if (oauthErr) setError(oauthErr.message);
-  }, [dest]);
+  }, [dest, mode]);
 
   const handleMagicLink = useCallback(
     async (e: React.FormEvent) => {
@@ -123,6 +130,9 @@ export function SupabaseAuthForm({
       const supabase = createBrowserSupabaseClient();
       if (!supabase) { setError("Auth is not configured."); return; }
       if (!email.trim()) { setError("Enter your email address."); return; }
+      if (mode === "sign-up") {
+        markPendingWebSignup("magic_link");
+      }
       setSubmitting(true);
       try {
         const { error: otpErr } = await supabase.auth.signInWithOtp({
@@ -170,8 +180,34 @@ export function SupabaseAuthForm({
             return;
           }
           if (result.session) {
+            if (result.isNewSignup) {
+              const { data: userData } = await supabase.auth.getUser();
+              const u = userData.user;
+              if (u) {
+                trackWebSignUpCompleted(
+                  {
+                    id: u.id,
+                    primaryEmailAddress: u.email
+                      ? { emailAddress: u.email }
+                      : null,
+                    firstName:
+                      (u.user_metadata?.given_name as string | undefined) ??
+                      (u.user_metadata?.first_name as string | undefined) ??
+                      null,
+                    lastName:
+                      (u.user_metadata?.family_name as string | undefined) ??
+                      (u.user_metadata?.last_name as string | undefined) ??
+                      null,
+                  },
+                  "email"
+                );
+              }
+            }
             navigateAfterWebAuth(dest);
             return;
+          }
+          if (result.isNewSignup) {
+            markPendingWebSignup("email");
           }
           setNotice("Almost there! Check your inbox and click the confirmation link, then sign in.");
         } finally {

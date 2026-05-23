@@ -584,22 +584,19 @@ export const trackAuth = {
 
     const conversionLabel = GOOGLE_ADS_SIGNUP_LABEL;
 
-    // GA4 `sign_up` is sent from the `user.created` webhook (Measurement Protocol)
-    // when `GA_MEASUREMENT_ID` + `GA_API_SECRET` are set — avoids double-count vs browser.
-    // Set `NEXT_PUBLIC_GA4_CLIENT_SIGNUP=1` to also push `sign_up` here (e.g. local dev without MP).
-    if (process.env.NEXT_PUBLIC_GA4_CLIENT_SIGNUP === "1") {
-      pushToDataLayer({
-        event: "sign_up",
-        user_id: userId,
-        method,
-        ...attributionData,
-        conversion_name: "sign_up",
-        conversion_label: conversionLabel || undefined,
-        google_ads_send_to: getGoogleAdsSendTo(conversionLabel),
-        value: 1,
-        currency: "CAD",
-      });
-    }
+    // Browser `sign_up` drives GTM (GA4 Event, Google Ads, Meta, Microsoft UET). Server-side GA4 MP
+    // from `/api/users/webhook` is optional backup when `GA_MEASUREMENT_ID` + `GA_API_SECRET` are set.
+    pushToDataLayer({
+      event: "sign_up",
+      user_id: userId,
+      method,
+      ...attributionData,
+      conversion_name: "sign_up",
+      conversion_label: conversionLabel || undefined,
+      google_ads_send_to: getGoogleAdsSendTo(conversionLabel),
+      value: 1,
+      currency: "CAD",
+    });
     trackRedditEvent("SignUp");
 
     if (userData) {

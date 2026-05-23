@@ -1,16 +1,19 @@
 "use client";
 
 /**
- * Observe auth state and push login / logout events to the data layer for GTM.
- * sign_up: GA4 Measurement Protocol from `user.created` webhook (+ optional client ads data on sign-up page).
+ * Observe auth state and push login / logout / sign_up events to the data layer for GTM.
+ * `sign_up` fires from `trackWebSignUpCompleted` after Supabase sign-up (or pending OAuth/email confirm).
  */
 
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import {
+  SUPPRESS_LOGIN_COMPLETED_ONCE_KEY,
+  tryTrackPendingWebSignup,
+} from "@/lib/analytics/web-signup-tracking";
 import { useEffect, useRef } from "react";
 import { trackAuth } from "@/lib/gtm";
 
-/** Set on the sign-up page when `signUpCompleted` runs so we do not double-count `login_completed`. */
-export const SUPPRESS_LOGIN_COMPLETED_ONCE_KEY = "celpip_suppress_login_completed_once";
+export { SUPPRESS_LOGIN_COMPLETED_ONCE_KEY };
 
 function inferAuthMethod(u: {
   externalAccounts?: readonly { provider: string }[];
@@ -31,6 +34,11 @@ export default function AuthGtmTracker() {
   const { user, isLoaded } = useHybridWebUser();
   const prevIdRef = useRef<string | null | undefined>(undefined);
   const initializedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isLoaded || !user?.id) return;
+    tryTrackPendingWebSignup(user);
+  }, [isLoaded, user, user?.id]);
 
   useEffect(() => {
     if (!isLoaded) return;

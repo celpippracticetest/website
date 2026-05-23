@@ -105,7 +105,7 @@ Use these checks after deploy:
   - `purchase` on `checkout.session.completed` (same `transaction_id` as the Stripe Checkout Session id).
   - `purchase` on `invoice.payment_succeeded` for **subscription renewals** only (`billing_reason` = `subscription_cycle`).
   - `subscription_cancelled` on subscription deleted (unchanged).
-- Verify Clerk `user.created` webhook → same GA4 MP: **`sign_up`** (aligned with Clerk; no GTM required). Browser `sign_up` in the data layer is **off by default** to avoid duplicates; set **`NEXT_PUBLIC_GA4_CLIENT_SIGNUP=1`** only if you need a client-side `sign_up` (e.g. local dev without MP secrets).
+- Verify Supabase sign-up: GTM Preview should show dataLayer **`sign_up`** after account creation (browser). Optional server backup: configure a Supabase Database Webhook or Auth hook on `auth.users` **INSERT** → `POST /api/users/webhook` with header `Authorization: Bearer $SUPABASE_AUTH_WEBHOOK_SECRET` (or `x-webhook-secret`) for GA4 MP **`sign_up`** when `GA_MEASUREMENT_ID` + `GA_API_SECRET` are set.
 
 ### 5) Build a useful GA4 dashboard
 
