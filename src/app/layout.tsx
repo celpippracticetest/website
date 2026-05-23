@@ -1,6 +1,7 @@
 import "./globals.css";
 import NextTopLoader from "nextjs-toploader";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { hasAnyWebSession } from "@/lib/auth/web-session-server";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
@@ -310,6 +311,7 @@ export default async function RootLayout({
           <LazyPromotionManager />
           <PerformanceMonitor />
           <Analytics />
+          <SpeedInsights />
           <ActiveUsersTracker />
           <Suspense fallback={null}>
             <AttributionTracker />
