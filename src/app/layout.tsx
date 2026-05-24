@@ -184,20 +184,6 @@ export default async function RootLayout({
           fetchPriority="high"
         />
 
-        {/* DNS prefetch / preconnect */}
-        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.googleapis.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-
         {/* Icons & PWA */}
         <link rel="icon" href="/favicon/favicon.ico" sizes="any" />
         <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
@@ -274,7 +260,7 @@ export default async function RootLayout({
         />
       </head>
 
-      <body className="bg-[#F4F7FF]" suppressHydrationWarning>
+      <body className={jakarta.className} suppressHydrationWarning>
         <MuiAppRouterCacheProvider>
           <AskBeavoModal />
           <CrispLoader />

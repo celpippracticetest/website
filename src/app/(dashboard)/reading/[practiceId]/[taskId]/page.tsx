@@ -10,8 +10,8 @@ import { ObjectId } from "bson";
 import { redirect, RedirectType } from "next/navigation";
 import type { Metadata } from "next";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
-import { Box, Typography } from "@mui/material";
 import { PracticeSubChrome } from "@/components/practice-seo/PracticeSubChrome";
+import ReadingStrategySection from "@/components/practice-seo/ReadingStrategySection";
 import {
   absoluteUrl,
   buildPracticeMetaDescription,
@@ -109,25 +109,10 @@ export default async function ReadingPracticeSubPage({ params }: PageProps) {
     ]);
   }
 
-  const strategyBodySx = {
-    mt: 2,
-    fontSize: 15,
-    lineHeight: "24px",
-    color: "#526071",
-  };
 
   return (
-    <Box
-      component="main"
-      sx={{
-        bgcolor: "#F2F6FF",
-        minHeight: "100vh",
-        display: "flex",
-        width: 1,
-        justifyContent: "center",
-      }}
-    >
-      <Box sx={{ width: 1, maxWidth: 1280 }}>
+    <main className="flex min-h-screen w-full justify-center bg-[#F2F6FF]">
+      <div className="w-full max-w-[1280px]">
         <PracticeSubChrome skill="reading" task={task} practice={selectedPractice}>
           <ReadingPractice
             showHeader={true}
@@ -140,38 +125,10 @@ export default async function ReadingPracticeSubPage({ params }: PageProps) {
             routeTaskId={taskId}
           />
         </PracticeSubChrome>
-        {!user && !selectedPractice?.isFree && (
-          <Box component="section" sx={{ px: 2, pb: 5 }}>
-            <Typography component="h2" sx={{ fontSize: 22, fontWeight: 600, color: "#37465C" }}>
-              CELPIP Reading practice strategy
-            </Typography>
-            <Typography component="p" sx={strategyBodySx}>
-              Build Reading speed by combining skimming for structure with scanning for exact
-              details. Focus on keyword matching, paraphrase recognition, and elimination logic.
-            </Typography>
-            <Typography component="p" sx={strategyBodySx}>
-              To improve scores faster, review wrong answers by task type and repeat targeted drills
-              before attempting another full Reading set.
-            </Typography>
-            <Typography component="p" sx={strategyBodySx}>
-              Begin each passage with a quick structure scan: title, headings, and paragraph roles.
-              This helps you predict where key evidence is located before you answer questions. When
-              time is limited, this structure-first method is more effective than reading every line
-              at the same speed.
-            </Typography>
-            <Typography component="p" sx={strategyBodySx}>
-              For difficult items, avoid guessing based on one familiar word. Compare at least two
-              options and confirm which one is fully supported by the text context. This habit
-              reduces avoidable errors in inference, viewpoint, and detail-matching questions.
-            </Typography>
-            <Typography component="p" sx={strategyBodySx}>
-              Weekly score gains usually come from better process control: faster scanning, cleaner
-              elimination, and disciplined timing. Track these three metrics after every session, and
-              you will see clearer improvement trends than only tracking final score.
-            </Typography>
-          </Box>
+        {!user && selectedPractice && !selectedPractice.isFree && (
+          <ReadingStrategySection />
         )}
-      </Box>
-    </Box>
+      </div>
+    </main>
   );
 }

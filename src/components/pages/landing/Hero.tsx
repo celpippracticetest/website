@@ -150,16 +150,7 @@ const Hero = () => {
         </div>
       </div>
 
-      <section className="relative overflow-hidden bg-[linear-gradient(180deg,#FAFBFF_0%,#EEF2FF_50%,#FAFBFF_100%)]">
-        <div
-          className="pointer-events-none absolute -right-[200px] -top-[200px] h-[600px] w-[600px] rounded-full bg-[radial-gradient(circle,rgba(59,130,246,0.06)_0%,transparent_70%)]"
-          aria-hidden
-        />
-        <div
-          className="pointer-events-none absolute -bottom-[100px] -left-[100px] h-[400px] w-[400px] rounded-full bg-[radial-gradient(circle,rgba(245,158,11,0.05)_0%,transparent_70%)]"
-          aria-hidden
-        />
-
+      <section className="relative overflow-hidden bg-[radial-gradient(circle_at_100%_0%,rgba(59,130,246,0.06)_0%,transparent_35%),radial-gradient(circle_at_0%_100%,rgba(245,158,11,0.05)_0%,transparent_35%),linear-gradient(180deg,#FAFBFF_0%,#EEF2FF_50%,#FAFBFF_100%)]">
         <TopHeader />
 
         <div className="relative z-[1] mx-auto w-full max-w-[1200px] px-4 pb-10 pt-[88px] screen744:px-8 screen744:pb-14 screen744:pt-[96px]">

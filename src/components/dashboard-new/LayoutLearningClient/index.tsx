@@ -44,9 +44,17 @@ import {
 import SvgDiamond from "@/components/icons/Diamond";
 import SvgLearningGift from "@/components/icons/LearningGift";
 import SvgLeagueLogo from "@/components/icons/LeagueLogo";
-import BottomNavigation from "@/components/dashboard-new/BottomNavigation";
-import DesktopNavigation from "@/components/dashboard-new/DesktopNavigation";
+import dynamic from "next/dynamic";
 import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
+
+const DesktopNavigation = dynamic(
+  () => import("@/components/dashboard-new/DesktopNavigation"),
+  { ssr: false }
+);
+const BottomNavigation = dynamic(
+  () => import("@/components/dashboard-new/BottomNavigation"),
+  { ssr: false }
+);
 
 const NavItem = ({
   icon,
@@ -793,35 +801,11 @@ const LayoutClient = ({ children }: any) => {
         </div>
       )}
 
-      <div className="relative flex w-full  mb-[88px] justify-center mx-auto z-[9] overflow-x-clip">
+      <div
+        className="relative mx-auto z-[9] mb-[88px] flex w-full justify-center overflow-x-clip bg-[#F4F7FF] bg-[radial-gradient(ellipse_55%_45%_at_85%_35%,rgba(255,183,138,0.22)_0%,transparent_70%),radial-gradient(ellipse_55%_45%_at_10%_30%,rgba(206,220,255,0.28)_0%,transparent_70%),radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(218,255,250,0.35)_0%,transparent_65%)]"
+      >
         <div
-          aria-hidden
-          className={`pointer-events-none absolute left-1/2 -translate-x-1/2 ${hasClosedModal ? "top-[170px]" : "-top-[220px]"
-            } w-[1065px] h-auto min-h-[300px] screen:744:!h-[629px] rounded-[9999px]`}
-          style={{ background: "#DAFFFA", filter: "blur(120px)", opacity: 0.8 }}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -left-[360px] top-1/4 w-[1065px] h-auto min-h-[300px] screen:744:!h-[629px] rounded-[9999px] rotate-[-20deg]"
-          style={{
-            background: "#CEDCFF80",
-            filter: "blur(120px)",
-            opacity: 0.9,
-          }}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-[360px] top-1/3 w-[1065px] h-auto min-h-[300px] screen:744:!h-[629px] rounded-[9999px] rotate-[15deg]"
-          style={{
-            background: "#FFB78A80",
-            filter: "blur(120px)",
-            opacity: 0.9,
-          }}
-        />
-
-        <div
-          className="flex flex-col  w-full    h-full     w-full
- items-end"
+          className="flex h-full w-full flex-col items-end"
         >
           <div className=" mx-auto px-[16px]  w-full mb-[16px]">
             <div

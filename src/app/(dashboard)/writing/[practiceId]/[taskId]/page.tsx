@@ -149,7 +149,7 @@ export default async function WritingPracticeSubPage({ params }: PageProps) {
             routeTaskId={taskId}
           />
         </PracticeSubChrome>
-        {!user && !selectedPractice?.isFree && (
+        {!user && selectedPractice && !selectedPractice.isFree && (
           <Box component="section" sx={{ px: 2, pb: 5 }}>
             <Typography component="h2" sx={{ fontSize: 22, fontWeight: 600, color: "#37465C" }}>
               CELPIP Writing practice strategy

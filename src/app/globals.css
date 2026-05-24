@@ -2,10 +2,6 @@
 @import "tailwindcss";
 @config "../../tailwind.config.js";
 
-* {
-  font-family: "Plus Jakarta Sans", sans-serif;
-}
-
 @keyframes gradientBorder {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -160,7 +156,15 @@ svg {
   }
 
   body {
-    @apply bg-background text-foreground;
+    font-family: var(--font-jakarta), system-ui, arial, sans-serif;
+    background-color: #f4f7ff;
+    color: #212e42;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  html {
+    background-color: #f4f7ff;
   }
 
   button:not(:disabled) {

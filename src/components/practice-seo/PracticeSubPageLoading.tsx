@@ -1,25 +1,21 @@
-import { Box, CircularProgress, Skeleton } from "@mui/material";
-
-/** Lightweight shell while practice sub-route data loads (keeps layout stable). */
+/** Lightweight shell while practice sub-route data loads (no MUI — avoids runtime CSS-in-JS delay). */
 export default function PracticeSubPageLoading() {
   return (
-    <Box
-      component="main"
-      sx={{
-        bgcolor: "#F2F6FF",
-        minHeight: "100vh",
-        p: 3,
-        maxWidth: 1280,
-        mx: "auto",
-        width: 1,
-      }}
+    <div
+      className="mx-auto min-h-screen w-full max-w-[1280px] bg-[#F2F6FF] p-6"
+      aria-busy="true"
+      aria-label="Loading practice"
     >
-      <Skeleton variant="rounded" width="55%" height={28} sx={{ mb: 1 }} />
-      <Skeleton variant="text" width="85%" />
-      <Skeleton variant="text" width="70%" />
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}>
-        <CircularProgress size={36} />
-      </Box>
-    </Box>
+      <div className="mb-2 h-7 w-[55%] animate-pulse rounded-lg bg-[#D5D6D8]/60" />
+      <div className="mb-1 h-4 w-[85%] animate-pulse rounded bg-[#D5D6D8]/40" />
+      <div className="mb-8 h-4 w-[70%] animate-pulse rounded bg-[#D5D6D8]/40" />
+      <div className="flex justify-center pt-8">
+        <div
+          className="h-9 w-9 animate-spin rounded-full border-2 border-[#316BFF] border-t-transparent"
+          role="status"
+          aria-label="Loading"
+        />
+      </div>
+    </div>
   );
 }

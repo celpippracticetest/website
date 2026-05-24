@@ -31,8 +31,7 @@ import { useMenuCollapsedStore } from "@/store/menuCollapsed.store";
 import CountdownTimer from "@/components/dashboard-app/CounterDownTimer";
 import SvgReferral from "@/components/icons/Referral";
 
-import BottomNavigation from "@/components/dashboard-new/BottomNavigation";
-import DesktopNavigation from "@/components/dashboard-new/DesktopNavigation";
+import dynamic from "next/dynamic";
 import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
 import FloatingChatIcon from "@/components/AskBeavo/FloatingChatIcon";
 import { GlobalInteractiveProvider } from "@/components/dashboard-app/practice/GlobalInteractiveProvider";
@@ -41,6 +40,15 @@ import {
   MOCK_EXAM_VIEW_MODE_STORAGE_KEY,
 } from "@/components/dashboard-app/exam-parts/components/useExamViewMode";
 import { cn } from "@/lib/utils";
+
+const DesktopNavigation = dynamic(
+  () => import("@/components/dashboard-new/DesktopNavigation"),
+  { ssr: false }
+);
+const BottomNavigation = dynamic(
+  () => import("@/components/dashboard-new/BottomNavigation"),
+  { ssr: false }
+);
 
 const NavItem = ({
   icon,

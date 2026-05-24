@@ -17,6 +17,8 @@ interface ReadingPracticeProps {
   completedPractice: string[];
   routePracticeId?: string;
   routeTaskId?: string;
+  /** Page already SSR'd task picker heading (Reading/Listening hub with ?taskId=). */
+  hideTaskPickerHeader?: boolean;
 }
 
 const ReadingPractice = ({
@@ -28,6 +30,7 @@ const ReadingPractice = ({
   completedPractice,
   routePracticeId,
   routeTaskId,
+  hideTaskPickerHeader = false,
 }: ReadingPracticeProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -65,6 +68,7 @@ const ReadingPractice = ({
       task={task}
       completedPractice={completedPractice}
       title={"Reading"}
+      hideHeader={hideTaskPickerHeader}
     />
   );
 };
