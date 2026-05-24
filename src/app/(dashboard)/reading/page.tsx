@@ -1,6 +1,6 @@
-import ReadingPractice from "@/components/dashboard-app/reading-practice/ReadingPractice";
-import ShowTasks from "@/components/dashboard-new/ShowTasks";
-import ShowTaskHeader from "@/components/dashboard-new/ShowTasks/Header";
+import ReadingPractice from "@/components/dashboard-app/reading-practice/ReadingPracticeLazy";
+import ShowTasks from "@/components/dashboard-new/ShowTasks/ShowTasksLazy";
+import ShowTaskHeader from "@/components/dashboard-new/ShowTasks/ShowTaskHeaderLazy";
 import SvgReadingPart from "@/components/icons/ReadingPart";
 import documentsClient from "@/lib/appDocumentsClient";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
@@ -126,6 +126,30 @@ interface PracticeSection {
   route: string;
 }
 
+function sortReadingTasks<T extends { taskNumber: string }>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    const numA = parseInt(a.taskNumber.replace(/\D/g, ""), 10);
+    const numB = parseInt(b.taskNumber.replace(/\D/g, ""), 10);
+    return numA - numB;
+  });
+}
+
+function toReadingTaskRows(
+  items: {
+    id: string;
+    category: string;
+    taskNumber: string;
+    name: string;
+  }[]
+) {
+  return sortReadingTasks(items).map((taskItem) => ({
+    id: taskItem.id,
+    category: taskItem.category,
+    taskNumber: taskItem.taskNumber,
+    name: taskItem.name,
+  }));
+}
+
 const ReadingPage = async ({
   searchParams,
 }: {
@@ -134,41 +158,25 @@ const ReadingPage = async ({
   const { selectedPracticeId, taskId } = await searchParams;
 
   const taskRepo = new TaskRepository(documentsClient);
-  const tasks = await taskRepo.getAllTask({ type: "practice" }, 0, 100);
+  const [tasks, hybridUser] = await Promise.all([
+    taskRepo.getAllTask({ type: "practice", category: "reading" }, 0, 100),
+    getHybridCurrentUser(),
+  ]);
 
+  const readingTaskItems = toReadingTaskRows(tasks.items);
   const readingTasks: PracticeSection[] = [
     {
-      tasks: tasks.items
-        .filter((taskItem) => taskItem.category === "reading")
-        .sort((a, b) => {
-          const numA = parseInt(a.taskNumber.replace(/\D/g, ""));
-          const numB = parseInt(b.taskNumber.replace(/\D/g, ""));
-          return numA - numB;
-        })
-        .map((taskItem) => ({
-          id: taskItem.id,
-          category: taskItem.category,
-          taskNumber: taskItem.taskNumber,
-          name: taskItem.name,
-        })),
+      tasks: readingTaskItems,
       route: "reading",
     },
   ];
 
-  const hybridUser = await getHybridCurrentUser();
   const user = hybridUser?.user ?? null;
   if (!user && !taskId && !selectedPracticeId) {
-    const availableTasks = tasks.items
-      .filter((taskItem) => taskItem.category === "reading")
-      .sort((a, b) => {
-        const numA = parseInt(a.taskNumber.replace(/\D/g, ""));
-        const numB = parseInt(b.taskNumber.replace(/\D/g, ""));
-        return numA - numB;
-      })
-      .map((taskItem) => ({
-        id: taskItem.id,
-        taskNumber: taskItem.taskNumber,
-      }));
+    const availableTasks = readingTaskItems.map((taskItem) => ({
+      id: taskItem.id,
+      taskNumber: taskItem.taskNumber,
+    }));
 
     return (
       <>
@@ -229,18 +237,20 @@ const ReadingPage = async ({
   }
 
   const practiceRepo = new PracticeRepository(documentsClient);
-  const practices = await practiceRepo.getAllPractice(
-    {
-      type: "READING",
-      taskId: new ObjectId(taskId) as unknown as string,
-    },
-    0,
-    200
-  );
-  let selectedPractice = null;
-  if (selectedPracticeId) {
-    selectedPractice = await practiceRepo.findPractice(selectedPracticeId);
-  }
+  const [practices, selectedPracticeFromDb] = await Promise.all([
+    practiceRepo.getAllPractice(
+      {
+        type: "READING",
+        taskId: new ObjectId(taskId) as unknown as string,
+      },
+      0,
+      200
+    ),
+    selectedPracticeId
+      ? practiceRepo.findPractice(selectedPracticeId)
+      : Promise.resolve(null),
+  ]);
+  let selectedPractice = selectedPracticeFromDb;
 
   if (
     !hasPaidPracticeAccess(

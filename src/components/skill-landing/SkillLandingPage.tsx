@@ -1,15 +1,28 @@
 import React from "react";
+import dynamic from "next/dynamic";
 import { SkillPageContent } from "@/data/skill-pages-content";
 import Link from "next/link";
 import Image from "next/image";
 import ExamSectionCard from "../pages/landing/ExamSectionCard";
-import FaqAccordion from "./FaqAccordion";
 import SvgListening from "../icons/Listening";
 import SvgSpeaking from "../icons/Speaking";
 import SvgWriting from "../icons/Writing";
 import SvgReading from "../icons/Reading";
 import SvgMockExamsColorful from "../icons/MockExamsColorful";
 import SvgLearning from "../icons/Learning";
+
+const FaqAccordion = dynamic(() => import("./FaqAccordion"), {
+  loading: () => (
+    <div className="space-y-4">
+      {[1, 2, 3].map((i) => (
+        <div
+          key={i}
+          className="h-14 rounded-xl border border-[#D5D6D8] bg-white animate-pulse"
+        />
+      ))}
+    </div>
+  ),
+});
 
 interface SkillLandingPageProps {
   content: SkillPageContent;

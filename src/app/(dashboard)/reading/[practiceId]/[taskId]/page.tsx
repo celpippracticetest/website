@@ -1,4 +1,4 @@
-import ReadingPractice from "@/components/dashboard-app/reading-practice/ReadingPractice";
+import ReadingPractice from "@/components/dashboard-app/reading-practice/ReadingPracticeLazy";
 import documentsClient from "@/lib/appDocumentsClient";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
 import { TTaskSchemaDto } from "@/models/tasks.model";
