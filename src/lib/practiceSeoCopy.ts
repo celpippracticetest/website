@@ -10,8 +10,10 @@ const SKILL_LABEL: Record<SkillRoute, string> = {
 };
 
 function taskNumberDigits(task: TTaskSchemaDto): string {
-  const n = task.taskNumber.replace(/\D/g, "");
-  return n || task.taskNumber;
+  const raw = task.taskNumber?.trim() ?? "";
+  if (!raw) return "1";
+  const n = raw.replace(/\D/g, "");
+  return n || raw;
 }
 
 function titleBenefitSuffix(practice: TPracticeDto): string {

@@ -4,6 +4,7 @@ import {
   readPracticePlanFromSupabaseUser,
 } from "@/lib/auth/supabase-user-plan";
 import { mobileUserBridgeFromSupabaseUser } from "@/lib/auth/supabase-mobile-user-bridge";
+import { readBearerTokenFromRequest } from "@/lib/auth/request-auth";
 import { appUserAdmin } from "@/lib/auth/app-user-admin";
 import { logger, trackUserAction, captureException } from "@/lib/sentry-logger";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
@@ -633,13 +634,25 @@ export default async function proxy(req: NextRequest) {
     "POST:/api/answers/writing",
     "GET:/api/answers/writing",
     "POST:/api/answers/speaking",
+    "GET:/api/answers/speaking",
+    "POST:/api/exams/answers",
+    "GET:/api/exams/answers/writing",
+    "POST:/api/exams/answers/writing",
+    "GET:/api/exams/answers/speaking",
+    "POST:/api/exams/answers/speaking",
     "POST:/api/checkout_session",
     "POST:/api/paypal/create-subscription",
   ];
 
   const requestedPath = `${req.method}:${req.nextUrl.pathname}`;
   if (protectedPaths.includes(requestedPath)) {
-    if (!supabaseWebUser) {
+    const hasBearer = Boolean(readBearerTokenFromRequest(req));
+    if (!supabaseWebUser && !hasBearer) {
+      if (req.nextUrl.pathname.startsWith("/api/")) {
+        return end(
+          NextResponse.json({ message: "Unauthorized" }, { status: 401 }),
+        );
+      }
       const signIn = new URL("/sign-in", req.url);
       return end(NextResponse.redirect(signIn));
     }

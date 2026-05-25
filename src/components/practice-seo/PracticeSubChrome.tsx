@@ -13,6 +13,12 @@ const SKILL_HUB_LABEL: Record<SkillRoute, string> = {
   listening: "Listening",
 };
 
+const PRACTICE_OVERVIEW_PATH = "/practice-overview";
+
+function buildTaskBreadcrumbLabel(task: TTaskSchemaDto): string {
+  return `${task.taskNumber?.replace(" #", "") ?? task.taskNumber}.${task.name}`;
+}
+
 type PracticeSubChromeProps = {
   skill: SkillRoute;
   task: TTaskSchemaDto;
@@ -28,7 +34,7 @@ export function PracticeSubChrome({
 }: PracticeSubChromeProps) {
   const hubPath = `/${skill}`;
   const taskPicker = taskPickerPath(skill, task.id);
-  const taskStepLabel = `Task ${task.taskNumber.replace(/\D/g, "") || task.taskNumber} – ${task.name}`;
+  const taskStepLabel = buildTaskBreadcrumbLabel(task);
   const currentUrl = absoluteUrl(practicePath(skill, practice.id, task.id));
 
   const breadcrumbLd = {
@@ -38,8 +44,8 @@ export function PracticeSubChrome({
       {
         "@type": "ListItem",
         position: 1,
-        name: "Home",
-        item: absoluteUrl("/"),
+        name: "Practice",
+        item: absoluteUrl(PRACTICE_OVERVIEW_PATH),
       },
       {
         "@type": "ListItem",
@@ -71,8 +77,8 @@ export function PracticeSubChrome({
       >
         <ol className="m-0 flex list-none flex-wrap items-center gap-1 p-0 text-sm text-[#76808F]">
           <li>
-            <Link href="/" className="text-inherit">
-              Home
+            <Link href={PRACTICE_OVERVIEW_PATH} className="text-inherit">
+              Practice
             </Link>
           </li>
           <li aria-hidden>/</li>

@@ -88,6 +88,12 @@ const SpeakingPracticeView = ({
     "67f4555616846d97ecbde9f7": 60,
   };
 
+  const taskIdKey = String(practice.taskId);
+  const initialPreparationTime = preparationTime[taskIdKey] ?? 30;
+  const initialRecordingTime = recordingTimePerTask[taskIdKey] ?? 90;
+  const activePassage =
+    practice.passages?.[passageIndex] ?? practice.passages?.[0];
+
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignUpModal, setShowSignUpModal] = useState(false);
   const [quickSubscribeAction, setQuickSubscribeAction] = useState("");
@@ -135,10 +141,8 @@ const SpeakingPracticeView = ({
   const [selectedAnswers, setSelectedAnswers] = useState<
     Record<string, string>
   >({});
-  const [time, setTime] = useState(preparationTime[practice.taskId.toString()]);
-  const [recordingTime, setRecordingTime] = useState(
-    recordingTimePerTask[practice.taskId.toString()]
-  );
+  const [time, setTime] = useState(initialPreparationTime);
+  const [recordingTime, setRecordingTime] = useState(initialRecordingTime);
   const [progressBar, setProgressBar] = useState(0);
   const [isSubmit, setIsSubmit] = useState(false);
   const [, setText] = useState("");
@@ -226,11 +230,16 @@ const SpeakingPracticeView = ({
           router.push("/pricing");
         }
         if (noUser) {
-          setShowLoginModal(true);
+          setShowSignUpModal(true);
         }
         return;
       }
-      
+
+      if (noUser) {
+        setShowSignUpModal(true);
+        return;
+      }
+
       // Check if microphone permission is already granted before auto-starting
       // On mobile, we should require user interaction to request permissions
       const checkPermissionAndStart = async () => {
@@ -291,8 +300,8 @@ const SpeakingPracticeView = ({
     if (isRecording) {
       cancelRecording();
     }
-    setTime(preparationTime[practice.taskId.toString()]);
-    setRecordingTime(recordingTimePerTask[practice.taskId.toString()]);
+    setTime(preparationTime[taskIdKey] ?? 30);
+    setRecordingTime(recordingTimePerTask[taskIdKey] ?? 90);
 
     if (!initialSpeakingAnswers?.length) {
       fetchUsersAnswer();
@@ -352,7 +361,7 @@ const SpeakingPracticeView = ({
   const startRecording = async () => {
     try {
       if (!user) {
-        router.push("/pricing");
+        setShowSignUpModal(true);
         return;
       }
       if (!shouldShowPractice) {
@@ -372,7 +381,7 @@ const SpeakingPracticeView = ({
 
       mediaRecorderRef.current.onstop = () => {
         setProgressBar(0);
-        setRecordingTime(90);
+        setRecordingTime(recordingTimePerTask[taskIdKey] ?? 90);
         const blob = new Blob(audioChunks.current, { type: "audio/m4a" });
         const url = URL.createObjectURL(blob);
         setAudioURL(url);
@@ -498,7 +507,7 @@ const SpeakingPracticeView = ({
         <div className="flex justify-between lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b pb-[10px]  border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
           <div className="flex gap-2 flex-col screen744:!shrink-0">
             <h1 className="text-[18px] font-bold text-[#212E42]">
-              {practice.passages[passageIndex].title}
+              {activePassage?.title ?? practice.title ?? practice.name}
             </h1>
             <StatBadge
               count={practiceCount}
@@ -567,10 +576,10 @@ const SpeakingPracticeView = ({
               <div className="grid lg:grid-cols-2 grid-cols-1 h-full w-full">
                 <div className="p-4 overflow-y-auto lg:border-r border-r-0 border-b lg:border-b-0 border-slate-300 [&::-webkit-scrollbar]:w-2  [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full  [&::-webkit-scrollbar-track]:bg-slate-100">
                   <div className="relative">
-                    {practice.passages[0].body &&
-                      practice.passages[0].body?.length > 30 ? (
+                    {activePassage?.body &&
+                      activePassage.body.length > 30 ? (
                       <>
-                        {!practice.passages[0].pictureUrl && (
+                        {!activePassage.pictureUrl && (
                           <p className="text-[14px] text-gray-400 mb-2">
                             Read the following Message
                           </p>
@@ -579,14 +588,14 @@ const SpeakingPracticeView = ({
                           {!shouldShowPractice ? (
                             <>
                               <span>
-                                {practice.passages[0].body?.slice(0, 150)}
+                                {activePassage.body.slice(0, 150)}
                               </span>
                               <span className="text-slate-500 blur-sm">
-                                {practice.passages[0].body?.slice(100)}
+                                {activePassage.body.slice(100)}
                               </span>
                             </>
                           ) : (
-                            <span>{practice.passages[0].body}</span>
+                            <span>{activePassage.body}</span>
                           )}
                         </p>
                       </>
@@ -595,11 +604,11 @@ const SpeakingPracticeView = ({
                         Read the following Message, Photo or Diagram
                       </p>
                     )}
-                    {practice.passages[0].pictureUrl && (
+                    {activePassage?.pictureUrl && (
                       <>
                         <img
-                          src={practice.passages[0].pictureUrl}
-                          alt={practice.passages[0].title}
+                          src={activePassage.pictureUrl}
+                          alt={activePassage.title ?? practice.name}
                           className={`w-full h-auto mb-4 rounded-lg shadow-md ${!shouldShowPractice ? "blur-sm" : ""
                             }`}
                         />
@@ -608,13 +617,13 @@ const SpeakingPracticeView = ({
                     <p className="text-[14px] text-slate-500">
                       Preparation time:
                       <b className="text-[#F27059] text-[16px]">
-                        {preparationTime[practice.taskId]}s
+                        {initialPreparationTime}s
                       </b>
                     </p>
                     <p className="text-[14px] mt-[8px] text-slate-500">
                       Recording time:{" "}
                       <b className="text-[#F27059] text-[16px]">
-                        {recordingTimePerTask[practice.taskId]}s
+                        {initialRecordingTime}s
                       </b>
                     </p>
 
@@ -834,7 +843,11 @@ const SpeakingPracticeView = ({
                                     fill="none"
                                     strokeDasharray={2 * Math.PI * 30}
                                     strokeDashoffset={
-                                      ((30 - time) / 30) * 2 * Math.PI * 30
+                                      ((initialPreparationTime - time) /
+                                        initialPreparationTime) *
+                                      2 *
+                                      Math.PI *
+                                      30
                                     }
                                     style={{
                                       transition: "stroke-dashoffset 1s linear",
