@@ -12,6 +12,7 @@ import Close from "@mui/icons-material/Close";
 import Logout from "@mui/icons-material/Logout";
 import WorkspacePremium from "@mui/icons-material/WorkspacePremium";
 import People from "@mui/icons-material/People";
+import CurrencyExchange from "@mui/icons-material/CurrencyExchange";
 import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
 import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
 import MenuBook from "@mui/icons-material/MenuBook";
@@ -120,6 +121,24 @@ export default function UsersPage() {
     totalUsersInDocuments?: number;
     missingUsers?: number;
   } | null>(null);
+
+  const [stripeSyncDialogOpen, setStripeSyncDialogOpen] = useState(false);
+  const [stripeSyncPhase, setStripeSyncPhase] = useState<"idle" | "dry_run" | "confirming" | "syncing" | "done">("idle");
+  const [stripeSyncPreview, setStripeSyncPreview] = useState<{
+    totalPlusUsersInDb: number;
+    processed: number;
+    revoked: number;
+    kept: number;
+    skipped: number;
+    hasMore: boolean;
+  } | null>(null);
+  const [stripeSyncResult, setStripeSyncResult] = useState<{
+    revoked: number;
+    kept: number;
+    skipped: number;
+    errors?: { profileId: string; message: string }[];
+  } | null>(null);
+
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const fetchUsers = async () => {
@@ -342,6 +361,47 @@ export default function UsersPage() {
     });
   };
 
+  const handleStripeSyncOpen = async () => {
+    setStripeSyncPreview(null);
+    setStripeSyncResult(null);
+    setStripeSyncPhase("dry_run");
+    setStripeSyncDialogOpen(true);
+    try {
+      const res = await fetch("/api/admin/users/sync-stripe-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dryRun: true, limit: 1000 }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Dry run failed");
+      setStripeSyncPreview(data);
+      setStripeSyncPhase("confirming");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Dry run failed");
+      setStripeSyncDialogOpen(false);
+      setStripeSyncPhase("idle");
+    }
+  };
+
+  const handleStripeSyncConfirm = async () => {
+    setStripeSyncPhase("syncing");
+    try {
+      const res = await fetch("/api/admin/users/sync-stripe-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm: "SYNC_STRIPE_STATUS", limit: 1000 }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Sync failed");
+      setStripeSyncResult(data);
+      setStripeSyncPhase("done");
+      await fetchUsers();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Sync failed");
+      setStripeSyncPhase("confirming");
+    }
+  };
+
   const checkSyncStatus = async () => {
     try {
       const response = await fetch("/api/admin/users/sync-missing");
@@ -516,6 +576,20 @@ export default function UsersPage() {
                 >
                   <Refresh
                     className={`w-5 h-5 text-blue-600 ${syncing ? "animate-spin" : ""}`}
+                  />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Sync Stripe subscription status → downgrade canceled users to Free">
+              <span>
+                <IconButton
+                  onClick={handleStripeSyncOpen}
+                  size="small"
+                  disabled={loading || stripeSyncPhase === "dry_run" || stripeSyncPhase === "syncing"}
+                  className="border border-orange-300"
+                >
+                  <CurrencyExchange
+                    className={`w-5 h-5 text-orange-500 ${stripeSyncPhase === "dry_run" || stripeSyncPhase === "syncing" ? "animate-spin" : ""}`}
                   />
                 </IconButton>
               </span>
@@ -1238,6 +1312,134 @@ export default function UsersPage() {
           >
             {revoking ? "Revoking..." : "Confirm Revoke"}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Sync Stripe Status Dialog */}
+      <Dialog
+        open={stripeSyncDialogOpen}
+        onClose={() => {
+          if (stripeSyncPhase !== "dry_run" && stripeSyncPhase !== "syncing") {
+            setStripeSyncDialogOpen(false);
+            setStripeSyncPhase("idle");
+          }
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box className="flex items-center gap-2">
+            <CurrencyExchange className="w-5 h-5 text-orange-500" />
+            Sync Stripe Subscription Status
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {stripeSyncPhase === "dry_run" && (
+            <Box className="flex items-center gap-3 py-4">
+              <CircularProgress size={20} />
+              <Typography variant="body2">Checking Stripe for all Plus users…</Typography>
+            </Box>
+          )}
+
+          {stripeSyncPhase === "confirming" && stripeSyncPreview && (
+            <Box>
+              <Box className="mb-4 grid grid-cols-3 gap-3">
+                <Box className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-center">
+                  <Typography variant="h5" className="font-bold text-red-600">
+                    {stripeSyncPreview.revoked}
+                  </Typography>
+                  <Typography variant="caption" className="text-gray-600">will be set to Free</Typography>
+                </Box>
+                <Box className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-center">
+                  <Typography variant="h5" className="font-bold text-green-600">
+                    {stripeSyncPreview.kept}
+                  </Typography>
+                  <Typography variant="caption" className="text-gray-600">active, no change</Typography>
+                </Box>
+                <Box className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-center">
+                  <Typography variant="h5" className="font-bold text-gray-400">
+                    {stripeSyncPreview.skipped}
+                  </Typography>
+                  <Typography variant="caption" className="text-gray-600">no Stripe data</Typography>
+                </Box>
+              </Box>
+              <Typography variant="body2" className="text-gray-600">
+                Scanned <strong>{stripeSyncPreview.processed}</strong> of{" "}
+                <strong>{stripeSyncPreview.totalPlusUsersInDb}</strong> Plus users.
+                {stripeSyncPreview.hasMore && (
+                  <span className="ml-1 text-orange-600">
+                    More users exist beyond the 1,000 limit — re-run to process the rest.
+                  </span>
+                )}
+              </Typography>
+              <Typography variant="body2" className="mt-2 text-gray-500">
+                Clicking <strong>Apply</strong> will immediately downgrade the{" "}
+                <strong>{stripeSyncPreview.revoked}</strong> users with no active Stripe subscription.
+              </Typography>
+            </Box>
+          )}
+
+          {stripeSyncPhase === "syncing" && (
+            <Box className="flex items-center gap-3 py-4">
+              <CircularProgress size={20} />
+              <Typography variant="body2">Applying changes… this may take a minute.</Typography>
+            </Box>
+          )}
+
+          {stripeSyncPhase === "done" && stripeSyncResult && (
+            <Box>
+              <Box className="mb-3 grid grid-cols-3 gap-3">
+                <Box className="rounded-lg border border-red-200 bg-red-50 p-3 text-center">
+                  <Typography variant="h5" className="font-bold text-red-600">
+                    {stripeSyncResult.revoked}
+                  </Typography>
+                  <Typography variant="caption" className="text-gray-600">downgraded to Free</Typography>
+                </Box>
+                <Box className="rounded-lg border border-green-200 bg-green-50 p-3 text-center">
+                  <Typography variant="h5" className="font-bold text-green-600">
+                    {stripeSyncResult.kept}
+                  </Typography>
+                  <Typography variant="caption" className="text-gray-600">kept as Plus</Typography>
+                </Box>
+                <Box className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-center">
+                  <Typography variant="h5" className="font-bold text-gray-400">
+                    {stripeSyncResult.skipped}
+                  </Typography>
+                  <Typography variant="caption" className="text-gray-600">skipped</Typography>
+                </Box>
+              </Box>
+              {stripeSyncResult.errors && stripeSyncResult.errors.length > 0 && (
+                <Box className="mt-2 rounded border border-red-200 bg-red-50 p-2">
+                  <Typography variant="caption" className="text-red-700 font-medium">
+                    {stripeSyncResult.errors.length} error(s):
+                  </Typography>
+                  {stripeSyncResult.errors.slice(0, 5).map((e) => (
+                    <Typography key={e.profileId} variant="caption" display="block" className="text-red-600">
+                      {e.profileId}: {e.message}
+                    </Typography>
+                  ))}
+                </Box>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => { setStripeSyncDialogOpen(false); setStripeSyncPhase("idle"); }}
+            disabled={stripeSyncPhase === "dry_run" || stripeSyncPhase === "syncing"}
+            color="inherit"
+          >
+            {stripeSyncPhase === "done" ? "Close" : "Cancel"}
+          </Button>
+          {stripeSyncPhase === "confirming" && (
+            <Button
+              onClick={handleStripeSyncConfirm}
+              color="warning"
+              variant="contained"
+            >
+              Apply — downgrade {stripeSyncPreview?.revoked ?? 0} users
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
 
