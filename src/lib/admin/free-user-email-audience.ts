@@ -3,7 +3,6 @@ import "server-only";
 import type { Sql } from "postgres";
 import { getDb } from "@/lib/appDocumentsClient";
 import { getSql } from "@/lib/pg/pool";
-import { userProfilesTableExists } from "@/lib/admin/adminUsersDataSource";
 import {
   FREE_USER_EMAIL_PREVIEW_LIMIT,
   FREE_USER_EMAIL_SEND_LIMIT,
@@ -22,7 +21,7 @@ export type FreeUserEmailAudienceResult = {
   period: SignupPeriod;
   totalCount: number;
   sample: FreeUserEmailRecipient[];
-  source: "user_profiles_sql" | "users_mongo";
+  source: "auth_users_sql" | "users_mongo";
 };
 
 function normalizeRecipient(row: {
@@ -45,7 +44,7 @@ function normalizeRecipient(row: {
   };
 }
 
-async function listFromUserProfiles(
+async function listFromAuthUsers(
   sql: Sql,
   period: SignupPeriod,
   opts: { forSend?: boolean }
@@ -55,11 +54,17 @@ async function listFromUserProfiles(
 
   const countRows = await sql<{ c: number }[]>`
     SELECT COUNT(*)::int AS c
-    FROM public.user_profiles p
-    WHERE lower(trim(coalesce(p.plan, ''))) IS DISTINCT FROM 'plus'
-      AND p.email IS NOT NULL
-      AND trim(p.email) <> ''
-      AND p.created_at >= ${since}
+    FROM auth.users u
+    LEFT JOIN public.user_profiles p ON p.supabase_auth_user_id = u.id
+    WHERE u.email IS NOT NULL
+      AND trim(u.email) <> ''
+      AND u.deleted_at IS NULL
+      AND u.created_at >= ${since}
+      AND lower(trim(coalesce(
+        u.raw_app_meta_data->>'plan',
+        p.plan,
+        ''
+      ))) IS DISTINCT FROM 'plus'
   `;
 
   const rows = await sql<
@@ -71,16 +76,27 @@ async function listFromUserProfiles(
     }[]
   >`
     SELECT
-      COALESCE(p.legacy_clerk_user_id, p.supabase_auth_user_id::text, p.id::text) AS user_id,
-      p.email,
-      p.first_name,
-      p.created_at
-    FROM public.user_profiles p
-    WHERE lower(trim(coalesce(p.plan, ''))) IS DISTINCT FROM 'plus'
-      AND p.email IS NOT NULL
-      AND trim(p.email) <> ''
-      AND p.created_at >= ${since}
-    ORDER BY p.created_at DESC
+      u.id::text AS user_id,
+      u.email,
+      COALESCE(
+        NULLIF(trim(u.raw_user_meta_data->>'first_name'), ''),
+        NULLIF(trim(u.raw_user_meta_data->>'firstName'), ''),
+        NULLIF(trim(u.raw_user_meta_data->>'given_name'), ''),
+        NULLIF(trim(p.first_name), '')
+      ) AS first_name,
+      u.created_at
+    FROM auth.users u
+    LEFT JOIN public.user_profiles p ON p.supabase_auth_user_id = u.id
+    WHERE u.email IS NOT NULL
+      AND trim(u.email) <> ''
+      AND u.deleted_at IS NULL
+      AND u.created_at >= ${since}
+      AND lower(trim(coalesce(
+        u.raw_app_meta_data->>'plan',
+        p.plan,
+        ''
+      ))) IS DISTINCT FROM 'plus'
+    ORDER BY u.created_at DESC
     LIMIT ${limit}
   `;
 
@@ -99,7 +115,7 @@ async function listFromUserProfiles(
     period,
     totalCount: countRows[0]?.c ?? 0,
     sample,
-    source: "user_profiles_sql",
+    source: "auth_users_sql",
   };
 }
 
@@ -159,13 +175,10 @@ export async function getFreeUserEmailAudience(
 ): Promise<FreeUserEmailAudienceResult> {
   try {
     const sql = getSql();
-    const hasProfiles = await userProfilesTableExists(sql);
-    if (hasProfiles) {
-      return listFromUserProfiles(sql, period, opts);
-    }
+    return await listFromAuthUsers(sql, period, opts);
   } catch (error) {
     console.warn(
-      "[free-user-email-audience] SQL path unavailable; falling back to Mongo:",
+      "[free-user-email-audience] auth.users SQL path unavailable; falling back to Mongo:",
       error instanceof Error ? error.message : error
     );
   }

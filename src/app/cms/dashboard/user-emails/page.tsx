@@ -185,7 +185,8 @@ export default function UserEmailsPage() {
       <Box className="flex flex-col gap-2">
         <h1 className="text-2xl font-bold text-gray-900">Send email to free users</h1>
         <p className="max-w-3xl text-sm text-gray-600">
-          One-off broadcast to signed-up users who do <strong>not</strong> have a Plus plan.
+          One-off broadcast to signed-up users from <code className="text-xs">auth.users</code> who do{" "}
+          <strong>not</strong> have a Plus plan.
           Emails are sent through{" "}
           <a className="text-primary underline" href="https://resend.com" target="_blank" rel="noreferrer">
             Resend
