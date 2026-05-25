@@ -48,134 +48,61 @@ export function parseOnlineUsersFromLiveStats(
   return parsePositiveLiveStat(data.stats?.onlineUsers, options);
 }
 
-/**
- * Polls `/api/analytics/live-stats` for GA4 `newUsers` (24h), used as “joined today”.
- */
-export function useRecentSignupsLiveStat(
-  fallbackDisplay: string,
-  options?: { enabled?: boolean }
-): {
-  count: number | null;
-  display: string;
-} {
-  const enabled = options?.enabled ?? true;
-  const [count, setCount] = useState<number | null>(null);
+type HookOptions = {
+  enabled?: boolean;
+  /** Never display a value below this floor (prevents embarrassingly low or zero counts). */
+  floor?: number;
+};
 
-  useEffect(() => {
-    if (!enabled) return;
-    let cancelled = false;
+function makeHook(
+  parser: (data: LiveStatsPayload, opts?: { allowZero?: boolean }) => number | null,
+) {
+  return function useLiveStat(
+    fallbackDisplay: string,
+    options?: HookOptions,
+  ): { count: number | null; display: string } {
+    const enabled = options?.enabled ?? true;
+    const floor = options?.floor ?? 0;
+    const [count, setCount] = useState<number | null>(null);
 
-    const load = async () => {
-      try {
-        const res = await fetch("/api/analytics/live-stats");
-        if (!res.ok) return;
-        const data = (await res.json()) as LiveStatsPayload;
-        const next = parseRecentSignupsFromLiveStats(data);
-        if (!cancelled && next != null) {
-          setCount(next);
+    useEffect(() => {
+      if (!enabled) return;
+      let cancelled = false;
+
+      const load = async () => {
+        try {
+          const res = await fetch("/api/analytics/live-stats");
+          if (!res.ok) return;
+          const data = (await res.json()) as LiveStatsPayload;
+          const next = parser(data);
+          if (!cancelled && next != null) {
+            setCount(next);
+          }
+        } catch {
+          /* keep fallback */
         }
-      } catch {
-        /* keep fallback */
-      }
-    };
+      };
 
-    void load();
-    const id = setInterval(load, LIVE_STATS_POLL_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [enabled]);
+      void load();
+      const id = setInterval(load, LIVE_STATS_POLL_MS);
+      return () => {
+        cancelled = true;
+        clearInterval(id);
+      };
+    }, [enabled]);
 
-  const display = count != null ? count.toLocaleString() : fallbackDisplay;
+    const flooredCount = count != null ? Math.max(count, floor) : null;
+    const display = flooredCount != null ? flooredCount.toLocaleString() : fallbackDisplay;
 
-  return { count, display };
+    return { count: flooredCount, display };
+  };
 }
 
-/**
- * Polls `/api/analytics/live-stats` for GA4 `sessions` (24h), used as “visits today”.
- */
-export function useRecentVisitsLiveStat(
-  fallbackDisplay: string,
-  options?: { enabled?: boolean }
-): {
-  count: number | null;
-  display: string;
-} {
-  const enabled = options?.enabled ?? true;
-  const [count, setCount] = useState<number | null>(null);
+/** Polls `/api/analytics/live-stats` for GA4 `newUsers` (24h), used as “joined today”. */
+export const useRecentSignupsLiveStat = makeHook(parseRecentSignupsFromLiveStats);
 
-  useEffect(() => {
-    if (!enabled) return;
-    let cancelled = false;
+/** Polls `/api/analytics/live-stats` for GA4 `sessions` (24h), used as “visits today”. */
+export const useRecentVisitsLiveStat = makeHook(parseRecentVisitsFromLiveStats);
 
-    const load = async () => {
-      try {
-        const res = await fetch("/api/analytics/live-stats");
-        if (!res.ok) return;
-        const data = (await res.json()) as LiveStatsPayload;
-        const next = parseRecentVisitsFromLiveStats(data);
-        if (!cancelled && next != null) {
-          setCount(next);
-        }
-      } catch {
-        /* keep fallback */
-      }
-    };
-
-    void load();
-    const id = setInterval(load, LIVE_STATS_POLL_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [enabled]);
-
-  const display = count != null ? count.toLocaleString() : fallbackDisplay;
-
-  return { count, display };
-}
-
-/**
- * Polls `/api/analytics/live-stats` for the header “online now” figure.
- */
-export function useOnlineUsersLiveStat(
-  fallbackDisplay: string,
-  options?: { enabled?: boolean }
-): {
-  count: number | null;
-  display: string;
-} {
-  const enabled = options?.enabled ?? true;
-  const [count, setCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!enabled) return;
-    let cancelled = false;
-
-    const load = async () => {
-      try {
-        const res = await fetch("/api/analytics/live-stats");
-        if (!res.ok) return;
-        const data = (await res.json()) as LiveStatsPayload;
-        const next = parseOnlineUsersFromLiveStats(data);
-        if (!cancelled && next != null) {
-          setCount(next);
-        }
-      } catch {
-        /* keep fallback */
-      }
-    };
-
-    void load();
-    const id = setInterval(load, LIVE_STATS_POLL_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [enabled]);
-
-  const display = count != null ? count.toLocaleString() : fallbackDisplay;
-
-  return { count, display };
-}
+/** Polls `/api/analytics/live-stats` for the “online now” figure. */
+export const useOnlineUsersLiveStat = makeHook(parseOnlineUsersFromLiveStats);

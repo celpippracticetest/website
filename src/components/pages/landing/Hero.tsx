@@ -14,7 +14,7 @@ import { SvgLearning } from "@/components/icons";
 import SvgWord from "@/components/icons/Word";
 import { cn } from "@/lib/utils";
 import { useHomepageCta } from "@/hooks/useHomepageCta";
-import { useRecentVisitsLiveStat } from "@/hooks/useRecentSignupsLiveStat";
+import { useOnlineUsersLiveStat } from "@/hooks/useRecentSignupsLiveStat";
 import { PricingUpgradeModalHeaderList } from "@/components/pages/pricing/PricingUpgradeModalHeaderList";
 import SvgPlus from "../../icons/Plus";
 import SvgArrowRight from "../../icons/ArrowRight";
@@ -89,7 +89,12 @@ const AVATAR_SRCS = [1, 2, 3, 4, 5].map(
   (i) => `https://i.pravatar.cc/128?u=celpip-hero-${i}`,
 );
 
-function HeroVisitsToday({ display }: { display: string }) {
+function HeroOnlineNow({ display }: { display: string | null }) {
+  if (!display) {
+    return (
+      <div className="mt-6 h-[44px] animate-pulse rounded-xl bg-[#F4F7FF]" />
+    );
+  }
   return (
     <div className="mt-6 flex items-center justify-center gap-2 rounded-xl bg-[#F4F7FF] px-4 py-3">
       <span className="relative flex h-2 w-2">
@@ -97,7 +102,7 @@ function HeroVisitsToday({ display }: { display: string }) {
         <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
       </span>
       <p className="text-sm font-semibold text-primary2">
-        {display} visits today
+        {display}+ people studying right now
       </p>
     </div>
   );
@@ -109,7 +114,7 @@ const Hero = () => {
     (state) => state,
   );
   const { href, label, shortLabel, trackClick } = useHomepageCta();
-  const { display: visitsDisplay } = useRecentVisitsLiveStat("7,174");
+  const { count: onlineCount, display: onlineDisplay } = useOnlineUsersLiveStat("", { floor: 25 });
 
   useEffect(() => {
     const onScroll = () => {
@@ -171,7 +176,7 @@ const Hero = () => {
 
               <div className="mb-8 w-full max-w-[560px]">
                 <PricingUpgradeModalHeaderList
-                  visitsDisplay={visitsDisplay}
+                  visitsDisplay={onlineCount != null ? onlineDisplay : undefined}
                   className="mx-auto screen744:mx-0"
                   itemTextClassName="text-text2 screen744:text-base"
                   emphasisTextClassName="font-semibold text-text2 screen744:text-base"
@@ -247,7 +252,7 @@ const Hero = () => {
                   ))}
                 </div>
 
-                <HeroVisitsToday display={visitsDisplay} />
+                <HeroOnlineNow display={onlineCount != null ? onlineDisplay : null} />
               </div>
             </div>
           </div>

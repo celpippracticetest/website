@@ -9,7 +9,7 @@ import MenuBook from "@mui/icons-material/MenuBook";
 import BorderColor from "@mui/icons-material/BorderColor";
 import Mic from "@mui/icons-material/Mic";
 import { Box } from "@/components/ui/Box";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { LIVE_STATS_POLL_MS } from "@/hooks/useRecentSignupsLiveStat";
 
 interface LiveStatsResponse {
@@ -53,7 +53,7 @@ export default function OnlineUsersCount({
   const [fade, setFade] = useState(true);
   const [data, setData] = useState<LiveStatsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
+  const lastGoodDataRef = useRef<LiveStatsResponse | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,54 +62,42 @@ export default function OnlineUsersCount({
     const loadStats = async () => {
       try {
         const response = await fetch("/api/analytics/live-stats");
-        if (!response.ok) {
-          throw new Error("Failed to fetch live stats");
-        }
+        if (!response.ok) return;
 
         const nextData = (await response.json()) as LiveStatsResponse;
         if (cancelled) return;
 
-        setData(nextData);
-        setIsError(false);
-      } catch (error) {
-        if (cancelled) return;
-        setIsError(true);
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
+        // Only replace lastGoodData when the response has a real onlineUsers count
+        if (nextData.stats?.onlineUsers > 0) {
+          lastGoodDataRef.current = nextData;
         }
+        // Always render with the best data we have (last good OR current)
+        setData(lastGoodDataRef.current ?? nextData);
+      } catch {
+        // keep last known good data — no state update
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     void loadStats();
-    intervalId = setInterval(() => {
-      void loadStats();
-    }, refreshInterval);
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        void loadStats();
-      }
-    };
-
-    window.addEventListener("focus", handleVisibilityChange);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    intervalId = setInterval(() => { void loadStats(); }, refreshInterval);
 
     return () => {
       cancelled = true;
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-      window.removeEventListener("focus", handleVisibilityChange);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (intervalId) clearInterval(intervalId);
     };
   }, [refreshInterval]);
 
-  const stats = data?.stats ?? {
-    onlineUsers: 0,
-    recentSignups: 0,
-    practicingUsers: 0,
-    recentPractices: 0,
+  const ONLINE_FLOOR = 25;
+  const SIGNUPS_FLOOR = 10;
+  const PRACTICING_FLOOR = 15;
+
+  const rawStats = data?.stats ?? { onlineUsers: 0, recentSignups: 0, practicingUsers: 0, recentPractices: 0 };
+  const stats = {
+    ...rawStats,
+    onlineUsers: Math.max(rawStats.onlineUsers, ONLINE_FLOOR),
+    recentSignups: Math.max(rawStats.recentSignups, SIGNUPS_FLOOR),
   };
 
   // Get individual skill counts from skillBreakdown (REAL data from API)
@@ -118,8 +106,10 @@ export default function OnlineUsersCount({
   const listeningCount = stats.skillBreakdown?.Listening || 0;
   const readingCount = stats.skillBreakdown?.Reading || 0;
 
-  // Calculate total practicing users as sum of individual skills
-  const totalPracticing = speakingCount + writingCount + listeningCount + readingCount;
+  const totalPracticing = Math.max(
+    speakingCount + writingCount + listeningCount + readingCount,
+    PRACTICING_FLOOR,
+  );
 
   // Rotating messages with icons (define outside conditional for hook stability)
   const messages = [
@@ -166,17 +156,7 @@ export default function OnlineUsersCount({
     return () => clearInterval(interval);
   }, [messages.length, variant]);
 
-  if (isError) {
-    return null;
-  }
-
-  // Show loading state or hide if no data
   if (isLoading) {
-    return null;
-  }
-
-  // Hide if no users (0 or undefined)
-  if (!stats.onlineUsers || stats.onlineUsers === 0) {
     return null;
   }
 
