@@ -6,7 +6,6 @@ import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
 import Close from "@mui/icons-material/Close";
 import ErrorOutline from "@mui/icons-material/ErrorOutline";
 import { TPracticeDto, TPracticeNavItem } from "@/models/practice.model";
-import type { TWritingAnswerDto } from "@/models/answer";
 import ListeningSideMenu from "../listening-practice/ListeningSideMenu";
 import ListeningAnswerList from "./components/ListeningAnswers";
 import { TPassage } from "@/models/listenExam.model";
@@ -33,7 +32,7 @@ import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributio
 import { StripeCheckoutDiscountBadge } from "@/components/checkout/StripeCheckoutDiscountBadge";
 import { getStripeCheckoutAutoDiscountLabel } from "@/lib/stripeCheckoutDiscountLabel";
 import { practicePath } from "@/lib/practiceRoutes";
-import type { SpeakingPracticeInitialAuth } from "./SpeakingPractice";
+import type { SpeakingPracticeInitialAuth } from "./types";
 
 interface SpeakingPracticeViewProps {
   practice: TPracticeDto;
@@ -91,8 +90,11 @@ const SpeakingPracticeView = ({
   const taskIdKey = String(practice.taskId);
   const initialPreparationTime = preparationTime[taskIdKey] ?? 30;
   const initialRecordingTime = recordingTimePerTask[taskIdKey] ?? 90;
-  const activePassage =
-    practice.passages?.[passageIndex] ?? practice.passages?.[0];
+  const [passageIndex, setPassageIndex] = useState(0);
+  const activePassage = useMemo(
+    () => practice.passages?.[passageIndex] ?? practice.passages?.[0],
+    [practice.passages, passageIndex]
+  );
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignUpModal, setShowSignUpModal] = useState(false);
@@ -134,7 +136,6 @@ const SpeakingPracticeView = ({
   const router = useRouter();
   const [isPlaying] = useState(false);
   const [page, setPage] = useState("question");
-  const [passageIndex, setPassageIndex] = useState(0);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [, setQuestionIndexInPractice] = useState(0);
   const [isOpen, setIsOpen] = useState<Record<number, boolean>>({});

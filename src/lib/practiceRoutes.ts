@@ -21,7 +21,7 @@ export function practicePath(skill: SkillRoute, practiceId: string, taskId: stri
   return `/${skill}/${practiceId}/${taskId}`;
 }
 
-/** Task picker / practice list for one task (indexable query). */
+/** Task picker / practice list for one task (indexable path). */
 export function taskPickerPath(skill: SkillRoute, taskId: string): string {
-  return `/${skill}?taskId=${encodeURIComponent(taskId)}`;
+  return `/${skill}/${encodeURIComponent(taskId)}`;
 }

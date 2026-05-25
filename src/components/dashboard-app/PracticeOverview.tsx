@@ -23,7 +23,7 @@ import {
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import { categoryToSkillRoute, practicePath } from "@/lib/practiceRoutes";
+import { categoryToSkillRoute, practicePath, taskPickerPath } from "@/lib/practiceRoutes";
 
 const practiceNavy = "#1B2B5A";
 const practiceMuted = "#475569";
@@ -69,7 +69,9 @@ const PracticeOverview = ({
       fetchPractices(selectedTask);
     } else {
       started(selectedTask?.id || "unknown", selectedTask?.category || "unknown");
-      setRedirectUrl(selectedTask?.category + "?taskId=" + selectedTask.id);
+      setRedirectUrl(
+        taskPickerPath(categoryToSkillRoute(selectedTask.category), selectedTask.id)
+      );
     }
   }, [selectedTask]);
   useEffect(() => {

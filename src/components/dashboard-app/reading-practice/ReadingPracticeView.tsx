@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import NextImage from "next/image";
 import ArrowBack from "@mui/icons-material/ArrowBack";
-import { TPracticeDto } from "@/models/practice.model";
+import { TPracticeDto, TPracticeNavItem } from "@/models/practice.model";
 import ListeningSideMenu from "../listening-practice/ListeningSideMenu";
 import ListeningAnswerList from "./components/ListeningAnswers";
 import { TPassage } from "@/models/listenExam.model";
@@ -34,7 +34,7 @@ import { practicePath } from "@/lib/practiceRoutes";
 interface ReadingPracticeViewProps {
   practice: TPracticeDto;
   task: TTaskSchemaDto;
-  allPractices: TPracticeDto[];
+  allPractices: TPracticeNavItem[];
   selectedPracticeId: string | null;
   selectedTaskId: string | null;
   previousAnswer: TListeningAndReadingAnswerDto | null;

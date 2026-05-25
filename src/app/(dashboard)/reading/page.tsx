@@ -1,22 +1,14 @@
-import ReadingPractice from "@/components/dashboard-app/reading-practice/ReadingPracticeLazy";
 import ShowTasks from "@/components/dashboard-new/ShowTasks/ShowTasksLazy";
 import ShowTaskHeader from "@/components/dashboard-new/ShowTasks/ShowTaskHeaderLazy";
 import SvgReadingPart from "@/components/icons/ReadingPart";
 import documentsClient from "@/lib/appDocumentsClient";
-import { TListeningAndReadingAnswerDto } from "@/models/answer";
-import { TTaskSchemaDto } from "@/models/tasks.model";
-import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
-import { PracticeRepository } from "@/repositories/practice.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
 import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
-import { ObjectId } from "bson";
 import { permanentRedirect, redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
 import { skillPagesContent } from "@/data/skill-pages-content";
 import { JsonLd } from "@/components/seo/JsonLd";
 import type { Metadata } from "next";
-import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
-import { PracticeTaskPickerHeader } from "@/components/practice-seo/PracticeTaskPickerHeader";
 import { skillHubPageMetadata } from "@/lib/skillHubPageMetadata";
 import { Box, Typography } from "@mui/material";
 
@@ -158,6 +150,13 @@ const ReadingPage = async ({
 }) => {
   const { selectedPracticeId, taskId } = await searchParams;
 
+  if (selectedPracticeId && taskId) {
+    permanentRedirect(`/reading/${selectedPracticeId}/${taskId}`);
+  }
+  if (taskId) {
+    permanentRedirect(`/reading/${taskId}`);
+  }
+
   const taskRepo = new TaskRepository(documentsClient);
   const [tasks, hybridUser] = await Promise.all([
     taskRepo.getAllTask({ type: "practice", category: "reading" }, 0, 100),
@@ -221,88 +220,7 @@ const ReadingPage = async ({
     );
   }
 
-  if (selectedPracticeId && taskId) {
-    permanentRedirect(`/reading/${selectedPracticeId}/${taskId}`);
-  }
-  if (selectedPracticeId && !taskId) {
-    redirect("/practice-overview", RedirectType.replace);
-  }
-  if (!taskId) {
-    redirect("/practice-overview", RedirectType.replace);
-  }
-
-  const task: TTaskSchemaDto | null = await taskRepo.findTaskById(taskId);
-
-  if (!task) {
-    redirect("/practice-overview", RedirectType.replace);
-  }
-
-  const practiceRepo = new PracticeRepository(documentsClient);
-  const [practices, selectedPracticeFromDb] = await Promise.all([
-    practiceRepo.getAllPractice(
-      {
-        type: "READING",
-        taskId: new ObjectId(taskId) as unknown as string,
-      },
-      0,
-      200
-    ),
-    selectedPracticeId
-      ? practiceRepo.findPractice(selectedPracticeId)
-      : Promise.resolve(null),
-  ]);
-  let selectedPractice = selectedPracticeFromDb;
-
-  if (
-    !hasPaidPracticeAccess(
-      user?.publicMetadata.plan as string | undefined,
-      user?.publicMetadata.purchaseDate as string | undefined
-    ) &&
-    selectedPractice &&
-    !selectedPractice.isFree &&
-    selectedPractice.passages[0] &&
-    selectedPractice.passages[0].body &&
-    selectedPractice.passages[0].body.length > 20
-  ) {
-    selectedPractice.passages[0].body =
-      selectedPractice.passages[0].body?.slice(0, 150) +
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
-  }
-  let answers: TListeningAndReadingAnswerDto | null = null;
-  let completedPractice: string[] = [];
-  if (user) {
-    const listeningAndReadingAnswerRepo =
-      new ListeningAndReadingAnswerRepository(documentsClient);
-    if (selectedPracticeId) {
-      answers = await listeningAndReadingAnswerRepo.findAnswerByPracticeAndUser(
-        selectedPracticeId,
-        user.id
-      );
-    }
-    completedPractice =
-      await listeningAndReadingAnswerRepo.findAllTaskIdsByTaskAndUser(
-        task.id,
-        user.id
-      );
-  }
-
-  return (
-    <main className="flex min-h-screen w-full justify-center bg-[#F2F6FF]">
-      <div className="w-full max-w-[1280px]">
-        <JsonLd data={readingStructuredData} />
-        <PracticeTaskPickerHeader skillLabel="Reading" task={task} />
-        <ReadingPractice
-          showHeader={true}
-          hideTaskPickerHeader
-          allPractices={practices.items}
-          selectedPractice={selectedPractice}
-          task={task}
-          previousAnswer={answers}
-          completedPractice={completedPractice}
-        />
-      </div>
-    </main>
-  );
+  redirect("/practice-overview", RedirectType.replace);
 };
 
 export default ReadingPage;

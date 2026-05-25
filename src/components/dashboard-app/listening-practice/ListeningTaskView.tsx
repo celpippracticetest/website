@@ -31,6 +31,8 @@ interface ListeningTaskViewProps {
   completedPractice: string[];
   task: TTaskSchemaDto;
   title: string;
+  /** Path-based task picker (`/{skill}/{taskId}`); falls back to `?taskId=`. */
+  selectedTaskId?: string | null;
   /** When true, page already rendered an SSR h1 (avoids duplicate headings). */
   hideHeader?: boolean;
 }
@@ -40,13 +42,14 @@ const ListeningTaskView = ({
   task,
   completedPractice,
   title,
+  selectedTaskId: selectedTaskIdProp,
   hideHeader = false,
 }: ListeningTaskViewProps) => {
   const router = useRouter();
   const { user, isLoaded } = useHybridWebUser();
 
   const searchParams = useSearchParams();
-  const selectedTaskId = searchParams.get("taskId");
+  const selectedTaskId = selectedTaskIdProp ?? searchParams.get("taskId");
 
   useEffect(() => {
     if (!selectedTaskId) {

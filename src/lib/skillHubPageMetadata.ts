@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import documentsClient from "@/lib/appDocumentsClient";
 import { TaskRepository } from "@/repositories/tasks.repo";
-import type { SkillRoute } from "@/lib/practiceRoutes";
+import { taskPickerPath, type SkillRoute } from "@/lib/practiceRoutes";
 
 function siteRoot(): string {
   return (process.env.APP_BASE_URL || "https://celpippracticetest.com").replace(
@@ -18,7 +18,7 @@ const SKILL_LABEL: Record<SkillRoute, string> = {
 };
 
 /**
- * Indexable hub + task-picker metadata: self-referencing canonical (includes ?taskId when set)
+ * Indexable hub + task-picker metadata: self-referencing canonical (path includes taskId when set)
  * and task-specific title/description for CTR when a task is selected.
  */
 export async function skillHubPageMetadata(
@@ -35,7 +35,7 @@ export async function skillHubPageMetadata(
   let description = fallbackDescription;
 
   if (taskId) {
-    canonical = `${root}${hubPath}?taskId=${encodeURIComponent(taskId)}`;
+    canonical = `${root}${taskPickerPath(skill, taskId)}`;
     const taskRepo = new TaskRepository(documentsClient);
     const task = await taskRepo.findTaskById(taskId);
     if (task && task.category === skill) {

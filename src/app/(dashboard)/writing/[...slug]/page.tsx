@@ -9,6 +9,7 @@ import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import { ObjectId } from "bson";
 import { redirect, RedirectType } from "next/navigation";
 import type { Metadata } from "next";
+import { cache } from "react";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { Box, Typography } from "@mui/material";
 import { PracticeSubChrome } from "@/components/practice-seo/PracticeSubChrome";
@@ -18,51 +19,105 @@ import {
   buildPracticePageTitle,
 } from "@/lib/practiceSeoCopy";
 import { practicePath } from "@/lib/practiceRoutes";
+import { skillHubPageMetadata } from "@/lib/skillHubPageMetadata";
+import { parsePracticeSlug } from "@/lib/parsePracticeSlug";
 
-type PageProps = {
-  params: Promise<{ practiceId: string; taskId: string }>;
+const writingMetadataBase = {
+  title: "CELPIP Practice Exam: Free CELPIP Writing Practice Test",
+  description:
+    "CELPIP practice exam for Writing: timed prompts, AI scoring, and structure tips. Train under realistic conditions before your real test.",
 };
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { practiceId, taskId } = await params;
-  const taskRepo = new TaskRepository(documentsClient);
-  const practiceRepo = new PracticeRepository(documentsClient);
-  const task = await taskRepo.findTaskById(taskId);
-  const practice = await practiceRepo.findPractice(practiceId);
-  if (!task || !practice) {
-    return { title: "Writing practice" };
+const loadWritingTaskAndPractice = cache(
+  async (practiceId: string, taskId: string) => {
+    const taskRepo = new TaskRepository(documentsClient);
+    const practiceRepo = new PracticeRepository(documentsClient);
+    const [task, practice] = await Promise.all([
+      taskRepo.findTaskById(taskId),
+      practiceRepo.findPractice(practiceId),
+    ]);
+    return { task, practice };
   }
-  const title = buildPracticePageTitle("writing", task, practice);
-  const description = buildPracticeMetaDescription("writing", task, practice);
-  const url = absoluteUrl(practicePath("writing", practiceId, taskId));
-  return {
-    title,
-    description,
-    robots: { index: false, follow: true },
-    alternates: { canonical: url },
-    openGraph: {
-      title,
-      description,
-      url,
-      siteName: "CELPIPPRACTICETEST",
-      type: "website",
+);
+
+type SlugPageProps = { params: Promise<{ slug: string[] }> };
+
+async function writingTaskPickerPage(taskId: string) {
+  const taskRepo = new TaskRepository(documentsClient);
+  const task: TTaskSchemaDto | null = await taskRepo.findTaskById(taskId);
+  if (!task || task.category !== "writing") {
+    redirect("/practice-overview", RedirectType.replace);
+  }
+
+  const practiceRepo = new PracticeRepository(documentsClient);
+  const hybridUser = await getHybridCurrentUser();
+  const user = hybridUser?.user ?? null;
+  const practices = await practiceRepo.getPracticeNavList(
+    {
+      type: "WRITING",
+      taskId: new ObjectId(taskId) as unknown as string,
     },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-    },
-  };
+    0,
+    200
+  );
+
+  let completedPracticeId: string[] = [];
+  if (user) {
+    const writingAnswerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
+    completedPracticeId = await writingAnswerRepo.findAnswersByPracticeIdsAndUser(
+      practices.items.map((p) => p.id),
+      user.id
+    );
+  }
+
+  return (
+    <Box
+      component="main"
+      sx={{
+        bgcolor: "#F2F6FF",
+        minHeight: "100vh",
+        display: "flex",
+        width: 1,
+        justifyContent: "center",
+      }}
+    >
+      <Box sx={{ width: 1, maxWidth: 1280 }}>
+        <Typography
+          component="h1"
+          sx={{
+            position: "absolute",
+            width: "1px",
+            height: "1px",
+            p: 0,
+            m: "-1px",
+            overflow: "hidden",
+            clip: "rect(0, 0, 0, 0)",
+            whiteSpace: "nowrap",
+            border: 0,
+          }}
+        >
+          CELPIP Writing Practice
+        </Typography>
+        <WritingPractice
+          showHeader={true}
+          allPractices={practices.items}
+          selectedPractice={null}
+          task={task}
+          completedPracticeId={completedPracticeId}
+          routeTaskId={taskId}
+        />
+      </Box>
+    </Box>
+  );
 }
 
-export default async function WritingPracticeSubPage({ params }: PageProps) {
-  const { practiceId, taskId } = await params;
+async function writingPracticeSessionPage(practiceId: string, taskId: string) {
   const taskRepo = new TaskRepository(documentsClient);
   const practiceRepo = new PracticeRepository(documentsClient);
 
   const [task, practices, selectedPractice, hybridUser] = await Promise.all([
     taskRepo.findTaskById(taskId),
-    practiceRepo.getAllPractice(
+    practiceRepo.getPracticeNavList(
       {
         type: "WRITING",
         taskId: new ObjectId(taskId) as unknown as string,
@@ -183,4 +238,50 @@ export default async function WritingPracticeSubPage({ params }: PageProps) {
       </Box>
     </Box>
   );
+}
+
+export async function generateMetadata({ params }: SlugPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const parsed = parsePracticeSlug(slug);
+  if (parsed?.kind === "task") {
+    return skillHubPageMetadata(
+      "writing",
+      parsed.taskId,
+      writingMetadataBase.title,
+      writingMetadataBase.description
+    );
+  }
+  if (parsed?.kind === "practice") {
+    const { task, practice } = await loadWritingTaskAndPractice(
+      parsed.practiceId,
+      parsed.taskId
+    );
+    if (!task || !practice) {
+      return { title: "Writing practice" };
+    }
+    const title = buildPracticePageTitle("writing", task, practice);
+    const description = buildPracticeMetaDescription("writing", task, practice);
+    const url = absoluteUrl(practicePath("writing", parsed.practiceId, parsed.taskId));
+    return {
+      title,
+      description,
+      robots: { index: false, follow: true },
+      alternates: { canonical: url },
+      openGraph: { title, description, url, siteName: "CELPIPPRACTICETEST", type: "website" },
+      twitter: { card: "summary_large_image", title, description },
+    };
+  }
+  return { title: "Writing practice" };
+}
+
+export default async function WritingSlugPage({ params }: SlugPageProps) {
+  const { slug } = await params;
+  const parsed = parsePracticeSlug(slug);
+  if (parsed?.kind === "task") {
+    return writingTaskPickerPage(parsed.taskId);
+  }
+  if (parsed?.kind === "practice") {
+    return writingPracticeSessionPage(parsed.practiceId, parsed.taskId);
+  }
+  redirect("/practice-overview", RedirectType.replace);
 }

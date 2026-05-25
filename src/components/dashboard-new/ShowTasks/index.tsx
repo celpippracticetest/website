@@ -17,7 +17,7 @@ import {
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import { categoryToSkillRoute, practicePath } from "@/lib/practiceRoutes";
+import { categoryToSkillRoute, practicePath, taskPickerPath } from "@/lib/practiceRoutes";
 
 export type ShowTasksTaskRow = {
   id: string;
@@ -57,7 +57,9 @@ const ShowTasks = ({ tasks }: { tasks: TaskSection[] }) => {
     if (!isMobile) {
       fetchPractices(selectedTask);
     } else {
-      setRedirectUrl(selectedTask?.category + "?taskId=" + selectedTask.id);
+      setRedirectUrl(
+        taskPickerPath(categoryToSkillRoute(selectedTask.category), selectedTask.id)
+      );
     }
     return () => {
       setSelectedTask(null);

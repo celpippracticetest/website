@@ -2,6 +2,7 @@ import React from "react";
 import dynamic from "next/dynamic";
 import { SkillPageContent } from "@/data/skill-pages-content";
 import Link from "next/link";
+import { taskPickerPath, type SkillRoute } from "@/lib/practiceRoutes";
 import Image from "next/image";
 import ExamSectionCard from "../pages/landing/ExamSectionCard";
 import SvgListening from "../icons/Listening";
@@ -104,9 +105,10 @@ const SkillLandingPage: React.FC<SkillLandingPageProps> = ({
               return num === task.id;
             });
 
-            const href = realTask
-              ? `/${skillType}?taskId=${realTask.id}`
-              : `/${skillType}?taskId=${task.id}`;
+            const href = taskPickerPath(
+              skillType as SkillRoute,
+              realTask ? realTask.id : task.id
+            );
 
             return (
               <Link

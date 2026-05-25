@@ -19,9 +19,13 @@ import {
   buildPracticePageTitle,
 } from "@/lib/practiceSeoCopy";
 import { practicePath } from "@/lib/practiceRoutes";
+import { skillHubPageMetadata } from "@/lib/skillHubPageMetadata";
+import { parsePracticeSlug } from "@/lib/parsePracticeSlug";
 
-type PageProps = {
-  params: Promise<{ practiceId: string; taskId: string }>;
+const listeningMetadataBase = {
+  title: "CELPIP Practice Exam: Free CELPIP Listening Practice Test",
+  description:
+    "Free CELPIP practice test and sample test for Listening: authentic audio, timed tasks, and review. Build note-taking, accuracy, and exam-day confidence.",
 };
 
 const loadListeningTaskAndPractice = cache(
@@ -36,37 +40,81 @@ const loadListeningTaskAndPractice = cache(
   }
 );
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { practiceId, taskId } = await params;
-  const { task, practice } = await loadListeningTaskAndPractice(practiceId, taskId);
-  if (!task || !practice) {
-    return { title: "Listening practice" };
+type SlugPageProps = { params: Promise<{ slug: string[] }> };
+
+async function listeningTaskPickerPage(taskId: string) {
+  const taskRepo = new TaskRepository(documentsClient);
+  const task: TTaskSchemaDto | null = await taskRepo.findTaskById(taskId);
+  if (!task || task.category !== "listening") {
+    redirect("/practice-overview", RedirectType.replace);
   }
-  const title = buildPracticePageTitle("listening", task, practice);
-  const description = buildPracticeMetaDescription("listening", task, practice);
-  const url = absoluteUrl(practicePath("listening", practiceId, taskId));
-  return {
-    title,
-    description,
-    robots: { index: false, follow: true },
-    alternates: { canonical: url },
-    openGraph: {
-      title,
-      description,
-      url,
-      siteName: "CELPIPPRACTICETEST",
-      type: "website",
+
+  const practiceRepo = new PracticeRepository(documentsClient);
+  const hybridUser = await getHybridCurrentUser();
+  const user = hybridUser?.user ?? null;
+  const practices = await practiceRepo.getPracticeNavList(
+    {
+      type: "LISTENING",
+      taskId: new ObjectId(taskId) as unknown as string,
     },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-    },
-  };
+    0,
+    200
+  );
+
+  let completedPractice: string[] = [];
+  if (user) {
+    const listeningAndReadingAnswerRepo =
+      new ListeningAndReadingAnswerRepository(documentsClient);
+    completedPractice =
+      await listeningAndReadingAnswerRepo.findAllTaskIdsByTaskAndUser(
+        task.id,
+        user.id
+      );
+  }
+
+  return (
+    <Box
+      component="main"
+      sx={{
+        bgcolor: "#F2F6FF",
+        minHeight: "100vh",
+        display: "flex",
+        width: 1,
+        justifyContent: "center",
+      }}
+    >
+      <Box sx={{ width: 1, maxWidth: 1280 }}>
+        <Typography
+          component="h1"
+          sx={{
+            position: "absolute",
+            width: "1px",
+            height: "1px",
+            p: 0,
+            m: "-1px",
+            overflow: "hidden",
+            clip: "rect(0, 0, 0, 0)",
+            whiteSpace: "nowrap",
+            border: 0,
+          }}
+        >
+          CELPIP Listening Practice
+        </Typography>
+        <ListeningPractice
+          showHeader={true}
+          allPractices={practices.items}
+          selectedPractice={null}
+          task={task}
+          previousAnswer={null}
+          completedPractice={completedPractice}
+          routeTaskId={taskId}
+        />
+      </Box>
+    </Box>
+  );
 }
 
-export default async function ListeningPracticeSubPage({ params }: PageProps) {
-  const { practiceId, taskId } = await params;
+async function listeningPracticeSessionPage(practiceId: string, taskId: string) {
   const practiceRepo = new PracticeRepository(documentsClient);
 
   const [{ task, practice: selectedPracticeRaw }, practices, hybridUser] =
@@ -182,4 +230,50 @@ export default async function ListeningPracticeSubPage({ params }: PageProps) {
       </Box>
     </Box>
   );
+}
+
+export async function generateMetadata({ params }: SlugPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const parsed = parsePracticeSlug(slug);
+  if (parsed?.kind === "task") {
+    return skillHubPageMetadata(
+      "listening",
+      parsed.taskId,
+      listeningMetadataBase.title,
+      listeningMetadataBase.description
+    );
+  }
+  if (parsed?.kind === "practice") {
+    const { task, practice } = await loadListeningTaskAndPractice(
+      parsed.practiceId,
+      parsed.taskId
+    );
+    if (!task || !practice) {
+      return { title: "Listening practice" };
+    }
+    const title = buildPracticePageTitle("listening", task, practice);
+    const description = buildPracticeMetaDescription("listening", task, practice);
+    const url = absoluteUrl(practicePath("listening", parsed.practiceId, parsed.taskId));
+    return {
+      title,
+      description,
+      robots: { index: false, follow: true },
+      alternates: { canonical: url },
+      openGraph: { title, description, url, siteName: "CELPIPPRACTICETEST", type: "website" },
+      twitter: { card: "summary_large_image", title, description },
+    };
+  }
+  return { title: "Listening practice" };
+}
+
+export default async function ListeningSlugPage({ params }: SlugPageProps) {
+  const { slug } = await params;
+  const parsed = parsePracticeSlug(slug);
+  if (parsed?.kind === "task") {
+    return listeningTaskPickerPage(parsed.taskId);
+  }
+  if (parsed?.kind === "practice") {
+    return listeningPracticeSessionPage(parsed.practiceId, parsed.taskId);
+  }
+  redirect("/practice-overview", RedirectType.replace);
 }

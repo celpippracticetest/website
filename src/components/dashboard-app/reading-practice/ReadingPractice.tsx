@@ -1,5 +1,5 @@
 "use client";
-import { TPracticeDto } from "@/models/practice.model";
+import { TPracticeDto, TPracticeNavItem } from "@/models/practice.model";
 import { useSearchParams } from "next/navigation";
 import ReadingPracticeView from "./ReadingPracticeView";
 import { TTaskSchemaDto } from "@/models/tasks.model";
@@ -10,7 +10,7 @@ import { useEffect } from "react";
 
 interface ReadingPracticeProps {
   showHeader?: boolean;
-  allPractices: TPracticeDto[];
+  allPractices: TPracticeNavItem[];
   selectedPractice: TPracticeDto | null;
   task: TTaskSchemaDto;
   previousAnswer: TListeningAndReadingAnswerDto | null;
@@ -48,8 +48,10 @@ const ReadingPractice = ({
     router.push("/practice-overview");
   };
 
-  return selectedPractice ? (
-    <div className="flex flex-col mx-auto  w-full max-w-[1280px] pb-[200px]">
+  return (
+    <div className="animate-fadeIn space-y-6 md:space-y-8 px-[16px] screen744:!px-0">
+      {selectedPractice ? (
+    <div className="flex flex-col mx-auto w-full max-w-[1280px] pb-[200px]">
       <ReadingPracticeView
         practice={selectedPractice}
         task={task}
@@ -62,14 +64,17 @@ const ReadingPractice = ({
         hideLegacyBreadcrumb={Boolean(routePracticeId)}
       />
     </div>
-  ) : (
+      ) : (
     <ListeningTaskView
       allPractices={allPractices}
       task={task}
       completedPractice={completedPractice}
       title={"Reading"}
+      selectedTaskId={selectedTaskId}
       hideHeader={hideTaskPickerHeader}
     />
+      )}
+    </div>
   );
 };
 

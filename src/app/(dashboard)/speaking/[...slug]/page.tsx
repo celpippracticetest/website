@@ -19,14 +19,17 @@ import {
 } from "@/lib/practiceSeoCopy";
 import { practicePath } from "@/lib/practiceRoutes";
 import { captureException } from "@/lib/sentry-logger";
+import { skillHubPageMetadata } from "@/lib/skillHubPageMetadata";
+import { parsePracticeSlug } from "@/lib/parsePracticeSlug";
 
-/** Strip non-JSON values before passing Mongo/Supabase DTOs into client components. */
 function serializeForClient<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-type PageProps = {
-  params: Promise<{ practiceId: string; taskId: string }>;
+const speakingMetadataBase = {
+  title: "CELPIP Practice Exam: Free CELPIP Speaking Practice Test",
+  description:
+    "CELPIP practice exam for Speaking: timed prompts, AI scoring, and tips for fluency. Train under realistic conditions before your real test.",
 };
 
 const loadSpeakingTaskAndPractice = cache(
@@ -41,52 +44,115 @@ const loadSpeakingTaskAndPractice = cache(
   }
 );
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { practiceId, taskId } = await params;
-  const { task, practice } = await loadSpeakingTaskAndPractice(practiceId, taskId);
-  if (!task || !practice) {
-    return { title: "Speaking practice" };
+type SlugPageProps = { params: Promise<{ slug: string[] }> };
+
+async function speakingTaskPickerPage(taskId: string) {
+  const taskRepo = new TaskRepository(documentsClient);
+  const task: TTaskSchemaDto | null = await taskRepo.findTaskById(taskId);
+  if (!task || task.category !== "speaking") {
+    redirect("/practice-overview", RedirectType.replace);
   }
-  const title = buildPracticePageTitle("speaking", task, practice);
-  const description = buildPracticeMetaDescription("speaking", task, practice);
-  const url = absoluteUrl(practicePath("speaking", practiceId, taskId));
-  return {
-    title,
-    description,
-    robots: { index: false, follow: true },
-    alternates: { canonical: url },
-    openGraph: {
-      title,
-      description,
-      url,
-      siteName: "CELPIPPRACTICETEST",
-      type: "website",
+
+  const practiceRepo = new PracticeRepository(documentsClient);
+  const hybridUser = await getHybridCurrentUser();
+  const user = hybridUser?.user ?? null;
+  const practices = await practiceRepo.getPracticeNavList(
+    {
+      type: "SPEAKING",
+      taskId: new ObjectId(taskId) as unknown as string,
     },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-    },
+    0,
+    200
+  );
+
+  let completedPracticeId: string[] = [];
+  if (user) {
+    const writingAnswerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
+    completedPracticeId = await writingAnswerRepo.findAnswersByPracticeIdsAndUser(
+      practices.items.map((p) => p.id),
+      user.id
+    );
+  }
+
+  const strategyBodySx = {
+    mt: 2,
+    fontSize: 15,
+    lineHeight: "24px",
+    color: "#526071",
   };
+
+  return (
+    <Box
+      component="main"
+      sx={{
+        bgcolor: "#F2F6FF",
+        minHeight: "100vh",
+        display: "flex",
+        width: 1,
+        justifyContent: "center",
+      }}
+    >
+      <Box sx={{ width: 1, maxWidth: 1280 }}>
+        <Typography
+          component="h1"
+          sx={{
+            position: "absolute",
+            width: "1px",
+            height: "1px",
+            p: 0,
+            m: "-1px",
+            overflow: "hidden",
+            clip: "rect(0, 0, 0, 0)",
+            whiteSpace: "nowrap",
+            border: 0,
+          }}
+        >
+          CELPIP Speaking Practice
+        </Typography>
+        <SpeakingPractice
+          showHeader={true}
+          allPractices={practices.items}
+          selectedPractice={null}
+          task={task}
+          completedPracticeId={completedPracticeId}
+          routeTaskId={taskId}
+        />
+        {!user && (
+          <Box component="section" sx={{ px: 2, pb: 5 }}>
+            <Typography component="h2" sx={{ fontSize: 22, fontWeight: 600, color: "#37465C" }}>
+              CELPIP Speaking practice strategy
+            </Typography>
+            <Typography component="p" sx={strategyBodySx}>
+              Improve Speaking scores by using clear structure, natural pacing, and relevant
+              supporting details for each task prompt.
+            </Typography>
+            <Typography component="p" sx={strategyBodySx}>
+              Practice with a timer, then review pronunciation clarity, grammar control, and idea
+              development to make targeted improvements before the next response.
+            </Typography>
+          </Box>
+        )}
+      </Box>
+    </Box>
+  );
 }
 
-export default async function SpeakingPracticeSubPage({ params }: PageProps) {
-  const { practiceId, taskId } = await params;
+async function speakingPracticeSessionPage(practiceId: string, taskId: string) {
   const practiceRepo = new PracticeRepository(documentsClient);
 
   const [{ task, practice: selectedPractice }, practices, hybridUser] =
     await Promise.all([
-    loadSpeakingTaskAndPractice(practiceId, taskId),
-    practiceRepo.getPracticeNavList(
-      {
-        type: "SPEAKING",
-        taskId: new ObjectId(taskId) as unknown as string,
-      },
-      0,
-      200
-    ),
-    getHybridCurrentUser(),
-  ]);
+      loadSpeakingTaskAndPractice(practiceId, taskId),
+      practiceRepo.getPracticeNavList(
+        {
+          type: "SPEAKING",
+          taskId: new ObjectId(taskId) as unknown as string,
+        },
+        0,
+        200
+      ),
+      getHybridCurrentUser(),
+    ]);
 
   if (!task) {
     redirect("/practice-overview", RedirectType.replace);
@@ -222,4 +288,50 @@ export default async function SpeakingPracticeSubPage({ params }: PageProps) {
       </Box>
     </Box>
   );
+}
+
+export async function generateMetadata({ params }: SlugPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const parsed = parsePracticeSlug(slug);
+  if (parsed?.kind === "task") {
+    return skillHubPageMetadata(
+      "speaking",
+      parsed.taskId,
+      speakingMetadataBase.title,
+      speakingMetadataBase.description
+    );
+  }
+  if (parsed?.kind === "practice") {
+    const { task, practice } = await loadSpeakingTaskAndPractice(
+      parsed.practiceId,
+      parsed.taskId
+    );
+    if (!task || !practice) {
+      return { title: "Speaking practice" };
+    }
+    const title = buildPracticePageTitle("speaking", task, practice);
+    const description = buildPracticeMetaDescription("speaking", task, practice);
+    const url = absoluteUrl(practicePath("speaking", parsed.practiceId, parsed.taskId));
+    return {
+      title,
+      description,
+      robots: { index: false, follow: true },
+      alternates: { canonical: url },
+      openGraph: { title, description, url, siteName: "CELPIPPRACTICETEST", type: "website" },
+      twitter: { card: "summary_large_image", title, description },
+    };
+  }
+  return { title: "Speaking practice" };
+}
+
+export default async function SpeakingSlugPage({ params }: SlugPageProps) {
+  const { slug } = await params;
+  const parsed = parsePracticeSlug(slug);
+  if (parsed?.kind === "task") {
+    return speakingTaskPickerPage(parsed.taskId);
+  }
+  if (parsed?.kind === "practice") {
+    return speakingPracticeSessionPage(parsed.practiceId, parsed.taskId);
+  }
+  redirect("/practice-overview", RedirectType.replace);
 }

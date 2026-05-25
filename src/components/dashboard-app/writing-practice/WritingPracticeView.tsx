@@ -5,7 +5,7 @@ import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
 import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
 import WorkspacePremium from "@mui/icons-material/WorkspacePremium";
 import ArrowBack from "@mui/icons-material/ArrowBack";
-import { TPracticeDto } from "@/models/practice.model";
+import { TPracticeDto, TPracticeNavItem } from "@/models/practice.model";
 import ListeningSideMenu from "../listening-practice/ListeningSideMenu";
 import ListeningAnswerList from "./components/ListeningAnswers";
 import { TPassage } from "@/models/listenExam.model";
@@ -59,7 +59,7 @@ const SvgFreePlan = dynamic(
 interface WritingPracticeViewProps {
   practice: TPracticeDto;
   task: TTaskSchemaDto;
-  allPractices: TPracticeDto[];
+  allPractices: TPracticeNavItem[];
   selectedPracticeId: string | null;
   selectedTaskId: string | null;
   completedPracticeId: string[];
