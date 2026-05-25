@@ -1,6 +1,7 @@
 import type { TPracticeDto } from "@/models/practice.model";
 import type { TTaskSchemaDto } from "@/models/tasks.model";
 import type { SkillRoute } from "@/lib/practiceRoutes";
+import { absoluteAppUrl } from "@/lib/appBaseUrl";
 
 const SKILL_LABEL: Record<SkillRoute, string> = {
   speaking: "Speaking",
@@ -67,6 +68,5 @@ export function buildPracticeMetaDescription(
 }
 
 export function absoluteUrl(path: string): string {
-  const base = process.env.APP_BASE_URL || "https://celpippracticetest.com";
-  return new URL(path, base.endsWith("/") ? base : `${base}/`).toString();
+  return absoluteAppUrl(path);
 }

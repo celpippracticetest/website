@@ -86,9 +86,10 @@ type TListeningAndReadingAnswerDto = z.infer<typeof ListeningAndReadingAnswerDto
 /** Lean `answers` row (e.g. from `app_documents`) → DTO. */
 export function writingAnswerDtoFromLeanDocument(doc: unknown): TWritingAnswerDto {
   const row = doc as TWritingAnswer;
+  const { _id, ...rest } = row;
   return WritingAnswerDto.parse({
-    ...row,
-    id: row._id.toHexString(),
+    ...rest,
+    id: _id.toHexString(),
   });
 }
 

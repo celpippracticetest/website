@@ -18,6 +18,12 @@ import {
   buildPracticePageTitle,
 } from "@/lib/practiceSeoCopy";
 import { practicePath } from "@/lib/practiceRoutes";
+import { captureException } from "@/lib/sentry-logger";
+
+/** Strip non-JSON values before passing Mongo/Supabase DTOs into client components. */
+function serializeForClient<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
 
 type PageProps = {
   params: Promise<{ practiceId: string; taskId: string }>;
@@ -89,22 +95,23 @@ export default async function SpeakingPracticeSubPage({ params }: PageProps) {
     redirect("/practice-overview", RedirectType.replace);
   }
   const user = hybridUser?.user ?? null;
+  const firstPassage = selectedPractice.passages?.[0];
   if (
+    firstPassage &&
     !hasPaidPracticeAccess(
       user?.publicMetadata.plan as string | undefined,
       user?.publicMetadata.purchaseDate as string | undefined
     ) &&
     !selectedPractice.isFree
   ) {
-    selectedPractice.passages[0].body =
-      selectedPractice.passages[0].body?.slice(0, 150) +
+    firstPassage.body =
+      firstPassage.body?.slice(0, 150) +
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
-    selectedPractice.passages[0].sampleResponse =
-      selectedPractice.passages[0].sampleResponse?.map((item) => {
-        item.body =
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
-        return item;
-      });
+    firstPassage.sampleResponse = firstPassage.sampleResponse?.map((item) => ({
+      ...item,
+      body:
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+    }));
   }
 
   let completedPracticeId: string[] = [];
@@ -120,22 +127,35 @@ export default async function SpeakingPracticeSubPage({ params }: PageProps) {
     : { isSignedIn: false as const, plan: "free" as const };
 
   if (user) {
-    const writingAnswerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
-    const [completed, answersPage] = await Promise.all([
-      writingAnswerRepo.findCompletedPracticeIdsByTaskAndUser(
-        taskId,
-        user.id,
-        "SPEAKING"
-      ),
-      writingAnswerRepo.getAllWritingAnswers(
-        { userId: user.id, practiceId, type: "SPEAKING" },
-        0,
-        30
-      ),
-    ]);
-    completedPracticeId = completed;
-    initialSpeakingAnswers = answersPage.items;
+    try {
+      const writingAnswerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
+      const [completed, answersPage] = await Promise.all([
+        writingAnswerRepo.findCompletedPracticeIdsByTaskAndUser(
+          taskId,
+          user.id,
+          "SPEAKING"
+        ),
+        writingAnswerRepo.getAllWritingAnswers(
+          { userId: user.id, practiceId, type: "SPEAKING" },
+          0,
+          30
+        ),
+      ]);
+      completedPracticeId = completed;
+      initialSpeakingAnswers = answersPage.items;
+    } catch (err) {
+      captureException(err, {
+        component: "SpeakingPracticeSubPage",
+        action: "load_user_answers",
+        metadata: { practiceId, taskId, userId: user.id },
+      });
+    }
   }
+
+  const clientPractice = serializeForClient(selectedPractice);
+  const clientTask = serializeForClient(task);
+  const clientPractices = serializeForClient(practices.items);
+  const clientInitialAnswers = serializeForClient(initialSpeakingAnswers);
 
   const strategyBodySx = {
     mt: 2,
@@ -156,14 +176,14 @@ export default async function SpeakingPracticeSubPage({ params }: PageProps) {
       }}
     >
       <Box sx={{ width: 1, maxWidth: 1280 }}>
-        <PracticeSubChrome skill="speaking" task={task} practice={selectedPractice}>
+        <PracticeSubChrome skill="speaking" task={clientTask} practice={clientPractice}>
           <SpeakingPractice
             showHeader={true}
-            allPractices={practices.items}
-            selectedPractice={selectedPractice}
-            task={task}
+            allPractices={clientPractices}
+            selectedPractice={clientPractice}
+            task={clientTask}
             completedPracticeId={completedPracticeId}
-            initialSpeakingAnswers={initialSpeakingAnswers}
+            initialSpeakingAnswers={clientInitialAnswers}
             initialAuth={initialAuth}
             routePracticeId={practiceId}
             routeTaskId={taskId}

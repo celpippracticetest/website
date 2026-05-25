@@ -14,11 +14,11 @@ export class TaskRepository {
   }
 
   private convertFromEntity(taskEntity: TTaskSchema) {
-    const task: TTaskSchemaDto = {
-      id: taskEntity._id.toHexString(),
-      ...taskEntity,
-    };
-    return TaskSchemaDto.parse(task);
+    const { _id, ...rest } = taskEntity;
+    return TaskSchemaDto.parse({
+      id: _id.toHexString(),
+      ...rest,
+    });
   }
   async findTaskById(id: string): Promise<TTaskSchemaDto | null> {
     const entity = await this.getTaskCollection().findOne({ _id: new ObjectId(id) });

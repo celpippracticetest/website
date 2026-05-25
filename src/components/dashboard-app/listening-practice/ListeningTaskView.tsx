@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { TPracticeDto } from "@/models/practice.model";
+import { TPracticeDto, TPracticeNavItem } from "@/models/practice.model";
 import { useSearchParams } from "next/navigation";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { useRouter } from "nextjs-toploader/app";
@@ -11,8 +11,23 @@ import SvgLock from "@/components/icons/Lock";
 import SvgConfirmCheck from "@/components/icons/ConfirmCheck";
 import { categoryToSkillRoute, practicePath } from "@/lib/practiceRoutes";
 
+type PracticeListItem = TPracticeNavItem | Pick<TPracticeDto, "id" | "name" | "isFree" | "title">;
+
+function practiceLabel(p: PracticeListItem): string {
+  const title = "title" in p ? p.title?.trim() : undefined;
+  return title || p.name?.trim() || "Practice";
+}
+
+function truncateLabel(label: string, maxWords: number): { text: string; showEllipsis: boolean } {
+  const words = label.split(/\s+/).filter(Boolean);
+  if (words.length <= maxWords) {
+    return { text: label, showEllipsis: false };
+  }
+  return { text: words.slice(0, maxWords).join(" "), showEllipsis: true };
+}
+
 interface ListeningTaskViewProps {
-  allPractices: TPracticeDto[];
+  allPractices: PracticeListItem[];
   completedPractice: string[];
   task: TTaskSchemaDto;
   title: string;
@@ -48,7 +63,7 @@ const ListeningTaskView = ({
         {!hideHeader && (
           <div className="flex flex-col px-6 pt-6">
             <p className="text-sm font-normal text-[#76808F]">
-              {title} - {task.taskNumber.replace("Task #", "Part")}
+              {title} - {(task.taskNumber ?? "").replace("Task #", "Part")}
             </p>
             <h2 className="pt-2 text-base font-semibold leading-5 tracking-wide text-[#212E42]">
               {task.name}
@@ -61,7 +76,14 @@ const ListeningTaskView = ({
               Loading…
             </div>
           ) : (
-            allPractices.map((p: TPracticeDto, index: number) => (
+            allPractices.map((p, index: number) => {
+              const label = practiceLabel(p);
+              const words = label.split(/\s+/).filter(Boolean);
+              const mobileMax = words.includes("a") ? 4 : 3;
+              const mobile = truncateLabel(label, mobileMax);
+              const desktop = truncateLabel(label, 5);
+
+              return (
               <a
                 key={p.id || index}
                 className="relative flex h-12 w-full cursor-pointer items-center justify-start gap-1 rounded-xl bg-white p-3 shadow-[0px_4px_10px_0px_#0000000F]"
@@ -78,16 +100,12 @@ const ListeningTaskView = ({
                 )}
 
                 <div className="flex grow text-sm font-normal leading-6 screen744:!hidden">
-                  {index + 1}.{" "}
-                  {p.title
-                    .split(" ")
-                    .slice(0, p.title.split(" ").includes("a") ? 4 : 3)
-                    .join(" ")}
-                  {p.title.split(" ").length > 5 ? "..." : ""}
+                  {index + 1}. {mobile.text}
+                  {words.length > 5 ? "..." : ""}
                 </div>
                 <div className="hidden grow text-sm font-normal leading-6 screen744:!flex">
-                  {index + 1}. {p.title.split(" ").slice(0, 5).join(" ")}
-                  {p.title.split(" ").length > 4 ? "..." : ""}
+                  {index + 1}. {desktop.text}
+                  {words.length > 4 ? "..." : ""}
                 </div>
                 {isLoaded &&
                   ((user &&
@@ -104,7 +122,8 @@ const ListeningTaskView = ({
                     <SvgLock className="shrink-0" />
                   ))}
               </a>
-            ))
+            );
+            })
           )}
         </div>
       </div>
