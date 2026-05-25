@@ -89,16 +89,7 @@ export default function OnlineUsersCount({
     };
   }, [refreshInterval]);
 
-  const ONLINE_FLOOR = 25;
-  const SIGNUPS_FLOOR = 10;
-  const PRACTICING_FLOOR = 15;
-
-  const rawStats = data?.stats ?? { onlineUsers: 0, recentSignups: 0, practicingUsers: 0, recentPractices: 0 };
-  const stats = {
-    ...rawStats,
-    onlineUsers: Math.max(rawStats.onlineUsers, ONLINE_FLOOR),
-    recentSignups: Math.max(rawStats.recentSignups, SIGNUPS_FLOOR),
-  };
+  const stats = data?.stats ?? { onlineUsers: 0, recentSignups: 0, practicingUsers: 0, recentPractices: 0 };
 
   // Get individual skill counts from skillBreakdown (REAL data from API)
   const speakingCount = stats.skillBreakdown?.Speaking || 0;
@@ -106,10 +97,7 @@ export default function OnlineUsersCount({
   const listeningCount = stats.skillBreakdown?.Listening || 0;
   const readingCount = stats.skillBreakdown?.Reading || 0;
 
-  const totalPracticing = Math.max(
-    speakingCount + writingCount + listeningCount + readingCount,
-    PRACTICING_FLOOR,
-  );
+  const totalPracticing = speakingCount + writingCount + listeningCount + readingCount;
 
   // Rotating messages with icons (define outside conditional for hook stability)
   const messages = [
@@ -156,9 +144,10 @@ export default function OnlineUsersCount({
     return () => clearInterval(interval);
   }, [messages.length, variant]);
 
-  if (isLoading) {
-    return null;
-  }
+  if (isLoading) return null;
+
+  // Hide entirely when GA4 has no meaningful data at all
+  if (!stats.onlineUsers && !stats.recentSignups && !totalPracticing) return null;
 
   // Marketing variant - Show all stats with motivation (landing section style)
   if (variant === "marketing") {

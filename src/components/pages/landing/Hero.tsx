@@ -14,7 +14,7 @@ import { SvgLearning } from "@/components/icons";
 import SvgWord from "@/components/icons/Word";
 import { cn } from "@/lib/utils";
 import { useHomepageCta } from "@/hooks/useHomepageCta";
-import { useOnlineUsersLiveStat } from "@/hooks/useRecentSignupsLiveStat";
+import { useRecentVisitsLiveStat } from "@/hooks/useRecentSignupsLiveStat";
 import { PricingUpgradeModalHeaderList } from "@/components/pages/pricing/PricingUpgradeModalHeaderList";
 import SvgPlus from "../../icons/Plus";
 import SvgArrowRight from "../../icons/ArrowRight";
@@ -89,7 +89,7 @@ const AVATAR_SRCS = [1, 2, 3, 4, 5].map(
   (i) => `https://i.pravatar.cc/128?u=celpip-hero-${i}`,
 );
 
-function HeroOnlineNow({ display }: { display: string | null }) {
+function HeroVisitsToday({ display }: { display: string | null }) {
   if (!display) {
     return (
       <div className="mt-6 h-[44px] animate-pulse rounded-xl bg-[#F4F7FF]" />
@@ -102,7 +102,7 @@ function HeroOnlineNow({ display }: { display: string | null }) {
         <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
       </span>
       <p className="text-sm font-semibold text-primary2">
-        {display}+ people studying right now
+        {display} visits today
       </p>
     </div>
   );
@@ -114,7 +114,7 @@ const Hero = () => {
     (state) => state,
   );
   const { href, label, shortLabel, trackClick } = useHomepageCta();
-  const { count: onlineCount, display: onlineDisplay } = useOnlineUsersLiveStat("", { floor: 25 });
+  const { count: visitsCount, display: visitsDisplay } = useRecentVisitsLiveStat("");
 
   useEffect(() => {
     const onScroll = () => {
@@ -176,7 +176,7 @@ const Hero = () => {
 
               <div className="mb-8 w-full max-w-[560px]">
                 <PricingUpgradeModalHeaderList
-                  visitsDisplay={onlineCount != null ? onlineDisplay : undefined}
+                  visitsDisplay={visitsCount != null ? visitsDisplay : undefined}
                   className="mx-auto screen744:mx-0"
                   itemTextClassName="text-text2 screen744:text-base"
                   emphasisTextClassName="font-semibold text-text2 screen744:text-base"
@@ -252,7 +252,7 @@ const Hero = () => {
                   ))}
                 </div>
 
-                <HeroOnlineNow display={onlineCount != null ? onlineDisplay : null} />
+                <HeroVisitsToday display={visitsCount != null ? visitsDisplay : null} />
               </div>
             </div>
           </div>

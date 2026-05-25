@@ -141,7 +141,7 @@ export function PricingUpgradeModalHeaderList({
               <span className="sr-only">Live — </span>
               Live
             </span>
-            <span>{visitsDisplay}+ people studying right now</span>
+            <span>{visitsDisplay} visits today</span>
           </span>
         </li>
       ) : signupDisplay != null ? (
