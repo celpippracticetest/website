@@ -17,6 +17,8 @@ import SvgArrowRight from "@/components/icons/ArrowRight";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { TWritingAnswerDto } from "@/models/answer";
 import LoginModal from "@/components/modal/LoginModal";
+import { PricingNavModal } from "@/components/pages/pricing/PricingNavModal";
+import { usePricingNavModal } from "@/hooks/usePricingNavModal";
 import { SupabaseAuthForm } from "@/components/auth/SupabaseAuthForm";
 import SvgRecording from "@/components/icons/Recording";
 import { ActivityLogger } from "@/lib/userActivity";
@@ -28,9 +30,6 @@ import TrophyModal from "@/components/modal/TrophyModal";
 import StatBadge from "@/components/shared/StatBadge";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
-import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
-import { StripeCheckoutDiscountBadge } from "@/components/checkout/StripeCheckoutDiscountBadge";
-import { getStripeCheckoutAutoDiscountLabel } from "@/lib/stripeCheckoutDiscountLabel";
 import { practicePath } from "@/lib/practiceRoutes";
 import type { SpeakingPracticeInitialAuth } from "./types";
 
@@ -98,7 +97,6 @@ const SpeakingPracticeView = ({
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignUpModal, setShowSignUpModal] = useState(false);
-  const [quickSubscribeAction, setQuickSubscribeAction] = useState("");
   const [pointsAwarded, setPointsAwarded] = useState(false);
   const [aiFeedbackPointsAwarded, setAiFeedbackPointsAwarded] = useState(false);
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
@@ -113,15 +111,6 @@ const SpeakingPracticeView = ({
     (user?.publicMetadata?.purchaseDate as string | undefined) ??
     initialAuth?.purchaseDate;
   const effectiveIsSignedIn = isLoaded ? isSignedIn : (initialAuth?.isSignedIn ?? false);
-  const stripeCheckoutDiscountLabel = useMemo(
-    () =>
-      effectiveIsSignedIn &&
-      quickSubscribeAction.includes("/api/checkout_session") &&
-      !quickSubscribeAction.includes("/guest")
-        ? getStripeCheckoutAutoDiscountLabel({ userPublicMetadata: user?.publicMetadata })
-        : null,
-    [effectiveIsSignedIn, quickSubscribeAction, user?.publicMetadata]
-  );
   const { addPoints } = useLeaguePoints();
   const {
     isModalOpen,
@@ -133,6 +122,8 @@ const SpeakingPracticeView = ({
   } = useTrophySystem();
   const freeUser = effectivePlan === "free";
   const noUser = authReady ? !effectiveIsSignedIn : false;
+  const { open: pricingModalOpen, setOpen: setPricingModalOpen, openPricingModal } =
+    usePricingNavModal();
   const router = useRouter();
   const [isPlaying] = useState(false);
   const [page, setPage] = useState("question");
@@ -161,32 +152,6 @@ const SpeakingPracticeView = ({
     useState(false);
   const [needsUserInteraction, setNeedsUserInteraction] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    if (!isLoaded) return;
-
-    (async () => {
-      try {
-        const res = await fetch("/api/plans/express-entry");
-        const data = (await res.json()) as {
-          plans?: Array<{ stripePriceId?: string }>;
-        };
-        if (!res.ok) return;
-        const stripePriceId = data.plans?.find((plan) => plan.stripePriceId)?.stripePriceId;
-        if (!stripePriceId || cancelled) return;
-        const checkoutBase = effectiveIsSignedIn
-          ? "/api/checkout_session"
-          : "/api/checkout_session/guest";
-        setQuickSubscribeAction(`${checkoutBase}?price=${encodeURIComponent(stripePriceId)}`);
-      } catch {
-        // Fall back to /pricing when quick checkout cannot be prepared.
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authReady, effectiveIsSignedIn]);
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
     let recordingTimer: NodeJS.Timeout | null = null;
@@ -228,7 +193,7 @@ const SpeakingPracticeView = ({
     if (time === 0) {
       if (freeAttempts === 0) {
         if (freeUser) {
-          router.push("/pricing");
+          openPricingModal();
         }
         if (noUser) {
           setShowSignUpModal(true);
@@ -366,7 +331,7 @@ const SpeakingPracticeView = ({
         return;
       }
       if (!shouldShowPractice) {
-        router.push("/pricing");
+        openPricingModal();
         return;
       }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -638,32 +603,15 @@ const SpeakingPracticeView = ({
                             if (noUser) {
                               setShowSignUpModal(true);
                             } else if (freeUser) {
-                              router.push("/pricing");
+                              openPricingModal();
                             } else {
                               setShowLoginModal(true);
                             }
                           }}
                         >
-                          Sign up free
+                          Upgrade to Pro
                           <SvgArrowRight />
                         </Button>
-                        <form
-                          action={quickSubscribeAction || "/pricing"}
-                          method={quickSubscribeAction ? "POST" : "GET"}
-                        >
-                          <CheckoutAttributionFields />
-                          <div className="relative">
-                            <StripeCheckoutDiscountBadge label={stripeCheckoutDiscountLabel} />
-                            <Button
-                              type="submit"
-                              variant="outline"
-                              className="flex w-full gap-[8px] text-white border-[#F79D65] items-center text-[14px] font-normal justify-center cursor-pointer rounded-[24px] bg-[#F79D65] hover:bg-[#ea8d53]"
-                            >
-                              Subscribe to continue
-                              <SvgArrowRight />
-                            </Button>
-                          </div>
-                        </form>
                       </div>
                     )}
                   </div>
@@ -924,7 +872,7 @@ const SpeakingPracticeView = ({
                             if (noUser) {
                               setShowSignUpModal(true);
                             } else if (freeUser) {
-                              router.push("/pricing");
+                              openPricingModal();
                             } else {
                               setShowLoginModal(true);
                             }
@@ -1090,6 +1038,7 @@ const SpeakingPracticeView = ({
         userPoints={userPoints}
         timeSpent={timeSpent}
       />
+      <PricingNavModal open={pricingModalOpen} onOpenChange={setPricingModalOpen} />
     </div>
   );
 };

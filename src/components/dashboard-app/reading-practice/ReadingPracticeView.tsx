@@ -16,6 +16,8 @@ import React from "react";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
 import LoginModal from "@/components/modal/LoginModal";
+import { PricingNavModal } from "@/components/pages/pricing/PricingNavModal";
+import { usePricingNavModal } from "@/hooks/usePricingNavModal";
 import { SupabaseAuthForm } from "@/components/auth/SupabaseAuthForm";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 import SvgArrowRight from "@/components/icons/ArrowRight";
@@ -72,6 +74,8 @@ const ReadingPracticeView = ({
   const noUser = isLoaded ? !isSignedIn : false;
   const [pointsAwarded, setPointsAwarded] = useState(false);
   const timerTime = practice.taskId === "67f168222f0ca7f9a751ed3d" ? 780 : 660;
+  const { open: pricingModalOpen, setOpen: setPricingModalOpen, openPricingModal } =
+    usePricingNavModal();
   const router = useRouter();
 
   useEffect(() => {
@@ -588,7 +592,7 @@ const ReadingPracticeView = ({
                               aria-label="Next testimonial"
                               onClick={() => {
                                 if (freeUser) {
-                                  router.push("/pricing");
+                                  openPricingModal();
                                 } else {
                                   setShowLoginModal(true);
                                 }
@@ -617,7 +621,7 @@ const ReadingPracticeView = ({
                             if (shouldShowPractice) {
                               handleAnswerSelect(questionId, answerId);
                             } else {
-                              router.push("/pricing");
+                              openPricingModal();
                             }
                           }}
                           selectedAnswers={selectedAnswers}
@@ -687,7 +691,7 @@ const ReadingPracticeView = ({
                                                             choice.id
                                                           );
                                                         } else {
-                                                          router.push("/pricing");
+                                                          openPricingModal();
                                                         }
                                                       }}
                                                     >
@@ -783,7 +787,7 @@ const ReadingPracticeView = ({
                                     answerId
                                   );
                                 } else {
-                                  router.push("/pricing");
+                                  openPricingModal();
                                 }
                               }}
                               selectedAnswers={selectedAnswers}
@@ -822,6 +826,7 @@ const ReadingPracticeView = ({
         userPoints={userPoints}
         timeSpent={timeSpent}
       />
+      <PricingNavModal open={pricingModalOpen} onOpenChange={setPricingModalOpen} />
     </div>
   );
 };

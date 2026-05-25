@@ -24,6 +24,8 @@ import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 // planDetails import removed
 
 import LoginModal from "@/components/modal/LoginModal";
+import { PricingNavModal } from "@/components/pages/pricing/PricingNavModal";
+import { usePricingNavModal } from "@/hooks/usePricingNavModal";
 import { SupabaseAuthForm } from "@/components/auth/SupabaseAuthForm";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
@@ -105,6 +107,8 @@ const WritingPracticeView = ({
   } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
+  const { open: pricingModalOpen, setOpen: setPricingModalOpen, openPricingModal } =
+    usePricingNavModal();
   const [showContinueModal, setShowContinueModal] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -460,7 +464,7 @@ const WritingPracticeView = ({
                             if (noUser) {
                               setShowSignUpModal(true);
                             } else if (freeUser) {
-                              router.push("/pricing");
+                              openPricingModal();
                             } else {
                               setShowLoginModal(true);
                             }
@@ -557,9 +561,9 @@ const WritingPracticeView = ({
                       value={text}
                       onChange={(e) => {
                         if (!user) {
-                          router.push("/pricing");
+                          openPricingModal();
                         } else if (!shouldShowPractice) {
-                          router.push("/pricing");
+                          openPricingModal();
                         }
                         const wordCount = e.target.value
                           .trim()
@@ -632,11 +636,11 @@ const WritingPracticeView = ({
                             className="cursor-pointer flex h-[40px] items-center justify-center text-white text-[14px] font-normal  rounded-[24px] bg-[#4A7DFF] w-full"
                             onClick={() => {
                               if (!user) {
-                                router.push("/pricing");
+                                openPricingModal();
                                 return;
                               }
                               if (!shouldShowPractice) {
-                                router.push("/pricing");
+                                openPricingModal();
                                 return;
                               }
                               if (!isSubmit && wordCount > 20) {
@@ -657,7 +661,7 @@ const WritingPracticeView = ({
                           disabled={progressBar > 0}
                           className="flex h-[40px] items-center justify-center text-white text-[14px] font-normal  rounded-[24px] bg-[#4A7DFF] w-full"
                           onClick={() => {
-                            router.push("/pricing");
+                            openPricingModal();
                           }}
                         >
                           <WorkspacePremium className="mr-2 h-4 w-4" />
@@ -830,6 +834,7 @@ const WritingPracticeView = ({
         userPoints={userPoints}
         timeSpent={timeSpent}
       />
+      <PricingNavModal open={pricingModalOpen} onOpenChange={setPricingModalOpen} />
     </div>
   );
 };

@@ -17,6 +17,8 @@ import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import LoginModal from "@/components/modal/LoginModal";
+import { PricingNavModal } from "@/components/pages/pricing/PricingNavModal";
+import { usePricingNavModal } from "@/hooks/usePricingNavModal";
 import { SupabaseAuthForm } from "@/components/auth/SupabaseAuthForm";
 import SvgChevronRight from "@/components/icons/ChevronRight";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
@@ -87,6 +89,8 @@ const ListeningPracticeView = ({
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
   const router = useRouter();
+  const { open: pricingModalOpen, setOpen: setPricingModalOpen, openPricingModal } =
+    usePricingNavModal();
   const [isPlaying] = useState(false);
   const [page, setPage] = useState("instructions");
   const [passageIndex, setPassageIndex] = useState(0);
@@ -548,7 +552,7 @@ const ListeningPracticeView = ({
                       if (noUser) {
                         setShowSignUpModal(true);
                       } else if (freeUser) {
-                        router.push("/pricing");
+                        openPricingModal();
                       } else {
                         setShowLoginModal(true);
                       }
@@ -738,6 +742,7 @@ const ListeningPracticeView = ({
         userPoints={userPoints}
         timeSpent={timeSpent}
       />
+      <PricingNavModal open={pricingModalOpen} onOpenChange={setPricingModalOpen} />
     </div>
   );
 };
