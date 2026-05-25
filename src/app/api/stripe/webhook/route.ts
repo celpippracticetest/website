@@ -15,6 +15,12 @@ import type { Plan } from "@/models/plans.model";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
 import { findOrCreateWebUserByEmail } from "@/lib/guestCheckoutAuth";
 import { persistStripeCustomerIdForUser } from "@/lib/resolveStripeCustomerId";
+import {
+  resolveUserProfileFromStripe,
+  grantPlusPlan,
+  revokePlusPlan,
+  upsertStripeSubscription,
+} from "@/lib/auth/supabase-user-admin";
 import { recordPartnerCommissionForSubscriber } from "@/lib/partner/recordPartnerCommissionForSubscriber";
 import {
   matchUsersCollectionByWebUserIds,
@@ -653,6 +659,26 @@ export async function POST(req: Request) {
         await persistStripeCustomerIdForUser(metadata.user_id, session.customer);
       }
 
+      // Supabase direct sync: grant plus plan (skip mock-exam one-time purchases)
+      if (metadata?.user_id && metadata.purchase_type !== "mock_exam") {
+        try {
+          const sbProfile = await resolveUserProfileFromStripe(
+            typeof session.customer === "string" ? session.customer : null,
+            metadata.user_id,
+            session.customer_details?.email,
+          );
+          if (sbProfile) {
+            await grantPlusPlan(sbProfile.supabaseAuthUserId, sbProfile.profileId);
+          }
+        } catch (sbErr) {
+          logger.error("checkout.completed: Supabase plan grant failed", {
+            component: "stripe_webhook",
+            action: "supabase_grant_plan_error",
+            metadata: { error: sbErr },
+          });
+        }
+      }
+
       if (metadata?.user_id) {
         // Get user metadata to check for any existing discounts
         const user = await authAdmin.users.getUser(metadata.user_id);
@@ -776,6 +802,11 @@ export async function POST(req: Request) {
             planRenewsAt: new Date(periodEnd * 1000).toISOString(),
             planExpiresAt: null,
           });
+        }
+
+        // Sync subscription row to Supabase PG
+        if (typeof session.customer === "string") {
+          await upsertStripeSubscription(subscription, session.customer).catch(() => undefined);
         }
       }
 
@@ -1027,6 +1058,30 @@ export async function POST(req: Request) {
                 planCancelled: false,
                 planExpiresAt: null,
               });
+
+              // Supabase direct sync
+              try {
+                const subCustomerId =
+                  typeof subscription.customer === "string"
+                    ? subscription.customer
+                    : (subscription.customer as { id?: string } | null)?.id ?? null;
+                const sbProfile = await resolveUserProfileFromStripe(
+                  subCustomerId,
+                  metadata.user_id,
+                );
+                if (sbProfile) {
+                  await grantPlusPlan(sbProfile.supabaseAuthUserId, sbProfile.profileId);
+                }
+                if (subCustomerId) {
+                  await upsertStripeSubscription(subscription, subCustomerId).catch(() => undefined);
+                }
+              } catch (sbErr) {
+                logger.error("subscription.updated: Supabase plan grant failed", {
+                  component: "stripe_webhook",
+                  action: "supabase_grant_plan_error",
+                  metadata: { error: sbErr },
+                });
+              }
             }
           }
         } catch (syncErr) {
@@ -1412,6 +1467,30 @@ export async function POST(req: Request) {
         checkoutRepo.updateStatus(checkout_id, "cancelled"),
         updateUserPublicMetadata(user_id, { plan: "free" }),
       ]);
+
+      // Supabase direct sync
+      try {
+        const delCustomerId =
+          typeof subscription.customer === "string"
+            ? subscription.customer
+            : (subscription.customer as { id?: string } | null)?.id ?? null;
+        const sbProfile = await resolveUserProfileFromStripe(
+          delCustomerId,
+          user_id,
+        );
+        if (sbProfile) {
+          await revokePlusPlan(sbProfile.supabaseAuthUserId, sbProfile.profileId);
+        }
+        if (delCustomerId) {
+          await upsertStripeSubscription(subscription, delCustomerId).catch(() => undefined);
+        }
+      } catch (sbErr) {
+        logger.error("subscription.deleted: Supabase plan revoke failed", {
+          component: "stripe_webhook",
+          action: "supabase_revoke_plan_error",
+          metadata: { error: sbErr },
+        });
+      }
 
       // Log subscription cancelled
       try {

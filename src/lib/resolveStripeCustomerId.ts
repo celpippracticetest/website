@@ -4,6 +4,7 @@ import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-brid
 import documentsClient from "@/lib/appDocumentsClient";
 import { stripe } from "@/lib/stripe";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
+import { getSql } from "@/lib/pg/pool";
 
 export function emailsFromAuthUser(user: {
   emailAddresses?: { emailAddress?: string | null }[];
@@ -34,23 +35,48 @@ export async function persistStripeCustomerIdForUser(
   userId: string,
   stripeCustomerId: string
 ): Promise<void> {
-  if (!documentsClient) return;
+  // MongoDB side (existing behaviour)
+  if (documentsClient) {
+    try {
+      const filter = userIdAppDocFilter(userId);
+      const insertKey =
+        "supabaseUserId" in filter
+          ? { supabaseUserId: userId }
+          : { clerkUserId: userId };
+      await documentsClient.db().collection("users").updateOne(
+        filter,
+        {
+          $set: { stripeCustomerId, updatedAt: new Date() },
+          $setOnInsert: { ...insertKey, createdAt: new Date() },
+        },
+        { upsert: true }
+      );
+    } catch {
+      // Non-fatal
+    }
+  }
+
+  // PostgreSQL side — populate user_profiles.stripe_customer_id so future
+  // Stripe webhook lookups can use the fast Tier-1 path.
   try {
-    const filter = userIdAppDocFilter(userId);
-    const insertKey =
-      "supabaseUserId" in filter
-        ? { supabaseUserId: userId }
-        : { clerkUserId: userId };
-    await documentsClient.db().collection("users").updateOne(
-      filter,
-      {
-        $set: { stripeCustomerId, updatedAt: new Date() },
-        $setOnInsert: { ...insertKey, createdAt: new Date() },
-      },
-      { upsert: true }
-    );
+    const sql = getSql();
+    if (isLikelySupabaseAuthUserId(userId)) {
+      await sql`
+        UPDATE public.user_profiles
+        SET stripe_customer_id = ${stripeCustomerId}, updated_at = NOW()
+        WHERE supabase_auth_user_id = ${userId}::uuid
+          AND (stripe_customer_id IS NULL OR stripe_customer_id <> ${stripeCustomerId})
+      `;
+    } else {
+      await sql`
+        UPDATE public.user_profiles
+        SET stripe_customer_id = ${stripeCustomerId}, updated_at = NOW()
+        WHERE legacy_clerk_user_id = ${userId}
+          AND (stripe_customer_id IS NULL OR stripe_customer_id <> ${stripeCustomerId})
+      `;
+    }
   } catch {
-    // Non-fatal: resolution still succeeded for this request.
+    // Non-fatal
   }
 }
 
