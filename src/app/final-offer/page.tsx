@@ -9,6 +9,7 @@ import { useCheckoutAttributionPayload } from "@/components/analytics/CheckoutAt
 import { mergePendingGa4IntoAttribution } from "@/lib/ga4BrowserIds";
 import { useUserContext } from "@/hooks/useUserContext";
 import { formatBillingCycle, getDurationGroupKeyFromStripeRecurring } from "@/lib/pricing";
+import AccountsEmailLink from "@/components/contact/AccountsEmailLink";
 import {
   FINAL_OFFER_CHALLENGE_SOURCE,
   FINAL_OFFER_CHALLENGE_TIERS,
@@ -477,12 +478,7 @@ export default function FinalOfferPage() {
             <p className="mt-2 text-sm leading-6 text-slate-700">
               We use the CELPIP Scores and Identity Verification System (SIVS) to validate score
               outcomes. Once you achieve your target result, email your score evidence to{" "}
-              <a
-                href="mailto:accounts@celpippracticetest.com"
-                className="font-semibold text-blue-700 underline"
-              >
-                accounts@celpippracticetest.com
-              </a>{" "}
+              <AccountsEmailLink className="font-semibold text-blue-700 underline" />{" "}
               and we process your refund.
             </p>
           </div>

@@ -4,7 +4,7 @@ import ArrowBack from "@mui/icons-material/ArrowBack";
 import CheckRounded from "@mui/icons-material/CheckRounded";
 import ChevronRightRounded from "@mui/icons-material/ChevronRightRounded";
 import PauseCircleOutlineRounded from "@mui/icons-material/PauseCircleOutlineRounded";
-import LoginModal from "@/components/modal/LoginModal";
+import SupportEmailLink from "@/components/contact/SupportEmailLink";
 import SvgFailed from "@/components/icons/Failed";
 import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
 import {
@@ -201,12 +201,12 @@ function FailedPageContent() {
             </p>
           ) : !checkoutCanceled ? (
             <p className="text-[13px] text-[#76808F] pt-1">
-              <a
-                href="mailto:support@celpippracticetest.com?subject=Help%20with%20payment"
+              <SupportEmailLink
+                subject="Help with payment"
                 className="font-medium text-[#4A7DFF] underline-offset-2 hover:underline"
               >
                 Contact support
-              </a>
+              </SupportEmailLink>
             </p>
           ) : null}
         </div>

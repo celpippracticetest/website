@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
+import SupportEmailLink from "@/components/contact/SupportEmailLink";
 
 const PrivacyPolicy = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -130,7 +131,7 @@ const PrivacyPolicy = () => {
       lists: [
         "Cookies: You can disable cookies in your browser settings, though some features may not function properly.",
         "Account: You may update or delete your account and associated data at any time in your profile settings.",
-        "Opt‑Out: To opt out of analytics sharing or marketing communications, please contact us at support@celpippracticetest.com.",
+        "Opt‑Out: To opt out of analytics sharing or marketing communications, please contact us using the email on our Contact Us page.",
       ],
     },
     {
@@ -140,7 +141,7 @@ const PrivacyPolicy = () => {
     {
       title: "10. Contact Us",
       description: ` If you have questions or concerns, please reach out:`,
-      link: `Email: support@celpippracticetest.com`,
+      showSupportEmail: true,
     },
   ];
 
@@ -178,6 +179,11 @@ const PrivacyPolicy = () => {
                     ))}
                   </div>
                 </div>
+              )}
+              {element?.showSupportEmail && (
+                <span className="font-normal text-[18px] text-primary1 mt-[8px] block">
+                  Email: <SupportEmailLink />
+                </span>
               )}
               {element?.link && (
                 <span className="font-normal text-[18px]  text-primary1">

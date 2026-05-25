@@ -4,6 +4,7 @@ import SvgCheckCircle from "@/components/icons/CheckCircle";
 import SvgCopy from "@/components/icons/Copy";
 import { pushToDataLayer } from "@/lib/gtm";
 import { useForm, useWatch } from "react-hook-form";
+import { buildSupportMailto } from "@/lib/contact/support-email";
 import {
   Box,
   Button,
@@ -468,7 +469,7 @@ const SubscriptionRetentionModal = ({
       primaryButtonText = "Contact Support";
       primaryAction = () => {
         trackCancellationEvent("contact_support_selected");
-        window.location.href = "mailto:support@celpippracticetest.com";
+        window.location.href = buildSupportMailto();
         onClose();
       };
     } else if (reason === "not_using") {

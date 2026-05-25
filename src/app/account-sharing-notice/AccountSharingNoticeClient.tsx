@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import SupportEmailLink from "@/components/contact/SupportEmailLink";
 
 export default function AccountSharingNoticeClient() {
   const searchParams = useSearchParams();
@@ -85,12 +86,9 @@ export default function AccountSharingNoticeClient() {
               {loading ? "Processing payment..." : "Add device and pay"}
             </button>
           ) : (
-            <a
-              href="mailto:support@celpippracticetest.com"
-              className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
-            >
+            <SupportEmailLink className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700">
               Contact support
-            </a>
+            </SupportEmailLink>
           )}
           {canRevokeFromProfile && (
             <a

@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Box } from "@/components/ui/Box";
+import SupportEmailLink from "@/components/contact/SupportEmailLink";
 
 const DeleteAccount = () => {
   return (
@@ -22,12 +23,7 @@ const DeleteAccount = () => {
             Send an email to our support team at:
           </p>
           <p className="font-normal text-[18px] mt-[12px]">
-            <Link
-              href="mailto:support@celpippracticetest.com?subject=Account%20Deletion%20Request"
-              className="text-primary1 underline underline-offset-2"
-            >
-              support@celpippracticetest.com
-            </Link>
+            <SupportEmailLink subject="Account Deletion Request" />
           </p>
           <p className="font-normal text-[18px] mt-[12px]">
             Use the subject line: <strong>Account Deletion Request</strong>

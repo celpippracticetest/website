@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Box } from "@/components/ui/Box";
+import SupportEmailLink from "@/components/contact/SupportEmailLink";
 
 const ContactUs = () => {
   return (
@@ -21,14 +22,7 @@ const ContactUs = () => {
         <Box className="flex flex-col mt-[40px]">
           <h2 className="font-semibold text-[20px]">Customer Support</h2>
           <p className="font-normal text-[18px] mt-[17px]">
-            Email:
-            {" "}
-            <Link
-              href="mailto:support@celpippracticetest.com"
-              className="text-primary1 underline underline-offset-2"
-            >
-              support@celpippracticetest.com
-            </Link>
+            Email: <SupportEmailLink />
           </p>
           <p className="font-normal text-[18px] mt-[12px]">
             Typical response time: within 24 hours on business days.

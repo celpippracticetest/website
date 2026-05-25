@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
+import SupportEmailLink from "@/components/contact/SupportEmailLink";
 
 const TermsOfService = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -137,7 +138,8 @@ If you exceed the two-device limit, you must purchase an additional subscription
     },
     {
       title: "13. Contact",
-      description: `For questions or assistance, contact us at: Email: support@celpippracticetest.com`,
+      description: `For questions or assistance, contact us at:`,
+      showSupportEmail: true,
     },
   ];
 
@@ -156,6 +158,11 @@ If you exceed the two-device limit, you must purchase an additional subscription
               <p className="font-normal text-[18px] mt-[17px]">
                 {element?.description}
               </p>
+              {element?.showSupportEmail && (
+                <p className="font-normal text-[18px] mt-[8px] text-primary1">
+                  Email: <SupportEmailLink />
+                </p>
+              )}
               {element?.lists && (
                 <ul className="pl-20">
                   {element?.lists?.map((list, index) => (

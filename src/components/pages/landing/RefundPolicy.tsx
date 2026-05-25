@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import SupportEmailLink from "@/components/contact/SupportEmailLink";
 
 const RefundPolicy = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -100,7 +101,8 @@ Initiating a chargeback, payment dispute, or bank claim does not override this p
     },
     {
       title: "Contact",
-      description: `For questions regarding this Refund Policy, contact: support@celpippracticetest.com`,
+      description: `For questions regarding this Refund Policy, contact:`,
+      showSupportEmail: true,
     },
   ];
 
@@ -119,6 +121,11 @@ Initiating a chargeback, payment dispute, or bank claim does not override this p
               <p className="font-normal text-[18px] mt-[17px] whitespace-pre-wrap">
                 {element?.description}
               </p>
+              {element?.showSupportEmail && (
+                <p className="font-normal text-[18px] mt-[8px] text-primary1">
+                  <SupportEmailLink />
+                </p>
+              )}
               {(element as any)?.link && (
                 <a
                   href={(element as any).link.href}

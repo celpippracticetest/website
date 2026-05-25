@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import SvgCloseCircle from "@/components/icons/CloseCircle";
 import { pushToDataLayer } from "@/lib/gtm";
 import { useForm, useWatch } from "react-hook-form";
+import { buildSupportMailto } from "@/lib/contact/support-email";
 import {
   Box,
   Button,
@@ -310,7 +311,7 @@ const AccountDeletionRetentionModal: React.FC<AccountDeletionRetentionModalProps
       primaryLabel = "Contact Support";
       primaryAction = () => {
         trackEvent("contact_support_selected", { step: "offer" });
-        window.location.href = "mailto:support@celpippracticetest.com";
+        window.location.href = buildSupportMailto();
       };
     } else if (reason === "privacy") {
       title = "Your data matters";
@@ -323,7 +324,7 @@ const AccountDeletionRetentionModal: React.FC<AccountDeletionRetentionModalProps
       primaryLabel = "Contact Support";
       primaryAction = () => {
         trackEvent("privacy_support_selected", { step: "offer" });
-        window.location.href = "mailto:support@celpippracticetest.com";
+        window.location.href = buildSupportMailto();
       };
     }
 
