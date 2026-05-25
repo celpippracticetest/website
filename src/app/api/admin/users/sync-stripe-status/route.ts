@@ -7,7 +7,6 @@ import { stripe } from "@/lib/stripe";
 import { revokePlusPlan } from "@/lib/auth/supabase-user-admin";
 
 const CONFIRM_PHRASE = "SYNC_STRIPE_STATUS";
-// 25 users × ~5 parallel Stripe calls each = finishes in ~2-3s, well under timeout
 const DEFAULT_LIMIT = 25;
 const MAX_LIMIT = 50;
 const STRIPE_CONCURRENCY = 5;
@@ -16,7 +15,6 @@ type ProfileRow = {
   id: string;
   supabase_auth_user_id: string;
   stripe_customer_id: string | null;
-  email: string | null;
 };
 
 type RowResult = {
@@ -29,15 +27,6 @@ type RowResult = {
 async function customerHasActiveSub(customerId: string): Promise<boolean> {
   const subs = await stripe.subscriptions.list({ customer: customerId, limit: 5 });
   return subs.data.some((s) => s.status === "active" || s.status === "trialing");
-}
-
-/** Looks up a Stripe customer ID by email. Returns the first match (or null). */
-async function findCustomerIdByEmail(email: string): Promise<string | null> {
-  const result = await stripe.customers.list({
-    email: email.trim().toLowerCase(),
-    limit: 3,
-  });
-  return result.data[0]?.id ?? null;
 }
 
 /** Run async tasks in parallel with a concurrency cap. */
@@ -66,41 +55,21 @@ async function processRow(
   const profileId = row.id;
 
   try {
-    let customerId = row.stripe_customer_id;
-    let resolvedViaEmail = false;
-
-    if (!customerId && row.email) {
-      customerId = await findCustomerIdByEmail(row.email);
-      resolvedViaEmail = Boolean(customerId);
-    }
+    const customerId = row.stripe_customer_id;
 
     if (!customerId) {
-      return { profileId, action: "skipped", reason: "no Stripe customer found" };
+      return { profileId, action: "skipped", reason: "no stripe_customer_id stored" };
     }
 
     const hasActive = await customerHasActiveSub(customerId);
 
     if (hasActive) {
-      if (resolvedViaEmail && !dryRun) {
-        await sql`
-          UPDATE public.user_profiles
-          SET stripe_customer_id = ${customerId}, updated_at = NOW()
-          WHERE id = ${profileId}::uuid
-        `.catch(() => undefined);
-      }
       return { profileId, action: "kept", reason: "active subscription" };
     }
 
     // No active subscription — revoke
     if (!dryRun) {
       await revokePlusPlan(row.supabase_auth_user_id, profileId);
-      if (resolvedViaEmail) {
-        await sql`
-          UPDATE public.user_profiles
-          SET stripe_customer_id = ${customerId}, updated_at = NOW()
-          WHERE id = ${profileId}::uuid
-        `.catch(() => undefined);
-      }
     }
     return {
       profileId,
@@ -153,7 +122,7 @@ export async function POST(request: NextRequest) {
   `;
 
   const rows = await sql<ProfileRow[]>`
-    SELECT id, supabase_auth_user_id, stripe_customer_id, email
+    SELECT id, supabase_auth_user_id, stripe_customer_id
     FROM public.user_profiles
     WHERE plan = 'plus'
     ORDER BY updated_at DESC
