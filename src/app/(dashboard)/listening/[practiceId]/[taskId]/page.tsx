@@ -1,4 +1,4 @@
-import ListeningPractice from "@/components/dashboard-app/listening-practice/ListeningPractice";
+import ListeningPractice from "@/components/dashboard-app/listening-practice/ListeningPracticeLazy";
 import documentsClient from "@/lib/appDocumentsClient";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
 import { TTaskSchemaDto } from "@/models/tasks.model";
@@ -9,6 +9,7 @@ import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import { ObjectId } from "bson";
 import { redirect, RedirectType } from "next/navigation";
 import type { Metadata } from "next";
+import { cache } from "react";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { Box, Typography } from "@mui/material";
 import { PracticeSubChrome } from "@/components/practice-seo/PracticeSubChrome";
@@ -23,12 +24,21 @@ type PageProps = {
   params: Promise<{ practiceId: string; taskId: string }>;
 };
 
+const loadListeningTaskAndPractice = cache(
+  async (practiceId: string, taskId: string) => {
+    const taskRepo = new TaskRepository(documentsClient);
+    const practiceRepo = new PracticeRepository(documentsClient);
+    const [task, practice] = await Promise.all([
+      taskRepo.findTaskById(taskId),
+      practiceRepo.findPractice(practiceId),
+    ]);
+    return { task, practice };
+  }
+);
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { practiceId, taskId } = await params;
-  const taskRepo = new TaskRepository(documentsClient);
-  const practiceRepo = new PracticeRepository(documentsClient);
-  const task = await taskRepo.findTaskById(taskId);
-  const practice = await practiceRepo.findPractice(practiceId);
+  const { task, practice } = await loadListeningTaskAndPractice(practiceId, taskId);
   if (!task || !practice) {
     return { title: "Listening practice" };
   }
@@ -57,22 +67,21 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ListeningPracticeSubPage({ params }: PageProps) {
   const { practiceId, taskId } = await params;
-  const taskRepo = new TaskRepository(documentsClient);
   const practiceRepo = new PracticeRepository(documentsClient);
 
-  const [task, practices, selectedPracticeRaw, hybridUser] = await Promise.all([
-    taskRepo.findTaskById(taskId),
-    practiceRepo.getAllPractice(
-      {
-        type: "LISTENING",
-        taskId: new ObjectId(taskId) as unknown as string,
-      },
-      0,
-      200
-    ),
-    practiceRepo.findPractice(practiceId),
-    getHybridCurrentUser(),
-  ]);
+  const [{ task, practice: selectedPracticeRaw }, practices, hybridUser] =
+    await Promise.all([
+      loadListeningTaskAndPractice(practiceId, taskId),
+      practiceRepo.getPracticeNavList(
+        {
+          type: "LISTENING",
+          taskId: new ObjectId(taskId) as unknown as string,
+        },
+        0,
+        200
+      ),
+      getHybridCurrentUser(),
+    ]);
 
   if (!task) {
     redirect("/practice-overview", RedirectType.replace);

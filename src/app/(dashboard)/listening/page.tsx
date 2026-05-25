@@ -1,4 +1,4 @@
-import ListeningPractice from "@/components/dashboard-app/listening-practice/ListeningPractice";
+import ListeningPractice from "@/components/dashboard-app/listening-practice/ListeningPracticeLazy";
 import ShowTasks from "@/components/dashboard-new/ShowTasks";
 import ShowTaskHeader from "@/components/dashboard-new/ShowTasks/Header";
 import SvgListeningPart from "@/components/icons/ListeningPart";

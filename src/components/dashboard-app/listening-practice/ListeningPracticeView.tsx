@@ -5,7 +5,7 @@ import ArrowBack from "@mui/icons-material/ArrowBack";
 import ArrowForward from "@mui/icons-material/ArrowForward";
 import AudioPlayer from "./components/AudioPlayer";
 import ListeningQuestionList from "./components/ListeningQuestionList";
-import { TPracticeDto } from "@/models/practice.model";
+import { TPracticeDto, TPracticeNavItem } from "@/models/practice.model";
 import ListeningSideMenu from "./ListeningSideMenu";
 import ListeningAnswerList from "./components/ListeningAnswers";
 import { TPassage } from "@/models/listenExam.model";
@@ -33,7 +33,7 @@ import { ActivityLogger } from "@/lib/userActivity";
 interface ListeningPracticeViewProps {
   practice: TPracticeDto;
   task: TTaskSchemaDto;
-  allPractices: TPracticeDto[];
+  allPractices: TPracticeNavItem[];
   selectedPracticeId: string | null;
   selectedTaskId: string | null;
   previousAnswer: TListeningAndReadingAnswerDto | null;
@@ -135,33 +135,54 @@ const ListeningPracticeView = ({
     setPassageIndex(0);
     setQuestionIndex(0);
 
-    const fetchPreviousAnswers = async () => {
-      if (!user || !selectedPracticeId) return;
-      try {
-        const response = await fetch(
-          `/api/answers?practiceId=${selectedPracticeId}&userId=${user.id}&type=LISTENING`,
-          { credentials: "include" }
-        );
-        if (response.ok) {
-          const data = await response.json();
-          const saved = data.answers && Object.keys(data.answers).length > 0;
-          if (saved) {
-            setSelectedAnswers(data.answers);
-            // Keep instructions so returning users can retake; "See Result" still uses loaded answers.
-            setPage("instructions");
-            return;
-          }
-        }
+    const applySavedAnswers = (saved: Record<string, string> | null) => {
+      if (saved && Object.keys(saved).length > 0) {
+        setSelectedAnswers(saved);
+      } else {
         setSelectedAnswers({});
-        setPage("instructions");
-      } catch (error) {
-        console.error("Error fetching previous answers:", error);
-        setSelectedAnswers({});
-        setPage("instructions");
       }
+      // Keep instructions so returning users can retake; "See Result" still uses loaded answers.
+      setPage("instructions");
     };
 
-    fetchPreviousAnswers();
+    if (!user || !selectedPracticeId) {
+      applySavedAnswers(null);
+    } else {
+      const serverPracticeId = previousAnswer?.practiceId;
+      const useServerAnswer =
+        previousAnswer != null &&
+        serverPracticeId != null &&
+        serverPracticeId === selectedPracticeId;
+
+      if (useServerAnswer) {
+        const saved =
+          previousAnswer.answers && Object.keys(previousAnswer.answers).length > 0
+            ? previousAnswer.answers
+            : null;
+        applySavedAnswers(saved);
+      } else {
+        void (async () => {
+          try {
+            const response = await fetch(
+              `/api/answers?practiceId=${selectedPracticeId}&userId=${user.id}&type=LISTENING`,
+              { credentials: "include" }
+            );
+            if (response.ok) {
+              const data = await response.json();
+              const raw = data.answers as Record<string, string> | undefined;
+              const saved =
+                raw && Object.keys(raw).length > 0 ? raw : null;
+              applySavedAnswers(saved);
+              return;
+            }
+            applySavedAnswers(null);
+          } catch (error) {
+            console.error("Error fetching previous answers:", error);
+            applySavedAnswers(null);
+          }
+        })();
+      }
+    }
 
     // Log practice started
     if (user && selectedPracticeId) {
@@ -172,7 +193,7 @@ const ListeningPracticeView = ({
         "Listening"
       ).catch(() => {});
     }
-  }, [selectedPracticeId, user]);
+  }, [selectedPracticeId, user, previousAnswer]);
 
   useEffect(() => {
     if (page === "answer" && user) {

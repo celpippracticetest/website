@@ -1,7 +1,7 @@
 "use client";
 import ListeningPracticeView from "./ListeningPracticeView";
 import { useListeningPracticeCompletion } from "./hooks/useListeningPracticeCompletion";
-import { TPracticeDto } from "@/models/practice.model";
+import { TPracticeDto, TPracticeNavItem } from "@/models/practice.model";
 import { useSearchParams } from "next/navigation";
 import ListeningTaskView from "./ListeningTaskView";
 import { TTaskSchemaDto } from "@/models/tasks.model";
@@ -12,7 +12,7 @@ import { practicePath } from "@/lib/practiceRoutes";
 
 interface ListeningPracticeProps {
   showHeader?: boolean;
-  allPractices: TPracticeDto[];
+  allPractices: TPracticeNavItem[];
   selectedPractice: TPracticeDto | null;
   task: TTaskSchemaDto;
   previousAnswer: TListeningAndReadingAnswerDto | null;
