@@ -4,70 +4,130 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
 import { getSql } from "@/lib/pg/pool";
 import { stripe } from "@/lib/stripe";
-import {
-  revokePlusPlan,
-  grantPlusPlan,
-  resolveUserProfileFromStripe,
-} from "@/lib/auth/supabase-user-admin";
+import { revokePlusPlan } from "@/lib/auth/supabase-user-admin";
 
 const CONFIRM_PHRASE = "SYNC_STRIPE_STATUS";
-const BATCH_SIZE = 50;
-const STRIPE_DELAY_MS = 120; // stay well under Stripe's 100 req/s limit
+// 25 users × ~5 parallel Stripe calls each = finishes in ~2-3s, well under timeout
+const DEFAULT_LIMIT = 25;
+const MAX_LIMIT = 50;
+const STRIPE_CONCURRENCY = 5;
 
 type ProfileRow = {
   id: string;
   supabase_auth_user_id: string;
-  legacy_clerk_user_id: string | null;
   stripe_customer_id: string | null;
   email: string | null;
-  plan: string | null;
 };
 
-type Result = {
+type RowResult = {
   profileId: string;
-  action: "revoked" | "kept" | "skipped" | "granted";
+  action: "revoked" | "kept" | "skipped" | "error";
   reason: string;
 };
 
-async function sleep(ms: number) {
-  return new Promise((r) => setTimeout(r, ms));
-}
-
 /** Returns true when the customer has at least one active or trialing subscription. */
 async function customerHasActiveSub(customerId: string): Promise<boolean> {
-  const subs = await stripe.subscriptions.list({
-    customer: customerId,
-    limit: 10,
-  });
-  return subs.data.some(
-    (s) => s.status === "active" || s.status === "trialing",
-  );
+  const subs = await stripe.subscriptions.list({ customer: customerId, limit: 5 });
+  return subs.data.some((s) => s.status === "active" || s.status === "trialing");
 }
 
-/** Looks up a Stripe customer by email, returns the ID or null. */
+/** Looks up a Stripe customer ID by email. Returns the first match (or null). */
 async function findCustomerIdByEmail(email: string): Promise<string | null> {
   const result = await stripe.customers.list({
     email: email.trim().toLowerCase(),
     limit: 3,
   });
-  // Prefer the most recent non-deleted customer with an active sub
-  for (const c of result.data) {
-    const active = await customerHasActiveSub(c.id);
-    if (active) return c.id;
-  }
-  // Return most recent customer even if no active sub (caller handles revoke logic)
   return result.data[0]?.id ?? null;
 }
 
+/** Run async tasks in parallel with a concurrency cap. */
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = [];
+  for (let i = 0; i < items.length; i += limit) {
+    const chunk = items.slice(i, i + limit);
+    const settled = await Promise.allSettled(chunk.map(fn));
+    for (const s of settled) {
+      if (s.status === "fulfilled") results.push(s.value);
+      else results.push(s.reason as R);
+    }
+  }
+  return results;
+}
+
+async function processRow(
+  row: ProfileRow,
+  dryRun: boolean,
+  sql: ReturnType<typeof getSql>,
+): Promise<RowResult> {
+  const profileId = row.id;
+
+  try {
+    let customerId = row.stripe_customer_id;
+    let resolvedViaEmail = false;
+
+    if (!customerId && row.email) {
+      customerId = await findCustomerIdByEmail(row.email);
+      resolvedViaEmail = Boolean(customerId);
+    }
+
+    if (!customerId) {
+      return { profileId, action: "skipped", reason: "no Stripe customer found" };
+    }
+
+    const hasActive = await customerHasActiveSub(customerId);
+
+    if (hasActive) {
+      if (resolvedViaEmail && !dryRun) {
+        await sql`
+          UPDATE public.user_profiles
+          SET stripe_customer_id = ${customerId}, updated_at = NOW()
+          WHERE id = ${profileId}::uuid
+        `.catch(() => undefined);
+      }
+      return { profileId, action: "kept", reason: "active subscription" };
+    }
+
+    // No active subscription — revoke
+    if (!dryRun) {
+      await revokePlusPlan(row.supabase_auth_user_id, profileId);
+      if (resolvedViaEmail) {
+        await sql`
+          UPDATE public.user_profiles
+          SET stripe_customer_id = ${customerId}, updated_at = NOW()
+          WHERE id = ${profileId}::uuid
+        `.catch(() => undefined);
+      }
+    }
+    return {
+      profileId,
+      action: "revoked",
+      reason: `no active sub for customer ${customerId}`,
+    };
+  } catch (err) {
+    return {
+      profileId,
+      action: "error",
+      reason: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
 /**
- * Admin endpoint: compare every 'plus' user's plan against their live Stripe
- * subscription status and revoke or keep accordingly.
+ * Admin endpoint: check live Stripe subscription status for 'plus' users and
+ * revoke plan for any who have no active or trialing subscription.
+ *
+ * Designed for small batches (default 25) called in a loop from the browser
+ * console to avoid serverless timeouts.
  *
  * POST body:
- *   confirm  – must equal "SYNC_STRIPE_STATUS" to write (omit for dry-run)
- *   dryRun   – boolean, default true when confirm phrase is missing
- *   offset   – start row for resuming a large run (default 0)
- *   limit    – max profiles to process per call (default 200, max 1000)
+ *   confirm  – must equal "SYNC_STRIPE_STATUS" to write
+ *   dryRun   – boolean (default true when confirm is missing)
+ *   offset   – pagination offset (default 0)
+ *   limit    – users per call (default 25, max 50)
  */
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -84,128 +144,43 @@ export async function POST(request: NextRequest) {
 
   const dryRun = body.confirm !== CONFIRM_PHRASE || body.dryRun === true;
   const offset = Math.max(0, Number(body.offset) || 0);
-  const limit = Math.min(Math.max(1, Number(body.limit) || 200), 1000);
+  const limit = Math.min(Math.max(1, Number(body.limit) || DEFAULT_LIMIT), MAX_LIMIT);
 
   const sql = getSql();
 
-  // Count total plus users for progress reporting
   const [{ total }] = await sql<{ total: number }[]>`
-    SELECT COUNT(*)::int AS total
-    FROM public.user_profiles
-    WHERE plan = 'plus'
+    SELECT COUNT(*)::int AS total FROM public.user_profiles WHERE plan = 'plus'
   `;
 
-  const results: Result[] = [];
-  let revokedCount = 0;
-  let keptCount = 0;
-  let skippedCount = 0;
-  let grantedCount = 0;
-  const errors: { profileId: string; message: string }[] = [];
+  const rows = await sql<ProfileRow[]>`
+    SELECT id, supabase_auth_user_id, stripe_customer_id, email
+    FROM public.user_profiles
+    WHERE plan = 'plus'
+    ORDER BY updated_at DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `;
 
-  let processed = 0;
+  const rowResults = await mapWithConcurrency(
+    rows,
+    STRIPE_CONCURRENCY,
+    (row) => processRow(row, dryRun, sql),
+  );
 
-  while (processed < limit) {
-    const batchLimit = Math.min(BATCH_SIZE, limit - processed);
-
-    const rows = await sql<ProfileRow[]>`
-      SELECT
-        id,
-        supabase_auth_user_id,
-        legacy_clerk_user_id,
-        stripe_customer_id,
-        email,
-        plan
-      FROM public.user_profiles
-      WHERE plan = 'plus'
-      ORDER BY updated_at DESC
-      LIMIT ${batchLimit}
-      OFFSET ${offset + processed}
-    `;
-
-    if (rows.length === 0) break;
-
-    for (const row of rows) {
-      processed++;
-      const profileId = row.id;
-
-      try {
-        let customerId = row.stripe_customer_id;
-        let resolvedViaEmail = false;
-
-        // If no customer ID stored, try to find one via email
-        if (!customerId && row.email) {
-          customerId = await findCustomerIdByEmail(row.email);
-          resolvedViaEmail = Boolean(customerId);
-          await sleep(STRIPE_DELAY_MS);
-        }
-
-        // If we still have no customer ID, skip — can't confirm Stripe status
-        if (!customerId) {
-          skippedCount++;
-          results.push({
-            profileId,
-            action: "skipped",
-            reason: "no stripe_customer_id and no email match in Stripe",
-          });
-          continue;
-        }
-
-        const hasActive = await customerHasActiveSub(customerId);
-        await sleep(STRIPE_DELAY_MS);
-
-        if (hasActive) {
-          // Backfill stripe_customer_id if we found it via email
-          if (resolvedViaEmail && !dryRun) {
-            await sql`
-              UPDATE public.user_profiles
-              SET stripe_customer_id = ${customerId}, updated_at = NOW()
-              WHERE id = ${profileId}::uuid
-            `.catch(() => undefined);
-          }
-          keptCount++;
-          results.push({ profileId, action: "kept", reason: "active Stripe subscription" });
-        } else {
-          // No active subscription — revoke plan
-          if (!dryRun) {
-            await revokePlusPlan(row.supabase_auth_user_id, profileId);
-            // Also backfill the customer ID we resolved
-            if (resolvedViaEmail) {
-              await sql`
-                UPDATE public.user_profiles
-                SET stripe_customer_id = ${customerId}, updated_at = NOW()
-                WHERE id = ${profileId}::uuid
-              `.catch(() => undefined);
-            }
-          }
-          revokedCount++;
-          results.push({
-            profileId,
-            action: "revoked",
-            reason: `no active subscription for customer ${customerId}`,
-          });
-        }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        errors.push({ profileId, message: msg });
-      }
-
-      await sleep(STRIPE_DELAY_MS);
-    }
-
-    if (rows.length < batchLimit) break; // reached the end
-  }
+  const revoked  = rowResults.filter((r) => r.action === "revoked").length;
+  const kept     = rowResults.filter((r) => r.action === "kept").length;
+  const skipped  = rowResults.filter((r) => r.action === "skipped").length;
+  const errored  = rowResults.filter((r) => r.action === "error").length;
 
   return NextResponse.json({
     dryRun,
     totalPlusUsersInDb: total,
-    processed,
-    revoked: revokedCount,
-    kept: keptCount,
-    skipped: skippedCount,
-    granted: grantedCount,
-    nextOffset: offset + processed,
-    hasMore: offset + processed < total,
-    errors: errors.length ? errors : undefined,
-    results: results.slice(0, 500), // cap to avoid giant responses
+    processed: rows.length,
+    revoked,
+    kept,
+    skipped,
+    errored,
+    nextOffset: offset + rows.length,
+    hasMore: offset + rows.length < total,
+    results: rowResults,
   });
 }
