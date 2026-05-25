@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, appUserAdmin } from "@/lib/auth/server-auth";
+import { appUserAdmin } from "@/lib/auth/server-auth";
+import { requireAuthenticatedRequest } from "@/lib/auth/request-auth";
 import Stripe from "stripe";
 import clientPromise from "@/lib/appDocumentsClient";
 import {
   emailsFromAuthUser,
   resolveStripeCustomerId,
 } from "@/lib/resolveStripeCustomerId";
+import { cancelGooglePlaySubscriptionForUser, findGooglePlaySubscriptionForUser } from "@/lib/mobile/googlePlaySubscription";
 import { matchUsersCollectionByWebUserIds } from "@/lib/users/userDocumentIdentity";
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 function normalizeDate(value: unknown): Date | null {
@@ -15,16 +18,56 @@ function normalizeDate(value: unknown): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-export async function POST(req: NextRequest) {
-  const { userId } = await auth();
+function isGooglePlaySubscriber(publicMetadata: Record<string, unknown>): boolean {
+  const source = String(publicMetadata.planSource ?? "").trim().toLowerCase();
+  return source === "google_play" || source === "google_play_rtdn";
+}
 
-  if (!userId) {
+export async function POST(req: NextRequest) {
+  let ctx;
+  try {
+    ctx = await requireAuthenticatedRequest(req);
+  } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const { userId } = ctx;
 
   try {
     const body = await req.json().catch(() => ({}));
     const flowId = typeof body?.flowId === "string" ? body.flowId : null;
+
+    const publicMetadata = ctx.user.publicMetadata ?? {};
+    const supabaseAuthUserId = ctx.supabaseAuthUserId?.trim() || null;
+
+    const googlePlayRow =
+      supabaseAuthUserId != null
+        ? await findGooglePlaySubscriptionForUser(supabaseAuthUserId)
+        : null;
+
+    if (googlePlayRow || (supabaseAuthUserId && isGooglePlaySubscriber(publicMetadata))) {
+      if (!supabaseAuthUserId) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      await cancelGooglePlaySubscriptionForUser({
+        supabaseAuthUserId,
+        userId,
+      });
+
+      const documentsClient = await clientPromise;
+      const db = documentsClient.db();
+      await db.collection("cancellation_flow_events").insertOne({
+        userId,
+        flowId,
+        eventName: "subscription_cancelled_success",
+        step: "confirm",
+        reason: null,
+        metadata: { source: "google_play" },
+        createdAt: new Date(),
+      });
+
+      return NextResponse.json({ success: true });
+    }
 
     const authAdmin = await appUserAdmin();
     const user = await authAdmin.users.getUser(userId);
@@ -38,7 +81,7 @@ export async function POST(req: NextRequest) {
 
     if (!customerId) {
       return NextResponse.json(
-        { error: "Stripe customer not found" },
+        { error: "No active subscription found for this account." },
         { status: 422 }
       );
     }
@@ -123,9 +166,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error canceling subscription:", error);
-    return NextResponse.json(
-      { error: "Failed to cancel subscription" },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to cancel subscription";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

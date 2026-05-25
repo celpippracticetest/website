@@ -2,6 +2,7 @@ import { appUserAdmin } from "@/lib/auth/server-auth";
 
 import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
 import documentsClient from "@/lib/appDocumentsClient";
+import { syncUserProfilePlan } from "@/lib/mobile/googlePlaySubscription";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { logger } from "@/lib/sentry-logger";
 
@@ -143,8 +144,11 @@ export async function applyVerifiedMobileSubscriptionPlan(args: {
         ...currentApp,
         plan,
         planSource: args.platform,
+        planCancelled: false,
       },
     });
+
+    await syncUserProfilePlan(supabaseAdminTarget, plan);
 
     if (
       args.platform === "google_play" &&

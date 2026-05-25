@@ -5,6 +5,7 @@ import {
   buildAndroidPublisherAuth,
   getGooglePlayServiceAccountJson,
 } from "@/app/api/mobile/iap/google/verify/route";
+import { syncUserProfilePlan } from "@/lib/mobile/googlePlaySubscription";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -94,6 +95,8 @@ async function downgradeUserPlan(supabaseUserId: string): Promise<void> {
       planCancelled: true,
     },
   });
+
+  await syncUserProfilePlan(supabaseUserId, "free");
 }
 
 async function reactivateUserPlan(
@@ -121,6 +124,8 @@ async function reactivateUserPlan(
       planCancelled: false,
     },
   });
+
+  await syncUserProfilePlan(supabaseUserId, plan);
 }
 
 /**
@@ -270,8 +275,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // CANCELED (3), ON_HOLD (5), PAUSED (10), etc. — note it but don't
-    // revoke access yet; wait for EXPIRED or REVOKED.
+    // CANCELED (3), ON_HOLD (5), PAUSED (10), etc. — mark cancelled but keep access until expiry.
+    if (notificationType === SubscriptionNotificationType.CANCELED) {
+      const adminClient = getSupabaseAdmin();
+      if (adminClient) {
+        const { data: existing } = await adminClient.auth.admin.getUserById(
+          supabaseUserId
+        );
+        if (existing?.user) {
+          const currentApp = (existing.user.app_metadata ?? {}) as Record<
+            string,
+            unknown
+          >;
+          await adminClient.auth.admin.updateUserById(supabaseUserId, {
+            app_metadata: {
+              ...currentApp,
+              planCancelled: true,
+              planSource: "google_play_rtdn",
+            },
+          });
+        }
+      }
+      logger.info("RTDN: subscription marked cancelled (access until expiry)", {
+        component: "mobile_rtdn_google",
+        userId: supabaseUserId,
+        metadata: { notificationType, subscriptionId },
+      });
+      return NextResponse.json({ ok: true });
+    }
+
     logger.info("RTDN: informational notification, no plan change", {
       component: "mobile_rtdn_google",
       metadata: { notificationType, subscriptionId },
