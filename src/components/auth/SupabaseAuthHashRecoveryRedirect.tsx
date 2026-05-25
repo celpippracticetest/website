@@ -18,6 +18,8 @@ export function SupabaseAuthHashRecoveryRedirect() {
   useEffect(() => {
     if (ran.current) return;
     if (typeof window === "undefined") return;
+    // Mobile app session bridge uses the same hash shape with type=magiclink.
+    if (pathname === "/auth/app-session") return;
 
     const raw = window.location.hash?.replace(/^#/, "") ?? "";
     if (!raw || !raw.includes("access_token")) return;

@@ -1006,6 +1006,25 @@ export async function POST(req: Request) {
             planRenewsAt: null,
           });
         }
+
+        // Supabase direct sync: record cancellation in PG subscription table
+        // (plan stays 'plus' until period ends — only upsert, no plan change)
+        try {
+          const cancelCustomerId =
+            typeof subscription.customer === "string"
+              ? subscription.customer
+              : (subscription.customer as { id?: string } | null)?.id ?? null;
+          if (cancelCustomerId) {
+            await upsertStripeSubscription(subscription, cancelCustomerId).catch(() => undefined);
+          }
+        } catch (sbErr) {
+          logger.error("subscription.updated cancel_at_period_end: Supabase upsert failed", {
+            component: "stripe_webhook",
+            action: "supabase_cancel_upsert_error",
+            metadata: { error: sbErr },
+          });
+        }
+
         return NextResponse.json({ received: true });
       }
 
@@ -1457,26 +1476,17 @@ export async function POST(req: Request) {
         }
       }
 
-      if (!user_id || !checkout_id || checkout_id === "{CHECKOUT_SESSION_ID}") {
-        console.warn("❌ Still missing metadata for", subscription.id);
-        return NextResponse.json({ received: true });
-      }
-
-      // Cancel and downgrade
-      await Promise.all([
-        checkoutRepo.updateStatus(checkout_id, "cancelled"),
-        updateUserPublicMetadata(user_id, { plan: "free" }),
-      ]);
-
-      // Supabase direct sync
+      // Supabase direct revoke — runs BEFORE the bail-out so it fires even when
+      // user_id / checkout_id couldn't be resolved from metadata. subscription.customer
+      // is always present and is the most reliable lookup key after migration.
+      const delCustomerId =
+        typeof subscription.customer === "string"
+          ? subscription.customer
+          : (subscription.customer as { id?: string } | null)?.id ?? null;
       try {
-        const delCustomerId =
-          typeof subscription.customer === "string"
-            ? subscription.customer
-            : (subscription.customer as { id?: string } | null)?.id ?? null;
         const sbProfile = await resolveUserProfileFromStripe(
           delCustomerId,
-          user_id,
+          user_id || null,
         );
         if (sbProfile) {
           await revokePlusPlan(sbProfile.supabaseAuthUserId, sbProfile.profileId);
@@ -1491,6 +1501,17 @@ export async function POST(req: Request) {
           metadata: { error: sbErr },
         });
       }
+
+      if (!user_id || !checkout_id || checkout_id === "{CHECKOUT_SESSION_ID}") {
+        console.warn("❌ Still missing metadata for", subscription.id);
+        return NextResponse.json({ received: true });
+      }
+
+      // Cancel and downgrade (Clerk-compat path — kept for safety during transition)
+      await Promise.all([
+        checkoutRepo.updateStatus(checkout_id, "cancelled"),
+        updateUserPublicMetadata(user_id, { plan: "free" }),
+      ]);
 
       // Log subscription cancelled
       try {

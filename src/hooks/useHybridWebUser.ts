@@ -104,9 +104,12 @@ const listeners = new Set<() => void>();
 let authListenerStarted = false;
 
 function emitAuthChange() {
-  for (const listener of listeners) {
-    listener();
-  }
+  // Defer so Supabase auth callbacks never update subscribers mid-mount (React 19).
+  queueMicrotask(() => {
+    for (const listener of listeners) {
+      listener();
+    }
+  });
 }
 
 function subscribeSharedAuth(listener: () => void) {
