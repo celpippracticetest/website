@@ -67,6 +67,7 @@ const mainItems: SidebarGroup = {
       icon: ShoppingCart,
       href: "/cms/dashboard/abandoned-cart-emails",
     },
+    { key: "user-emails", label: "Send User Email", icon: Mail, href: "/cms/dashboard/user-emails" },
     { key: "league", label: "League", icon: EmojiEvents, href: "/cms/dashboard/league" },
   ],
 };
@@ -154,6 +155,7 @@ export function AdminSidebar({
     if (key === "nurture-emails" && pathname.startsWith("/cms/dashboard/nurture-emails")) return true;
     if (key === "reminder-emails" && pathname.startsWith("/cms/dashboard/reminder-emails")) return true;
     if (key === "abandoned-cart-emails" && pathname.startsWith("/cms/dashboard/abandoned-cart-emails")) return true;
+    if (key === "user-emails" && pathname.startsWith("/cms/dashboard/user-emails")) return true;
     if (key === "league" && pathname.startsWith("/cms/dashboard/league")) return true;
     if (key === "homepage-hero" && pathname.startsWith("/cms/dashboard/homepage-hero")) return true;
     if (key === "tasks" && pathname.startsWith("/cms/dashboard/tasks")) return true;
