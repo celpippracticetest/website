@@ -23,7 +23,8 @@ import {
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import { categoryToSkillRoute, practicePath, taskPickerPath } from "@/lib/practiceRoutes";
+import { categoryToSkillRoute, taskPickerPath } from "@/lib/practiceRoutes";
+import { navigateToPracticeSessionFromCategory } from "@/lib/navigateToPracticeSession";
 
 const practiceNavy = "#1B2B5A";
 const practiceMuted = "#475569";
@@ -98,12 +99,11 @@ const PracticeOverview = ({
 
       started(data.items[0].id, task.category);
 
-      setRedirectUrl(
-        practicePath(
-          categoryToSkillRoute(task.category),
-          data.items[0].id,
-          task.id
-        )
+      navigateToPracticeSessionFromCategory(
+        router,
+        task.category,
+        data.items[0].id,
+        task.id
       );
     } catch (error) {}
   };

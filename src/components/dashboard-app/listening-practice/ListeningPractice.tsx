@@ -8,7 +8,7 @@ import { TTaskSchemaDto } from "@/models/tasks.model";
 import { useRouter } from "nextjs-toploader/app";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
 import { useEffect, useState } from "react";
-import { practicePath } from "@/lib/practiceRoutes";
+import { practicePath, taskPickerPath } from "@/lib/practiceRoutes";
 
 interface ListeningPracticeProps {
   showHeader?: boolean;
@@ -45,6 +45,10 @@ const ListeningPractice = ({
   }, [selectedPracticeId, selectedTaskId, router]);
 
   const handleBackToPracticeList = () => {
+    if (selectedTaskId) {
+      router.push(taskPickerPath("listening", selectedTaskId));
+      return;
+    }
     router.push("/practice-overview");
   };
 

@@ -416,3 +416,29 @@ export class PracticeRepository {
     `;
   }
 }
+
+/** Count practices per task from Postgres (source of truth after practices migration). */
+export async function countPracticesByTaskIds(
+  taskIds: string[]
+): Promise<Record<string, number>> {
+  const normalized = [
+    ...new Set(
+      taskIds
+        .map((id) => taskIdHexLoose(id))
+        .filter((id): id is string => id != null)
+    ),
+  ];
+  if (normalized.length === 0) {
+    return {};
+  }
+
+  const sql = getSql();
+  const rows = await sql<{ task_mongo_id: string; c: number }[]>`
+    SELECT task_mongo_id, COUNT(*)::int AS c
+    FROM public.practices
+    WHERE task_mongo_id = ANY(${normalized})
+    GROUP BY task_mongo_id
+  `;
+
+  return Object.fromEntries(rows.map((row) => [row.task_mongo_id, row.c]));
+}

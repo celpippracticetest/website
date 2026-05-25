@@ -11,7 +11,7 @@ import ListeningTaskView from "../listening-practice/ListeningTaskView";
 import { useRouter } from "nextjs-toploader/app";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
-import { practicePath } from "@/lib/practiceRoutes";
+import { practicePath, taskPickerPath } from "@/lib/practiceRoutes";
 
 interface WritingPracticeProps {
   showHeader?: boolean;
@@ -68,6 +68,10 @@ const WritingPractice = ({
   }, [selectedPracticeId, selectedTaskId, router]);
 
   const handleBackToPracticeList = () => {
+    if (selectedTaskId) {
+      router.push(taskPickerPath("writing", selectedTaskId));
+      return;
+    }
     router.push("/practice-overview");
   };
 

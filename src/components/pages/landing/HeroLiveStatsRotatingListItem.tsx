@@ -9,6 +9,7 @@ import Avatar from "@mui/material/Avatar";
 import AvatarGroup from "@mui/material/AvatarGroup";
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
+import { LIVE_STATS_POLL_MS } from "@/hooks/useRecentSignupsLiveStat";
 
 /** 100 distinct faces via pravatar `u` seed (stable per index). */
 const AVATAR_POOL: readonly string[] = Array.from(
@@ -96,7 +97,7 @@ export function HeroLiveStatsRotatingListItem({
     void loadStats();
     intervalId = setInterval(() => {
       void loadStats();
-    }, 10_000);
+    }, LIVE_STATS_POLL_MS);
 
     const onResume = () => {
       if (document.visibilityState === "visible") void loadStats();

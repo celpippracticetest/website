@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(cd \"C:/Projects/CELPIP/website\"; npx tsc --noEmit 2>&1 | Where-Object { $_ -match \"supabase-user-admin|resolveStripeCustomerId|stripe/webhook/route\" })",
+      "Bash(npx tsc *)"
+    ]
+  }
+}

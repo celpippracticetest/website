@@ -1,6 +1,7 @@
 import { TaskSchema, TaskSchemaDto, TTaskSchema, TTaskSchemaDto } from "@/models/tasks.model";
 import { ObjectId } from "bson";
 import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
+import { countPracticesByTaskIds } from "@/repositories/practice.repo";
 
 export class TaskRepository {
   private readonly db: Db;
@@ -122,9 +123,14 @@ export class TaskRepository {
       };
     }
     const practices = results[0]?.items || [];
+    const items = practices.map((practice: TTaskSchema) => this.convertFromEntity(practice));
+    const practiceCounts = await countPracticesByTaskIds(items.map((task) => task.id));
 
     return {
-      items: practices.map((practice: TTaskSchema) => this.convertFromEntity(practice)),
+      items: items.map((task) => ({
+        ...task,
+        practiceCount: practiceCounts[task.id.toLowerCase()] ?? 0,
+      })),
       page,
       totalItems: results[0].totalItems,
       totalPages: results[0].totalPages,

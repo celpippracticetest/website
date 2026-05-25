@@ -14,7 +14,7 @@ import { SvgLearning } from "@/components/icons";
 import SvgWord from "@/components/icons/Word";
 import { cn } from "@/lib/utils";
 import { useHomepageCta } from "@/hooks/useHomepageCta";
-import { useRecentSignupsLiveStat } from "@/hooks/useRecentSignupsLiveStat";
+import { useRecentVisitsLiveStat } from "@/hooks/useRecentSignupsLiveStat";
 import { PricingUpgradeModalHeaderList } from "@/components/pages/pricing/PricingUpgradeModalHeaderList";
 import SvgPlus from "../../icons/Plus";
 import SvgArrowRight from "../../icons/ArrowRight";
@@ -89,7 +89,7 @@ const AVATAR_SRCS = [1, 2, 3, 4, 5].map(
   (i) => `https://i.pravatar.cc/128?u=celpip-hero-${i}`,
 );
 
-function HeroJoinedToday({ display }: { display: string }) {
+function HeroVisitsToday({ display }: { display: string }) {
   return (
     <div className="mt-6 flex items-center justify-center gap-2 rounded-xl bg-[#F4F7FF] px-4 py-3">
       <span className="relative flex h-2 w-2">
@@ -97,7 +97,7 @@ function HeroJoinedToday({ display }: { display: string }) {
         <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
       </span>
       <p className="text-sm font-semibold text-primary2">
-        {display} joined today
+        {display} visits today
       </p>
     </div>
   );
@@ -109,7 +109,7 @@ const Hero = () => {
     (state) => state,
   );
   const { href, label, shortLabel, trackClick } = useHomepageCta();
-  const { display: signupDisplay } = useRecentSignupsLiveStat("3,358");
+  const { display: visitsDisplay } = useRecentVisitsLiveStat("7,174");
 
   useEffect(() => {
     const onScroll = () => {
@@ -171,7 +171,7 @@ const Hero = () => {
 
               <div className="mb-8 w-full max-w-[560px]">
                 <PricingUpgradeModalHeaderList
-                  signupDisplay={signupDisplay}
+                  visitsDisplay={visitsDisplay}
                   className="mx-auto screen744:mx-0"
                   itemTextClassName="text-text2 screen744:text-base"
                   emphasisTextClassName="font-semibold text-text2 screen744:text-base"
@@ -247,7 +247,7 @@ const Hero = () => {
                   ))}
                 </div>
 
-                <HeroJoinedToday display={signupDisplay} />
+                <HeroVisitsToday display={visitsDisplay} />
               </div>
             </div>
           </div>

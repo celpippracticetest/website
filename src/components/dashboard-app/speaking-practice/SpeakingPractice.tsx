@@ -12,7 +12,7 @@ import { TTaskSchemaDto } from "@/models/tasks.model";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import type { TWritingAnswerDto } from "@/models/answer";
 import type { SpeakingPracticeInitialAuth } from "./types";
-import { practicePath } from "@/lib/practiceRoutes";
+import { practicePath, taskPickerPath } from "@/lib/practiceRoutes";
 
 export type { SpeakingPracticeInitialAuth };
 
@@ -74,6 +74,10 @@ const SpeakingPractice = ({
   };
 
   const handleBackToPracticeList = () => {
+    if (selectedTaskId) {
+      router.push(taskPickerPath("speaking", selectedTaskId));
+      return;
+    }
     router.push("/practice-overview");
   };
 

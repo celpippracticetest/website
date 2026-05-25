@@ -10,6 +10,7 @@ import BorderColor from "@mui/icons-material/BorderColor";
 import Mic from "@mui/icons-material/Mic";
 import { Box } from "@/components/ui/Box";
 import { useState, useEffect } from "react";
+import { LIVE_STATS_POLL_MS } from "@/hooks/useRecentSignupsLiveStat";
 
 interface LiveStatsResponse {
   success: boolean;
@@ -24,7 +25,7 @@ interface LiveStatsResponse {
 }
 
 interface OnlineUsersCountProps {
-  /** Refresh interval in milliseconds (default: 10000 = 10 seconds) */
+  /** Refresh interval in milliseconds (default matches GA4 server cache cadence). */
   refreshInterval?: number;
   /** Show icon */
   showIcon?: boolean;
@@ -43,7 +44,7 @@ interface OnlineUsersCountProps {
  * Uses React Query to poll the API every 10 seconds
  */
 export default function OnlineUsersCount({
-  refreshInterval = 10000,
+  refreshInterval = LIVE_STATS_POLL_MS,
   showIcon = true,
   className = "",
   variant = "default",

@@ -2,10 +2,14 @@
 
 import { useEffect, useState } from "react";
 
+/** Client poll interval — keep in sync with server GA4 cache (~90s). */
+export const LIVE_STATS_POLL_MS = 120_000;
+
 export type LiveStatsPayload = {
   success?: boolean;
   stats?: {
     recentSignups?: number;
+    recentVisits?: number;
     onlineUsers?: number;
   };
 };
@@ -26,6 +30,14 @@ export function parseRecentSignupsFromLiveStats(
 ): number | null {
   if (data.success === false) return null;
   return parsePositiveLiveStat(data.stats?.recentSignups, options);
+}
+
+export function parseRecentVisitsFromLiveStats(
+  data: LiveStatsPayload,
+  options?: { allowZero?: boolean }
+): number | null {
+  if (data.success === false) return null;
+  return parsePositiveLiveStat(data.stats?.recentVisits, options);
 }
 
 export function parseOnlineUsersFromLiveStats(
@@ -68,7 +80,51 @@ export function useRecentSignupsLiveStat(
     };
 
     void load();
-    const id = setInterval(load, 30_000);
+    const id = setInterval(load, LIVE_STATS_POLL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [enabled]);
+
+  const display = count != null ? count.toLocaleString() : fallbackDisplay;
+
+  return { count, display };
+}
+
+/**
+ * Polls `/api/analytics/live-stats` for GA4 `totalUsers` (24h), used as “visits today”.
+ */
+export function useRecentVisitsLiveStat(
+  fallbackDisplay: string,
+  options?: { enabled?: boolean }
+): {
+  count: number | null;
+  display: string;
+} {
+  const enabled = options?.enabled ?? true;
+  const [count, setCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const res = await fetch("/api/analytics/live-stats");
+        if (!res.ok) return;
+        const data = (await res.json()) as LiveStatsPayload;
+        const next = parseRecentVisitsFromLiveStats(data);
+        if (!cancelled && next != null) {
+          setCount(next);
+        }
+      } catch {
+        /* keep fallback */
+      }
+    };
+
+    void load();
+    const id = setInterval(load, LIVE_STATS_POLL_MS);
     return () => {
       cancelled = true;
       clearInterval(id);
@@ -112,7 +168,7 @@ export function useOnlineUsersLiveStat(
     };
 
     void load();
-    const id = setInterval(load, 30_000);
+    const id = setInterval(load, LIVE_STATS_POLL_MS);
     return () => {
       cancelled = true;
       clearInterval(id);

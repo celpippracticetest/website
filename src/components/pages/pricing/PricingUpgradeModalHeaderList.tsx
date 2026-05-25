@@ -35,6 +35,8 @@ function LivePulseDot() {
 export type PricingUpgradeModalHeaderListProps = {
   /** When set, shows a “joined today” row (navbar modal live stat). */
   signupDisplay?: string;
+  /** When set, shows a “visits today” row (hero live stat). */
+  visitsDisplay?: string;
   className?: string;
   itemTextClassName?: string;
   emphasisTextClassName?: string;
@@ -88,6 +90,7 @@ function HeaderListItem({
 
 export function PricingUpgradeModalHeaderList({
   signupDisplay,
+  visitsDisplay,
   className,
   itemTextClassName,
   emphasisTextClassName,
@@ -111,7 +114,37 @@ export function PricingUpgradeModalHeaderList({
           </HeaderListItem>
         );
       })}
-      {signupDisplay != null ? (
+      {visitsDisplay != null ? (
+        <li className="flex items-start gap-2.5 text-sm leading-snug">
+          <span
+            className={cn(
+              "relative mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md",
+              USERS_ICON_STYLE.bg,
+              USERS_ICON_STYLE.text,
+              iconWrapClassName
+            )}
+            aria-hidden
+          >
+            <Users className="h-3.5 w-3.5" strokeWidth={2.25} />
+            <span className="absolute -right-0.5 -top-0.5">
+              <LivePulseDot />
+            </span>
+          </span>
+          <span
+            className={cn(
+              "flex flex-wrap items-center gap-1.5",
+              itemTextClassName ?? "text-slate-600",
+              emphasisTextClassName ?? "font-semibold text-[#1B2B5A]"
+            )}
+          >
+            <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
+              <span className="sr-only">Live — </span>
+              Live
+            </span>
+            <span>{visitsDisplay} visits today</span>
+          </span>
+        </li>
+      ) : signupDisplay != null ? (
         <li className="flex items-start gap-2.5 text-sm leading-snug">
           <span
             className={cn(

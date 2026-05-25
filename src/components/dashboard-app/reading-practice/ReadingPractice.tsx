@@ -7,6 +7,7 @@ import ListeningTaskView from "../listening-practice/ListeningTaskView";
 import { useRouter } from "nextjs-toploader/app";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
 import { useEffect } from "react";
+import { taskPickerPath } from "@/lib/practiceRoutes";
 
 interface ReadingPracticeProps {
   showHeader?: boolean;
@@ -45,6 +46,10 @@ const ReadingPractice = ({
   }, [selectedPracticeId, selectedTaskId, router]);
 
   const handleBackToPracticeList = () => {
+    if (selectedTaskId) {
+      router.push(taskPickerPath("reading", selectedTaskId));
+      return;
+    }
     router.push("/practice-overview");
   };
 

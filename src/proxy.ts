@@ -112,12 +112,17 @@ export default async function proxy(req: NextRequest) {
     return applyMarketingCookiesToResponse(req, response);
   };
 
-  if (PRACTICE_HUB_PATHS.has(req.nextUrl.pathname)) {
-    const practiceId = req.nextUrl.searchParams.get("selectedPracticeId");
-    const taskId = req.nextUrl.searchParams.get("taskId");
-    if (practiceId && taskId) {
+  const practiceId = req.nextUrl.searchParams.get("selectedPracticeId");
+  const taskId = req.nextUrl.searchParams.get("taskId");
+  if (practiceId && taskId) {
+    const hubMatch = PRACTICE_HUB_PATHS.has(req.nextUrl.pathname);
+    const slugMatch = /^\/(speaking|reading|writing|listening)(\/|$)/.test(
+      req.nextUrl.pathname,
+    );
+    if (hubMatch || slugMatch) {
       const url = req.nextUrl.clone();
-      url.pathname = `${req.nextUrl.pathname}/${practiceId}/${taskId}`;
+      const skill = req.nextUrl.pathname.split("/").filter(Boolean)[0];
+      url.pathname = `/${skill}/${practiceId}/${taskId}`;
       url.search = "";
       return end(NextResponse.redirect(url, 301));
     }
