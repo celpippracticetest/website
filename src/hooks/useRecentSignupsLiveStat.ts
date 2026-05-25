@@ -93,7 +93,7 @@ export function useRecentSignupsLiveStat(
 }
 
 /**
- * Polls `/api/analytics/live-stats` for GA4 `totalUsers` (24h), used as “visits today”.
+ * Polls `/api/analytics/live-stats` for GA4 `sessions` (24h), used as “visits today”.
  */
 export function useRecentVisitsLiveStat(
   fallbackDisplay: string,

@@ -58,7 +58,7 @@ export async function buildGa4LiveStatsBody(): Promise<LiveStatsJsonBody> {
   const dateFmt = (d: Date) => d.toISOString().slice(0, 10);
 
   let activeUsersNow: number | null = null;
-  let totalUsers24h: number | null = null;
+  let sessionsToday: number | null = null;
   let newUsers24h: number | null = null;
   let totalPracticingFromGa4: number | null = null;
   const warnings: string[] = [];
@@ -90,14 +90,14 @@ export async function buildGa4LiveStatsBody(): Promise<LiveStatsJsonBody> {
           endDate: dateFmt(today),
         },
       ],
-      metrics: [{ name: "totalUsers" }, { name: "newUsers" }],
+      metrics: [{ name: "sessions" }, { name: "newUsers" }],
     });
-    const parsedTotalUsers = parseInt(
+    const parsedSessions = parseInt(
       last24HoursResponse.rows?.[0]?.metricValues?.[0]?.value ?? "",
       10,
     );
-    if (Number.isFinite(parsedTotalUsers)) {
-      totalUsers24h = parsedTotalUsers;
+    if (Number.isFinite(parsedSessions)) {
+      sessionsToday = parsedSessions;
     }
     const parsedNewUsers = parseInt(
       last24HoursResponse.rows?.[0]?.metricValues?.[1]?.value ?? "",
@@ -209,7 +209,7 @@ export async function buildGa4LiveStatsBody(): Promise<LiveStatsJsonBody> {
 
   console.log("[GA4 Live Stats - service_account]", {
     activeUsersNow,
-    totalUsers24h,
+    sessionsToday,
     newUsers24h,
     totalPracticing,
     skillBreakdown,
@@ -231,12 +231,17 @@ export async function buildGa4LiveStatsBody(): Promise<LiveStatsJsonBody> {
     };
   }
 
+  const recentVisits =
+    sessionsToday != null && newUsers24h != null
+      ? Math.max(sessionsToday, newUsers24h)
+      : (sessionsToday ?? newUsers24h);
+
   return {
     success: true,
     stats: {
       ...(onlineUsers !== null ? { onlineUsers } : {}),
       ...(newUsers24h !== null ? { recentSignups: newUsers24h } : {}),
-      ...(totalUsers24h !== null ? { recentVisits: totalUsers24h } : {}),
+      ...(recentVisits !== null ? { recentVisits } : {}),
       practicingUsers: totalPracticing,
       recentPractices: totalPracticing,
       skillBreakdown,

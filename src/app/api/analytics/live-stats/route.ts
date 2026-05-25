@@ -33,7 +33,7 @@ function statusForBody(body: { success?: boolean; error?: string }): number {
  * Fetches real-time statistics from Google Analytics 4 (cached ~90s server-side).
  * - onlineUsers: realtime activeUsers only (omitted when realtime quota/errors)
  * - recentSignups: newUsers in the last ~24h
- * - recentVisits: totalUsers in the last ~24h
+ * - recentVisits: sessions in the last ~24h (yesterday through today)
  */
 export async function GET() {
   try {

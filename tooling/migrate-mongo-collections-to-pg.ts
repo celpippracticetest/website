@@ -25,6 +25,7 @@ export const DEFAULT_MONGO_PG_SYNC_COLLECTIONS: readonly string[] = [
   "account_deletion_flow_events",
   "account_deletion_surveys",
   "account_device_restrictions",
+  // "account_access_signals" — relational `public.account_access_signals` (migration 20260521160000).
   // "answers" — relational `public.answers` (migrations 20260515133000, 20260521150000).
   "blog_target_keywords",
   "cancellation_flow_events",
