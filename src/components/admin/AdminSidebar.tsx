@@ -112,7 +112,12 @@ const contentItems: SidebarGroup = {
   ],
 };
 
-const settingsItem: SidebarItem = { key: "settings", label: "Settings", icon: Settings, href: "/cms/settings" };
+const settingsItem: SidebarItem = {
+  key: "settings",
+  label: "Settings",
+  icon: Settings,
+  href: "/cms/dashboard",
+};
 
 export function AdminSidebar({
   mobileOpen,

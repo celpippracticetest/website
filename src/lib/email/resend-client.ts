@@ -55,22 +55,22 @@ function extractBareEmail(value: string): string | null {
 }
 
 /**
- * Resend-verified sender. Prefers a full `Name <email>` from FROM_EMAIL; otherwise
- * wraps RESEND_FROM_EMAIL (bare) as `CELPIP Practice <email>`.
+ * Resend-verified sender. When set, RESEND_FROM_EMAIL wins over FROM_EMAIL
+ * (FROM_EMAIL is often an SMTP/affiliate address that is not verified in Resend).
  */
 export function resolveResendFromAddress(): string {
   const fromEmail = stripEnvQuotes(process.env.FROM_EMAIL ?? "");
   const resendEmail = stripEnvQuotes(process.env.RESEND_FROM_EMAIL ?? "");
 
+  if (resendEmail) {
+    if (resendEmail.includes("<")) return resendEmail;
+    const bare = extractBareEmail(resendEmail) || resendEmail;
+    return `CELPIP Practice <${bare}>`;
+  }
+
   if (fromEmail.includes("<")) return fromEmail;
-  if (resendEmail.includes("<")) return resendEmail;
 
-  const bare =
-    extractBareEmail(resendEmail) ||
-    extractBareEmail(fromEmail) ||
-    resendEmail ||
-    fromEmail;
-
+  const bare = extractBareEmail(fromEmail) || fromEmail;
   if (bare) {
     return `CELPIP Practice <${bare}>`;
   }
@@ -146,6 +146,95 @@ export async function listResendAudiences(): Promise<ResendAudienceOption[]> {
 /**
  * Add a lead to a Resend Audience. Creates the contact, or updates first name on duplicate email.
  */
+export async function createResendAudience(name: string): Promise<{ id: string; name: string }> {
+  const resend = getResendClient();
+  if (!resend) {
+    throw new Error("RESEND_API_KEY is not configured");
+  }
+  const trimmed = name.trim().slice(0, 120);
+  if (!trimmed) {
+    throw new Error("Audience name is required");
+  }
+  const { data, error } = await resend.audiences.create({ name: trimmed });
+  if (error || !data?.id) {
+    throw new Error(error?.message || "Resend could not create the audience");
+  }
+  return { id: data.id, name: data.name };
+}
+
+export type ResendAudienceSyncResult = {
+  audienceId: string;
+  audienceName: string;
+  attempted: number;
+  added: number;
+  failed: number;
+  capped: boolean;
+  cap: number;
+  errors: string[];
+};
+
+export async function syncRecipientsToResendAudience(input: {
+  audienceId: string;
+  audienceName?: string;
+  recipients: { email: string; firstName: string }[];
+  cap?: number;
+  delayMs?: number;
+}): Promise<ResendAudienceSyncResult> {
+  const cap = input.cap ?? 2000;
+  const delayMs = input.delayMs ?? 150;
+  const audienceId = input.audienceId.trim();
+  if (!audienceId) {
+    throw new Error("Resend audience ID is required");
+  }
+
+  const unique: { email: string; firstName: string }[] = [];
+  const seen = new Set<string>();
+  for (const r of input.recipients) {
+    const email = r.email.trim().toLowerCase();
+    if (!email || seen.has(email)) continue;
+    seen.add(email);
+    unique.push({
+      email,
+      firstName: r.firstName.trim().slice(0, 80) || email.split("@")[0] || "Friend",
+    });
+  }
+
+  const batch = unique.slice(0, cap);
+  let added = 0;
+  let failed = 0;
+  const errors: string[] = [];
+
+  for (const recipient of batch) {
+    try {
+      await addContactToResendAudience({
+        audienceId,
+        email: recipient.email,
+        firstName: recipient.firstName,
+      });
+      added += 1;
+    } catch (error) {
+      failed += 1;
+      const msg = error instanceof Error ? error.message : "sync failed";
+      errors.push(`${recipient.email}: ${msg}`);
+      if (errors.length >= 10) continue;
+    }
+    if (delayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+
+  return {
+    audienceId,
+    audienceName: input.audienceName?.trim() || audienceId,
+    attempted: batch.length,
+    added,
+    failed,
+    capped: unique.length > cap,
+    cap,
+    errors: errors.slice(0, 10),
+  };
+}
+
 export async function addContactToResendAudience(input: {
   audienceId: string;
   email: string;

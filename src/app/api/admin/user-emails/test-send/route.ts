@@ -77,15 +77,20 @@ export async function POST(request: NextRequest) {
     console.error("[admin user-emails test-send] failed:", error);
 
     if (error instanceof ResendSendError) {
+      const from = resolveResendFromAddress();
+      const errLower = error.message.toLowerCase();
+      let hint: string | undefined;
+      if (error.code === "validation_error" || errLower.includes("domain") || errLower.includes("from")) {
+        hint =
+          "Use RESEND_FROM_EMAIL for a domain verified in Resend (Resend ignores unverified FROM_EMAIL / affiliate addresses).";
+      }
       return NextResponse.json(
         {
           ok: false,
           error: error.message,
           code: error.code ?? null,
-          hint:
-            error.code === "validation_error"
-              ? "Check RESEND_FROM_EMAIL / FROM_EMAIL matches a verified domain in Resend."
-              : undefined,
+          from: from || null,
+          hint,
         },
         { status: 502 }
       );

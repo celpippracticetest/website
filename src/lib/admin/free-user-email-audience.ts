@@ -5,10 +5,22 @@ import { getDb } from "@/lib/appDocumentsClient";
 import { getSql } from "@/lib/pg/pool";
 import {
   FREE_USER_EMAIL_PREVIEW_LIMIT,
+  FREE_USER_EMAIL_RESEND_SYNC_LIMIT,
   FREE_USER_EMAIL_SEND_LIMIT,
   signupPeriodStart,
   type SignupPeriod,
 } from "@/lib/admin/free-user-email-config";
+
+type AudienceListOpts = {
+  forSend?: boolean;
+  forResendSync?: boolean;
+};
+
+function resolveAudienceLimit(opts: AudienceListOpts): number {
+  if (opts.forResendSync) return FREE_USER_EMAIL_RESEND_SYNC_LIMIT;
+  if (opts.forSend) return FREE_USER_EMAIL_SEND_LIMIT;
+  return FREE_USER_EMAIL_PREVIEW_LIMIT;
+}
 
 export type FreeUserEmailRecipient = {
   userId: string;
@@ -47,10 +59,10 @@ function normalizeRecipient(row: {
 async function listFromAuthUsers(
   sql: Sql,
   period: SignupPeriod,
-  opts: { forSend?: boolean }
+  opts: AudienceListOpts
 ): Promise<FreeUserEmailAudienceResult> {
   const since = signupPeriodStart(period);
-  const limit = opts.forSend ? FREE_USER_EMAIL_SEND_LIMIT : FREE_USER_EMAIL_PREVIEW_LIMIT;
+  const limit = resolveAudienceLimit(opts);
 
   const countRows = await sql<{ c: number }[]>`
     SELECT COUNT(*)::int AS c
@@ -121,10 +133,10 @@ async function listFromAuthUsers(
 
 async function listFromMongo(
   period: SignupPeriod,
-  opts: { forSend?: boolean }
+  opts: AudienceListOpts
 ): Promise<FreeUserEmailAudienceResult> {
   const since = signupPeriodStart(period);
-  const limit = opts.forSend ? FREE_USER_EMAIL_SEND_LIMIT : FREE_USER_EMAIL_PREVIEW_LIMIT;
+  const limit = resolveAudienceLimit(opts);
   const db = await getDb();
   const usersCollection = db.collection("users");
 
@@ -171,7 +183,7 @@ async function listFromMongo(
 
 export async function getFreeUserEmailAudience(
   period: SignupPeriod,
-  opts: { forSend?: boolean } = {}
+  opts: AudienceListOpts = {}
 ): Promise<FreeUserEmailAudienceResult> {
   try {
     const sql = getSql();
@@ -191,4 +203,22 @@ export async function listFreeUserEmailRecipientsForSend(
 ): Promise<FreeUserEmailRecipient[]> {
   const result = await getFreeUserEmailAudience(period, { forSend: true });
   return result.sample;
+}
+
+export async function listFreeUserEmailRecipientsForResendSync(
+  period: SignupPeriod
+): Promise<FreeUserEmailRecipient[]> {
+  const result = await getFreeUserEmailAudience(period, { forResendSync: true });
+  return dedupeRecipientsByEmail(result.sample);
+}
+
+export function dedupeRecipientsByEmail(
+  recipients: FreeUserEmailRecipient[]
+): FreeUserEmailRecipient[] {
+  const seen = new Set<string>();
+  return recipients.filter((r) => {
+    if (seen.has(r.email)) return false;
+    seen.add(r.email);
+    return true;
+  });
 }

@@ -26,6 +26,15 @@ type AudienceData = {
 
 const PERIOD_OPTIONS: SignupPeriod[] = ["last_3_days", "last_7_days", "last_30_days"];
 
+type ResendAudienceOption = { id: string; name: string };
+
+type ResendAudienceMode = "create" | "existing";
+
+function defaultResendAudienceName(period: SignupPeriod): string {
+  const date = new Date().toISOString().slice(0, 10);
+  return `CMS free users · ${SIGNUP_PERIOD_LABELS[period]} · ${date}`;
+}
+
 const DEFAULT_SUBJECT = "{{first_name}}, unlock CELPIP Plus";
 const DEFAULT_HTML = `<!DOCTYPE html>
 <html>
@@ -46,6 +55,11 @@ export default function UserEmailsPage() {
   const [isLoadingAudience, setIsLoadingAudience] = useState(true);
   const [isSendingTest, setIsSendingTest] = useState(false);
   const [isSendingBulk, setIsSendingBulk] = useState(false);
+  const [isSyncingResend, setIsSyncingResend] = useState(false);
+  const [resendAudiences, setResendAudiences] = useState<ResendAudienceOption[]>([]);
+  const [resendAudienceMode, setResendAudienceMode] = useState<ResendAudienceMode>("create");
+  const [resendAudienceId, setResendAudienceId] = useState("");
+  const [resendAudienceName, setResendAudienceName] = useState("");
   const [message, setMessage] = useState<string | null>(null);
 
   const mergeTagRows = useMemo(
@@ -81,9 +95,30 @@ export default function UserEmailsPage() {
     }
   }, [period]);
 
+  const loadResendAudiences = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/user-emails/resend-audience", {
+        cache: "no-store",
+      });
+      if (!response.ok) return;
+      const payload = await response.json();
+      if (Array.isArray(payload?.data)) {
+        setResendAudiences(payload.data);
+        setResendAudienceId((prev) => prev || payload.data[0]?.id || "");
+      }
+    } catch (error) {
+      console.error("[user-emails-cms] loadResendAudiences failed:", error);
+    }
+  }, []);
+
   useEffect(() => {
     loadAudience();
-  }, [loadAudience]);
+    loadResendAudiences();
+  }, [loadAudience, loadResendAudiences]);
+
+  useEffect(() => {
+    setResendAudienceName(defaultResendAudienceName(period));
+  }, [period]);
 
   const sendTest = async () => {
     const to = testEmail.trim();
@@ -106,8 +141,13 @@ export default function UserEmailsPage() {
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const hint = payload?.hint ? ` ${payload.hint}` : "";
-        setMessage([payload?.error || "Test send failed.", payload?.code, hint].filter(Boolean).join(" — "));
+        const parts = [
+          payload?.error || "Test send failed.",
+          payload?.code,
+          payload?.from ? `From: ${payload.from}` : null,
+          payload?.hint,
+        ].filter(Boolean);
+        setMessage(parts.join(" — "));
         return;
       }
       setMessage(`Test email sent via Resend (id: ${payload.resendId ?? "n/a"}). Subject prefixed with [TEST].`);
@@ -116,6 +156,78 @@ export default function UserEmailsPage() {
       setMessage("Test send failed.");
     } finally {
       setIsSendingTest(false);
+    }
+  };
+
+  const syncToResendAudience = async () => {
+    const count = audience?.totalCount ?? 0;
+    if (count === 0) {
+      setMessage("No recipients in this audience.");
+      return;
+    }
+    if (resendAudienceMode === "existing" && !resendAudienceId.trim()) {
+      setMessage("Select a Resend audience.");
+      return;
+    }
+
+    const label = SIGNUP_PERIOD_LABELS[period];
+    const targetLabel =
+      resendAudienceMode === "create"
+        ? resendAudienceName.trim() || defaultResendAudienceName(period)
+        : resendAudiences.find((a) => a.id === resendAudienceId)?.name ?? resendAudienceId;
+
+    if (
+      !confirm(
+        `Add up to ${Math.min(count, 2000)} contacts from "${label}" to Resend audience "${targetLabel}"? Existing contacts in that audience are kept; duplicates are updated.`
+      )
+    ) {
+      return;
+    }
+
+    setIsSyncingResend(true);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/admin/user-emails/resend-audience", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          period,
+          mode: resendAudienceMode,
+          audienceId: resendAudienceMode === "existing" ? resendAudienceId : undefined,
+          audienceName:
+            resendAudienceMode === "create"
+              ? resendAudienceName.trim() || defaultResendAudienceName(period)
+              : undefined,
+          confirm: true,
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessage(payload?.error || "Resend audience sync failed.");
+        return;
+      }
+
+      const errSuffix =
+        Array.isArray(payload.errors) && payload.errors.length > 0
+          ? ` Errors: ${payload.errors.slice(0, 2).join("; ")}`
+          : "";
+      const capSuffix = payload.capped
+        ? ` (capped at ${payload.cap} — run again to add more)`
+        : "";
+
+      setMessage(
+        `Resend audience "${payload.audienceName}" (${payload.audienceId}): added ${payload.added}/${payload.attempted} contacts.${capSuffix}${payload.failed ? ` ${payload.failed} failed.${errSuffix}` : ""} Use Resend Broadcasts to email this segment.`
+      );
+      if (resendAudienceMode === "create") {
+        await loadResendAudiences();
+        setResendAudienceId(payload.audienceId);
+        setResendAudienceMode("existing");
+      }
+    } catch (error) {
+      console.error("[user-emails-cms] syncToResendAudience failed:", error);
+      setMessage("Resend audience sync failed.");
+    } finally {
+      setIsSyncingResend(false);
     }
   };
 
@@ -265,6 +377,89 @@ export default function UserEmailsPage() {
             )}
           </Box>
         )}
+      </Box>
+
+      <Box className="rounded-xl border border-violet-200 bg-violet-50/50 p-5 shadow-sm">
+        <h2 className="mb-1 text-sm font-semibold text-gray-900">Resend audience (segment)</h2>
+        <p className="mb-4 text-xs text-gray-600">
+          Save the current filter as contacts in a Resend Audience, then send a broadcast from the{" "}
+          <a
+            className="text-primary underline"
+            href="https://resend.com/audiences"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Resend dashboard
+          </a>
+          . Sync is capped at 2,000 contacts per run.
+        </p>
+
+        <Box className="mb-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setResendAudienceMode("create")}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+              resendAudienceMode === "create"
+                ? "bg-violet-600 text-white"
+                : "bg-white text-gray-700 ring-1 ring-gray-300"
+            }`}
+          >
+            Create new audience
+          </button>
+          <button
+            type="button"
+            onClick={() => setResendAudienceMode("existing")}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+              resendAudienceMode === "existing"
+                ? "bg-violet-600 text-white"
+                : "bg-white text-gray-700 ring-1 ring-gray-300"
+            }`}
+          >
+            Add to existing
+          </button>
+        </Box>
+
+        {resendAudienceMode === "create" ? (
+          <label className="mb-3 flex flex-col gap-1">
+            <span className="text-xs font-medium text-gray-700">New audience name</span>
+            <input
+              type="text"
+              value={resendAudienceName}
+              onChange={(e) => setResendAudienceName(e.target.value)}
+              className="h-10 max-w-lg rounded-lg border border-gray-300 px-3 text-sm"
+            />
+          </label>
+        ) : (
+          <label className="mb-3 flex flex-col gap-1">
+            <span className="text-xs font-medium text-gray-700">Resend audience</span>
+            <select
+              value={resendAudienceId}
+              onChange={(e) => setResendAudienceId(e.target.value)}
+              className="h-10 max-w-lg rounded-lg border border-gray-300 px-3 text-sm"
+            >
+              {resendAudiences.length === 0 ? (
+                <option value="">No audiences — create one first</option>
+              ) : (
+                resendAudiences.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))
+              )}
+            </select>
+          </label>
+        )}
+
+        <button
+          type="button"
+          onClick={syncToResendAudience}
+          disabled={isSyncingResend || isLoadingAudience || (audience?.totalCount ?? 0) === 0}
+          className="h-10 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-60"
+        >
+          {isSyncingResend
+            ? "Syncing…"
+            : `Sync ${Math.min(audience?.totalCount ?? 0, 2000)} users to Resend`}
+        </button>
       </Box>
 
       <Box className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-4">

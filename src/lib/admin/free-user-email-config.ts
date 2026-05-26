@@ -28,3 +28,6 @@ export const FREE_USER_EMAIL_PREVIEW_LIMIT = 25;
 
 /** Hard cap per bulk send to protect Resend quota and request timeouts. */
 export const FREE_USER_EMAIL_SEND_LIMIT = 500;
+
+/** Max contacts synced to a Resend audience per request. */
+export const FREE_USER_EMAIL_RESEND_SYNC_LIMIT = 2000;
