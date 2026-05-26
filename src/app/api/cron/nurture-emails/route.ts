@@ -7,6 +7,7 @@ import {
   NURTURE_EMAIL_CONFIG_COLLECTION,
   NURTURE_EMAIL_CONFIG_KEY,
   type NurtureEmailConfigInput,
+  type NurtureTriggerType,
 } from "@/lib/nurture-email/config";
 import {
   buildNurtureMergeFields,
@@ -17,15 +18,12 @@ import {
   findNextNurtureStage,
   hasElapsedHours,
   toDate,
-  type NurtureCandidate,
 } from "@/lib/nurture-email/stage-scheduler";
-import type { NurtureTriggerType } from "@/lib/nurture-email/config";
-import { mongoExprWebUserId } from "@/lib/users/userDocumentIdentity";
+import { listNurtureCandidates } from "@/lib/nurture-email/candidates";
 
 const NURTURE_STATE_COLLECTION = "usernurturestates";
 const NURTURE_METRICS_COLLECTION = "usernurtureemailstats";
 const NURTURE_LOCK_COLLECTION = "usernurtureemaildispatchlocks";
-const SIGNUP_LOOKBACK_DAYS = 60;
 
 type ResolvedNurture = {
   userId: string;
@@ -57,102 +55,6 @@ async function getNurtureEmailConfig(): Promise<NurtureEmailConfigInput> {
   return buildNurtureEmailConfigWithDefaults(doc?.config || null);
 }
 
-async function getCandidates(limit: number): Promise<NurtureCandidate[]> {
-  const db = await getDb();
-  const usersCollection = db.collection("users");
-  const minSignupAt = new Date(Date.now() - SIGNUP_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
-
-  const rows = await usersCollection
-    .aggregate([
-      {
-        $project: {
-          _id: 0,
-          userId: mongoExprWebUserId(),
-          signupAt: "$createdAt",
-          plan: "$plan",
-        },
-      },
-      {
-        $match: {
-          userId: { $type: "string", $ne: "" },
-          signupAt: { $gte: minSignupAt },
-        },
-      },
-      {
-        $lookup: {
-          from: "useractivities",
-          let: { uid: "$userId" },
-          pipeline: [
-            { $match: { $expr: { $eq: ["$userId", "$$uid"] } } },
-            {
-              $group: {
-                _id: null,
-                activityCount: { $sum: 1 },
-                firstActivityAt: { $min: "$timestampUtc" },
-                lastActivityAt: { $max: "$timestampUtc" },
-              },
-            },
-          ],
-          as: "activitySummary",
-        },
-      },
-      {
-        $addFields: {
-          activityCount: {
-            $ifNull: [{ $arrayElemAt: ["$activitySummary.activityCount", 0] }, 0],
-          },
-          firstActivityAt: { $arrayElemAt: ["$activitySummary.firstActivityAt", 0] },
-          lastActivityAt: { $arrayElemAt: ["$activitySummary.lastActivityAt", 0] },
-          isSubscribed: {
-            $in: ["$plan", ["plus"]],
-          },
-        },
-      },
-      {
-        $lookup: {
-          from: NURTURE_STATE_COLLECTION,
-          localField: "userId",
-          foreignField: "userId",
-          as: "nurtureState",
-        },
-      },
-      {
-        $addFields: {
-          lastNurtureSentAt: { $arrayElemAt: ["$nurtureState.lastNurtureSentAt", 0] },
-          nurtureFlow: { $arrayElemAt: ["$nurtureState.nurtureFlow", 0] },
-          nurtureStageId: { $arrayElemAt: ["$nurtureState.nurtureStageId", 0] },
-          nurtureWindowStartedAt: { $arrayElemAt: ["$nurtureState.nurtureWindowStartedAt", 0] },
-          nurturesInWindow: { $arrayElemAt: ["$nurtureState.nurturesInWindow", 0] },
-        },
-      },
-      {
-        $match: {
-          isSubscribed: false,
-        },
-      },
-      {
-        $project: {
-          userId: 1,
-          signupAt: 1,
-          firstActivityAt: 1,
-          lastActivityAt: 1,
-          activityCount: 1,
-          isSubscribed: 1,
-          lastNurtureSentAt: 1,
-          nurtureFlow: 1,
-          nurtureStageId: 1,
-          nurtureWindowStartedAt: 1,
-          nurturesInWindow: 1,
-        },
-      },
-      { $sort: { signupAt: -1 } },
-      { $limit: limit },
-    ])
-    .toArray();
-
-  return rows as NurtureCandidate[];
-}
-
 export async function GET(request: NextRequest) {
   try {
     if (!isAuthorizedCron(request)) {
@@ -171,7 +73,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const candidates = await getCandidates(1500);
+    const candidates = await listNurtureCandidates(1500);
     const db = await getDb();
     const stateCollection = db.collection(NURTURE_STATE_COLLECTION);
     const metricsCollection = db.collection(NURTURE_METRICS_COLLECTION);

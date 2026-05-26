@@ -9,23 +9,13 @@ import {
   type ReminderEmailConfigInput,
   type ReminderEmailStage,
 } from "@/lib/reminder-email/config";
+import {
+  listReminderCandidates,
+  type ReminderCandidate,
+  type ReminderFlow,
+} from "@/lib/reminder-email/candidates";
 
-type ReminderFlow = "signup_no_activity" | "inactive";
 type ABVariant = "A" | "B";
-
-type Candidate = {
-  userId: string;
-  signupAt?: Date;
-  lastActivityAt?: Date;
-  activityCount: number;
-  isSubscribed?: boolean;
-  reminderFlow?: ReminderFlow;
-  reminderStageId?: string;
-  lastReminderSentAt?: Date;
-  lastEngagedAt?: Date;
-  reminderWindowStartedAt?: Date;
-  remindersInWindow?: number;
-};
 
 type ResolvedReminder = {
   userId: string;
@@ -44,7 +34,6 @@ const REMINDER_METRICS_COLLECTION = "useractivityreminderstats";
 const REMINDER_LOCK_COLLECTION = "useractivityreminderdispatchlocks";
 const SUBSCRIBER_REMINDER_COOLDOWN_HOURS = 168;
 const DEFAULT_REMINDER_COOLDOWN_HOURS = 24;
-const SIGNUP_LOOKBACK_DAYS = 30;
 
 function isAuthorizedCron(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -96,98 +85,8 @@ async function getReminderEmailConfig(): Promise<ReminderEmailConfigInput> {
   return buildReminderEmailConfigWithDefaults(doc?.config || null);
 }
 
-async function getCandidates(limit: number): Promise<Candidate[]> {
-  const db = await getDb();
-  const usersCollection = db.collection("users");
-  const minSignupAt = new Date(Date.now() - SIGNUP_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
-
-  const rows = await usersCollection
-    .aggregate([
-      {
-        $project: {
-          _id: 0,
-          userId: "$clerkUserId",
-          signupAt: "$createdAt",
-          plan: "$plan",
-        },
-      },
-      {
-        $match: {
-          userId: { $type: "string", $ne: "" },
-          signupAt: { $gte: minSignupAt },
-        },
-      },
-      {
-        $lookup: {
-          from: "useractivities",
-          let: { uid: "$userId" },
-          pipeline: [
-            { $match: { $expr: { $eq: ["$userId", "$$uid"] } } },
-            {
-              $group: {
-                _id: null,
-                activityCount: { $sum: 1 },
-                lastActivityAt: { $max: "$timestampUtc" },
-              },
-            },
-          ],
-          as: "activitySummary",
-        },
-      },
-      {
-        $addFields: {
-          activityCount: {
-            $ifNull: [{ $arrayElemAt: ["$activitySummary.activityCount", 0] }, 0],
-          },
-          lastActivityAt: { $arrayElemAt: ["$activitySummary.lastActivityAt", 0] },
-          isSubscribed: {
-            $in: ["$plan", ["plus"]],
-          },
-        },
-      },
-      {
-        $lookup: {
-          from: REMINDER_STATE_COLLECTION,
-          localField: "userId",
-          foreignField: "userId",
-          as: "reminderState",
-        },
-      },
-      {
-        $addFields: {
-          lastReminderSentAt: { $arrayElemAt: ["$reminderState.lastReminderSentAt", 0] },
-          reminderFlow: { $arrayElemAt: ["$reminderState.reminderFlow", 0] },
-          reminderStageId: { $arrayElemAt: ["$reminderState.reminderStageId", 0] },
-          lastEngagedAt: { $arrayElemAt: ["$reminderState.lastEngagedAt", 0] },
-          reminderWindowStartedAt: { $arrayElemAt: ["$reminderState.reminderWindowStartedAt", 0] },
-          remindersInWindow: { $arrayElemAt: ["$reminderState.remindersInWindow", 0] },
-        },
-      },
-      {
-        $project: {
-          userId: 1,
-          signupAt: 1,
-          activityCount: 1,
-          lastActivityAt: 1,
-          isSubscribed: 1,
-          lastReminderSentAt: 1,
-          reminderFlow: 1,
-          reminderStageId: 1,
-          lastEngagedAt: 1,
-          reminderWindowStartedAt: 1,
-          remindersInWindow: 1,
-        },
-      },
-      { $sort: { signupAt: -1 } },
-      { $limit: limit },
-    ])
-    .toArray();
-
-  return rows as Candidate[];
-}
-
 function findNextStageForCandidate(
-  candidate: Candidate,
+  candidate: ReminderCandidate,
   stages: ReminderEmailStage[],
   now: Date
 ): ReminderEmailStage | null {
@@ -274,7 +173,7 @@ export async function GET(request: NextRequest) {
     }
 
     const now = new Date();
-    const candidates = await getCandidates(1000);
+    const candidates = await listReminderCandidates(1000);
     const reminderEmailConfig = await getReminderEmailConfig();
     const stages = reminderEmailConfig.stages;
 
