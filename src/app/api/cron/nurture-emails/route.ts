@@ -20,6 +20,7 @@ import {
   type NurtureCandidate,
 } from "@/lib/nurture-email/stage-scheduler";
 import type { NurtureTriggerType } from "@/lib/nurture-email/config";
+import { mongoExprWebUserId } from "@/lib/users/userDocumentIdentity";
 
 const NURTURE_STATE_COLLECTION = "usernurturestates";
 const NURTURE_METRICS_COLLECTION = "usernurtureemailstats";
@@ -66,7 +67,7 @@ async function getCandidates(limit: number): Promise<NurtureCandidate[]> {
       {
         $project: {
           _id: 0,
-          userId: "$clerkUserId",
+          userId: mongoExprWebUserId(),
           signupAt: "$createdAt",
           plan: "$plan",
         },

@@ -77,3 +77,35 @@ export function matchUsersCollectionByWebUserIds(...userIds: string[]) {
 export function supabaseAuthUserIdFieldsOnUserDoc(userId: string) {
   return { supabaseUserId: userId, sub: userId };
 }
+
+/**
+ * Mongo aggregation expression for the canonical web user id on `users` docs.
+ * Prefers Supabase UUID (matches `useractivities.userId`) over legacy Clerk ids.
+ */
+export function mongoExprWebUserId() {
+  return {
+    $let: {
+      vars: {
+        supa: { $ifNull: ["$supabaseUserId", "$sub"] },
+        clerk: "$clerkUserId",
+      },
+      in: {
+        $cond: {
+          if: {
+            $and: [{ $eq: [{ $type: "$$supa" }, "string"] }, { $ne: ["$$supa", ""] }],
+          },
+          then: "$$supa",
+          else: {
+            $cond: {
+              if: {
+                $and: [{ $eq: [{ $type: "$$clerk" }, "string"] }, { $ne: ["$$clerk", ""] }],
+              },
+              then: "$$clerk",
+              else: null,
+            },
+          },
+        },
+      },
+    },
+  };
+}
