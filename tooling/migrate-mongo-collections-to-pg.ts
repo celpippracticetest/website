@@ -53,7 +53,7 @@ export const DEFAULT_MONGO_PG_SYNC_COLLECTIONS: readonly string[] = [
   "paypal_subscription_grants",
   "paypal_subscription_pending",
   "plans",
-  "pricing_ab_events",
+  // "pricing_ab_events" — relational `public.pricing_ab_events` (migration 20260521180000).
   "profession_pages",
   "referralCodes",
   "referralInvitations",
@@ -68,14 +68,14 @@ export const DEFAULT_MONGO_PG_SYNC_COLLECTIONS: readonly string[] = [
   "stripe_sync_state",
   "tasks",
   // "user_activity" — relational `public.user_activity` (see migration 20260519161000).
-  "user_attribution_events",
+  // "user_attribution_events" — relational `public.user_attribution_events` (migration 20260521190000).
   // "user_learning_events" — relational `public.user_learning_events` (migration 20260519162000).
   // "useractivities" — relational `public.user_activities` (migration 20260520131000).
   "useractivityreminderdispatchlocks",
   "useractivityreminderstats",
   "useractivityreminders",
   // "user_league_points" — relational `public.user_league_points` (migration 20260519163000).
-  "userwords",
+  // "userwords" — relational `public.user_words` (migration 20260521170000).
   "userwordstudyactivities",
   // "users" — relational `public.user_profiles` (migration 20260520130000).
   "withdrawalRequests",
