@@ -59,8 +59,8 @@ export const durationMeta: Record<DurationGroupKey, DurationMeta> = {
 
 export const accessTierMeta: Record<AccessTierKey, AccessTierMeta> = {
   premium: {
-    title: "Premium",
-    summary: "Daily practice with AI feedback, full exam experience, and study support.",
+    title: "Plus",
+    summary: "Mock exams, full exam simulation, AI feedback, and the full practice library.",
   },
   premiumPlus: {
     title: "Plus",
@@ -70,11 +70,11 @@ export const accessTierMeta: Record<AccessTierKey, AccessTierMeta> = {
 
 export const planTemplates: PlanTemplate[] = [
   {
-    id: "weekly-premium",
-    label: "Weekly / Premium",
+    id: "weekly-plus",
+    label: "Weekly / Plus",
     durationKey: "weekly",
-    accessTier: "premium",
-    title: "Premium Weekly",
+    accessTier: "premiumPlus",
+    title: "Plus Weekly",
     type: "Weekly",
     planTitle: "Weekly",
     buttonTitle: "Start Weekly Plan",
@@ -84,39 +84,11 @@ export const planTemplates: PlanTemplate[] = [
     iconWrapperColor: "bg-purple5",
   },
   {
-    id: "weekly-premium-plus",
-    label: "Weekly / Premium Plus",
-    durationKey: "weekly",
-    accessTier: "premiumPlus",
-    title: "Premium Plus Weekly",
-    type: "Weekly",
-    planTitle: "Weekly",
-    buttonTitle: "Start Weekly Plan",
-    billingInterval: "week",
-    billingIntervalCount: 1,
-    iconType: "PopularPlan",
-    iconWrapperColor: "bg-purple5",
-  },
-  {
-    id: "monthly-premium",
-    label: "Monthly / Premium",
-    durationKey: "monthly",
-    accessTier: "premium",
-    title: "Premium Monthly",
-    type: "Easy Start",
-    planTitle: "Monthly",
-    buttonTitle: "Start Monthly Plan",
-    billingInterval: "month",
-    billingIntervalCount: 1,
-    iconType: "PopularPlan",
-    iconWrapperColor: "bg-purple5",
-  },
-  {
-    id: "monthly-premium-plus",
-    label: "Monthly / Premium Plus",
+    id: "monthly-plus",
+    label: "Monthly / Plus",
     durationKey: "monthly",
     accessTier: "premiumPlus",
-    title: "Premium Plus Monthly",
+    title: "Plus Monthly",
     type: "Monthly",
     planTitle: "Monthly",
     buttonTitle: "Start Monthly Plan",
@@ -126,25 +98,11 @@ export const planTemplates: PlanTemplate[] = [
     iconWrapperColor: "bg-secondary5",
   },
   {
-    id: "three-month-premium",
-    label: "3-Month / Premium",
-    durationKey: "threeMonth",
-    accessTier: "premium",
-    title: "Premium 3-Month",
-    type: "3-Month",
-    planTitle: "3 Months",
-    buttonTitle: "Choose 3-Month Plan",
-    billingInterval: "month",
-    billingIntervalCount: 3,
-    iconType: "PopularPlan",
-    iconWrapperColor: "bg-purple5",
-  },
-  {
-    id: "three-month-premium-plus",
-    label: "3-Month / Premium Plus",
+    id: "three-month-plus",
+    label: "3-Month / Plus",
     durationKey: "threeMonth",
     accessTier: "premiumPlus",
-    title: "Premium Plus 3-Month",
+    title: "Plus 3-Month",
     type: "Best Seller",
     planTitle: "3 Months",
     buttonTitle: "Choose 3-Month Plan",
@@ -154,25 +112,11 @@ export const planTemplates: PlanTemplate[] = [
     iconWrapperColor: "bg-secondary5",
   },
   {
-    id: "yearly-premium",
-    label: "Yearly / Premium",
-    durationKey: "yearly",
-    accessTier: "premium",
-    title: "Premium Yearly",
-    type: "Yearly",
-    planTitle: "Yearly",
-    buttonTitle: "Choose Yearly Plan",
-    billingInterval: "year",
-    billingIntervalCount: 1,
-    iconType: "PopularPlan",
-    iconWrapperColor: "bg-purple5",
-  },
-  {
-    id: "yearly-premium-plus",
-    label: "Yearly / Premium Plus",
+    id: "yearly-plus",
+    label: "Yearly / Plus",
     durationKey: "yearly",
     accessTier: "premiumPlus",
-    title: "Premium Plus Yearly",
+    title: "Plus Yearly",
     type: "Best Value",
     planTitle: "Yearly",
     buttonTitle: "Choose Yearly Plan",
@@ -183,6 +127,18 @@ export const planTemplates: PlanTemplate[] = [
   },
 ];
 
+const LEGACY_TEMPLATE_IDS: Record<string, string> = {
+  "weekly-premium-plus": "weekly-plus",
+  "monthly-premium-plus": "monthly-plus",
+  "three-month-premium-plus": "three-month-plus",
+  "yearly-premium-plus": "yearly-plus",
+  "weekly-premium": "weekly-plus",
+  "monthly-premium": "monthly-plus",
+  "three-month-premium": "three-month-plus",
+  "yearly-premium": "yearly-plus",
+};
+
 export function getPlanTemplateById(templateId: string) {
-  return planTemplates.find((template) => template.id === templateId) || null;
+  const resolvedId = LEGACY_TEMPLATE_IDS[templateId] ?? templateId;
+  return planTemplates.find((template) => template.id === resolvedId) || null;
 }

@@ -162,7 +162,7 @@ const MobileHeader = (props: {
               {!isSignedIn && (
                 <>
                   <div onClick={() => auth.loginInitiated("header")}>
-                    <a href="/sign-in">
+                    <a href="/sign-in?mode=sign-in">
                       <Button
                         hidden={isMobile}
                         variant="outline"

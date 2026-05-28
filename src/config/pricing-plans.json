@@ -1,0 +1,24 @@
+{
+  "plans": [
+    {
+      "id": "weekly-plus",
+      "stripePriceId": "price_1TEGcXHBKaYwAPUKmwfaqWtq",
+      "order": 1
+    },
+    {
+      "id": "monthly-plus",
+      "stripePriceId": "price_1TLoh2HBKaYwAPUKBigd2gHF",
+      "order": 2
+    },
+    {
+      "id": "three-month-plus",
+      "stripePriceId": "price_1TLoiYHBKaYwAPUKD2f7QhFM",
+      "order": 3
+    },
+    {
+      "id": "yearly-plus",
+      "stripePriceId": "price_1Rj1zmHBKaYwAPUK9VpU8i5S",
+      "order": 4
+    }
+  ]
+}

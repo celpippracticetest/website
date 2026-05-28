@@ -151,22 +151,22 @@ export function HomeTestimonialsSection() {
     <section
       ref={sectionRef}
       aria-labelledby="testimonials-heading"
-      className="bg-[linear-gradient(180deg,#F8FAFC_0%,#EEF2FF_100%)] py-14 screen744:py-20"
+      className="relative overflow-hidden py-16 screen744:py-24"
     >
       <JsonLd data={reviewsSchema} />
-      <div className="mx-auto max-w-[1200px] px-4 screen744:px-8">
+      <div className="relative z-[1] mx-auto max-w-[1200px] px-4 screen744:px-8">
         <div className="mx-auto mb-10 max-w-2xl text-center screen744:mb-14">
-          <span className="mb-3 inline-block rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">
+          <span className="mb-3 inline-block rounded-full bg-secondary6 px-3 py-1 text-xs font-semibold text-secondary2">
             Success Stories
           </span>
           <h2
             id="testimonials-heading"
-            className="text-balance text-3xl font-extrabold text-slate-900 screen744:text-4xl"
+            className="text-balance text-3xl font-extrabold text-text1 screen744:text-4xl"
           >
             Join 70,000+ Who{" "}
-            <span className="text-amber-600">Passed CELPIP</span>
+            <span className="text-secondary2">Passed CELPIP</span>
           </h2>
-          <p className="mt-3 text-base text-slate-600 screen744:text-lg">
+          <p className="mt-3 text-base text-text2 screen744:text-lg">
             Real results from real test-takers who prepared with our platform.
           </p>
         </div>

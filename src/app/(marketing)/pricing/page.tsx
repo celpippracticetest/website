@@ -59,7 +59,7 @@ export default async function PricingPage({ searchParams }: PricingPageProps) {
   const pricingAbParticipatesInExperiment = previewLayout === null;
   const pricingAbLayout = previewLayout ?? assignedLayout;
 
-  const plansWithStripePricing = await getActivePlansCatalog({ plusOnly: false });
+  const plansWithStripePricing = await getActivePlansCatalog();
 
   const itemListSchema = {
     "@context": "https://schema.org",

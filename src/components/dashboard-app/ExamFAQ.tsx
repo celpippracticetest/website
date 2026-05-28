@@ -76,7 +76,7 @@ const ExamFAQ = () => {
             </summary>
             <div className="overflow-hidden">
               <div
-                className="p-[24px] pt-0 text-[16px] text-[#5F6D7E] leading-[24px]"
+                className="px-[24px] pb-[24px] pt-4 text-[16px] text-[#5F6D7E] leading-[24px]"
                 dangerouslySetInnerHTML={{ __html: faq.answer }}
               />
             </div>

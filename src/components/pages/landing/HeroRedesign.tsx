@@ -197,7 +197,7 @@ const HeroRedesign = ({
 
               <div className="mt-8 flex justify-center screen1280:justify-start">
                 <div onClick={() => handleCTAClick("hero_main")}>
-                  <Button href={href} size="lg" className="shadow-md">
+                  <Button href={href} size="lg">
                     <SvgPlus />
                     <span>{label}</span>
                   </Button>

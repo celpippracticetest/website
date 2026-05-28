@@ -1,14 +1,12 @@
-"use client";
+import PublicPageShell from "@/components/pages/landing/PublicPageShell";
+import PublicPageFooter from "@/components/pages/landing/PublicPageFooter";
 
-
-export default function RootLayout({
+export default function FailedLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <div className="w-full">
-      {children}
-    </div>
+    <PublicPageShell footer={<PublicPageFooter />}>{children}</PublicPageShell>
   );
 }

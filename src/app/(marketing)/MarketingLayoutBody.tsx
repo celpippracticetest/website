@@ -2,7 +2,7 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
-import TopHeader from "@/components/pages/landing/TopHeader";
+import PublicPageShell from "@/components/pages/landing/PublicPageShell";
 
 /** Routes where the global marketing header should not render */
 const HIDE_HEADER_PREFIXES = ["/landing/express-entry"];
@@ -15,24 +15,17 @@ function shouldHideHeader(pathname: string) {
 
 export default function MarketingLayoutBody({
   children,
+  footer,
 }: {
   children: React.ReactNode;
+  footer?: React.ReactNode;
 }) {
   const pathname = usePathname() ?? "";
   const hideHeader = shouldHideHeader(pathname);
 
   return (
-    <div className="bg-[#F4F7FF] min-h-screen flex flex-col">
-      {!hideHeader && <TopHeader />}
-      <main
-        className={
-          hideHeader
-            ? "flex-grow pb-10 pt-0"
-            : "flex-grow pb-10 pt-[100px]"
-        }
-      >
-        {children}
-      </main>
-    </div>
+    <PublicPageShell hideHeader={hideHeader} footer={footer}>
+      {children}
+    </PublicPageShell>
   );
 }

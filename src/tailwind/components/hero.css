@@ -15,6 +15,57 @@
     background-position: 0 0;
   }
 }
+
+@keyframes hero-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(2%, -4%, 0) scale(1.06);
+  }
+}
+
+@keyframes hero-float-alt {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-3%, 3%, 0) scale(1.04);
+  }
+}
+
+@keyframes hero-shimmer {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.animate-hero-float {
+  animation: hero-float 14s ease-in-out infinite;
+}
+
+.animate-hero-float-alt {
+  animation: hero-float-alt 18s ease-in-out infinite;
+}
+
+.animate-hero-shimmer {
+  animation: hero-shimmer 8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-hero-float,
+  .animate-hero-float-alt,
+  .animate-hero-shimmer {
+    animation: none;
+  }
+}
+
 .custom-before-effect::before {
   content: "";
   position: absolute;

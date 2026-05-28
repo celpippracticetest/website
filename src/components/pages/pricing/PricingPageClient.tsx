@@ -1,80 +1,38 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { useRecentSignupsLiveStat } from "@/hooks/useRecentSignupsLiveStat";
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
-import Bolt from "@mui/icons-material/Bolt";
 import CheckCircle from "@mui/icons-material/CheckCircle";
 import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
 import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
 import AutoAwesome from "@mui/icons-material/AutoAwesome";
 import Close from "@mui/icons-material/Close";
-import Diamond from "@mui/icons-material/Diamond";
-import Groups from "@mui/icons-material/Groups";
 import Shield from "@mui/icons-material/Shield";
 import Star from "@mui/icons-material/Star";
-import Timer from "@mui/icons-material/Timer";
-import TrendingUp from "@mui/icons-material/TrendingUp";
-import SvgDiamond from "@/components/icons/Diamond";
+import { PricingCheckoutLayout } from "@/components/pages/pricing/PricingCheckoutLayout";
+import { PricingModalPlanList } from "@/components/pages/pricing/PricingModalPlanList";
 import { cn } from "@/lib/utils";
-import { useCheckoutAttributionPayload } from "@/components/analytics/CheckoutAttributionFields";
-import { mergePendingGa4IntoAttribution } from "@/lib/ga4BrowserIds";
 import {
   pricingFaqs,
   pricingTestimonials,
 } from "@/components/pages/pricing/pricingContent";
 import { Box } from "@/components/ui/Box";
-import { useEcommerceTracking, useEngagementTracking } from "@/hooks/useTracking";
+import { useEngagementTracking } from "@/hooks/useTracking";
 import { useUserContext } from "@/hooks/useUserContext";
-import { durationDisplayOrder, durationMeta } from "@/lib/pricingCatalog";
 import {
-  buildMonthlySavingsMap,
   formatBillingCycle,
   formatPlanCadPrice,
-  getDurationGroupKey,
-  getStablePlanId,
-  isPremiumPlusPlan,
-  parsePrice,
   PRICING_PLUS_FEATURE_LABELS,
 } from "@/lib/pricing";
+import { groupPlansByDuration, sortPlansByOrder } from "@/lib/pricingPlanSections";
+import { durationDisplayOrder } from "@/lib/pricingCatalog";
 import type { PricingAbLayout } from "@/lib/pricingAbTest";
 import type { DurationGroupKey, PricingFaq, SerializedPlan } from "@/types/pricing";
+import type { PricingPlanSection } from "@/lib/pricingPlanSections";
 const avatarSources = ["Carlos.png", "Li.png", "Tatiana.png"];
-
-const PLAN_CARD_VISUAL: Record<
-  DurationGroupKey,
-  { color: string; Icon: typeof Bolt }
-> = {
-  weekly: { color: "#64748B", Icon: Bolt },
-  monthly: { color: "#3B82F6", Icon: Star },
-  threeMonth: { color: "#8B5CF6", Icon: Diamond },
-  yearly: { color: "#0D9488", Icon: TrendingUp },
-};
-
-function approxDaysForDurationKey(key: DurationGroupKey): number {
-  switch (key) {
-    case "weekly":
-      return 7;
-    case "monthly":
-      return 30;
-    case "threeMonth":
-      return 90;
-    case "yearly":
-      return 365;
-    default:
-      return 30;
-  }
-}
-
-function perDayCadLabel(plan: SerializedPlan, durationKey: DurationGroupKey): string {
-  const total = parsePrice(plan.price);
-  const days = approxDaysForDurationKey(durationKey);
-  if (!Number.isFinite(total) || days <= 0) return "—";
-  return (total / days).toFixed(2);
-}
 
 type PersonalizedRecommendation = {
   planType: DurationGroupKey;
@@ -82,204 +40,6 @@ type PersonalizedRecommendation = {
   summary: string;
   reasons: string[];
 };
-
-type GroupedPlanItem = {
-  plan: SerializedPlan;
-  index: number;
-  stableId: string;
-};
-
-type PricingPlanSection = {
-  key: DurationGroupKey;
-  plus: GroupedPlanItem | null;
-  title: string;
-  eyebrow: string;
-  summary: string;
-};
-
-function PricingPlanCheckoutTile({
-  section,
-  pricingCheckoutFields,
-  pricingAbLayout,
-  monthlySavingsById,
-  recommendedPlanId,
-  recommendedSectionKey,
-}: {
-  section: PricingPlanSection;
-  pricingCheckoutFields?: Record<string, string>;
-  pricingAbLayout?: PricingAbLayout;
-  monthlySavingsById: Map<string, string>;
-  recommendedPlanId: string | null;
-  recommendedSectionKey: DurationGroupKey | null | undefined;
-}) {
-  const item = section.plus;
-  const { user, isSignedIn, isLoaded } = useHybridWebUser();
-  const { selectItem, beginCheckout } = useEcommerceTracking();
-  const attribution = useCheckoutAttributionPayload();
-
-  const isRecommended =
-    Boolean(item && recommendedPlanId) &&
-    recommendedSectionKey === section.key &&
-    item.stableId === recommendedPlanId;
-
-  if (!item?.plan.stripePriceId) {
-    return (
-      <div
-        id={isRecommended ? "recommended-plan" : undefined}
-        className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500"
-      >
-        {section.title} — Unavailable
-      </div>
-    );
-  }
-
-  const p = item.plan;
-  const stripePriceId = p.stripePriceId;
-  const checkoutBase = !isLoaded
-    ? ""
-    : isSignedIn
-      ? "/api/checkout_session"
-      : "/api/checkout_session/guest";
-  const checkoutAction = checkoutBase
-    ? `${checkoutBase}?price=${encodeURIComponent(stripePriceId)}`
-    : "";
-  const normalizedPrice = parsePrice(p.price);
-  const trackingItem = {
-    item_id: p.planTitle,
-    item_name: p.title,
-    price: normalizedPrice,
-    quantity: 1,
-    item_brand: "CELPIP Practice Test",
-    item_category: "Subscription",
-  };
-
-  const trackCheckoutIntent = () => {
-    selectItem([trackingItem], "plans_page", "Pricing Plans");
-    beginCheckout([trackingItem], "CAD", normalizedPrice, undefined, {
-      email: user?.primaryEmailAddress?.emailAddress?.trim().toLowerCase(),
-      address: {
-        first_name: user?.firstName || "",
-        last_name: user?.lastName || "",
-      },
-    });
-  };
-
-  const submitStripeCheckout = () => {
-    if (!checkoutAction) return;
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = checkoutAction;
-    const add = (name: string, value: string) => {
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = name;
-      input.value = value;
-      form.appendChild(input);
-    };
-    for (const [key, value] of Object.entries(mergePendingGa4IntoAttribution(attribution))) {
-      add(key, value);
-    }
-    if (pricingCheckoutFields) {
-      for (const [name, value] of Object.entries(pricingCheckoutFields)) {
-        if (value) add(name, value);
-      }
-    }
-    document.body.appendChild(form);
-    form.submit();
-  };
-
-  const onCheckout = () => {
-    trackCheckoutIntent();
-    submitStripeCheckout();
-  };
-
-  const savingsBadge = getSectionSavingsBadge(
-    { key: section.key, plus: item },
-    monthlySavingsById
-  );
-
-  const emphasisThreeMonth = section.key === "threeMonth";
-  const visual = PLAN_CARD_VISUAL[section.key] ?? PLAN_CARD_VISUAL.monthly;
-  const IconComp = visual.Icon;
-  const perDay = perDayCadLabel(p, section.key);
-  const cycle = formatBillingCycle(p.billingInterval, p.billingIntervalCount);
-  const isPopular = emphasisThreeMonth;
-
-  return (
-    <button
-      type="button"
-      id={isRecommended ? "recommended-plan" : undefined}
-      onClick={onCheckout}
-      disabled={!checkoutAction}
-      aria-label={`Upgrade to Plus, ${section.title}`}
-      className={cn(
-        "relative flex h-full min-h-[320px] w-full min-w-0 flex-col rounded-2xl border bg-white p-6 text-left shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B5CF6] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-        isRecommended && "scroll-mt-24 md:scroll-mt-28",
-        isPopular
-          ? "z-[2] border-2 border-[#8B5CF6] shadow-[0_20px_60px_rgba(139,92,246,0.15)] md:scale-[1.02] md:hover:scale-[1.03]"
-          : "border-slate-200 hover:-translate-y-1 hover:border-slate-300 hover:shadow-lg",
-      )}
-    >
-      {isPopular ? (
-        <span className="pointer-events-none absolute -top-3 left-1/2 z-[3] flex -translate-x-1/2 items-center gap-1 rounded-full bg-[#8B5CF6] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-wider text-white shadow-md">
-          <AutoAwesome sx={{ fontSize: 14 }} aria-hidden />
-          Most popular
-        </span>
-      ) : null}
-      {savingsBadge ? (
-        <span
-          className={cn(
-            "pointer-events-none absolute z-[4] max-w-[11rem] truncate rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[0.65rem] font-bold uppercase tracking-wide text-emerald-800 shadow-sm ring-2 ring-white",
-            isPopular ? "right-4 top-14" : "right-3 top-3",
-          )}
-          title={savingsBadge}
-        >
-          {savingsBadge}
-        </span>
-      ) : null}
-
-      <div
-        className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl"
-        style={{
-          backgroundColor: `${visual.color}14`,
-          color: visual.color,
-        }}
-      >
-        <IconComp sx={{ fontSize: 26 }} aria-hidden />
-      </div>
-
-      <h3 className="text-lg font-bold text-slate-900">{section.title}</h3>
-      <p className="text-sm text-slate-500">{section.eyebrow}</p>
-
-      <div className="mt-5 flex flex-wrap items-baseline gap-1">
-        <span className="text-sm font-normal text-slate-500">CA$</span>
-        <span className="text-3xl font-extrabold leading-none text-[#1B2B5A]">
-          {formatPlanCadPrice(p.price)}
-        </span>
-      </div>
-      {cycle ? (
-        <p className="mt-1 text-sm text-slate-500">per {cycle}</p>
-      ) : null}
-
-      <span className="mt-3 inline-flex w-fit rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-        {perDay === "—" ? "Per-day estimate unavailable" : `Only CA$${perDay}/day`}
-      </span>
-
-      <p className="mt-4 flex-1 text-sm leading-relaxed text-slate-600">{section.summary}</p>
-
-      <span
-        className={cn(
-          "mt-6 flex w-full shrink-0 items-center justify-center rounded-full py-3.5 text-sm font-bold text-white transition-shadow",
-          isPopular
-            ? "bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] shadow-[0_4px_14px_rgba(139,92,246,0.35)] hover:shadow-[0_6px_20px_rgba(139,92,246,0.4)]"
-            : "bg-gradient-to-br from-[#1B2B5A] to-[#2E4494] shadow-[0_4px_14px_rgba(27,43,90,0.28)] hover:shadow-[0_6px_20px_rgba(27,43,90,0.35)]",
-        )}
-      >
-        {isPopular ? "Get Best Value" : "Upgrade to Plus"}
-      </span>
-    </button>
-  );
-}
 
 function formatWeakAreasForSentence(weakAreas: string[]) {
   if (weakAreas.length === 0) return "";
@@ -419,20 +179,6 @@ function buildPersonalizedRecommendation(
   };
 }
 
-function PricingUrgencyBanner() {
-  const { display } = useRecentSignupsLiveStat("127");
-
-  return (
-    <div className="mb-6 flex flex-col items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-center shadow-sm sm:flex-row sm:text-left">
-      <Groups sx={{ color: "#D97706", fontSize: 22 }} className="shrink-0" aria-hidden />
-      <p className="text-sm font-semibold text-amber-900">
-        <span className="font-extrabold">{display}</span> people upgraded to Plus in the
-        last 24 hours
-      </p>
-    </div>
-  );
-}
-
 function FAQItem({ question, answer }: PricingFaq) {
   const [isOpen, setIsOpen] = useState(false);
   const { faqClick } = useEngagementTracking();
@@ -465,53 +211,6 @@ function FAQItem({ question, answer }: PricingFaq) {
           {answer}
         </Box>
       )}
-    </Box>
-  );
-}
-
-function getSectionSavingsBadge(section: {
-  key: DurationGroupKey;
-  plus: GroupedPlanItem | null;
-}, monthlySavingsById: Map<string, string>) {
-  const savingsCandidates = [section.plus]
-    .filter(Boolean)
-    .map((item) => {
-      const savingsText = monthlySavingsById.get(item!.stableId);
-
-      if (!savingsText) {
-        return null;
-      }
-
-      const numericMatch = savingsText.match(/(\d+)/);
-      const numericValue = numericMatch ? Number.parseInt(numericMatch[1], 10) : 0;
-
-      return {
-        label: savingsText,
-        score: numericValue,
-      };
-    })
-    .filter(Boolean) as Array<{ label: string; score: number }>;
-
-  if (savingsCandidates.length === 0) {
-    return null;
-  }
-
-  return savingsCandidates.sort((left, right) => right.score - left.score)[0].label;
-}
-
-function AvatarStack() {
-  return (
-    <Box className="flex -space-x-2">
-      {avatarSources.map((avatarSource, index) => (
-        <Image
-          key={avatarSource}
-          src={`/images/${avatarSource}`}
-          alt={`Student avatar ${index + 1}`}
-          width={32}
-          height={32}
-          className="rounded-full border-2 border-white object-cover"
-        />
-      ))}
     </Box>
   );
 }
@@ -599,48 +298,16 @@ export default function PricingPageClient({
     };
   }, [mobilePlansSheetOpen]);
 
-  const orderedPlans = useMemo(() => {
-    return [...plans].sort((left, right) => {
-      const leftOrder = left.order ?? Number.MAX_SAFE_INTEGER;
-      const rightOrder = right.order ?? Number.MAX_SAFE_INTEGER;
-      return leftOrder - rightOrder;
-    });
-  }, [plans]);
+  const orderedPlans = useMemo(() => sortPlansByOrder(plans), [plans]);
+  const groupedPlans = useMemo(() => groupPlansByDuration(orderedPlans), [orderedPlans]);
 
-  const groupedPlans = useMemo(() => {
-    const groupedEntries = new Map<DurationGroupKey, GroupedPlanItem[]>();
-
-    orderedPlans.forEach((plan, index) => {
-      const durationKey = getDurationGroupKey(plan);
-      if (!durationKey) {
-        return;
-      }
-
-      const nextItem = {
-        plan,
-        index,
-        stableId: getStablePlanId(plan, index),
-      };
-
-      groupedEntries.set(durationKey, [...(groupedEntries.get(durationKey) || []), nextItem]);
-    });
-
-    return durationDisplayOrder
-      .map((key) => {
-        const items = groupedEntries.get(key) || [];
-        // Prefer a plan that matches Plus heuristics; otherwise show any plan in this
-        // bucket so /pricing does not go blank when copy/features omit "Plus"/mock exams.
-        const plus =
-          items.find((item) => isPremiumPlusPlan(item.plan)) ?? items[0] ?? null;
-
-        return {
-          key,
-          ...durationMeta[key],
-          plus,
-        };
-      })
-      .filter((section) => section.plus);
-  }, [orderedPlans]);
+  const visiblePlanSections = useMemo(
+    () =>
+      durationDisplayOrder
+        .map((key) => groupedPlans.find((section) => section.key === key))
+        .filter(Boolean) as PricingPlanSection[],
+    [groupedPlans],
+  );
 
   const availableDurationKeys = useMemo(() => {
     return groupedPlans.map((section) => section.key);
@@ -683,7 +350,6 @@ export default function PricingPageClient({
   }, [recommendedSection]);
 
   const recommendedPlanId = recommendedPlanEntry?.stableId || null;
-  const monthlySavingsById = useMemo(() => buildMonthlySavingsMap(orderedPlans), [orderedPlans]);
 
   const bestValuePlanEntry = useMemo(() => {
     return (
@@ -696,49 +362,6 @@ export default function PricingPageClient({
 
   const stickyCtaEntry = personalizedRecommendation ? recommendedPlanEntry : bestValuePlanEntry;
 
-  const styleOneVisibleDurationKeys = useMemo(
-    () => durationDisplayOrder.filter((key) => groupedPlans.some((s) => s.key === key)),
-    [groupedPlans]
-  );
-
-  const styleOneDurationButtonGridClass = useMemo(() => {
-    const n = styleOneVisibleDurationKeys.length;
-    if (n <= 1) return "grid-cols-1";
-    if (n === 2) return "grid-cols-1 sm:grid-cols-2";
-    if (n === 3) return "grid-cols-1 sm:grid-cols-3";
-    return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
-  }, [styleOneVisibleDurationKeys]);
-
-  const durationCheckoutTiles = useMemo(
-    () =>
-      styleOneVisibleDurationKeys.map((key) => {
-        const sec = groupedPlans.find((s) => s.key === key)!;
-        return (
-          <PricingPlanCheckoutTile
-            key={key}
-            section={sec}
-            pricingCheckoutFields={pricingCheckoutFields}
-            pricingAbLayout={
-              pricingAbParticipatesInExperiment ? pricingAbLayout : undefined
-            }
-            monthlySavingsById={monthlySavingsById}
-            recommendedPlanId={recommendedPlanId}
-            recommendedSectionKey={recommendedSection?.key}
-          />
-        );
-      }),
-    [
-      styleOneVisibleDurationKeys,
-      groupedPlans,
-      pricingCheckoutFields,
-      pricingAbParticipatesInExperiment,
-      pricingAbLayout,
-      monthlySavingsById,
-      recommendedPlanId,
-      recommendedSection?.key,
-    ]
-  );
-
   return (
     <Box
       className={cn(
@@ -746,43 +369,6 @@ export default function PricingPageClient({
         stickyCtaEntry ? "pb-24 md:pb-0" : "",
       )}
     >
-      <section className="bg-[linear-gradient(180deg,#FAFBFF_0%,#EEF2FF_100%)] pb-10 pt-10 text-center md:pb-12 md:pt-14">
-        <div className="mx-auto max-w-3xl px-4 md:px-8">
-          <div className="mb-4 flex items-center justify-center gap-2">
-            <SvgDiamond className="-rotate-12 text-[#2563EB]" aria-hidden />
-            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-800">
-              Simple, transparent pricing
-            </span>
-          </div>
-          <h1 className="text-balance text-3xl font-extrabold leading-tight text-slate-900 md:text-5xl">
-            Invest in Your{" "}
-            <span className="text-[#2563EB]">Canadian Future</span>
-          </h1>
-          <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-slate-600 md:text-lg">
-            One full-access tier. Pick the timeline that fits your exam date. Every
-            plan includes all Plus features — only the billing period changes. Each
-            Subscriber plan includes up to 2 devices; purchase another subscription
-            for each additional device.
-          </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap">
-            <div className="flex items-center gap-2">
-              <AvatarStack />
-              <span className="text-sm font-medium text-slate-600">
-                Trusted by <strong>70,000+</strong>
-              </span>
-            </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800">
-              <Shield sx={{ fontSize: 16 }} aria-hidden />
-              48-hour money-back guarantee
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-900">
-              <Timer sx={{ fontSize: 16 }} aria-hidden />
-              Cancel anytime
-            </span>
-          </div>
-        </div>
-      </section>
-
       <Box className="mx-auto w-full max-w-6xl">
         {personalizedRecommendation && recommendedPlanEntry && (
           <Box className="mt-8 rounded-[24px] border border-blue-200 bg-[linear-gradient(90deg,_rgba(74,125,255,0.08)_0%,_rgba(247,157,101,0.08)_100%)] px-5 py-5 shadow-sm">
@@ -846,69 +432,73 @@ export default function PricingPageClient({
         )}
 
         {groupedPlans.length > 0 && (
-          <div id="pricing-style-one" className="relative z-[1] -mt-6 mb-10 md:-mt-8">
-            <PricingUrgencyBanner />
-            <div
-              className={cn("grid items-stretch gap-6", styleOneDurationButtonGridClass)}
-              role="group"
-              aria-label="Choose billing period"
-            >
-              {durationCheckoutTiles}
-            </div>
-          </div>
+          <PricingCheckoutLayout
+            id="pricing-style-one"
+            className="mb-10"
+            plans={plans}
+            groupedPlans={groupedPlans}
+            pricingCheckoutFields={pricingCheckoutFields}
+            recommendedPlanId={recommendedPlanId}
+            recommendedSectionKey={recommendedSection?.key ?? null}
+            asPageHeading
+          />
         )}
 
       </Box>
 
         <section
           id="whats-in-plus"
-          className="mt-16 border-t border-slate-200 bg-white py-14 md:py-16"
+          className="mt-16 py-14 md:py-16"
         >
-          <div className="mx-auto max-w-3xl px-4 text-center md:px-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-blue-700">
-              One full-access tier
-            </p>
-            <h2 className="mt-2 text-3xl font-extrabold text-slate-900 md:text-4xl">
-              Everything in Plus
-            </h2>
-            <p className="mt-3 text-base leading-relaxed text-slate-600 md:text-lg">
-              Every paid timeline includes the same features — only the billing period
-              changes. Pick Weekly, Monthly, 3-Month, or Yearly based on how long you
-              want to prepare.
-            </p>
-          </div>
-          <div className="mx-auto mt-10 grid max-w-3xl grid-cols-1 gap-x-8 gap-y-3 px-4 sm:grid-cols-2 md:px-8">
-            {PRICING_PLUS_FEATURE_LABELS.map((label) => (
-              <div key={label} className="flex items-center gap-2.5">
-                <CheckCircle sx={{ color: "#10B981", fontSize: 22 }} aria-hidden />
-                <span className="text-[15px] font-medium text-slate-800">{label}</span>
+          <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 md:px-8 lg:flex-row lg:items-start lg:gap-12">
+            <div className="min-w-0 flex-1">
+              <div className="text-center lg:text-left">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-blue-700">
+                  One full-access tier
+                </p>
+                <h2 className="mt-2 text-3xl font-extrabold text-slate-900 md:text-4xl">
+                  Everything in Plus
+                </h2>
+                <p className="mt-3 text-base leading-relaxed text-slate-600 md:text-lg">
+                  Every paid timeline includes the same features — only the billing period
+                  changes. Pick Weekly, Monthly, 3-Month, or Yearly based on how long you
+                  want to prepare.
+                </p>
               </div>
-            ))}
+              <div className="mx-auto mt-10 grid max-w-3xl grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2 lg:mx-0 lg:max-w-none">
+                {PRICING_PLUS_FEATURE_LABELS.map((label) => (
+                  <div key={label} className="flex items-center gap-2.5">
+                    <CheckCircle sx={{ color: "#10B981", fontSize: 22 }} aria-hidden />
+                    <span className="text-[15px] font-medium text-slate-800">{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="w-full shrink-0 lg:max-w-md lg:pt-2">
+              <div className="rounded-3xl border border-slate-200 bg-white px-6 py-8 text-center shadow-sm md:px-10 md:py-10">
+                <Shield
+                  sx={{ fontSize: 48, color: "#10B981" }}
+                  className="mx-auto mb-4"
+                  aria-hidden
+                />
+                <h2 className="text-2xl font-bold text-slate-900 md:text-3xl">
+                  48-Hour Money-Back Guarantee
+                </h2>
+                <p className="mt-3 text-base leading-relaxed text-slate-600">
+                  Not satisfied? Request a full refund within 48 hours of your first
+                  purchase when usage stays within our published caps. See our{" "}
+                  <Link href="/refund-policy" className="font-semibold text-blue-700 underline underline-offset-2">
+                    Refund Policy
+                  </Link>{" "}
+                  for full terms.
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 
-        <section className="border-t border-slate-200 bg-[#F4F7FF] py-12 md:py-16">
-          <div className="mx-auto max-w-lg rounded-3xl border border-slate-200 bg-white px-6 py-8 text-center shadow-sm md:px-10 md:py-10">
-            <Shield
-              sx={{ fontSize: 48, color: "#10B981" }}
-              className="mx-auto mb-4"
-              aria-hidden
-            />
-            <h2 className="text-2xl font-bold text-slate-900 md:text-3xl">
-              48-Hour Money-Back Guarantee
-            </h2>
-            <p className="mt-3 text-base leading-relaxed text-slate-600">
-              Not satisfied? Request a full refund within 48 hours of your first
-              purchase when usage stays within our published caps. See our{" "}
-              <Link href="/refund-policy" className="font-semibold text-blue-700 underline underline-offset-2">
-                Refund Policy
-              </Link>{" "}
-              for full terms.
-            </p>
-          </div>
-        </section>
-
-        <section className="border-t border-slate-200 bg-[linear-gradient(180deg,#F8FAFC_0%,#EEF2FF_100%)] py-14 md:py-16">
+        <section className="py-14 md:py-16">
           <div className="mx-auto max-w-6xl px-4 md:px-8">
             <div className="max-w-xl">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-amber-800">
@@ -930,7 +520,7 @@ export default function PricingPageClient({
           </div>
         </section>
 
-        <section className="border-t border-slate-200 bg-white py-14 md:py-16">
+        <section className="py-14 md:py-16">
           <div className="mx-auto max-w-3xl px-4 md:px-8">
             <div className="mb-10 text-center">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
@@ -948,23 +538,6 @@ export default function PricingPageClient({
                 <FAQItem key={faq.question} {...faq} />
               ))}
             </div>
-          </div>
-        </section>
-
-        <section className="bg-gradient-to-br from-[#1B2B5A] via-[#2E4494] to-[#1B2B5A] py-14 text-center md:py-20">
-          <div className="mx-auto max-w-lg px-4 md:px-8">
-            <h2 className="text-3xl font-extrabold text-white md:text-4xl">
-              Start Practicing Today
-            </h2>
-            <p className="mt-4 text-base text-white/75 md:text-lg">
-              Join thousands who are already improving their CELPIP scores.
-            </p>
-            <Link
-              href="/practice-overview"
-              className="mt-8 inline-flex items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-300 px-8 py-3.5 text-base font-bold text-[#1B2B5A] shadow-[0_4px_14px_rgba(245,158,11,0.4)] transition-shadow hover:shadow-[0_6px_20px_rgba(245,158,11,0.45)]"
-            >
-              Start Free — Upgrade Later
-            </Link>
           </div>
         </section>
 
@@ -1070,8 +643,14 @@ export default function PricingPageClient({
                   <Close className="h-5 w-5" />
                 </button>
               </Box>
-              <Box className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-4 py-4">
-                {durationCheckoutTiles}
+              <Box className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 py-4">
+                <PricingModalPlanList
+                  plans={plans}
+                  sections={visiblePlanSections}
+                  recommendedPlanId={recommendedPlanId}
+                  recommendedSectionKey={recommendedSection?.key ?? null}
+                  pricingCheckoutFields={pricingCheckoutFields}
+                />
               </Box>
             </motion.div>
           </motion.div>

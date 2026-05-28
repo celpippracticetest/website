@@ -35,7 +35,7 @@ const ScoreDiagnostic = () => {
             onClick={() => trackClick("hero_primary_cta")}
             variant="primary"
             size="lg"
-            className="w-full min-w-0 text-center text-base font-bold shadow-lg transition-all hover:shadow-xl screen744:text-[17px]"
+            className="w-full min-w-0 text-center text-base font-bold screen744:text-[17px]"
           >
             {label}
           </Button>
@@ -44,7 +44,7 @@ const ScoreDiagnostic = () => {
             onClick={() => trackCTA(MOCK_EXAM_LABEL, "hero_mock_exam_cta")}
             variant="secondary"
             size="lg"
-            className="w-full min-w-0 text-center text-base font-bold shadow-md transition-all hover:shadow-lg screen744:text-[17px]"
+            className="w-full min-w-0 text-center text-base font-bold screen744:text-[17px]"
           >
             {MOCK_EXAM_LABEL}
           </Button>

@@ -88,7 +88,7 @@ export default function ForgotSupabasePasswordClient() {
         )}
 
         <p className="mt-6 text-center text-sm text-slate-600">
-          <Link href="/sign-in" className="font-medium text-blue-600 hover:underline">
+          <Link href="/sign-in?mode=sign-in" className="font-medium text-blue-600 hover:underline">
             Back to sign in
           </Link>
         </p>

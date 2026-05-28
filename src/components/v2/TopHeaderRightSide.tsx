@@ -48,23 +48,26 @@ const TopHeaderRightSide = () => {
           <>
             {showPricingCta && (
               <>
-                <button
+                <Button
                   type="button"
-                  className="screen744:!hidden flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-amber-400 bg-white text-amber-900 shadow-none transition-colors hover:bg-amber-50"
+                  variant="outlineAmber"
+                  className="screen744:!hidden !flex !h-10 !w-10 !min-h-0 shrink-0 !p-0"
                   aria-label="View pricing plans"
                   onClick={() => setPricingModalOpen(true)}
                 >
                   <AutoAwesomeIcon sx={{ fontSize: 22 }} />
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  className="screen744:!flex hidden h-10 shrink-0 items-center justify-center gap-2 rounded-full border-2 border-amber-400 bg-white px-4 text-sm font-semibold text-amber-900 shadow-none transition-colors hover:bg-amber-50"
+                  variant="outlineAmber"
+                  size="sm"
+                  className="screen744:!flex hidden !h-10 !w-auto !min-w-0 shrink-0 px-4 !text-sm !font-semibold"
                   aria-label="View pricing plans"
                   onClick={() => setPricingModalOpen(true)}
                 >
                   <AutoAwesomeIcon sx={{ fontSize: 20 }} />
                   Pricing
-                </button>
+                </Button>
               </>
             )}
           </>

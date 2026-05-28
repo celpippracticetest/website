@@ -7,11 +7,11 @@ const FAQ = () => {
     const { faqClick } = useEngagementTracking();
 
     const toggleAccordion = (index: number, question: string) => {
-        if (openIndex !== index) {
-            // Track FAQ click when opening
+        const isClosing = openIndex === index;
+        if (!isClosing) {
             faqClick(question, "Landing Page");
         }
-        setOpenIndex(openIndex === index ? null : index);
+        setOpenIndex(isClosing ? null : index);
     };
 
     const faqs = [
@@ -98,7 +98,7 @@ const FAQ = () => {
         <section
             id="faq"
             aria-labelledby="faq-heading"
-            className="border-t border-slate-200 bg-white py-12 screen744:py-16 scroll-mt-24"
+            className="border-t border-slate-200/60 py-12 screen744:py-16 scroll-mt-24"
         >
             <div className="mx-auto max-w-[1120px] px-4 screen744:px-8">
                 <h2
@@ -108,11 +108,11 @@ const FAQ = () => {
                     FAQ
                 </h2>
 
-                <div className="grid grid-cols-1 gap-3 screen744:grid-cols-2 screen744:gap-4">
+                <div className="grid grid-cols-1 items-start gap-3 screen744:grid-cols-2 screen744:gap-4">
                     {faqs.map((faq, index) => (
                         <div
-                            key={index}
-                            className={`overflow-hidden rounded-lg border bg-white ${openIndex === index ? "border-slate-300" : "border-slate-200"}`}
+                            key={faq.question}
+                            className={`h-fit overflow-hidden rounded-lg border bg-white ${openIndex === index ? "border-slate-300" : "border-slate-200"}`}
                         >
                             <button
                                 type="button"

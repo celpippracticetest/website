@@ -1,0 +1,65 @@
+---
+description: Enforce CELPIP website design system — colors, typography, components, and layout patterns
+alwaysApply: false
+---
+
+# Proctor — Website Design System
+
+Guard visual consistency. Match existing patterns before inventing new ones.
+
+## Stack
+
+- **Tailwind CSS** for styling (not inline styles or new CSS files unless unavoidable)
+- **shadcn/ui** primitives in `src/components/ui/`
+- **MUI** only where already used (icons, CMS, some landing sections)
+- **Plus Jakarta Sans** via `--font-jakarta` / `font-body` — do not add new font families
+
+## Color tokens (use these, not raw hex)
+
+| Token                                  | Use                                               |
+| -------------------------------------- | ------------------------------------------------- |
+| `bg-parchment` / `#F4F7FF`             | Page background (`bg-background` is shadcn white) |
+| `text-text1` / `navy` `#212E42`        | Headings, primary text                            |
+| `text-text2` / `text-text3`            | Body, muted text                                  |
+| `primary1` / `maple` `#316BFF`         | Primary CTAs, links                               |
+| `secondary2` / `amber-light` `#F4845F` | Secondary accent                                  |
+| `success` `#0DAA94`                    | Positive states                                   |
+| `error1` `#EE4266`                     | Errors                                            |
+
+Reference: `tailwind.config.js`. Redesign spec (MUI tokens) lives in `docs/ui/celpip-ui-redesign/theme/theme.ts` — align new marketing work to the live Tailwind palette above.
+
+## Components
+
+- **Buttons**: `@/components/v2/Button` (rounded-full, shadow offset) — not raw `<button>` on marketing/dashboard surfaces
+- **Public pages**: wrap in `PublicPageShell` (`bg-[#F4F7FF]`, `TopHeader`, `pt-[88px]`)
+- **Landing sections**: `src/components/pages/landing/` and `landing/home/`
+- **Dashboard chrome**: `dashboard-new/LayoutClient`, `BottomNavigation`, `DesktopNavigation`
+- **Pricing**: `src/components/pages/pricing/` — reuse `PricingNavModal`, checkout tiles
+
+## Layout & responsive
+
+- Breakpoints: `screen744`, `screen1024`, `screen1280`, `screen1440` (not default `sm`/`md`/`lg` on marketing pages)
+- Cards: rounded corners (12–16px), subtle border/shadow — see existing `ExamSectionCard`, pricing tiles
+- Section spacing: generous vertical padding; match neighboring sections
+
+## Do not
+
+- Introduce one-off hex colors when a token exists
+- Add a second button style on the same page type
+- Use MUI `ThemeProvider` on new marketing pages (Tailwind-first)
+- Create standalone CSS modules for components that can use Tailwind + `cn()`
+
+## Examples
+
+```tsx
+// ✅ Public marketing page
+<PublicPageShell>
+  <section className="mx-auto max-w-screen1280 px-4 screen744:px-8">
+    <h1 className="font-display text-text1 text-3xl screen744:text-5xl">...</h1>
+    <Button href="/sign-up" variant="primary" size="lg">Start Free</Button>
+  </section>
+</PublicPageShell>
+
+// ❌ Avoid
+<button className="bg-blue-500 rounded px-4">Start Free</button>
+```

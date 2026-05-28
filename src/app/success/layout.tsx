@@ -1,4 +1,6 @@
 import { Metadata } from "next";
+import PublicPageShell from "@/components/pages/landing/PublicPageShell";
+import PublicPageFooter from "@/components/pages/landing/PublicPageFooter";
 
 export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "";
@@ -11,10 +13,12 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function RootLayout({
+export default function SuccessLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <div className="w-full bg-[#F4F7FF]">{children}</div>;
+  return (
+    <PublicPageShell footer={<PublicPageFooter />}>{children}</PublicPageShell>
+  );
 }

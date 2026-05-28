@@ -157,14 +157,14 @@ svg {
 
   body {
     font-family: var(--font-jakarta), system-ui, arial, sans-serif;
-    background-color: #f4f7ff;
+    background-color: #f2f6ff;
     color: #212e42;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
 
   html {
-    background-color: #f4f7ff;
+    background-color: #f2f6ff;
   }
 
   button:not(:disabled) {

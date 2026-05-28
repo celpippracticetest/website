@@ -2,7 +2,6 @@ import "./globals.css";
 import NextTopLoader from "nextjs-toploader";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { hasAnyWebSession } from "@/lib/auth/web-session-server";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import AskBeavoModal from "@/components/AskBeavo/AskBeavoModal";
@@ -17,7 +16,6 @@ import ActiveUsersTracker from "@/components/analytics/ActiveUsersTracker";
 import AttributionTracker from "@/components/analytics/AttributionTracker";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
 import RedditPixelTracker from "@/components/analytics/RedditPixelTracker";
-import MarketingFooterSection from "@/components/pages/landing/MarketingFooterSection";
 import { SupabaseAuthHashRecoveryRedirect } from "@/components/auth/SupabaseAuthHashRecoveryRedirect";
 import MuiAppRouterCacheProvider from "@/components/MuiAppRouterCacheProvider";
 import { getHomepageHeroDisplay } from "@/lib/homepage-hero";
@@ -169,7 +167,6 @@ export default async function RootLayout({
   const enableLegacyGtm = enableGtm && LEGACY_GTM_ID && LEGACY_GTM_ID !== GTM_ID;
   const enableClarity =
     process.env.NODE_ENV === "production" && Boolean(CLARITY_ID);
-  const isSignedIn = await hasAnyWebSession();
 
   return (
     <html suppressHydrationWarning className={jakarta.variable} lang="en">
@@ -292,7 +289,6 @@ export default async function RootLayout({
           <ErrorBoundary>
             <SupabaseAuthHashRecoveryRedirect />
             {children}
-            <MarketingFooterSection isSignedIn={isSignedIn} />
           </ErrorBoundary>
           <LazyPromotionManager />
           <PerformanceMonitor />

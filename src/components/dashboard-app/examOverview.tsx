@@ -5,13 +5,13 @@ import { useSelectedExam } from "@/store/useSelectedExam.store";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import {
   Box,
-  Button,
   LinearProgress,
   Paper,
   Skeleton,
   Stack,
   Typography,
 } from "@mui/material";
+import { Button } from "@/components/v2/Button";
 import { useRouter } from "nextjs-toploader/app";
 import { useEffect, useMemo, useState } from "react";
 import LoginModal from "../modal/LoginModal";
@@ -25,8 +25,6 @@ import {
 import type { ExamProgressSummary } from "@/lib/examOverviewProgress";
 
 const examCardNavy = "#1B2B5A";
-const examPrimaryGradient =
-  "linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #3B82F6 100%)";
 
 const examSections = [
   { label: "Listening", partId: 1, section: "listening" },
@@ -351,23 +349,24 @@ const ExamOverview = ({
                             px: 1.5,
                             py: 0.75,
                             borderRadius: "999px",
-                            backgroundColor: "#F8FAFC",
-                            color: "#475569",
-                            fontSize: "0.75rem",
-                            fontWeight: 600,
+                            backgroundColor: unlocked ? "#F2F6FF" : "#F8FAFC",
+                            color: unlocked ? "#212E42" : "#37465C",
+                            fontSize: "0.8125rem",
+                            fontWeight: 700,
                             textAlign: "center",
-                            border: "1px solid #E2E8F0",
-                            opacity: unlocked ? 1 : 0.45,
+                            border: unlocked
+                              ? "1.5px solid #316BFF"
+                              : "1.5px solid rgba(49, 107, 255, 0.45)",
                             transition:
-                              "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, opacity 0.2s ease",
+                              "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease",
                             "&:hover:not(:disabled)": {
-                              backgroundColor: "#EFF6FF",
-                              borderColor: "#93C5FD",
-                              color: "#1D4ED8",
+                              backgroundColor: "#E3EBFF",
+                              borderColor: "#2554D4",
+                              color: "#1B2B5A",
                             },
                             "&:focus-visible": {
-                              borderColor: "#2563EB",
-                              boxShadow: "0 0 0 3px rgba(37, 99, 235, 0.22)",
+                              borderColor: "#316BFF",
+                              boxShadow: "0 0 0 3px rgba(49, 107, 255, 0.25)",
                             },
                           }}
                         >
@@ -440,44 +439,11 @@ const ExamOverview = ({
 
                   <Box sx={{ position: "relative", width: 1 }}>
                     <Button
-                      variant="contained"
+                      variant={purchasedUnlock ? "secondary" : "primary"}
+                      size="md"
+                      className="w-full"
                       disabled={!isLoaded}
                       onClick={() => handlePrimaryAction(exam)}
-                      fullWidth
-                      sx={{
-                        minHeight: 48,
-                        borderRadius: "999px",
-                        textTransform: "none",
-                        fontSize: "0.95rem",
-                        fontWeight: 700,
-                        boxShadow: "none",
-                        ...(purchasedUnlock
-                          ? {
-                              backgroundColor: "#EA580C",
-                              color: "#FFFFFF",
-                              "&:hover": {
-                                backgroundColor: "#C2410C",
-                                boxShadow: "none",
-                              },
-                              "&.Mui-disabled": {
-                                backgroundColor: "rgba(234, 88, 12, 0.45)",
-                                color: "#FFFFFF",
-                              },
-                            }
-                          : {
-                              background: examPrimaryGradient,
-                              color: "#FFFFFF",
-                              "&:hover": {
-                                opacity: 0.96,
-                                boxShadow: "none",
-                              },
-                              "&.Mui-disabled": {
-                                background:
-                                  "linear-gradient(135deg, rgba(30, 58, 138, 0.45), rgba(59, 130, 246, 0.45))",
-                                color: "#FFFFFF",
-                              },
-                            }),
-                      }}
                     >
                       {signedInFreeUser
                         ? mockExamUnlocked(exam)

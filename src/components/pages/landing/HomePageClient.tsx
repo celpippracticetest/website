@@ -3,8 +3,8 @@
 import { ErrorBoundary } from "react-error-boundary";
 import dynamic from "next/dynamic";
 import FAQ from "./FAQ";
-import { HomeCelpipVsIeltsBand } from "./HomeConversionSections";
 import { useChunkErrorHandler } from "@/hooks/useChunkErrorHandler";
+import { Button } from "@/components/v2/Button";
 import {
   HomeFeaturesSection,
   HomeHowItWorksSection,
@@ -19,19 +19,16 @@ const FloatingChatIcon = dynamic(() => import("../../AskBeavo/FloatingChatIcon")
 
 function ErrorFallback() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#f4f7ff] text-center">
-      <h1 className="text-2xl font-semibold text-red-600 mb-4">
+    <div className="flex min-h-[50vh] flex-col items-center justify-center px-4 text-center">
+      <h1 className="mb-4 text-2xl font-semibold text-error1">
         Failed to Load Content
       </h1>
-      <p className="mb-4">
+      <p className="mb-4 text-text2">
         Something went wrong while loading part of the application.
       </p>
-      <button
-        onClick={() => window.location.reload()}
-        className="px-4 py-2 bg-blue-500 text-white rounded"
-      >
+      <Button variant="primary" size="md" onClick={() => window.location.reload()}>
         Retry
-      </button>
+      </Button>
     </div>
   );
 }
@@ -41,16 +38,15 @@ export default function HomePageClient() {
   if (shouldReload) return null;
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <div className="bg-[#F4F7FF]">
+      <div className="relative -mt-[88px] overflow-hidden pt-[88px] screen744:-mt-[96px] screen744:pt-[96px]">
         <Hero />
         <HomeFeaturesSection />
-        <HomeHowItWorksSection />
-        <HomeTestimonialsSection />
-        <HomeCelpipVsIeltsBand />
-        <FAQ />
-        <HomeCtaBanner />
-        <FloatingChatIcon autoOpen={false} />
       </div>
+      <HomeHowItWorksSection />
+      <HomeTestimonialsSection />
+      <FAQ />
+      <HomeCtaBanner />
+      <FloatingChatIcon autoOpen={false} />
     </ErrorBoundary>
   );
 }

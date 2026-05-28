@@ -30,7 +30,7 @@ export default function SignSupabasePageClient() {
   );
 
   const showLegacyAuthHint = searchParams.get("legacy") === "1";
-  const initialMode = searchParams.get("mode") === "sign-up" ? "sign-up" : "sign-in";
+  const initialMode = searchParams.get("mode") === "sign-in" ? "sign-in" : "sign-up";
 
   const forceShowForm = useMemo(() => {
     const f = searchParams.get("force");
@@ -142,6 +142,7 @@ export default function SignSupabasePageClient() {
         initialMode={initialMode as "sign-in" | "sign-up"}
         redirectAfterAuth={redirectAfterAuth}
         showLegacyAuthHint={showLegacyAuthHint}
+        showBranding={false}
       />
     </AuthMarketingShell>
   );

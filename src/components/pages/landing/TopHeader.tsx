@@ -5,38 +5,59 @@ import { useOnlineUsersLiveStat } from "@/hooks/useRecentSignupsLiveStat";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import QuizIcon from "@mui/icons-material/Quiz";
 import SchoolIcon from "@mui/icons-material/School";
-import MenuBookIcon from "@mui/icons-material/MenuBook";
-import AbcIcon from "@mui/icons-material/Abc";
+import SvgMockExamsColorful from "@/components/icons/MockExamsColorful";
+import { SvgLearning } from "@/components/icons";
+import SvgWord from "@/components/icons/Word";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
+import { Button } from "@/components/v2/Button";
 import { cn } from "@/lib/utils";
 
 const mainNav = [
   {
     label: "Mock Exams",
     href: "/exam-overview",
-    icon: QuizIcon,
+    renderIcon: (size: number) => (
+      <SvgMockExamsColorful
+        width={size}
+        height={size}
+        className="shrink-0"
+        aria-hidden
+      />
+    ),
   },
   {
     label: "Practice",
     href: "/practice-overview",
-    icon: SchoolIcon,
+    renderIcon: (size: number) => (
+      <SchoolIcon sx={{ fontSize: size, color: "#3B82F6" }} aria-hidden />
+    ),
   },
   {
     label: "Learning",
     href: "/learning",
-    icon: MenuBookIcon,
+    renderIcon: (size: number) => (
+      <SvgLearning
+        className="text-secondary2"
+        width={size}
+        height={size}
+        aria-hidden
+      />
+    ),
   },
   {
     label: "Words",
     href: "/words",
-    icon: AbcIcon,
+    renderIcon: (size: number) => (
+      <SvgWord className="text-success" width={size} height={size} aria-hidden />
+    ),
   },
 ] as const;
+
+const NAV_ICON_SIZE = 20;
 
 function HeaderOnlineBadge({
   compact,
@@ -56,8 +77,7 @@ function HeaderOnlineBadge({
     <div
       className={cn(
         "inline-flex max-w-full items-center gap-2 rounded-full px-2.5 py-1 text-xs font-semibold",
-        variant === "default" &&
-          "border border-emerald-200 bg-emerald-50 text-emerald-700",
+        variant === "default" && "text-emerald-700",
         variant === "onNavy" &&
           "border border-white/20 bg-white/10 text-emerald-50 backdrop-blur-sm",
         compact && "w-full justify-start py-2 pl-3",
@@ -152,13 +172,13 @@ const TopHeader = () => {
           </Link>
 
           <nav className="hidden items-center gap-1 screen1280:flex">
-            {mainNav.map(({ label, href, icon: Icon }) => (
+            {mainNav.map(({ label, href, renderIcon }) => (
               <Link
                 key={label}
                 href={href}
                 className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-[15px] font-medium text-slate-800 transition-colors hover:bg-slate-100 hover:text-[#2563EB]"
               >
-                <Icon sx={{ fontSize: 18, color: "#3B82F6" }} aria-hidden />
+                {renderIcon(NAV_ICON_SIZE)}
                 {label}
               </Link>
             ))}
@@ -228,7 +248,7 @@ const TopHeader = () => {
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-y-contain px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
           <nav className="flex flex-col gap-2">
-            {mainNav.map(({ label, href, icon: Icon }) => (
+            {mainNav.map(({ label, href, renderIcon }) => (
               <Link
                 key={label}
                 href={href}
@@ -236,7 +256,7 @@ const TopHeader = () => {
                 onClick={() => setMobileOpen(false)}
               >
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#EFF6FF] to-[#E0E7FF] text-[#2563EB]">
-                  <Icon sx={{ fontSize: 22 }} aria-hidden />
+                  {renderIcon(22)}
                 </span>
                 {label}
               </Link>
@@ -244,21 +264,25 @@ const TopHeader = () => {
           </nav>
 
           <div className="flex flex-col gap-2.5">
-            <Link
+            <Button
+              size="lg"
+              variant="outlineAmber"
               href="/pricing"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-amber-400/90 bg-white px-4 py-3.5 text-sm font-semibold text-amber-950 shadow-sm transition-colors hover:bg-amber-50/80"
+              className="w-full"
               onClick={() => setMobileOpen(false)}
             >
               <AutoAwesomeIcon sx={{ fontSize: 20 }} />
               View pricing
-            </Link>
-            <Link
+            </Button>
+            <Button
+              size="lg"
+              variant="primary"
               href="/practice-overview"
-              className="inline-flex w-full items-center justify-center rounded-full bg-gradient-to-br from-[#1B2B5A] to-[#2E4494] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(27,43,90,0.35)] transition-[transform,box-shadow] hover:shadow-[0_10px_28px_rgba(27,43,90,0.42)] active:scale-[0.99]"
+              className="w-full"
               onClick={() => setMobileOpen(false)}
             >
               Start free practice
-            </Link>
+            </Button>
           </div>
 
           <div className="mt-auto rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-3.5 text-center text-xs leading-relaxed text-slate-600 backdrop-blur-sm">

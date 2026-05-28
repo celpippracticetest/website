@@ -1,0 +1,71 @@
+---
+description: CELPIP website file placement, App Router paths, and component routing conventions
+alwaysApply: false
+---
+# Path — Website Structure & Routing
+
+Place code in the right folder. Build URLs through helpers, not string concatenation.
+
+## App Router groups
+
+| Route group      | URL                                     | Purpose                            |
+| ---------------- | --------------------------------------- | ---------------------------------- |
+| `(marketing)/`   | `/pricing`, `/blog/*`, `/landing/*`     | SEO pages, no auth shell           |
+| `(dashboard)/`   | `/practice-overview`, `/listening/*`, … | Authenticated app (`LayoutClient`) |
+| `(exported)/`    | `/learning`, `/league`                  | Standalone exported views          |
+| `cms/dashboard/` | `/cms/dashboard/*`                      | Admin CMS (MUI theme)              |
+| Root `src/app/`  | `/`, `/sign-in`, `/wiki`, legal pages   | Top-level routes                   |
+
+Route groups `(name)` do **not** appear in URLs.
+
+## Where to put components
+
+```
+src/components/
+├── pages/landing/     # Marketing: Hero, FAQ, PublicPageShell, home/*
+├── pages/pricing/     # Pricing modals, checkout grid, urgency banners
+├── dashboard-app/     # Practice session UI (speaking, reading, writing, listening)
+├── dashboard-new/     # App shell: nav, profile, ShowTasks
+├── skill-landing/     # SEO skill hub pages
+├── practice-seo/      # Task picker chrome, SEO sub-pages
+├── ui/                # shadcn primitives (Button, Dialog, …)
+├── v2/                # Branded Button, shared v2 atoms
+├── auth/              # Sign-in/up forms
+└── admin/             # CMS sidebar, editors
+```
+
+- **New marketing section** → `pages/landing/` or `pages/landing/home/`
+- **New practice feature** → `dashboard-app/{skill}-practice/`
+- **Shared lib** → `src/lib/` (e.g. `practiceRoutes.ts`, `utils.ts`)
+
+## URL helpers (`src/lib/practiceRoutes.ts`)
+
+```ts
+practicePath(skill, practiceId, taskId); // /{skill}/{practiceId}/{taskId} — noindex deep link
+taskPickerPath(skill, taskId); // /{skill}/{taskId} — indexable hub
+```
+
+Skills: `speaking` | `reading` | `writing` | `listening`. Use `navigateToPracticeSession` for cross-skill navigation.
+
+## Page file pattern
+
+```
+src/app/(dashboard)/listening/[...slug]/page.tsx   # Catch-all practice routes
+src/app/(marketing)/pricing/page.tsx               # Static marketing page
+```
+
+- Server components by default; add `"use client"` only when needed
+- Metadata in `page.tsx` or colocated `layout.tsx`
+- Lazy-load heavy client bundles (`*Lazy.tsx` pattern)
+
+## Imports
+
+- Path alias: `@/` → `src/`
+- Prefer existing barrels (`landing/home/index.ts`) when present
+- Do not import dashboard components into marketing pages (keeps bundles lean)
+
+## Do not
+
+- Hardcode `"/speaking/" + id` — use `practicePath` / `taskPickerPath`
+- Put CMS-only UI in `pages/landing/`
+- Add new top-level route groups without matching layout needs

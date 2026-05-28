@@ -45,12 +45,8 @@ import SvgDiamond from "@/components/icons/Diamond";
 import SvgLearningGift from "@/components/icons/LearningGift";
 import SvgLeagueLogo from "@/components/icons/LeagueLogo";
 import dynamic from "next/dynamic";
-import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
+import TopHeader from "@/components/pages/landing/TopHeader";
 
-const DesktopNavigation = dynamic(
-  () => import("@/components/dashboard-new/DesktopNavigation"),
-  { ssr: false }
-);
 const BottomNavigation = dynamic(
   () => import("@/components/dashboard-new/BottomNavigation"),
   { ssr: false }
@@ -365,7 +361,7 @@ const LayoutClient = ({ children }: any) => {
           </div>
           <div className="text-[16px]   mt-[32px]  text-center font-medium">
             <span>Do you have an account? </span>{" "}
-            <Link href="/sign-in">
+            <Link href="/sign-in?mode=sign-in">
               <span className="text-[#316BFF] cursor-pointer"> Login </span>
             </Link>
           </div>
@@ -801,50 +797,12 @@ const LayoutClient = ({ children }: any) => {
         </div>
       )}
 
+      <TopHeader />
+
       <div
         className="relative mx-auto z-[9] mb-[88px] flex w-full justify-center overflow-x-clip bg-[#F4F7FF] bg-[radial-gradient(ellipse_55%_45%_at_85%_35%,rgba(255,183,138,0.22)_0%,transparent_70%),radial-gradient(ellipse_55%_45%_at_10%_30%,rgba(206,220,255,0.28)_0%,transparent_70%),radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(218,255,250,0.35)_0%,transparent_65%)]"
       >
-        <div
-          className="flex h-full w-full flex-col items-end"
-        >
-          <div className=" mx-auto px-[16px]  w-full mb-[16px]">
-            <div
-              className={clsx(
-                "transition-all flex justify-between w-full px-[16px] duration-1000 ease-in-out mt-[24px] rounded-[32px] ",
-                "screen1280:!w-full mx-auto  flex h-[80px] max-w-[1280px] items-center justify-center pl-[24px] relative w-full border border-[#D1DEFF] bg-[linear-gradient(90deg,_rgba(255,_255,_255,_0.65)_0%,_rgba(255,_255,_255,_0.2)_100%)] ",
-                "flex-row items-center"
-              )}
-            >
-              <div className="flex gap-[64px] w-full">
-                <Image
-                  onClick={() => router.push("/")}
-                  alt="full logo"
-                  width={133}
-                  height={40}
-                  className={clsx(
-                    "opacity-100 delay-300 hover:!cursor-pointer"
-                  )}
-                  src="/images/logo.png"
-                />
-
-                <DesktopNavigation />
-              </div>
-
-              <div className="flex items-center justify-between  h-[48px]">
-                {/* <span
-                onClick={() => setIsMenuOpen && setIsMenuOpen(!isMenuOpen)}
-                className="flex cursor-pointer gap-[5px] items-center justify-center w-[40px] h-[40px] border-[#D5D6D8]  border-[1px] rounded-[100%] screen744:!hidden"
-              >
-                <SvgHamburger />
-              </span> */}
-                <div className="hidden screen744:!flex flex-col"></div>
-
-                {/* right side */}
-                <TopHeaderRightSide />
-              </div>
-            </div>
-          </div>
-
+        <div className="flex h-full w-full flex-col items-end pt-[88px] screen744:pt-[96px]">
           {children}
           {copied && (
             <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-[#37465C] text-white px-4 py-2 rounded-[8px] text-[14px] shadow-lg z-[9999] transition-opacity duration-300">

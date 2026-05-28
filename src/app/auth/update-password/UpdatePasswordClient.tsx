@@ -146,7 +146,7 @@ export default function UpdatePasswordClient() {
           .
         </p>
         <p>
-          <Link href="/sign-in" className="text-sm font-medium text-blue-600 hover:underline">
+          <Link href="/sign-in?mode=sign-in" className="text-sm font-medium text-blue-600 hover:underline">
             Back to sign in
           </Link>
         </p>

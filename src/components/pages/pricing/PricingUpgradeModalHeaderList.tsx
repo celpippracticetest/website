@@ -132,16 +132,11 @@ export function PricingUpgradeModalHeaderList({
           </span>
           <span
             className={cn(
-              "flex flex-wrap items-center gap-1.5",
               itemTextClassName ?? "text-slate-600",
               emphasisTextClassName ?? "font-semibold text-[#1B2B5A]"
             )}
           >
-            <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
-              <span className="sr-only">Live — </span>
-              Live
-            </span>
-            <span>{visitsDisplay} visits today</span>
+            {visitsDisplay} visits today
           </span>
         </li>
       ) : signupDisplay != null ? (
@@ -162,18 +157,11 @@ export function PricingUpgradeModalHeaderList({
           </span>
           <span
             className={cn(
-              "flex flex-wrap items-center gap-1.5",
               itemTextClassName ?? "text-slate-600",
               emphasisTextClassName ?? "font-semibold text-[#1B2B5A]"
             )}
           >
-            <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
-              <span className="sr-only">Live — </span>
-              Live
-            </span>
-            <span>
-              {signupDisplay}+ joined today
-            </span>
+            {signupDisplay}+ joined today
           </span>
         </li>
       ) : null}

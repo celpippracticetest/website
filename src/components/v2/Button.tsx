@@ -13,6 +13,14 @@ const v2ButtonVariants = cva(
           "bg-button-primary text-white shadow-[3.69px_3.91px_0_0_rgba(117,156,255,1)] hover:bg-button-primary active:shadow-[0px_0px_0_0_rgba(117,156,255,0)] disabled:bg-button-disabled disabled:text-[#6B7280] disabled:hover:bg-button-disabled",
         secondary:
           "bg-button-secondary text-white shadow-[3.69px_3.91px_0_0_rgba(117,156,255,1)] hover:bg-button-secondary active:shadow-[0px_0px_0_0_rgba(117,156,255,0)] disabled:bg-button-disabled disabled:text-[#6B7280] disabled:hover:bg-button-disabled",
+        ghost:
+          "bg-transparent text-white ring-1 ring-white/35 shadow-[3.69px_3.91px_0_0_rgba(255,255,255,0.15)] hover:bg-white/10 active:shadow-[0px_0px_0_0_rgba(255,255,255,0)] disabled:bg-transparent disabled:text-white/50",
+        outline:
+          "bg-white text-text1 shadow-[3.69px_3.91px_0_0_rgba(255,255,255,0.25)] hover:bg-white/90 active:shadow-[0px_0px_0_0_rgba(255,255,255,0)] disabled:bg-white disabled:text-[#6B7280]",
+        outlineAmber:
+          "bg-white text-amber-950 border-2 border-amber-400/90 shadow-[3.69px_3.91px_0_0_rgba(251,191,36,0.35)] hover:bg-amber-50/80 active:shadow-[0px_0px_0_0_rgba(251,191,36,0)] disabled:bg-white disabled:text-[#6B7280]",
+        outlinePrimary:
+          "bg-white text-slate-700 border-2 border-primary1 shadow-[3.69px_3.91px_0_0_rgba(49,107,255,0.35)] hover:bg-primary6 hover:text-primary1 active:shadow-[0px_0px_0_0_rgba(49,107,255,0)] disabled:bg-white disabled:text-[#6B7280]",
       },
       size: {
         sm: "h-[40px] w-[100px] text-[14px]",

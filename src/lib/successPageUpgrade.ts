@@ -5,19 +5,23 @@ import {
   getPlanTemplateById,
   type PlanTemplate,
 } from "@/lib/pricingCatalog";
-import type { AccessTierKey, DurationGroupKey } from "@/types/pricing";
+import type { DurationGroupKey } from "@/types/pricing";
 import { PlansRepository } from "@/repositories/plans.repo";
 import { stripe } from "@/lib/stripe";
 
 /** Next tier upsell after a successful purchase (catalog template ids). */
 const UPGRADE_TARGET_BY_TEMPLATE: Partial<Record<string, string>> = {
-  "weekly-premium": "monthly-premium-plus",
-  "weekly-premium-plus": "monthly-premium-plus",
-  "monthly-premium": "monthly-premium-plus",
-  "monthly-premium-plus": "three-month-premium-plus",
-  "three-month-premium": "three-month-premium-plus",
-  "three-month-premium-plus": "yearly-premium-plus",
-  "yearly-premium": "yearly-premium-plus",
+  "weekly-plus": "monthly-plus",
+  "monthly-plus": "three-month-plus",
+  "three-month-plus": "yearly-plus",
+  "weekly-premium-plus": "monthly-plus",
+  "monthly-premium-plus": "three-month-plus",
+  "three-month-premium-plus": "yearly-plus",
+  "weekly-premium": "monthly-plus",
+  "monthly-premium": "three-month-plus",
+  "three-month-premium": "yearly-plus",
+  "yearly-premium": "yearly-plus",
+  "yearly-premium-plus": "yearly-plus",
 };
 
 export type SuccessUpgradeOfferForClient = {
@@ -53,21 +57,13 @@ function billingPlanPhrase(template: PlanTemplate): string {
   return "monthly plan";
 }
 
-function templateIdFromDurationAndTier(
-  durationKey: DurationGroupKey,
-  accessTier: AccessTierKey
-): string {
-  const d =
-    durationKey === "threeMonth" ? "three-month" : durationKey;
-  const t = accessTier === "premiumPlus" ? "premium-plus" : "premium";
-  return `${d}-${t}`;
+function templateIdFromDuration(durationKey: DurationGroupKey): string {
+  const d = durationKey === "threeMonth" ? "three-month" : durationKey;
+  return `${d}-plus`;
 }
 
 export function inferCatalogTemplateIdFromPlan(plan: Plan): string | null {
   const recurring = getPlanRecurringConfig(plan);
-  const text = `${plan.title} ${plan.planTitle} ${plan.type}`.toLowerCase();
-  const isPlus = /\bplus\b/.test(text);
-
   let durationKey: DurationGroupKey;
   if (recurring.interval === "week") durationKey = "weekly";
   else if (recurring.interval === "month" && recurring.interval_count === 3)
@@ -75,8 +71,7 @@ export function inferCatalogTemplateIdFromPlan(plan: Plan): string | null {
   else if (recurring.interval === "year") durationKey = "yearly";
   else durationKey = "monthly";
 
-  const accessTier: AccessTierKey = isPlus ? "premiumPlus" : "premium";
-  const templateId = templateIdFromDurationAndTier(durationKey, accessTier);
+  const templateId = templateIdFromDuration(durationKey);
   return getPlanTemplateById(templateId) ? templateId : null;
 }
 
@@ -214,7 +209,7 @@ export async function resolveSuccessUpgradeOfferFromSourcePrice(
     successSessionId: sourceReferenceId,
     sourcePlanTitle,
     targetPlanTitle,
-    targetPlanSummary: `${targetTemplate.accessTier === "premiumPlus" ? "Premium Plus" : "Premium"} · ${targetTemplate.planTitle}`,
+    targetPlanSummary: `Plus · ${targetTemplate.planTitle}`,
     promoFirstPeriodDisplay,
     fullRegularUnitDisplay,
     targetBillingPlanPhrase: billingPlanPhrase(targetTemplate),

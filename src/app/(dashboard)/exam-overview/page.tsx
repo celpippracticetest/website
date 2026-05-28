@@ -4,7 +4,7 @@ import { ExamRepository } from "@/repositories/exams.repo";
 import { Metadata } from "next";
 import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import ExamFAQ, { FAQ_DATA } from "@/components/dashboard-app/ExamFAQ";
-import { Box, Paper, Stack, Typography } from "@mui/material";
+import { Paper, Stack, Typography } from "@mui/material";
 import {
   coercePurchasedMockExamIds,
   normalizeMockExamIdForAccess,
@@ -15,8 +15,6 @@ const examOverviewTimingLog =
   process.env.NODE_ENV === "development" ||
   process.env.EXAM_OVERVIEW_TIMING_LOG === "1";
 
-const examOverviewPageBg =
-  "linear-gradient(135deg, #FAFBFF 0%, #EEF2FF 50%, #F8FAFC 100%)";
 const examOverviewNavy = "#1B2B5A";
 const examOverviewMuted = "#475569";
 
@@ -75,26 +73,10 @@ const ExamsPage = async () => {
   }
 
   return (
-    <Box
-      component="main"
-      sx={{
-        width: "100%",
-        minHeight: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        background: examOverviewPageBg,
-      }}
-    >
-      <Box
-        sx={{
-          width: "100%",
-          maxWidth: "1280px",
-          px: { xs: 2, md: 3 },
-          py: { xs: 3, md: 4 },
-        }}
-      >
+    <main className="flex w-full min-h-screen justify-center bg-transparent">
+      <div className="w-full max-w-[1280px] bg-transparent px-4 py-6 md:px-6 md:py-8">
         {noUser ? (
-          <Box sx={{ mb: { xs: 4, md: 5 } }}>
+          <div className="mb-8 md:mb-10">
             <script
               type="application/ld+json"
               dangerouslySetInnerHTML={{
@@ -149,7 +131,7 @@ const ExamsPage = async () => {
                 </Typography>
               </Stack>
             </Paper>
-          </Box>
+          </div>
         ) : (
           <Paper
             elevation={0}
@@ -190,7 +172,7 @@ const ExamsPage = async () => {
           </Paper>
         )}
 
-        <Box id="exam-overview-list">
+        <div id="exam-overview-list">
           <ExamOverview
             exams={examsForOverview}
             examProgressById={{}}
@@ -207,7 +189,7 @@ const ExamsPage = async () => {
             }
             timingLog={examOverviewTimingLog}
           />
-        </Box>
+        </div>
 
         {noUser && (
           <Paper
@@ -263,12 +245,12 @@ const ExamsPage = async () => {
         )}
 
         {noUser && (
-          <Box sx={{ pb: { xs: 4, md: 6 } }}>
+          <div className="pb-8 md:pb-12">
             <ExamFAQ />
-          </Box>
+          </div>
         )}
-      </Box>
-    </Box>
+      </div>
+    </main>
   );
 };
 

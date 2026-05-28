@@ -35,6 +35,15 @@ export const pricingUpgradeModalHighlights = [
 /** Matches checkout tiles / pricing page “Unlock access to” list heading. */
 export const pricingUpgradeUnlockHeading = "Unlock access to:";
 
+/** Compact unlock list for pricing modals (legacy upgrade drawer copy). */
+export const pricingUpgradeUnlockFeatures = [
+  "All Mock Exams",
+  "All Sample Questions",
+  "Unlimited AI scoring",
+  "CELPIP Courses",
+  "CELPIP Vocabulary Bundles",
+] as const;
+
 export const pricingSelectionSteps = [
   {
     title: "Pick your timeline",

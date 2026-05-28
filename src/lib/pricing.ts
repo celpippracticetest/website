@@ -99,6 +99,15 @@ export function formatPlanCadPrice(value: string) {
   }).format(numericValue);
 }
 
+/** Whole-dollar display for computed strikethrough / compare-at prices. */
+export function formatPlanCadPriceWhole(value: string) {
+  const numericValue = parsePrice(value);
+  return new Intl.NumberFormat("en-CA", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(Math.round(numericValue));
+}
+
 export function isWeeklyPlan(plan: SerializedPlan) {
   return getDurationGroupKey(plan) === "weekly";
 }

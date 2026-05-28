@@ -7,7 +7,7 @@ import { useHasEverPurchased } from "@/hooks/useHasEverPurchased";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { useRouter } from "next/navigation";
 import { signOutWebSession } from "@/lib/auth/client-sign-out";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/v2/Button";
 const AuthButtons = () => {
   type ChallengeStatus = {
     active: boolean;
@@ -63,7 +63,7 @@ const AuthButtons = () => {
 
   const handleSignOut = async () => {
     localStorage.removeItem("hasClosedExtraDiscountModal");
-    await signOutWebSession(router, "/sign-in");
+    await signOutWebSession(router, "/sign-in?mode=sign-in");
   };
 
   if (!mounted || !isLoaded) {
@@ -146,18 +146,15 @@ const AuthButtons = () => {
         </div>
       )}
       {!isSignedIn && (
-        <Link
+        <Button
           href="/sign-in"
           id="sign-up-button"
-          className={cn(
-            "inline-flex h-10 min-h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-slate-200/90 bg-white/90 font-medium text-slate-700 shadow-none ring-offset-background transition-colors",
-            "hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40 focus-visible:ring-offset-2",
-            "px-4 text-sm min-[744px]:px-5"
-          )}
+          variant="outlinePrimary"
+          size="sm"
+          className="!h-10 !w-auto !min-w-0 shrink-0 px-4 min-[744px]:px-5 !text-sm !font-medium"
         >
           Get started
-        </Link>
+        </Button>
       )}    </>
   );
 };

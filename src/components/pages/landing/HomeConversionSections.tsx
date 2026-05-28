@@ -41,7 +41,7 @@ export function HomeStatsTrustStrip() {
           <div className="h-px screen744:!h-auto screen744:!w-px bg-outline screen744:!self-stretch shrink-0" aria-hidden />
           <div className="flex flex-col items-center screen744:!items-end gap-[8px] text-center screen744:!text-right min-w-0 screen744:!max-w-[240px]">
             <div className="flex items-center gap-[6px] text-text1">
-              <span className="text-[#F59E0B] text-[18px] leading-none" aria-hidden>
+              <span className="text-secondary2 text-[18px] leading-none" aria-hidden>
                 ★★★★★
               </span>
               <span className="text-[14px] screen1280:!text-[15px] font-semibold">Loved by learners</span>
@@ -210,18 +210,22 @@ export function HomeCelpipVsIeltsBand() {
             </p>
           </div>
           <div className="flex flex-col screen744:!flex-row gap-[12px] shrink-0">
-            <Link
+            <Button
+              size="md"
+              variant="outline"
               href="/wiki/celpip-reading-score-guide"
-              className="inline-flex h-[48px] min-w-[200px] px-[24px] items-center justify-center rounded-full bg-white text-text1 text-[15px] font-semibold hover:bg-white/90 transition-colors text-center"
+              className="!min-w-[200px]"
               onClick={() => trackCTA("CELPIP vs IELTS scores", "home_compare_band")}>
               Score comparison guide
-            </Link>
-            <Link
+            </Button>
+            <Button
+              size="md"
+              variant="ghost"
               href="/learning"
-              className="inline-flex h-[48px] min-w-[200px] px-[24px] items-center justify-center rounded-full bg-white/10 text-white text-[15px] font-semibold border border-white/35 hover:bg-white/15 transition-colors text-center"
+              className="!min-w-[200px]"
               onClick={() => trackCTA("Free courses", "home_compare_band")}>
               Free learning hub
-            </Link>
+            </Button>
           </div>
         </div>
       </motion.div>

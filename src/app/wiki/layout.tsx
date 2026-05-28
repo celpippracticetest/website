@@ -1,5 +1,6 @@
 import { Metadata } from "next";
-import TopHeader from "@/components/pages/landing/TopHeader";
+import PublicPageShell from "@/components/pages/landing/PublicPageShell";
+import PublicPageFooter from "@/components/pages/landing/PublicPageFooter";
 
 export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "";
@@ -18,9 +19,6 @@ export default function WikiLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="bg-[#F4F7FF] min-h-screen flex flex-col">
-      <TopHeader />
-      <main className="flex-grow pt-[100px] pb-10">{children}</main>
-    </div>
+    <PublicPageShell footer={<PublicPageFooter />}>{children}</PublicPageShell>
   );
 }
