@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { AppAuthBridge } from "@/components/app/AppAuthBridge";
 import { AppDownloadContent } from "@/components/pages/app/AppDownloadContent";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { ANDROID_APP_STORE_URL, getIosAppStoreUrl } from "@/lib/mobile/storeUrls";
 
 const DEFAULT_APP_BASE_URL = "https://celpippracticetest.com";
 
@@ -94,8 +95,8 @@ export default function AppDownloadPage({
     <>
       <JsonLd data={webpageJsonLd} />
       <AppDownloadContent
-        iosAppUrl={process.env.NEXT_PUBLIC_IOS_APP_URL}
-        androidAppUrl={process.env.NEXT_PUBLIC_ANDROID_APP_URL}
+        iosAppUrl={getIosAppStoreUrl()}
+        androidAppUrl={ANDROID_APP_STORE_URL}
       />
     </>
   );

@@ -4,6 +4,7 @@ import SvgLinkedIn from "@/components/icons/LinkedIn";
 import SvgYouTube from "@/components/icons/YouTube";
 import SvgInstagram from "@/components/icons/Instagram";
 import { StoreBadgesRow } from "@/components/pages/app/StoreBadges";
+import { ANDROID_APP_STORE_URL, getIosAppStoreUrl } from "@/lib/mobile/storeUrls";
 import FooterVisibilityObserver from "./FooterVisibilityObserver";
 import { cn } from "@/lib/utils";
 
@@ -143,8 +144,8 @@ export const FooterBase = ({
           </div>
 
           <StoreBadgesRow
-            iosAppUrl={process.env.NEXT_PUBLIC_IOS_APP_URL}
-            androidAppUrl={process.env.NEXT_PUBLIC_ANDROID_APP_URL}
+            iosAppUrl={getIosAppStoreUrl()}
+            androidAppUrl={ANDROID_APP_STORE_URL}
             className="screen1280:shrink-0"
           />
         </div>
