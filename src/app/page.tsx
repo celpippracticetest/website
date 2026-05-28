@@ -11,7 +11,7 @@ const HomePageClient = dynamic(
 
 export default function HomePage() {
   return (
-    <PublicPageShell liveBackground footer={<PublicPageFooter />}>
+    <PublicPageShell footer={<PublicPageFooter />}>
       <HomePageClient />
     </PublicPageShell>
   );

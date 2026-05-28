@@ -11,6 +11,7 @@ import {
   HomeTestimonialsSection,
   HomeCtaBanner,
 } from "./home";
+import { HomeHeroAnimatedBackground } from "./home/HomeHeroAnimatedBackground";
 
 const Hero = dynamic(() => import("./Hero"), { ssr: true });
 const FloatingChatIcon = dynamic(() => import("../../AskBeavo/FloatingChatIcon"), {
@@ -38,9 +39,12 @@ export default function HomePageClient() {
   if (shouldReload) return null;
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <div className="relative -mt-[88px] overflow-hidden pt-[88px] screen744:-mt-[96px] screen744:pt-[96px]">
-        <Hero />
-        <HomeFeaturesSection />
+      <div className="relative -mt-[88px] overflow-hidden pt-[88px] screen744:-mt-[96px] screen744:pt-[96px] screen1280:rounded-b-[200px]">
+        <HomeHeroAnimatedBackground />
+        <div className="relative z-[1]">
+          <Hero />
+          <HomeFeaturesSection />
+        </div>
       </div>
       <HomeHowItWorksSection />
       <HomeTestimonialsSection />

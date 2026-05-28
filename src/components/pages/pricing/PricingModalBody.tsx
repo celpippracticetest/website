@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { PricingModalHero } from "@/components/pages/pricing/PricingModalHero";
 import { PricingModalPlanList } from "@/components/pages/pricing/PricingModalPlanList";
+import { PricingMoneyBackGuaranteeCard } from "@/components/pages/pricing/PricingMoneyBackGuaranteeCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { durationDisplayOrder } from "@/lib/pricingCatalog";
 import type { PricingPlanSection } from "@/lib/pricingPlanSections";
@@ -91,12 +92,18 @@ export function PricingModalBody({
           ) : null}
 
           {showPlanList ? (
-            <PricingModalPlanList
-              plans={plans}
-              sections={visibleSections}
-              recommendedPlanId={recommendedPlanId}
-              recommendedSectionKey={recommendedSectionKey}
-            />
+            <>
+              <PricingModalPlanList
+                plans={plans}
+                sections={visibleSections}
+                recommendedPlanId={recommendedPlanId}
+                recommendedSectionKey={recommendedSectionKey}
+              />
+              <PricingMoneyBackGuaranteeCard
+                className="mt-4 px-5 py-6 md:px-8 md:py-8"
+                onRefundPolicyClick={onClose}
+              />
+            </>
           ) : null}
         </div>
       </div>

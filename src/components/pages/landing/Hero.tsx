@@ -16,7 +16,6 @@ import { useRecentVisitsLiveStat } from "@/hooks/useRecentSignupsLiveStat";
 import { PricingUpgradeModalHeaderList } from "@/components/pages/pricing/PricingUpgradeModalHeaderList";
 import SvgPlus from "../../icons/Plus";
 import SvgArrowRight from "../../icons/ArrowRight";
-import SvgPlay from "../../icons/Play";
 
 const SvgMockExamsColorful = dynamic(
   () => import("../../icons/MockExamsColorful"),
@@ -142,7 +141,7 @@ const Hero = () => {
               </div>
 
               <h1 className="mb-5 w-full text-balance text-[2.5rem] font-extrabold leading-[1.1] screen744:text-[3rem] screen1280:text-[3.75rem]">
-                <span className="text-primary1">Reach Your Target CELPIP Score.</span>{" "}
+                <span className="text-text1">Reach Your Target CELPIP Score.</span>{" "}
                 <span className="text-secondary2">Faster.</span>
               </h1>
 
@@ -155,7 +154,7 @@ const Hero = () => {
                 />
               </div>
 
-              <div className="mb-4 flex w-full max-w-md flex-col gap-3 screen744:max-w-none screen744:flex-row screen744:gap-4">
+              <div className="mb-4 flex w-full max-w-md screen744:max-w-none">
                 <Button
                   size="lg"
                   variant="primary"
@@ -165,16 +164,6 @@ const Hero = () => {
                 >
                   Start Free Practice
                   <SvgArrowRight className="h-5 w-5" />
-                </Button>
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  href="/exam-overview"
-                  className={HERO_CTA_CLASS}
-                  onClick={() => trackClick("hero_mock_exam")}
-                >
-                  <SvgPlay className="h-5 w-5 shrink-0 text-white" />
-                  Try a Mock Exam
                 </Button>
               </div>
 

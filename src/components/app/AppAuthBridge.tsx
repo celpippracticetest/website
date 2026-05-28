@@ -2,6 +2,8 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { Button } from '@/components/v2/Button';
+import { cn } from '@/lib/utils';
 
 const APP_PACKAGE = 'com.celpippt.app';
 
@@ -64,7 +66,7 @@ function Bridge() {
         title="Confirmation failed"
         body={error}
         hint="You can close this tab and try again."
-        titleColor="#c0392b"
+        variant="error"
       />
     );
   }
@@ -76,7 +78,7 @@ function Bridge() {
         qs ? (
           <span>
             App did not open?{' '}
-            <a href={toAppUrl(qs)} style={{ color: '#0070f3', fontWeight: 600 }}>
+            <a href={toAppUrl(qs)} className="font-semibold text-primary1 underline-offset-2 hover:underline">
               Tap here to open
             </a>
           </span>
@@ -84,22 +86,14 @@ function Bridge() {
       }
       cta={
         qs ? (
-          <a
+          <Button
             href={toIntentUrl(qs)}
-            style={{
-              display: 'inline-block',
-              marginTop: '20px',
-              padding: '14px 32px',
-              background: '#0070f3',
-              color: '#fff',
-              borderRadius: '10px',
-              fontSize: '16px',
-              fontWeight: 700,
-              textDecoration: 'none',
-            }}
+            variant="primary"
+            size="lg"
+            className="mt-5 w-full max-w-xs px-8 screen744:w-auto"
           >
             Open CELPIP App
-          </a>
+          </Button>
         ) : undefined
       }
     />
@@ -111,38 +105,33 @@ function Screen({
   body,
   hint,
   cta,
-  titleColor = '#111',
+  variant = 'default',
 }: {
   title: string;
   body?: string;
   hint?: React.ReactNode;
   cta?: React.ReactNode;
-  titleColor?: string;
+  variant?: 'default' | 'error';
 }) {
   return (
-    <main
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        fontFamily: 'system-ui, sans-serif',
-        padding: '24px',
-        textAlign: 'center',
-        background: '#f9f9f9',
-      }}
-    >
-      <p style={{ fontSize: '20px', fontWeight: 600, color: titleColor, marginBottom: '8px' }}>
-        {title}
-      </p>
-      {body && (
-        <p style={{ fontSize: '15px', color: '#333', marginBottom: '12px' }}>{body}</p>
-      )}
-      {cta}
-      {hint && (
-        <p style={{ fontSize: '13px', color: '#888', marginTop: '16px' }}>{hint}</p>
-      )}
+    <main className="flex min-h-[60vh] flex-col items-center justify-center px-6 py-16 text-center screen744:min-h-[50vh]">
+      <div className="w-full max-w-md rounded-3xl border border-outline/80 bg-white px-6 py-8 shadow-sm screen744:px-8 screen744:py-10">
+        <p
+          className={cn(
+            'text-xl font-semibold screen744:text-2xl',
+            variant === 'error' ? 'text-error1' : 'text-text1',
+          )}
+        >
+          {title}
+        </p>
+        {body ? (
+          <p className="mt-3 text-base leading-relaxed text-text2">{body}</p>
+        ) : null}
+        {cta}
+        {hint ? (
+          <p className="mt-4 text-sm text-text3">{hint}</p>
+        ) : null}
+      </div>
     </main>
   );
 }

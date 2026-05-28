@@ -2,19 +2,13 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import CheckCircle from "@mui/icons-material/CheckCircle";
 import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
 import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
-import AutoAwesome from "@mui/icons-material/AutoAwesome";
-import Close from "@mui/icons-material/Close";
-import Shield from "@mui/icons-material/Shield";
 import Star from "@mui/icons-material/Star";
 import { PricingCheckoutLayout } from "@/components/pages/pricing/PricingCheckoutLayout";
-import { PricingModalPlanList } from "@/components/pages/pricing/PricingModalPlanList";
-import { cn } from "@/lib/utils";
+import { PricingMoneyBackGuaranteeCard } from "@/components/pages/pricing/PricingMoneyBackGuaranteeCard";
 import {
   pricingFaqs,
   pricingTestimonials,
@@ -23,8 +17,6 @@ import { Box } from "@/components/ui/Box";
 import { useEngagementTracking } from "@/hooks/useTracking";
 import { useUserContext } from "@/hooks/useUserContext";
 import {
-  formatBillingCycle,
-  formatPlanCadPrice,
   PRICING_PLUS_FEATURE_LABELS,
 } from "@/lib/pricing";
 import { groupPlansByDuration, sortPlansByOrder } from "@/lib/pricingPlanSections";
@@ -260,7 +252,6 @@ export default function PricingPageClient({
   pricingAbLayout,
   pricingAbParticipatesInExperiment,
 }: PricingPageClientProps) {
-  const [mobilePlansSheetOpen, setMobilePlansSheetOpen] = useState(false);
   const { isSignedIn } = useHybridWebUser();
   const userContext = useUserContext();
   const pricingCheckoutFields = useMemo(
@@ -283,20 +274,6 @@ export default function PricingPageClient({
       body: JSON.stringify({ eventType: "page_view", layout: pricingAbLayout }),
     });
   }, [pricingAbLayout, pricingAbParticipatesInExperiment]);
-
-  useEffect(() => {
-    if (!mobilePlansSheetOpen) return;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const onKeydown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMobilePlansSheetOpen(false);
-    };
-    window.addEventListener("keydown", onKeydown);
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      window.removeEventListener("keydown", onKeydown);
-    };
-  }, [mobilePlansSheetOpen]);
 
   const orderedPlans = useMemo(() => sortPlansByOrder(plans), [plans]);
   const groupedPlans = useMemo(() => groupPlansByDuration(orderedPlans), [orderedPlans]);
@@ -351,24 +328,8 @@ export default function PricingPageClient({
 
   const recommendedPlanId = recommendedPlanEntry?.stableId || null;
 
-  const bestValuePlanEntry = useMemo(() => {
-    return (
-      groupedPlans.find((section) => section.key === "threeMonth")?.plus ||
-      groupedPlans.find((section) => section.key === "yearly")?.plus ||
-      recommendedPlanEntry ||
-      null
-    );
-  }, [groupedPlans, recommendedPlanEntry]);
-
-  const stickyCtaEntry = personalizedRecommendation ? recommendedPlanEntry : bestValuePlanEntry;
-
   return (
-    <Box
-      className={cn(
-        "flex-1 overflow-y-auto bg-[#F4F7FF] px-4 py-0 md:px-8 lg:px-10",
-        stickyCtaEntry ? "pb-24 md:pb-0" : "",
-      )}
-    >
+    <Box className="flex-1 overflow-y-auto bg-[#F4F7FF] px-4 py-0 md:px-8 lg:px-10">
       <Box className="mx-auto w-full max-w-6xl">
         {personalizedRecommendation && recommendedPlanEntry && (
           <Box className="mt-8 rounded-[24px] border border-blue-200 bg-[linear-gradient(90deg,_rgba(74,125,255,0.08)_0%,_rgba(247,157,101,0.08)_100%)] px-5 py-5 shadow-sm">
@@ -476,24 +437,7 @@ export default function PricingPageClient({
             </div>
 
             <div className="w-full shrink-0 lg:max-w-md lg:pt-2">
-              <div className="rounded-3xl border border-slate-200 bg-white px-6 py-8 text-center shadow-sm md:px-10 md:py-10">
-                <Shield
-                  sx={{ fontSize: 48, color: "#10B981" }}
-                  className="mx-auto mb-4"
-                  aria-hidden
-                />
-                <h2 className="text-2xl font-bold text-slate-900 md:text-3xl">
-                  48-Hour Money-Back Guarantee
-                </h2>
-                <p className="mt-3 text-base leading-relaxed text-slate-600">
-                  Not satisfied? Request a full refund within 48 hours of your first
-                  purchase when usage stays within our published caps. See our{" "}
-                  <Link href="/refund-policy" className="font-semibold text-blue-700 underline underline-offset-2">
-                    Refund Policy
-                  </Link>{" "}
-                  for full terms.
-                </p>
-              </div>
+              <PricingMoneyBackGuaranteeCard />
             </div>
           </div>
         </section>
@@ -540,122 +484,6 @@ export default function PricingPageClient({
             </div>
           </div>
         </section>
-
-      <AnimatePresence>
-        {stickyCtaEntry && (
-          <motion.div
-            key="pricing-mobile-sticky"
-            role="region"
-            aria-label="Plan quick actions"
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 34, stiffness: 420 }}
-            className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-4 pt-3 shadow-[0_-10px_30px_rgba(15,23,42,0.12)] backdrop-blur md:hidden"
-            style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
-          >
-            <Box className="mx-auto flex max-w-6xl items-center justify-between gap-3">
-              <Box className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-700">
-                  {personalizedRecommendation ? "Recommended" : "Best value"}
-                </p>
-                <p className="truncate text-sm font-semibold text-blue-950">
-                  {stickyCtaEntry.plan.planTitle || stickyCtaEntry.plan.title}
-                </p>
-                <p className="text-xs text-slate-600">
-                  {(() => {
-                    const cycle = formatBillingCycle(
-                      stickyCtaEntry.plan.billingInterval,
-                      stickyCtaEntry.plan.billingIntervalCount
-                    );
-                    return (
-                      <>
-                        CA$ {formatPlanCadPrice(stickyCtaEntry.plan.price)}
-                        {cycle ? ` · per ${cycle}` : null}
-                      </>
-                    );
-                  })()}
-                </p>
-              </Box>
-              <button
-                type="button"
-                disabled={groupedPlans.length === 0}
-                onClick={() => setMobilePlansSheetOpen(true)}
-                className="inline-flex shrink-0 items-center justify-center rounded-full bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] px-4 py-2 text-sm font-semibold text-white shadow-md disabled:pointer-events-none disabled:opacity-40"
-              >
-                <AutoAwesome className="mr-2 h-4 w-4" />
-                View plans
-              </button>
-            </Box>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {mobilePlansSheetOpen && groupedPlans.length > 0 && (
-          <motion.div
-            key="pricing-plans-sheet"
-            className="fixed inset-0 z-50 flex flex-col justify-end md:hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
-          >
-            <motion.button
-              type="button"
-              aria-label="Close plan options"
-              className="absolute inset-0 border-0 bg-slate-900/45 p-0"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setMobilePlansSheetOpen(false)}
-            />
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="pricing-sheet-title"
-              className="relative mx-auto flex w-full max-w-lg flex-col rounded-t-2xl bg-white shadow-2xl"
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 36, stiffness: 400 }}
-              style={{
-                maxHeight: "min(85vh, 100dvh - 1.5rem)",
-                paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Box className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3">
-                <Box className="min-w-0 pr-2">
-                  <p id="pricing-sheet-title" className="text-base font-semibold text-blue-950">
-                    Choose a plan
-                  </p>
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    Live catalog from our database — secure checkout on Stripe
-                  </p>
-                </Box>
-                <button
-                  type="button"
-                  aria-label="Close"
-                  onClick={() => setMobilePlansSheetOpen(false)}
-                  className="shrink-0 rounded-full p-2 text-slate-600 hover:bg-slate-100"
-                >
-                  <Close className="h-5 w-5" />
-                </button>
-              </Box>
-              <Box className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 py-4">
-                <PricingModalPlanList
-                  plans={plans}
-                  sections={visiblePlanSections}
-                  recommendedPlanId={recommendedPlanId}
-                  recommendedSectionKey={recommendedSection?.key ?? null}
-                  pricingCheckoutFields={pricingCheckoutFields}
-                />
-              </Box>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </Box>
   );
 }

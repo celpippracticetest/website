@@ -2,6 +2,8 @@ import TrackedLink from "@/components/analytics/TrackedLink";
 import Image from "next/image";
 import SvgLinkedIn from "@/components/icons/LinkedIn";
 import SvgYouTube from "@/components/icons/YouTube";
+import SvgInstagram from "@/components/icons/Instagram";
+import { StoreBadgesRow } from "@/components/pages/app/StoreBadges";
 import FooterVisibilityObserver from "./FooterVisibilityObserver";
 import { cn } from "@/lib/utils";
 
@@ -127,8 +129,24 @@ export const FooterBase = ({
               >
                 <SvgYouTube className="h-4 w-4" />
               </TrackedLink>
+              <TrackedLink
+                href="https://www.instagram.com/celpippracticetest/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={socialClassName}
+                aria-label="Visit our Instagram page"
+                navType="footer"
+              >
+                <SvgInstagram className="h-4 w-4" />
+              </TrackedLink>
             </div>
           </div>
+
+          <StoreBadgesRow
+            iosAppUrl={process.env.NEXT_PUBLIC_IOS_APP_URL}
+            androidAppUrl={process.env.NEXT_PUBLIC_ANDROID_APP_URL}
+            className="screen1280:shrink-0"
+          />
         </div>
 
         <div

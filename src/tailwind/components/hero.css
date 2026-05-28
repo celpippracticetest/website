@@ -16,6 +16,19 @@
   }
 }
 
+.animate-home-gradient {
+  background: linear-gradient(
+    -45deg,
+    #fde2e4,
+    #fef3c7,
+    #e0f2fe,
+    #f1f5f9,
+    #fde2e4
+  );
+  background-size: 300% 300%;
+  animation: gradient 12s ease-in-out infinite;
+}
+
 @keyframes hero-float {
   0%,
   100% {
@@ -63,6 +76,12 @@
   .animate-hero-float-alt,
   .animate-hero-shimmer {
     animation: none;
+  }
+
+  .animate-home-gradient {
+    animation: none;
+    background-size: 100% 100%;
+    background-position: 50% 50%;
   }
 }
 

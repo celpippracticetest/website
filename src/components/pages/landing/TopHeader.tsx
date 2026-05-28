@@ -219,7 +219,12 @@ const TopHeader = () => {
           mobileOpen ? "pointer-events-auto" : "pointer-events-none",
         )}
       >
-        <div className="shrink-0 bg-gradient-to-br from-[#1B2B5A] via-[#2E4494] to-[#3B5998] px-5 pb-5 pt-[max(1rem,env(safe-area-inset-top))]">
+        <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-primary1 via-primary2 to-secondary2 px-5 pb-5 pt-[max(1rem,env(safe-area-inset-top))]">
+          <div
+            className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/0 via-white/10 to-white/0 opacity-20"
+            aria-hidden
+          />
+          <div className="relative z-[1]">
           <div
             className="mb-4 mr-auto h-1 w-10 rounded-full bg-white/30"
             aria-hidden
@@ -243,6 +248,7 @@ const TopHeader = () => {
           </div>
           <div className="mt-4">
             <HeaderOnlineBadge compact variant="onNavy" className="w-full" />
+          </div>
           </div>
         </div>
 

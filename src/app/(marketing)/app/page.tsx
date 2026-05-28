@@ -1,9 +1,7 @@
 import { Metadata } from "next";
-import Download from "@mui/icons-material/Download";
-import Bolt from "@mui/icons-material/Bolt";
-import { Box } from "@/components/ui/Box";
-import { JsonLd } from "@/components/seo/JsonLd";
 import { AppAuthBridge } from "@/components/app/AppAuthBridge";
+import { AppDownloadContent } from "@/components/pages/app/AppDownloadContent";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 const DEFAULT_APP_BASE_URL = "https://celpippracticetest.com";
 
@@ -11,14 +9,12 @@ function normalizeAppBaseUrl(raw: string | undefined): string {
   const input = (raw ?? "").trim().replace(/^['"]|['"]$/g, "");
   if (!input) return DEFAULT_APP_BASE_URL;
 
-  // If it's already a valid absolute URL, keep it.
   try {
     return new URL(input).toString();
   } catch {
     // continue
   }
 
-  // If it has an http(s) scheme but is still invalid, fall back.
   if (/^https?:\/\//i.test(input)) return DEFAULT_APP_BASE_URL;
 
   const hostPart = input.split("/")[0];
@@ -70,25 +66,14 @@ export default function AppDownloadPage({
 }: {
   searchParams: Record<string, string | string[] | undefined>;
 }) {
-  // Auth deep-link bridge: Supabase redirects here after email confirmation
-  // with ?code= (PKCE) or ?error=. Hand off to the client component which
-  // performs a direct JS navigation to celpipapp://auth?… — the only way to
-  // reliably open the app from a server-side redirect chain on Android.
-  const hasCode = 'code' in searchParams;
-  const hasError = 'error' in searchParams;
+  const hasCode = "code" in searchParams;
+  const hasError = "error" in searchParams;
   if (hasCode || hasError) {
     return <AppAuthBridge />;
   }
 
-  const iosAppUrl = process.env.NEXT_PUBLIC_IOS_APP_URL;
-  const androidAppUrl = process.env.NEXT_PUBLIC_ANDROID_APP_URL;
-
   const baseUrl = normalizeAppBaseUrl(process.env.APP_BASE_URL);
   const pageUrl = `${baseUrl.replace(/\/$/, "")}/app`;
-  /**
-   * Avoid `SoftwareApplication` + `offers` without real store `aggregateRating`/`review`
-   * (Google Software App rich result requires one of those; see Search Console / SD docs).
-   */
   const webpageJsonLd = {
     "@context": "https://schema.org",
     "@type": "WebPage",
@@ -105,104 +90,13 @@ export default function AppDownloadPage({
     },
   };
 
-  const StoreBadge = ({ kind, href }: { kind: "ios" | "android"; href?: string }) => {
-    const disabled = !href?.trim();
-
-    const baseClassName =
-      "flex w-full flex-col justify-between rounded-2xl border px-5 py-4 transition-shadow";
-
-    const className =
-      kind === "ios"
-        ? `${baseClassName} bg-black border-black text-white hover:shadow-[0_12px_30px_rgba(0,0,0,0.25)]`
-        : `${baseClassName} bg-slate-900 border-slate-900 text-white hover:shadow-[0_12px_30px_rgba(2,6,23,0.35)]`;
-
-    const content = (
-      <Box className="flex flex-col">
-        <Box className="text-xs font-medium text-white/80">
-          {kind === "ios" ? "Download on the" : "Get it on"}
-        </Box>
-        <Box className="mt-0.5 text-xl font-semibold tracking-tight">
-          {kind === "ios" ? "App Store" : "Google Play"}
-        </Box>
-        <Box className="mt-1 text-xs text-white/70">CELPIP Practice Test</Box>
-        <Box className="mt-2 h-px w-full bg-white/10" />
-      </Box>
-    );
-
-    if (disabled) {
-      return (
-        <Box className={`${className} opacity-60 cursor-not-allowed`} aria-disabled="true">
-          {content}
-        </Box>
-      );
-    }
-
-    return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={kind === "ios" ? "Download on the App Store" : "Get it on Google Play"}
-        className={className}
-      >
-        {content}
-      </a>
-    );
-  };
-
   return (
-    <Box className="cel-container py-10 md:py-14">
+    <>
       <JsonLd data={webpageJsonLd} />
-
-      <Box className="flex flex-col gap-6">
-        <Box className="flex items-start justify-between gap-6 flex-wrap">
-          <Box className="flex flex-col gap-2">
-            <Box className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700">
-              <Download className="h-4 w-4 text-blue-700" />
-              Mobile App Downloads
-            </Box>
-            <h1 className="text-3xl font-bold text-slate-900 md:text-5xl">Download the CELPIP App</h1>
-            <Box className="text-base text-slate-600 md:text-lg max-w-3xl">
-              Practice CELPIP anywhere with instant scoring, AI-powered feedback, and realistic mock exam drills.
-            </Box>
-          </Box>
-
-          <Box className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-blue-50 px-4 py-3">
-            <Bolt className="h-5 w-5 text-blue-700" />
-            <Box className="text-sm font-medium text-blue-900">Study faster with mobile practice</Box>
-          </Box>
-        </Box>
-
-        <Box className="mt-2 flex flex-col gap-4 md:flex-row">
-          <StoreBadge kind="ios" href={iosAppUrl} />
-          <StoreBadge kind="android" href={androidAppUrl} />
-        </Box>
-
-        <Box className="mt-4 rounded-2xl border border-slate-200 bg-white p-6 md:p-8">
-          <Box className="text-xl font-bold text-slate-900">What you can do in the app</Box>
-          <Box className="mt-4 flex flex-col gap-3">
-            <Box className="flex items-start gap-3">
-              <Box className="mt-1 h-2 w-2 rounded-full bg-blue-600" />
-              <Box className="text-slate-700">
-                <span className="font-medium text-slate-900">Mock exams:</span> Listening, Reading, Writing, and Speaking practice on your schedule.
-              </Box>
-            </Box>
-            <Box className="flex items-start gap-3">
-              <Box className="mt-1 h-2 w-2 rounded-full bg-blue-600" />
-              <Box className="text-slate-700">
-                <span className="font-medium text-slate-900">Instant feedback:</span> AI-guided improvements to help you target the highest-impact errors.
-              </Box>
-            </Box>
-            <Box className="flex items-start gap-3">
-              <Box className="mt-1 h-2 w-2 rounded-full bg-blue-600" />
-              <Box className="text-slate-700">
-                <span className="font-medium text-slate-900">On-the-go learning:</span> Review strategies and drill key question types anywhere.
-              </Box>
-            </Box>
-          </Box>
-        </Box>
-      </Box>
-    </Box>
+      <AppDownloadContent
+        iosAppUrl={process.env.NEXT_PUBLIC_IOS_APP_URL}
+        androidAppUrl={process.env.NEXT_PUBLIC_ANDROID_APP_URL}
+      />
+    </>
   );
 }
-

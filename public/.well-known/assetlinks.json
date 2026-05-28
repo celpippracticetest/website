@@ -1,13 +1,15 @@
 [
   {
     "relation": [
-      "delegate_permission/common.handle_all_urls"
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
     ],
     "target": {
       "namespace": "android_app",
       "package_name": "com.celpippt.app",
       "sha256_cert_fingerprints": [
-        "1F:37:1F:63:C3:F2:8C:A9:6A:E9:72:29:4A:C3:86:A2:03:09:83:A8:58:A9:B7:68:6C:74:69:A9:91:15:21:C4"
+        "1F:37:1F:63:C3:F2:8C:A9:6A:E9:72:29:4A:C3:86:A2:03:09:83:A8:58:A9:B7:68:6C:74:69:A9:91:15:21:C4",
+        "6E:ED:14:87:A1:CC:C5:B2:1F:A1:18:1D:A7:4F:01:0E:DE:58:6C:9F:C7:59:EA:03:EE:5C:35:92:EB:BA:F0:82"
       ]
     }
   }
