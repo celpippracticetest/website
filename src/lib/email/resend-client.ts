@@ -88,6 +88,28 @@ export class ResendSendError extends Error {
   }
 }
 
+export class ResendApiError extends Error {
+  statusCode: number;
+  code?: string;
+
+  constructor(message: string, opts?: { statusCode?: number; code?: string }) {
+    super(message);
+    this.name = "ResendApiError";
+    this.statusCode = opts?.statusCode ?? 500;
+    this.code = opts?.code;
+  }
+}
+
+function throwIfResendError(
+  error: { message: string; name?: string; statusCode?: number } | null | undefined
+): void {
+  if (!error) return;
+  throw new ResendApiError(error.message, {
+    statusCode: error.statusCode ?? 500,
+    code: error.name,
+  });
+}
+
 export async function sendResendHtmlEmail(opts: {
   to: string | string[];
   subject: string;
@@ -136,9 +158,7 @@ export async function listResendAudiences(): Promise<ResendAudienceOption[]> {
     throw new Error("RESEND_API_KEY is not configured");
   }
   const { data, error } = await resend.audiences.list();
-  if (error) {
-    throw new Error(error.message);
-  }
+  throwIfResendError(error);
   const rows = data?.data ?? [];
   return rows.map((a) => ({ id: a.id, name: a.name }));
 }
@@ -156,8 +176,9 @@ export async function createResendAudience(name: string): Promise<{ id: string; 
     throw new Error("Audience name is required");
   }
   const { data, error } = await resend.audiences.create({ name: trimmed });
-  if (error || !data?.id) {
-    throw new Error(error?.message || "Resend could not create the audience");
+  throwIfResendError(error);
+  if (!data?.id) {
+    throw new ResendApiError("Resend could not create the audience");
   }
   return { id: data.id, name: data.name };
 }

@@ -100,8 +100,14 @@ export default function UserEmailsPage() {
       const response = await fetch("/api/admin/user-emails/resend-audience", {
         cache: "no-store",
       });
-      if (!response.ok) return;
-      const payload = await response.json();
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessage(
+          payload?.error ||
+            "Could not load Resend audiences. Check RESEND_API_KEY permissions (audiences/contacts)."
+        );
+        return;
+      }
       if (Array.isArray(payload?.data)) {
         setResendAudiences(payload.data);
         setResendAudienceId((prev) => prev || payload.data[0]?.id || "");

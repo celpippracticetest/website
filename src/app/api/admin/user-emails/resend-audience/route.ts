@@ -10,6 +10,7 @@ import {
   createResendAudience,
   getResendClient,
   listResendAudiences,
+  ResendApiError,
   syncRecipientsToResendAudience,
 } from "@/lib/email/resend-client";
 import { z } from "zod";
@@ -32,6 +33,20 @@ function defaultAudienceName(period: string): string {
   return `CMS free users · ${label} · ${date}`;
 }
 
+function resendErrorResponse(error: unknown, fallback: string) {
+  const message = error instanceof Error ? error.message : fallback;
+  const code = error instanceof ResendApiError ? error.code : undefined;
+  const status =
+    error instanceof ResendApiError
+      ? error.statusCode === 401
+        ? 403
+        : error.statusCode >= 400 && error.statusCode < 600
+          ? error.statusCode
+          : 500
+      : 500;
+  return NextResponse.json({ ok: false, error: message, code }, { status });
+}
+
 export async function GET(request: NextRequest) {
   try {
     const admin = await ensureAdminApi(request);
@@ -48,8 +63,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, data: audiences }, { status: 200 });
   } catch (error) {
     console.error("[admin user-emails resend-audience] GET failed:", error);
-    const message = error instanceof Error ? error.message : "Failed to load Resend audiences.";
-    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+    return resendErrorResponse(error, "Failed to load Resend audiences.");
   }
 }
 
@@ -134,8 +148,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("[admin user-emails resend-audience] POST failed:", error);
-    const message =
-      error instanceof Error ? error.message : "Failed to sync audience to Resend.";
-    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+    return resendErrorResponse(error, "Failed to sync audience to Resend.");
   }
 }
