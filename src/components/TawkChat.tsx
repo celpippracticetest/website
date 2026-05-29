@@ -2,22 +2,22 @@
 
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { useEffect } from "react";
-import { ensureCrispScript, hideCrispChat } from "@/lib/crisp";
+import { ensureTawkScript, hideTawkChat } from "@/lib/tawk";
 
-/** Loads Crisp for signed-in users on all routes; keeps the default launcher hidden until Live support opens it. */
-export default function CrispChat() {
+/** Loads Tawk for signed-in users on all routes; keeps the default launcher hidden until Live support opens it. */
+export default function TawkChat() {
   const { isSignedIn, isLoaded } = useHybridWebUser();
 
   useEffect(() => {
     if (!isLoaded) return;
 
     if (!isSignedIn) {
-      hideCrispChat();
+      hideTawkChat();
       return;
     }
 
-    ensureCrispScript();
-    hideCrispChat();
+    ensureTawkScript();
+    hideTawkChat();
   }, [isLoaded, isSignedIn]);
 
   return null;

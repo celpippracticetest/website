@@ -7,7 +7,7 @@ import { useEngagementTracking } from "@/hooks/useTracking";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { useRouter } from "next/navigation";
 import { useAskBeavoStore } from "@/stores/askBeavoStore";
-import { ensureCrispScript, openCrispChat } from "@/lib/crisp";
+import { ensureTawkScript, openTawkChat } from "@/lib/tawk";
 import ChatOutlined from "@mui/icons-material/ChatOutlined";
 
 interface FloatingChatIconProps {
@@ -35,7 +35,7 @@ const FloatingChatIcon: React.FC<FloatingChatIconProps> = ({
     }
   }, [autoOpen, chatbotMessageSent]);
 
-  const handleCrispClick = (e: React.MouseEvent) => {
+  const handleTawkClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (!isLoaded) return;
@@ -43,8 +43,8 @@ const FloatingChatIcon: React.FC<FloatingChatIconProps> = ({
       router.push("/sign-in");
       return;
     }
-    ensureCrispScript();
-    openCrispChat();
+    ensureTawkScript();
+    openTawkChat();
   };
 
   const handleBeavoClick = (e: React.MouseEvent) => {
@@ -76,13 +76,13 @@ const FloatingChatIcon: React.FC<FloatingChatIconProps> = ({
     >
       {isSignedIn && (
         <button
-          id="crisp-support-fab"
+          id="tawk-support-fab"
           type="button"
-          data-support-chat="crisp"
-          onClick={handleCrispClick}
+          data-support-chat="tawk"
+          onClick={handleTawkClick}
           className="flex h-12 w-12 items-center justify-center rounded-full bg-[#212E42] text-white shadow-lg transition-transform duration-200 hover:scale-110"
           aria-label="Open live support chat"
-          title="Live support (Crisp)"
+          title="Live support"
         >
           <ChatOutlined sx={{ fontSize: 26, color: "#fff" }} />
         </button>

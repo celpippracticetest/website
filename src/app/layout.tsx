@@ -5,9 +5,9 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import AskBeavoModal from "@/components/AskBeavo/AskBeavoModal";
-import CrispChat from "@/components/CrispChat";
-import CrispLoader from "@/components/CrispLoader";
-import CrispUserSync from "@/components/CrispUserSync";
+import TawkChat from "@/components/TawkChat";
+import TawkLoader from "@/components/TawkLoader";
+import TawkUserSync from "@/components/TawkUserSync";
 import AuthGtmTracker from "@/components/analytics/AuthGtmTracker";
 import { LazyPromotionManager } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
@@ -260,9 +260,9 @@ export default async function RootLayout({
       <body className={jakarta.className} suppressHydrationWarning>
         <MuiAppRouterCacheProvider>
           <AskBeavoModal />
-          <CrispLoader />
-          <CrispChat />
-          <CrispUserSync />
+          <TawkLoader />
+          <TawkChat />
+          <TawkUserSync />
           <AuthGtmTracker />
           {enableGtm && (
             <noscript>

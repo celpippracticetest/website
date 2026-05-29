@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect } from "react";
-import { ensureCrispScript } from "@/lib/crisp";
+import { ensureTawkScript } from "@/lib/tawk";
 
 /**
- * Injects Crisp on the client only (official pattern: `$crisp` queue + `CRISP_WEBSITE_ID` + `l.js`).
+ * Injects Tawk.to on the client only (official pattern: `Tawk_API` queue + embed script).
  * Avoids `next/script` + `dangerouslySetInnerHTML` in the root layout, which breaks under React 19 / Turbopack.
  */
-export default function CrispLoader() {
+export default function TawkLoader() {
   useEffect(() => {
-    ensureCrispScript();
+    ensureTawkScript();
   }, []);
 
   return null;

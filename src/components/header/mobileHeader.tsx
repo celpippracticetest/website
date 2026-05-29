@@ -13,6 +13,7 @@ import { useEventTracker } from "@/hooks/useTracking";
 import { isPaidSubscriptionPlan } from "@/lib/subscriptionPlan";
 import { signOutWebSession } from "@/lib/auth/client-sign-out";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { openTawkChat } from "@/lib/tawk";
 // import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 
 interface NavLinks {
@@ -248,10 +249,7 @@ const MobileHeader = (props: {
             <button
               onClick={() => {
                 trackNav("Support", "chat:open", "header");
-                if (typeof window !== "undefined" && (window as any).$crisp) {
-                  (window as any).$crisp.push(["do", "chat:show"]);
-                  (window as any).$crisp.push(["do", "chat:open"]);
-                }
+                openTawkChat();
               }}
               className="block px-4 py-2 text-[14px] text-gray-700 w-full text-left cursor-pointer"
               role="menuitem"

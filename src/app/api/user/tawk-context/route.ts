@@ -15,7 +15,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 export const maxDuration = 30;
 
 /**
- * Consolidated context for Crisp `session:data` (plan, tokens, subscription, etc.).
+ * Consolidated context for Tawk visitor attributes (plan, tokens, subscription, etc.).
  */
 export async function GET(request: NextRequest) {
   try {
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
             llmTokensCompletionTotal: n(row?.completion),
           };
         } catch (dbErr) {
-          console.error("crisp-context documents:", dbErr);
+          console.error("tawk-context documents:", dbErr);
           return { llmTokensPromptTotal: 0, llmTokensCompletionTotal: 0 };
         }
       })(),
@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
             cancelAtPeriodEnd: sub.cancel_at_period_end,
           };
         } catch (stripeErr) {
-          console.error("crisp-context stripe:", stripeErr);
+          console.error("tawk-context stripe:", stripeErr);
           return null;
         }
       })(),
@@ -178,10 +178,10 @@ export async function GET(request: NextRequest) {
       subscription,
     });
   } catch (e) {
-    console.error("crisp-context:", e);
+    console.error("tawk-context:", e);
     return NextResponse.json(
-      { error: "Failed to load Crisp context" },
-      { status: 500 }
+      { error: "Failed to load Tawk context" },
+      { status: 500 },
     );
   }
 }
