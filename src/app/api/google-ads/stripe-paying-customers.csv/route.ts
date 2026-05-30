@@ -1,24 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { buildHashedCustomerMatchCsv } from "@/lib/google-ads/customer-match-csv";
 import {
   googleDataManagerHttpsUnauthorizedResponse,
   isGoogleDataManagerHttpsConfigured,
   verifyGoogleDataManagerHttpsAuth,
 } from "@/lib/google-ads/data-manager-https-auth";
-import { fetchStripePayingCustomerRecords } from "@/lib/google-ads/stripe-paying-customers";
+import { readStripePayingCustomersCsvCache } from "@/lib/google-ads/stripe-paying-customers-cache";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
   if (!isGoogleDataManagerHttpsConfigured()) {
-    return NextResponse.json(
+    return new NextResponse(
+      "Email\r\nConfigure GOOGLE_DATA_MANAGER_HTTPS_USERNAME and GOOGLE_DATA_MANAGER_HTTPS_PASSWORD on the server.\r\n",
       {
-        error:
-          "Set GOOGLE_DATA_MANAGER_HTTPS_USERNAME and GOOGLE_DATA_MANAGER_HTTPS_PASSWORD.",
+        status: 503,
+        headers: {
+          "Content-Type": "text/csv; charset=utf-8",
+          "Cache-Control": "private, no-store",
+        },
       },
-      { status: 503 },
     );
   }
 
@@ -27,22 +29,35 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const records = await fetchStripePayingCustomerRecords();
-    const csv = buildHashedCustomerMatchCsv(records);
+    const cache = await readStripePayingCustomersCsvCache();
+    if (!cache) {
+      return new NextResponse(
+        "Email\r\nRun /api/cron/google-ads-stripe-customer-match first to populate the export cache.\r\n",
+        {
+          status: 503,
+          headers: {
+            "Content-Type": "text/csv; charset=utf-8",
+            "Cache-Control": "private, no-store",
+          },
+        },
+      );
+    }
 
-    return new NextResponse(csv, {
+    return new NextResponse(cache.csv, {
       status: 200,
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": 'inline; filename="stripe-paying-customers.csv"',
+        "Content-Disposition": 'attachment; filename="stripe-paying-customers.csv"',
         "Cache-Control": "private, no-store",
+        "X-Record-Count": String(cache.recordCount),
+        "X-Generated-At": new Date(cache.generatedAt).toISOString(),
       },
     });
   } catch (error) {
     const message =
       error instanceof Error
         ? error.message
-        : "Failed to build Stripe Customer Match CSV.";
+        : "Failed to load Stripe Customer Match CSV.";
     console.error("[google-ads stripe-paying-customers.csv]", error);
     return NextResponse.json({ error: message }, { status: 500 });
   }

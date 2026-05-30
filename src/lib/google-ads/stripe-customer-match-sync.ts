@@ -6,6 +6,7 @@ import {
   refreshGoogleDataManagerAccessToken,
   sendCustomerMatchAudienceMembers,
 } from "@/lib/google-ads/data-manager-client";
+import { refreshStripePayingCustomersCsvCache } from "@/lib/google-ads/stripe-paying-customers-cache";
 import { fetchStripePayingCustomerEmailHashes } from "@/lib/google-ads/stripe-paying-customers";
 
 const STRIPE_ACCOUNT_CUSTOMER_ID = "4183784250";
@@ -21,6 +22,10 @@ export type StripeCustomerMatchSyncResult = {
   membersUploaded: number;
   ingestRequestIds: string[];
   skippedUploadReason?: string;
+  csvCache?: {
+    recordCount: number;
+    generatedAt: string;
+  };
 };
 
 function readStripeAudienceConfig() {
@@ -99,6 +104,10 @@ export async function syncStripePayingCustomersCustomerMatch(args: {
     };
   }
 
+  const csvCache = validateOnly
+    ? undefined
+    : await refreshStripePayingCustomersCsvCache();
+
   const ingestRequestIds = await sendCustomerMatchAudienceMembers(
     config,
     accessToken,
@@ -117,5 +126,6 @@ export async function syncStripePayingCustomersCustomerMatch(args: {
     membersFound: memberHashes.length,
     membersUploaded: memberHashes.length,
     ingestRequestIds,
+    csvCache,
   };
 }
