@@ -14,9 +14,6 @@ import {
 import { HomeHeroAnimatedBackground } from "./home/HomeHeroAnimatedBackground";
 
 const Hero = dynamic(() => import("./Hero"), { ssr: true });
-const FloatingChatIcon = dynamic(() => import("../../AskBeavo/FloatingChatIcon"), {
-  ssr: false,
-});
 
 function ErrorFallback() {
   return (
@@ -50,7 +47,6 @@ export default function HomePageClient() {
       <HomeTestimonialsSection />
       <FAQ />
       <HomeCtaBanner />
-      <FloatingChatIcon autoOpen={false} />
     </ErrorBoundary>
   );
 }

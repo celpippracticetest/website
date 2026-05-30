@@ -33,7 +33,6 @@ import SvgReferral from "@/components/icons/Referral";
 
 import dynamic from "next/dynamic";
 import TopHeader from "@/components/pages/landing/TopHeader";
-import FloatingChatIcon from "@/components/AskBeavo/FloatingChatIcon";
 import { GlobalInteractiveProvider } from "@/components/dashboard-app/practice/GlobalInteractiveProvider";
 import {
   MOCK_EXAM_VIEW_MODE_EVENT,
@@ -820,7 +819,6 @@ const LayoutClient = ({ children }: any) => {
         {/* bottom menu for mobile */}
         {!hideMainHeaderForOfficialExam && <BottomNavigation />}
       </div >
-      {isSignedIn && <FloatingChatIcon autoOpen={false} />}
       <GlobalInteractiveProvider />
     </>
   );

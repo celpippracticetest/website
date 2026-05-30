@@ -1,19 +1,20 @@
 import "server-only";
 
-import { createHash } from "crypto";
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 import documentsClient from "@/lib/appDocumentsClient";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { normalizePlan } from "@/lib/subscriptionAccess";
+import {
+  customerMatchEmailHash,
+  findOrCreateCustomerMatchAudience,
+  readGoogleDataManagerConfig,
+  refreshGoogleDataManagerAccessToken,
+  sendCustomerMatchAudienceMembers,
+  uniqueSorted,
+} from "@/lib/google-ads/data-manager-client";
 
-const DATA_MANAGER_BASE_URL =
-  process.env.GOOGLE_DATA_MANAGER_API_BASE_URL?.trim() ||
-  "https://datamanager.googleapis.com/v1";
-
-const GOOGLE_OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const DEFAULT_CUSTOMER_ID = "8641929017";
 const SUPABASE_PAGE_SIZE = 100;
-const CUSTOMER_MATCH_BATCH_SIZE = 10000;
 
 type AudienceKey = "signed_up" | "subscribers";
 
@@ -25,21 +26,6 @@ type CustomerMatchAudienceConfig = {
   configuredAudienceId?: string;
   memberHashes: string[];
   removeStaleMembers: boolean;
-};
-
-type GoogleDataManagerConfig = {
-  customerId: string;
-  loginCustomerId: string | null;
-  clientId: string;
-  clientSecret: string;
-  refreshToken: string;
-  membershipDurationSeconds: number | null;
-};
-
-type UserList = {
-  id?: string;
-  name?: string;
-  displayName?: string;
 };
 
 type AudienceSyncState = {
@@ -75,59 +61,10 @@ export type CustomerMatchSyncResult = {
   audiences: CustomerMatchAudienceSyncResult[];
 };
 
-function requiredEnv(name: string, fallbackName?: string): string {
-  const value = process.env[name]?.trim() || (fallbackName ? process.env[fallbackName]?.trim() : "");
-  if (!value) {
-    throw new Error(
-      fallbackName
-        ? `Missing env: ${name} or ${fallbackName}.`
-        : `Missing env: ${name}.`,
-    );
-  }
-  return value;
-}
-
-function normalizedCustomerId(value: string | undefined, fallback = "") {
-  return (value || fallback).trim().replace(/-/g, "");
-}
-
-function readConfig(): GoogleDataManagerConfig {
-  const customerId = normalizedCustomerId(
-    process.env.GOOGLE_ADS_CUSTOMER_ID,
-    DEFAULT_CUSTOMER_ID,
-  );
-  const loginCustomerId =
-    normalizedCustomerId(process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID) || null;
-  const membershipDays = Number(process.env.GOOGLE_CUSTOMER_MATCH_MEMBERSHIP_DAYS || "");
-  return {
-    customerId,
-    loginCustomerId,
-    clientId: requiredEnv("GOOGLE_ADS_CLIENT_ID", "GOOGLE_CLIENT_ID"),
-    clientSecret: requiredEnv("GOOGLE_ADS_CLIENT_SECRET", "GOOGLE_CLIENT_SECRET"),
-    refreshToken: requiredEnv("GOOGLE_ADS_REFRESH_TOKEN", "GOOGLE_REFRESH_TOKEN"),
-    membershipDurationSeconds:
-      Number.isFinite(membershipDays) && membershipDays > 0
-        ? Math.floor(membershipDays) * 86400
-        : null,
-  };
-}
-
-function normalizeEmailForCustomerMatch(email: string) {
-  return email.trim().toLowerCase().replace(/\s+/g, "");
-}
-
-function sha256Hex(value: string) {
-  return createHash("sha256").update(value).digest("hex");
-}
-
-function uniqueSorted(values: string[]) {
-  return [...new Set(values.filter(Boolean))].sort();
-}
-
-function customerMatchEmailHash(email: string) {
-  const normalized = normalizeEmailForCustomerMatch(email);
-  if (!normalized || !normalized.includes("@")) return null;
-  return sha256Hex(normalized);
+function readConfig() {
+  return readGoogleDataManagerConfig({
+    defaultCustomerId: DEFAULT_CUSTOMER_ID,
+  });
 }
 
 function readUserMetadataValue(user: SupabaseAuthUser, key: string) {
@@ -172,229 +109,11 @@ async function listSupabaseUsers() {
   return users;
 }
 
-async function refreshAccessToken(config: GoogleDataManagerConfig) {
-  const response = await fetch(GOOGLE_OAUTH_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: config.clientId,
-      client_secret: config.clientSecret,
-      refresh_token: config.refreshToken,
-      grant_type: "refresh_token",
-    }),
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok || typeof payload.access_token !== "string") {
-    throw new Error(
-      `Google OAuth failed: ${payload.error_description || payload.error || response.status}`,
-    );
-  }
-  return payload.access_token as string;
-}
-
-function resourceManagementHeaders(config: GoogleDataManagerConfig, accessToken: string) {
-  return {
-    Authorization: `Bearer ${accessToken}`,
-    "Content-Type": "application/json",
-    ...(config.loginCustomerId
-      ? { "login-account": `accountTypes/GOOGLE_ADS/accounts/${config.loginCustomerId}` }
-      : {}),
-  };
-}
-
-function ingestionHeaders(accessToken: string) {
-  return {
-    Authorization: `Bearer ${accessToken}`,
-    "Content-Type": "application/json",
-  };
-}
-
-function accountParent(config: GoogleDataManagerConfig) {
-  return `accountTypes/GOOGLE_ADS/accounts/${config.customerId}`;
-}
-
-async function dataManagerJson<T>(
-  url: string,
-  init: RequestInit,
-  action: string,
-): Promise<T> {
-  const response = await fetch(url, init);
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const errorPayload = payload?.error ?? payload;
-    const message =
-      errorPayload?.message ||
-      errorPayload?.status ||
-      JSON.stringify(errorPayload) ||
-      response.status;
-    const details = Array.isArray(errorPayload?.details)
-      ? ` Details: ${JSON.stringify(errorPayload.details)}`
-      : "";
-    throw new Error(`${action} failed (${response.status}): ${message}${details}`);
-  }
-  return payload as T;
-}
-
-async function listUserLists(config: GoogleDataManagerConfig, accessToken: string) {
-  const userLists: UserList[] = [];
-  let pageToken = "";
-
-  do {
-    const url = new URL(`${DATA_MANAGER_BASE_URL}/${accountParent(config)}/userLists`);
-    url.searchParams.set("pageSize", "1000");
-    if (pageToken) url.searchParams.set("pageToken", pageToken);
-
-    const payload = await dataManagerJson<{ userLists?: UserList[]; nextPageToken?: string }>(
-      url.toString(),
-      { method: "GET", headers: resourceManagementHeaders(config, accessToken) },
-      "Data Manager userLists.list",
-    );
-    userLists.push(...(payload.userLists ?? []));
-    pageToken = payload.nextPageToken ?? "";
-  } while (pageToken);
-
-  return userLists;
-}
-
-async function createUserList(
-  config: GoogleDataManagerConfig,
-  accessToken: string,
-  audience: CustomerMatchAudienceConfig,
-  validateOnly: boolean,
-) {
-  const url = new URL(`${DATA_MANAGER_BASE_URL}/${accountParent(config)}/userLists`);
-  if (validateOnly) url.searchParams.set("validateOnly", "true");
-
-  const body: Record<string, unknown> = {
-    displayName: audience.displayName,
-    description: audience.description,
-    integrationCode: audience.integrationCode,
-    membershipStatus: "OPEN",
-    ingestedUserListInfo: {
-      contactIdInfo: {
-        dataSourceType: "DATA_SOURCE_TYPE_FIRST_PARTY",
-      },
-      uploadKeyTypes: ["CONTACT_ID"],
-    },
-  };
-  if (config.membershipDurationSeconds) {
-    body.membershipDuration = `${config.membershipDurationSeconds}s`;
-  }
-
-  return dataManagerJson<UserList>(
-    url.toString(),
-    {
-      method: "POST",
-      headers: resourceManagementHeaders(config, accessToken),
-      body: JSON.stringify(body),
-    },
-    `Data Manager userLists.create (${audience.displayName})`,
-  );
-}
-
-async function findOrCreateAudience(
-  config: GoogleDataManagerConfig,
-  accessToken: string,
-  audience: CustomerMatchAudienceConfig,
-  validateOnly: boolean,
-) {
-  if (audience.configuredAudienceId) {
-    return { id: audience.configuredAudienceId, displayName: audience.displayName };
-  }
-
-  const existing = (await listUserLists(config, accessToken)).find(
-    (list) => list.displayName === audience.displayName,
-  );
-  if (existing?.id) return existing;
-
-  try {
-    const created = await createUserList(config, accessToken, audience, validateOnly);
-    if (created.id) return created;
-  } catch (error) {
-    const refreshed = (await listUserLists(config, accessToken)).find(
-      (list) => list.displayName === audience.displayName,
-    );
-    if (refreshed?.id) return refreshed;
-    throw error;
-  }
-
-  if (validateOnly) {
-    return { displayName: audience.displayName };
-  }
-
-  throw new Error(`Audience was created without an id: ${audience.displayName}`);
-}
-
-function buildDestination(config: GoogleDataManagerConfig, audienceId: string) {
-  return {
-    operatingAccount: {
-      accountType: "GOOGLE_ADS",
-      accountId: config.customerId,
-    },
-    ...(config.loginCustomerId
-      ? {
-          loginAccount: {
-            accountType: "GOOGLE_ADS",
-            accountId: config.loginCustomerId,
-          },
-        }
-      : {}),
-    productDestinationId: audienceId,
-  };
-}
-
-function audienceMembersFromHashes(memberHashes: string[]) {
-  return memberHashes.map((hash) => ({
-    userData: {
-      userIdentifiers: [{ emailAddress: hash }],
-    },
-  }));
-}
-
-async function sendAudienceMembers(
-  config: GoogleDataManagerConfig,
-  accessToken: string,
-  audienceId: string,
-  memberHashes: string[],
-  operation: "ingest" | "remove",
-  validateOnly: boolean,
-) {
-  const requestIds: string[] = [];
-  for (let i = 0; i < memberHashes.length; i += CUSTOMER_MATCH_BATCH_SIZE) {
-    const batch = memberHashes.slice(i, i + CUSTOMER_MATCH_BATCH_SIZE);
-    if (batch.length === 0) continue;
-
-    const payload = await dataManagerJson<{ requestId?: string }>(
-      `${DATA_MANAGER_BASE_URL}/audienceMembers:${operation}`,
-      {
-        method: "POST",
-        headers: ingestionHeaders(accessToken),
-        body: JSON.stringify({
-          destinations: [buildDestination(config, audienceId)],
-          audienceMembers: audienceMembersFromHashes(batch),
-          encoding: "HEX",
-          validateOnly,
-          ...(operation === "ingest"
-            ? {
-                termsOfService: {
-                  customerMatchTermsOfServiceStatus: "ACCEPTED",
-                },
-              }
-            : {}),
-        }),
-      },
-      `Data Manager audienceMembers.${operation}`,
-    );
-    if (payload.requestId) requestIds.push(payload.requestId);
-  }
-  return requestIds;
-}
-
-function audienceStateId(config: GoogleDataManagerConfig, key: AudienceKey) {
+function audienceStateId(config: ReturnType<typeof readConfig>, key: AudienceKey) {
   return `google_ads_customer_match:${config.customerId}:${key}`;
 }
 
-async function loadPreviousHashes(config: GoogleDataManagerConfig, key: AudienceKey) {
+async function loadPreviousHashes(config: ReturnType<typeof readConfig>, key: AudienceKey) {
   const state = await documentsClient
     .db()
     .collection<AudienceSyncState>("googleAdsCustomerMatchAudienceSyncs")
@@ -403,7 +122,7 @@ async function loadPreviousHashes(config: GoogleDataManagerConfig, key: Audience
 }
 
 async function saveAudienceState(
-  config: GoogleDataManagerConfig,
+  config: ReturnType<typeof readConfig>,
   audience: CustomerMatchAudienceConfig,
   audienceId: string,
   ingestRequestIds: string[],
@@ -474,13 +193,18 @@ export async function syncGoogleAdsCustomerMatchAudiences(args: {
   const config = readConfig();
   const [users, accessToken] = await Promise.all([
     listSupabaseUsers(),
-    refreshAccessToken(config),
+    refreshGoogleDataManagerAccessToken(config),
   ]);
   const audiences = buildAudiences(users);
   const results: CustomerMatchAudienceSyncResult[] = [];
 
   for (const audience of audiences) {
-    const userList = await findOrCreateAudience(config, accessToken, audience, validateOnly);
+    const userList = await findOrCreateCustomerMatchAudience(
+      config,
+      accessToken,
+      audience,
+      validateOnly,
+    );
     const audienceId = userList.id;
     if (!audienceId) {
       if (validateOnly) {
@@ -510,7 +234,7 @@ export async function syncGoogleAdsCustomerMatchAudiences(args: {
       ? previousHashes.filter((hash) => !currentSet.has(hash))
       : [];
 
-    const ingestRequestIds = await sendAudienceMembers(
+    const ingestRequestIds = await sendCustomerMatchAudienceMembers(
       config,
       accessToken,
       audienceId,
@@ -518,7 +242,7 @@ export async function syncGoogleAdsCustomerMatchAudiences(args: {
       "ingest",
       validateOnly,
     );
-    const removeRequestIds = await sendAudienceMembers(
+    const removeRequestIds = await sendCustomerMatchAudienceMembers(
       config,
       accessToken,
       audienceId,

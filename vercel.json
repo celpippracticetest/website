@@ -41,6 +41,12 @@
     }
   ],
   "functions": {
+    "src/app/api/cron/google-ads-stripe-customer-match/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/google-ads/stripe-paying-customers.csv/route.ts": {
+      "maxDuration": 300
+    },
     "src/app/api/**/*": {
       "maxDuration": 59
     }
@@ -69,6 +75,10 @@
     {
       "path": "/api/cron/practice-push-reminder",
       "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/google-ads-stripe-customer-match?token=Z3x!9pTq@L1mN8",
+      "schedule": "0 6 * * 0"
     }
   ]
 }

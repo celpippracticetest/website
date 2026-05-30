@@ -16,6 +16,10 @@ secrets/google-ads-mcp-credentials.json
 secrets/ga-mcp-credentials.json
 # GTM OAuth desktop client JSON for gtm-mcp (never commit)
 secrets/gtm-client-auth.json
+# Google Ads API OAuth yaml configs (never commit — use *.yaml.template)
+secrets/google-ads.yaml
+secrets/google-ads-418.yaml
+secrets/google-ads-no-mcc.yaml
 
 # Windows: optional repo-root junction `templates` -> `supabase/templates` for Supabase CLI (auth email content_path)
 /templates

@@ -1,4 +1,4 @@
-/** Tawk.to live chat — shared helpers for TawkChat + FloatingChatIcon (single custom launcher). */
+/** Tawk.to live chat — shared helpers for site-wide embed and header support links. */
 
 export const TAWK_EMBED_SRC =
   process.env.NEXT_PUBLIC_TAWK_EMBED_SRC ??
@@ -23,8 +23,6 @@ declare global {
   }
 }
 
-let tawkMinimizeListenerAttached = false;
-
 function runWhenTawkReady(fn: () => void): void {
   if (typeof window === "undefined") return;
   window.Tawk_API = window.Tawk_API || {};
@@ -39,33 +37,14 @@ function runWhenTawkReady(fn: () => void): void {
   };
 }
 
-function attachTawkHideWidgetOnMinimize(): void {
-  if (typeof window === "undefined" || tawkMinimizeListenerAttached) return;
-  window.Tawk_API = window.Tawk_API || {};
-  tawkMinimizeListenerAttached = true;
-  const prev = window.Tawk_API.onChatMinimized;
-  window.Tawk_API.onChatMinimized = function () {
-    if (typeof prev === "function") prev();
-    window.Tawk_API?.hideWidget?.();
-  };
-}
-
-export function hideTawkChat(): void {
-  if (typeof window === "undefined") return;
-  runWhenTawkReady(() => {
-    window.Tawk_API?.hideWidget?.();
-  });
-}
-
 /**
  * Official Tawk.to embed pattern (`Tawk_API` queue + embed script).
- * Idempotent: safe to call from {@link TawkLoader}, {@link TawkChat}, and custom launchers.
+ * Idempotent: safe to call from {@link TawkLoader} and header support links.
  */
 export function ensureTawkScript(): void {
   if (typeof document === "undefined") return;
   window.Tawk_API = window.Tawk_API || {};
   window.Tawk_LoadStart = window.Tawk_LoadStart || new Date();
-  attachTawkHideWidgetOnMinimize();
 
   if (document.getElementById("tawk-chat-script")) return;
 
@@ -82,7 +61,7 @@ export function ensureTawkScript(): void {
   s0.parentNode.insertBefore(s1, s0);
 }
 
-/** Open Tawk from the floating support button (after optional {@link ensureTawkScript}). */
+/** Open Tawk from header support links (after optional {@link ensureTawkScript}). */
 export function openTawkChat(): void {
   if (typeof window === "undefined") return;
   ensureTawkScript();
