@@ -802,7 +802,7 @@ const LayoutClient = ({ children }: any) => {
       <div
         className="relative mx-auto z-[9] mb-[88px] flex w-full justify-center overflow-x-clip bg-[#F4F7FF] bg-[radial-gradient(ellipse_55%_45%_at_85%_35%,rgba(255,183,138,0.22)_0%,transparent_70%),radial-gradient(ellipse_55%_45%_at_10%_30%,rgba(206,220,255,0.28)_0%,transparent_70%),radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(218,255,250,0.35)_0%,transparent_65%)]"
       >
-        <div className="flex h-full w-full flex-col items-end pt-[88px] screen744:pt-[96px]">
+        <div className="flex h-full w-full flex-col items-end pt-[calc(88px+var(--android-download-banner-height,0px))] screen744:pt-[96px]">
           {children}
           {copied && (
             <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-[#37465C] text-white px-4 py-2 rounded-[8px] text-[14px] shadow-lg z-[9999] transition-opacity duration-300">

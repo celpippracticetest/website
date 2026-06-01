@@ -5,143 +5,6 @@ const withBundleAnalyzer = require("@next/bundle-analyzer")({
   enabled: process.env.ANALYZE === "true",
 });
 
-const withPWA = require("next-pwa")({
-  dest: "public",
-  register: true,
-  skipWaiting: true,
-  // Workbox options
-  buildExcludes: [
-    /middleware-manifest\.json$/,
-    /_buildManifest\.js$/,
-    /_ssgManifest\.js$/,
-  ],
-  runtimeCaching: [
-    {
-      urlPattern: /^https:\/\/fonts\.(?:gstatic)\.com\/.*/i,
-      handler: "CacheFirst",
-      options: {
-        cacheName: "google-fonts-webfonts",
-        expiration: {
-          maxEntries: 4,
-          maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
-        },
-      },
-    },
-    {
-      urlPattern: /^https:\/\/fonts\.(?:googleapis)\.com\/.*/i,
-      handler: "StaleWhileRevalidate",
-      options: {
-        cacheName: "google-fonts-stylesheets",
-        expiration: {
-          maxEntries: 4,
-          maxAgeSeconds: 7 * 24 * 60 * 60, // 1 week
-        },
-      },
-    },
-    {
-      urlPattern: /\.(?:eot|otf|ttc|ttf|woff|woff2|font.css)$/i,
-      handler: "StaleWhileRevalidate",
-      options: {
-        cacheName: "static-font-assets",
-        expiration: {
-          maxEntries: 4,
-          maxAgeSeconds: 7 * 24 * 60 * 60, // 1 week
-        },
-      },
-    },
-    {
-      urlPattern: /\.(?:jpg|jpeg|gif|png|svg|ico|webp)$/i,
-      handler: "StaleWhileRevalidate",
-      options: {
-        cacheName: "static-image-assets",
-        expiration: {
-          maxEntries: 64,
-          maxAgeSeconds: 24 * 60 * 60, // 24 hours
-        },
-      },
-    },
-    {
-      urlPattern: /\/_next\/image\?url=.+$/i,
-      handler: "StaleWhileRevalidate",
-      options: {
-        cacheName: "next-image",
-        expiration: {
-          maxEntries: 64,
-          maxAgeSeconds: 24 * 60 * 60, // 24 hours
-        },
-      },
-    },
-    {
-      urlPattern: /\.(?:mp3|wav|ogg)$/i,
-      handler: "CacheFirst",
-      options: {
-        rangeRequests: true,
-        cacheName: "static-audio-assets",
-        expiration: {
-          maxEntries: 32,
-          maxAgeSeconds: 24 * 60 * 60, // 24 hours
-        },
-      },
-    },
-    {
-      urlPattern: /\.(?:mp4)$/i,
-      handler: "CacheFirst",
-      options: {
-        rangeRequests: true,
-        cacheName: "static-video-assets",
-        expiration: {
-          maxEntries: 32,
-          maxAgeSeconds: 24 * 60 * 60, // 24 hours
-        },
-      },
-    },
-    {
-      urlPattern: /\.(?:js)$/i,
-      handler: "StaleWhileRevalidate",
-      options: {
-        cacheName: "static-js-assets",
-        expiration: {
-          maxEntries: 32,
-          maxAgeSeconds: 24 * 60 * 60, // 24 hours
-        },
-      },
-    },
-    {
-      urlPattern: /\.(?:css|less)$/i,
-      handler: "StaleWhileRevalidate",
-      options: {
-        cacheName: "static-style-assets",
-        expiration: {
-          maxEntries: 32,
-          maxAgeSeconds: 24 * 60 * 60, // 24 hours
-        },
-      },
-    },
-    {
-      urlPattern: /\/_next\/data\/.+\/.+\.json$/i,
-      handler: "StaleWhileRevalidate",
-      options: {
-        cacheName: "next-data",
-        expiration: {
-          maxEntries: 32,
-          maxAgeSeconds: 24 * 60 * 60, // 24 hours
-        },
-      },
-    },
-    {
-      urlPattern: /\.(?:json|xml|csv)$/i,
-      handler: "NetworkFirst",
-      options: {
-        cacheName: "static-data-assets",
-        expiration: {
-          maxEntries: 32,
-          maxAgeSeconds: 24 * 60 * 60, // 24 hours
-        },
-      },
-    },
-  ],
-});
-
 const nextConfig: NextConfig = {
   // Performance optimizations
   compress: true,
@@ -154,9 +17,13 @@ const nextConfig: NextConfig = {
       ["/celpip-vs-ielts", "/blog/celpip-vs-ielts-format-fees-scoring"],
       ["/celpip-speaking-tips-for-healthcare", "/wiki/celpip-speaking-tips-high-score"],
       ["/how-to-score-clb-7-on-celpip-for-nursing", "/celpip-for-nurses"],
+      ["/celpip-speaking-for-nurses", "/celpip-for-nurses"],
       ["/ircc-language-requirements-for-nurses", "/blog/celpip-2026-canadian-immigration-updates"],
       ["/pass-celpip-writing", "/blog/7-key-strategies-to-excel-in-celpip-writing-test"],
+      ["/pass-celpip-writing-for-healthcare", "/how-to-pass-celpip-writing-for-healthcare"],
+      ["/celpip-writing-for-healthcare", "/how-to-pass-celpip-writing-for-healthcare"],
       ["/clb-levels-for-immigration", "/blog/complete-guide-celpip-test-booking-results-clb"],
+      ["/clb-levels-for-healthcare", "/clb-7-explained"],
       ["/sign-in/clerk", "/sign-in/legacy"],
       ["/sign-up/clerk", "/sign-up/legacy"],
       ["/celpip-writing-email-tips", "/blog/celpip-writing-task-1-samples-email-tone-clb-9-2026"],
@@ -383,7 +250,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(withPWA(withBundleAnalyzer(nextConfig)), {
+export default withSentryConfig(withBundleAnalyzer(nextConfig), {
   // For all available options, see:
   // https://github.com/getsentry/sentry-webpack-plugin#options
 

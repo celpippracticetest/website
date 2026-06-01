@@ -31,7 +31,9 @@ export default function PublicPageShell({
       <main
         className={cn(
           "relative z-[1] flex-grow pb-10",
-          hideHeader ? "pt-0" : "pt-[88px] screen744:pt-[96px]",
+          hideHeader
+            ? "pt-0"
+            : "pt-[calc(88px+var(--android-download-banner-height,0px))] screen744:pt-[96px]",
         )}
       >
         {children}

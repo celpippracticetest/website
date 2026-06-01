@@ -794,7 +794,7 @@ const LayoutClient = ({ children }: any) => {
       <TopHeader />
 
       <div className="relative mx-auto z-[9] mb-[88px] flex w-full justify-center overflow-x-clip">
-        <div className="flex w-full flex-col items-end pt-[88px] screen744:pt-[96px]">
+        <div className="flex w-full flex-col items-end pt-[calc(88px+var(--android-download-banner-height,0px))] screen744:pt-[96px]">
           {children}
           {copied && (
             <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-[#37465C] text-white px-4 py-2 rounded-[8px] text-[14px] shadow-lg z-[9999] transition-opacity duration-300">

@@ -1,6 +1,7 @@
 "use client";
 
 import CheckCircle from "@mui/icons-material/CheckCircle";
+import Shield from "@mui/icons-material/Shield";
 import SvgDiamond from "@/components/icons/Diamond";
 import {
   pricingUpgradeUnlockFeatures,
@@ -71,6 +72,15 @@ export function PricingModalHero({ align = "left", asPageHeading = false }: Pric
               <span className="m-0">{feature}</span>
             </div>
           ))}
+          <div
+            className={cn(
+              "flex items-center gap-2",
+              !isLeft && "justify-center",
+            )}
+          >
+            <Shield sx={{ color: "#F4845F", fontSize: 20 }} aria-hidden />
+            <span className="m-0 text-secondary2">48-Hour Money-Back Guarantee</span>
+          </div>
         </div>
       </div>
     </header>

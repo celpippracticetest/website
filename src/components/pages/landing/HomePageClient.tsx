@@ -36,7 +36,7 @@ export default function HomePageClient() {
   if (shouldReload) return null;
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <div className="relative -mt-[88px] overflow-hidden pt-[88px] screen744:-mt-[96px] screen744:pt-[96px] screen1280:rounded-b-[200px]">
+      <div className="relative -mt-[calc(88px+var(--android-download-banner-height,0px))] overflow-hidden pt-[calc(88px+var(--android-download-banner-height,0px))] screen744:-mt-[96px] screen744:pt-[96px] screen1280:rounded-b-[200px]">
         <HomeHeroAnimatedBackground />
         <div className="relative z-[1]">
           <Hero />

@@ -13,6 +13,7 @@ import {
   safeStripeProductId,
 } from "@/lib/checkoutCancelUrl";
 import { resolveCampaignPromoFromRequest } from "@/lib/campaignPromo";
+import { resolveManualPromoPromotionCodeId } from "@/lib/stripePromotionCode";
 import {
   FINAL_OFFER_CHALLENGE_SOURCE,
   isValidFinalOfferChallengeCombo,
@@ -478,6 +479,26 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
         { upsert: true }
       );
     }
+
+    const manualPromoCode = readRequestAttribution("promo_code");
+    if (
+      !hasChallengePayload &&
+      !referralDiscountApplied &&
+      !partnerDiscountApplied &&
+      manualPromoCode
+    ) {
+      const manualPromotionId = await resolveManualPromoPromotionCodeId(manualPromoCode);
+      if (manualPromotionId) {
+        promotionCode = manualPromotionId;
+        campaignPromoKey = "manual_promo";
+        logger.info("Applying manual promo code at checkout", {
+          component: "checkout_session_api",
+          action: "apply_manual_promo",
+          userId: user.id,
+        });
+      }
+    }
+
     const finalOfferSource = readRequestAttribution("final_offer");
     const isOnboardingFinalOffer =
       finalOfferSource === "onboarding_final_chance" && !hasChallengePayload;

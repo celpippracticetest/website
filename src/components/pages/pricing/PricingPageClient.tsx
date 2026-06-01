@@ -418,7 +418,7 @@ export default function PricingPageClient({
                   One full-access tier
                 </p>
                 <h2 className="mt-2 text-3xl font-extrabold text-slate-900 md:text-4xl">
-                  Everything in Plus
+                  Everything in Pro
                 </h2>
                 <p className="mt-3 text-base leading-relaxed text-slate-600 md:text-lg">
                   Every paid timeline includes the same features — only the billing period

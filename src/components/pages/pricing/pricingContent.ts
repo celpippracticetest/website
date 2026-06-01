@@ -37,10 +37,9 @@ export const pricingUpgradeUnlockHeading = "Unlock access to:";
 
 /** Compact unlock list for pricing modals (legacy upgrade drawer copy). */
 export const pricingUpgradeUnlockFeatures = [
-  "All Mock Exams",
-  "All Sample Questions",
+  "All 60+ mock exams",
+  "All 3000+ practices",
   "Unlimited AI scoring",
-  "CELPIP Courses",
   "CELPIP Vocabulary Bundles",
 ] as const;
 
@@ -104,9 +103,9 @@ export const pricingFaqs: PricingFaq[] = [
       "Yes. You get instant AI-powered feedback so you can quickly understand what to improve next.",
   },
   {
-    question: "What is included in Plus?",
+    question: "What is included in Pro?",
     answer:
-      "Plus includes 60 full mock exams, real exam simulation, 3,000+ practice questions, instant AI feedback, progress tracking, study guides, and every subscriber feature on the platform.",
+      "Pro includes 60 full mock exams, real exam simulation, 3,000+ practice questions, instant AI feedback, progress tracking, study guides, and every subscriber feature on the platform.",
   },
   {
     question: "How many devices are included in a Subscriber plan?",

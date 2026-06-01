@@ -12,6 +12,7 @@ import {
   safeStripeProductId,
 } from "@/lib/checkoutCancelUrl";
 import { resolveCampaignPromoFromRequest } from "@/lib/campaignPromo";
+import { resolveManualPromoPromotionCodeId } from "@/lib/stripePromotionCode";
 import {
   ACQUISITION_ATTRIBUTION_COOKIE,
   flatAcquisitionFromCookie,
@@ -179,7 +180,15 @@ async function guestCheckoutResponse(req: NextRequest): Promise<NextResponse> {
 
     const campaignPromo = await resolveCampaignPromoFromRequest(req);
     const campaignPromoKey = campaignPromo.campaignKey;
-    const campaignPromotionCode = campaignPromo.promotionCode;
+    let campaignPromotionCode = campaignPromo.promotionCode;
+
+    const manualPromoCode = readRequestAttribution("promo_code");
+    if (manualPromoCode) {
+      const manualPromotionId = await resolveManualPromoPromotionCodeId(manualPromoCode);
+      if (manualPromotionId) {
+        campaignPromotionCode = manualPromotionId;
+      }
+    }
 
     const attributionSnapshot = {
       attribution_source:

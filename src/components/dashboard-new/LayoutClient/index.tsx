@@ -802,7 +802,7 @@ const LayoutClient = ({ children }: any) => {
           className={cn(
             "flex h-full w-full flex-col items-end screen744:!w-[calc(100%-84px)]",
             {
-              "mb-[120px] pt-[88px] screen744:pt-[96px]":
+              "mb-[120px] pt-[calc(88px+var(--android-download-banner-height,0px))] screen744:pt-[96px]":
                 !hideMainHeaderForOfficialExam,
               "pt-0 screen744:pt-0": hideMainHeaderForOfficialExam,
             }

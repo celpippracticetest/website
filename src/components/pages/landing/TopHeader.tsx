@@ -140,7 +140,7 @@ const TopHeader = () => {
     <>
       <header
         className={cn(
-          "fixed inset-x-0 top-0 z-[1200] border-b border-slate-200/90",
+          "fixed inset-x-0 top-[var(--android-download-banner-height,0px)] z-[1200] border-b border-slate-200/90",
           "bg-white/95 backdrop-blur-[16px] supports-[backdrop-filter]:bg-white/90",
         )}
       >
@@ -215,7 +215,7 @@ const TopHeader = () => {
         animate={{ x: mobileOpen ? 0 : "100%" }}
         transition={{ type: "tween", duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
         className={cn(
-          "fixed right-0 top-0 z-[1201] flex h-[100dvh] max-h-[100dvh] w-[min(100%,400px)] flex-col overflow-hidden rounded-l-3xl border-l border-slate-200/90 bg-[#FAFBFF] shadow-[-12px_0_40px_rgba(15,23,42,0.12)] screen1280:hidden",
+          "fixed right-0 top-[var(--android-download-banner-height,0px)] z-[1201] flex h-[calc(100dvh-var(--android-download-banner-height,0px))] max-h-[calc(100dvh-var(--android-download-banner-height,0px))] w-[min(100%,400px)] flex-col overflow-hidden rounded-l-3xl border-l border-slate-200/90 bg-[#FAFBFF] shadow-[-12px_0_40px_rgba(15,23,42,0.12)] screen1280:hidden",
           mobileOpen ? "pointer-events-auto" : "pointer-events-none",
         )}
       >

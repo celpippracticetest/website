@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCheckoutAttributionPayload } from "@/components/analytics/CheckoutAttributionFields";
 import { getSectionSavingsBadge } from "@/components/pages/pricing/PricingPlanCheckoutTile";
 import { mergePendingGa4IntoAttribution } from "@/lib/ga4BrowserIds";
@@ -12,6 +12,8 @@ import {
   parsePrice,
 } from "@/lib/pricing";
 import type { PricingPlanSection } from "@/lib/pricingPlanSections";
+import { v2ButtonVariants } from "@/components/v2/Button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { useEcommerceTracking } from "@/hooks/useTracking";
@@ -101,15 +103,32 @@ export function PricingModalPlanList({
   const attribution = useCheckoutAttributionPayload();
   const monthlySavingsById = useMemo(() => buildMonthlySavingsMap(plans), [plans]);
   const originalPriceById = useMemo(() => buildOriginalPriceFromWeeklyMap(plans), [plans]);
-  const [selectedSectionKey, setSelectedSectionKey] = useState<DurationGroupKey | null>(
-    recommendedSectionKey,
+  const [selectedSectionKey, setSelectedSectionKey] = useState<DurationGroupKey | null>(null);
+  const [showPromoInput, setShowPromoInput] = useState(false);
+  const [promoCodeInput, setPromoCodeInput] = useState("");
+  const [appliedPromoCode, setAppliedPromoCode] = useState<string | null>(null);
+  const [appliedPromoDiscountLabel, setAppliedPromoDiscountLabel] = useState<string | null>(
+    null,
   );
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoValidating, setPromoValidating] = useState(false);
 
   useEffect(() => {
-    if (recommendedSectionKey) {
-      setSelectedSectionKey(recommendedSectionKey);
-    }
-  }, [recommendedSectionKey]);
+    setSelectedSectionKey((current) => {
+      if (current !== null) {
+        return current;
+      }
+      if (recommendedSectionKey) {
+        return recommendedSectionKey;
+      }
+      if (sections.length === 0) {
+        return null;
+      }
+      return (
+        sections.find((section) => section.key === "threeMonth")?.key ?? sections[0]?.key ?? null
+      );
+    });
+  }, [recommendedSectionKey, sections]);
 
   const checkoutBase = !isLoaded
     ? ""
@@ -117,7 +136,57 @@ export function PricingModalPlanList({
       ? "/api/checkout_session"
       : "/api/checkout_session/guest";
 
-  const handleCheckout = (section: PricingPlanSection) => {
+  const validatePromoCode = useCallback(async (code: string) => {
+    const response = await fetch("/api/promo/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+    const data = (await response.json()) as {
+      valid?: boolean;
+      error?: string;
+      discountLabel?: string;
+    };
+    if (!response.ok || !data.valid) {
+      return { ok: false as const, error: data.error ?? "This promo code is not valid" };
+    }
+    return {
+      ok: true as const,
+      discountLabel: data.discountLabel ?? null,
+    };
+  }, []);
+
+  const applyPromoCode = useCallback(async () => {
+    const code = promoCodeInput.trim();
+    if (!code) {
+      setPromoError("Enter a promo code");
+      setAppliedPromoCode(null);
+      setAppliedPromoDiscountLabel(null);
+      return;
+    }
+    setPromoValidating(true);
+    setPromoError(null);
+    try {
+      const result = await validatePromoCode(code);
+      if (!result.ok) {
+        setPromoError(result.error);
+        setAppliedPromoCode(null);
+        setAppliedPromoDiscountLabel(null);
+        return;
+      }
+      setAppliedPromoCode(code);
+      setAppliedPromoDiscountLabel(result.discountLabel);
+      setPromoError(null);
+    } catch {
+      setPromoError("Could not validate promo code");
+      setAppliedPromoCode(null);
+      setAppliedPromoDiscountLabel(null);
+    } finally {
+      setPromoValidating(false);
+    }
+  }, [promoCodeInput, validatePromoCode]);
+
+  const handleCheckout = async (section: PricingPlanSection) => {
     const item = section.plus;
     if (!item?.plan.stripePriceId || !checkoutBase) {
       return;
@@ -163,11 +232,33 @@ export function PricingModalPlanList({
         if (value) add(name, value);
       }
     }
+
+    let promoToSubmit = appliedPromoCode;
+    const typedPromo = promoCodeInput.trim();
+    if (!promoToSubmit && typedPromo) {
+      const result = await validatePromoCode(typedPromo);
+      if (!result.ok) {
+        setShowPromoInput(true);
+        setPromoError(result.error);
+        return;
+      }
+      promoToSubmit = typedPromo;
+      if (result.discountLabel) {
+        setAppliedPromoDiscountLabel(result.discountLabel);
+      }
+    }
+    if (promoToSubmit) {
+      add("promo_code", promoToSubmit);
+    }
+
     document.body.appendChild(form);
     form.submit();
   };
 
+  const selectedSection = sections.find((section) => section.key === selectedSectionKey);
+
   return (
+    <div className="flex w-full flex-col">
     <div
       className="flex w-full flex-col gap-2.5 lg:gap-3"
       role="radiogroup"
@@ -198,7 +289,6 @@ export function PricingModalPlanList({
         );
         const displayOldPrice = resolvePlanOldPrice(p, computedOriginalPrice);
         const displayTitle = getPlanDisplayTitle(section);
-        const disabled = !checkoutBase;
 
         return (
           <button
@@ -207,20 +297,16 @@ export function PricingModalPlanList({
             role="radio"
             aria-checked={isSelected}
             id={isRecommended ? "recommended-plan" : undefined}
-            disabled={disabled}
-            onClick={() => {
-              setSelectedSectionKey(section.key);
-              handleCheckout(section);
-            }}
+            onClick={() => setSelectedSectionKey(section.key)}
             aria-label={
               discountLabel
-                ? `Upgrade to Plus, ${displayTitle}, ${discountLabel}`
-                : `Upgrade to Plus, ${displayTitle}`
+                ? `${displayTitle}, ${discountLabel}`
+                : displayTitle
             }
             className={cn(
               "relative flex w-full items-center gap-3 rounded-2xl border bg-white px-4 py-3.5 text-left shadow-sm transition-all",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary1 focus-visible:ring-offset-2",
-              "hover:border-primary1/35 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50",
+              "hover:border-primary1/35 hover:shadow-md",
               isSelected &&
                 "scroll-mt-24 border-2 border-primary1 bg-blue-50/50 shadow-md md:scroll-mt-28",
               isPopular &&
@@ -257,6 +343,94 @@ export function PricingModalPlanList({
           </button>
         );
       })}
+    </div>
+    <div className="mt-4 flex w-full flex-col gap-2">
+      {!showPromoInput ? (
+        <button
+          type="button"
+          onClick={() => setShowPromoInput(true)}
+          className="self-start text-sm font-semibold text-primary1 underline-offset-2 hover:underline"
+        >
+          Promo code
+        </button>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <Input
+              value={promoCodeInput}
+              onChange={(event) => {
+                setPromoCodeInput(event.target.value);
+                setPromoError(null);
+                if (appliedPromoCode && event.target.value.trim() !== appliedPromoCode) {
+                  setAppliedPromoCode(null);
+                  setAppliedPromoDiscountLabel(null);
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void applyPromoCode();
+                }
+              }}
+              placeholder="Enter promo code"
+              aria-label="Promo code"
+              autoComplete="off"
+              className="h-11 flex-1 rounded-xl border-slate-200 bg-white text-base"
+            />
+            <button
+              type="button"
+              disabled={promoValidating || !promoCodeInput.trim()}
+              onClick={() => void applyPromoCode()}
+              className={cn(
+                v2ButtonVariants({ variant: "outlinePrimary", size: "sm" }),
+                "h-11 shrink-0 px-4 text-sm font-semibold",
+              )}
+            >
+              {promoValidating ? "..." : "Apply"}
+            </button>
+          </div>
+          {promoError ? (
+            <p className="text-sm text-error1" role="alert">
+              {promoError}
+            </p>
+          ) : null}
+          {appliedPromoCode ? (
+            <p className="text-sm font-medium text-success">
+              Promo code &ldquo;{appliedPromoCode}&rdquo; applied
+              {appliedPromoDiscountLabel ? (
+                <span className="font-semibold"> — {appliedPromoDiscountLabel}</span>
+              ) : null}
+            </p>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => {
+              setShowPromoInput(false);
+              setPromoError(null);
+            }}
+            className="self-start text-xs font-medium text-slate-500 hover:text-slate-700"
+          >
+            Hide promo code
+          </button>
+        </div>
+      )}
+    </div>
+    <button
+      type="button"
+      disabled={!checkoutBase || !selectedSection || promoValidating}
+      onClick={() => {
+        if (selectedSection) {
+          void handleCheckout(selectedSection);
+        }
+      }}
+      className={cn(
+        v2ButtonVariants({ variant: "primary", size: "md" }),
+        "mt-3 h-12 w-full shrink-0 text-sm font-bold",
+      )}
+    >
+      Upgrade to Pro
+    </button>
+    <p className="mt-2 text-center text-xs text-slate-500">Cancel anytime</p>
     </div>
   );
 }

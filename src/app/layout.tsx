@@ -17,6 +17,7 @@ import PageViewTracker from "@/components/analytics/PageViewTracker";
 import RedditPixelTracker from "@/components/analytics/RedditPixelTracker";
 import { SupabaseAuthHashRecoveryRedirect } from "@/components/auth/SupabaseAuthHashRecoveryRedirect";
 import MuiAppRouterCacheProvider from "@/components/MuiAppRouterCacheProvider";
+import AndroidDownloadAppBanner from "@/components/mobile/AndroidDownloadAppBanner";
 import { getHomepageHeroDisplay } from "@/lib/homepage-hero";
 import type { Metadata, Viewport } from "next";
 import { Suspense, type ComponentType } from "react";
@@ -123,7 +124,6 @@ export async function generateMetadata(): Promise<Metadata> {
         { url: "/favicon/apple-touch-icon.png", sizes: "180x180", type: "image/png" }
       ],
     },
-    manifest: "/manifest.json",
     openGraph: {
       title: "CELPIP Practice Test Online | Instant Scoring, Expert Tips",
       description: "Celpip Practice Test platform designed to boost your score with real exam questions, instant results, and expert tips for Listening, Reading, Writing & Speaking.",
@@ -180,18 +180,30 @@ export default async function RootLayout({
           fetchPriority="high"
         />
 
-        {/* Icons & PWA */}
+        {/* Icons */}
         <link rel="icon" href="/favicon/favicon.ico" sizes="any" />
-        <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
         <link rel="apple-touch-icon" href="/favicon/apple-touch-icon.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
-        <link rel="mask-icon" href="/favicon/apple-touch-icon.png" color="#3B82F6"></link>
 
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="CELPIP Test" />
-        <meta name="theme-color" content="#3B82F6" />
+        {/* Unregister legacy PWA service worker for users who previously installed the app */}
+        <Script id="pwa-unregister" strategy="afterInteractive">
+          {`
+            if ("serviceWorker" in navigator) {
+              navigator.serviceWorker.getRegistrations().then((regs) => {
+                for (const reg of regs) {
+                  const scriptUrl =
+                    reg.active?.scriptURL ||
+                    reg.installing?.scriptURL ||
+                    reg.waiting?.scriptURL ||
+                    "";
+                  if (scriptUrl.endsWith("/sw.js")) {
+                    reg.unregister();
+                  }
+                }
+              });
+            }
+          `}
+        </Script>
 
         {/* Fix Stripe/Payment Attribution: Hide stripe.com (and other payment gateways) from GTM/GA4/Pixels to prevent session break */}
         <Script id="stripe-payment-referrer-fix" strategy="beforeInteractive">
@@ -284,6 +296,7 @@ export default async function RootLayout({
           )}
 
           <NextTopLoaderComponent />
+          <AndroidDownloadAppBanner />
           <ErrorBoundary>
             <SupabaseAuthHashRecoveryRedirect />
             {children}
