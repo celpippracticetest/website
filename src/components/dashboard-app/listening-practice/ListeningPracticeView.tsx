@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import ArrowBack from "@mui/icons-material/ArrowBack";
-import ArrowForward from "@mui/icons-material/ArrowForward";
+import PracticeExamCardHeader from "../exam-parts/components/PracticeExamCardHeader";
 import AudioPlayer from "./components/AudioPlayer";
 import ListeningQuestionList from "./components/ListeningQuestionList";
 import { TPracticeDto, TPracticeNavItem } from "@/models/practice.model";
@@ -270,6 +269,97 @@ const ListeningPracticeView = ({
     setIsFromFirstPage(false);
   };
 
+  const resetListeningTimer = () => {
+    setTime(
+      task5or6.includes(practice.taskId)
+        ? 240 + (task5or6[1] === practice.taskId ? 30 : 0)
+        : 30
+    );
+  };
+
+  const handleHeaderBack = () => {
+    if (page === "problem" && passageIndex === 0) {
+      setPage("instructions");
+    } else if (page === "problem" && passageIndex > 0) {
+      setPage("question");
+      setPassageIndex(passageIndex - 1);
+      setQuestionIndex(
+        Math.max(
+          0,
+          (practice.passages[passageIndex - 1].questions?.length ?? 1) - 1
+        )
+      );
+    } else if (page === "question" && questionIndex > 0) {
+      setQuestionIndex(questionIndex - 1);
+      setQuestionIndexInPractice(questionIndexInPractice - 1);
+    } else if (page === "question" && questionIndex === 0) {
+      setPage("problem");
+      setQuestionIndex(0);
+      setQuestionIndexInPractice(questionIndexInPractice - 1);
+    } else if (page === "answer") {
+      setPage("question");
+      setQuestionIndex(
+        Math.max(
+          0,
+          (practice.passages[passageIndex].questions?.length ?? 1) - 1
+        )
+      );
+      setPassageIndex(practice.passages.length - 1);
+    }
+    resetListeningTimer();
+  };
+
+  const handleHeaderNext = () => {
+    if (page === "instructions" && passageIndex === 0) {
+      setPage("problem");
+      setQuestionIndex(0);
+    } else if (page === "problem") {
+      setPage("question");
+      setQuestionIndexInPractice(questionIndexInPractice + 1);
+    } else if (page === "question" && useDropdownForQuestions) {
+      setPage("answer");
+    } else if (
+      page === "question" &&
+      questionIndex <
+        (practice.passages[passageIndex].questions?.length ?? 0) - 1 &&
+      !useDropdownForQuestions
+    ) {
+      setQuestionIndex(questionIndex + 1);
+      setQuestionIndexInPractice(questionIndexInPractice + 1);
+    } else if (page === "question" && passageIndex < practice.passages.length - 1) {
+      setPage("problem");
+      setPassageIndex(passageIndex + 1);
+      setQuestionIndex(0);
+    } else if (page === "question") {
+      setPage("answer");
+    } else if (page === "answer") {
+      if (practiceIndex < allPractices.length - 1 && selectedTaskId) {
+        setPage("instructions");
+        setQuestionIndex(0);
+        setPassageIndex(0);
+        router.push(
+          practicePath(
+            "listening",
+            allPractices[practiceIndex + 1].id,
+            selectedTaskId
+          )
+        );
+      } else {
+        resetToStart();
+      }
+    }
+    setTime(initialTime);
+  };
+
+  const listeningHeaderTitle =
+    page === "instructions"
+      ? "Instruction"
+      : practice.passages[passageIndex].title;
+  const showListeningHeaderNav = page !== "instructions";
+  const showListeningBack = !(
+    page === "problem" && passageIndex === 0
+  );
+
   if (!isLoaded || (user && user.publicMetadata?.plan === undefined)) {
     return (
       <div className="text-center py-10 text-gray-500 w-full">Loading...</div>
@@ -323,142 +413,31 @@ const ListeningPracticeView = ({
           selectedTaskId={selectedTaskId}
           completedPractice={completedPractice}
         />
-        <Card className="bg-white/90 flex min-h-0 flex-col overflow-hidden border border-[#D5D6D8] w-full screen1280:!h-[920px]">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 lg:gap-4 px-6 py-4 border-b border-[#D5D6D8] w-full min-w-0 h-auto bg-[#FFEBD6]">
-            <div className="flex w-full min-w-0 flex-col items-start gap-2 lg:flex-1 lg:w-auto lg:min-w-0">
-              <h1 className="text-[18px] font-bold text-[#212E42] break-words">
-                {page === "instructions"
-                  ? "Instruction"
-                  : practice.passages[passageIndex].title}
-              </h1>
-              <StatBadge
-                count={practiceCount}
-                label="answered today"
-              />
-            </div>
-
-            {page !== "instructions" ? (
-              <div className="flex w-full min-w-0 shrink-0 flex-row flex-nowrap items-center justify-end gap-2 overflow-x-auto pb-[10px] lg:w-auto lg:min-w-fit lg:flex-none lg:gap-2 lg:overflow-visible lg:pb-0">
-                  {page === "question" && (
-                    <div className="flex shrink-0 justify-center items-center lg:flex-row flex-col">
-                      <div className="text-[14px] font-semibold gap-2 text-center text-[#EE4266] flex items-center">
-                        <p>
-                          {time > 0
-                            ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
-                            }`
-                            : "Time's Up!"}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  <button
-                    hidden={page === "problem" && passageIndex === 0}
-                    onClick={() => {
-                    if (page == "problem" && passageIndex == 0) {
-                      setPage("instructions");
-                    } else if (page == "problem" && passageIndex > 0) {
-                      setPage("question");
-                      setPassageIndex(passageIndex - 1);
-                      setQuestionIndex(
-                        Math.max(
-                          0,
-                          (practice.passages[passageIndex - 1].questions?.length ?? 1) -
-                          1
-                        )
-                      );
-                      // setQuestionIndexInPractice(questionIndexInPractice - 1);
-                    } else if (page == "question" && questionIndex > 0) {
-                      setQuestionIndex(questionIndex - 1);
-                      setQuestionIndexInPractice(questionIndexInPractice - 1);
-                    } else if (page == "question" && questionIndex == 0) {
-                      setPage("problem");
-                      setQuestionIndex(0);
-                      setQuestionIndexInPractice(questionIndexInPractice - 1);
-                    } else if (page == "answer") {
-                      setPage("question");
-                      setQuestionIndex(
-                        Math.max(
-                          0,
-                          (practice.passages[passageIndex].questions?.length ?? 1) -
-                          1
-                        )
-                      );
-                      setPassageIndex(practice.passages.length - 1);
-                    }
-                    setTime(
-                      task5or6.includes(practice.taskId)
-                        ? 240 + (task5or6[1] === practice.taskId ? 30 : 0)
-                        : 30
-                    );
-                  }}
-                    className="cursor-pointer shrink-0 w-[40px] h-[40px] border flex items-center justify-center border-[#37465C] rounded-[100%]"
-                  >
-                    <ArrowBack sx={{ fontSize: 18 }} />
-                  </button>
-                <button
-                  onClick={() => {
-                    if (page == "instructions" && passageIndex == 0) {
-                      setPage("problem");
-                      setQuestionIndex(0);
-                    } else if (page == "problem") {
-                      setPage("question");
-                      setQuestionIndexInPractice(questionIndexInPractice + 1);
-                    } else if (
-                      page == "question" &&
-                      useDropdownForQuestions
-                    ) {
-                      setPage("answer");
-                    } else if (
-                      page == "question" &&
-                      questionIndex <
-                      (practice.passages[passageIndex].questions?.length ?? 0) - 1 &&
-                      !useDropdownForQuestions
-                    ) {
-                      setQuestionIndex(questionIndex + 1);
-                      setQuestionIndexInPractice(questionIndexInPractice + 1);
-                    } else if (
-                      page == "question" &&
-                      passageIndex < practice.passages.length - 1
-                    ) {
-                      setPage("problem");
-                      setPassageIndex(passageIndex + 1);
-
-                      setQuestionIndex(0);
-                    } else if (page == "question") {
-                      setPage("answer");
-                    } else if (page === "answer") {
-                      if (practiceIndex < allPractices.length - 1 && selectedTaskId) {
-                        setPage("instructions");
-                        setQuestionIndex(0);
-                        setPassageIndex(0);
-                        router.push(
-                          practicePath(
-                            "listening",
-                            allPractices[practiceIndex + 1].id,
-                            selectedTaskId
-                          )
-                        );
-                      } else {
-                        resetToStart();
-                      }
-                    }
-                    setTime(initialTime);
-                  }}
-                  className={`cursor-pointer shrink-0 text-[14px] font-medium inline-flex items-center justify-center gap-1 rounded-[24px] w-[96px] min-h-[40px] px-2 sm:px-3 ${page !== "answer"
-                    ? "bg-[#4A7DFF] text-white lg:bg-white lg:text-[#212E42] lg:font-normal"
-                    : "bg-green-100 text-gray-900"
-                    }`}
-                >
-                  {page === "answer" && practiceIndex >= allPractices.length - 1
-                    ? "Start again"
-                    : "Next"}
-                  <ArrowForward sx={{ fontSize: 18 }} />
-                </button>
-              </div>
-            ) : (
-              <></>
-            )}
-          </div>
+        <Card className="flex min-h-0 w-full flex-col overflow-hidden border border-outline bg-white/90 shadow-[0_18px_44px_rgba(55,70,92,0.08)] screen1280:!h-[920px]">
+          <PracticeExamCardHeader
+            partTitle={listeningHeaderTitle}
+            metaSlot={
+              <StatBadge count={practiceCount} label="answered today" />
+            }
+            onBack={handleHeaderBack}
+            onNext={handleHeaderNext}
+            showBack={showListeningHeaderNav && showListeningBack}
+            showNext={showListeningHeaderNav}
+            nextLabel={
+              page === "answer" && practiceIndex >= allPractices.length - 1
+                ? "Start again"
+                : "Next"
+            }
+            trailingSlot={
+              page === "question" ? (
+                <div className="min-w-[128px] shrink-0 rounded-full border border-error1/15 bg-error1/10 px-4 py-2 text-center font-body text-[15px] font-extrabold text-error1">
+                  {time > 0
+                    ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60}`
+                    : "Time's Up!"}
+                </div>
+              ) : undefined
+            }
+          />
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto w-full [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-track]:bg-slate-100">
             {page == "instructions" ? (
               <div className="px-[24px] py-[16px] w-full">
@@ -580,7 +559,7 @@ const ListeningPracticeView = ({
                         aria-label="Go to questions"
                       >
                         Next
-                        <ArrowForward sx={{ fontSize: 18 }} />
+                        <SvgArrowRight />
                       </button>
 
                       {isOpen && (

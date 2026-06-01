@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-
+import PracticeExamCardHeader from "../exam-parts/components/PracticeExamCardHeader";
 import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
 import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
 import Close from "@mui/icons-material/Close";
@@ -427,6 +427,40 @@ const SpeakingPracticeView = ({
     setIsRecording(false);
   };
 
+  const speakingPracticeIndex = allPractices.findIndex(
+    (p) => p.id == selectedPracticeId
+  );
+
+  const handleHeaderBack = () => {
+    if (speakingPracticeIndex > 0 && selectedTaskId) {
+      if (isRecording) {
+        cancelRecording();
+      }
+      const previousPractice = allPractices[speakingPracticeIndex - 1];
+      setTime(preparationTime[previousPractice.taskId.toString()]);
+      setRecordingTime(recordingTimePerTask[previousPractice.taskId.toString()]);
+      setPage("question");
+      router.push(
+        practicePath("speaking", previousPractice.id, selectedTaskId)
+      );
+    }
+  };
+
+  const handleHeaderNext = () => {
+    if (speakingPracticeIndex < allPractices.length - 1 && selectedTaskId) {
+      if (isRecording) {
+        cancelRecording();
+      }
+      const nextPractice = allPractices[speakingPracticeIndex + 1];
+      setTime(preparationTime[nextPractice.taskId.toString()]);
+      setRecordingTime(recordingTimePerTask[nextPractice.taskId.toString()]);
+      setPage("question");
+      router.push(
+        practicePath("speaking", nextPractice.id, selectedTaskId)
+      );
+    }
+  };
+
   if (!authReady) {
     return (
       <div className="text-center py-10 text-gray-500 w-full">Loading...</div>
@@ -452,73 +486,26 @@ const SpeakingPracticeView = ({
         selectedTaskId={selectedTaskId}
         completedPractice={completedPractice}
       />
-      <div className="bg-white rounded-xl flex min-h-0 flex-col overflow-hidden border border-[#D5D6D8] w-full screen1280:!h-[920px]">
-        <div className="flex justify-between lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b pb-[10px]  border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
-          <div className="flex gap-2 flex-col screen744:!shrink-0">
-            <h1 className="text-[18px] font-bold text-[#212E42]">
-              {activePassage?.title ?? practice.title ?? practice.name}
-            </h1>
-            <StatBadge
-              count={practiceCount}
-              label="answered today"
-            />
-          </div>
-          {
-            <div className="flex items-center gap-2 justify-end pb-[10px] ">
-              {shouldShowPractice && user && page === "question" && (
-                <div className="flex justify-center items-center lg:flex-row flex-col">
-                  <div className="text-[14px] font-bold gap-2 text-center text-[#EE4266] flex items-center">
-                    <p>
-                      {time > 0
-                        ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
-                        }`
-                        : "Time's Up!"}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <button
-                onClick={() => {
-                  const practiceIndex = allPractices.findIndex(
-                    (p) => p.id == selectedPracticeId
-                  );
-                  if (practiceIndex < allPractices.length - 1) {
-                    if (isRecording) {
-                      cancelRecording();
-                    }
-                    setTime(
-                      preparationTime[
-                      allPractices[practiceIndex + 1].taskId.toString()
-                      ]
-                    );
-                    setRecordingTime(
-                      recordingTimePerTask[
-                      allPractices[practiceIndex + 1].taskId.toString()
-                      ]
-                    );
-                    setPage("question");
-                    if (selectedTaskId) {
-                      router.push(
-                        practicePath(
-                          "speaking",
-                          allPractices[practiceIndex + 1].id,
-                          selectedTaskId
-                        )
-                      );
-                    }
-                  } else {
-                  }
-                }}
-                className={`cursor-pointer gap-[8px] inline-flex items-center justify-center  text-[14px] font-normal w-[96px] h-[40px] rounded-[24px] ${"bg-white"}`}
-              >
-                {"Next"}
-
-                <SvgArrowRight />
-              </button>
-            </div>
+      <div className="flex min-h-0 w-full flex-col overflow-hidden rounded-xl border border-outline bg-white shadow-[0_18px_44px_rgba(55,70,92,0.08)] screen1280:!h-[920px]">
+        <PracticeExamCardHeader
+          partTitle={activePassage?.title ?? practice.title ?? practice.name}
+          metaSlot={
+            <StatBadge count={practiceCount} label="answered today" />
           }
-        </div>
+          onBack={handleHeaderBack}
+          onNext={handleHeaderNext}
+          showBack={speakingPracticeIndex > 0}
+          showNext={speakingPracticeIndex < allPractices.length - 1}
+          trailingSlot={
+            shouldShowPractice && user && page === "question" ? (
+              <div className="min-w-[128px] shrink-0 rounded-full border border-error1/15 bg-error1/10 px-4 py-2 text-center font-body text-[15px] font-extrabold text-error1">
+                {time > 0
+                  ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60}`
+                  : "Time's Up!"}
+              </div>
+            ) : undefined
+          }
+        />
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden w-full">
           {page == "question" && (
             <div className="h-full overflow-hidden ">

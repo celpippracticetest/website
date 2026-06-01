@@ -1,10 +1,9 @@
 import { useCallback, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import ArrowForward from "@mui/icons-material/ArrowForward";
+import PracticeExamCardHeader from "../exam-parts/components/PracticeExamCardHeader";
 import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
 import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
 import WorkspacePremium from "@mui/icons-material/WorkspacePremium";
-import ArrowBack from "@mui/icons-material/ArrowBack";
 import { TPracticeDto, TPracticeNavItem } from "@/models/practice.model";
 import ListeningSideMenu from "../listening-practice/ListeningSideMenu";
 import ListeningAnswerList from "./components/ListeningAnswers";
@@ -325,6 +324,47 @@ const WritingPracticeView = ({
     }));
   };
 
+  const writingPracticeIndex = allPractices.findIndex(
+    (p) => p.id == selectedPracticeId
+  );
+
+  const resetWritingSessionState = () => {
+    setTime(1620);
+    setText("");
+    setWordCount(0);
+    setProgressBar(0);
+    setIsSubmit(false);
+    setTryToSubmit(false);
+  };
+
+  const handleHeaderBack = () => {
+    if (writingPracticeIndex > 0 && selectedTaskId) {
+      setPage("question");
+      resetWritingSessionState();
+      router.push(
+        practicePath(
+          "writing",
+          allPractices[writingPracticeIndex - 1].id,
+          selectedTaskId
+        )
+      );
+    }
+  };
+
+  const handleHeaderNext = () => {
+    if (writingPracticeIndex < allPractices.length - 1 && selectedTaskId) {
+      setPage("question");
+      resetWritingSessionState();
+      router.push(
+        practicePath(
+          "writing",
+          allPractices[writingPracticeIndex + 1].id,
+          selectedTaskId
+        )
+      );
+    }
+  };
+
   if (
     !isHydrated ||
     !isLoaded ||
@@ -354,66 +394,26 @@ const WritingPracticeView = ({
         selectedTaskId={selectedTaskId}
         completedPractice={completedPracticeId}
       />
-      <div className="bg-white rounded-xl flex min-h-0 flex-col overflow-hidden border border-[#D5D6D8] w-full mb-[120px] screen1280:!h-[920px]">
-        <div className="flex justify-between pb-[21px]  lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
-          <div className="flex gap-2 flex-col screen744:!shrink-0">
-            <h1 className="text-[18px] font-bold text-[#212E42]">
-              {practice.passages[passageIndex].title}
-            </h1>
-            <StatBadge
-              count={practiceCount}
-              label="answered today"
-            />
-          </div>
-          {
-            <div className="flex items-center gap-2 justify-end pb-[10px] ">
-              {shouldShowPractice && page === "question" && (
-                <div className="flex justify-center items-center lg:flex-row flex-col">
-                  <div className="text-[14px] font-bold gap-2 text-center text-[#EE4266] flex items-center">
-                    <p>
-                      {time > 0
-                        ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
-                        }`
-                        : "Time's Up!"}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {allPractices.findIndex((p) => p.id == selectedPracticeId) <
-                allPractices.length - 1 && (
-                  <button
-                    onClick={() => {
-                      const practiceIndex = allPractices.findIndex(
-                        (p) => p.id == selectedPracticeId
-                      );
-                      if (practiceIndex < allPractices.length - 1 && selectedTaskId) {
-                        setPage("question");
-                        setTime(1620);
-                        setText("");
-                        setWordCount(0);
-                        setProgressBar(0);
-                        setIsSubmit(false);
-                        setTryToSubmit(false);
-                        router.push(
-                          practicePath(
-                            "writing",
-                            allPractices[practiceIndex + 1].id,
-                            selectedTaskId
-                          )
-                        );
-                      } else {
-                      }
-                    }}
-                    className={`cursor-pointer text-[14px] font-normal  inline-flex items-center justify-center rounded-[24px] bg-white  w-[96px] h-[40px]`}
-                  >
-                    {"Next"}
-                    <ArrowForward sx={{ fontSize: 18 }} className="ml-2" />
-                  </button>
-                )}
-            </div>
+      <div className="mb-[120px] flex min-h-0 w-full flex-col overflow-hidden rounded-xl border border-outline bg-white shadow-[0_18px_44px_rgba(55,70,92,0.08)] screen1280:!h-[920px]">
+        <PracticeExamCardHeader
+          partTitle={practice.passages[passageIndex].title}
+          metaSlot={
+            <StatBadge count={practiceCount} label="answered today" />
           }
-        </div>
+          onBack={handleHeaderBack}
+          onNext={handleHeaderNext}
+          showBack={writingPracticeIndex > 0}
+          showNext={writingPracticeIndex < allPractices.length - 1}
+          trailingSlot={
+            shouldShowPractice && page === "question" ? (
+              <div className="min-w-[128px] shrink-0 rounded-full border border-error1/15 bg-error1/10 px-4 py-2 text-center font-body text-[15px] font-extrabold text-error1">
+                {time > 0
+                  ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60}`
+                  : "Time's Up!"}
+              </div>
+            ) : undefined
+          }
+        />
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden w-full">
           {page == "question" && (
             <div className="flex flex-col h-full overflow-hidden w-full ">

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import NextImage from "next/image";
-import ArrowBack from "@mui/icons-material/ArrowBack";
+import PracticeExamCardHeader from "../exam-parts/components/PracticeExamCardHeader";
 import { TPracticeDto, TPracticeNavItem } from "@/models/practice.model";
 import ListeningSideMenu from "../listening-practice/ListeningSideMenu";
 import ListeningAnswerList from "./components/ListeningAnswers";
@@ -227,6 +227,152 @@ const ReadingPracticeView = ({
         user?.publicMetadata.plan as string | undefined,
         user?.publicMetadata.purchaseDate as string | undefined
       ));
+
+  const handleViewAnswersAndScore = async () => {
+    if (page === "question" && shouldShowPractice) {
+      setTime(30);
+      let answersData: Record<string, string> | null = null;
+      if (user?.id) {
+        try {
+          const getRes = await fetch(
+            `/api/answers?practiceId=${practice.id}&userId=${user.id}&type=${practice.type}`,
+            { credentials: "include" }
+          );
+          if (getRes.ok) {
+            const json = await getRes.json();
+            const raw = json.answers as Record<string, string> | undefined;
+            answersData = raw && Object.keys(raw).length > 0 ? raw : null;
+          }
+        } catch (err) {
+          console.error("Error checking existing answers:", err);
+        }
+        if (!answersData) {
+          try {
+            const postRes = await fetch("/api/answers", {
+              method: "POST",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                practiceId: practice.id,
+                answers: selectedAnswers,
+              }),
+            });
+            let postJson: { result?: { answers?: Record<string, string> } } = {};
+            try {
+              postJson = await postRes.json();
+            } catch {
+              /* non-JSON body */
+            }
+            answersData =
+              postJson.result?.answers ?? (postRes.ok ? selectedAnswers : null);
+          } catch (err) {
+            console.error("Failed to save answers:", err);
+          }
+        }
+      } else {
+        answersData = selectedAnswers;
+      }
+      if (answersData) {
+        setSelectedAnswers(answersData);
+      }
+      setPage("answer");
+    } else if (page === "answer" || (page === "question" && !shouldShowPractice)) {
+      const practiceIndex = allPractices.findIndex(
+        (p) => p.id == selectedPracticeId
+      );
+      if (practiceIndex < allPractices.length - 1 && selectedTaskId) {
+        setPage("question");
+        router.push(
+          practicePath(
+            "reading",
+            allPractices[practiceIndex + 1].id,
+            selectedTaskId
+          )
+        );
+      }
+      setTime(30);
+    }
+  };
+
+  const handleHeaderBack = () => {
+    if (page === "answer") {
+      setPage("question");
+      setTime(timerTime);
+      return;
+    }
+
+    const practiceIndex = allPractices.findIndex(
+      (p) => p.id == selectedPracticeId
+    );
+    if (practiceIndex > 0 && selectedTaskId) {
+      setPage("question");
+      router.push(
+        practicePath(
+          "reading",
+          allPractices[practiceIndex - 1].id,
+          selectedTaskId
+        )
+      );
+    }
+    setTime(timerTime);
+  };
+
+  const handleHeaderNext = async () => {
+    setTime(30);
+    if (Object.keys(selectedAnswers).length > 0 && user) {
+      try {
+        const saveRes = await fetch("/api/answers", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            practiceId: practice.id,
+            answers: selectedAnswers,
+          }),
+        });
+
+        if (saveRes.ok && !pointsAwarded) {
+          runPracticeSubmitSideEffects({
+            practiceId: practice.id,
+            skill: "Reading",
+            overallScore: 100,
+            result: { overall: 100 },
+            durationSeconds: time,
+            pointsAwarded,
+            addPoints,
+            checkTrophyAchievements,
+            onPointsAwarded: () => setPointsAwarded(true),
+          });
+        }
+      } catch (err) {
+        console.error("Failed to save answers before navigating:", err);
+      }
+    }
+    if (
+      page === "answer" ||
+      (page === "question" && !shouldShowPractice) ||
+      (page === "question" && shouldShowPractice)
+    ) {
+      const practiceIndex = allPractices.findIndex(
+        (p) => p.id == selectedPracticeId
+      );
+      if (practiceIndex < allPractices.length - 1 && selectedTaskId) {
+        setPage("question");
+        router.push(
+          practicePath(
+            "reading",
+            allPractices[practiceIndex + 1].id,
+            selectedTaskId
+          )
+        );
+      }
+    }
+  };
+
+  const showPracticeHeaderActions = page !== "answer" && shouldShowPractice;
+  const showPracticeHeaderBack =
+    showPracticeHeaderActions || page === "answer";
+
   return (
     <div className="">
       {noUser ? (
@@ -274,240 +420,40 @@ const ReadingPracticeView = ({
           selectedTaskId={selectedTaskId}
           completedPractice={completedPractice}
         />
-        <Card className="bg-white/90 flex min-h-0 flex-col overflow-hidden border border-[#D5D6D8] w-full screen1280:!h-[920px]">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 lg:gap-4 px-6 py-4 border-b border-[#D5D6D8] w-full min-w-0 h-auto bg-[#FFEBD6]">
-            <div className="flex w-full min-w-0 flex-col items-start gap-2 lg:flex-1 lg:w-auto lg:min-w-0">
-              <h1 className="text-[18px] font-bold text-[#212E42] break-words w-full">
-                {practice.passages[passageIndex].title}
-              </h1>
-              <StatBadge
-                count={practiceCount}
-                label="answered today"
-              />
-            </div>
-            <div className="flex w-full min-w-0 shrink-0 flex-row flex-nowrap items-center justify-end gap-2 overflow-x-auto pb-[10px] lg:w-auto lg:min-w-fit lg:flex-none lg:gap-2 lg:overflow-visible lg:pb-0">
-            {page !== "answer" && shouldShowPractice && (
-                  <button
-                      onClick={async () => {
-                        if (page == "question" && shouldShowPractice) {
-                          setTime(30);
-                          let answersData: Record<string, string> | null = null;
-                          if (user?.id) {
-                            try {
-                              const getRes = await fetch(
-                                `/api/answers?practiceId=${practice.id}&userId=${user.id}&type=${practice.type}`,
-                                { credentials: "include" }
-                              );
-                              if (getRes.ok) {
-                                const json = await getRes.json();
-                                const raw = json.answers as
-                                  | Record<string, string>
-                                  | undefined;
-                                answersData =
-                                  raw && Object.keys(raw).length > 0 ? raw : null;
-                              }
-                            } catch (err) {
-                              console.error(
-                                "Error checking existing answers:",
-                                err
-                              );
-                            }
-                            if (!answersData) {
-                              try {
-                                const postRes = await fetch("/api/answers", {
-                                  method: "POST",
-                                  credentials: "include",
-                                  headers: {
-                                    "Content-Type": "application/json",
-                                  },
-                                  body: JSON.stringify({
-                                    practiceId: practice.id,
-                                    answers: selectedAnswers,
-                                  }),
-                                });
-                                let postJson: {
-                                  result?: { answers?: Record<string, string> };
-                                } = {};
-                                try {
-                                  postJson = await postRes.json();
-                                } catch {
-                                  /* non-JSON body */
-                                }
-                                answersData =
-                                  postJson.result?.answers ??
-                                  (postRes.ok ? selectedAnswers : null);
-                              } catch (err) {
-                                console.error("Failed to save answers:", err);
-                              }
-                            }
-                          } else {
-                            answersData = selectedAnswers;
-                          }
-                          if (answersData) {
-                            setSelectedAnswers(answersData);
-                          }
-                          setPage("answer");
-                        } else if (
-                          page === "answer" ||
-                          (page == "question" && !shouldShowPractice)
-                        ) {
-                          const practiceIndex = allPractices.findIndex(
-                            (p) => p.id == selectedPracticeId
-                          );
-                          if (practiceIndex < allPractices.length - 1 && selectedTaskId) {
-                            setPage("question");
-                            router.push(
-                              practicePath(
-                                "reading",
-                                allPractices[practiceIndex + 1].id,
-                                selectedTaskId
-                              )
-                            );
-                          } else {
-                          }
-                          setTime(30);
-                        }
-                      }}
-                      className={`cursor-pointer shrink-0 border border-[#76808F] px-[24px] text-[14px] font-normal h-[40px] rounded-[24px] ${page !== "answer" && shouldShowPractice
-                        ? "bg-white"
-                        : "bg-white"
-                        }`}
-                    >
-                      <span className="hidden screen1280:!flex">
-                        View Answers &amp; Score
-                      </span>
-                      <span className="flex screen1280:!hidden"> Score</span>{" "}
-                    </button>
-            )}
-            {page !== "answer" && shouldShowPractice && (
-              <>
-                {shouldShowPractice && page === "question" && (
-                  <div className="flex shrink-0 justify-center items-center lg:flex-row flex-col">
-                    <div className="text-[14px] shrink-0 font-semibold gap-2 text-center text-[#EE4266] flex items-center">
-                      <p>
-                        {time > 0
-                          ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
-                          }`
-                          : "Time's Up!"}
-                      </p>
-                    </div>
-                  </div>
-                )}
+        <Card className="flex min-h-0 w-full flex-col overflow-hidden border border-outline bg-white/90 shadow-[0_18px_44px_rgba(55,70,92,0.08)] screen1280:!h-[920px]">
+          <PracticeExamCardHeader
+            partTitle={practice.passages[passageIndex].title}
+            metaSlot={
+              <StatBadge count={practiceCount} label="answered today" />
+            }
+            onBack={handleHeaderBack}
+            onNext={handleHeaderNext}
+            showBack={showPracticeHeaderBack}
+            showNext={showPracticeHeaderActions}
+            actionsSlot={
+              showPracticeHeaderActions ? (
                 <button
                   type="button"
-                  onClick={() => {
-                    const practiceIndex = allPractices.findIndex(
-                      (p) => p.id == selectedPracticeId
-                    );
-                    if (practiceIndex > 0 && selectedTaskId) {
-                      setPage("question");
-                      router.push(
-                        practicePath(
-                          "reading",
-                          allPractices[practiceIndex - 1].id,
-                          selectedTaskId
-                        )
-                      );
-                    }
-                    setTime(timerTime);
-                  }}
-                  className="cursor-pointer inline-flex border border-[#37465C] shrink-0 items-center h-[40px] w-[40px] rounded-[100%] justify-center min-h-[40px]"
+                  onClick={() => void handleViewAnswersAndScore()}
+                  className="inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-outline bg-white px-4 font-body text-sm font-semibold text-text1 transition-colors hover:border-primary1/30 hover:bg-primary6"
                 >
-                  <ArrowBack sx={{ fontSize: 18 }} />
+                  <span className="hidden screen1280:inline">
+                    View Answers &amp; Score
+                  </span>
+                  <span className="screen1280:hidden">Score</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setTime(30);
-                    if (Object.keys(selectedAnswers).length > 0 && user) {
-                      try {
-                        const saveRes = await fetch("/api/answers", {
-                          method: "POST",
-                          credentials: "include",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            practiceId: practice.id,
-                            answers: selectedAnswers,
-                          }),
-                        });
-
-                        if (saveRes.ok && !pointsAwarded) {
-                          runPracticeSubmitSideEffects({
-                            practiceId: practice.id,
-                            skill: "Reading",
-                            overallScore: 100,
-                            result: { overall: 100 },
-                            durationSeconds: time,
-                            pointsAwarded,
-                            addPoints,
-                            checkTrophyAchievements,
-                            onPointsAwarded: () => setPointsAwarded(true),
-                          });
-                        }
-                      } catch (err) {
-                        console.error(
-                          "Failed to save answers before navigating:",
-                          err
-                        );
-                      }
-                    }
-                    if (
-                      page === "answer" ||
-                      (page === "question" && !shouldShowPractice) ||
-                      (page === "question" && shouldShowPractice)
-                    ) {
-                      const practiceIndex = allPractices.findIndex(
-                        (p) => p.id == selectedPracticeId
-                      );
-                      if (practiceIndex < allPractices.length - 1 && selectedTaskId) {
-                        setPage("question");
-                        router.push(
-                          practicePath(
-                            "reading",
-                            allPractices[practiceIndex + 1].id,
-                            selectedTaskId
-                          )
-                        );
-                      }
-                    }
-                  }}
-                  className="cursor-pointer shrink-0 border border-[#76808F] px-[24px] text-[14px] font-normal h-[40px] rounded-[24px] bg-white"
-                >
-                  Next
-                </button>
-              </>
-            )}
-            {(page === "answer" || !shouldShowPractice) && (
-              <>
-                {shouldShowPractice && page === "question" && (
-                  <div className="flex shrink-0 justify-center items-center lg:flex-row flex-col">
-                    <div className="text-[14px] font-semibold gap-2 text-center text-[#EE4266] flex items-center">
-                      <p>
-                        {time > 0
-                          ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
-                          }`
-                          : "Time's Up!"}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                <button
-                  type="button"
-                  hidden={page !== "answer"}
-                  onClick={() => {
-                    if (page == "answer") {
-                      setPage("question");
-                    }
-                    setTime(timerTime);
-                  }}
-                  className="cursor-pointer inline-flex border border-[#37465C] shrink-0 items-center h-[40px] w-[40px] rounded-[100%] justify-center min-h-[40px]"
-                >
-                  <ArrowBack sx={{ fontSize: 18 }} />
-                </button>
-              </>
-            )}
-            </div>
-          </div>
+              ) : undefined
+            }
+            trailingSlot={
+              shouldShowPractice && page === "question" ? (
+                <div className="min-w-[128px] shrink-0 rounded-full border border-error1/15 bg-error1/10 px-4 py-2 text-center font-body text-[15px] font-extrabold text-error1">
+                  {time > 0
+                    ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60}`
+                    : "Time's Up!"}
+                </div>
+              ) : undefined
+            }
+          />
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden w-full">
             {page == "question" && (
               <div className="h-full overflow-hidden ">
