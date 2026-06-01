@@ -110,6 +110,8 @@ type StoreBadgesRowProps = {
 };
 
 export function StoreBadgesRow({ iosAppUrl, androidAppUrl, className }: StoreBadgesRowProps) {
+  const showIos = Boolean(iosAppUrl?.trim());
+
   return (
     <div
       className={cn(
@@ -117,7 +119,7 @@ export function StoreBadgesRow({ iosAppUrl, androidAppUrl, className }: StoreBad
         className,
       )}
     >
-      <AppStoreBadge href={iosAppUrl} />
+      {showIos ? <AppStoreBadge href={iosAppUrl} /> : null}
       <GooglePlayStoreBadge href={androidAppUrl} />
     </div>
   );

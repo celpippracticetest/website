@@ -1,16 +1,30 @@
-import Link from "next/link";
-import { useAuthModalStore } from "@/store/useAuthModal.store";
-import Close from "../icons/Close";
-import { useRef, useEffect } from "react";
+"use client";
 
-const LoginModal = (params: any) => {
-  const { setShowLoginModal } = params;
-  const { loginMessage } = useAuthModalStore();
+import { SupabaseAuthForm } from "@/components/auth/SupabaseAuthForm";
+import {
+  useAuthModalStore,
+  type AuthModalMode,
+} from "@/store/useAuthModal.store";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
+
+interface LoginModalProps {
+  setShowLoginModal: (show: boolean) => void;
+  initialMode?: AuthModalMode;
+}
+
+const LoginModal = ({
+  setShowLoginModal,
+  initialMode: initialModeProp,
+}: LoginModalProps) => {
+  const { loginMessage, authMode } = useAuthModalStore();
   const loginRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  const initialMode = initialModeProp ?? authMode ?? "sign-up";
 
   useEffect(() => {
-    function handleClickOutside(event: any) {
-      if (loginRef.current && !loginRef.current.contains(event.target)) {
+    function handleClickOutside(event: MouseEvent) {
+      if (loginRef.current && !loginRef.current.contains(event.target as Node)) {
         setShowLoginModal(false);
       }
     }
@@ -18,42 +32,29 @@ const LoginModal = (params: any) => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
+  }, [setShowLoginModal]);
 
   return (
-    <div className="z-[9999] px-[16px] fixed top-0 left-0 right-0 mx-auto w-full h-full bg-[#17161680] flex justify-center items-center">
-      <div
-        ref={loginRef}
-        className="flex-col relative w-[440px] pt-[24px]  pb-[18px]  h-[270px] rounded-[24px] bg-white "
-      >
-        <div
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 px-4">
+      <div ref={loginRef} className="relative w-full max-w-md">
+        <button
+          type="button"
+          className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-600 shadow hover:bg-slate-100"
           onClick={() => setShowLoginModal(false)}
-          className="absolute right-[20px] cursor-pointer"
+          aria-label="Close sign in modal"
         >
-          <Close />
-        </div>
-        <div className="text-[#212E42] text-[20px] text-center font-semibold">
-          Sign up to continue
-        </div>
-        <div className="text-[#76808F] mt-[12px] text-[14px] text-center font-normal">
-          {loginMessage || "Please create an account to start the exam"}
-          <Link href="/sign-in?mode=sign-up">
-            <div className="text-[14px] mx-[16px] cursor-pointer flex items-center justify-center text-white bg-[#4A7DFF] rounded-[24px] h-[40px] mt-[12px]  text-center font-normal">
-              Create a free account
-            </div>
-          </Link>
-        </div>
-
-        <div className="flex justify-center items-center mt-[32px] gap-[20px]">
-          <div className="h-[1px] w-full bg-[#D5D6D8]"></div>
-          <span className="text-[#37465C] text-[14px]">Or</span>
-          <div className="h-[1px] w-full bg-[#D5D6D8]"></div>
-        </div>
-        <div className="text-[16px] mt-[32px] text-center font-medium">
-          <Link href="/sign-in?mode=sign-up">
-            <span className="text-[#316BFF] cursor-pointer">Sign up</span>
-          </Link>
-        </div>
+          ×
+        </button>
+        {loginMessage ? (
+          <p className="mb-3 rounded-xl border border-primary1/20 bg-white px-4 py-2.5 text-center text-sm text-text1 shadow-sm">
+            {loginMessage}
+          </p>
+        ) : null}
+        <SupabaseAuthForm
+          className="shadow-xl"
+          initialMode={initialMode}
+          redirectAfterAuth={pathname}
+        />
       </div>
     </div>
   );

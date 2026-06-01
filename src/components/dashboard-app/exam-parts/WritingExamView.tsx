@@ -2,7 +2,6 @@
 
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import ArrowBack from "@mui/icons-material/ArrowBack";
 import Autorenew from "@mui/icons-material/Autorenew";
 import { TPracticeDto } from "@/models/practice.model";
 import { useRouter } from "nextjs-toploader/app";
@@ -23,6 +22,7 @@ import TrophyModal from "@/components/modal/TrophyModal";
 import { PRACTICE_PARTS } from "@/constants";
 import ContinueExamModal from "@/components/modal/ContinueExamModal";
 import ExamHeader from "./components/ExamHeader";
+import PracticeExamCardHeader from "./components/PracticeExamCardHeader";
 import {
   hasMockExamAccess,
   hasPremiumPlusAccess,
@@ -426,49 +426,25 @@ const WritingExamView = ({
             statusSlot={officialStatusSlot}
           />
         ) : (
-        <div className="bg-white rounded-xl flex flex-col screen1280:!h-[920px] overflow-auto border border-[#D5D6D8] w-full">
-          <div className="flex justify-between pb-[21px]  lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
-            <div className="flex screen744:!items-center flex-col-reverse screen744:!flex-row gap-[16px]">
-              <div className="flex gap-2 flex-col screen744:!shrink-0">
-                <span>{PRACTICE_PARTS[partId - 1]}</span>
-                <span className="font-normal text-[14px] text-[#37465C]">
-                  Writing Task {partId - 10}
-                </span>
-              </div>
-            </div>
-            {
-              <div className="flex items-center gap-2 justify-end pb-[10px] ">
-                {shouldShowPractice && page === "question" && (
-                  <div className="flex justify-center items-center lg:flex-row flex-col">
-                    <div className="text-[14px] font-semibold gap-2 text-center text-[#EE4266] flex items-center">
-                      <p>
-                        {time > 0
-                          ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
-                          }`
-                          : "Time's Up!"}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <button
-                  onClick={handleBack}
-                  className="cursor-pointer inline-flex items-center justify-center border-[1px] border-[#37465C] rounded-[100%]  w-[40px] h-[40px]"
-                >
-                  <ArrowBack sx={{ fontSize: 18 }} />
-                </button>
-                <button
-                  onClick={handleHeaderNext}
-                  className={
-                    "cursor-pointer flex items-center gap-[8px] justify-center h-[40px] font-normal text-[#212E42] text-[14px] w-[96px] bg-white rounded-[24px]"
-                  }
-                >
-                  {section === "writing" && partId >= 12 ? "Finish Exam" : "Next"}
-                  <SvgArrowRight />
-                </button>
-              </div>
+        <div className="bg-white rounded-xl flex flex-col screen1280:!h-[920px] overflow-auto border border-outline w-full shadow-[0_18px_44px_rgba(55,70,92,0.08)]">
+          <PracticeExamCardHeader
+            partTitle={PRACTICE_PARTS[partId - 1]}
+            taskLabel={`Writing Task ${partId - 10}`}
+            onBack={handleBack}
+            onNext={handleHeaderNext}
+            nextLabel={
+              section === "writing" && partId >= 12 ? "Finish Exam" : "Next"
             }
-          </div>
+            trailingSlot={
+              shouldShowPractice && page === "question" ? (
+                <div className="min-w-[128px] rounded-full border border-error1/15 bg-error1/10 px-4 py-2 text-center font-body text-[15px] font-extrabold text-error1">
+                  {time > 0
+                    ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60}`
+                    : "Time's Up!"}
+                </div>
+              ) : undefined
+            }
+          />
           <div className="flex flex-col h-full overflow-hidden w-full">
             {page == "description" && (
               <div className="p-6">

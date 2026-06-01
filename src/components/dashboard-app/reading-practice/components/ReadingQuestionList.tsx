@@ -4,7 +4,7 @@ import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
 import SvgCircle from "@/components/icons/Circle";
-import { Box, Button, Menu, MenuItem, Stack, Typography } from "@mui/material";
+import { Box, Button, Menu, MenuItem, Typography } from "@mui/material";
 import { useState } from "react";
 
 interface ReadingQuestionListProps {
@@ -197,44 +197,15 @@ const ReadingQuestionList = ({
   }
 
   return (
-    <Stack
-      key={question.id}
-      spacing={2.25}
-      sx={{
-        "& > :nth-child(3)": {
-          mt: 0,
-        },
-      }}
-    >
-      <Typography
-        sx={{
-          fontSize: "14px",
-          lineHeight: 1.5,
-          fontWeight: 600,
-          color: "#526071",
-          px: "4px",
-        }}
-      >
+    <div key={question.id} className="flex flex-col gap-3">
+      <p className="font-body text-sm font-semibold text-text3">
         Question {questionIndex + 1} of {totalQuestions}
-      </Typography>
-      <Typography
-        sx={{
-          fontSize: { xs: "1.05rem", md: "1.15rem" },
-          fontWeight: 800,
-          color: "#212E42",
-        }}
-      >
+      </p>
+      <p className="font-body text-lg font-extrabold leading-snug text-text1 screen744:text-xl">
         {question.question}
-      </Typography>
-      <Stack
-        spacing={{ xs: 0, sm: 1.25 }}
-        sx={{
-          m: 0,
-          p: 0,
-          pt: "15px",
-        }}
-      >
-        {question.choices.map((option, index) => (
+      </p>
+      <div className="flex flex-col gap-2">
+        {question.choices.map((option) => (
           <QuestionOption
             key={option.id}
             option={option}
@@ -243,11 +214,10 @@ const ReadingQuestionList = ({
             showResults={false}
             isCorrect={false}
             onClick={() => onAnswerSelect(questionIndex, option.id)}
-            isLastItem={index === question.choices.length - 1}
           />
         ))}
-      </Stack>
-    </Stack>
+      </div>
+    </div>
   );
 };
 

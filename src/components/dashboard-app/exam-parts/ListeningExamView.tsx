@@ -6,13 +6,10 @@ import {
   Button,
   CircularProgress,
   Collapse,
-  IconButton,
   Paper,
   Stack,
   Typography,
 } from "@mui/material";
-import { alpha } from "@mui/material/styles";
-import ArrowBack from "@mui/icons-material/ArrowBack";
 import AudioPlayer from "../listening-practice/components/AudioPlayer";
 import ListeningQuestionList from "../listening-practice/components/ListeningQuestionList";
 import { TPracticeDto } from "@/models/practice.model";
@@ -20,7 +17,6 @@ import { useRouter } from "nextjs-toploader/app";
 import { useSearchParams } from "next/navigation";
 import ListeningDropDownQuestionList from "../listening-practice/components/ListeningDropDownQuestionList";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
-import SvgArrowRight from "@/components/icons/ArrowRight";
 import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
@@ -28,6 +24,7 @@ import TrophyModal from "@/components/modal/TrophyModal";
 import { PRACTICE_PARTS } from "@/constants";
 import ContinueExamModal from "@/components/modal/ContinueExamModal";
 import ExamHeader from "./components/ExamHeader";
+import PracticeExamCardHeader from "./components/PracticeExamCardHeader";
 import {
   hasMockExamAccess,
   hasPremiumPlusAccess,
@@ -542,111 +539,21 @@ const ListeningExamView = (props: ListeningExamViewProps) => {
             boxShadow: "0 18px 44px rgba(55, 70, 92, 0.08)",
           }}
         >
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: { xs: "column", lg: "row" },
-            justifyContent: "space-between",
-            gap: 2,
-            px: { xs: 2.5, md: 3.5 },
-            py: { xs: 2.5, md: 3 },
-            borderBottom: "1px solid #E2EAF6",
-            background:
-              "linear-gradient(135deg, rgba(255, 235, 214, 0.95), rgba(255, 255, 255, 0.98))",
-          }}
-        >
-          <Stack spacing={0.5}>
-            <Typography
-              component="p"
-              sx={{
-                fontSize: { xs: "1.15rem", md: "1.35rem" },
-                fontWeight: 800,
-                color: "#212E42",
-              }}
-            >
-              {PRACTICE_PARTS[partId - 1]}
-            </Typography>
-            <Typography sx={{ fontSize: "0.95rem", color: "#526071" }}>
-              Listening Task {partId}
-            </Typography>
-          </Stack>
-
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={1.25}
-            alignItems={{ sm: "center" }}
-            justifyContent="flex-end"
-          >
-            {page === "question" && (
-              <Box
-                sx={{
-                  minWidth: "128px",
-                  px: 2,
-                  py: 1.25,
-                  borderRadius: "999px",
-                  backgroundColor: alpha("#EE4266", 0.08),
-                  border: `1px solid ${alpha("#EE4266", 0.14)}`,
-                  textAlign: "center",
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontSize: "0.95rem",
-                    fontWeight: 800,
-                    color: "#EE4266",
-                  }}
-                >
-                  {formatTime(time)}
-                </Typography>
-              </Box>
-            )}
-
-            <Stack direction="row" spacing={1} justifyContent={{ xs: "flex-end", sm: "flex-start" }}>
-              <IconButton
-                aria-label="Go back"
-                disabled={page === "answer"}
-                onClick={handleBack}
-                sx={{
-                  width: 44,
-                  height: 44,
-                  border: "1px solid #C9D4E3",
-                  color: "#37465C",
-                  backgroundColor: "#FFFFFF",
-                  "&:hover": {
-                    backgroundColor: "#F7F9FC",
-                  },
-                  "&.Mui-disabled": {
-                    borderColor: "#E2E8F1",
-                  },
-                }}
-              >
-                <ArrowBack sx={{ fontSize: 18 }} />
-              </IconButton>
-              <Button
-                disabled={page === "answer"}
-                onClick={handleNext}
-                variant="contained"
-                endIcon={<SvgArrowRight />}
-                sx={{
-                  minWidth: "108px",
-                  minHeight: "44px",
-                  borderRadius: "999px",
-                  textTransform: "none",
-                  fontSize: "0.95rem",
-                  fontWeight: 700,
-                  backgroundColor: "#316BFF",
-                  boxShadow: "none",
-                  "&:hover": {
-                    backgroundColor: "#255CE0",
-                    boxShadow: "none",
-                  },
-                }}
-              >
-                Next
-              </Button>
-            </Stack>
-          </Stack>
-        </Box>
+        <PracticeExamCardHeader
+          partTitle={PRACTICE_PARTS[partId - 1]}
+          taskLabel={`Listening Task ${partId}`}
+          onBack={handleBack}
+          onNext={handleNext}
+          backDisabled={page === "answer" || page === "transition"}
+          nextDisabled={page === "answer" || page === "transition"}
+          trailingSlot={
+            page === "question" ? (
+              <div className="min-w-[128px] rounded-full border border-error1/15 bg-error1/10 px-4 py-2 text-center font-body text-[15px] font-extrabold text-error1">
+                {formatTime(time)}
+              </div>
+            ) : undefined
+          }
+        />
 
         <Box sx={{ minHeight: { xs: 480, xl: 620 } }}>
           {page === "answer" && (

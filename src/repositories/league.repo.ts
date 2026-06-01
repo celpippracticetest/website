@@ -247,18 +247,20 @@ export class LeagueRepository {
     const userInGroup = group.users.some((u: any) => u.userId === userId);
 
     if (userInGroup) {
-      // Update existing user's points
+      // Positional `$` is unsupported by mingo in-memory PG updates; use index paths.
+      const userIndex = group.users.findIndex((u: { userId: string }) => u.userId === userId);
+      if (userIndex < 0) {
+        return false;
+      }
+
       const result = await this.db
         .collection(this.leagueGroupsCollection)
         .updateOne(
-          {
-            _id: new ObjectId(groupId),
-            "users.userId": userId,
-          },
+          { _id: new ObjectId(groupId) },
           {
             $set: {
-              "users.$.points": points,
-              "users.$.lastActivityAt": new Date(),
+              [`users.${userIndex}.points`]: points,
+              [`users.${userIndex}.lastActivityAt`]: new Date(),
             },
           }
         );
@@ -592,27 +594,31 @@ export class LeagueRepository {
         groupIsValid = !!existingGroup;
       }
 
-      if ((userRecord as any).groupId && groupIsValid) {
-        await this.updateUserPointsInGroup(
-          userId,
-          (userRecord as any).groupId.toString(),
-          (userRecord as any).totalPoints
-        );
-      } else {
-        const assigned = await this.autoAssignUserToLeague(userId);
+      try {
+        if ((userRecord as any).groupId && groupIsValid) {
+          await this.updateUserPointsInGroup(
+            userId,
+            (userRecord as any).groupId.toString(),
+            (userRecord as any).totalPoints
+          );
+        } else {
+          const assigned = await this.autoAssignUserToLeague(userId);
 
-        if (assigned) {
-          const refreshed = await this.db
-            .collection(this.userLeaguePointsCollection)
-            .findOne({ userId, seasonId });
-          if (refreshed && (refreshed as any).groupId) {
-            await this.updateUserPointsInGroup(
-              userId,
-              (refreshed as any).groupId.toString(),
-              (refreshed as any).totalPoints || 0
-            );
+          if (assigned) {
+            const refreshed = await this.db
+              .collection(this.userLeaguePointsCollection)
+              .findOne({ userId, seasonId });
+            if (refreshed && (refreshed as any).groupId) {
+              await this.updateUserPointsInGroup(
+                userId,
+                (refreshed as any).groupId.toString(),
+                (refreshed as any).totalPoints || 0
+              );
+            }
           }
         }
+      } catch (groupSyncError) {
+        console.error("Error syncing league group points after add:", groupSyncError);
       }
 
       return true;
@@ -1835,13 +1841,18 @@ export class LeagueRepository {
             targetLeague = league.leagueType;
           }
 
-          // Update user status in current group
-          await this.db
-            .collection(this.leagueGroupsCollection)
-            .updateOne(
-              { _id: new ObjectId(groupId), "users.userId": user.userId },
-              { $set: { "users.$.status": newStatus } }
-            );
+          // Positional `$` is unsupported by mingo in-memory PG updates; use index paths.
+          const userIndex = group.users.findIndex(
+            (u: { userId: string }) => u.userId === user.userId
+          );
+          if (userIndex >= 0) {
+            await this.db
+              .collection(this.leagueGroupsCollection)
+              .updateOne(
+                { _id: new ObjectId(groupId) },
+                { $set: { [`users.${userIndex}.status`]: newStatus } }
+              );
+          }
 
           // Track users to move to next season
           usersToMove.push({

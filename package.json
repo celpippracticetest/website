@@ -22,6 +22,8 @@
     "postbuild": "node ./scripts/postbuild-cleanup.js",
     "svgr": "npx @svgr/cli --typescript --out-dir  src/components/icons/ -- icons/svg",
     "test:e2e": "npx playwright test",
+    "test:e2e:local": "npx playwright test --config=playwright.run.config.ts",
+    "test:e2e:reading": "npx playwright test reading-exam-dropdowns --config=playwright.run.config.ts",
     "test:e2e:headed": "npx playwright test --headed",
     "test:e2e:ui": "npx playwright test --ui",
     "pg:documents:summary": "node ./tooling/pg-app-documents-summary.mjs",

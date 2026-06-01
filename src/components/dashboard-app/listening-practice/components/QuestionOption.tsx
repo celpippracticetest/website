@@ -1,5 +1,6 @@
 import SvgCheckCircle from "@/components/icons/CheckCircle";
 import SvgCircle from "@/components/icons/Circle";
+import { cn } from "@/lib/utils";
 import { Box, Typography } from "@mui/material";
 
 interface QuestionOptionProps {
@@ -16,6 +17,9 @@ interface QuestionOptionProps {
   variant?: "default" | "official";
 }
 
+const officialFontFamily =
+  '"Fira Sans", "Trebuchet MS", "Helvetica Neue", Helvetica, Arial, sans-serif';
+
 const QuestionOption = ({
   option,
   isSelected,
@@ -26,26 +30,7 @@ const QuestionOption = ({
   variant = "default",
 }: QuestionOptionProps) => {
   const isOfficialMode = variant === "official";
-  const isUserSelection = isSelected;
-  const isWrongSelection = showResults && isUserSelection && !isCorrect;
-  const backgroundColor = showResults
-    ? isCorrect
-      ? "#F0FFFD"
-      : isWrongSelection
-        ? "#FFF4F5"
-        : "#FFFFFF"
-    : isSelected
-      ? "#F2F6FF"
-      : "#FFFFFF";
-  const borderColor = showResults
-    ? isCorrect
-      ? "#0DAA94"
-      : isWrongSelection
-        ? "#EE4266"
-        : "#E2EAF6"
-    : isSelected
-      ? "#AFC7FF"
-      : "#E2EAF6";
+  const isWrongSelection = showResults && isSelected && !isCorrect;
 
   if (isOfficialMode && !showResults) {
     return (
@@ -65,8 +50,7 @@ const QuestionOption = ({
           cursor: "pointer",
           color: "#000000",
           transition: "background-color 0.2s ease",
-          fontFamily:
-            '"Fira Sans", "Trebuchet MS", "Helvetica Neue", Helvetica, Arial, sans-serif',
+          fontFamily: officialFontFamily,
           fontSize: "12px",
           lineHeight: "18px",
           fontWeight: 400,
@@ -105,8 +89,7 @@ const QuestionOption = ({
         <Typography
           component="span"
           sx={{
-            fontFamily:
-              '"Fira Sans", "Trebuchet MS", "Helvetica Neue", Helvetica, Arial, sans-serif',
+            fontFamily: officialFontFamily,
             fontSize: "12px",
             lineHeight: "18px",
             fontWeight: 400,
@@ -120,81 +103,49 @@ const QuestionOption = ({
   }
 
   return (
-    <Box
+    <button
+      type="button"
       onClick={onClick}
-      sx={{
-        px: { xs: 1.5, sm: 1.75 },
-        py: { xs: 0.5, sm: 1.5 },
-        borderRadius: { xs: 0, sm: "18px" },
-        border: {
-          xs: "none",
-          sm: `1px solid ${borderColor}`,
-        },
-        borderBottom: {
-          xs: isLastItem ? "none" : "1px solid #E2EAF6",
-          sm: "none",
-        },
-        backgroundColor,
-        cursor: "pointer",
-        transition:
-          "border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease",
-        "&:hover": {
-          transform: { xs: "none", sm: "translateY(-1px)" },
-          ...(showResults
-            ? { backgroundColor }
-            : {
-                borderColor: isSelected ? "#8BAEFF" : "#C7D6F8",
-                backgroundColor: "#E7F8F3",
-              }),
-        },
-      }}
+      className={cn(
+        "flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left transition-colors",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary1/25 focus-visible:ring-offset-2",
+        showResults
+          ? isCorrect
+            ? "border-success/40 bg-success5"
+            : isWrongSelection
+              ? "border-error1/40 bg-error5/70"
+              : "border-outline bg-white"
+          : isSelected
+            ? "border-primary1/40 bg-primary6"
+            : "border-outline bg-white hover:border-primary1/25 hover:bg-primary6/60"
+      )}
     >
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "flex-start",
-          gap: 1.25,
-          ...(showResults ? { my: 0.5 } : {}),
-        }}
-      >
-        {!showResults && isSelected && <SvgCheckCircle className="shrink-0" />}
-        {!showResults && !isSelected && <SvgCircle className="shrink-0" />}
+      {!showResults && (
+        <span className="mt-0.5 shrink-0">
+          {isSelected ? (
+            <SvgCheckCircle className="shrink-0" />
+          ) : (
+            <SvgCircle className="shrink-0" />
+          )}
+        </span>
+      )}
+
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
         {showResults && isCorrect && (
-          <Typography
-            sx={{
-              fontSize: { xs: "0.82rem", sm: "0.95rem" },
-              fontWeight: 700,
-              color: "#0DAA94",
-              whiteSpace: "nowrap",
-            }}
-          >
+          <span className="font-body text-xs font-bold text-success">
             Correct answer:
-          </Typography>
+          </span>
         )}
-        {showResults && !isCorrect && (
-          <Typography
-            sx={{
-              fontSize: { xs: "0.82rem", sm: "0.95rem" },
-              fontWeight: 700,
-              color: "#EE4266",
-              whiteSpace: "nowrap",
-            }}
-          >
+        {showResults && isWrongSelection && (
+          <span className="font-body text-xs font-bold text-error1">
             Your answer:
-          </Typography>
+          </span>
         )}
-        <Typography
-          sx={{
-            flex: 1,
-            fontSize: "14px",
-            lineHeight: 1.65,
-            color: "#243244",
-          }}
-        >
+        <span className="font-body text-sm leading-relaxed text-text1">
           {option.text}
-        </Typography>
-      </Box>
-    </Box>
+        </span>
+      </span>
+    </button>
   );
 };
 

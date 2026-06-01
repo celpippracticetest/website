@@ -168,21 +168,21 @@ const ListeningQuestionList = ({
             <Paper
               elevation={0}
               sx={{
-                mt: { xs: 3, sm: 4 },
-                width: "100%",
-                maxWidth: "520px",
-                px: { xs: 1.25, sm: 2 },
-                py: { xs: 1, sm: 1.5 },
-                borderRadius: { xs: "12px", sm: "16px" },
+                mt: { xs: 2, sm: 2.5 },
+                width: "fit-content",
+                maxWidth: { xs: "100%", sm: "420px" },
+                px: { xs: 1, sm: 1.25 },
+                py: { xs: 0.625, sm: 0.75 },
+                borderRadius: "10px",
                 backgroundColor: "#FFF7EE",
                 border: "1px solid #FFE2C4",
               }}
             >
               <Typography
                 sx={{
-                  fontSize: { xs: "0.8125rem", sm: "0.95rem" },
-                  lineHeight: { xs: 1.5, sm: 1.7 },
-                  fontWeight: 600,
+                  fontSize: { xs: "0.6875rem", sm: "0.75rem" },
+                  lineHeight: 1.45,
+                  fontWeight: 500,
                   color: "#F4845F",
                 }}
               >
@@ -205,92 +205,111 @@ const ListeningQuestionList = ({
           backgroundColor: isOfficialMode ? "#EAF2FF" : undefined,
         }}
       >
-        <Stack
-          spacing={2.25}
-          key={question.id}
-          sx={{
-            "& > :nth-child(3)": {
-              mt: 0,
-            },
-          }}
-        >
-          <Typography
-            sx={{
-              fontFamily: isOfficialMode ? officialFontFamily : undefined,
-              fontSize: isOfficialMode ? "12px" : "14px",
-              lineHeight: isOfficialMode ? "19px" : 1.5,
-              fontWeight: isOfficialMode ? 400 : 600,
-              color: isOfficialMode ? "#5E7088" : "#526071",
-              px: isOfficialMode ? 0 : "4px",
-            }}
-          >
-            Question {questionIndex} of {totalQuestions}
-          </Typography>
-          <Typography
-            sx={{
-              fontFamily: isOfficialMode ? officialFontFamily : undefined,
-              fontSize:
-                isOfficialMode
-                  ? "16px"
-                  : { xs: "1.05rem", md: "1.15rem" },
-              lineHeight: isOfficialMode ? "20px" : undefined,
-              fontWeight: isOfficialMode ? 700 : 800,
-              color: isOfficialMode ? "#516D91" : "#212E42",
-            }}
-          >
-            {isOfficialMode
-              ? "Choose the best answer to each question."
-              : "Choose the best answer to the question."}
-          </Typography>
+        {isOfficialMode ? (
           <Stack
-            component={isOfficialMode ? "ol" : "div"}
-            spacing={isOfficialMode ? 0 : { xs: 0, sm: 1.25 }}
+            spacing={2.25}
+            key={question.id}
             sx={{
-              m: 0,
-              p: 0,
-              pt: "15px",
-              pl: isOfficialMode ? "18px" : 0,
+              "& > :nth-child(3)": {
+                mt: 0,
+              },
             }}
           >
-            {question.choices.map((option, index) => (
-              <QuestionOption
-                key={option.id}
-                option={option}
-                questionId={question.id}
-                isSelected={selectedAnswers[questionIndex - 1] === option.id}
-                showResults={false}
-                isCorrect={false}
-                onClick={() => onAnswerSelect(questionIndex, option.id)}
-                isLastItem={index === question.choices.length - 1}
-                variant={isOfficialMode ? "official" : "default"}
-              />
-            ))}
-          </Stack>
-          {!isOfficialMode && hasSelection && onNext && (
-            <Button
-              onClick={onNext}
-              endIcon={<ArrowForward sx={{ fontSize: 18 }} />}
-              variant="contained"
-              disableElevation
+            <Typography
               sx={{
-                mt: 0,
-                textTransform: "none",
-                fontWeight: 700,
-                minWidth: "150px",
-                minHeight: "40px",
-                px: 2,
-                  borderRadius: "0px",
-                backgroundColor: "#4A7DFF",
-                color: "#FFFFFF",
-                "&:hover": {
-                  backgroundColor: "#3F6FD8",
-                },
+                fontFamily: officialFontFamily,
+                fontSize: "12px",
+                lineHeight: "19px",
+                fontWeight: 400,
+                color: "#5E7088",
               }}
             >
-              Next
-            </Button>
-          )}
-        </Stack>
+              Question {questionIndex} of {totalQuestions}
+            </Typography>
+            <Typography
+              sx={{
+                fontFamily: officialFontFamily,
+                fontSize: "16px",
+                lineHeight: "20px",
+                fontWeight: 700,
+                color: "#516D91",
+              }}
+            >
+              Choose the best answer to each question.
+            </Typography>
+            <Stack
+              component="ol"
+              spacing={0}
+              sx={{
+                m: 0,
+                p: 0,
+                pt: "15px",
+                pl: "18px",
+              }}
+            >
+              {question.choices.map((option, index) => (
+                <QuestionOption
+                  key={option.id}
+                  option={option}
+                  questionId={question.id}
+                  isSelected={selectedAnswers[questionIndex - 1] === option.id}
+                  showResults={false}
+                  isCorrect={false}
+                  onClick={() => onAnswerSelect(questionIndex, option.id)}
+                  isLastItem={index === question.choices.length - 1}
+                  variant="official"
+                />
+              ))}
+            </Stack>
+          </Stack>
+        ) : (
+          <div key={question.id} className="flex flex-col gap-3">
+            <p className="px-1 font-body text-sm font-semibold text-text3">
+              Question {questionIndex} of {totalQuestions}
+            </p>
+            <p className="font-body text-lg font-extrabold leading-snug text-text1 screen744:text-xl">
+              Choose the best answer to the question.
+            </p>
+            <div className="flex flex-col gap-2">
+              {question.choices.map((option) => (
+                <QuestionOption
+                  key={option.id}
+                  option={option}
+                  questionId={question.id}
+                  isSelected={selectedAnswers[questionIndex - 1] === option.id}
+                  showResults={false}
+                  isCorrect={false}
+                  onClick={() => onAnswerSelect(questionIndex, option.id)}
+                />
+              ))}
+            </div>
+            {hasSelection && onNext && (
+              <Button
+                onClick={onNext}
+                endIcon={<ArrowForward sx={{ fontSize: 18 }} />}
+                variant="contained"
+                disableElevation
+                sx={{
+                  alignSelf: "flex-start",
+                  mt: 0.5,
+                  textTransform: "none",
+                  fontWeight: 700,
+                  minWidth: "108px",
+                  minHeight: "44px",
+                  px: 2.5,
+                  borderRadius: "999px",
+                  backgroundColor: "#316BFF",
+                  color: "#FFFFFF",
+                  "&:hover": {
+                    backgroundColor: "#255CE0",
+                  },
+                }}
+              >
+                Next
+              </Button>
+            )}
+          </div>
+        )}
       </Box>
     </Box>
   );

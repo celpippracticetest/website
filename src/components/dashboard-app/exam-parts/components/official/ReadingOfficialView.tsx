@@ -285,7 +285,7 @@ const ReadingOfficialView = ({
                       </Popover.Trigger>
                       <Popover.Portal>
                         <Popover.Content
-                          className="PopoverContent text-popover-foreground outline-none"
+                          className="PopoverContent z-50 text-popover-foreground outline-none"
                           sideOffset={5}
                           align="start"
                           style={{

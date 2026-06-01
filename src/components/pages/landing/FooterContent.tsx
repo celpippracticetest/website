@@ -4,7 +4,7 @@ import SvgLinkedIn from "@/components/icons/LinkedIn";
 import SvgYouTube from "@/components/icons/YouTube";
 import SvgInstagram from "@/components/icons/Instagram";
 import { StoreBadgesRow } from "@/components/pages/app/StoreBadges";
-import { ANDROID_APP_STORE_URL, getIosAppStoreUrl } from "@/lib/mobile/storeUrls";
+import { ANDROID_APP_STORE_URL } from "@/lib/mobile/storeUrls";
 import FooterVisibilityObserver from "./FooterVisibilityObserver";
 import { cn } from "@/lib/utils";
 
@@ -144,7 +144,6 @@ export const FooterBase = ({
           </div>
 
           <StoreBadgesRow
-            iosAppUrl={getIosAppStoreUrl()}
             androidAppUrl={ANDROID_APP_STORE_URL}
             className="screen1280:shrink-0"
           />
@@ -236,6 +235,21 @@ const userSections: FooterSection[] = [
       { href: "/learning", label: "AI Learning" },
     ],
   },
+  {
+    title: "Company",
+    links: [
+      { href: "/", label: "About" },
+      { href: "/contact-us", label: "Contact" },
+    ],
+  },
+  {
+    title: "Legal",
+    links: [
+      { href: "/privacy-policy", label: "Privacy" },
+      { href: "/terms-of-service", label: "Terms" },
+      { href: "/refund-policy", label: "Refund" },
+    ],
+  },
 ];
 
 export const GUEST_FOOTER_SECTIONS: FooterSection[] = [
@@ -277,6 +291,7 @@ export const GUEST_FOOTER_SECTIONS: FooterSection[] = [
   {
     title: "Resources",
     links: [
+      { href: "/", label: "About" },
       { href: "/pricing", label: "Pricing" },
       { href: "/blog", label: "Blog" },
       { href: "/contact-us", label: "Contact Us" },

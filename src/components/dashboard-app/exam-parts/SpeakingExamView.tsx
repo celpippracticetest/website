@@ -2,7 +2,6 @@
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
-import ArrowBack from "@mui/icons-material/ArrowBack";
 import ErrorOutline from "@mui/icons-material/ErrorOutline";
 import Autorenew from "@mui/icons-material/Autorenew";
 import { TPracticeDto } from "@/models/practice.model";
@@ -23,6 +22,7 @@ import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import { PRACTICE_PARTS } from "@/constants";
 import ExamHeader from "./components/ExamHeader";
+import PracticeExamCardHeader from "./components/PracticeExamCardHeader";
 import {
   hasMockExamAccess,
   hasPremiumPlusAccess,
@@ -534,36 +534,16 @@ const SpeakingExamView = ({
             statusSlot={officialStatusSlot}
           />
         ) : (
-        <div className="bg-white rounded-xl flex flex-col screen1280:!h-[920px] overflow-auto border border-[#D5D6D8] w-full">
-          <div className="flex justify-between pb-[21px]  lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
-            <div className="flex screen744:!items-center flex-col-reverse screen744:!flex-row gap-[16px]">
-              <div className="flex gap-2 flex-col screen744:!shrink-0">
-                <span>{PRACTICE_PARTS[partId - 1]}</span>
-                <span className="font-normal text-[14px] text-[#37465C]">
-                  Speaking Task {partId - 12}
-                </span>
-              </div>
-            </div>
-            {
-              <div className="flex items-center gap-2 justify-end pb-[10px] ">
-                <button
-                  onClick={handleBack}
-                  className="cursor-pointer inline-flex items-center justify-center border-[1px] border-[#37465C] rounded-[100%]  w-[40px] h-[40px]"
-                >
-                  <ArrowBack sx={{ fontSize: 18 }} />
-                </button>
-                <button
-                  onClick={handleHeaderNext}
-                  className={
-                    "cursor-pointer flex items-center gap-[8px] justify-center h-[40px] font-normal text-[#212E42] text-[14px] w-[96px] bg-white rounded-[24px]"
-                  }
-                >
-                  {section === "speaking" && partId >= 20 ? "Finish Exam" : "Next"}
-                  <SvgArrowRight />
-                </button>
-              </div>
+        <div className="bg-white rounded-xl flex flex-col screen1280:!h-[920px] overflow-auto border border-outline w-full shadow-[0_18px_44px_rgba(55,70,92,0.08)]">
+          <PracticeExamCardHeader
+            partTitle={PRACTICE_PARTS[partId - 1]}
+            taskLabel={`Speaking Task ${partId - 12}`}
+            onBack={handleBack}
+            onNext={handleHeaderNext}
+            nextLabel={
+              section === "speaking" && partId >= 20 ? "Finish Exam" : "Next"
             }
-          </div>
+          />
           <div className="flex flex-col h-full overflow-hidden w-full">
             {page == "evaluateResult" && !sendingResult && (
               <div className="flex flex-col items-center justify-center h-full p-6 text-center">

@@ -19,7 +19,6 @@ import { TWritingAnswerDto } from "@/models/answer";
 import LoginModal from "@/components/modal/LoginModal";
 import { PricingNavModal } from "@/components/pages/pricing/PricingNavModal";
 import { usePricingNavModal } from "@/hooks/usePricingNavModal";
-import { SupabaseAuthForm } from "@/components/auth/SupabaseAuthForm";
 import SvgRecording from "@/components/icons/Recording";
 import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
@@ -96,7 +95,6 @@ const SpeakingPracticeView = ({
   );
 
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showSignUpModal, setShowSignUpModal] = useState(false);
   const [pointsAwarded, setPointsAwarded] = useState(false);
   const [aiFeedbackPointsAwarded, setAiFeedbackPointsAwarded] = useState(false);
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
@@ -196,13 +194,13 @@ const SpeakingPracticeView = ({
           openPricingModal();
         }
         if (noUser) {
-          setShowSignUpModal(true);
+          setShowLoginModal(true);
         }
         return;
       }
 
       if (noUser) {
-        setShowSignUpModal(true);
+        setShowLoginModal(true);
         return;
       }
 
@@ -327,7 +325,7 @@ const SpeakingPracticeView = ({
   const startRecording = async () => {
     try {
       if (!user) {
-        setShowSignUpModal(true);
+        setShowLoginModal(true);
         return;
       }
       if (!shouldShowPractice) {
@@ -441,21 +439,6 @@ const SpeakingPracticeView = ({
         showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />
       ) : (
         <></>
-      )}
-      {showSignUpModal && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 px-4">
-          <div className="relative w-full max-w-md">
-            <button
-              type="button"
-              className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-600 shadow hover:bg-slate-100"
-              onClick={() => setShowSignUpModal(false)}
-              aria-label="Close sign up modal"
-            >
-              ×
-            </button>
-            <SupabaseAuthForm className="shadow-xl" initialMode="sign-up" />
-          </div>
-        </div>
       )}
 
       <ListeningSideMenu
@@ -601,7 +584,7 @@ const SpeakingPracticeView = ({
                           aria-label="Next testimonial"
                           onClick={() => {
                             if (noUser) {
-                              setShowSignUpModal(true);
+                              setShowLoginModal(true);
                             } else if (freeUser) {
                               openPricingModal();
                             } else {
@@ -870,7 +853,7 @@ const SpeakingPracticeView = ({
                           aria-label="Next testimonial"
                           onClick={() => {
                             if (noUser) {
-                              setShowSignUpModal(true);
+                              setShowLoginModal(true);
                             } else if (freeUser) {
                               openPricingModal();
                             } else {

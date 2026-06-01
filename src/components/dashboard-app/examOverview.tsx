@@ -246,6 +246,11 @@ const ExamOverview = ({
               exam.id,
               purchasedMockExamIds
             );
+            const isFreeMockExam =
+              firstReadyExamId != null &&
+              (normalizeMockExamIdForAccess(exam.id) ?? String(exam.id)) ===
+                (normalizeMockExamIdForAccess(firstReadyExamId) ??
+                  String(firstReadyExamId));
 
             return (
               <Paper
@@ -303,18 +308,70 @@ const ExamOverview = ({
                   }}
                 >
                   <Stack spacing={2}>
-                    <Typography
-                      component="h2"
+                    <Box
                       sx={{
-                        fontSize: { xs: "1.125rem", md: "1.25rem" },
-                        lineHeight: 1.3,
-                        fontWeight: 800,
-                        color: examCardNavy,
-                        letterSpacing: "-0.02em",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        flexWrap: "wrap",
                       }}
                     >
-                      {exam.name}
-                    </Typography>
+                      <Typography
+                        component="h2"
+                        sx={{
+                          fontSize: { xs: "1.125rem", md: "1.25rem" },
+                          lineHeight: 1.3,
+                          fontWeight: 800,
+                          color: examCardNavy,
+                          letterSpacing: "-0.02em",
+                        }}
+                      >
+                        {exam.name}
+                      </Typography>
+                      {isFreeMockExam ? (
+                        <Box
+                          component="span"
+                          sx={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            px: 0.75,
+                            py: 0.125,
+                            borderRadius: "999px",
+                            fontSize: "0.625rem",
+                            lineHeight: 1.2,
+                            fontWeight: 700,
+                            letterSpacing: "0.03em",
+                            textTransform: "uppercase",
+                            color: "#0D9488",
+                            backgroundColor: "#ECFDF5",
+                            border: "1px solid #99F6E4",
+                          }}
+                        >
+                          Free
+                        </Box>
+                      ) : (
+                        <Box
+                          component="span"
+                          sx={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            px: 0.75,
+                            py: 0.125,
+                            borderRadius: "999px",
+                            fontSize: "0.625rem",
+                            lineHeight: 1.2,
+                            fontWeight: 700,
+                            letterSpacing: "0.03em",
+                            textTransform: "uppercase",
+                            color: "#C05621",
+                            backgroundColor: "#FFF4ED",
+                            border: "1px solid #FDBA74",
+                          }}
+                        >
+                          Pro
+                        </Box>
+                      )}
+                    </Box>
 
                     <Box
                       sx={{
@@ -450,8 +507,8 @@ const ExamOverview = ({
                           ? "Start Practice"
                           : "View plans"
                         : noUser
-                          ? "Sign in"
-                          : "Start Full Test"}
+                          ? "Get started"
+                          : "Start Test"}
                     </Button>
                   </Box>
                 </Stack>

@@ -47,7 +47,7 @@ export function HomeHowItWorksSection() {
   return (
     <section
       aria-labelledby="how-redesign-heading"
-      className="border-t border-outline/60 py-14 screen744:py-20"
+      className="py-14 screen744:py-20"
     >
       <div className="mx-auto max-w-[1200px] px-4 screen744:px-8">
         <div className="mx-auto mb-10 max-w-2xl text-center screen744:mb-14">

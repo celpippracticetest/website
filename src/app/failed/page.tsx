@@ -5,6 +5,7 @@ import CheckRounded from "@mui/icons-material/CheckRounded";
 import ChevronRightRounded from "@mui/icons-material/ChevronRightRounded";
 import PauseCircleOutlineRounded from "@mui/icons-material/PauseCircleOutlineRounded";
 import SupportEmailLink from "@/components/contact/SupportEmailLink";
+import LoginModal from "@/components/modal/LoginModal";
 import SvgFailed from "@/components/icons/Failed";
 import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
 import {

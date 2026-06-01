@@ -85,7 +85,7 @@ export const WordMenu: React.FC<WordMenuProps> = ({
 
         if (!isSignedIn) {
             setIsOpen(false);
-            setShowLoginModal(true, "Please log in to add the word");
+            setShowLoginModal(true, "Please log in to add the word", "sign-in");
             return;
         }
 
@@ -114,7 +114,7 @@ export const WordMenu: React.FC<WordMenuProps> = ({
         setIsOpen(false);
 
         if (!isSignedIn) {
-            setShowLoginModal(true, "Please log in to add the word");
+            setShowLoginModal(true, "Please log in to add the word", "sign-in");
             return;
         }
 

@@ -19,7 +19,6 @@ import SvgArrowRight from "@/components/icons/ArrowRight";
 import LoginModal from "@/components/modal/LoginModal";
 import { PricingNavModal } from "@/components/pages/pricing/PricingNavModal";
 import { usePricingNavModal } from "@/hooks/usePricingNavModal";
-import { SupabaseAuthForm } from "@/components/auth/SupabaseAuthForm";
 import SvgChevronRight from "@/components/icons/ChevronRight";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
@@ -74,7 +73,6 @@ const ListeningPracticeView = ({
     : 30;
 
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showSignUpModal, setShowSignUpModal] = useState(false);
   const [pointsAwarded, setPointsAwarded] = useState(false);
   const { user, isSignedIn, isLoaded } = useHybridWebUser();
   const { addPoints } = useLeaguePoints();
@@ -284,21 +282,6 @@ const ListeningPracticeView = ({
         showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />
       ) : (
         <></>
-      )}
-      {showSignUpModal && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 px-4">
-          <div className="relative w-full max-w-md">
-            <button
-              type="button"
-              className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-600 shadow hover:bg-slate-100"
-              onClick={() => setShowSignUpModal(false)}
-              aria-label="Close sign up modal"
-            >
-              ×
-            </button>
-            <SupabaseAuthForm className="shadow-xl" initialMode="sign-up" />
-          </div>
-        </div>
       )}
       {!hideLegacyBreadcrumb && (
         <div className="w-full min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1 pl-0 screen744:pl-[40px] text-[#76808F] text-[14px] mt-[-35px] mb-[28px]">
@@ -550,7 +533,7 @@ const ListeningPracticeView = ({
                     aria-label="Next testimonial"
                     onClick={() => {
                       if (noUser) {
-                        setShowSignUpModal(true);
+                        setShowLoginModal(true);
                       } else if (freeUser) {
                         openPricingModal();
                       } else {
