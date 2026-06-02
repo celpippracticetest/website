@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { appUserAdmin } from "@/lib/auth/server-auth";
 import { getDb } from "@/lib/appDocumentsClient";
-import { applyMergeTags, getResendClient, sendResendHtmlEmail } from "@/lib/email/resend-client";
+import { getResendClient, sendResendHtmlEmail } from "@/lib/email/resend-client";
+import {
+  buildReminderMergeFields,
+  renderReminderEmail,
+} from "@/lib/reminder-email/merge-fields";
 import {
   buildReminderEmailConfigWithDefaults,
   REMINDER_EMAIL_CONFIG_COLLECTION,
@@ -269,14 +273,16 @@ export async function GET(request: NextRequest) {
           (typeof u.username === "string" ? u.username.trim() : "") ||
           primaryEmail.split("@")[0] ||
           "there";
-        const mergeFields = { first_name: firstName };
-        const subject = applyMergeTags(reminder.subject, mergeFields);
-        const html = applyMergeTags(reminder.htmlBody, mergeFields);
+        const mergeFields = buildReminderMergeFields({
+          firstName,
+          email: primaryEmail,
+        });
+        const rendered = renderReminderEmail(reminder.subject, reminder.htmlBody, mergeFields);
 
         await sendResendHtmlEmail({
           to: primaryEmail,
-          subject,
-          html,
+          subject: rendered.subject,
+          html: rendered.html,
         });
 
         const reminderWindowStartedAt = toDate(reminder.reminderWindowStartedAt);

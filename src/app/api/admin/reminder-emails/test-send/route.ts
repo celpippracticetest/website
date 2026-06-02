@@ -6,10 +6,7 @@ import {
   resolveResendFromAddress,
   sendResendHtmlEmail,
 } from "@/lib/email/resend-client";
-import {
-  renderAbandonedCartEmail,
-  sampleAbandonedCartMergeFields,
-} from "@/lib/abandoned-cart-email/merge-fields";
+import { renderReminderEmail, sampleReminderMergeFields } from "@/lib/reminder-email/merge-fields";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -21,11 +18,9 @@ const BodySchema = z
     subject: z.string().trim().min(1).max(200),
     htmlBody: z.string().trim().min(1).max(500_000).optional(),
     bodyHtml: z.string().trim().min(1).max(500_000).optional(),
-    /** @deprecated load stage from DB by id */
-    stageId: z.string().trim().min(1).max(100).optional(),
   })
-  .refine((data) => Boolean(data.htmlBody?.trim() || data.bodyHtml?.trim() || data.stageId), {
-    message: "Email body (htmlBody) or stageId is required.",
+  .refine((data) => Boolean(data.htmlBody?.trim() || data.bodyHtml?.trim()), {
+    message: "Email body (htmlBody) is required.",
     path: ["htmlBody"],
   });
 
@@ -61,39 +56,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { to } = parsed.data;
-    let subject = parsed.data.subject;
-    let htmlBody = (parsed.data.htmlBody ?? parsed.data.bodyHtml)?.trim();
-
-    if (parsed.data.stageId && !htmlBody) {
-      const { getDb } = await import("@/lib/appDocumentsClient");
-      const {
-        ABANDONED_CART_EMAIL_CONFIG_COLLECTION,
-        ABANDONED_CART_EMAIL_CONFIG_KEY,
-        buildAbandonedCartEmailConfigWithDefaults,
-      } = await import("@/lib/abandoned-cart-email/config");
-      const db = await getDb();
-      const doc = await db
-        .collection(ABANDONED_CART_EMAIL_CONFIG_COLLECTION)
-        .findOne({ configKey: ABANDONED_CART_EMAIL_CONFIG_KEY });
-      const config = buildAbandonedCartEmailConfigWithDefaults(doc?.config || null);
-      const stage = config.stages.find((s) => s.id === parsed.data.stageId);
-      if (!stage) {
-        return NextResponse.json({ ok: false, error: "Stage not found." }, { status: 404 });
-      }
-      subject = stage.subject;
-      htmlBody = stage.htmlBody;
-    }
-
-    if (!htmlBody?.trim()) {
+    const { to, subject } = parsed.data;
+    const htmlBody = (parsed.data.htmlBody ?? parsed.data.bodyHtml)?.trim();
+    if (!htmlBody) {
       return NextResponse.json(
         { ok: false, error: "Email body (htmlBody) is required." },
         { status: 400 }
       );
     }
 
-    const mergeFields = sampleAbandonedCartMergeFields(to);
-    const rendered = renderAbandonedCartEmail(subject, htmlBody, mergeFields);
+    const mergeFields = sampleReminderMergeFields();
+    const rendered = renderReminderEmail(subject, htmlBody, mergeFields);
 
     const result = await sendResendHtmlEmail({
       to,
@@ -103,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, resendId: result.id ?? null }, { status: 200 });
   } catch (error) {
-    console.error("[admin abandoned-cart-emails test-send] failed:", error);
+    console.error("[admin reminder-emails test-send] failed:", error);
 
     if (error instanceof ResendSendError) {
       return NextResponse.json(

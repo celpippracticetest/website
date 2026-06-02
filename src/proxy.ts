@@ -513,8 +513,12 @@ export default async function proxy(req: NextRequest) {
                 body: JSON.stringify({
                   referralCode,
                   userId: webStableId,
-                  userEmail: (sessionClaims as any)
-                    ?.email_addresses?.[0]?.email_address,
+                  userEmail:
+                    supabaseWebUser?.email?.trim() ||
+                    mobileUserBridgeFromSupabaseUser(supabaseWebUser!)
+                      .primaryEmailAddress?.emailAddress ||
+                    (sessionClaims as any)?.email_addresses?.[0]
+                      ?.email_address,
                 }),
               },
             );

@@ -1,21 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Box } from "@/components/ui/Box";
 import {
   buildReminderEmailConfigWithDefaults,
   REMINDER_EMAIL_DEFAULT_CONFIG,
+  TRIGGER_TYPES,
   type ReminderEmailConfigInput,
   type ReminderEmailStage,
   type TriggerType,
-  type TimeUnit,
-  TRIGGER_TYPES,
-  TIME_UNITS,
 } from "@/lib/reminder-email/config";
+import { ReminderStageCard } from "./ReminderStageCard";
+import { MERGE_TAG_ROWS, TRIGGER_LABELS } from "./constants";
 
-const TRIGGER_LABELS: Record<TriggerType, string> = {
-  signup_no_activity: "After Signup (No Activity)",
-  inactive: "After User Becomes Inactive",
+const DEFAULT_STAGE_TEMPLATE: Omit<ReminderEmailStage, "id" | "sortOrder"> = {
+  label: "New reminder email",
+  triggerType: "signup_no_activity",
+  delayAmount: 1,
+  delayUnit: "days",
+  subject: "{{first_name}}, ready for a quick CELPIP practice?",
+  htmlBody:
+    '<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif"><p>Hi {{first_name}},</p><p></p><p><a href="{{practice_url}}">Start practicing</a></p></body></html>',
+  enabled: true,
 };
 
 export default function ReminderEmailConfigPage() {
@@ -24,6 +30,9 @@ export default function ReminderEmailConfigPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [editingStageId, setEditingStageId] = useState<string | null>(null);
+  const [testEmail, setTestEmail] = useState("");
+  const [sendingTestStageId, setSendingTestStageId] = useState<string | null>(null);
+  const [filterFlow, setFilterFlow] = useState<TriggerType | "all">("all");
 
   const loadConfig = async () => {
     setIsLoading(true);
@@ -38,9 +47,7 @@ export default function ReminderEmailConfigPage() {
         setMessage(payload?.error || "Could not load reminder email config.");
         return;
       }
-
-      const resolved = buildReminderEmailConfigWithDefaults(payload?.data || null);
-      setConfig(resolved);
+      setConfig(buildReminderEmailConfigWithDefaults(payload?.data || null));
     } catch (error) {
       console.error("[reminder-email-cms] loadConfig failed:", error);
       setMessage("Could not load reminder email config.");
@@ -67,7 +74,7 @@ export default function ReminderEmailConfigPage() {
         setMessage(payload?.error || "Could not save config.");
         return;
       }
-      setMessage("Reminder email config saved successfully.");
+      setMessage("Reminder sequence saved. Cron sends activity nudges to all users.");
       setConfig(buildReminderEmailConfigWithDefaults(payload?.data || config));
       setEditingStageId(null);
     } catch (error) {
@@ -78,44 +85,33 @@ export default function ReminderEmailConfigPage() {
     }
   };
 
-  const addNewStage = () => {
+  const addNewStage = (triggerType: TriggerType = "signup_no_activity") => {
     const newStage: ReminderEmailStage = {
-      id: `stage_${Date.now()}`,
-      label: "New Reminder Stage",
-      triggerType: "signup_no_activity",
-      delayAmount: 1,
-      delayUnit: "days",
-      subject: "Reminder from CELPIP Practice Test",
-      htmlBody:
-        '<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif"><p>Hi {{first_name}},</p><p></p></body></html>',
-      enabled: true,
+      id: `reminder_${Date.now()}`,
+      ...DEFAULT_STAGE_TEMPLATE,
+      triggerType,
       sortOrder: config.stages.length,
     };
-    setConfig((prev) => ({
-      ...prev,
-      stages: [...prev.stages, newStage],
-    }));
+    setConfig((prev) => ({ ...prev, stages: [...prev.stages, newStage] }));
     setEditingStageId(newStage.id);
-    setMessage("New stage added. Remember to click 'Save Configuration' to persist changes.");
+    setMessage("New stage added — save to persist.");
   };
 
   const updateStage = (stageId: string, updates: Partial<ReminderEmailStage>) => {
     setConfig((prev) => ({
       ...prev,
-      stages: prev.stages.map((stage) =>
-        stage.id === stageId ? { ...stage, ...updates } : stage
-      ),
+      stages: prev.stages.map((s) => (s.id === stageId ? { ...s, ...updates } : s)),
     }));
   };
 
   const deleteStage = (stageId: string) => {
-    if (!confirm("Are you sure you want to delete this reminder stage?")) return;
+    if (!confirm("Delete this reminder email stage?")) return;
     setConfig((prev) => ({
       ...prev,
-      stages: prev.stages.filter((stage) => stage.id !== stageId),
+      stages: prev.stages.filter((s) => s.id !== stageId),
     }));
     setEditingStageId(null);
-    setMessage("Stage deleted. Click 'Save Configuration' to persist changes.");
+    setMessage("Stage removed — save to persist.");
   };
 
   const moveStage = (stageId: string, direction: "up" | "down") => {
@@ -123,278 +119,238 @@ export default function ReminderEmailConfigPage() {
       const stages = [...prev.stages];
       const index = stages.findIndex((s) => s.id === stageId);
       if (index === -1) return prev;
-
       const newIndex = direction === "up" ? index - 1 : index + 1;
       if (newIndex < 0 || newIndex >= stages.length) return prev;
-
       [stages[index], stages[newIndex]] = [stages[newIndex], stages[index]];
-
-      // Update sortOrder
-      stages.forEach((stage, idx) => {
-        stage.sortOrder = idx;
+      stages.forEach((s, idx) => {
+        s.sortOrder = idx;
       });
-
       return { ...prev, stages };
     });
-    setMessage("Stage reordered. Click 'Save Configuration' to persist changes.");
   };
+
+  const sendTestForStage = async (stage: ReminderEmailStage) => {
+    const to = testEmail.trim();
+    if (!to) {
+      setMessage("Enter a test recipient email above.");
+      return;
+    }
+    if (!stage.subject?.trim() || !stage.htmlBody?.trim()) {
+      setMessage("Subject and body are required.");
+      return;
+    }
+    setSendingTestStageId(stage.id);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/admin/reminder-emails/test-send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to,
+          subject: stage.subject,
+          htmlBody: stage.htmlBody,
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const issueHint = Array.isArray(payload?.issues)
+          ? payload.issues
+              .map((i: { path?: string[]; message?: string }) =>
+                [i.path?.join("."), i.message].filter(Boolean).join(": ")
+              )
+              .join(" · ")
+          : "";
+        const hint = payload?.hint ? ` ${payload.hint}` : "";
+        setMessage(
+          [payload?.error || "Test send failed.", payload?.code, issueHint, hint]
+            .filter(Boolean)
+            .join(" — ")
+        );
+        return;
+      }
+      setMessage(
+        `Test sent for "${stage.label}" with sample merge tags (Resend: ${payload.resendId ?? "n/a"}).`
+      );
+    } catch (error) {
+      console.error("[reminder-email-cms] sendTest failed:", error);
+      setMessage("Test send failed.");
+    } finally {
+      setSendingTestStageId(null);
+    }
+  };
+
+  const filteredStages = useMemo(() => {
+    if (filterFlow === "all") return config.stages;
+    return config.stages.filter((s) => s.triggerType === filterFlow);
+  }, [config.stages, filterFlow]);
+
+  const flowCounts = useMemo(() => {
+    const counts: Record<TriggerType, number> = {
+      signup_no_activity: 0,
+      inactive: 0,
+    };
+    for (const s of config.stages) {
+      if (s.enabled) counts[s.triggerType] += 1;
+    }
+    return counts;
+  }, [config.stages]);
 
   return (
     <Box className="flex w-full flex-col gap-6 p-6">
       <Box className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold text-gray-900">Reminder Email Config</h1>
-        <p className="text-sm text-gray-600">
-          Create and manage reminder email stages. Messages are sent with{" "}
-          <a className="text-primary underline" href="https://resend.com" target="_blank" rel="noreferrer">
-            Resend
-          </a>{" "}
-          (configure <code className="text-xs">RESEND_API_KEY</code> and a verified sender).
+        <h1 className="text-2xl font-bold text-gray-900">Reminder sequence (activity nudges)</h1>
+        <p className="max-w-3xl text-sm text-gray-600">
+          Activity-based emails to bring users back to practice. Runs via{" "}
+          <code className="rounded bg-gray-100 px-1 text-xs">/api/cron/word-study-reminder</code>.
+          Use <strong>Nurture Sequence</strong> for non-subscriber conversion; use this page for
+          engagement.
+        </p>
+        <p className="text-xs font-medium text-emerald-800">
+          Audience: all users (free and Plus) — stops when the user engages after a reminder.
         </p>
       </Box>
 
-      <Box className="flex flex-col gap-4">
-        {config.stages.map((stage, index) => (
-          <Box
-            key={stage.id}
-            className={`rounded-xl border bg-white p-5 shadow-sm ${
-              !stage.enabled ? "opacity-60" : ""
-            }`}
-          >
-            <Box className="flex items-start justify-between gap-4">
-              <Box className="flex-1">
-                {editingStageId === stage.id ? (
-                  // Edit Mode
-                  <Box className="flex flex-col gap-4">
-                    <Box className="flex flex-wrap gap-3">
-                      <label className="flex w-full flex-col gap-1">
-                        <span className="text-sm font-medium text-gray-700">
-                          Label <span className="text-red-500">*</span>
-                        </span>
-                        <input
-                          type="text"
-                          value={stage.label}
-                          onChange={(e) => updateStage(stage.id, { label: e.target.value })}
-                          className="h-10 rounded-lg border border-gray-300 px-3 text-sm"
-                          placeholder="e.g., Welcome Email - 20min"
-                        />
-                      </label>
+      <Box className="grid gap-4 lg:grid-cols-3">
+        <Box className="rounded-xl border border-gray-200 bg-white p-4 lg:col-span-2">
+          <h2 className="mb-3 text-sm font-semibold text-gray-900">Sequence overview</h2>
+          <div className="flex flex-wrap gap-2">
+            {TRIGGER_TYPES.map((flow) => (
+              <button
+                key={flow}
+                type="button"
+                onClick={() => setFilterFlow(flow)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+                  filterFlow === flow
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                {TRIGGER_LABELS[flow]} ({flowCounts[flow]} active)
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setFilterFlow("all")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+                filterFlow === "all"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              All stages
+            </button>
+          </div>
+        </Box>
 
-                      <label className="flex w-full flex-col gap-1">
-                        <span className="text-sm font-medium text-gray-700">
-                          Trigger Type <span className="text-red-500">*</span>
-                        </span>
-                        <select
-                          value={stage.triggerType}
-                          onChange={(e) =>
-                            updateStage(stage.id, { triggerType: e.target.value as TriggerType })
-                          }
-                          className="h-10 rounded-lg border border-gray-300 px-3 text-sm"
-                        >
-                          {TRIGGER_TYPES.map((type) => (
-                            <option key={type} value={type}>
-                              {TRIGGER_LABELS[type]}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <Box className="flex w-full gap-3">
-                        <label className="flex flex-1 flex-col gap-1">
-                          <span className="text-sm font-medium text-gray-700">
-                            Delay Amount <span className="text-red-500">*</span>
-                          </span>
-                          <input
-                            type="number"
-                            min="1"
-                            value={stage.delayAmount}
-                            onChange={(e) =>
-                              updateStage(stage.id, {
-                                delayAmount: parseInt(e.target.value) || 1,
-                              })
-                            }
-                            className="h-10 rounded-lg border border-gray-300 px-3 text-sm"
-                          />
-                        </label>
-
-                        <label className="flex flex-1 flex-col gap-1">
-                          <span className="text-sm font-medium text-gray-700">
-                            Unit <span className="text-red-500">*</span>
-                          </span>
-                          <select
-                            value={stage.delayUnit}
-                            onChange={(e) =>
-                              updateStage(stage.id, { delayUnit: e.target.value as TimeUnit })
-                            }
-                            className="h-10 rounded-lg border border-gray-300 px-3 text-sm"
-                          >
-                            {TIME_UNITS.map((unit) => (
-                              <option key={unit} value={unit}>
-                                {unit}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      </Box>
-
-                      <label className="flex w-full flex-col gap-1">
-                        <span className="text-sm font-medium text-gray-700">
-                          Email subject <span className="text-red-500">*</span>
-                        </span>
-                        <input
-                          type="text"
-                          value={stage.subject}
-                          onChange={(e) => updateStage(stage.id, { subject: e.target.value })}
-                          className="h-10 rounded-lg border border-gray-300 px-3 text-sm"
-                          placeholder="e.g., Welcome back to CELPIP prep"
-                        />
-                      </label>
-
-                      <label className="flex w-full flex-col gap-1">
-                        <span className="text-sm font-medium text-gray-700">
-                          HTML body <span className="text-red-500">*</span>
-                        </span>
-                        <textarea
-                          value={stage.htmlBody}
-                          onChange={(e) => updateStage(stage.id, { htmlBody: e.target.value })}
-                          rows={12}
-                          className="w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-xs"
-                          spellCheck={false}
-                        />
-                      </label>
-
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={stage.enabled}
-                          onChange={(e) => updateStage(stage.id, { enabled: e.target.checked })}
-                          className="h-4 w-4"
-                        />
-                        <span className="text-sm font-medium text-gray-700">Enabled</span>
-                      </label>
-                    </Box>
-
-                    <Box className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingStageId(null);
-                          setMessage("Changes made. Click 'Save Configuration' below to persist to database.");
-                        }}
-                        className="h-9 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white"
-                      >
-                        Done Editing
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => deleteStage(stage.id)}
-                        className="h-9 rounded-lg border border-red-300 bg-white px-4 text-sm font-semibold text-red-600"
-                      >
-                        Delete Stage
-                      </button>
-                    </Box>
-                  </Box>
-                ) : (
-                  // View Mode
-                  <Box className="flex flex-col gap-2">
-                    <Box className="flex items-center gap-3">
-                      <h3 className="text-lg font-semibold text-gray-900">{stage.label}</h3>
-                      {!stage.enabled && (
-                        <span className="rounded-full bg-gray-200 px-2 py-1 text-xs font-medium text-gray-600">
-                          Disabled
-                        </span>
-                      )}
-                    </Box>
-                    <p className="text-sm text-gray-600">
-                      <span className="font-medium">Trigger:</span> {TRIGGER_LABELS[stage.triggerType]}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      <span className="font-medium">Delay:</span> {stage.delayAmount} {stage.delayUnit}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      <span className="font-medium">Subject:</span> {stage.subject || "(not set)"}
-                    </p>
-                  </Box>
-                )}
-              </Box>
-
-              {editingStageId !== stage.id && (
-                <Box className="flex flex-col gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditingStageId(stage.id)}
-                    className="h-9 rounded-lg border border-gray-300 bg-white px-3 text-sm font-semibold text-gray-800"
-                  >
-                    Edit
-                  </button>
-                  <Box className="flex gap-1">
-                    <button
-                      type="button"
-                      onClick={() => moveStage(stage.id, "up")}
-                      disabled={index === 0}
-                      className="h-8 w-8 rounded border border-gray-300 bg-white text-sm disabled:opacity-30"
-                      title="Move up"
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => moveStage(stage.id, "down")}
-                      disabled={index === config.stages.length - 1}
-                      className="h-8 w-8 rounded border border-gray-300 bg-white text-sm disabled:opacity-30"
-                      title="Move down"
-                    >
-                      ↓
-                    </button>
-                  </Box>
-                </Box>
-              )}
-            </Box>
-          </Box>
-        ))}
-
-        {config.stages.length === 0 && (
-          <Box className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
-            <p className="text-sm text-gray-600">No reminder stages configured yet.</p>
-          </Box>
-        )}
-
-        <button
-          type="button"
-          onClick={addNewStage}
-          className="h-10 rounded-lg border-2 border-dashed border-gray-300 bg-white px-4 text-sm font-semibold text-gray-700 hover:border-gray-400"
-        >
-          + Add New Reminder Stage
-        </button>
+        <Box className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-4">
+          <h2 className="mb-2 text-sm font-semibold text-gray-900">Merge tags</h2>
+          <ul className="space-y-1 text-xs text-gray-700">
+            {MERGE_TAG_ROWS.map((row) => (
+              <li key={row.key}>
+                <code className="rounded bg-white px-1">{row.token}</code> — {row.label}
+              </li>
+            ))}
+          </ul>
+        </Box>
       </Box>
+
+      <Box className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-4">
+        <h2 className="mb-2 text-sm font-semibold text-gray-900">Test sends (Resend)</h2>
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-gray-600">Test recipient</span>
+          <input
+            type="email"
+            placeholder="you@example.com"
+            value={testEmail}
+            onChange={(e) => setTestEmail(e.target.value)}
+            className="h-10 max-w-md rounded-lg border border-gray-300 px-3 text-sm"
+            autoComplete="email"
+          />
+        </label>
+        <p className="mt-2 text-xs text-gray-600">
+          Subject is prefixed with [TEST]. Merge tags are filled with sample values (e.g. Alex,
+          practice URL).
+        </p>
+      </Box>
+
+      {isLoading ? (
+        <p className="text-sm text-gray-600">Loading…</p>
+      ) : (
+        <Box className="flex flex-col gap-4">
+          {filteredStages.map((stage) => {
+            const index = config.stages.findIndex((s) => s.id === stage.id);
+            return (
+              <ReminderStageCard
+                key={stage.id}
+                stage={stage}
+                index={index}
+                total={config.stages.length}
+                isEditing={editingStageId === stage.id}
+                isSendingTest={sendingTestStageId === stage.id}
+                onEdit={() => setEditingStageId(stage.id)}
+                onDoneEditing={() => {
+                  setEditingStageId(null);
+                  setMessage("Click Save below to persist changes.");
+                }}
+                onUpdate={(updates) => updateStage(stage.id, updates)}
+                onDelete={() => deleteStage(stage.id)}
+                onMove={(dir) => moveStage(stage.id, dir)}
+                onTestSend={() => sendTestForStage(stage)}
+              />
+            );
+          })}
+
+          {filteredStages.length === 0 && (
+            <Box className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
+              <p className="text-sm text-gray-600">No stages for this filter.</p>
+            </Box>
+          )}
+
+          <Box className="flex flex-wrap gap-2">
+            {TRIGGER_TYPES.map((flow) => (
+              <button
+                key={flow}
+                type="button"
+                onClick={() => addNewStage(flow)}
+                className="h-10 rounded-lg border-2 border-dashed border-gray-300 bg-white px-4 text-sm font-semibold text-gray-700 hover:border-gray-400"
+              >
+                + Add {TRIGGER_LABELS[flow]} stage
+              </button>
+            ))}
+          </Box>
+        </Box>
+      )}
 
       <Box className="sticky bottom-0 flex items-center gap-3 rounded-lg border border-yellow-300 bg-yellow-50 p-4 shadow-lg">
         <button
           type="button"
           onClick={saveConfig}
           disabled={isSaving || isLoading}
-          className="h-10 rounded-lg bg-blue-600 px-6 text-sm font-semibold text-white disabled:opacity-70 hover:bg-blue-700"
+          className="h-10 rounded-lg bg-blue-600 px-6 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-70"
         >
-          {isSaving ? "Saving..." : "💾 Save Configuration to Database"}
+          {isSaving ? "Saving…" : "Save sequence"}
         </button>
         {message ? (
           <p className="text-sm font-medium text-gray-700">{message}</p>
         ) : (
-          <p className="text-xs text-gray-600">
-            Changes are not saved until you click this button
-          </p>
+          <p className="text-xs text-gray-600">Changes are not live until you save.</p>
         )}
       </Box>
 
       <Box className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-        <h3 className="mb-2 text-sm font-semibold text-blue-900">💡 How it works</h3>
-        <ul className="space-y-2 text-xs text-blue-800">
-          <li>• Create custom reminder stages with your own timing</li>
-          <li>• Set trigger type: after signup (no activity) or after user becomes inactive</li>
-          <li>• Configure delay: X minutes, hours, or days</li>
-          <li>• Use <code className="rounded bg-white px-1">{"{{first_name}}"}</code> in subject and HTML</li>
-          <li>• Each stage sends as its own HTML email via Resend</li>
-          <li>• Enable/disable stages without deleting them</li>
-          <li>• Reorder stages to control the sequence</li>
+        <h3 className="mb-2 text-sm font-semibold text-blue-900">Activity playbook</h3>
+        <ul className="space-y-2 text-xs text-blue-900">
+          <li>
+            <strong>Signup track:</strong> welcome at 20 min → day 1 checklist → day 3 mock-exam
+            nudge → day 7 final touch (before they go quiet).
+          </li>
+          <li>
+            <strong>Inactive track:</strong> day 1 &quot;we miss you&quot; → day 7 gentle come-back
+            (after last activity).
+          </li>
+          <li>Cap: max 4 reminders per 7-day window; 24h cooldown for free users, 7 days for Plus.</li>
+          <li>Stops entirely when the user engages after receiving a reminder.</li>
+          <li>Do not duplicate Nurture Sequence — those focus on subscription, not activity.</li>
         </ul>
       </Box>
     </Box>
