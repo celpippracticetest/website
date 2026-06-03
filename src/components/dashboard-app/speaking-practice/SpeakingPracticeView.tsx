@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import PracticeExamCardHeader from "../exam-parts/components/PracticeExamCardHeader";
 import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
@@ -144,8 +144,44 @@ const SpeakingPracticeView = ({
     practice.isFree ||
     (!practice.isFree &&
       hasPaidPracticeAccess(effectivePlan, effectivePurchaseDate));
-  const [answers, setAnswers] = useState<any[]>(initialSpeakingAnswers ?? []);
+  const [answers, setAnswers] = useState<TWritingAnswerDto[]>(
+    initialSpeakingAnswers ?? []
+  );
   const [freeAttempts, setFreeAttempts] = useState<number | null>(3);
+
+  const fetchUsersAnswer = useCallback(async () => {
+    if (!practice?.id || !effectiveIsSignedIn) {
+      return;
+    }
+
+    try {
+      const url = new URL("/api/answers/speaking", window.location.origin);
+      url.searchParams.append("practiceId", practice.id);
+
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (response.status === 401) {
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error("Network response was not ok.");
+      }
+
+      const data = await response.json();
+      const items = Array.isArray(data.items) ? data.items : [];
+      setAnswers((prev) => (items.length > 0 ? items : prev));
+    } catch (error) {
+      console.error("Error fetching answer:", error);
+    }
+  }, [effectiveIsSignedIn, practice?.id]);
+
   const [errorAccessingMicrophone, setErrorAccessingMicrophone] =
     useState(false);
   const [needsUserInteraction, setNeedsUserInteraction] = useState(false);
@@ -267,10 +303,10 @@ const SpeakingPracticeView = ({
     setTime(preparationTime[taskIdKey] ?? 30);
     setRecordingTime(recordingTimePerTask[taskIdKey] ?? 90);
 
-    if (!initialSpeakingAnswers?.length) {
-      fetchUsersAnswer();
-    } else {
+    if (initialSpeakingAnswers?.length) {
       setAnswers(initialSpeakingAnswers);
+    } else {
+      void fetchUsersAnswer();
     }
 
     // Log practice started
@@ -278,10 +314,8 @@ const SpeakingPracticeView = ({
       const attemptId = `practice_${selectedPracticeId}_${Date.now()}`;
       ActivityLogger.practiceStarted(attemptId, selectedPracticeId, "Speaking");
     }
-  }, [selectedPracticeId, user]);
-  useEffect(() => {
-    fetchUsersAnswer();
-  }, [isSubmit]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- omit user/fetchUsersAnswer to avoid wiping history when auth hydrates
+  }, [selectedPracticeId, initialSpeakingAnswers]);
 
   useEffect(() => {
     if (
@@ -294,27 +328,6 @@ const SpeakingPracticeView = ({
     }
   }, [user, answers]);
 
-  const fetchUsersAnswer = async () => {
-    try {
-      const url = new URL("/api/answers/speaking", window.location.origin);
-      url.searchParams.append("practiceId", practice.id);
-
-      const response = await fetch(url.toString(), {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Network response was not ok.");
-      }
-      const data = await response.json();
-      setAnswers(data.items);
-    } catch (error) {
-      console.error("Error fetching answer:", error);
-    }
-  };
   const handleAnswerSelect = (questionId: number, answerId: string) => {
     setSelectedAnswers((prev) => ({
       ...prev,
@@ -370,6 +383,13 @@ const SpeakingPracticeView = ({
             setProgressBar(100);
             setIsSubmit(false);
             onAnswerButtonClick(practice, data);
+            if (typeof data?.id === "string") {
+              setAnswers((prev) => [
+                data as TWritingAnswerDto,
+                ...prev.filter((a) => a.id !== data.id),
+              ]);
+            }
+            void fetchUsersAnswer();
 
             runPracticeSubmitSideEffects({
               practiceId: practice.id,

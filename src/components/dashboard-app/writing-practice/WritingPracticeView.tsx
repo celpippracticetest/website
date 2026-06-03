@@ -214,7 +214,8 @@ const WritingPracticeView = ({
       }
 
       const data = await response.json();
-      setAnswers(Array.isArray(data.items) ? data.items : []);
+      const items = Array.isArray(data.items) ? data.items : [];
+      setAnswers((prev) => (items.length > 0 ? items : prev));
     } catch {
       setAnswers([]);
     }
@@ -241,6 +242,12 @@ const WritingPracticeView = ({
       const result = await response.json();
       setProgressBar(100);
       onAnswerButtonClick(practice, result);
+      if (typeof result?.id === "string") {
+        setAnswers((prev) => [
+          result as TWritingAnswerDto,
+          ...prev.filter((a) => a.id !== result.id),
+        ]);
+      }
 
       runPracticeSubmitSideEffects({
         practiceId: practice.id,
@@ -293,13 +300,7 @@ const WritingPracticeView = ({
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally omit user/fetchUsersAnswer to avoid wiping the draft when auth hydrates
-  }, [
-    selectedPracticeId,
-    practice.id,
-    routePracticeId,
-    initialWritingAnswers,
-    fetchUsersAnswer,
-  ]);
+  }, [selectedPracticeId, practice.id, routePracticeId, initialWritingAnswers]);
 
   useEffect(() => {
     if (routePracticeId && practice.id === routePracticeId) {

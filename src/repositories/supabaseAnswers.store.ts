@@ -616,11 +616,12 @@ export async function supabaseCreateOrUpdateWritingAnswer(
       .maybeSingle();
     existing = (data as AnswerRow | null) ?? null;
   } else if (dto.practiceId) {
+    const normalizedPracticeId = dto.practiceId.toLowerCase();
     const { data } = await admin
       .from("answers")
       .select("*")
       .eq("user_id", dto.userId)
-      .eq("practice_id", dto.practiceId)
+      .eq("practice_id", normalizedPracticeId)
       .maybeSingle();
     existing = (data as AnswerRow | null) ?? null;
   } else if (examId != null && dto.partId != null) {
@@ -637,9 +638,13 @@ export async function supabaseCreateOrUpdateWritingAnswer(
   }
 
   const typeUpper = String(dto.type ?? "WRITING").toUpperCase();
+  const practiceId =
+    dto.practiceId == null || dto.practiceId === ""
+      ? null
+      : dto.practiceId.toLowerCase();
   const basePayload = {
     user_id: dto.userId,
-    practice_id: dto.practiceId ?? null,
+    practice_id: practiceId,
     exam_id: examId ?? null,
     part_id: dto.partId ?? null,
     attempt_id: dto.attemptId ?? null,
@@ -722,7 +727,7 @@ export async function supabaseGetAllWritingAnswers(
     q = q.in("exam_id", examVariants);
   }
   if (partIdVal != null) q = q.eq("part_id", partIdVal);
-  if (practiceIdVal) q = q.eq("practice_id", practiceIdVal);
+  if (practiceIdVal) q = q.eq("practice_id", practiceIdVal.toLowerCase());
   if ("attemptId" in filter) {
     q = q.eq("attempt_key", attemptKeyFromDto(filter.attemptId));
   }
