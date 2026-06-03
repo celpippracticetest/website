@@ -1,10 +1,10 @@
 import dynamic from "next/dynamic";
 import React from "react";
 import { Metadata } from "next";
+import { getIndexingRobotsDirective } from "@/lib/searchIndexing";
 
 export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "";
-  const isPreview = appBaseUrl.includes("vercel.app");
 
   return {
     title: "Contact Us | CELPIPPRACTICETEST.com",
@@ -34,10 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
       description:
         "Get in touch with CELPIPPRACTICETEST.com support for account, billing, and practice questions.",
     },
-    robots: {
-      index: !isPreview,
-      follow: !isPreview,
-    },
+    robots: getIndexingRobotsDirective(appBaseUrl),
   };
 }
 

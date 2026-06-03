@@ -19,6 +19,7 @@ import { SupabaseAuthHashRecoveryRedirect } from "@/components/auth/SupabaseAuth
 import MuiAppRouterCacheProvider from "@/components/MuiAppRouterCacheProvider";
 import AndroidDownloadAppBanner from "@/components/mobile/AndroidDownloadAppBanner";
 import { getHomepageHeroDisplay } from "@/lib/homepage-hero";
+import { getIndexingRobotsDirective, isNonIndexableDeployment } from "@/lib/searchIndexing";
 import type { Metadata, Viewport } from "next";
 import { Suspense, type ComponentType } from "react";
 
@@ -91,7 +92,6 @@ export function generateViewport(): Viewport {
 
 export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = normalizeAppBaseUrl(process.env.APP_BASE_URL);
-  const isPreview = appBaseUrl.includes("vercel.app");
   const homepageHero = await getHomepageHeroDisplay();
 
   // `APP_BASE_URL` is environment-driven and can occasionally be malformed.
@@ -149,7 +149,7 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: {
       canonical: appBaseUrl,
     },
-    robots: { index: !isPreview, follow: !isPreview },
+    robots: getIndexingRobotsDirective(appBaseUrl),
   };
 }
 
@@ -160,9 +160,10 @@ export default async function RootLayout({
   const gtmAllowedHosts = buildGtmAllowedHosts(baseUrl);
   // Production builds: skip only Vercel Preview (pollutes analytics). Production
   // on a *.vercel.app URL still loads GTM when APP_BASE_URL points there.
-  const isVercelPreview = process.env.VERCEL_ENV === "preview";
   const enableGtm =
-    process.env.NODE_ENV === "production" && !isVercelPreview && Boolean(GTM_ID);
+    process.env.NODE_ENV === "production" &&
+    !isNonIndexableDeployment(baseUrl) &&
+    Boolean(GTM_ID);
   const enableLegacyGtm = enableGtm && LEGACY_GTM_ID && LEGACY_GTM_ID !== GTM_ID;
   const enableClarity =
     process.env.NODE_ENV === "production" && Boolean(CLARITY_ID);

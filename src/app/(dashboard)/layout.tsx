@@ -3,16 +3,13 @@ import Footer from "@/components/pages/landing/Footer";
 import ReactQueryProvider from "@/components/ReactQueryProvider";
 import { getDashboardLayoutAuthContext } from "@/lib/auth/web-session-server";
 import { Metadata } from "next";
+import { getIndexingRobotsDirective } from "@/lib/searchIndexing";
 
 export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "";
-  const isPreview = appBaseUrl.includes("vercel.app");
   return {
     title: "Dashboard",
-    robots: {
-      index: !isPreview,
-      follow: !isPreview,
-    },
+    robots: getIndexingRobotsDirective(appBaseUrl),
   };
 }
 export default async function RootLayout({

@@ -4,6 +4,9 @@ export const TAWK_EMBED_SRC =
   process.env.NEXT_PUBLIC_TAWK_EMBED_SRC ??
   "https://embed.tawk.to/6a19d80abfd8e61c339dc625/1jpqf7qn1";
 
+/** Matches {@link useIsMobile} — floating bubble is header-only below this width. */
+export const TAWK_MOBILE_BREAKPOINT = 768;
+
 declare global {
   interface Window {
     Tawk_API?: {
@@ -17,10 +20,61 @@ declare global {
       ) => void;
       onLoad?: () => void;
       onChatMinimized?: () => void;
+      onChatHidden?: () => void;
       visitor?: { name?: string; email?: string };
     };
     Tawk_LoadStart?: Date;
   }
+}
+
+export function isMobileViewport(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.innerWidth < TAWK_MOBILE_BREAKPOINT;
+}
+
+function chainTawkCallback(
+  key: "onLoad" | "onChatMinimized" | "onChatHidden",
+  fn: () => void,
+): void {
+  window.Tawk_API = window.Tawk_API || {};
+  const prev = window.Tawk_API[key];
+  window.Tawk_API[key] = function () {
+    if (typeof prev === "function") prev();
+    fn();
+  };
+}
+
+function syncTawkWidgetForViewport(): void {
+  if (isMobileViewport()) {
+    window.Tawk_API?.hideWidget?.();
+  } else {
+    window.Tawk_API?.showWidget?.();
+  }
+}
+
+function dismissTawkOnMobile(): void {
+  if (!isMobileViewport()) return;
+  window.Tawk_API?.minimize?.();
+  window.Tawk_API?.hideWidget?.();
+}
+
+let mobileBehaviorInitialized = false;
+
+/** Hide floating bubble on mobile; reopen from header Support. Idempotent. */
+export function initTawkMobileBehavior(): void {
+  if (typeof window === "undefined" || mobileBehaviorInitialized) return;
+  mobileBehaviorInitialized = true;
+
+  ensureTawkScript();
+  chainTawkCallback("onLoad", syncTawkWidgetForViewport);
+  chainTawkCallback("onChatMinimized", dismissTawkOnMobile);
+  chainTawkCallback("onChatHidden", dismissTawkOnMobile);
+
+  if (typeof window.Tawk_API?.maximize === "function") {
+    syncTawkWidgetForViewport();
+  }
+
+  window.addEventListener("resize", syncTawkWidgetForViewport);
 }
 
 function runWhenTawkReady(fn: () => void): void {
@@ -69,6 +123,12 @@ export function openTawkChat(): void {
     window.Tawk_API?.showWidget?.();
     window.Tawk_API?.maximize?.();
   });
+}
+
+/** Close Tawk chat and hide the widget (mobile dismiss). */
+export function closeTawkChat(): void {
+  if (typeof window === "undefined") return;
+  runWhenTawkReady(dismissTawkOnMobile);
 }
 
 export type TawkVisitorAttribute = [string, string | number | boolean];

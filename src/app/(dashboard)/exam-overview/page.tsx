@@ -2,6 +2,7 @@ import ExamOverview from "@/components/dashboard-app/examOverview";
 import documentsClient from "@/lib/appDocumentsClient";
 import { ExamRepository } from "@/repositories/exams.repo";
 import { Metadata } from "next";
+import { getIndexingRobotsDirective } from "@/lib/searchIndexing";
 import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import ExamFAQ, { FAQ_DATA } from "@/components/dashboard-app/ExamFAQ";
 import { Paper, Stack, Typography } from "@mui/material";
@@ -20,7 +21,6 @@ const examOverviewMuted = "#475569";
 
 export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "";
-  const isPreview = appBaseUrl.includes("vercel.app");
   return {
     title: "CELPIP Mock Test Online — Full-Length Practice Exams",
     description:
@@ -28,10 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: {
       canonical: "https://celpippracticetest.com/exam-overview",
     },
-    robots: {
-      index: !isPreview,
-      follow: !isPreview,
-    },
+    robots: getIndexingRobotsDirective(appBaseUrl),
   };
 }
 

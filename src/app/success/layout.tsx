@@ -1,15 +1,12 @@
 import { Metadata } from "next";
+import { getIndexingRobotsDirective } from "@/lib/searchIndexing";
 import PublicPageShell from "@/components/pages/landing/PublicPageShell";
 import PublicPageFooter from "@/components/pages/landing/PublicPageFooter";
 
 export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "";
-  const isPreview = appBaseUrl.includes("vercel.app");
   return {
-    robots: {
-      index: !isPreview,
-      follow: !isPreview,
-    },
+    robots: getIndexingRobotsDirective(appBaseUrl),
   };
 }
 

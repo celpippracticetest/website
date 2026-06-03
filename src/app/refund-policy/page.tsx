@@ -1,9 +1,9 @@
 import dynamic from "next/dynamic";
 import { Metadata } from "next";
+import { getIndexingRobotsDirective } from "@/lib/searchIndexing";
 
 export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "";
-  const isPreview = appBaseUrl.includes("vercel.app");
   const description =
     "Understand CELPIP Practice Test refund rules, eligibility windows, non-refundable cases, and steps to submit, review, and track your refund request online.";
   return {
@@ -24,10 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: {
       canonical: "https://celpippracticetest.com/refund-policy",
     },
-    robots: {
-      index: !isPreview,
-      follow: !isPreview,
-    },
+    robots: getIndexingRobotsDirective(appBaseUrl),
   };
 }
 

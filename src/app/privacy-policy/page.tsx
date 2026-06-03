@@ -1,9 +1,9 @@
 import dynamic from "next/dynamic";
 import { Metadata } from "next";
+import { getIndexingRobotsDirective } from "@/lib/searchIndexing";
 
 export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "";
-  const isPreview = appBaseUrl.includes("vercel.app");
   return {
     title: "Privacy Policy | CELPIPPRACTICETEST.com",
     description:
@@ -11,10 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: {
       canonical: "https://celpippracticetest.com/privacy-policy",
     },
-    robots: {
-      index: !isPreview,
-      follow: !isPreview,
-    },
+    robots: getIndexingRobotsDirective(appBaseUrl),
   };
 }
 

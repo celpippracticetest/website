@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
+import { getIndexingRobotsDirective } from "@/lib/searchIndexing";
 
 const BASE_URL = process.env.APP_BASE_URL || "https://celpippracticetest.com";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const isPreview = BASE_URL.includes("vercel.app");
-
   return {
     title: "Personalized CELPIP Microlearning Flow | CELPIP Practice Test",
     description:
@@ -12,10 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: {
       canonical: `${BASE_URL}/flow`,
     },
-    robots: {
-      index: !isPreview,
-      follow: !isPreview,
-    },
+    robots: getIndexingRobotsDirective(BASE_URL),
     openGraph: {
       title: "Personalized CELPIP Microlearning Flow",
       description:

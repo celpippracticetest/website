@@ -1,10 +1,11 @@
 "use client";
 import { Dispatch, JSX, SetStateAction, useState } from "react";
 import { Button } from "@/components/ui/button";
-import WorkspacePremium from "@mui/icons-material/WorkspacePremium";
+import ChatBubbleOutline from "@mui/icons-material/ChatBubbleOutline";
 import Menu from "@mui/icons-material/Menu";
 import Close from "@mui/icons-material/Close";
 import Link from "next/link";
+import SvgDiamond from "@/components/icons/Diamond";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 import { useIsMobile } from "@/hooks/use-mobile";
 import useStore from "@/store";
@@ -136,6 +137,17 @@ const MobileHeader = (props: {
 
           {/* Auth buttons */}
           <div className="flex items-right gap-4 lg:gap-5 md:gap-3 ">
+            <button
+              type="button"
+              aria-label="Open support chat"
+              onClick={() => {
+                trackNav("Support", "chat:open", "header");
+                openTawkChat();
+              }}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-300 text-[#3ebbf3] cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+            >
+              <ChatBubbleOutline className="h-5 w-5" />
+            </button>
             {(!user ||
               !isPaidSubscriptionPlan(user.publicMetadata?.plan)) && (
               <div
@@ -145,7 +157,7 @@ const MobileHeader = (props: {
                 }}
                 className="relative border border-slate-300 rounded-full pl-1 pr-1 shadow-sm min-w-13 min-h-10 justify-center outline-none flex items-center gap-2 cursor-pointer hover:-translate-y-0.5 transition-all duration-300 hover:shadow-md"
               >
-                <WorkspacePremium className="w-5 h-5 flex-shrink-0 text-blue-400 ml-1" />
+                <SvgDiamond className="w-5 h-5 flex-shrink-0 -rotate-12 ml-1" />
                 <div
                   hidden={user === null || isMobile}
                   className="flex flex-col justify-start mr-1"

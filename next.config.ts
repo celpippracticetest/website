@@ -1,5 +1,6 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
+import { isNonIndexableDeployment } from "./src/lib/searchIndexing";
 
 const withBundleAnalyzer = require("@next/bundle-analyzer")({
   enabled: process.env.ANALYZE === "true",
@@ -99,7 +100,7 @@ const nextConfig: NextConfig = {
       });
     }
 
-    if (process.env.VERCEL_ENV === "preview") {
+    if (isNonIndexableDeployment(process.env.APP_BASE_URL)) {
       globalHeaders.push({
         key: "X-Robots-Tag",
         value: "noindex, nofollow, noarchive, nosnippet, noimageindex",

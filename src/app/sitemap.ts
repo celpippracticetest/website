@@ -1,4 +1,5 @@
 import { MetadataRoute } from "next";
+import { isNonIndexableDeployment } from "@/lib/searchIndexing";
 import { getWikiSlugs } from "@/lib/wiki/public";
 import { getPublishedBlogSlugs } from "@/lib/blog/public";
 import {
@@ -15,6 +16,10 @@ function toAbsoluteUrl(path: string): string {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  if (isNonIndexableDeployment(BASE_URL)) {
+    return [];
+  }
+
   const professionSlugs = await getPublishedProfessionPageSlugs();
   const publishedProfessionSlugs = (
     await Promise.all(

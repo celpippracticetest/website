@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { isNonIndexableDeployment } from "@/lib/searchIndexing";
 import { getDashboardLayoutAuthContext } from "@/lib/auth/web-session-server";
 import { redirect } from "next/navigation";
 import RefundRequestPortal from "@/components/dashboard-new/RefundRequestPortal";
@@ -6,7 +7,6 @@ import documentsClient from "@/lib/appDocumentsClient";
 import { Box } from "@/components/ui/Box";
 export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "https://celpippracticetest.com";
-  const isPreview = appBaseUrl.includes("vercel.app");
 
   return {
     title: "Refund Request Form | CELPIP Practice Test",
@@ -30,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     robots: {
       index: false,
-      follow: !isPreview,
+      follow: !isNonIndexableDeployment(appBaseUrl),
     },
   };
 }
