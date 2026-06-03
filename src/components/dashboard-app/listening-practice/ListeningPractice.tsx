@@ -99,6 +99,7 @@ const ListeningPractice = ({
           completedPractice={completedPractice}
           task={task}
           title={"Listening"}
+          selectedTaskId={selectedTaskId}
         />
       )}
     </div>

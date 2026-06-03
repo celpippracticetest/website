@@ -15,10 +15,10 @@ import { LIVE_STATS_POLL_MS } from "@/hooks/useRecentSignupsLiveStat";
 interface LiveStatsResponse {
   success: boolean;
   stats: {
-    onlineUsers: number;
-    recentSignups: number;
-    practicingUsers: number;
-    recentPractices: number;
+    onlineUsers?: number;
+    recentSignups?: number;
+    practicingUsers?: number;
+    recentPractices?: number;
     skillBreakdown?: Record<string, number>;
   };
   timestamp: string;
@@ -89,7 +89,14 @@ export default function OnlineUsersCount({
     };
   }, [refreshInterval]);
 
-  const stats = data?.stats ?? { onlineUsers: 0, recentSignups: 0, practicingUsers: 0, recentPractices: 0 };
+  const rawStats = data?.stats;
+  const stats = {
+    onlineUsers: rawStats?.onlineUsers ?? 0,
+    recentSignups: rawStats?.recentSignups ?? 0,
+    practicingUsers: rawStats?.practicingUsers ?? 0,
+    recentPractices: rawStats?.recentPractices ?? 0,
+    skillBreakdown: rawStats?.skillBreakdown,
+  };
 
   // Get individual skill counts from skillBreakdown (REAL data from API)
   const speakingCount = stats.skillBreakdown?.Speaking || 0;

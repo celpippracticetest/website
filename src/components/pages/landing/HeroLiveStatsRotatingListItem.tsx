@@ -46,7 +46,7 @@ function pickFiveAvatars(seed: number): { alt: string; src: string }[] {
 interface LiveStatsResponse {
   success: boolean;
   stats: {
-    onlineUsers: number;
+    onlineUsers?: number;
     skillBreakdown?: Record<string, number>;
   };
 }
@@ -113,8 +113,10 @@ export function HeroLiveStatsRotatingListItem({
     };
   }, []);
 
-  const stats = data?.stats ?? {
-    onlineUsers: 0,
+  const rawStats = data?.stats;
+  const stats = {
+    onlineUsers: rawStats?.onlineUsers ?? 0,
+    skillBreakdown: rawStats?.skillBreakdown,
   };
 
   const speakingCount = stats.skillBreakdown?.Speaking ?? 0;
