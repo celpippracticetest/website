@@ -33,8 +33,11 @@ import CountdownTimer from "@/components/dashboard-app/CounterDownTimer";
 import SvgReferral from "@/components/icons/Referral";
 
 import dynamic from "next/dynamic";
-import TopHeader from "@/components/pages/landing/TopHeader";
+import { TopHeaderByVariant } from "@/components/ui-variant/TopHeaderByVariant";
+import DashboardHeaderClassic from "@/components/ui-variants/classic/dashboard/DashboardHeaderClassic";
 import { GlobalInteractiveProvider } from "@/components/dashboard-app/practice/GlobalInteractiveProvider";
+import { getSiteHeaderMainPaddingClass } from "@/lib/uiHeaderLayout";
+import { useUiVariant } from "@/components/ui-variant/UiVariantProvider";
 import {
   MOCK_EXAM_VIEW_MODE_EVENT,
   MOCK_EXAM_VIEW_MODE_STORAGE_KEY,
@@ -183,6 +186,7 @@ const NavItem = ({
 };
 
 const LayoutClient = ({ children }: any) => {
+  const uiVariant = useUiVariant();
   const sidebarMenuRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const couponId = useExtraDiscountStore((state) => state.couponId);
@@ -572,6 +576,10 @@ const LayoutClient = ({ children }: any) => {
 
   const hideMainHeaderForOfficialExam =
     pathname.includes("exams") && isOfficialExamView;
+  const headerMainPadding = getSiteHeaderMainPaddingClass(
+    uiVariant,
+    hideMainHeaderForOfficialExam,
+  );
 
   return (
     <>
@@ -750,19 +758,25 @@ const LayoutClient = ({ children }: any) => {
         </div>
       )}
 
-      {!hideMainHeaderForOfficialExam && <TopHeader />}
+      {!hideMainHeaderForOfficialExam && uiVariant !== "classic" && (
+        <TopHeaderByVariant />
+      )}
 
       <div className="relative mx-auto z-[9] flex w-full max-w-[1440px] justify-center overflow-x-clip">
         <div
           className={cn(
             "flex h-full w-full flex-col items-end screen744:!w-[calc(100%-84px)]",
+            uiVariant === "classic" && "bg-[#F4F7FF]",
             {
-              "mb-[120px] pt-[calc(88px+var(--android-download-banner-height,0px))] screen744:pt-[96px]":
-                !hideMainHeaderForOfficialExam,
+              "mb-[120px] screen1280:m-0": !hideMainHeaderForOfficialExam,
+              [headerMainPadding]: !hideMainHeaderForOfficialExam,
               "pt-0 screen744:pt-0": hideMainHeaderForOfficialExam,
             }
           )}
         >
+          {!hideMainHeaderForOfficialExam && uiVariant === "classic" ? (
+            <DashboardHeaderClassic embedded />
+          ) : null}
           {children}
           {copied && (
             <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-[#37465C] text-white px-4 py-2 rounded-[8px] text-[14px] shadow-lg z-[9999] transition-opacity duration-300">

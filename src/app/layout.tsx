@@ -20,6 +20,8 @@ import MuiAppRouterCacheProvider from "@/components/MuiAppRouterCacheProvider";
 import AndroidDownloadAppBanner from "@/components/mobile/AndroidDownloadAppBanner";
 import { getHomepageHeroDisplay } from "@/lib/homepage-hero";
 import { getIndexingRobotsDirective, isNonIndexableDeployment } from "@/lib/searchIndexing";
+import { UiVariantProvider } from "@/components/ui-variant/UiVariantProvider";
+import { getUiAbVariant } from "@/lib/uiAbTest.server";
 import type { Metadata, Viewport } from "next";
 import { Suspense, type ComponentType } from "react";
 
@@ -156,6 +158,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const uiVariant = await getUiAbVariant();
   const baseUrl = normalizeAppBaseUrl(process.env.APP_BASE_URL);
   const gtmAllowedHosts = buildGtmAllowedHosts(baseUrl);
   // Production builds: skip only Vercel Preview (pollutes analytics). Production
@@ -169,7 +172,12 @@ export default async function RootLayout({
     process.env.NODE_ENV === "production" && Boolean(CLARITY_ID);
 
   return (
-    <html suppressHydrationWarning className={jakarta.variable} lang="en">
+    <html
+      suppressHydrationWarning
+      className={jakarta.variable}
+      lang="en"
+      data-ui-variant={uiVariant}
+    >
       <head suppressHydrationWarning>
         {/* Logo is above-the-fold on every route; homepage hero preload removed (was
             every page + often unused on mobile where hero art is a smaller layout). */}
@@ -271,6 +279,7 @@ export default async function RootLayout({
 
       <body className={jakarta.className} suppressHydrationWarning>
         <MuiAppRouterCacheProvider>
+          <UiVariantProvider variant={uiVariant}>
           <AskBeavoModal />
           <TawkLoader />
           <TawkUserSync />
@@ -322,6 +331,7 @@ export default async function RootLayout({
           )}
 
           <Script src="/scripts/third-party-loader.js" strategy="lazyOnload" />
+          </UiVariantProvider>
         </MuiAppRouterCacheProvider>
       </body>
     </html>

@@ -46,7 +46,10 @@ import SvgDiamond from "@/components/icons/Diamond";
 import SvgLearningGift from "@/components/icons/LearningGift";
 import SvgLeagueLogo from "@/components/icons/LeagueLogo";
 import dynamic from "next/dynamic";
-import TopHeader from "@/components/pages/landing/TopHeader";
+import { TopHeaderByVariant } from "@/components/ui-variant/TopHeaderByVariant";
+import DashboardHeaderClassic from "@/components/ui-variants/classic/dashboard/DashboardHeaderClassic";
+import { getSiteHeaderMainPaddingClass } from "@/lib/uiHeaderLayout";
+import { useUiVariant } from "@/components/ui-variant/UiVariantProvider";
 
 const BottomNavigation = dynamic(
   () => import("@/components/dashboard-new/BottomNavigation"),
@@ -190,6 +193,8 @@ const NavItem = ({
 };
 
 const LayoutClient = ({ children }: any) => {
+  const uiVariant = useUiVariant();
+  const headerMainPadding = getSiteHeaderMainPaddingClass(uiVariant);
   const sidebarMenuRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const couponId = useExtraDiscountStore((state) => state.couponId);
@@ -752,12 +757,13 @@ const LayoutClient = ({ children }: any) => {
         </div>
       )}
 
-      <TopHeader />
+      {uiVariant !== "classic" && <TopHeaderByVariant />}
 
       <div
         className="relative mx-auto z-[9] mb-[88px] flex w-full justify-center overflow-x-clip bg-[#F4F7FF] bg-[radial-gradient(ellipse_55%_45%_at_85%_35%,rgba(255,183,138,0.22)_0%,transparent_70%),radial-gradient(ellipse_55%_45%_at_10%_30%,rgba(206,220,255,0.28)_0%,transparent_70%),radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(218,255,250,0.35)_0%,transparent_65%)]"
       >
-        <div className="flex h-full w-full flex-col items-end pt-[calc(88px+var(--android-download-banner-height,0px))] screen744:pt-[96px]">
+        <div className={clsx("flex h-full w-full flex-col items-end", headerMainPadding)}>
+          {uiVariant === "classic" ? <DashboardHeaderClassic embedded /> : null}
           {children}
           {copied && (
             <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-[#37465C] text-white px-4 py-2 rounded-[8px] text-[14px] shadow-lg z-[9999] transition-opacity duration-300">

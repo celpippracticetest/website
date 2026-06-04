@@ -1,0 +1,85 @@
+﻿import Down from "@/components/icons/Down";
+import Svg7 from "@/components/icons/Svg7";
+import Svg9 from "@/components/icons/Svg9";
+import React from "react";
+
+const Improve = () => {
+  return (
+    <>
+      <div className="text-text3   rounded-[8px] border-[1px] border-[#D5D6D8] min-h-[369px]">
+        <div className="flex justify-between px-[16px] flex-col-reverse screen744:!flex-row">
+          <h2 className="text-[14px] font-normal leading-[24px] pt-[8px] pb-[12px] screen744:!py-[16px]">
+            A Peaceful Countryside Road
+          </h2>
+          <div className="flex items-center gap-[16px] pt-[12px] screen744:!py-[12px] justify-end">
+            <span className="text-error2 font-medium text-[16px]">24:10</span>
+            <div className="flex justify-center max-w-[129px] w-full rounded-[24px] border-solid border-[1px] border-neutral2 px-[24px] py-[8px] items-center">
+              <span className="text-text2 leading-[16px] text-[12px] font-normal flex-shrink-0">
+                Next Question
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="flex border-t-[1px] border-[#D5D6D8] flex-col screen744:flex-row">
+          <div className="flex-1 h-auto max-w-[530px] screen1280:!border-r-[1px] border-[#D5D6D8] flex  p-[16px] flex-col">
+            <span className="text-text2 text-[12px] font-normal leading-[24px]">
+              A local business council is researching ways to strengthen the economy by helping screen744all businesses and your input after seeing them struggle and having potential. 
+              They've done a survey to see what support option would be best, hoping to lift the community's prosperity. 
+              This is your chance to promote local development! 
+              Which one is your choice? Why did you choose it? 
+              A: Provide grants and tax credits to screen744all businesspersons. 
+              B: Create pop-up events and neighborhood markets for indigenous businesspeople.
+            </span>
+
+            <div className="rounded-[12px] mt-[10px] px-[16px] py-[8px] border-[1px] border-solid border-[#D5D6D8]">
+              <div className="flex flex-col gap-[10px] justify-between font-normal text-[14px] text-text2">
+                <div className="flex justify-between">
+                  <span>Sample Response (Beginner)</span>
+                  <span>
+                    <Down />
+                  </span>
+                </div>
+                <div className="h-[1px] bg-[#D5D6D8]"></div>
+                <div className="flex justify-between">
+                  <span> Sample Response (Intermediate)</span>
+                  <span>
+                    <Down />
+                  </span>
+                </div>
+                <div className="h-[1px] bg-[#D5D6D8]"></div>
+                <div className="flex justify-between">
+                  <span> Sample Response (Advanced)</span>
+                  <span>
+                    <Down />
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex-1 flex min-h-[294px] p-[16px] bg-[#F8FAFC] flex-col">
+            <div>
+              <h2 className="text-text2 text-[18px] font-semibold">
+                Your Submissions:
+              </h2>
+
+              <div className="flex justify-between mt-[8px] px-[16px] items-center bg-white h-[66px] rounded-[12px] border-[1px] border-solid border-outline">
+                <span className="text-text2">1. 1 minute ago</span>
+                <Svg9 />
+              </div>
+              <div className="flex justify-between mt-[8px]  px-[16px] items-center bg-white h-[66px] rounded-[12px] border-[1px] border-solid border-outline">
+                <span className="text-text2">2. 8 minutes ago</span>
+                <Svg7 />
+              </div>
+              <div className="flex justify-between mt-[8px]  px-[16px] items-center bg-white h-[66px] rounded-[12px] border-[1px] border-solid border-outline">
+                <span className="text-text2">1. 1 minute ago</span>
+                <Svg7 />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default Improve;

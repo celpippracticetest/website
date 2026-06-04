@@ -10,6 +10,12 @@ import { logger, trackUserAction, captureException } from "@/lib/sentry-logger";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { PRICING_AB_COOKIE, type PricingAbLayout } from "@/lib/pricingAbTest";
 import { HOME_AB_COOKIE, type HomeAbVariant } from "@/lib/homeAbTest";
+import {
+  UI_AB_COOKIE,
+  UI_AB_COOKIE_MAX_AGE_SECONDS,
+  UI_AB_HEADER,
+  resolveUiAbMiddleware,
+} from "@/lib/uiAbTest";
 import { applyMarketingCookiesToResponse } from "@/lib/marketingCookies";
 import {
   runAccountSharingMiddlewareCheck,
@@ -43,6 +49,19 @@ export default async function proxy(req: NextRequest) {
   let setReferralCreateCooldown = false;
   let clearPendingReferralCookie = false;
 
+  const uiAb = resolveUiAbMiddleware(req);
+  if (uiAb.stripQueryRedirect) {
+    const redirect = NextResponse.redirect(uiAb.stripQueryRedirect);
+    redirect.headers.set(UI_AB_HEADER, uiAb.variant);
+    redirect.cookies.set(UI_AB_COOKIE, uiAb.variant, {
+      path: "/",
+      maxAge: UI_AB_COOKIE_MAX_AGE_SECONDS,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
+    return applyMarketingCookiesToResponse(req, redirect);
+  }
+
   const { user: supabaseWebUser, cookieWrites: supabaseCookieWrites } =
     await refreshSupabaseSessionFromRequest(req);
   const webStableId = supabaseWebUser
@@ -57,6 +76,15 @@ export default async function proxy(req: NextRequest) {
     : null;
 
   const end = (response: NextResponse) => {
+    response.headers.set(UI_AB_HEADER, uiAb.variant);
+    if (uiAb.shouldSetCookie) {
+      response.cookies.set(UI_AB_COOKIE, uiAb.variant, {
+        path: "/",
+        maxAge: UI_AB_COOKIE_MAX_AGE_SECONDS,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+      });
+    }
     for (const w of supabaseCookieWrites) {
       response.cookies.set(w.name, w.value, w.options);
     }

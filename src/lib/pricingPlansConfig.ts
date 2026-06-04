@@ -11,6 +11,10 @@ export type PricingPlanConfigEntry = {
   order?: number;
   /** Defaults to true. Set false to hide a plan without removing it from the file. */
   active?: boolean;
+  /** Compare-at list price for strikethrough and “% OFF” badges (e.g. prior weekly price). */
+  oldPrice?: string;
+  /** Optional fixed discount percent when not derived from `oldPrice` vs live Stripe price. */
+  discount?: string;
 };
 
 type PricingPlansConfig = {
@@ -43,9 +47,9 @@ export function getSerializedPlansFromConfig(): SerializedPlan[] {
         title: template.title,
         type: template.type,
         planTitle: template.planTitle,
-        oldPrice: "",
+        oldPrice: entry.oldPrice?.trim() ?? "",
         price: "0",
-        discount: "",
+        discount: entry.discount?.trim() ?? "",
         buttonTitle: template.buttonTitle,
         features: [...PRICING_PLUS_FEATURE_LABELS],
         billingInterval: template.billingInterval,

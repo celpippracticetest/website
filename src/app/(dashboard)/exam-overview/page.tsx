@@ -11,6 +11,8 @@ import {
   normalizeMockExamIdForAccess,
 } from "@/lib/subscriptionAccess";
 import type { TExamSchemaDto } from "@/models/exam.model";
+import { getUiAbVariant } from "@/lib/uiAbTest.server";
+import { Box } from "@/components/ui/Box";
 
 const examOverviewTimingLog =
   process.env.NODE_ENV === "development" ||
@@ -33,6 +35,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const ExamsPage = async () => {
+  const uiVariant = await getUiAbVariant();
+  const isClassic = uiVariant === "classic";
   const tPageStart = performance.now();
   const exampRepo = new ExamRepository(documentsClient);
   const [result, hybridUser] = await Promise.all([
@@ -70,9 +74,60 @@ const ExamsPage = async () => {
   }
 
   return (
-    <main className="flex w-full min-h-screen justify-center bg-transparent">
-      <div className="w-full max-w-[1280px] bg-transparent px-4 py-6 md:px-6 md:py-8">
-        {noUser ? (
+    <main
+      className={
+        isClassic
+          ? "mx-auto w-full max-w-[1280px] px-[16px] pt-[24px] screen744:!px-0"
+          : "flex min-h-screen w-full justify-center bg-transparent"
+      }
+    >
+      <div
+        className={
+          isClassic
+            ? "w-full"
+            : "w-full max-w-[1280px] bg-transparent px-4 py-6 md:px-6 md:py-8"
+        }
+      >
+        {isClassic ? (
+          noUser ? (
+            <Box className="mb-8 flex w-full flex-col items-center justify-center gap-4 px-4 text-center">
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                  __html: JSON.stringify({
+                    "@context": "https://schema.org",
+                    "@type": "FAQPage",
+                    mainEntity: FAQ_DATA.map((faq) => ({
+                      "@type": "Question",
+                      name: faq.question,
+                      acceptedAnswer: {
+                        "@type": "Answer",
+                        text: faq.answer,
+                      },
+                    })),
+                  }),
+                }}
+              />
+              <h1 className="pt-[20px] text-[32px] font-bold leading-[40px] text-[#37465C] screen744:pt-0 screen744:text-[48px] screen744:leading-[56px]">
+                CELPIP Practice Tests – Full Mock Exams Online
+              </h1>
+              <h2 className="max-w-[800px] text-[18px] font-medium leading-[28px] text-[#37465C] screen744:text-[24px] screen744:leading-[32px]">
+                Prepare for the CELPIP exam with realistic full-length practice tests in the
+                official test format.
+              </h2>
+              <p className="max-w-[900px] text-[16px] leading-[24px] text-[#526071]">
+                Practice for the CELPIP exam with full-length mock tests designed to match the real
+                exam structure. Each practice test includes listening, reading, writing, and
+                speaking sections with authentic timing and question types. Start a CELPIP mock
+                exam and prepare with confidence.
+              </p>
+            </Box>
+          ) : (
+            <h1 className="mb-4 text-center text-2xl font-bold text-[#37465C] screen744:text-left">
+              CELPIP Mock Exams
+            </h1>
+          )
+        ) : noUser ? (
           <div className="mb-8 md:mb-10">
             <script
               type="application/ld+json"
@@ -188,7 +243,7 @@ const ExamsPage = async () => {
           />
         </div>
 
-        {noUser && (
+        {noUser && !isClassic && (
           <Paper
             component="section"
             elevation={0}

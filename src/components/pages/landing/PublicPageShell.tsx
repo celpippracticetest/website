@@ -1,10 +1,14 @@
 "use client";
 
 import React from "react";
-import TopHeader from "@/components/pages/landing/TopHeader";
+import { TopHeaderByVariant } from "@/components/ui-variant/TopHeaderByVariant";
 import PublicPageFooterClient from "@/components/pages/landing/PublicPageFooterClient";
 import { LandingLiveBackground } from "@/components/pages/landing/LandingLiveBackground";
 import { cn } from "@/lib/utils";
+import {
+  useSiteHeaderMainPaddingClass,
+  useSiteShellBackgroundClass,
+} from "@/hooks/useSiteHeaderLayout";
 
 export default function PublicPageShell({
   children,
@@ -19,21 +23,22 @@ export default function PublicPageShell({
   liveBackground?: boolean;
   footer?: React.ReactNode;
 }) {
+  const mainPaddingClass = useSiteHeaderMainPaddingClass(hideHeader);
+  const shellBackgroundClass = useSiteShellBackgroundClass(liveBackground);
+
   return (
     <div
       className={cn(
         "relative min-h-screen flex flex-col",
-        !liveBackground && "bg-parchment",
+        shellBackgroundClass,
       )}
     >
       {liveBackground && <LandingLiveBackground />}
-      {!hideHeader && <TopHeader />}
+      {!hideHeader && <TopHeaderByVariant />}
       <main
         className={cn(
           "relative z-[1] flex-grow pb-10",
-          hideHeader
-            ? "pt-0"
-            : "pt-[calc(88px+var(--android-download-banner-height,0px))] screen744:pt-[96px]",
+          mainPaddingClass,
         )}
       >
         {children}

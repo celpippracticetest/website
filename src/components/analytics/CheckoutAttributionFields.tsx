@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { HOME_AB_COOKIE } from "@/lib/homeAbTest";
+import { UI_AB_COOKIE } from "@/lib/uiAbTest";
 import {
   loadPendingGa4IdsFromStorage,
   persistPendingGa4Ids,
@@ -49,6 +50,7 @@ export function useCheckoutAttributionPayload(): Record<string, string> {
   const searchParams = useSearchParams();
   const [fields, setFields] = useState<CheckoutAttributionState>({});
   const [homeAbVariant, setHomeAbVariant] = useState<string | null>(null);
+  const [uiAbVariant, setUiAbVariant] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -76,6 +78,12 @@ export function useCheckoutAttributionPayload(): Record<string, string> {
       new RegExp(`(?:^|;\\s*)${escaped}=(classic|passport|legacy)`)
     );
     setHomeAbVariant(m?.[1] ?? null);
+
+    const uiEscaped = UI_AB_COOKIE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const uiMatch = document.cookie.match(
+      new RegExp(`(?:^|;\\s*)${uiEscaped}=(classic|modern)`),
+    );
+    setUiAbVariant(uiMatch?.[1] ?? null);
   }, [searchParams]);
 
   useEffect(() => {
@@ -104,6 +112,9 @@ export function useCheckoutAttributionPayload(): Record<string, string> {
   }
   if (homeAbVariant) {
     payload.home_ab_variant = homeAbVariant;
+  }
+  if (uiAbVariant) {
+    payload.site_ui_variant = uiAbVariant;
   }
 
   if (typeof window !== "undefined") {

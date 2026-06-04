@@ -17,12 +17,13 @@ import { useEffect, useMemo, useState } from "react";
 import LoginModal from "../modal/LoginModal";
 import {
   hasMockExamAccess,
-  hasPaidPracticeAccess,
   isMockExamUnlockedViaPurchase,
   normalizeMockExamIdForAccess,
   normalizePlan,
 } from "@/lib/subscriptionAccess";
 import type { ExamProgressSummary } from "@/lib/examOverviewProgress";
+import { useUiVariant } from "@/components/ui-variant/UiVariantProvider";
+import ExamOverviewClassic from "@/components/ui-variants/classic/dashboard/ExamOverviewClassic";
 
 const examCardNavy = "#1B2B5A";
 
@@ -33,7 +34,7 @@ const examSections = [
   { label: "Speaking", partId: 13, section: "speaking" },
 ];
 
-const ExamOverview = ({
+const ExamOverviewModern = ({
   exams,
   examProgressById,
   showUserProgress,
@@ -519,6 +520,20 @@ const ExamOverview = ({
       </Box>
     </>
   );
+};
+
+const ExamOverview = (props: Parameters<typeof ExamOverviewModern>[0]) => {
+  const variant = useUiVariant();
+  if (variant === "classic") {
+    return (
+      <ExamOverviewClassic
+        exams={props.exams}
+        showUserProgress={props.showUserProgress}
+        rscUserAccessSnapshot={props.rscUserAccessSnapshot}
+      />
+    );
+  }
+  return <ExamOverviewModern {...props} />;
 };
 
 export default ExamOverview;
