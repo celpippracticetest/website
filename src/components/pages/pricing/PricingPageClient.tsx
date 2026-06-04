@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import CheckCircle from "@mui/icons-material/CheckCircle";
 import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
 import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
@@ -15,161 +14,15 @@ import {
 } from "@/components/pages/pricing/pricingContent";
 import { Box } from "@/components/ui/Box";
 import { useEngagementTracking } from "@/hooks/useTracking";
-import { useUserContext } from "@/hooks/useUserContext";
 import {
   PRICING_PLUS_FEATURE_LABELS,
 } from "@/lib/pricing";
 import { groupPlansByDuration, sortPlansByOrder } from "@/lib/pricingPlanSections";
 import { durationDisplayOrder } from "@/lib/pricingCatalog";
 import type { PricingAbLayout } from "@/lib/pricingAbTest";
-import type { DurationGroupKey, PricingFaq, SerializedPlan } from "@/types/pricing";
+import type { PricingFaq, SerializedPlan } from "@/types/pricing";
 import type { PricingPlanSection } from "@/lib/pricingPlanSections";
 const avatarSources = ["Carlos.png", "Li.png", "Tatiana.png"];
-
-type PersonalizedRecommendation = {
-  planType: DurationGroupKey;
-  headline: string;
-  summary: string;
-  reasons: string[];
-};
-
-function formatWeakAreasForSentence(weakAreas: string[]) {
-  if (weakAreas.length === 0) return "";
-  if (weakAreas.length === 1) return weakAreas[0];
-  if (weakAreas.length === 2) return `${weakAreas[0]} and ${weakAreas[1]}`;
-  return `${weakAreas.slice(0, -1).join(", ")}, and ${weakAreas[weakAreas.length - 1]}`;
-}
-
-function buildRecommendationExplanation(params: {
-  testDate: string | null;
-  focusSkill: string | null;
-  weakAreas: string[];
-  hasHighTarget: boolean;
-}) {
-  const explanationParts: string[] = [];
-
-  if (params.testDate) {
-    explanationParts.push(`your exam is ${params.testDate.toLowerCase()}`);
-  }
-
-  if (params.focusSkill && !/other/i.test(params.focusSkill)) {
-    explanationParts.push(`your main focus is ${params.focusSkill}`);
-  }
-
-  if (params.weakAreas.length > 0) {
-    explanationParts.push(
-      `${formatWeakAreasForSentence(params.weakAreas)} ${
-        params.weakAreas.length === 1 ? "is" : "are"
-      } the area${params.weakAreas.length === 1 ? "" : "s"} you need to improve most`
-    );
-  }
-
-  if (params.hasHighTarget) {
-    explanationParts.push("you are aiming for a high target score");
-  }
-
-  if (explanationParts.length === 0) {
-    return "";
-  }
-
-  if (explanationParts.length === 1) {
-    return `This is recommended because ${explanationParts[0]}.`;
-  }
-
-  return `This is recommended because ${explanationParts
-    .slice(0, -1)
-    .join(", ")}, and ${explanationParts[explanationParts.length - 1]}.`;
-}
-
-function buildPersonalizedRecommendation(
-  availableDurationKeys: DurationGroupKey[],
-  userContext: ReturnType<typeof useUserContext>,
-  isSignedIn: boolean
-): PersonalizedRecommendation | null {
-  if (!isSignedIn || availableDurationKeys.length === 0) {
-    return null;
-  }
-
-  const testDate = userContext.onboardingProfile?.testDate || null;
-  const focusSkill = userContext.onboardingProfile?.focusSkill || null;
-  const weakAreas = userContext.weakAreas || [];
-  const targetClb = Number.parseFloat(userContext.targetCLB || "");
-  const targetScore = Number(userContext.onboardingProfile?.targetScore || 0);
-  const hasHighTarget =
-    (Number.isFinite(targetClb) && targetClb >= 9) ||
-    (Number.isFinite(targetScore) && targetScore >= 9);
-  const urgentExam = testDate === "In less than 2 weeks";
-  const nearTermExam = testDate === "In 1 month";
-  const longRunExam = testDate === "In 2+ months" || testDate === "I haven't booked it yet";
-  const focusedSingleSkill =
-    Boolean(focusSkill) &&
-    !/exam strategy/i.test(focusSkill || "") &&
-    weakAreas.length <= 1;
-  const needsFullPrep =
-    urgentExam ||
-    nearTermExam ||
-    weakAreas.length >= 2 ||
-    /exam strategy/i.test(focusSkill || "") ||
-    hasHighTarget;
-
-  const reasons: string[] = [];
-  if (testDate) reasons.push(`Exam timeline: ${testDate}`);
-  if (focusSkill) reasons.push(`Primary focus: ${focusSkill}`);
-  if (weakAreas.length > 0) reasons.push(`Weak areas: ${weakAreas.join(", ")}`);
-  if (hasHighTarget) reasons.push("Target level is ambitious");
-
-  const explanation = buildRecommendationExplanation({
-    testDate,
-    focusSkill,
-    weakAreas,
-    hasHighTarget,
-  });
-
-  if (urgentExam && focusedSingleSkill && !needsFullPrep && availableDurationKeys.includes("weekly")) {
-    return {
-      planType: "weekly",
-      headline: "Recommended for your short timeline",
-      summary:
-        explanation ||
-        "A short Weekly plan is the best fit when your exam is close and your prep is focused.",
-      reasons,
-    };
-  }
-
-  if (
-    ((focusedSingleSkill && longRunExam && !needsFullPrep) ||
-      (nearTermExam && focusedSingleSkill && !hasHighTarget)) &&
-    availableDurationKeys.includes("monthly")
-  ) {
-    return {
-      planType: "monthly",
-      headline: "Recommended for focused improvement",
-      summary:
-        explanation ||
-        "This option gives you enough guided practice time without overcommitting to a longer plan.",
-      reasons,
-    };
-  }
-
-  if (availableDurationKeys.includes("threeMonth")) {
-    return {
-      planType: "threeMonth",
-      headline: "Recommended for your goal and timeline",
-      summary:
-        explanation ||
-        "This option gives you the best balance of time, depth, and mock exam support.",
-      reasons,
-    };
-  }
-
-  return {
-    planType: availableDurationKeys[0],
-    headline: "Recommended for your current prep stage",
-    summary:
-      explanation || "This plan best matches your current timeline and study needs.",
-    reasons,
-  };
-}
 
 function FAQItem({ question, answer }: PricingFaq) {
   const [isOpen, setIsOpen] = useState(false);
@@ -252,8 +105,6 @@ export default function PricingPageClient({
   pricingAbLayout,
   pricingAbParticipatesInExperiment,
 }: PricingPageClientProps) {
-  const { isSignedIn } = useHybridWebUser();
-  const userContext = useUserContext();
   const pricingCheckoutFields = useMemo(
     () =>
       pricingAbParticipatesInExperiment
@@ -286,37 +137,14 @@ export default function PricingPageClient({
     [groupedPlans],
   );
 
-  const availableDurationKeys = useMemo(() => {
-    return groupedPlans.map((section) => section.key);
-  }, [groupedPlans]);
-
-  const personalizedRecommendation = useMemo(
+  const recommendedSection = useMemo(
     () =>
-      buildPersonalizedRecommendation(
-        availableDurationKeys,
-        userContext,
-        Boolean(isSignedIn)
-      ),
-    [availableDurationKeys, userContext, isSignedIn]
-  );
-
-  const recommendedSection = useMemo(() => {
-    if (personalizedRecommendation) {
-      const match = groupedPlans.find(
-        (section) => section.key === personalizedRecommendation.planType
-      );
-      if (match) {
-        return match;
-      }
-    }
-
-    return (
       groupedPlans.find((section) => section.key === "threeMonth") ||
       groupedPlans.find((section) => section.key === "monthly") ||
       groupedPlans[0] ||
-      null
-    );
-  }, [groupedPlans, personalizedRecommendation]);
+      null,
+    [groupedPlans]
+  );
 
   const recommendedPlanEntry = useMemo(() => {
     if (!recommendedSection) {
@@ -331,42 +159,6 @@ export default function PricingPageClient({
   return (
     <Box className="flex-1 overflow-y-auto bg-[#F4F7FF] px-4 py-0 md:px-8 lg:px-10">
       <Box className="mx-auto w-full max-w-6xl">
-        {personalizedRecommendation && recommendedPlanEntry && (
-          <Box className="mt-8 rounded-[24px] border border-blue-200 bg-[linear-gradient(90deg,_rgba(74,125,255,0.08)_0%,_rgba(247,157,101,0.08)_100%)] px-5 py-5 shadow-sm">
-            <Box className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <Box>
-                <p className="text-sm font-semibold uppercase tracking-[0.08em] text-blue-700">
-                  Recommended for you
-                </p>
-                <h2 className="mt-1 text-lg font-semibold text-blue-950">
-                  {personalizedRecommendation.headline}
-                </h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-700">
-                  {personalizedRecommendation.summary}
-                </p>
-              </Box>
-              <a
-                href="#recommended-plan"
-                className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-blue-950 px-5 text-sm font-semibold text-white"
-              >
-                View recommended plan
-              </a>
-            </Box>
-            {personalizedRecommendation.reasons.length > 0 && (
-              <Box className="mt-4 flex flex-wrap gap-2">
-                {personalizedRecommendation.reasons.slice(0, 3).map((reason) => (
-                  <Box
-                    key={reason}
-                    className="rounded-full border border-white/70 bg-white/80 px-3 py-1 text-xs font-medium text-slate-700"
-                  >
-                    {reason}
-                  </Box>
-                ))}
-              </Box>
-            )}
-          </Box>
-        )}
-
         {orderedPlans.length === 0 && (
           <Box className="mt-8 rounded-[28px] border border-amber-200 bg-amber-50/80 p-6 text-center text-sm text-slate-800 md:p-8 md:text-base">
             <p className="font-semibold text-amber-950">No plans are available right now</p>
