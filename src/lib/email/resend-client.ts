@@ -110,11 +110,14 @@ function throwIfResendError(
   });
 }
 
+export type ResendEmailTag = { name: string; value: string };
+
 export async function sendResendHtmlEmail(opts: {
   to: string | string[];
   subject: string;
   html: string;
   from?: string;
+  tags?: ResendEmailTag[];
 }): Promise<{ id?: string }> {
   const resend = getResendClient();
   if (!resend) {
@@ -136,6 +139,7 @@ export async function sendResendHtmlEmail(opts: {
     to,
     subject,
     html,
+    tags: opts.tags,
   });
 
   if (error) {

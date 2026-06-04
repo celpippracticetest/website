@@ -2,6 +2,7 @@ import type { Sql } from "postgres";
 import { PgAccountAccessSignalsCollection } from "./accountAccessSignalsCollection";
 import { PgAnswersCollection } from "./answersCollection";
 import { PgStripeSubscriptionsCollection } from "./stripeSubscriptionsCollection";
+import { PgStripeCustomersCollection } from "./stripeCustomersCollection";
 import { PgLeagueGroupsCollection } from "./leagueGroupsCollection";
 import { PgUsersCollection } from "./usersCollection";
 import { PgLeagueSeasonsCollection } from "./leagueSeasonsCollection";
@@ -14,6 +15,21 @@ import { PgUserAttributionEventsCollection } from "./userAttributionEventsCollec
 import { PgPricingAbEventsCollection } from "./pricingAbEventsCollection";
 import { PgUserWordsCollection } from "./userWordsCollection";
 import { PgUserLeaguePointsCollection } from "./userLeaguePointsCollection";
+import { PgUserNurtureEmailStatsCollection } from "./userNurtureEmailStatsCollection";
+import { PgUserNurtureStatesCollection } from "./userNurtureStatesCollection";
+import { PgUserNurtureEmailDispatchLocksCollection } from "./userNurtureEmailDispatchLocksCollection";
+import { PgHomeAbEventsCollection } from "./homeAbEventsCollection";
+import { PgAccountDeletionFlowEventsCollection } from "./accountDeletionFlowEventsCollection";
+import { PgAbandonedCartEmailConfigsCollection } from "./abandonedCartEmailConfigsCollection";
+import { PgAccountDeletionSurveysCollection } from "./accountDeletionSurveysCollection";
+import { PgCancellationFlowEventsCollection } from "./cancellationFlowEventsCollection";
+import { PgCancellationSurveysCollection } from "./cancellationSurveysCollection";
+import { PgCheckoutsCollection } from "./checkoutsCollection";
+import { PgOnboardingCollection } from "./onboardingCollection";
+import { PgOnboardingNewResultsCollection } from "./onboardingNewResultsCollection";
+import { PgReferralCodesCollection } from "./referralCodesCollection";
+import { PgUserActivityRemindersCollection } from "./userActivityRemindersCollection";
+import { PgGaUserAttributionCollection } from "./gaUserAttributionCollection";
 
 /** Maps `db("prod")` to collection keys like `prod.checkouts`. */
 export class PgDatabase {
@@ -57,6 +73,9 @@ export class PgDatabase {
     if (name === "user_attribution_events") {
       return new PgUserAttributionEventsCollection<T>(this.sql) as unknown as PgCollection<T>;
     }
+    if (name === "ga_user_attribution") {
+      return new PgGaUserAttributionCollection<T>(this.sql) as unknown as PgCollection<T>;
+    }
     if (name === "pricing_ab_events") {
       return new PgPricingAbEventsCollection<T>(this.sql) as unknown as PgCollection<T>;
     }
@@ -65,6 +84,57 @@ export class PgDatabase {
     }
     if (name === "stripe_subscriptions") {
       return new PgStripeSubscriptionsCollection<T>(this.sql) as unknown as PgCollection<T>;
+    }
+    if (name === "stripe_customers") {
+      return new PgStripeCustomersCollection<T>(this.sql) as unknown as PgCollection<T>;
+    }
+    if (name === "usernurtureemailstats") {
+      return new PgUserNurtureEmailStatsCollection<T>(this.sql) as unknown as PgCollection<T>;
+    }
+    if (name === "usernurturestates") {
+      return new PgUserNurtureStatesCollection<T>(this.sql) as unknown as PgCollection<T>;
+    }
+    if (name === "usernurtureemaildispatchlocks") {
+      return new PgUserNurtureEmailDispatchLocksCollection<T>(
+        this.sql
+      ) as unknown as PgCollection<T>;
+    }
+    if (name === "home_ab_events") {
+      return new PgHomeAbEventsCollection<T>(this.sql) as unknown as PgCollection<T>;
+    }
+    if (name === "account_deletion_flow_events") {
+      return new PgAccountDeletionFlowEventsCollection<T>(
+        this.sql
+      ) as unknown as PgCollection<T>;
+    }
+    if (name === "abandonedCartEmailConfigs") {
+      return new PgAbandonedCartEmailConfigsCollection<T>(
+        this.sql
+      ) as unknown as PgCollection<T>;
+    }
+    if (name === "account_deletion_surveys") {
+      return new PgAccountDeletionSurveysCollection<T>(this.sql) as unknown as PgCollection<T>;
+    }
+    if (name === "cancellation_flow_events") {
+      return new PgCancellationFlowEventsCollection<T>(this.sql) as unknown as PgCollection<T>;
+    }
+    if (name === "cancellation_surveys") {
+      return new PgCancellationSurveysCollection<T>(this.sql) as unknown as PgCollection<T>;
+    }
+    if (name === "checkouts") {
+      return new PgCheckoutsCollection<T>(this.sql) as unknown as PgCollection<T>;
+    }
+    if (name === "onboarding") {
+      return new PgOnboardingCollection<T>(this.sql) as unknown as PgCollection<T>;
+    }
+    if (name === "onboarding_new_results") {
+      return new PgOnboardingNewResultsCollection<T>(this.sql) as unknown as PgCollection<T>;
+    }
+    if (name === "referralCodes") {
+      return new PgReferralCodesCollection<T>(this.sql) as unknown as PgCollection<T>;
+    }
+    if (name === "useractivityreminders") {
+      return new PgUserActivityRemindersCollection<T>(this.sql) as unknown as PgCollection<T>;
     }
     return new PgCollection<T>(this.sql, key);
   }

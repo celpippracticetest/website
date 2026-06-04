@@ -164,6 +164,116 @@ export async function loadActivitySummariesByUserIds(
   return map;
 }
 
+export type UserNurtureStateRow = {
+  userId: string;
+  lastNurtureSentAt?: Date;
+  nurtureFlow?: string;
+  nurtureStageId?: string;
+  nurtureWindowStartedAt?: Date;
+  nurturesInWindow?: number;
+};
+
+/** Loads per-user nurture state from `public.user_nurture_states`. */
+export async function loadUserNurtureStatesByUserIds(
+  userIds: string[]
+): Promise<Map<string, UserNurtureStateRow>> {
+  if (userIds.length === 0) {
+    return new Map();
+  }
+
+  const sql = getSql();
+  const rows = await sql<
+    {
+      user_id: string;
+      last_nurture_sent_at: Date | null;
+      nurture_flow: string | null;
+      nurture_stage_id: string | null;
+      nurture_window_started_at: Date | null;
+      nurtures_in_window: number;
+    }[]
+  >`
+    SELECT
+      user_id,
+      last_nurture_sent_at,
+      nurture_flow,
+      nurture_stage_id,
+      nurture_window_started_at,
+      nurtures_in_window
+    FROM public.user_nurture_states
+    WHERE user_id = ANY(${userIds})
+  `;
+
+  const map = new Map<string, UserNurtureStateRow>();
+  for (const row of rows) {
+    map.set(row.user_id, {
+      userId: row.user_id,
+      lastNurtureSentAt: row.last_nurture_sent_at ?? undefined,
+      nurtureFlow: row.nurture_flow ?? undefined,
+      nurtureStageId: row.nurture_stage_id ?? undefined,
+      nurtureWindowStartedAt: row.nurture_window_started_at ?? undefined,
+      nurturesInWindow: row.nurtures_in_window,
+    });
+  }
+  return map;
+}
+
+export type UserActivityReminderStateRow = {
+  userId: string;
+  lastReminderSentAt?: Date;
+  reminderFlow?: string;
+  reminderStageId?: string;
+  lastEngagedAt?: Date;
+  reminderWindowStartedAt?: Date;
+  remindersInWindow?: number;
+};
+
+/** Loads per-user reminder state from `public.user_activity_reminders`. */
+export async function loadUserActivityRemindersByUserIds(
+  userIds: string[]
+): Promise<Map<string, UserActivityReminderStateRow>> {
+  if (userIds.length === 0) {
+    return new Map();
+  }
+
+  const sql = getSql();
+  const rows = await sql<
+    {
+      user_id: string;
+      last_reminder_sent_at: Date | null;
+      reminder_flow: string | null;
+      reminder_stage_id: string | null;
+      last_engaged_at: Date | null;
+      reminder_window_started_at: Date | null;
+      reminders_in_window: number;
+    }[]
+  >`
+    SELECT
+      user_id,
+      last_reminder_sent_at,
+      reminder_flow,
+      reminder_stage_id,
+      last_engaged_at,
+      reminder_window_started_at,
+      reminders_in_window
+    FROM public.user_activity_reminders
+    WHERE user_id = ANY(${userIds})
+  `;
+
+  const map = new Map<string, UserActivityReminderStateRow>();
+  for (const row of rows) {
+    map.set(row.user_id, {
+      userId: row.user_id,
+      lastReminderSentAt: row.last_reminder_sent_at ?? undefined,
+      reminderFlow: row.reminder_flow ?? undefined,
+      reminderStageId: row.reminder_stage_id ?? undefined,
+      lastEngagedAt: row.last_engaged_at ?? undefined,
+      reminderWindowStartedAt: row.reminder_window_started_at ?? undefined,
+      remindersInWindow: row.reminders_in_window,
+    });
+  }
+  return map;
+}
+
 /** Loads app_documents rows by `body.userId` without scanning the full partition. */
 export async function loadAppDocumentsByUserIds<T extends { userId?: string }>(
   collectionLogicalKey: string,

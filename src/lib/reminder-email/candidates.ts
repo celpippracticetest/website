@@ -4,10 +4,8 @@ import {
   filterValidUserRows,
   listRecentAuthUsers,
   loadActivitySummariesByUserIds,
-  loadAppDocumentsByUserIds,
+  loadUserActivityRemindersByUserIds,
 } from "@/lib/email-cron/sql-audience";
-
-const REMINDER_STATE_COLLECTION = "useractivityreminders";
 export const REMINDER_CANDIDATE_LOOKBACK_DAYS = 30;
 
 export type ReminderFlow = "signup_no_activity" | "inactive";
@@ -21,16 +19,6 @@ export type ReminderCandidate = {
   reminderFlow?: ReminderFlow;
   reminderStageId?: string;
   lastReminderSentAt?: Date;
-  lastEngagedAt?: Date;
-  reminderWindowStartedAt?: Date;
-  remindersInWindow?: number;
-};
-
-type ReminderStateDoc = {
-  userId?: string;
-  lastReminderSentAt?: Date;
-  reminderFlow?: ReminderFlow;
-  reminderStageId?: string;
   lastEngagedAt?: Date;
   reminderWindowStartedAt?: Date;
   remindersInWindow?: number;
@@ -54,7 +42,7 @@ export async function listReminderCandidates(limit: number): Promise<ReminderCan
   const userIds = userRows.map((row) => row.user_id);
   const [activityByUser, stateByUser] = await Promise.all([
     loadActivitySummariesByUserIds(userIds),
-    loadAppDocumentsByUserIds<ReminderStateDoc>(REMINDER_STATE_COLLECTION, userIds),
+    loadUserActivityRemindersByUserIds(userIds),
   ]);
 
   return userRows.map((row) => {
@@ -67,7 +55,10 @@ export async function listReminderCandidates(limit: number): Promise<ReminderCan
       activityCount: activity?.activityCount ?? 0,
       isSubscribed: row.is_subscribed,
       lastReminderSentAt: state?.lastReminderSentAt,
-      reminderFlow: state?.reminderFlow,
+      reminderFlow:
+        state?.reminderFlow === "signup_no_activity" || state?.reminderFlow === "inactive"
+          ? state.reminderFlow
+          : undefined,
       reminderStageId: state?.reminderStageId,
       lastEngagedAt: state?.lastEngagedAt,
       reminderWindowStartedAt: state?.reminderWindowStartedAt,

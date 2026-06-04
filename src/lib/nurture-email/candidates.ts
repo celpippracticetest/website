@@ -6,20 +6,10 @@ import {
   filterValidUserRows,
   listRecentAuthUsers,
   loadActivitySummariesByUserIds,
-  loadAppDocumentsByUserIds,
+  loadUserNurtureStatesByUserIds,
 } from "@/lib/email-cron/sql-audience";
 
-const NURTURE_STATE_COLLECTION = "usernurturestates";
 export const NURTURE_CANDIDATE_LOOKBACK_DAYS = 60;
-
-type NurtureStateDoc = {
-  userId?: string;
-  lastNurtureSentAt?: Date;
-  nurtureFlow?: NurtureTriggerType;
-  nurtureStageId?: string;
-  nurtureWindowStartedAt?: Date;
-  nurturesInWindow?: number;
-};
 
 /**
  * Loads nurture candidates without mingo `$lookup` (which preloads all user_activities).
@@ -39,7 +29,7 @@ export async function listNurtureCandidates(limit: number): Promise<NurtureCandi
   const userIds = userRows.map((row) => row.user_id);
   const [activityByUser, stateByUser] = await Promise.all([
     loadActivitySummariesByUserIds(userIds),
-    loadAppDocumentsByUserIds<NurtureStateDoc>(NURTURE_STATE_COLLECTION, userIds),
+    loadUserNurtureStatesByUserIds(userIds),
   ]);
 
   return userRows.map((row) => {
@@ -53,7 +43,7 @@ export async function listNurtureCandidates(limit: number): Promise<NurtureCandi
       activityCount: activity?.activityCount ?? 0,
       isSubscribed: false,
       lastNurtureSentAt: state?.lastNurtureSentAt,
-      nurtureFlow: state?.nurtureFlow,
+      nurtureFlow: state?.nurtureFlow as NurtureTriggerType | undefined,
       nurtureStageId: state?.nurtureStageId,
       nurtureWindowStartedAt: state?.nurtureWindowStartedAt,
       nurturesInWindow: state?.nurturesInWindow,

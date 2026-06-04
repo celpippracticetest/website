@@ -648,6 +648,11 @@ export class PgStripeSubscriptionsCollection<T extends AppDoc = AppDoc> {
         if (short === "users") {
           const { loadUserProfilesForAggregateJoin } = await import("./usersCollection");
           preload.set(short, await loadUserProfilesForAggregateJoin(this.sql));
+        } else if (short === "ga_user_attribution") {
+          const { loadGaUserAttributionForAggregateJoin } = await import(
+            "./gaUserAttributionCollection"
+          );
+          preload.set(short, await loadGaUserAttributionForAggregateJoin(this.sql));
         } else {
           preload.set(short, await loadAppDocumentsJoinCollection(this.sql, short));
         }

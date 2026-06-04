@@ -36,6 +36,7 @@ export const useUserContext = (): UserContext => {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
 
     const loadUserContext = async () => {
       if (!user) {
@@ -44,7 +45,9 @@ export const useUserContext = (): UserContext => {
       }
 
       try {
-        const response = await fetch("/api/user-scores");
+        const response = await fetch("/api/user-scores", {
+          signal: controller.signal,
+        });
         if (response.ok) {
           const data = await response.json();
           if (cancelled) return;
@@ -61,6 +64,8 @@ export const useUserContext = (): UserContext => {
           return;
         }
       } catch (error) {
+        // Ignore fetches aborted on unmount / Fast Refresh — these are not real failures.
+        if ((error as Error)?.name === "AbortError" || cancelled) return;
         console.error("Error fetching user context:", error);
       }
 
@@ -88,6 +93,7 @@ export const useUserContext = (): UserContext => {
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [user]);
 

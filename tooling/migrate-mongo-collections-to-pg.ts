@@ -22,18 +22,18 @@ import { printPostgresCollectionCounts, syncMongoCollectionsToPg } from "./mongo
 
 /** Logical collection names used by the website `documentsClient.db().collection(...)` surface. */
 export const DEFAULT_MONGO_PG_SYNC_COLLECTIONS: readonly string[] = [
-  "account_deletion_flow_events",
-  "account_deletion_surveys",
+  // "account_deletion_flow_events" — relational `public.account_deletion_flow_events` (migration 20260604124000).
+  // "account_deletion_surveys" — relational `public.account_deletion_surveys` (migration 20260604126000).
   "account_device_restrictions",
   // "account_access_signals" — relational `public.account_access_signals` (migration 20260521160000).
   // "answers" — relational `public.answers` (migrations 20260515133000, 20260521150000).
   "blog_target_keywords",
-  "cancellation_flow_events",
-  "cancellation_surveys",
-  "checkouts",
+  // "cancellation_flow_events" — relational `public.cancellation_flow_events` (migration 20260604127000).
+  // "cancellation_surveys" — relational `public.cancellation_surveys` (migration 20260604128000).
+  // "checkouts" — relational `public.checkouts` (migration 20260604129000).
   // "exams" / "exam-parts" / "practices" — relational `public.exams`, `public.exam_parts`, `public.practices`.
-  "ga_user_attribution",
-  "home_ab_events",
+  // "ga_user_attribution" — relational `public.ga_user_attribution` (migration 20260604135000).
+  // "home_ab_events" — relational `public.home_ab_events` (migration 20260604123000).
   "homepageHeroSchedules",
   "internalLinks",
   "leadCaptureConfig",
@@ -44,8 +44,8 @@ export const DEFAULT_MONGO_PG_SYNC_COLLECTIONS: readonly string[] = [
   // "leagues" / "league_seasons" — relational tables (migration 20260519164000).
   "marketing_assets",
   "messageCounts",
-  "onboarding",
-  "onboarding_new_results",
+  // "onboarding" — relational `public.onboarding` (migration 20260604134000).
+  // "onboarding_new_results" — relational `public.onboarding_new_results` (migration 20260604130000).
   "onboarding_results",
   "partnerCommissions",
   "partnerProgramSettings",
@@ -55,13 +55,13 @@ export const DEFAULT_MONGO_PG_SYNC_COLLECTIONS: readonly string[] = [
   "plans",
   // "pricing_ab_events" — relational `public.pricing_ab_events` (migration 20260521180000).
   "profession_pages",
-  "referralCodes",
+  // "referralCodes" — relational `public.referral_codes` (migration 20260604132000).
   "referralInvitations",
   "referralRewards",
   "refundRequests",
   "reminderEmailConfigs",
   "stripe_balance_transactions",
-  "stripe_customers",
+  // "stripe_customers" — relational `public.stripe_customers` (migration 20260604131000).
   "stripe_invoices",
   "stripe_prices",
   // "stripe_subscriptions" — relational `public.stripe_subscriptions` (migration 20260521140000).
@@ -73,7 +73,7 @@ export const DEFAULT_MONGO_PG_SYNC_COLLECTIONS: readonly string[] = [
   // "useractivities" — relational `public.user_activities` (migration 20260520131000).
   "useractivityreminderdispatchlocks",
   "useractivityreminderstats",
-  "useractivityreminders",
+  // "useractivityreminders" — relational `public.user_activity_reminders` (migration 20260604133000).
   // "user_league_points" — relational `public.user_league_points` (migration 20260519163000).
   // "userwords" — relational `public.user_words` (migration 20260521170000).
   "userwordstudyactivities",

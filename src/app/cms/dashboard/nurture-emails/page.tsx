@@ -12,6 +12,7 @@ import {
   type NurtureTriggerType,
 } from "@/lib/nurture-email/config";
 import { NurtureStageCard } from "./NurtureStageCard";
+import { NurtureEmailStatsPanel } from "./NurtureEmailStatsPanel";
 import { MERGE_TAG_ROWS, TRIGGER_LABELS } from "./constants";
 
 const DEFAULT_STAGE_TEMPLATE: Omit<NurtureEmailStage, "id" | "sortOrder"> = {
@@ -210,6 +211,8 @@ export default function NurtureEmailConfigPage() {
           Audience: {NURTURE_AUDIENCE.replace(/_/g, " ")} — subscribers (plan: plus) are never emailed.
         </p>
       </Box>
+
+      <NurtureEmailStatsPanel />
 
       <Box className="grid gap-4 lg:grid-cols-3">
         <Box className="rounded-xl border border-gray-200 bg-white p-4 lg:col-span-2">

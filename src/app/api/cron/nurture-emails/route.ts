@@ -20,9 +20,12 @@ import {
   toDate,
 } from "@/lib/nurture-email/stage-scheduler";
 import { listNurtureCandidates } from "@/lib/nurture-email/candidates";
+import {
+  NURTURE_EMAIL_KIND,
+  NURTURE_METRICS_COLLECTION,
+} from "@/lib/nurture-email/metrics";
 
 const NURTURE_STATE_COLLECTION = "usernurturestates";
-const NURTURE_METRICS_COLLECTION = "usernurtureemailstats";
 const NURTURE_LOCK_COLLECTION = "usernurtureemaildispatchlocks";
 
 type ResolvedNurture = {
@@ -170,10 +173,16 @@ export async function GET(request: NextRequest) {
         });
         const { subject, html } = renderNurtureEmail(item.subject, item.htmlBody, mergeFields);
 
-        await sendResendHtmlEmail({
+        const { id: resendMessageId } = await sendResendHtmlEmail({
           to: primaryEmail,
           subject,
           html,
+          tags: [
+            { name: "email_kind", value: NURTURE_EMAIL_KIND },
+            { name: "user_id", value: item.userId },
+            { name: "stage_id", value: item.stageId },
+            { name: "flow", value: item.flow },
+          ],
         });
 
         const windowStart = toDate(item.nurtureWindowStartedAt);
@@ -206,9 +215,12 @@ export async function GET(request: NextRequest) {
           stageId: item.stageId,
           stageLabel: item.stageLabel,
           emailProvider: "resend",
+          resendMessageId,
           subject: item.subject,
           sentAt: now,
           createdAt: now,
+          openCount: 0,
+          clickCount: 0,
         });
 
         stageCounters[item.stageLabel] = (stageCounters[item.stageLabel] || 0) + 1;
