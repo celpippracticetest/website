@@ -10,6 +10,8 @@ import SvgCheckSquare from "@/components/icons/CheckSquare";
 import SvgLock from "@/components/icons/Lock";
 import SvgConfirmCheck from "@/components/icons/ConfirmCheck";
 import { categoryToSkillRoute, practicePath } from "@/lib/practiceRoutes";
+import { PracticeBreadcrumbNav } from "@/components/practice-seo/PracticeBreadcrumbNav";
+import { buildTaskPickerPageH1 } from "@/components/practice-seo/practiceBreadcrumbShared";
 
 type PracticeListItem = TPracticeNavItem | Pick<TPracticeDto, "id" | "name" | "isFree" | "title">;
 
@@ -41,7 +43,6 @@ const ListeningTaskView = ({
   allPractices,
   task,
   completedPractice,
-  title,
   selectedTaskId: selectedTaskIdProp,
   hideHeader = false,
 }: ListeningTaskViewProps) => {
@@ -60,20 +61,20 @@ const ListeningTaskView = ({
   const showPlanLoading =
     isLoaded && user && user.publicMetadata?.plan === undefined;
 
+  const skill = categoryToSkillRoute(task.category);
+
   return (
     <div className="animate-fadeIn space-y-6 md:space-y-8">
+      <PracticeBreadcrumbNav skill={skill} task={task} />
+      {!hideHeader && (
+        <div className="mx-auto w-full max-w-[1280px] px-4 pb-0.5 pt-2">
+          <h1 className="text-base font-semibold leading-snug text-[#212E42] sm:text-lg">
+            {buildTaskPickerPageH1(skill, task)}
+          </h1>
+        </div>
+      )}
       <div className="mx-auto w-full max-w-xl">
-        {!hideHeader && (
-          <div className="flex flex-col px-6 pt-6">
-            <p className="text-sm font-normal text-[#76808F]">
-              {title} - {(task.taskNumber ?? "").replace("Task #", "Part")}
-            </p>
-            <h2 className="pt-2 text-base font-semibold leading-5 tracking-wide text-[#212E42]">
-              {task.name}
-            </h2>
-          </div>
-        )}
-        <div className="flex flex-wrap justify-start gap-2 px-6 pt-6">
+        <div className="flex flex-wrap justify-start gap-2 px-6 pt-4">
           {showPlanLoading ? (
             <div className="w-full py-6 text-center text-sm text-[#76808F]">
               Loading…

@@ -31,6 +31,12 @@ import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
 import { practicePath } from "@/lib/practiceRoutes";
 import type { SpeakingPracticeInitialAuth } from "./types";
+import {
+  hasGuestSpeakingTrialAvailable,
+  loadGuestSpeakingAnswers,
+  markGuestSpeakingTrialUsed,
+  saveGuestSpeakingAnswer,
+} from "@/lib/writingFreeTrial";
 
 interface SpeakingPracticeViewProps {
   practice: TPracticeDto;
@@ -98,9 +104,7 @@ const SpeakingPracticeView = ({
   const [pointsAwarded, setPointsAwarded] = useState(false);
   const [aiFeedbackPointsAwarded, setAiFeedbackPointsAwarded] = useState(false);
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
-  const authReady =
-    Boolean(initialAuth) ||
-    (isLoaded && (!user || user.publicMetadata?.plan !== undefined));
+  const authReady = initialAuth?.isSignedIn === true || isLoaded;
   const effectivePlan =
     (user?.publicMetadata?.plan as string | undefined) ??
     initialAuth?.plan ??
@@ -108,7 +112,9 @@ const SpeakingPracticeView = ({
   const effectivePurchaseDate =
     (user?.publicMetadata?.purchaseDate as string | undefined) ??
     initialAuth?.purchaseDate;
-  const effectiveIsSignedIn = isLoaded ? isSignedIn : (initialAuth?.isSignedIn ?? false);
+  const effectiveIsSignedIn = isLoaded
+    ? isSignedIn
+    : (initialAuth?.isSignedIn ?? false);
   const { addPoints } = useLeaguePoints();
   const {
     isModalOpen,
@@ -119,7 +125,7 @@ const SpeakingPracticeView = ({
     checkTrophyAchievements,
   } = useTrophySystem();
   const freeUser = effectivePlan === "free";
-  const noUser = authReady ? !effectiveIsSignedIn : false;
+  const noUser = isLoaded ? !isSignedIn : false;
   const { open: pricingModalOpen, setOpen: setPricingModalOpen, openPricingModal } =
     usePricingNavModal();
   const router = useRouter();
@@ -140,10 +146,14 @@ const SpeakingPracticeView = ({
   const [, setAudioURL] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunks = useRef<Blob[]>([]);
-  const shouldShowPractice: any =
+  const guestSpeakingTrialAvailable =
+    noUser && practice.isFree && hasGuestSpeakingTrialAvailable();
+  const shouldShowPractice =
     practice.isFree ||
-    (!practice.isFree &&
-      hasPaidPracticeAccess(effectivePlan, effectivePurchaseDate));
+    hasPaidPracticeAccess(effectivePlan, effectivePurchaseDate) ||
+    guestSpeakingTrialAvailable;
+  const canRecordSpeaking =
+    shouldShowPractice && (effectiveIsSignedIn || guestSpeakingTrialAvailable);
   const [answers, setAnswers] = useState<TWritingAnswerDto[]>(
     initialSpeakingAnswers ?? []
   );
@@ -224,25 +234,22 @@ const SpeakingPracticeView = ({
   }, [page, time, isRecording, recordingTime]);
 
   useEffect(() => {
-    if (time === 0) {
-      if (freeAttempts === 0) {
-        if (freeUser) {
-          openPricingModal();
-        }
-        if (noUser) {
-          setShowLoginModal(true);
-        }
-        return;
-      }
+    if (time !== 0) return;
+    if (!isLoaded && !initialAuth?.isSignedIn) return;
 
+    if (!canRecordSpeaking) {
+      if (!isLoaded) return;
       if (noUser) {
         setShowLoginModal(true);
-        return;
+      } else if (freeAttempts === 0 || !shouldShowPractice) {
+        openPricingModal();
       }
+      return;
+    }
 
-      // Check if microphone permission is already granted before auto-starting
-      // On mobile, we should require user interaction to request permissions
-      const checkPermissionAndStart = async () => {
+    setShowLoginModal(false);
+
+    const checkPermissionAndStart = async () => {
         try {
           if (navigator.permissions && navigator.permissions.query) {
             const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
@@ -276,8 +283,16 @@ const SpeakingPracticeView = ({
       };
       
       checkPermissionAndStart();
-    }
-  }, [time]);
+  }, [
+    time,
+    isLoaded,
+    initialAuth?.isSignedIn,
+    canRecordSpeaking,
+    freeAttempts,
+    noUser,
+    shouldShowPractice,
+    openPricingModal,
+  ]);
 
   useEffect(() => {
     if (recordingTime === 0) {
@@ -305,6 +320,8 @@ const SpeakingPracticeView = ({
 
     if (initialSpeakingAnswers?.length) {
       setAnswers(initialSpeakingAnswers);
+    } else if (noUser) {
+      setAnswers(loadGuestSpeakingAnswers(practice.id));
     } else {
       void fetchUsersAnswer();
     }
@@ -318,7 +335,14 @@ const SpeakingPracticeView = ({
   }, [selectedPracticeId, initialSpeakingAnswers]);
 
   useEffect(() => {
-    if (
+    if (!isLoaded || !noUser || initialSpeakingAnswers?.length) return;
+    setAnswers(loadGuestSpeakingAnswers(practice.id));
+  }, [isLoaded, noUser, practice.id, initialSpeakingAnswers]);
+
+  useEffect(() => {
+    if (noUser) {
+      setFreeAttempts(guestSpeakingTrialAvailable ? 1 : 0);
+    } else if (
       (user && !user.publicMetadata.plan) ||
       effectivePlan === "free"
     ) {
@@ -326,7 +350,7 @@ const SpeakingPracticeView = ({
     } else {
       setFreeAttempts(null);
     }
-  }, [user, answers]);
+  }, [user, answers, noUser, guestSpeakingTrialAvailable, effectivePlan]);
 
   const handleAnswerSelect = (questionId: number, answerId: string) => {
     setSelectedAnswers((prev) => ({
@@ -335,14 +359,91 @@ const SpeakingPracticeView = ({
     }));
   };
 
+  const submitSpeakingRecording = async (blob: Blob) => {
+    const isGuestSubmit = noUser && guestSpeakingTrialAvailable;
+    const endpoint = isGuestSubmit
+      ? "/api/answers/speaking/guest"
+      : "/api/answers/speaking";
+    const formData = new FormData();
+    formData.append("audio", blob, "recording.m4a");
+    formData.append("practiceId", selectedPracticeId ?? "");
+    const stopProgress = startPracticeSubmitProgress(setProgressBar);
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        if (response.status === 401 && noUser) {
+          setShowLoginModal(true);
+          return;
+        }
+        if (response.status === 403 && noUser) {
+          markGuestSpeakingTrialUsed();
+          openPricingModal();
+          return;
+        }
+        throw new Error(
+          typeof err.message === "string"
+            ? err.message
+            : "Failed to upload audio"
+        );
+      }
+
+      const data = await response.json();
+      setProgressBar(100);
+      setIsSubmit(false);
+      onAnswerButtonClick(practice, data);
+
+      if (isGuestSubmit) {
+        markGuestSpeakingTrialUsed();
+        saveGuestSpeakingAnswer(practice.id, data);
+        setAnswers([data as TWritingAnswerDto]);
+      } else if (typeof data?.id === "string") {
+        setAnswers((prev) => [
+          data as TWritingAnswerDto,
+          ...prev.filter((a) => a.id !== data.id),
+        ]);
+        void fetchUsersAnswer();
+
+        runPracticeSubmitSideEffects({
+          practiceId: practice.id,
+          skill: "Speaking",
+          overallScore: data.overall ?? data.overalScore ?? 0,
+          result: data,
+          durationSeconds: recordingTime,
+          usage: data.usage,
+          pointsAwarded,
+          aiFeedbackPointsAwarded,
+          addPoints,
+          checkTrophyAchievements,
+          onPointsAwarded: () => setPointsAwarded(true),
+          onAiFeedbackPointsAwarded: () => setAiFeedbackPointsAwarded(true),
+        });
+      }
+    } catch (error) {
+      console.error("Error uploading audio:", error);
+    } finally {
+      stopProgress();
+      setTimeout(() => setProgressBar(0), 600);
+    }
+  };
+
   const startRecording = async () => {
     try {
-      if (!user) {
-        setShowLoginModal(true);
+      if (!isLoaded && !initialAuth?.isSignedIn) {
         return;
       }
-      if (!shouldShowPractice) {
-        openPricingModal();
+      if (!canRecordSpeaking) {
+        if (noUser) {
+          setShowLoginModal(true);
+        } else {
+          openPricingModal();
+        }
         return;
       }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -362,57 +463,7 @@ const SpeakingPracticeView = ({
         const blob = new Blob(audioChunks.current, { type: "audio/m4a" });
         const url = URL.createObjectURL(blob);
         setAudioURL(url);
-        const formData = new FormData();
-        formData.append("audio", blob, "recording.m4a");
-        formData.append("practiceId", selectedPracticeId ?? "");
-        const stopProgress = startPracticeSubmitProgress(setProgressBar);
-
-        fetch("/api/answers/speaking", {
-          method: "POST",
-          credentials: "include",
-          body: formData,
-        })
-          .then((response) => {
-            stopProgress();
-            if (!response.ok) {
-              throw new Error("Failed to upload audio");
-            }
-            return response.json();
-          })
-          .then((data) => {
-            setProgressBar(100);
-            setIsSubmit(false);
-            onAnswerButtonClick(practice, data);
-            if (typeof data?.id === "string") {
-              setAnswers((prev) => [
-                data as TWritingAnswerDto,
-                ...prev.filter((a) => a.id !== data.id),
-              ]);
-            }
-            void fetchUsersAnswer();
-
-            runPracticeSubmitSideEffects({
-              practiceId: practice.id,
-              skill: "Speaking",
-              overallScore: data.overall ?? data.overalScore ?? 0,
-              result: data,
-              durationSeconds: recordingTime,
-              usage: data.usage,
-              pointsAwarded,
-              aiFeedbackPointsAwarded,
-              addPoints,
-              checkTrophyAchievements,
-              onPointsAwarded: () => setPointsAwarded(true),
-              onAiFeedbackPointsAwarded: () => setAiFeedbackPointsAwarded(true),
-            });
-          })
-          .catch((error) => {
-            console.error("Error uploading audio:", error);
-            stopProgress();
-          })
-          .finally(() => {
-            setTimeout(() => setProgressBar(0), 600);
-          });
+        void submitSpeakingRecording(blob);
         mediaRecorderRef.current?.stream
           .getTracks()
           .forEach((track) => track.stop());
@@ -517,7 +568,7 @@ const SpeakingPracticeView = ({
           showBack={speakingPracticeIndex > 0}
           showNext={speakingPracticeIndex < allPractices.length - 1}
           trailingSlot={
-            shouldShowPractice && user && page === "question" ? (
+            shouldShowPractice && page === "question" ? (
               <div className="min-w-[128px] shrink-0 rounded-full border border-error1/15 bg-error1/10 px-4 py-2 text-center font-body text-[15px] font-extrabold text-error1">
                 {time > 0
                   ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60}`
@@ -873,7 +924,7 @@ const SpeakingPracticeView = ({
                         </Button>
                       </div>
                     )}
-                    {shouldShowPractice && freeAttempts !== null && (
+                    {shouldShowPractice && freeAttempts !== null && !noUser && (
                       <div className="text-[14px] text-center mt-2">
                         <p className="text-[14px] text-gray-600">
                           You have{" "}
@@ -882,6 +933,14 @@ const SpeakingPracticeView = ({
                             {freeAttempts} free attempts{" "}
                           </b>{" "}
                           remaining.
+                        </p>
+                      </div>
+                    )}
+                    {noUser && guestSpeakingTrialAvailable && (
+                      <div className="text-[14px] text-center mt-2">
+                        <p className="text-[14px] text-gray-600">
+                          Try one free speaking task with AI feedback — no account
+                          needed.
                         </p>
                       </div>
                     )}

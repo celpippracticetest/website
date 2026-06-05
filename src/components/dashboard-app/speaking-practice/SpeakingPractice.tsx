@@ -10,6 +10,7 @@ import ListeningTaskView from "../listening-practice/ListeningTaskView";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import { hasGuestSpeakingTrialAvailable } from "@/lib/writingFreeTrial";
 import type { TWritingAnswerDto } from "@/models/answer";
 import type { SpeakingPracticeInitialAuth } from "./types";
 import { practicePath, taskPickerPath } from "@/lib/practiceRoutes";
@@ -53,9 +54,15 @@ const SpeakingPractice = ({
   const { handlePracticeComplete } = useListeningPracticeCompletion();
   const [isAnswerModalOpen, setAnswerModalOpen] = useState(false);
   const [result, setResult] = useState<Record<string, any> | null>(null);
-  const { user } = useHybridWebUser();
+  const { user, isLoaded, isSignedIn } = useHybridWebUser();
+  const noUser = isLoaded ? !isSignedIn : false;
+  const guestTrialAvailable =
+    noUser &&
+    Boolean(selectedPractice?.isFree) &&
+    hasGuestSpeakingTrialAvailable();
   const shouldShowPractice =
     (selectedPractice && selectedPractice.isFree) ||
+    guestTrialAvailable ||
     (selectedPractice &&
       !selectedPractice.isFree &&
       hasPaidPracticeAccess(
@@ -67,7 +74,7 @@ const SpeakingPractice = ({
     practice: TPracticeDto,
     result: Record<string, any>
   ) => {
-    if (shouldShowPractice) {
+    if (shouldShowPractice || result?.isGuestTrial) {
       setAnswerModalOpen(true);
       setResult(result);
     }

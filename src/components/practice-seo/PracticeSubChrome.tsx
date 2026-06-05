@@ -5,19 +5,11 @@ import { practicePath, taskPickerPath, type SkillRoute } from "@/lib/practiceRou
 import { absoluteUrl, buildPracticePageH1 } from "@/lib/practiceSeoCopy";
 import type { TPracticeDto } from "@/models/practice.model";
 import type { TTaskSchemaDto } from "@/models/tasks.model";
-
-const SKILL_HUB_LABEL: Record<SkillRoute, string> = {
-  speaking: "Speaking",
-  reading: "Reading",
-  writing: "Writing",
-  listening: "Listening",
-};
-
-const PRACTICE_OVERVIEW_PATH = "/practice-overview";
-
-function buildTaskBreadcrumbLabel(task: TTaskSchemaDto): string {
-  return `${task.taskNumber?.replace(" #", "") ?? task.taskNumber}.${task.name}`;
-}
+import {
+  buildTaskBreadcrumbLabel,
+  PRACTICE_OVERVIEW_PATH,
+  SKILL_HUB_LABEL,
+} from "./practiceBreadcrumbShared";
 
 type PracticeSubChromeProps = {
   skill: SkillRoute;

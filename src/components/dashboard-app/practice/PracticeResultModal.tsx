@@ -48,7 +48,12 @@ const PracticeResultModal = ({
         user?.publicMetadata?.plan as string | undefined,
         user?.publicMetadata?.purchaseDate as string | undefined
     );
-    const lockDetailedFeedback = isLoaded ? !isPro : true;
+    const isGuestTrial = Boolean(data?.isGuestTrial);
+    const lockDetailedFeedback = isGuestTrial
+        ? false
+        : isLoaded
+          ? !isPro
+          : true;
 
     // Reset tab when modal opens
     React.useEffect(() => {
