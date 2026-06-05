@@ -17,6 +17,7 @@ const QuestionItemSchema = z.object({
 const McqFeedbackRequestSchema = z.object({
   skill: z.enum(["Reading", "Listening"]),
   practiceId: z.string().min(1),
+  context: z.enum(["practice", "mock"]).optional().default("practice"),
   taskName: z.string().optional(),
   correct: z.number().int().min(0),
   total: z.number().int().min(1),
@@ -51,6 +52,13 @@ Rules:
 - Do not guarantee scores.
 - For Listening, mention note-taking or previewing questions when relevant.
 - For Reading, mention scanning, paraphrase traps, or inference when relevant.`;
+
+const MOCK_SYSTEM_ADDENDUM = `
+
+When context is a full mock exam (not isolated practice):
+- Tie advice to timed mock conditions and moving on after each section.
+- Mention stamina, answer transfer, and not losing points on skipped items.
+- Suggest one focus for the next full mock vs. isolated skill practice.`;
 
 function parseJsonContent(raw: string): unknown {
   const trimmed = raw.trim();
@@ -102,6 +110,7 @@ export async function POST(req: NextRequest) {
     const wrongItems = data.questions.filter((q) => !q.isCorrect);
     const userContent = JSON.stringify(
       {
+        context: data.context,
         skill: data.skill,
         taskName: data.taskName,
         score: `${data.correct}/${data.total}`,
@@ -113,6 +122,9 @@ export async function POST(req: NextRequest) {
       null,
       2
     );
+
+    const systemPrompt =
+      data.context === "mock" ? SYSTEM_PROMPT + MOCK_SYSTEM_ADDENDUM : SYSTEM_PROMPT;
 
     const model =
       resolveOpenRouterEvalModel() ?? "qwen/qwen3-next-80b-a3b-instruct";
@@ -138,7 +150,7 @@ export async function POST(req: NextRequest) {
             max_tokens: 800,
             temperature: 0.3,
             messages: [
-              { role: "system", content: SYSTEM_PROMPT },
+              { role: "system", content: systemPrompt },
               { role: "user", content: userContent },
             ],
           }),

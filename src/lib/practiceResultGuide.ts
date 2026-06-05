@@ -84,6 +84,36 @@ export function getMcqSkillTips(skill: McqSkill): string[] {
   ];
 }
 
+export function getMockExamMcqTips(skill: McqSkill): string[] {
+  if (skill === "Listening") {
+    return [
+      "In a full mock you cannot replay audio—commit your answer and stay with the recording.",
+      "Use pauses between parts to reset focus; Listening is often the longest section.",
+      "Wrong answers here often come from similar-sounding options—watch for negation and qualifiers.",
+    ];
+  }
+  return [
+    "Pace yourself across all reading parts; answer easier items first, then revisit harder ones.",
+    "Evidence for the correct option must be explicit in the passage—avoid outside knowledge.",
+    "In a mock exam, accuracy under time pressure matters more than re-reading every line.",
+  ];
+}
+
+export function getMockExamProductionTips(skill: ProductionSkill): string[] {
+  if (skill === "Writing") {
+    return [
+      "Mock writing is strictly timed—sketch a quick outline in the first 2–3 minutes.",
+      "Hit every bullet in the prompt; missing one requirement limits Task Fulfillment.",
+      "Reserve the last 2 minutes for proofreading grammar, articles, and word count.",
+    ];
+  }
+  return [
+    "Speaking tasks come one after another—keep answers focused and avoid rushing the opener.",
+    "Use preparation time to choose two clear points; a simple structure beats a long ramble.",
+    "Fluency and clarity matter as much as vocabulary in timed mock conditions.",
+  ];
+}
+
 export function getWeakestProductionSkills(scores: {
   coherence: number;
   vocabulary: number;

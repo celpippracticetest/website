@@ -18,6 +18,7 @@ import { useSearchParams } from "next/navigation";
 import ListeningDropDownQuestionList from "../listening-practice/components/ListeningDropDownQuestionList";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { ActivityLogger } from "@/lib/userActivity";
+import { runMockSubmitSideEffects } from "@/lib/mockSubmitSideEffects";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
@@ -250,29 +251,18 @@ const ListeningExamView = (props: ListeningExamViewProps) => {
         const result = await response.json();
         const loggerAttemptId = attemptId || `mock_${practice.taskId}_${Date.now()}`;
 
-        await ActivityLogger.mockCompleted(
-          loggerAttemptId,
-          practice.taskId.toString(),
-          result.overall,
-          result,
-          time
-        );
-
-        await addPoints(
-          20,
-          "mockExams",
-          `${Math.floor(time / 60)} minutes`
-        );
-
-        if (!section) {
-          await checkTrophyAchievements(
-            20,
-            "mockExams",
-            `${Math.floor(time / 60)}:${time % 60}`
-          );
-        }
-
         examAnswerPersistDoneRef.current = true;
+
+        runMockSubmitSideEffects({
+          attemptId: loggerAttemptId,
+          examId: practice.taskId.toString(),
+          overallScore: result.overall,
+          result,
+          durationSeconds: time,
+          section,
+          addPoints,
+          checkTrophyAchievements,
+        });
 
         if (section === "listening" && partId >= 6) {
           setShowContinueModal(true);

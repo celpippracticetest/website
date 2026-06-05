@@ -9,6 +9,7 @@ import { Accordion } from "radix-ui";
 import * as React from "react";
 import AudioPlayer from "../listening-practice/components/AudioPlayer";
 import { PRACTICE_PARTS } from "@/constants";
+import PracticeProductionScoreGuide from "../practice/PracticeProductionScoreGuide";
 
 const WritingResultView = ({
   examPart,
@@ -232,6 +233,14 @@ const WritingResultView = ({
                         </TableBody>
                       </Table>
                     </div>
+                  )}
+                  {answer?.result && (
+                    <PracticeProductionScoreGuide
+                      skill="Writing"
+                      overall={answer.result.overall ?? overallScore}
+                      scores={skillScores}
+                      context="mock"
+                    />
                   )}
                   <div className="flex flex-col gap-2 text-[14px]">
                     <div className="flex items-center gap-2">

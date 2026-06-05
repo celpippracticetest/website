@@ -614,17 +614,6 @@ export async function POST(request: NextRequest) {
 
       console.log("Add points result:", success);
 
-      // After adding points, try to auto-assign user to league if not already assigned
-      if (success) {
-        console.log("Points added successfully, checking for league assignment...");
-        const currentLeague = await leagueRepo.getUserCurrentLeague(userId);
-        if (!currentLeague) {
-          console.log("User not in league, attempting auto-assignment...");
-          const autoAssignResult = await leagueRepo.autoAssignUserToLeague(userId);
-          console.log("Auto-assignment result after points:", autoAssignResult);
-        }
-      }
-
       if (!success) {
         console.error("addPointsToUser returned false - checking user league status...");
 

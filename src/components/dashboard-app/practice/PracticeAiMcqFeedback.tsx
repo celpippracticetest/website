@@ -21,8 +21,24 @@ interface PracticeAiMcqFeedbackProps {
   wrong: number;
   notAnswered: number;
   questions: TQuestion[];
-  selectedAnswers: Record<string, string>;
+  selectedAnswers: Record<string, string> | string[];
   passageExcerpt?: string;
+  context?: "practice" | "mock";
+}
+
+function normalizeSelectedAnswers(
+  selectedAnswers: Record<string, string> | string[],
+  questionCount: number
+): Record<string, string> {
+  if (Array.isArray(selectedAnswers)) {
+    const out: Record<string, string> = {};
+    for (let i = 0; i < questionCount; i++) {
+      const id = selectedAnswers[i];
+      if (id) out[String(i)] = id;
+    }
+    return out;
+  }
+  return selectedAnswers;
 }
 
 function userAnswerFor(
@@ -37,11 +53,8 @@ function userAnswerFor(
   );
 }
 
-function cacheKey(
-  practiceId: string,
-  selectedAnswers: Record<string, string>
-) {
-  return `celpip_mcq_ai_${practiceId}_${JSON.stringify(selectedAnswers)}`;
+function cacheKey(sessionId: string, selectedAnswers: Record<string, string>) {
+  return `celpip_mcq_ai_${sessionId}_${JSON.stringify(selectedAnswers)}`;
 }
 
 export default function PracticeAiMcqFeedback(props: PracticeAiMcqFeedbackProps) {
@@ -50,9 +63,14 @@ export default function PracticeAiMcqFeedback(props: PracticeAiMcqFeedbackProps)
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const answersMap = useMemo(
+    () => normalizeSelectedAnswers(props.selectedAnswers, props.questions.length),
+    [props.selectedAnswers, props.questions.length]
+  );
+
   const payloadQuestions = useMemo(() => {
     return props.questions.map((q, index) => {
-      const ua = userAnswerFor(props.selectedAnswers, q, index);
+      const ua = userAnswerFor(answersMap, q, index);
       const userChoice = q.choices.find((c) => c.id === ua);
       const correctChoice = q.choices.find((c) => c.id === q.answer);
       return {
@@ -63,13 +81,13 @@ export default function PracticeAiMcqFeedback(props: PracticeAiMcqFeedbackProps)
         explanation: q.description,
       };
     });
-  }, [props.questions, props.selectedAnswers]);
+  }, [props.questions, answersMap]);
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
     if (!props.practiceId || props.questions.length === 0) return;
 
-    const key = cacheKey(props.practiceId, props.selectedAnswers);
+    const key = cacheKey(props.practiceId, answersMap);
     try {
       const cached = sessionStorage.getItem(key);
       if (cached) {
@@ -86,10 +104,12 @@ export default function PracticeAiMcqFeedback(props: PracticeAiMcqFeedbackProps)
 
     fetch("/api/practice/mcq-feedback", {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         skill: props.skill,
         practiceId: props.practiceId,
+        context: props.context ?? "practice",
         taskName: props.taskName,
         correct: props.correct,
         total: props.total,
@@ -130,6 +150,7 @@ export default function PracticeAiMcqFeedback(props: PracticeAiMcqFeedbackProps)
     isSignedIn,
     props.practiceId,
     props.skill,
+    props.context,
     props.taskName,
     props.correct,
     props.total,
@@ -137,7 +158,7 @@ export default function PracticeAiMcqFeedback(props: PracticeAiMcqFeedbackProps)
     props.notAnswered,
     props.passageExcerpt,
     payloadQuestions,
-    props.selectedAnswers,
+    answersMap,
     props.questions.length,
   ]);
 

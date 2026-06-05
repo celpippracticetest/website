@@ -16,6 +16,7 @@ import SvgReadingPart from "@/components/icons/ReadingPart";
 import SvgListeningPart from "@/components/icons/ListeningPart";
 import SvgSpeakingPart from "@/components/icons/SpeakingPart";
 import { ActivityLogger } from "@/lib/userActivity";
+import { runMockSubmitSideEffects } from "@/lib/mockSubmitSideEffects";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
@@ -201,41 +202,19 @@ const WritingExamView = ({
         setProgressBar(100);
         const result = await response.json();
 
-        // Log mock exam part completed
         const attemptId = browserAttemptId || `mock_${practice.taskId}_${Date.now()}`;
-        await ActivityLogger.mockCompleted(
+        runMockSubmitSideEffects({
           attemptId,
-          practice.taskId.toString(),
-          result.overall,
+          examId: practice.taskId.toString(),
+          overallScore: result.overall,
           result,
-          time
-        );
-
-        // Add league points for mock exam completion
-        await addPoints(20, "mockExams", `${Math.floor(time / 60)} minutes`);
-
-        // Check for trophy achievements (only for complete exam mode)
-        if (!section) {
-          await checkTrophyAchievements(
-            20,
-            "mockExams",
-            `${Math.floor(time / 60)}:${time % 60}`
-          );
-        }
-
-        // Log AI feedback generation
-        if (result.usage) {
-          await ActivityLogger.aiFeedbackGenerated(
-            "mock",
-            "Writing",
-            result.usage.prompt_tokens || 0,
-            result.usage.completion_tokens || 0,
-            attemptId
-          );
-
-          // Add league points for AI feedback
-          await addPoints(5, "aiFeedback");
-        }
+          durationSeconds: time,
+          section,
+          usage: result.usage,
+          aiFeedbackSkill: "Writing",
+          addPoints,
+          checkTrophyAchievements,
+        });
       } finally {
         clearInterval(progressInterval);
       }

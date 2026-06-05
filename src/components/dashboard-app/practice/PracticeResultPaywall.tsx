@@ -7,6 +7,9 @@ interface PracticeResultPaywallProps {
   onUpgrade: () => void;
   children: React.ReactNode;
   tint?: string;
+  title?: string;
+  description?: string;
+  buttonLabel?: string;
 }
 
 export default function PracticeResultPaywall({
@@ -14,6 +17,9 @@ export default function PracticeResultPaywall({
   onUpgrade,
   children,
   tint = "#ffffff",
+  title = "You're seeing half of your AI feedback",
+  description = "Upgrade to Pro for the full breakdown — grammar fixes, improvements, and a model answer.",
+  buttonLabel = "Get Pro",
 }: PracticeResultPaywallProps) {
   if (!locked) {
     return <>{children}</>;
@@ -50,18 +56,17 @@ export default function PracticeResultPaywall({
         <div className="flex flex-col items-center gap-3 text-center max-w-[320px] rounded-[16px] border border-[#D6E6FF] bg-white/95 px-6 py-5 shadow-lg">
           <WorkspacePremium className="h-6 w-6 text-[#316BFF]" />
           <p className="text-[15px] font-semibold text-[#212E42]">
-            You&apos;re seeing half of your AI feedback
+            {title}
           </p>
           <p className="text-[13px] text-[#76808F] leading-relaxed">
-            Upgrade to Pro for the full breakdown — grammar fixes,
-            improvements, and a model answer.
+            {description}
           </p>
           <button
             type="button"
             onClick={onUpgrade}
             className="flex h-[40px] min-w-[180px] items-center justify-center rounded-[24px] bg-[#4A7DFF] px-6 text-[14px] font-medium text-white hover:bg-[#316BFF] transition-colors"
           >
-            Get Pro
+            {buttonLabel}
           </button>
         </div>
       </div>

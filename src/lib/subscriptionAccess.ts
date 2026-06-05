@@ -93,14 +93,14 @@ export function isMockExamUnlockedViaPurchase(
 }
 
 /**
- * Full mock exam access for paid `plus`, or per-exam purchase.
- * `firstReadyExamId` is kept for call-site compatibility.
+ * Mock exam access: à la carte purchase, paid `plus`, or the first ready catalog exam for any signed-in user.
+ * `firstReadyExamId` is the lowest-`order` ready exam (see exam overview FREE badge).
  */
 export function hasMockExamAccess(
   plan: string | null | undefined,
   purchaseDate: unknown,
   examId: string | null | undefined,
-  _firstReadyExamId: string | null | undefined,
+  firstReadyExamId: string | null | undefined,
   purchasedMockExamIds?: unknown
 ) {
   const normalizedExamId = normalizeMockExamIdForAccess(examId ?? undefined);
@@ -108,7 +108,20 @@ export function hasMockExamAccess(
   if (normalizedExamId && purchasedIds.includes(normalizedExamId)) {
     return true;
   }
-  return hasPaidPracticeAccess(plan, purchaseDate);
+  if (hasPaidPracticeAccess(plan, purchaseDate)) {
+    return true;
+  }
+  const normalizedFirst = normalizeMockExamIdForAccess(
+    firstReadyExamId ?? undefined
+  );
+  if (
+    normalizedExamId &&
+    normalizedFirst &&
+    normalizedExamId === normalizedFirst
+  ) {
+    return true;
+  }
+  return false;
 }
 
 /**

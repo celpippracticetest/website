@@ -6,6 +6,7 @@ import { TQuestion } from "@/models/question.model";
 import { Accordion } from "radix-ui";
 import * as React from "react";
 import { PRACTICE_PARTS } from "@/constants";
+import PracticeMcqScoreGuide from "../practice/PracticeMcqScoreGuide";
 
 const ReadingResultView = ({
   examPart,
@@ -25,6 +26,25 @@ const ReadingResultView = ({
     (q: any, index: number) =>
       userAnswer?.answers[index] && q.answer === userAnswer?.answers[index]
   ).length;
+  const totalQuestions = allQuestions.length;
+  const numberOfWrong = allQuestions.filter(
+    (q: any, index: number) =>
+      userAnswer?.answers[index] && q.answer !== userAnswer?.answers[index]
+  ).length;
+  const notAnswered = allQuestions.filter(
+    (_q: any, index: number) => !userAnswer?.answers[index]
+  ).length;
+
+  const mockSessionId =
+    examPart?.examId != null && examPart?.partId != null
+      ? `mock_${examPart.examId}_part${examPart.partId}_${userAnswer?.attemptId ?? "legacy"}`
+      : undefined;
+
+  const partLabel =
+    examPart?.partId != null ? PRACTICE_PARTS[examPart.partId - 1] : undefined;
+
+  const passageExcerpt = examPart?.passages?.[0]?.body?.slice(0, 2000);
+
   return (
     <Accordion.Root
       className="border  border-[#D5D6D8] rounded-[8px] bg-white overflow-hidden"
@@ -74,7 +94,20 @@ const ReadingResultView = ({
         </Accordion.Header>
         <Accordion.Content>
           <div className="p-4 border-t border-gray-300 bg-white">
-            <div className=" gap-6 text-[14px] font-medium">
+            <PracticeMcqScoreGuide
+              skill="Reading"
+              correct={numberOfCorrect}
+              total={totalQuestions}
+              wrong={numberOfWrong}
+              notAnswered={notAnswered}
+              context="mock"
+              contextId={mockSessionId}
+              taskName={partLabel}
+              questions={allQuestions as TQuestion[]}
+              selectedAnswers={userAnswer?.answers ?? {}}
+              passageExcerpt={passageExcerpt}
+            />
+            <div className="mt-[16px] gap-6 text-[14px] font-medium">
               {allQuestions?.map((question: TQuestion, index: number) => (
                 <React.Fragment key={index}>
                   <div key={index} className="flex flex-col gap-2 col-span-3">
@@ -136,7 +169,7 @@ const ReadingResultView = ({
                       </div>
                     </div>
                     {question.description && (
-                      <div className="flex pl-[16px]  rounded-[8px] text-[#5786FF] items-center h-[40px] bg-[#F2F6FF] text-[16px] font-medium  overflow-x-auto whitespace-nowrap">
+                      <div className="rounded-[8px] bg-[#F2F6FF] px-[16px] py-2 text-[16px] font-medium leading-relaxed text-[#5786FF] whitespace-normal break-words">
                         {question.description}
                       </div>
                     )}

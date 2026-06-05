@@ -17,6 +17,7 @@ import SvgWritingPart from "@/components/icons/WritingPart";
 import SvgListeningPart from "@/components/icons/ListeningPart";
 import SvgReadingPart from "@/components/icons/ReadingPart";
 import { ActivityLogger } from "@/lib/userActivity";
+import { runMockSubmitSideEffects } from "@/lib/mockSubmitSideEffects";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
@@ -242,32 +243,15 @@ const SpeakingExamView = ({
       }
       setProgressBar(100);
 
-      await response.json();
-      // Log mock exam part completed
       const loggerAttemptId = browserAttemptId || `mock_${practice.taskId}_${Date.now()}`;
-      await ActivityLogger.mockCompleted(
-        loggerAttemptId,
-        practice.taskId.toString(),
-        undefined, // Score will be available later
-        undefined, // Breakdown will be available later
-        recordingTime
-      );
-
-      // Add league points for mock exam completion
-      await addPoints(
-        20,
-        "mockExams",
-        `${Math.floor(recordingTime / 60)} minutes`
-      );
-
-      // Check for trophy achievements (only for complete exam mode)
-      if (!section) {
-        await checkTrophyAchievements(
-          20,
-          "mockExams",
-          `${Math.floor(recordingTime / 60)}:${recordingTime % 60}`
-        );
-      }
+      runMockSubmitSideEffects({
+        attemptId: loggerAttemptId,
+        examId: practice.taskId.toString(),
+        durationSeconds: recordingTime,
+        section,
+        addPoints,
+        checkTrophyAchievements,
+      });
 
       setIsSubmit(true);
     } catch (error) {

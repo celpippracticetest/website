@@ -18,6 +18,7 @@ import SvgSpeakingPart from "@/components/icons/SpeakingPart";
 import SvgWritingPart from "@/components/icons/WritingPart";
 import SvgReadingPart from "@/components/icons/ReadingPart";
 import { ActivityLogger } from "@/lib/userActivity";
+import { runMockSubmitSideEffects } from "@/lib/mockSubmitSideEffects";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import {
   hasMockExamAccess,
@@ -220,29 +221,19 @@ const ReadingExamView = ({
 
         const result = await response.json();
         const loggerAttemptId = attemptIdParam || `mock_${practice.taskId}_${Date.now()}`;
-        await ActivityLogger.mockCompleted(
-          loggerAttemptId,
-          practice.taskId.toString(),
-          result.overall,
-          result,
-          time
-        );
-
-        await addPoints(
-          20,
-          "mockExams",
-          `${Math.floor(time / 60)} minutes`
-        );
-
-        if (!section) {
-          await checkTrophyAchievements(
-            20,
-            "mockExams",
-            `${Math.floor(time / 60)}:${time % 60}`
-          );
-        }
 
         examAnswerPersistDoneRef.current = true;
+
+        runMockSubmitSideEffects({
+          attemptId: loggerAttemptId,
+          examId: practice.taskId.toString(),
+          overallScore: result.overall,
+          result,
+          durationSeconds: time,
+          section,
+          addPoints,
+          checkTrophyAchievements,
+        });
 
         if (section === "reading" && partId >= 10) {
           setShowContinueModal(true);

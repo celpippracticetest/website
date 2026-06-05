@@ -538,8 +538,6 @@ export class LeagueRepository {
           { userId, seasonId },
           {
             $setOnInsert: {
-              leagueId: new ObjectId(),
-              groupId: new ObjectId(),
               totalPoints: 0,
               overallPoints: 0,
               pointsBreakdown: {
@@ -935,11 +933,16 @@ export class LeagueRepository {
         return false;
       }
 
-      // Check if user is already in any league group
+      // Check if user is already in a real league group
       const currentLeague = await this.getUserCurrentLeague(userId);
-      if (currentLeague && currentLeague.groupId && currentLeague.groupId !== null && currentLeague.groupId !== "" && currentLeague.groupId !== "null") {
-        console.log("User already in league group:", currentLeague.groupId);
-        return true;
+      if (currentLeague?.groupId) {
+        const group = await this.db
+          .collection(this.leagueGroupsCollection)
+          .findOne({ _id: new ObjectId(currentLeague.groupId) });
+        if (group?.users?.some((u: { userId: string }) => u.userId === userId)) {
+          console.log("User already in league group:", currentLeague.groupId);
+          return true;
+        }
       }
 
       // Get user's overall points to determine league
@@ -1013,24 +1016,36 @@ export class LeagueRepository {
 
         groupId = await this.createLeagueGroup(newGroup);
 
-        // Create user league points record for new group
-        await this.createUserLeaguePoints({
+        const existingPoints = await this.getUserLeaguePoints(
           userId,
-          leagueId: new ObjectId(targetLeague._id),
-          groupId: new ObjectId(groupId!),
-          seasonId: currentSeason.seasonId,
-          totalPoints: 0,
-          overallPoints: overallPoints,
-          pointsBreakdown: {
-            mockExams: 0,
-            practiceSessions: 0,
-            aiFeedback: 0,
-            skillsTried: 0,
-            timeSpent: 0,
-          },
-          tasksCompleted: [],
-          lastActivityAt: new Date(),
-        });
+          currentSeason.seasonId
+        );
+        if (existingPoints) {
+          await this.updateUserLeaguePoints(userId, currentSeason.seasonId, {
+            leagueId: new ObjectId(targetLeague._id),
+            groupId: new ObjectId(groupId!),
+            overallPoints: overallPoints,
+            lastActivityAt: new Date(),
+          });
+        } else {
+          await this.createUserLeaguePoints({
+            userId,
+            leagueId: new ObjectId(targetLeague._id),
+            groupId: new ObjectId(groupId!),
+            seasonId: currentSeason.seasonId,
+            totalPoints: 0,
+            overallPoints: overallPoints,
+            pointsBreakdown: {
+              mockExams: 0,
+              practiceSessions: 0,
+              aiFeedback: 0,
+              skillsTried: 0,
+              timeSpent: 0,
+            },
+            tasksCompleted: [],
+            lastActivityAt: new Date(),
+          });
+        }
 
         // Update season league groups
         await this.db.collection(this.leagueSeasonsCollection).updateOne(

@@ -66,7 +66,7 @@ function runMingoUpdate(
 ): void {
   const payload = stripSetOnInsert(update);
   if (arrayFilters?.length) {
-    mingoUpdate(doc, payload as never, { arrayFilters } as never);
+    mingoUpdate(doc, payload as never, arrayFilters as never);
   } else {
     mingoUpdate(doc, payload as never);
   }
