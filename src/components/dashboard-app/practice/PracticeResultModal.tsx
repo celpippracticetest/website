@@ -1,3 +1,5 @@
+"use client";
+
 import CircularSkillProgress from "@/components/shared/CircularSkillProgress";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import * as React from "react";
@@ -12,6 +14,13 @@ import { InteractiveText } from "./InteractiveText";
 import { diffWords } from "diff";
 import { useEffect } from "react";
 import { useAskBeavoStore } from "@/stores/askBeavoStore";
+import PracticeProductionScoreGuide from "./PracticeProductionScoreGuide";
+import PracticeGrammarMistakes from "./PracticeGrammarMistakes";
+import PracticeResultPaywall from "./PracticeResultPaywall";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import { PricingNavModal } from "@/components/pages/pricing/PricingNavModal";
+import { usePricingNavModal } from "@/hooks/usePricingNavModal";
 
 interface PracticeResultModalProps {
     isOpen: boolean;
@@ -32,6 +41,14 @@ const PracticeResultModal = ({
     const [isTaskResponseOpen, setIsTaskResponseOpen] = React.useState(false);
     const [onlyShowCorrect, setOnlyShowCorrect] = React.useState(false);
     const { askAboutWord, setOpen } = useAskBeavoStore();
+    const { user, isLoaded } = useHybridWebUser();
+    const { open: pricingModalOpen, setOpen: setPricingModalOpen, openPricingModal } =
+        usePricingNavModal();
+    const isPro = hasPaidPracticeAccess(
+        user?.publicMetadata?.plan as string | undefined,
+        user?.publicMetadata?.purchaseDate as string | undefined
+    );
+    const lockDetailedFeedback = isLoaded ? !isPro : true;
 
     // Reset tab when modal opens
     React.useEffect(() => {
@@ -221,6 +238,18 @@ const PracticeResultModal = ({
                         </div>
                     </div>
 
+                    {/* Detailed feedback: free users see top half, Pro sees all */}
+                    <PracticeResultPaywall
+                        locked={lockDetailedFeedback}
+                        onUpgrade={openPricingModal}
+                        tint="#F4F7FF"
+                    >
+                    <PracticeProductionScoreGuide
+                        skill={type === "WRITING" ? "Writing" : "Speaking"}
+                        overall={data?.result?.overall ?? overallScore}
+                        scores={skillScores}
+                    />
+
                     {/* TABBED INTERFACE */}
                     <div className="mt-4">
                         {/* Tab Headers */}
@@ -283,6 +312,10 @@ const PracticeResultModal = ({
                                 </div>
                             </div>
 
+                            <PracticeGrammarMistakes
+                                mistakes={data?.result?.grammarMistakes ?? []}
+                            />
+
                             {/* IMPROVEMENTS SECTION */}
                             <div id="improvements" className="flex flex-col gap-3 mb-10 pt-4 scroll-mt-24">
                                 <div className="flex items-center gap-4">
@@ -295,21 +328,13 @@ const PracticeResultModal = ({
                                 <div className="prose prose-base max-w-none text-slate-800 bg-[#FFF5EF] p-8 rounded-[12px] leading-8 text-[16px]">
                                     <span>
                                         {(() => {
-                                            // For Writing, data.text contains the user's response.
-                                            // For Speaking, data.text might be missing. We can reconstruct it from grammarMistakes 
-                                            // (which typically covers the full text in segments) or check if there's a transcript.
-                                            // Fallback to joining grammarMistakes if text is missing.
                                             const originalText = data?.text || data?.result?.grammarMistakes?.map((m: { original: string }) => m.original).join(" ") || "";
-
-                                            // The better version is used for the diff.
                                             const improvedText = data?.result?.betterVersion || "";
-
 
                                             try {
                                                 const diff = diffWords(originalText, improvedText);
 
                                                 return diff.map((part, index) => {
-                                                    // Improved (Added) -> Green
                                                     if (part.added) {
                                                         if (onlyShowCorrect) {
                                                             return (
@@ -325,9 +350,8 @@ const PracticeResultModal = ({
                                                         );
                                                     }
 
-                                                    // Original (Removed) -> Red
                                                     if (part.removed) {
-                                                        if (onlyShowCorrect) return null; // Hide removed parts in "only correct" mode
+                                                        if (onlyShowCorrect) return null;
 
                                                         return (
                                                             <span key={index} className="bg-[#FFBDB3] text-slate-900 mx-0.5 px-0.5 rounded-[2px] line-through decoration-slate-500/50">
@@ -336,7 +360,6 @@ const PracticeResultModal = ({
                                                         );
                                                     }
 
-                                                    // Unchanged
                                                     return <span key={index}>{part.value}</span>;
                                                 });
                                             } catch (e) {
@@ -347,12 +370,14 @@ const PracticeResultModal = ({
                                     </span>
                                 </div>
 
+                                {!lockDetailedFeedback && (
                                 <button
                                     onClick={() => setOnlyShowCorrect(!onlyShowCorrect)}
                                     className="mt-2 w-fit px-6 py-3 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-slate-900 font-bold rounded-lg text-[14px] transition-colors"
                                 >
                                     {onlyShowCorrect ? "Show Differences" : "Show only the correct version"}
                                 </button>
+                                )}
                             </div>
 
                             {/* BETTER VERSION SECTION */}
@@ -365,7 +390,7 @@ const PracticeResultModal = ({
                                 </div>
 
                                 <div className="flex flex-col gap-0 text-slate-800 bg-[#F2FFFD] rounded-[12px] overflow-hidden">
-                                    {/* Helper Tip / Bulk Save */}
+                                    {!lockDetailedFeedback && (
                                     <div className="flex items-center justify-center gap-2 p-6 pb-2 pt-8">
                                         <button
                                             onClick={async () => {
@@ -379,9 +404,7 @@ const PracticeResultModal = ({
                                                             body: JSON.stringify({ words }),
                                                         });
                                                         if (response.ok) {
-                                                            // Could show a toast here
                                                             alert("All words saved to your vocabulary!");
-                                                            // Reload WordMenus to update their status
                                                             window.location.reload();
                                                         }
                                                     } catch (error) {
@@ -397,8 +420,8 @@ const PracticeResultModal = ({
                                             <span className="text-[14px] font-bold text-slate-900 underline decoration-[#0DAA94] decoration-2 underline-offset-4">Click to save all words to learn them later.</span>
                                         </button>
                                     </div>
+                                    )}
 
-                                    {/* Content */}
                                     <div className="text-slate-700 p-8 pt-4 leading-8 text-[16px]">
                                         <InteractiveText
                                             text={data?.result?.betterVersion || ''}
@@ -406,7 +429,7 @@ const PracticeResultModal = ({
                                         />
                                     </div>
 
-                                    {/* Audio Player */}
+                                    {!lockDetailedFeedback && (
                                     <div className="px-8 pb-8 pt-0">
                                         <AudioPlayerV2
                                             key="better-version-audio"
@@ -414,13 +437,16 @@ const PracticeResultModal = ({
                                             textToSpeak={data?.result?.betterVersion || ""}
                                         />
                                     </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
                     </div>
+                    </PracticeResultPaywall>
 
                 </div>
             </div >
+            <PricingNavModal open={pricingModalOpen} onOpenChange={setPricingModalOpen} />
         </>
     );
 };

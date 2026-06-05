@@ -9,8 +9,6 @@ import type { TWritingAnswerDto } from "@/models/answer";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import ListeningTaskView from "../listening-practice/ListeningTaskView";
 import { useRouter } from "nextjs-toploader/app";
-import { useHybridWebUser } from "@/hooks/useHybridWebUser";
-import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { practicePath, taskPickerPath } from "@/lib/practiceRoutes";
 
 interface WritingPracticeProps {
@@ -22,6 +20,7 @@ interface WritingPracticeProps {
   initialWritingAnswers?: TWritingAnswerDto[];
   routePracticeId?: string;
   routeTaskId?: string;
+  totalWritingAnswerCount?: number;
 }
 
 const WritingPractice = ({
@@ -32,6 +31,7 @@ const WritingPractice = ({
   initialWritingAnswers = [],
   routePracticeId,
   routeTaskId,
+  totalWritingAnswerCount = 0,
 }: WritingPracticeProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -41,24 +41,13 @@ const WritingPractice = ({
   const { handlePracticeComplete } = useListeningPracticeCompletion();
   const [isAnswerModalOpen, setAnswerModalOpen] = useState(false);
   const [result, setResult] = useState<Record<string, any> | null>(null);
-  const { user } = useHybridWebUser();
-  const shouldShowPractice =
-    (selectedPractice && selectedPractice.isFree) ||
-    (selectedPractice &&
-      !selectedPractice.isFree &&
-      hasPaidPracticeAccess(
-        user?.publicMetadata.plan as string | undefined,
-        user?.publicMetadata.purchaseDate as string | undefined
-      ));
 
   const onAnswerButtonClick = (
     practice: TPracticeDto,
     result: Record<string, any>
   ) => {
-    if (shouldShowPractice) {
-      setAnswerModalOpen(true);
-      setResult(result);
-    }
+    setAnswerModalOpen(true);
+    setResult(result);
   };
 
   useEffect(() => {
@@ -112,6 +101,7 @@ const WritingPractice = ({
             completedPracticeId={completedPracticeId}
             initialWritingAnswers={initialWritingAnswers}
             routePracticeId={routePracticeId}
+            totalWritingAnswerCount={totalWritingAnswerCount}
           />
           <WritingAnswerModal
             isAnswerModalOpen={isAnswerModalOpen}

@@ -2,7 +2,9 @@ import { useState } from "react";
 import { ListeningQuestion } from "../types/ListeningPractice";
 import QuestionOption from "./QuestionOption";
 import { TQuestion } from "@/models/question.model";
-import AudioPlayer from "./AudioPlayer";
+import PracticeMcqScoreGuide from "../../practice/PracticeMcqScoreGuide";
+import PracticeQuestionAnswerLabels from "../../practice/PracticeQuestionAnswerLabels";
+import PracticeQuestionExplanation from "../../practice/PracticeQuestionExplanation";
 
 interface ListeningAnswerListProps {
   questions: TQuestion[];
@@ -61,6 +63,14 @@ const ListeningAnswerList = ({
           </div>
         </div>
 
+        <PracticeMcqScoreGuide
+          skill="Reading"
+          correct={numberOfCorrect}
+          total={questions.length}
+          wrong={numberOfWrong}
+          notAnswered={notAnswered}
+        />
+
         <div className="flex flex-col gap-3 mt-[24px]">
           {questions.map((question, index) => (
             <div key={index} className="">
@@ -88,6 +98,11 @@ const ListeningAnswerList = ({
                   )}
               </div>
 
+              <PracticeQuestionAnswerLabels
+                question={question}
+                userAnswerId={selectedAnswers[index]}
+              />
+
               <div className="flex flex-col mt-[12px]">
                 {question.choices
                   .filter(
@@ -109,6 +124,18 @@ const ListeningAnswerList = ({
                     />
                   ))}
               </div>
+
+              {question.description && (
+                <PracticeQuestionExplanation
+                  description={question.description}
+                  variant={
+                    selectedAnswers[index] !== undefined &&
+                    selectedAnswers[index] !== question.answer
+                      ? "wrong"
+                      : "tip"
+                  }
+                />
+              )}
             </div>
           ))}
           {/* {questions.map((question, index) => {

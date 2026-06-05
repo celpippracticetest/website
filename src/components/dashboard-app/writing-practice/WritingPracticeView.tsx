@@ -37,6 +37,12 @@ import StatBadge from "@/components/shared/StatBadge";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
 import { practicePath } from "@/lib/practiceRoutes";
 import { sanitizeMockExamAttemptIdParam } from "@/lib/mockExamAttemptId";
+import {
+  hasGuestWritingTrialAvailable,
+  loadGuestWritingAnswers,
+  markGuestWritingTrialUsed,
+  saveGuestWritingAnswer,
+} from "@/lib/writingFreeTrial";
 
 const SvgBestValuePlan = dynamic(
   () => import("../../../components/icons/BestValuePlan"),
@@ -73,6 +79,7 @@ interface WritingPracticeViewProps {
   onNextPractice: () => void;
   initialWritingAnswers?: TWritingAnswerDto[];
   routePracticeId?: string;
+  totalWritingAnswerCount?: number;
 }
 
 const WritingPracticeView = ({
@@ -86,6 +93,7 @@ const WritingPracticeView = ({
   onAnswerButtonClick,
   initialWritingAnswers = [],
   routePracticeId,
+  totalWritingAnswerCount = 0,
 }: WritingPracticeViewProps) => {
   const practiceCount = usePracticeCount(task.id, practice.id, task.taskNumber);
   const router = useRouter();
@@ -104,8 +112,16 @@ const WritingPracticeView = ({
   } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
-  const { open: pricingModalOpen, setOpen: setPricingModalOpen, openPricingModal } =
-    usePricingNavModal();
+  const isPaidUser = hasPaidPracticeAccess(
+    user?.publicMetadata.plan as string | undefined,
+    user?.publicMetadata.purchaseDate as string | undefined
+  );
+  const guestTrialAvailable =
+    noUser && practice.isFree && hasGuestWritingTrialAvailable();
+  const shouldShowPractice: boolean =
+    practice.isFree ||
+    isPaidUser ||
+    guestTrialAvailable;
   const [showContinueModal, setShowContinueModal] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -129,13 +145,8 @@ const WritingPracticeView = ({
   const [isOpen, setIsOpen] = useState<Record<number, boolean>>({});
   const [isPlaying, setIsPlaying] = useState(false);
 
-  const shouldShowPractice: any =
-    practice.isFree ||
-    (!practice.isFree &&
-      hasPaidPracticeAccess(
-        user?.publicMetadata.plan as string | undefined,
-        user?.publicMetadata.purchaseDate as string | undefined
-      ));
+  const { open: pricingModalOpen, setOpen: setPricingModalOpen, openPricingModal } =
+    usePricingNavModal();
   const [answers, setAnswers] = useState<any[]>([]);
   const [freeAttempts, setFreeAttempts] = useState<number | null>(3);
   useEffect(() => {
@@ -176,15 +187,14 @@ const WritingPracticeView = ({
   }, [isSubmit]);
 
   useEffect(() => {
-    if (
-      (user && !user.publicMetadata.plan) ||
-      (user && user.publicMetadata.plan === "free")
-    ) {
-      setFreeAttempts(3 - answers.length > 0 ? 3 - answers.length : 0);
-    } else {
+    if (isPaidUser) {
       setFreeAttempts(null);
+    } else if (noUser) {
+      setFreeAttempts(guestTrialAvailable ? 1 : 0);
+    } else {
+      setFreeAttempts(totalWritingAnswerCount >= 1 ? 0 : 1);
     }
-  }, [user, answers]);
+  }, [isPaidUser, noUser, guestTrialAvailable, totalWritingAnswerCount, answers.length]);
 
   const fetchUsersAnswer = useCallback(async () => {
     if (!practice?.id) return;
@@ -223,8 +233,11 @@ const WritingPracticeView = ({
 
   const submitAnswer = async () => {
     const stopProgress = startPracticeSubmitProgress(setProgressBar);
+    const endpoint = noUser
+      ? "/api/answers/writing/guest"
+      : "/api/answers/writing";
     try {
-      const response = await fetch("/api/answers/writing", {
+      const response = await fetch(endpoint, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -236,36 +249,53 @@ const WritingPracticeView = ({
       });
 
       if (!response.ok) {
-        throw new Error("Network response was not ok.");
+        const err = await response.json().catch(() => ({}));
+        if (response.status === 403 && noUser) {
+          openPricingModal();
+        }
+        throw new Error(
+          typeof err.message === "string"
+            ? err.message
+            : "Network response was not ok."
+        );
       }
 
       const result = await response.json();
       setProgressBar(100);
       onAnswerButtonClick(practice, result);
-      if (typeof result?.id === "string") {
+
+      if (noUser) {
+        markGuestWritingTrialUsed();
+        saveGuestWritingAnswer(practice.id, result);
+        setAnswers([result as TWritingAnswerDto]);
+      } else if (typeof result?.id === "string") {
         setAnswers((prev) => [
           result as TWritingAnswerDto,
           ...prev.filter((a) => a.id !== result.id),
         ]);
       }
 
-      runPracticeSubmitSideEffects({
-        practiceId: practice.id,
-        skill: "Writing",
-        overallScore: result.overall ?? result.overalScore ?? 0,
-        result,
-        durationSeconds: time,
-        usage: result.usage,
-        pointsAwarded,
-        addPoints,
-        checkTrophyAchievements,
-        onPointsAwarded: () => setPointsAwarded(true),
-        onAiFeedbackPointsAwarded: () => {},
-      });
+      if (!noUser) {
+        runPracticeSubmitSideEffects({
+          practiceId: practice.id,
+          skill: "Writing",
+          overallScore: result.overall ?? result.overalScore ?? 0,
+          result,
+          durationSeconds: time,
+          usage: result.usage,
+          pointsAwarded,
+          addPoints,
+          checkTrophyAchievements,
+          onPointsAwarded: () => setPointsAwarded(true),
+          onAiFeedbackPointsAwarded: () => {},
+        });
+      }
 
       setTryToSubmit(false);
       setIsSubmit(false);
-      void fetchUsersAnswer();
+      if (!noUser) {
+        void fetchUsersAnswer();
+      }
     } catch (error) {
       console.error("Error submitting answer:", error);
     } finally {
@@ -287,6 +317,8 @@ const WritingPracticeView = ({
 
     if (routePracticeId && practice.id === routePracticeId) {
       setAnswers(initialWritingAnswers);
+    } else if (noUser) {
+      setAnswers(loadGuestWritingAnswers(practice.id));
     } else {
       void fetchUsersAnswer();
     }
@@ -369,7 +401,7 @@ const WritingPracticeView = ({
   if (
     !isHydrated ||
     !isLoaded ||
-    (user && user.publicMetadata?.plan === undefined)
+    (isSignedIn && user && user.publicMetadata?.plan === undefined)
   ) {
     return (
       <div className="text-center py-10 text-gray-500 w-full">Loading...</div>
@@ -544,10 +576,9 @@ const WritingPracticeView = ({
                       placeholder="Type your response here..."
                       value={text}
                       onChange={(e) => {
-                        if (!user) {
+                        if (!shouldShowPractice) {
                           openPricingModal();
-                        } else if (!shouldShowPractice) {
-                          openPricingModal();
+                          return;
                         }
                         const wordCount = e.target.value
                           .trim()
@@ -619,10 +650,6 @@ const WritingPracticeView = ({
                             disabled={progressBar > 0}
                             className="cursor-pointer flex h-[40px] items-center justify-center text-white text-[14px] font-normal  rounded-[24px] bg-[#4A7DFF] w-full"
                             onClick={() => {
-                              if (!user) {
-                                openPricingModal();
-                                return;
-                              }
                               if (!shouldShowPractice) {
                                 openPricingModal();
                                 return;
@@ -652,15 +679,25 @@ const WritingPracticeView = ({
                           Subscribe
                         </button>
                       )}
-                      {shouldShowPractice && freeAttempts !== null && (
+                      {shouldShowPractice && freeAttempts !== null && freeAttempts > 0 && (
                         <div className="text-[14px] text-center mt-2">
                           <p className="text-[14px] text-gray-600">
-                            You have{" "}
-                            <b className="text-gray-900">
-                              {" "}
-                              {freeAttempts} free attempts{" "}
-                            </b>{" "}
-                            remaining.
+                            {noUser ? (
+                              <>
+                                <b className="text-gray-900">1 free try</b> — no
+                                account required. Sign up afterward to save your
+                                results.
+                              </>
+                            ) : (
+                              <>
+                                You have{" "}
+                                <b className="text-gray-900">
+                                  {freeAttempts} free attempt
+                                  {freeAttempts === 1 ? "" : "s"}
+                                </b>{" "}
+                                remaining.
+                              </>
+                            )}
                           </p>
                         </div>
                       )}

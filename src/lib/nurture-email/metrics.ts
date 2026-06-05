@@ -40,6 +40,85 @@ function rate(numerator: number, denominator: number): number {
   return Math.round((numerator / denominator) * 1000) / 10;
 }
 
+async function applyNurtureEngagementToStats(input: {
+  eventType: NurtureEmailEventType;
+  resendMessageId: string;
+  occurredAt: Date;
+  userId?: string;
+  stageId?: string;
+}): Promise<boolean> {
+  const sql = getSql();
+  const isOpen = input.eventType === "opened";
+  const userId = input.userId?.trim();
+  const stageId = input.stageId?.trim();
+
+  if (isOpen) {
+    const byMessageId = await sql<Array<{ mongo_id: string }>>`
+      UPDATE public.user_nurture_email_stats
+      SET
+        opened_at = COALESCE(opened_at, ${input.occurredAt}),
+        last_opened_at = ${input.occurredAt},
+        open_count = open_count + 1,
+        resend_message_id = COALESCE(resend_message_id, ${input.resendMessageId})
+      WHERE resend_message_id = ${input.resendMessageId}
+      RETURNING mongo_id
+    `;
+    if (byMessageId.length > 0) return true;
+  } else {
+    const byMessageId = await sql<Array<{ mongo_id: string }>>`
+      UPDATE public.user_nurture_email_stats
+      SET
+        clicked_at = COALESCE(clicked_at, ${input.occurredAt}),
+        last_clicked_at = ${input.occurredAt},
+        click_count = click_count + 1,
+        resend_message_id = COALESCE(resend_message_id, ${input.resendMessageId})
+      WHERE resend_message_id = ${input.resendMessageId}
+      RETURNING mongo_id
+    `;
+    if (byMessageId.length > 0) return true;
+  }
+
+  if (!userId || !stageId) return false;
+
+  if (isOpen) {
+    const byUserStage = await sql<Array<{ mongo_id: string }>>`
+      UPDATE public.user_nurture_email_stats
+      SET
+        opened_at = COALESCE(opened_at, ${input.occurredAt}),
+        last_opened_at = ${input.occurredAt},
+        open_count = open_count + 1,
+        resend_message_id = COALESCE(resend_message_id, ${input.resendMessageId})
+      WHERE mongo_id = (
+        SELECT mongo_id
+        FROM public.user_nurture_email_stats
+        WHERE user_id = ${userId} AND stage_id = ${stageId}
+        ORDER BY sent_at DESC
+        LIMIT 1
+      )
+      RETURNING mongo_id
+    `;
+    return byUserStage.length > 0;
+  }
+
+  const byUserStage = await sql<Array<{ mongo_id: string }>>`
+    UPDATE public.user_nurture_email_stats
+    SET
+      clicked_at = COALESCE(clicked_at, ${input.occurredAt}),
+      last_clicked_at = ${input.occurredAt},
+      click_count = click_count + 1,
+      resend_message_id = COALESCE(resend_message_id, ${input.resendMessageId})
+    WHERE mongo_id = (
+      SELECT mongo_id
+      FROM public.user_nurture_email_stats
+      WHERE user_id = ${userId} AND stage_id = ${stageId}
+      ORDER BY sent_at DESC
+      LIMIT 1
+    )
+    RETURNING mongo_id
+  `;
+  return byUserStage.length > 0;
+}
+
 export async function recordNurtureEmailEvent(input: {
   svixId: string;
   eventType: NurtureEmailEventType;
@@ -49,7 +128,6 @@ export async function recordNurtureEmailEvent(input: {
 }): Promise<{ recorded: boolean; updatedStat: boolean }> {
   const db = await getDb();
   const eventsCollection = db.collection(NURTURE_EVENTS_COLLECTION);
-  const metricsCollection = db.collection(NURTURE_METRICS_COLLECTION);
 
   try {
     await eventsCollection.insertOne({
@@ -66,46 +144,54 @@ export async function recordNurtureEmailEvent(input: {
     return { recorded: false, updatedStat: false };
   }
 
-  let stat = await metricsCollection.findOne({ resendMessageId: input.resendMessageId });
+  const updatedStat = await applyNurtureEngagementToStats({
+    eventType: input.eventType,
+    resendMessageId: input.resendMessageId,
+    occurredAt: input.occurredAt,
+    userId: input.tags?.user_id,
+    stageId: input.tags?.stage_id,
+  });
 
-  const userId = input.tags?.user_id?.trim();
-  const stageId = input.tags?.stage_id?.trim();
-  if (!stat && userId && stageId) {
-    const matches = await metricsCollection
-      .find({ userId, stageId })
-      .sort({ sentAt: -1 })
-      .limit(1)
-      .toArray();
-    stat = matches[0] ?? null;
-  }
+  return { recorded: true, updatedStat };
+}
 
-  if (!stat?._id) {
-    return { recorded: true, updatedStat: false };
-  }
+/** Re-apply engagement from stored webhook events (e.g. after fixing stats updates). */
+export async function backfillNurtureEmailEngagementFromEvents(): Promise<{
+  processed: number;
+  updated: number;
+}> {
+  const db = await getDb();
+  const events = await db
+    .collection(NURTURE_EVENTS_COLLECTION)
+    .find({})
+    .sort({ occurredAt: 1 })
+    .toArray();
 
-  const isOpen = input.eventType === "opened";
-  const firstField = isOpen ? "openedAt" : "clickedAt";
-  const lastField = isOpen ? "lastOpenedAt" : "lastClickedAt";
-  const countField = isOpen ? "openCount" : "clickCount";
-  const existing = stat as Record<string, unknown>;
-
-  const setFields: Record<string, unknown> = { [lastField]: input.occurredAt };
-  if (!existing[firstField]) {
-    setFields[firstField] = input.occurredAt;
-  }
-  if (!existing.resendMessageId) {
-    setFields.resendMessageId = input.resendMessageId;
-  }
-
-  await metricsCollection.updateOne(
-    { _id: stat._id },
-    {
-      $set: setFields,
-      $inc: { [countField]: 1 },
+  let updated = 0;
+  for (const event of events) {
+    const doc = event as Record<string, unknown>;
+    const eventType = doc.eventType;
+    const resendMessageId = doc.resendMessageId;
+    const occurredAt = doc.occurredAt;
+    if (
+      (eventType !== "opened" && eventType !== "clicked") ||
+      typeof resendMessageId !== "string" ||
+      !(occurredAt instanceof Date)
+    ) {
+      continue;
     }
-  );
 
-  return { recorded: true, updatedStat: true };
+    const didUpdate = await applyNurtureEngagementToStats({
+      eventType,
+      resendMessageId,
+      occurredAt,
+      userId: typeof doc.userId === "string" ? doc.userId : undefined,
+      stageId: typeof doc.stageId === "string" ? doc.stageId : undefined,
+    });
+    if (didUpdate) updated += 1;
+  }
+
+  return { processed: events.length, updated };
 }
 
 export async function getNurtureEmailStatsSummary(): Promise<NurtureEmailStatsSummary> {

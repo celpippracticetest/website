@@ -156,9 +156,10 @@ async function writingPracticeSessionPage(practiceId: string, taskId: string) {
 
   let completedPracticeId: string[] = [];
   let initialWritingAnswers: TWritingAnswerDto[] = [];
+  let totalWritingAnswerCount = 0;
   if (user) {
     const writingAnswerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
-    const [completed, answersPage] = await Promise.all([
+    const [completed, answersPage, totalPage] = await Promise.all([
       writingAnswerRepo.findAnswersByPracticeIdsAndUser(
         practices.items.map((p) => p.id),
         user.id
@@ -168,9 +169,15 @@ async function writingPracticeSessionPage(practiceId: string, taskId: string) {
         0,
         100
       ),
+      writingAnswerRepo.getAllWritingAnswers(
+        { userId: user.id, type: "WRITING" },
+        0,
+        1
+      ),
     ]);
     completedPracticeId = completed;
     initialWritingAnswers = answersPage.items;
+    totalWritingAnswerCount = totalPage.totalItems;
   }
 
   const strategyBodySx = {
@@ -202,6 +209,7 @@ async function writingPracticeSessionPage(practiceId: string, taskId: string) {
             initialWritingAnswers={initialWritingAnswers}
             routePracticeId={practiceId}
             routeTaskId={taskId}
+            totalWritingAnswerCount={totalWritingAnswerCount}
           />
         </PracticeSubChrome>
         {!user && selectedPractice && !selectedPractice.isFree && (

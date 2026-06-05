@@ -5,6 +5,7 @@ import {
   TListeningAndReadingAnswerDto,
   TWritingAnswerDto,
   writingAnswerDtoFromLeanDocument,
+  answerIdFromLeanDocument,
 } from "@/models/answer";
 import {
   supabaseCreateOrUpdateAnswer,
@@ -108,7 +109,7 @@ function listeningAnswerDtoFromLeanDocument(
   const row = doc as TListeningAndReadingAnswer;
   const answer: TListeningAndReadingAnswerDto = {
     ...row,
-    id: row._id.toHexString(),
+    id: answerIdFromLeanDocument(row._id),
     answers: row.answers ?? {},
     taskId: optionalIdString(row.taskId as unknown),
     examId: optionalIdString(row.examId as unknown),

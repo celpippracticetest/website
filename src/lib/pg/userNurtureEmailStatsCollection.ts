@@ -19,6 +19,13 @@ type UserNurtureEmailStatRow = {
   subject: string | null;
   sent_at: Date;
   created_at: Date;
+  resend_message_id: string | null;
+  opened_at: Date | null;
+  last_opened_at: Date | null;
+  open_count: number;
+  clicked_at: Date | null;
+  last_clicked_at: Date | null;
+  click_count: number;
 };
 
 const USER_NURTURE_EMAIL_STAT_COLUMNS = `
@@ -30,7 +37,14 @@ const USER_NURTURE_EMAIL_STAT_COLUMNS = `
   email_provider,
   subject,
   sent_at,
-  created_at
+  created_at,
+  resend_message_id,
+  opened_at,
+  last_opened_at,
+  open_count,
+  clicked_at,
+  last_clicked_at,
+  click_count
 `;
 
 function maxScan(): number {
@@ -64,6 +78,13 @@ function userNurtureEmailStatRowToDoc(row: UserNurtureEmailStatRow): AppDoc {
     subject: row.subject ?? undefined,
     sentAt: row.sent_at,
     createdAt: row.created_at,
+    resendMessageId: row.resend_message_id ?? undefined,
+    openedAt: row.opened_at ?? undefined,
+    lastOpenedAt: row.last_opened_at ?? undefined,
+    openCount: row.open_count,
+    clickedAt: row.clicked_at ?? undefined,
+    lastClickedAt: row.last_clicked_at ?? undefined,
+    clickCount: row.click_count,
   };
 }
 
@@ -97,6 +118,16 @@ function userNurtureEmailStatDocToRow(doc: AppDoc, mongoId: string): UserNurture
       doc.subject == null || doc.subject === undefined ? null : String(doc.subject),
     sent_at: sentAt,
     created_at: createdAt,
+    resend_message_id:
+      doc.resendMessageId == null || doc.resendMessageId === undefined
+        ? null
+        : String(doc.resendMessageId),
+    opened_at: doc.openedAt instanceof Date ? doc.openedAt : null,
+    last_opened_at: doc.lastOpenedAt instanceof Date ? doc.lastOpenedAt : null,
+    open_count: typeof doc.openCount === "number" ? doc.openCount : 0,
+    clicked_at: doc.clickedAt instanceof Date ? doc.clickedAt : null,
+    last_clicked_at: doc.lastClickedAt instanceof Date ? doc.lastClickedAt : null,
+    click_count: typeof doc.clickCount === "number" ? doc.clickCount : 0,
   };
 }
 
@@ -153,6 +184,9 @@ export function userNurtureEmailStatsFilterToSql(
       params.push(v);
     } else if (k === "stageId" && typeof v === "string") {
       parts.push(`stage_id = $${paramIndex++}`);
+      params.push(v);
+    } else if (k === "resendMessageId" && typeof v === "string") {
+      parts.push(`resend_message_id = $${paramIndex++}`);
       params.push(v);
     } else if (k === "sentAt" && v && typeof v === "object" && !Array.isArray(v)) {
       for (const [op, val] of Object.entries(v as Record<string, unknown>)) {
@@ -242,7 +276,10 @@ export class PgUserNurtureEmailStatsCollection<T extends AppDoc = AppDoc> {
           email_provider,
           subject,
           sent_at,
-          created_at
+          created_at,
+          resend_message_id,
+          open_count,
+          click_count
         )
         VALUES (
           ${row.mongo_id},
@@ -253,7 +290,10 @@ export class PgUserNurtureEmailStatsCollection<T extends AppDoc = AppDoc> {
           ${row.email_provider},
           ${row.subject},
           ${row.sent_at},
-          ${row.created_at}
+          ${row.created_at},
+          ${row.resend_message_id},
+          ${row.open_count},
+          ${row.click_count}
         )
       `;
     } catch (e: unknown) {

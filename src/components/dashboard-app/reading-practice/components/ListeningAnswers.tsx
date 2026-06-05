@@ -5,12 +5,18 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import QuestionOption from "./QuestionOption";
 import { TQuestion } from "@/models/question.model";
+import PracticeMcqScoreGuide from "../../practice/PracticeMcqScoreGuide";
+import PracticeQuestionAnswerLabels from "../../practice/PracticeQuestionAnswerLabels";
+import PracticeQuestionExplanation from "../../practice/PracticeQuestionExplanation";
 
 interface ListeningAnswerListProps {
   questions: TQuestion[];
   onAnswerSelect: (questionId: number, answerId: string) => void;
   selectedAnswers: Record<string, string>;
   questionIndex: number;
+  practiceId?: string;
+  taskName?: string;
+  passageExcerpt?: string;
 }
 
 /** Support keys stored as index ("0".."n"), numeric access, or question.id from API. */
@@ -29,6 +35,9 @@ function userAnswerFor(
 const ListeningAnswerList = ({
   questions,
   selectedAnswers,
+  practiceId,
+  taskName,
+  passageExcerpt,
 }: ListeningAnswerListProps) => {
   const { isLoaded, isSignedIn } = useHybridWebUser();
 
@@ -183,6 +192,19 @@ const ListeningAnswerList = ({
 
         {noUser && signupKeepResultCard("mt-[16px]")}
 
+        <PracticeMcqScoreGuide
+          skill="Reading"
+          correct={numberOfCorrect}
+          total={questions.length}
+          wrong={numberOfWrong}
+          notAnswered={notAnswered}
+          practiceId={practiceId}
+          taskName={taskName}
+          questions={questions}
+          selectedAnswers={selectedAnswers}
+          passageExcerpt={passageExcerpt}
+        />
+
         {!noUser && showSavedImprovement && (
           <div className="mt-[16px] border border-[#D5D6D8] rounded-[12px] bg-white px-[16px] py-[14px]">
             <div className="text-[#212E42] font-semibold text-[16px]">
@@ -234,6 +256,11 @@ const ListeningAnswerList = ({
                   )}
                 </div>
 
+                <PracticeQuestionAnswerLabels
+                  question={question}
+                  userAnswerId={ua}
+                />
+
                 <div className="flex flex-col mt-[12px]">
                   {question.choices
                     .filter(
@@ -254,6 +281,15 @@ const ListeningAnswerList = ({
                       />
                     ))}
                 </div>
+
+                {question.description && (
+                  <PracticeQuestionExplanation
+                    description={question.description}
+                    variant={
+                      ua !== undefined && ua !== question.answer ? "wrong" : "tip"
+                    }
+                  />
+                )}
               </div>
             );
           })}

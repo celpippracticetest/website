@@ -691,6 +691,13 @@ const ReadingPracticeView = ({
                   )}
                   onAnswerSelect={() => { }}
                   selectedAnswers={selectedAnswers}
+                  practiceId={practice.id}
+                  taskName={task.name}
+                  passageExcerpt={practice.passages
+                    .map((p) => p.body)
+                    .filter(Boolean)
+                    .join("\n\n")
+                    .slice(0, 2000)}
                 />
               </div>
             )}

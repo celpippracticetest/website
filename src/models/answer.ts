@@ -1,6 +1,7 @@
 import { ObjectId } from "bson";
 import { text } from "stream/consumers";
 import { z } from "zod";
+import { objectIdLikeToHex } from "@/lib/pg/document";
 import { ExamType } from "./enums";
 
 const WritingAnswerRequestSchema = z.object({
@@ -83,13 +84,21 @@ type TListeningAndReadingAnswerRequest = z.infer<typeof ListeningAndReadingAnswe
 type TListeningAndReadingAnswer = z.infer<typeof ListeningAndReadingAnswer>;
 type TListeningAndReadingAnswerDto = z.infer<typeof ListeningAndReadingAnswerDto>;
 
-/** Lean `answers` row (e.g. from `app_documents`) → DTO. */
+export function answerIdFromLeanDocument(_id: unknown): string {
+  const hex = objectIdLikeToHex(_id);
+  if (hex) return hex;
+  if (typeof _id === "string" && _id.length > 0) return _id;
+  if (typeof _id === "number" || typeof _id === "bigint") return String(_id);
+  throw new Error("Cannot derive answer id from document _id");
+}
+
+/** Lean `answers` row (e.g. from `app_documents` / `public.answers`) → DTO. */
 export function writingAnswerDtoFromLeanDocument(doc: unknown): TWritingAnswerDto {
   const row = doc as TWritingAnswer;
   const { _id, ...rest } = row;
   return WritingAnswerDto.parse({
     ...rest,
-    id: _id.toHexString(),
+    id: answerIdFromLeanDocument(_id),
   });
 }
 
