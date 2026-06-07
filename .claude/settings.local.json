@@ -2,7 +2,23 @@
   "permissions": {
     "allow": [
       "PowerShell(cd \"C:/Projects/CELPIP/website\"; npx tsc --noEmit 2>&1 | Where-Object { $_ -match \"supabase-user-admin|resolveStripeCustomerId|stripe/webhook/route\" })",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(aws --version)",
+      "Bash(aws sts *)",
+      "PowerShell($ErrorActionPreference='SilentlyContinue'; \\(Get-Command aws\\).Source; \"---SSM---\"; \\(Get-Command session-manager-plugin\\).Source; \"---SSH---\"; \\(Get-Command ssh\\).Source)",
+      "Read(//c/Users/rezah/.ssh/**)",
+      "Bash(ssh -o ConnectTimeout=15 -o StrictHostKeyChecking=accept-new nexy 'echo \"INSTANCE: $\\(curl -s http://169.254.169.254/latest/meta-data/instance-id 2>/dev/null || \\(TOKEN=$\\(curl -s -X PUT http://169.254.169.254/latest/api/token -H \"X-aws-ec2-metadata-token-ttl-seconds: 60\"\\); curl -s -H \"X-aws-ec2-metadata-token: $TOKEN\" http://169.254.169.254/latest/meta-data/instance-id\\)\\)\"; echo \"HOST: $\\(hostname\\)\"; echo \"UPTIME: $\\(uptime\\)\"')",
+      "Read(//c/Nexy/keys/**)",
+      "Bash(ssh -v -o ConnectTimeout=15 -o IdentitiesOnly=yes nexy 'echo OK')",
+      "Bash(ssh-keygen -y -f /c/Nexy/keys/nexy2026.pem)",
+      "Bash(ssh -v -o ConnectTimeout=15 -o IdentitiesOnly=yes -i \"C:\\\\Nexy\\\\keys\\\\nexy2026.pem\" nexy 'echo OK')",
+      "Bash(ssh -vv -o ConnectTimeout=15 -o IdentitiesOnly=yes -o PubkeyAcceptedAlgorithms=+ssh-rsa -i \"C:\\\\Nexy\\\\keys\\\\nexy2026.pem\" nexy 'echo OK')",
+      "Bash(ssh -vv -o ConnectTimeout=15 -o IdentitiesOnly=yes -i \"C:\\\\Nexy\\\\keys\\\\nexy2026.pem\" nexy 'echo OK')",
+      "Bash(ssh -o ConnectTimeout=12 -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o BatchMode=yes -i \"C:\\\\Nexy\\\\keys\\\\nexy2026.pem\" nexy@35.183.94.83 'echo CONNECTED as $\\(whoami\\) on $\\(hostname\\)')",
+      "Bash(ssh-keygen -y -f \"C:\\\\\\\\Nexy\\\\\\\\keys\\\\\\\\nexy2026.pem\")",
+      "Bash(ssh -o ConnectTimeout=15 nexy 'echo OK as $\\(whoami\\)')",
+      "Bash(ssh nexy *)",
+      "Bash(ssh -o ConnectTimeout=15 -o StrictHostKeyChecking=accept-new nexy 'echo OK as $\\(whoami\\); echo \"server still listening:\"; sudo ss -tlnp | grep -E \":8282|:8080\" | tr -s \" \"')"
     ]
   }
 }

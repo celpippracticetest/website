@@ -19,7 +19,7 @@ import { SupabaseAuthHashRecoveryRedirect } from "@/components/auth/SupabaseAuth
 import MuiAppRouterCacheProvider from "@/components/MuiAppRouterCacheProvider";
 import AndroidDownloadAppBanner from "@/components/mobile/AndroidDownloadAppBanner";
 import { getHomepageHeroDisplay } from "@/lib/homepage-hero";
-import { getIndexingRobotsDirective, isNonIndexableDeployment } from "@/lib/searchIndexing";
+import { getIndexingRobotsDirective } from "@/lib/searchIndexing";
 import { UiVariantProvider } from "@/components/ui-variant/UiVariantProvider";
 import { getUiAbVariant } from "@/lib/uiAbTest.server";
 import type { Metadata, Viewport } from "next";
@@ -161,11 +161,10 @@ export default async function RootLayout({
   const uiVariant = await getUiAbVariant();
   const baseUrl = normalizeAppBaseUrl(process.env.APP_BASE_URL);
   const gtmAllowedHosts = buildGtmAllowedHosts(baseUrl);
-  // Production builds: skip only Vercel Preview (pollutes analytics). Production
-  // on a *.vercel.app URL still loads GTM when APP_BASE_URL points there.
+  // Production builds: skip only Vercel Preview (pollutes analytics).
   const enableGtm =
     process.env.NODE_ENV === "production" &&
-    !isNonIndexableDeployment(baseUrl) &&
+    process.env.VERCEL_ENV !== "preview" &&
     Boolean(GTM_ID);
   const enableLegacyGtm = enableGtm && LEGACY_GTM_ID && LEGACY_GTM_ID !== GTM_ID;
   const enableClarity =

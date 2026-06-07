@@ -25,10 +25,11 @@ export function isNonIndexableDeployment(appBaseUrl?: string | null): boolean {
     return true;
   }
 
+  // Do not use VERCEL_URL here: every Vercel deployment (including Production on a
+  // custom domain) has a *.vercel.app alias, which would incorrectly noindex prod.
   const hosts = [
     normalizeHost(appBaseUrl),
     normalizeHost(process.env.APP_BASE_URL),
-    normalizeHost(process.env.VERCEL_URL),
     normalizeHost(process.env.NEXT_PUBLIC_APP_URL),
   ].filter((host): host is string => Boolean(host));
 
