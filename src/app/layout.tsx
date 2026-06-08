@@ -40,6 +40,7 @@ const jakarta = Plus_Jakarta_Sans({
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID?.trim() ?? "";
 const LEGACY_GTM_ID = process.env.NEXT_PUBLIC_GTM_LEGACY_ID?.trim() ?? "";
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() ?? "";
 const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID?.trim() ?? "";
 const DEFAULT_APP_BASE_URL = "https://celpippracticetest.com";
 
@@ -166,6 +167,7 @@ export default async function RootLayout({
     process.env.NODE_ENV === "production" &&
     process.env.VERCEL_ENV !== "preview" &&
     Boolean(GTM_ID);
+  const enableGaTag = enableGtm && Boolean(GA_MEASUREMENT_ID);
   const enableLegacyGtm = enableGtm && LEGACY_GTM_ID && LEGACY_GTM_ID !== GTM_ID;
   const enableClarity =
     process.env.NODE_ENV === "production" && Boolean(CLARITY_ID);
@@ -234,6 +236,21 @@ export default async function RootLayout({
             strategy="beforeInteractive"
             src="/scripts/gtm-consent-defaults.js"
           />
+        )}
+
+        {/* Direct Google tag so GA4 / Google Ads setup tools detect G-… in page HTML.
+            send_page_view:false — GTM + PageViewTracker own page_view hits. */}
+        {enableGaTag && (
+          <>
+            <Script
+              id="google-tag-js"
+              strategy="beforeInteractive"
+              src={`/gtag/js?id=${GA_MEASUREMENT_ID}`}
+            />
+            <Script id="google-tag-config" strategy="beforeInteractive">
+              {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","${GA_MEASUREMENT_ID}",{send_page_view:false});`}
+            </Script>
+          </>
         )}
 
         {enableGtm && (

@@ -18,7 +18,28 @@
       "Bash(ssh-keygen -y -f \"C:\\\\\\\\Nexy\\\\\\\\keys\\\\\\\\nexy2026.pem\")",
       "Bash(ssh -o ConnectTimeout=15 nexy 'echo OK as $\\(whoami\\)')",
       "Bash(ssh nexy *)",
-      "Bash(ssh -o ConnectTimeout=15 -o StrictHostKeyChecking=accept-new nexy 'echo OK as $\\(whoami\\); echo \"server still listening:\"; sudo ss -tlnp | grep -E \":8282|:8080\" | tr -s \" \"')"
+      "Bash(ssh -o ConnectTimeout=15 -o StrictHostKeyChecking=accept-new nexy 'echo OK as $\\(whoami\\); echo \"server still listening:\"; sudo ss -tlnp | grep -E \":8282|:8080\" | tr -s \" \"')",
+      "Bash(npx --no-install firebase --version)",
+      "Bash(npx --no-install firebase projects:list)",
+      "Bash(npx --no-install firebase functions:log --only rentBattery --project zappyapp)",
+      "Read(//c/Projects/Nexy/**)",
+      "Bash(sed -n '1,120p' \"C:\\\\Projects\\\\Nexy\\\\preauth-app\\\\lib\\\\rent.ts\")",
+      "Bash(node -e ' *)",
+      "Bash(npx --no-install firebase functions:log --only returnBattery,onRentReturnedCharge,partnerReportRelease --project zappyapp)",
+      "Bash(npx --no-install firebase functions:log --project zappyapp)",
+      "Bash(echo \"=== other Nexy projects \\(admin app?\\) ===\"; ls \"C:\\\\Projects\\\\Nexy\" 2>/dev/null *)",
+      "Bash(grep -rnE \"notifyPartnerOnReturn|shouldNotifyPartnerOnReturn\" src)",
+      "Bash(sed -n '80,110p' src/rentals/return-battery.ts)",
+      "Bash(sed -n '40,48p' src/rentals/partner-notify.ts)",
+      "Bash(sed -n '641,700p' src/rentals/rent-battery.ts)",
+      "Bash(sed -n '/2. CRITICAL: Validate payment BEFORE releasing battery/,/hasPaymentIntent: Boolean\\(body.paymentIntentId\\),/p' src/rentals/rent-battery.ts)",
+      "Bash(sed -n '54,135p' src/rentals/on-rent-returned-charge.ts)",
+      "Bash(xargs -I{} sh -c 'sed -n \"/fetchStationById/,/^}/p\" {}')",
+      "Bash(npx --no-install firebase deploy --only \"functions:nexy-app:rentBattery,functions:nexy-app:onRentReturnedCharge,functions:nexy-app:returnBattery\" --project zappyapp)",
+      "mcp__5141ddc3-8f99-4d1f-b386-77c695707f46__list_deployments",
+      "WebFetch(domain:app.notion.com)",
+      "Bash(npx --no-install firebase functions:secrets:set NEXY_WEBHOOK_TOKEN --data-file=- --project zappyapp)",
+      "Bash(npx --no-install firebase deploy --only \"functions:nexy-app:onRentReturnedCharge,functions:nexy-app:returnBattery,functions:nexy-app:returnWebhook\" --project zappyapp)"
     ]
   }
 }
