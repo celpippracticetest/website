@@ -36,6 +36,7 @@ import {
   sanitizeMockExamAttemptIdParam,
   type MockExamSkillSection,
 } from "@/lib/mockExamAttemptId";
+import { getProductionOverallScore } from "@/lib/productionOverallScore";
 
 function scaleToBand(weightedPercent: number): number {
   if (isNaN(weightedPercent)) return 0;
@@ -313,7 +314,7 @@ const ResultExamView = ({
         const ans = speakingAndWritingAnswers.find(
           (a) => a.partId === partId
         );
-        return ((ans?.overalScore ?? 0) / 12) * 100 * weight;
+        return (getProductionOverallScore(ans) / 12) * 100 * weight;
       })
       .reduce((sum, p) => sum + p, 0);
     return scaleToBand(weightedPercent);
@@ -329,7 +330,7 @@ const ResultExamView = ({
           (a) => a.partId === partId
         );
 
-        return ((ans?.overalScore ?? 0) / 12) * 100 * weight;
+        return (getProductionOverallScore(ans) / 12) * 100 * weight;
       })
       .reduce((sum, p) => sum + p, 0);
     return scaleToBand(weightedPercent);

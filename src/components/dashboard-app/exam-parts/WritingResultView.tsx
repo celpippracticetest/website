@@ -10,6 +10,10 @@ import * as React from "react";
 import AudioPlayer from "../listening-practice/components/AudioPlayer";
 import { PRACTICE_PARTS } from "@/constants";
 import PracticeProductionScoreGuide from "../practice/PracticeProductionScoreGuide";
+import {
+  getProductionOverallScore,
+  getProductionSkillScores,
+} from "@/lib/productionOverallScore";
 
 const WritingResultView = ({
   examPart,
@@ -65,18 +69,9 @@ const WritingResultView = ({
     return <div></div>;
   }
 
-  const skillScores = {
-    coherence: answer?.result?.contentAndCoherence ?? 0,
-    vocabulary: answer?.result?.vocabulary ?? 0,
-    readability: answer?.result?.readabilityAndGrammar ?? 0,
-    fulfillment: answer?.result?.taskFulfillment ?? 0,
-  };
-
+  const skillScores = getProductionSkillScores(answer);
   const maxScore = 12;
-  const overallScore = Math.round(
-    Object.values(skillScores).reduce((sum, score) => sum + score, 0) /
-    Object.keys(skillScores).length
-  );
+  const overallScore = getProductionOverallScore(answer);
 
   // Determine the description based on overall score
   const getScoreDescription = (score: number) => {
@@ -120,7 +115,7 @@ const WritingResultView = ({
                 {examPart?.partId && PRACTICE_PARTS[examPart?.partId - 1]}
               </span>
               <span className="text-[#212E42] px-[12px] rounded-[24px] flex items-center text-[11px] font-medium  h-[24px] border border-[#D5D6D8]">
-                Score: {answer && answer.overalScore ? answer?.overalScore : 0}
+                Score: {getProductionOverallScore(answer)}
                 /12
               </span>
               <a
