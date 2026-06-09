@@ -14,6 +14,7 @@ import {
   markPendingWebSignup,
   trackWebSignUpCompleted,
 } from "@/lib/analytics/web-signup-tracking";
+import { AUTH_PAGE_COPY } from "@/lib/auth/authPageCopy";
 import { signUpOrSignInWithPassword } from "@/lib/auth/sign-up-or-sign-in";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { cn } from "@/lib/utils";
@@ -144,7 +145,7 @@ export function CustomSupabaseSignUpForm({
           Free to start
         </p>
         <h2 className="mt-1.5 text-xl font-extrabold tracking-tight text-[#1B2B5A] sm:text-2xl">
-          Create free account
+          {AUTH_PAGE_COPY["sign-up"].title}
         </h2>
         {showLegacyAuthSignupHint ? (
           <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-left text-sm text-amber-950">
@@ -160,7 +161,8 @@ export function CustomSupabaseSignUpForm({
           </div>
         ) : (
           <p className="mt-2 text-sm text-slate-500">
-            Create your account with email and password. Already registered?{" "}
+            {AUTH_PAGE_COPY["sign-up"].description}{" "}
+            Already registered?{" "}
             <Link href="/sign-in" className="font-medium text-blue-600 hover:underline">
               Sign in
             </Link>

@@ -12,8 +12,6 @@ import {
   type SuccessUpgradeOfferForClient,
 } from "@/lib/successPageUpgrade";
 import { waitForCheckoutRecord } from "@/lib/waitForCheckoutRecord";
-import { findOrCreateWebUserByEmail } from "@/lib/guestCheckoutAuth";
-import { getRequestOriginFromHeaders } from "@/lib/requestOrigin";
 
 function inferSkillTypeFromPath(pathLike: unknown): "Speaking" | "Writing" | "Listening" | "Reading" | "General" {
   const value = typeof pathLike === "string" ? pathLike.toLowerCase() : "";
@@ -121,26 +119,8 @@ export default async function Success({ searchParams }: any) {
 
   if (status === "open") redirect("/");
 
-  const guestCheckout =
-    String(checkoutMetadata.guest_checkout ?? "").toLowerCase() === "true";
-
-  // Guest checkout: ensure web user exists (webhook may still be running), then
-  // send payer to sign-up with a locked Stripe email + password (or Google for Gmail).
-  if (!user && status === "complete" && guestCheckout && customerEmail?.trim()) {
-    const emailNorm = customerEmail.trim().toLowerCase();
-    try {
-      await findOrCreateWebUserByEmail(emailNorm);
-    } catch (e) {
-      console.error("[success] guest findOrCreateUser", e);
-    }
-    const origin = await getRequestOriginFromHeaders();
-    redirect(
-      `${origin}/sign-up?checkout_session=${encodeURIComponent(session_id)}`
-    );
-  }
-
-  // Logged-out payer with an existing account (non-guest): magic link before dashboard.
-  if (!user && status === "complete" && !guestCheckout && customerEmail?.trim()) {
+  // Logged-out payer with an existing account: magic link before dashboard.
+  if (!user && status === "complete" && customerEmail?.trim()) {
     const emailNorm = customerEmail.trim().toLowerCase();
     const client = await appUserAdmin();
     const users = await client.users.getUserList({
@@ -178,6 +158,7 @@ export default async function Success({ searchParams }: any) {
             items={lineItems || []}
             email={normalizedEmail}
             attributionData={purchaseAttributionData}
+            purchaseType={resolvedPurchaseType}
           />
         ) : null}
         <DashboardHome
@@ -237,6 +218,7 @@ export default async function Success({ searchParams }: any) {
           items={lineItems || []}
           email={customerEmail?.trim().toLowerCase()}
           attributionData={purchaseAttributionData}
+          purchaseType={resolvedPurchaseType}
         />
 
         <DashboardHome

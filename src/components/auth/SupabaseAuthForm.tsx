@@ -4,7 +4,7 @@ import BoltIcon from "@mui/icons-material/Bolt";
 import ShieldIcon from "@mui/icons-material/Shield";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AuthLiveJoinedBanner } from "@/components/auth/AuthPageChrome";
 import { Button } from "@/components/v2/Button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import {
   trackWebSignUpCompleted,
 } from "@/lib/analytics/web-signup-tracking";
 import { navigateAfterWebAuth } from "@/lib/auth/post-auth-redirect";
+import { AUTH_PAGE_COPY } from "@/lib/auth/authPageCopy";
 import { signUpOrSignInWithPassword } from "@/lib/auth/sign-up-or-sign-in";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { cn } from "@/lib/utils";
@@ -110,6 +111,11 @@ export function SupabaseAuthForm({
   const [notice, setNotice] = useState<string | null>(null);
 
   const dest = redirectAfterAuth ?? "/practice-overview";
+  const pageCopy = AUTH_PAGE_COPY[mode];
+
+  useEffect(() => {
+    document.title = pageCopy.documentTitle;
+  }, [pageCopy.documentTitle]);
 
   const resetState = (nextMode?: AuthMode) => {
     setError(null);
@@ -306,13 +312,9 @@ export function SupabaseAuthForm({
           Free to start
         </p>
         <h1 className="mt-1.5 text-xl font-extrabold tracking-tight text-text1 screen744:text-2xl">
-          {mode === "sign-in" ? "Welcome back" : "Create free account"}
+          {pageCopy.title}
         </h1>
-        <p className="mt-1 text-sm text-text2">
-          {mode === "sign-in"
-            ? "Sign in to continue practising."
-            : "Join thousands improving their CELPIP scores."}
-        </p>
+        <p className="mt-1 text-sm text-text2">{pageCopy.description}</p>
       </div>
 
       <div className="px-4 pb-2 pt-4">

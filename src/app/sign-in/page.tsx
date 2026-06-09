@@ -1,8 +1,10 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { AuthLoadingCard } from "@/components/auth/AuthPageChrome";
 import SignSupabasePageClient from "./SignSupabasePageClient";
 import { hasSupabaseWebSession } from "@/lib/auth/web-session-server";
+import { getAuthPageMetadata } from "@/lib/auth/authPageCopy";
 
 function readForceAuthScreen(
   sp: Record<string, string | string[] | undefined>
@@ -15,6 +17,16 @@ function readForceAuthScreen(
 
 function SignInFallback() {
   return <AuthLoadingCard />;
+}
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const sp = await searchParams;
+  const mode = sp.mode === "sign-in" ? "sign-in" : "sign-up";
+  return getAuthPageMetadata(mode);
 }
 
 export default async function SignInPage({

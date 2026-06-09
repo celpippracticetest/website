@@ -28,11 +28,7 @@ import {
   usersCollectionSetOnInsertFromAuthUser,
 } from "@/lib/users/userDocumentIdentity";
 import {
-  sendGa4CheckoutPurchaseFromSession,
-} from "@/lib/stripe/ga4CheckoutPurchase";
-import {
   sendGa4Events,
-  type Ga4ItemParam,
 } from "@/lib/ga4MeasurementProtocol";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -144,25 +140,6 @@ function readGa4SessionIdForMp(
 ): string | undefined {
   const v = readMetadataValue(metadata, "ga4_session_id");
   return v ?? undefined;
-}
-
-/** GA4 `purchase.items` from Checkout Session (Measurement Protocol). */
-function buildStripeRenewalPurchaseItems(
-  invoice: { amount_paid?: number | null },
-  planName: string | null
-): Ga4ItemParam[] {
-  const value = (invoice.amount_paid || 0) / 100;
-  const label = planName?.trim() || "Subscription renewal";
-  const itemId = planName?.trim() || "subscription_renewal";
-  return [
-    {
-      item_id: itemId.slice(0, 100),
-      item_name: label.slice(0, 100),
-      price: value,
-      quantity: 1,
-      item_category: "Subscription",
-    },
-  ];
 }
 
 function buildStripeGaAttributionParams(
@@ -840,24 +817,6 @@ export async function POST(req: Request) {
 
       }
 
-      // GA4 `purchase` (Measurement Protocol) — source of truth; do not rely on success page JS.
-      const ga4Purchase = await sendGa4CheckoutPurchaseFromSession(
-        stripe,
-        session,
-        metadata
-      );
-      if (!ga4Purchase.sent) {
-        logger.info("GA4 checkout purchase not sent", {
-          component: "stripe_webhook",
-          action: "ga4_purchase_skipped",
-          metadata: {
-            sessionId: session.id,
-            reason: ga4Purchase.reason,
-            paymentStatus: session.payment_status,
-          },
-        });
-      }
-
       const pricingAbRaw = metadata?.pricing_ab_layout;
       if (
         typeof pricingAbRaw === "string" &&
@@ -910,28 +869,6 @@ export async function POST(req: Request) {
     }
 
     if (event.type === "checkout.session.async_payment_succeeded") {
-      const session = event.data.object as Stripe.Checkout.Session;
-      const metadata: Record<string, string | undefined> = {
-        ...(session.metadata as Record<string, string | undefined>),
-      };
-
-      const ga4Purchase = await sendGa4CheckoutPurchaseFromSession(
-        stripe,
-        session,
-        metadata
-      );
-      if (!ga4Purchase.sent) {
-        logger.info("GA4 async checkout purchase not sent", {
-          component: "stripe_webhook",
-          action: "ga4_purchase_skipped",
-          metadata: {
-            sessionId: session.id,
-            reason: ga4Purchase.reason,
-            paymentStatus: session.payment_status,
-          },
-        });
-      }
-
       return NextResponse.json({ received: true });
     }
 
@@ -1171,12 +1108,6 @@ export async function POST(req: Request) {
           subscriptionMetadata = null;
         }
       }
-      const billingReason =
-        typeof invoice?.billing_reason === "string" ? invoice.billing_reason : "";
-      const invoicePurchaseType =
-        billingReason === "subscription_cycle"
-          ? "subscription_renewal"
-          : "first_purchase";
 
       let sessionId: string | null = null;
       const paymentIntentId = invoice?.payment_intent as string | undefined;
@@ -1237,49 +1168,6 @@ export async function POST(req: Request) {
                   );
                 }
 
-                // Subscription renewals: `purchase` here only. Initial checkout
-                // is counted from `checkout.session.completed` (avoid duplicate).
-                if (invoicePurchaseType === "subscription_renewal") {
-                  const renewalPlanName = readMetadataValue(
-                    subscriptionMetadata ?? undefined,
-                    "plan_name"
-                  );
-                  void sendGa4Events({
-                    clientId: buildStripeGaClientId({
-                      metadata: subscriptionMetadata,
-                      customerId:
-                        typeof invoice?.customer === "string"
-                          ? invoice.customer
-                          : null,
-                      userId: user.id,
-                      sessionId: String(lastCheckout.checkoutId),
-                      subscriptionId,
-                    }),
-                    userId: user.id,
-                    gaSessionId: readGa4SessionIdForMp(subscriptionMetadata),
-                    events: [
-                      {
-                        name: "purchase",
-                        params: {
-                          transaction_id: invoiceId || lastCheckout.checkoutId,
-                          invoice_id: invoiceId || "",
-                          subscription_id: subscriptionId || "",
-                          purchase_type: "subscription_renewal",
-                          value: (invoice?.amount_paid || 0) / 100,
-                          currency: (invoice?.currency || "usd").toUpperCase(),
-                          billing_reason: billingReason,
-                          ...(renewalPlanName ? { plan_name: renewalPlanName } : {}),
-                          items: buildStripeRenewalPurchaseItems(
-                            invoice,
-                            renewalPlanName
-                          ),
-                          ...buildStripeGaAttributionParams(subscriptionMetadata),
-                        },
-                      },
-                    ],
-                  });
-                }
-
                 return NextResponse.json({ received: true });
               }
             }
@@ -1290,40 +1178,6 @@ export async function POST(req: Request) {
         console.warn(
           `No checkout session or user found for invoice ${invoiceId}, skipping repository update`
         );
-        if (invoicePurchaseType === "subscription_renewal") {
-          const renewalPlanName = readMetadataValue(
-            subscriptionMetadata ?? undefined,
-            "plan_name"
-          );
-          void sendGa4Events({
-            clientId: buildStripeGaClientId({
-              metadata: subscriptionMetadata,
-              customerId:
-                typeof invoice?.customer === "string" ? invoice.customer : null,
-              userId: null,
-              sessionId: null,
-              subscriptionId,
-            }),
-            gaSessionId: readGa4SessionIdForMp(subscriptionMetadata),
-            events: [
-              {
-                name: "purchase",
-                params: {
-                  transaction_id: invoiceId || "",
-                  invoice_id: invoiceId || "",
-                  subscription_id: subscriptionId || "",
-                  purchase_type: "subscription_renewal",
-                  value: (invoice?.amount_paid || 0) / 100,
-                  currency: (invoice?.currency || "usd").toUpperCase(),
-                  billing_reason: billingReason,
-                  ...(renewalPlanName ? { plan_name: renewalPlanName } : {}),
-                  items: buildStripeRenewalPurchaseItems(invoice, renewalPlanName),
-                  ...buildStripeGaAttributionParams(subscriptionMetadata),
-                },
-              },
-            ],
-          });
-        }
         return NextResponse.json({ received: true });
       }
 
@@ -1338,49 +1192,6 @@ export async function POST(req: Request) {
         );
         if (session) {
           await handleReferralRewards(session, session.metadata);
-
-          const metadata = session.metadata as Record<string, string | undefined>;
-          const billingReason =
-            typeof invoice?.billing_reason === "string"
-              ? invoice.billing_reason
-              : "";
-          const purchaseType =
-            billingReason === "subscription_cycle"
-              ? "subscription_renewal"
-              : "first_purchase";
-
-          if (purchaseType === "subscription_renewal") {
-            const renewalPlanName = readMetadataValue(metadata, "plan_name");
-            void sendGa4Events({
-              clientId: buildStripeGaClientId({
-                metadata,
-                customerId:
-                  typeof invoice?.customer === "string" ? invoice.customer : null,
-                userId: metadata?.user_id || null,
-                sessionId: session.id,
-                subscriptionId,
-              }),
-              userId: metadata?.user_id || undefined,
-              gaSessionId: readGa4SessionIdForMp(metadata),
-              events: [
-                {
-                  name: "purchase",
-                  params: {
-                    transaction_id: invoiceId || session.id,
-                    invoice_id: invoiceId || "",
-                    subscription_id: subscriptionId || "",
-                    purchase_type: "subscription_renewal",
-                    value: (invoice?.amount_paid || 0) / 100,
-                    currency: (invoice?.currency || "usd").toUpperCase(),
-                    billing_reason: billingReason,
-                    ...(renewalPlanName ? { plan_name: renewalPlanName } : {}),
-                    items: buildStripeRenewalPurchaseItems(invoice, renewalPlanName),
-                    ...buildStripeGaAttributionParams(metadata),
-                  },
-                },
-              ],
-            });
-          }
         }
       } catch (err) {
         console.error(
