@@ -77,10 +77,16 @@ export async function sendGa4Events(
   input: SendGa4EventsInput
 ): Promise<boolean> {
   const cfg = getGa4Config();
-  if (!cfg) return false;
+  if (!cfg) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[GA4 MP] Skipped: GA_MEASUREMENT_ID or GA_API_SECRET not configured");
+    }
+    return false;
+  }
   if (!input.clientId || input.events.length === 0) return false;
 
   const sessionId = input.gaSessionId?.trim();
+  const debugMode = process.env.GA4_MP_DEBUG === "true";
 
   const events = input.events
     .map((event) => {
@@ -92,6 +98,9 @@ export async function sendGa4Events(
         if (rawParams.engagement_time_msec === undefined) {
           rawParams.engagement_time_msec = 1;
         }
+      }
+      if (debugMode) {
+        rawParams.debug_mode = 1;
       }
       return {
         name: event.name,
@@ -111,17 +120,38 @@ export async function sendGa4Events(
     payload.user_id = input.userId.trim();
   }
 
+  const endpoint = debugMode ? "debug/mp/collect" : "mp/collect";
+
   try {
     const response = await fetch(
-      `https://www.google-analytics.com/mp/collect?measurement_id=${cfg.measurementId}&api_secret=${cfg.apiSecret}`,
+      `https://www.google-analytics.com/${endpoint}?measurement_id=${cfg.measurementId}&api_secret=${cfg.apiSecret}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       }
     );
-    return response.ok;
-  } catch {
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      console.error("[GA4 MP] Request failed", {
+        status: response.status,
+        body: body.slice(0, 500),
+        events: events.map((e) => e.name),
+      });
+      return false;
+    }
+
+    if (debugMode) {
+      const body = await response.text().catch(() => "");
+      if (body) {
+        console.info("[GA4 MP debug]", body.slice(0, 1000));
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.error("[GA4 MP] Network error", error);
     return false;
   }
 }

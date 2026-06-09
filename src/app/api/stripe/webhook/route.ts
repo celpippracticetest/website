@@ -28,6 +28,9 @@ import {
   usersCollectionSetOnInsertFromAuthUser,
 } from "@/lib/users/userDocumentIdentity";
 import {
+  sendGa4CheckoutPurchaseFromSession,
+} from "@/lib/stripe/ga4CheckoutPurchase";
+import {
   sendGa4Events,
   type Ga4ItemParam,
 } from "@/lib/ga4MeasurementProtocol";
@@ -144,29 +147,6 @@ function readGa4SessionIdForMp(
 }
 
 /** GA4 `purchase.items` from Checkout Session (Measurement Protocol). */
-function buildStripeCheckoutPurchaseItems(
-  session: Stripe.Checkout.Session,
-  metadata: Record<string, string | undefined>
-): Ga4ItemParam[] {
-  const value = (session.amount_total || 0) / 100;
-  const planName =
-    readMetadataValue(metadata, "plan_name") || "CELPIP Plan";
-  const mockId = readMetadataValue(metadata, "mock_exam_id");
-  const itemId =
-    mockId ||
-    readMetadataValue(metadata, "plan_name") ||
-    (session.mode === "subscription" ? "subscription" : "checkout");
-  return [
-    {
-      item_id: itemId,
-      item_name: planName,
-      price: value,
-      quantity: 1,
-      item_category: "Subscription",
-    },
-  ];
-}
-
 function buildStripeRenewalPurchaseItems(
   invoice: { amount_paid?: number | null },
   planName: string | null
@@ -860,40 +840,23 @@ export async function POST(req: Request) {
 
       }
 
-      // GA4 standard `purchase` (Measurement Protocol) — source of truth when
-      // the success page / GTM never runs (ad blockers, tab closed, etc.).
-      const checkoutPlanName = readMetadataValue(metadata, "plan_name");
-      void sendGa4Events({
-        clientId: buildStripeGaClientId({
-          metadata,
-          customerId:
-            typeof session.customer === "string" ? session.customer : null,
-          userId: metadata?.user_id || null,
-          sessionId: session.id,
-          subscriptionId:
-            typeof session.subscription === "string"
-              ? session.subscription
-              : null,
-        }),
-        userId: metadata?.user_id || undefined,
-        gaSessionId: readGa4SessionIdForMp(metadata),
-        events: [
-          {
-            name: "purchase",
-            params: {
-              transaction_id: session.id,
-              value: (session.amount_total || 0) / 100,
-              currency: (session.currency || "usd").toUpperCase(),
-              purchase_type: metadata?.purchase_type || "first_purchase",
-              billing_mode:
-                session.mode === "subscription" ? "subscription" : "one_time",
-              ...(checkoutPlanName ? { plan_name: checkoutPlanName } : {}),
-              items: buildStripeCheckoutPurchaseItems(session, metadata),
-              ...buildStripeGaAttributionParams(metadata),
-            },
+      // GA4 `purchase` (Measurement Protocol) — source of truth; do not rely on success page JS.
+      const ga4Purchase = await sendGa4CheckoutPurchaseFromSession(
+        stripe,
+        session,
+        metadata
+      );
+      if (!ga4Purchase.sent) {
+        logger.info("GA4 checkout purchase not sent", {
+          component: "stripe_webhook",
+          action: "ga4_purchase_skipped",
+          metadata: {
+            sessionId: session.id,
+            reason: ga4Purchase.reason,
+            paymentStatus: session.payment_status,
           },
-        ],
-      });
+        });
+      }
 
       const pricingAbRaw = metadata?.pricing_ab_layout;
       if (
@@ -941,6 +904,32 @@ export async function POST(req: Request) {
         } catch (abErr) {
           console.error("home_ab purchase log failed:", abErr);
         }
+      }
+
+      return NextResponse.json({ received: true });
+    }
+
+    if (event.type === "checkout.session.async_payment_succeeded") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const metadata: Record<string, string | undefined> = {
+        ...(session.metadata as Record<string, string | undefined>),
+      };
+
+      const ga4Purchase = await sendGa4CheckoutPurchaseFromSession(
+        stripe,
+        session,
+        metadata
+      );
+      if (!ga4Purchase.sent) {
+        logger.info("GA4 async checkout purchase not sent", {
+          component: "stripe_webhook",
+          action: "ga4_purchase_skipped",
+          metadata: {
+            sessionId: session.id,
+            reason: ga4Purchase.reason,
+            paymentStatus: session.payment_status,
+          },
+        });
       }
 
       return NextResponse.json({ received: true });

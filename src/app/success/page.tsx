@@ -164,7 +164,7 @@ export default async function Success({ searchParams }: any) {
     prevCheckout = await waitForCheckoutRecord(documentsClient, session_id);
   }
   if (prevCheckout !== null) {
-    const transactionId = (session?.invoice as string) || session_id;
+    const transactionId = session_id;
     const normalizedCurrency = currency?.toUpperCase() || "CAD";
     const normalizedEmail = customerEmail?.trim().toLowerCase();
 
@@ -231,7 +231,7 @@ export default async function Success({ searchParams }: any) {
     return (
       <div className="bg-[#F4F7FF]  min-h-screen flex w-full lg:pt-[108px] pt-[70px]">
         <SuccessPageTracking
-          transactionId={(session?.invoice as string) || session_id}
+          transactionId={session_id}
           value={(amountTotal ?? 0) / 100}
           currency={currency?.toUpperCase() || 'CAD'}
           items={lineItems || []}
