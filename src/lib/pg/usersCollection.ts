@@ -297,18 +297,15 @@ function filterBranchToSql(
   if (field === "supabaseUserId" || field === "sub") {
     if (typeof value !== "string") return null;
     const uuid = parseUuid(value);
-    // Do not reuse the same $n for ::uuid and text (->>) comparisons — Postgres
-    // infers one type per placeholder and then fails with "text = uuid".
-    params.push(value);
-    const textP = paramIndex;
     if (uuid) {
       params.push(value);
-      const uuidP = paramIndex + 1;
       return {
-        clause: `(supabase_auth_user_id = $${uuidP}::uuid OR legacy_body->>'supabaseUserId' = $${textP} OR legacy_body->>'sub' = $${textP})`,
-        nextIndex: paramIndex + 2,
+        clause: `supabase_auth_user_id = $${paramIndex}::uuid`,
+        nextIndex: paramIndex + 1,
       };
     }
+    params.push(value);
+    const textP = paramIndex;
     return {
       clause: `(legacy_body->>'supabaseUserId' = $${textP} OR legacy_body->>'sub' = $${textP})`,
       nextIndex: paramIndex + 1,
@@ -318,9 +315,8 @@ function filterBranchToSql(
   if (field === "clerkUserId") {
     if (typeof value !== "string") return null;
     params.push(value);
-    const p = paramIndex;
     return {
-      clause: `(legacy_clerk_user_id = $${p} OR legacy_body->>'clerkUserId' = $${p})`,
+      clause: `legacy_clerk_user_id = $${paramIndex}`,
       nextIndex: paramIndex + 1,
     };
   }

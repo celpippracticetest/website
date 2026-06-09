@@ -33,16 +33,16 @@ const broken = `(
   OR (legacy_clerk_user_id = $3 OR legacy_body->>'clerkUserId' = $3)
 )`;
 
-/** Matches usersFilterToSql after fix (separate placeholders for uuid vs text). */
+/** Matches usersFilterToSql: indexed columns only (no legacy_body OR). */
 const fixed = `(
-  (supabase_auth_user_id = $2::uuid OR legacy_body->>'supabaseUserId' = $1 OR legacy_body->>'sub' = $1)
-  OR (supabase_auth_user_id = $4::uuid OR legacy_body->>'supabaseUserId' = $3 OR legacy_body->>'sub' = $3)
-  OR (legacy_clerk_user_id = $5 OR legacy_body->>'clerkUserId' = $6)
+  (supabase_auth_user_id = $1::uuid)
+  OR (supabase_auth_user_id = $2::uuid)
+  OR (legacy_clerk_user_id = $3)
 )`;
 
 for (const [name, clause, params] of [
   ["broken", broken, [uid, uid, uid]],
-  ["fixed", fixed, [uid, uid, uid, uid, uid, uid]],
+  ["fixed", fixed, [uid, uid, uid]],
 ]) {
   try {
     await sql.unsafe(
