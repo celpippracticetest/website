@@ -2,7 +2,6 @@ import { NextResponse, type NextRequest } from "next/server";
 import {
   readLegacyImportedExternalUserId,
   readPracticePlanFromSupabaseUser,
-  subscriptionMetadataIndicatesPaidPlan,
 } from "@/lib/auth/supabase-user-plan";
 import { repairAuthPlanIfProfileIsPlus } from "@/lib/auth/supabase-user-admin";
 import { mobileUserBridgeFromSupabaseUser } from "@/lib/auth/supabase-mobile-user-bridge";
@@ -327,10 +326,7 @@ export default async function proxy(req: NextRequest) {
 
   if (supabaseWebUser) {
     const app = (supabaseWebUser.app_metadata ?? {}) as Record<string, unknown>;
-    if (
-      normalizePlan(app.plan as string) !== "plus" &&
-      subscriptionMetadataIndicatesPaidPlan(app)
-    ) {
+    if (normalizePlan(app.plan as string) !== "plus") {
       void repairAuthPlanIfProfileIsPlus(supabaseWebUser.id).catch(() => undefined);
     }
   }

@@ -10,6 +10,7 @@ import { ActivityLogger } from "@/lib/userActivity";
 import { isPricingAbLayout } from "@/lib/pricingAbTest";
 import { isHomeAbExperimentVariant } from "@/lib/homeAbTest";
 import { getAccessTierKey } from "@/lib/pricing";
+import { normalizePlan } from "@/lib/subscriptionAccess";
 import { toSerializedPlan } from "@/lib/planSerialization";
 import type { Plan } from "@/models/plans.model";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
@@ -203,6 +204,7 @@ async function updateUserPublicMetadata(
     // race with concurrent webhook updates and overwrite `app_metadata.plan`.
     await authAdmin.users.updateUserMetadata(userId, {
       publicMetadata: newFields,
+      allowPlanDowngrade: normalizePlan(newFields.plan as string) === "free",
     });
     logger.info("Successfully updated metadata for user", {
       component: "stripe_webhook",
@@ -1540,6 +1542,7 @@ export async function POST(req: Request) {
             if (userId) {
               await authAdmin.users.updateUserMetadata(userId, {
                 publicMetadata: { plan: "free" },
+                allowPlanDowngrade: true,
               });
             }
             return NextResponse.json({ received: true });

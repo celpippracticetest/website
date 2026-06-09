@@ -1,11 +1,12 @@
 "use client";
 
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 import {
   readLegacyImportedExternalUserId,
   readPracticePlanFromSupabaseUser,
 } from "@/lib/auth/supabase-user-plan";
+import { refreshSupabaseSessionUser } from "@/lib/auth/refresh-supabase-session-user";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 
 /**
@@ -140,9 +141,20 @@ function ensureSharedAuthListener() {
     emitAuthChange();
   });
 
-  supabase.auth.onAuthStateChange((_event, session) => {
+  supabase.auth.onAuthStateChange((event, session) => {
     sharedAuth.user = session?.user ?? null;
     emitAuthChange();
+    if (
+      session?.user &&
+      (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED")
+    ) {
+      void refreshSupabaseSessionUser({ force: true }).then((refreshed) => {
+        if (refreshed) {
+          sharedAuth.user = refreshed;
+          emitAuthChange();
+        }
+      });
+    }
   });
 }
 

@@ -3,7 +3,9 @@ import {
   getAuthenticatedRequestContext,
   readBearerTokenFromRequest,
 } from "@/lib/auth/request-auth";
+import { repairAuthPlanIfProfileIsPlus } from "@/lib/auth/supabase-user-admin";
 import { mobileUserBridgeFromSupabaseUser } from "@/lib/auth/supabase-mobile-user-bridge";
+import { appUserAdmin } from "@/lib/auth/server-auth";
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 
 type BootstrapUserRow = {
@@ -49,6 +51,19 @@ export async function GET(request: NextRequest) {
       authContext.mobileAuthKind === "supabase"
         ? "mobile_supabase"
         : authContext.source;
+    const supabaseAuthUserId = authContext.supabaseAuthUserId;
+    if (supabaseAuthUserId) {
+      const repaired = await repairAuthPlanIfProfileIsPlus(supabaseAuthUserId).catch(
+        () => false,
+      );
+      if (repaired) {
+        const client = await appUserAdmin();
+        const refreshedUser = await client.users.getUser(supabaseAuthUserId);
+        return NextResponse.json(
+          jsonBootstrapPayload(authSource, refreshedUser as BootstrapUserRow),
+        );
+      }
+    }
     return NextResponse.json(
       jsonBootstrapPayload(authSource, authContext.user as BootstrapUserRow),
     );
@@ -94,6 +109,13 @@ export async function GET(request: NextRequest) {
   }
 
   // Valid Supabase JWT but primary auth resolution failed — still return profile.
+  if (await repairAuthPlanIfProfileIsPlus(data.user.id).catch(() => false)) {
+    const { data: refreshed, error: refreshErr } = await admin.auth.getUser(bearer);
+    if (!refreshErr && refreshed.user) {
+      const bridge = mobileUserBridgeFromSupabaseUser(refreshed.user);
+      return NextResponse.json(jsonBootstrapPayload("mobile_supabase", bridge));
+    }
+  }
   const bridge = mobileUserBridgeFromSupabaseUser(data.user);
   return NextResponse.json(jsonBootstrapPayload("mobile_supabase", bridge));
 }

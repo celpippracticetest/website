@@ -156,11 +156,8 @@ export async function POST(req: NextRequest) {
       }
     } else {
       const authAdmin = await appUserAdmin();
-      const clerkUser = await authAdmin.users.getUser(userId);
-      const existingPublicMetadata = (clerkUser.publicMetadata || {}) as Record<string, unknown>;
       await authAdmin.users.updateUserMetadata(userId, {
         publicMetadata: {
-          ...existingPublicMetadata,
           ...(attributionData.utm_source && { utm_source: attributionData.utm_source }),
           ...(attributionData.utm_medium && { utm_medium: attributionData.utm_medium }),
           ...(attributionData.utm_campaign && { utm_campaign: attributionData.utm_campaign }),

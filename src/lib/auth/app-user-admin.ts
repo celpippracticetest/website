@@ -6,7 +6,9 @@ import {
   type AppShapeUser,
 } from "@/lib/auth/supabase-user-app-shape";
 import { resolveSupabaseAuthUserId } from "@/lib/auth/resolve-supabase-auth-user-id";
+import { getSql } from "@/lib/pg/pool";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { normalizePlan } from "@/lib/subscriptionAccess";
 
 const APP_METADATA_PUBLIC_KEYS = new Set([
   "plan",
@@ -94,6 +96,62 @@ async function persistSupabaseUser(
   return data.user;
 }
 
+/** True when Postgres or Stripe still indicates an active paid entitlement. */
+async function paidEntitlementLocked(supabaseAuthUserId: string): Promise<boolean> {
+  try {
+    const sql = getSql();
+    const rows = await sql<{ plan: string | null; has_active: boolean }[]>`
+      SELECT
+        up.plan,
+        EXISTS (
+          SELECT 1 FROM public.stripe_subscriptions ss
+          WHERE ss.customer_id = up.stripe_customer_id
+            AND ss.status IN ('active', 'trialing')
+        ) AS has_active
+      FROM public.user_profiles up
+      WHERE up.supabase_auth_user_id = ${supabaseAuthUserId}::uuid
+      LIMIT 1
+    `;
+    const row = rows[0];
+    if (!row) return false;
+    if (normalizePlan(row.plan) === "plus") return true;
+    return row.has_active === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Blocks accidental `plan: "free"` writes from attribution / onboarding / spread
+ * patches while the user still has Plus in Postgres or an active Stripe sub.
+ */
+async function sanitizePublicMetadataPatch(
+  supabaseAuthUserId: string,
+  patch: Record<string, unknown>,
+  options?: { allowPlanDowngrade?: boolean },
+): Promise<Record<string, unknown>> {
+  if (options?.allowPlanDowngrade) return patch;
+  if (!("plan" in patch)) return patch;
+  if (normalizePlan(String(patch.plan ?? "")) !== "free") return patch;
+  if (!(await paidEntitlementLocked(supabaseAuthUserId))) return patch;
+
+  const { plan: _removed, ...rest } = patch;
+  return rest;
+}
+
+async function applyPublicMetadataPatch(
+  uid: string,
+  app: Record<string, unknown>,
+  meta: Record<string, unknown>,
+  publicMetadata: Record<string, unknown>,
+  options?: { allowPlanDowngrade?: boolean },
+): Promise<void> {
+  const sanitized = await sanitizePublicMetadataPatch(uid, publicMetadata, options);
+  const { app: appPatch, userMeta: userPatch } = splitPublicMetadataPatch(sanitized);
+  Object.assign(app, appPatch);
+  Object.assign(meta, userPatch);
+}
+
 export type { AppShapeUser };
 
 export async function appUserAdmin() {
@@ -109,7 +167,11 @@ export async function appUserAdmin() {
 
       updateUserMetadata: async (
         userId: string,
-        args: { publicMetadata?: Record<string, unknown>; privateMetadata?: Record<string, unknown> },
+        args: {
+          publicMetadata?: Record<string, unknown>;
+          privateMetadata?: Record<string, unknown>;
+          allowPlanDowngrade?: boolean;
+        },
       ) => {
         const user = await loadSupabaseUserByExternalId(userId);
         if (!user) throw new Error(`User not found: ${userId}`);
@@ -118,9 +180,9 @@ export async function appUserAdmin() {
         const meta = { ...(user.user_metadata ?? {}) } as Record<string, unknown>;
 
         if (args.publicMetadata) {
-          const { app: appPatch, userMeta: userPatch } = splitPublicMetadataPatch(args.publicMetadata);
-          Object.assign(app, appPatch);
-          Object.assign(meta, userPatch);
+          await applyPublicMetadataPatch(uid, app, meta, args.publicMetadata, {
+            allowPlanDowngrade: args.allowPlanDowngrade,
+          });
         }
         if (args.privateMetadata) {
           const merged = mergePrivateIntoUserMetadata(meta, args.privateMetadata);
@@ -145,6 +207,7 @@ export async function appUserAdmin() {
           primaryEmailAddressID?: string;
           unsafeMetadata?: Record<string, unknown>;
           password?: string;
+          allowPlanDowngrade?: boolean;
         },
       ) => {
         const user = await loadSupabaseUserByExternalId(userId);
@@ -154,9 +217,9 @@ export async function appUserAdmin() {
         const meta = { ...(user.user_metadata ?? {}) } as Record<string, unknown>;
 
         if (args.publicMetadata) {
-          const { app: appPatch, userMeta: userPatch } = splitPublicMetadataPatch(args.publicMetadata);
-          Object.assign(app, appPatch);
-          Object.assign(meta, userPatch);
+          await applyPublicMetadataPatch(uid, app, meta, args.publicMetadata, {
+            allowPlanDowngrade: args.allowPlanDowngrade,
+          });
         }
         if (args.privateMetadata) {
           const merged = mergePrivateIntoUserMetadata(meta, args.privateMetadata);
