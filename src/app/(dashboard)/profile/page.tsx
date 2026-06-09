@@ -11,6 +11,9 @@ import { redirect } from "next/navigation";
 import Stripe from "stripe";
 import { getDashboardLayoutAuthContext } from "@/lib/auth/web-session-server";
 import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
+import { pageSeo } from "@/lib/seo/pageSeo";
+
+export const metadata = pageSeo("/profile");
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 

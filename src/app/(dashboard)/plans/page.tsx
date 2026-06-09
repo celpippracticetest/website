@@ -8,9 +8,12 @@ import { PlansRepository } from "@/repositories/plans.repo";
 import SvgBestValuePlan from "@/components/icons/BestValuePlan";
 import SvgPopularPlan from "@/components/icons/PopularPlan";
 import SvgFreePlan from "@/components/icons/FreePlan";
+import { pageSeo } from "@/lib/seo/pageSeo";
 
 import React from "react";
 import { getSubscriptionDisplayName, hasPremiumPlusAccess } from "@/lib/subscriptionAccess";
+
+export const metadata = pageSeo("/plans");
 
 const getIconComponent = (iconType?: string) => {
   switch (iconType) {

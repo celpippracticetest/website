@@ -1,6 +1,8 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { auth } from "@/lib/auth/server-auth";
+import { pageSeo } from "@/lib/seo/pageSeo";
 import {
   ArrowRight,
   BarChart3,
@@ -13,11 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export const metadata = {
-  title: "Become a Partner | CELPIP Practice Test",
-  description:
-    "Help your clients succeed with CELPIP Practice Test and earn 30% commission on first subscription purchases.",
-};
+export const metadata: Metadata = pageSeo("/partners");
 
 const HERO_BG =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663468453012/Nvow3xsVp4swjjq4NHT4Qb/hero-bg-g9DwStDGBNv3J3K25xbmtK.webp";

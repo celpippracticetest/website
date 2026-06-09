@@ -1,14 +1,8 @@
 import type { Metadata } from "next";
 import HomepageHeroPageClient from "./HomepageHeroPageClient";
+import { cmsPageSeo } from "@/lib/seo/cmsPageSeo";
 
-export const metadata: Metadata = {
-  title: "Homepage Hero Scheduler - CMS Dashboard",
-  description: "Manage scheduled homepage hero images for date-based campaigns.",
-  robots: {
-    index: false,
-    follow: false,
-  },
-};
+export const metadata: Metadata = cmsPageSeo("/cms/dashboard/homepage-hero");
 
 export default function HomepageHeroPage() {
   return <HomepageHeroPageClient />;

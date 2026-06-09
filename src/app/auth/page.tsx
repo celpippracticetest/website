@@ -1,4 +1,7 @@
 import { redirect } from "next/navigation";
+import { pageSeo } from "@/lib/seo/pageSeo";
+
+export const metadata = pageSeo("/auth");
 
 /**
  * /auth has no UI — the unified sign-in/sign-up page lives at /sign-in.

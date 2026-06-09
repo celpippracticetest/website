@@ -7,6 +7,9 @@ import { ExamRepository } from "@/repositories/exams.repo";
 import { TExamSchemaDto } from "@/models/exam.model";
 import dynamic from "next/dynamic";
 import { Box, Link, Typography } from "@mui/material";
+import { pageSeo } from "@/lib/seo/pageSeo";
+
+export const metadata = pageSeo("/exams/session");
 
 const MockExamView = dynamic(() => import("@/components/dashboard-app/exam-parts/MockExamView"), {
   loading: () => (

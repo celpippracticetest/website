@@ -2,6 +2,9 @@ import { Suspense } from "react";
 import { auth } from "@/lib/auth/server-auth";
 import { redirect } from "next/navigation";
 import PartnerAuthClient from "./PartnerAuthClient";
+import { pageSeo } from "@/lib/seo/pageSeo";
+
+export const metadata = pageSeo("/partners/auth");
 
 function AuthFallback() {
   return (

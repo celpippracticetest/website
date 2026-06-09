@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { cmsPageSeo } from "@/lib/seo/cmsPageSeo";
 
 import "chart.js/auto";
 import documentsClient from "@/lib/appDocumentsClient";
@@ -11,9 +12,7 @@ import {
 } from "@/lib/cms/challengeAcceptances";
 import { Box } from "@/components/ui/Box";
 
-export const metadata: Metadata = {
-  title: "CMS Dashboard",
-};
+export const metadata: Metadata = cmsPageSeo("/cms/dashboard");
 
 type PendingRefundRequest = {
   _id: string;

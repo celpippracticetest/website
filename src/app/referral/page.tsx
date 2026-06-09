@@ -1,9 +1,6 @@
-export const metadata = {
-  robots: {
-    index: false,
-    follow: false,
-  },
-};
+import { pageSeo } from "@/lib/seo/pageSeo";
+
+export const metadata = pageSeo("/referral");
 
 import { Suspense } from "react";
 import dynamic from "next/dynamic";

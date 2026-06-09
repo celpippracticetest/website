@@ -1,5 +1,8 @@
 import { redirect } from "next/navigation";
 import { hasSupabaseWebSession } from "@/lib/auth/web-session-server";
+import { pageSeo } from "@/lib/seo/pageSeo";
+
+export const metadata = pageSeo("/sign-up");
 
 /**
  * Sign-up now lives on /sign-in (unified auth page with tabs).

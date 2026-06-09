@@ -19,7 +19,10 @@ import {
 interface SubscriptionRetentionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirmCancellation: (flowId: string | null) => void;
+  onConfirmCancellation: (
+    flowId: string | null,
+    context?: { surveyReason?: Reason | null },
+  ) => void | Promise<void>;
   loading: boolean;
 }
 
@@ -620,7 +623,7 @@ const SubscriptionRetentionModal = ({
               step: "confirm",
             });
             submitSurvey();
-            onConfirmCancellation(flowId);
+            onConfirmCancellation(flowId, { surveyReason: reason ?? null });
           }}
           disabled={loading}
           variant="outlined"

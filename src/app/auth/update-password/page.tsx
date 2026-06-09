@@ -1,5 +1,8 @@
 import { Suspense } from "react";
 import UpdatePasswordClient from "./UpdatePasswordClient";
+import { pageSeo } from "@/lib/seo/pageSeo";
+
+export const metadata = pageSeo("/auth/update-password");
 
 function UpdatePasswordFallback() {
   return (

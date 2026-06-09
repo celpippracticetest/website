@@ -12,6 +12,9 @@ import {
 import { resolvePayPalPlanIdForStripePrice } from "@/lib/paypal/planMap";
 import { finalizePayPalSubscriptionReturn } from "@/lib/paypal/finalizeSubscriptionReturn";
 import { matchUsersCollectionByWebUserIds } from "@/lib/users/userDocumentIdentity";
+import { pageSeo } from "@/lib/seo/pageSeo";
+
+export const metadata = pageSeo("/success/paypal");
 
 export default async function PayPalSuccessPage({ searchParams }: any) {
   const params = searchParams ? await searchParams : {};

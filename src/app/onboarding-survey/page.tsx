@@ -1,13 +1,11 @@
 import OnboardingSurveyPageClient from "./OnboardingSurveyPageClient";
 import { userNeedsOnboardingSurvey } from "@/lib/userNeedsOnboardingSurvey";
 import { currentUser } from "@/lib/auth/server-auth";
-import { Metadata } from "next";
+import { pageSeo } from "@/lib/seo/pageSeo";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Welcome — Tell us your goals",
-  robots: { index: false, follow: false },
-};
+export const metadata: Metadata = pageSeo("/onboarding-survey");
 
 function safeInternalNextPath(raw: string | undefined): string | null {
   if (typeof raw !== "string" || !raw.startsWith("/") || raw.startsWith("//")) {

@@ -1,8 +1,12 @@
 import dynamic from "next/dynamic";
+import type { Metadata } from "next";
 import PublicPageShell from "@/components/pages/landing/PublicPageShell";
 import PublicPageFooter from "@/components/pages/landing/PublicPageFooter";
+import { pageSeo } from "@/lib/seo/pageSeo";
 import { getUiAbVariant } from "@/lib/uiAbTest.server";
 import { readUiAbQueryParam } from "@/lib/uiAbTest";
+
+export const metadata: Metadata = pageSeo("/");
 
 const HomePageClient = dynamic(
   () => import("@/components/pages/landing/HomePageClient"),

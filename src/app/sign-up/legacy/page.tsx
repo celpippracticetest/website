@@ -1,5 +1,8 @@
 import { redirect } from "next/navigation";
 import { hasAnyWebSession } from "@/lib/auth/web-session-server";
+import { pageSeo } from "@/lib/seo/pageSeo";
+
+export const metadata = pageSeo("/sign-up/legacy");
 
 const PASSTHROUGH_KEYS = [
   "force",

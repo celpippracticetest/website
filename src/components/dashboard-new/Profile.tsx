@@ -21,6 +21,7 @@ import Link from "next/link";
 import SubscriptionRetentionModal from "@/components/modal/SubscriptionRetentionModal";
 import ChangePlanModal from "@/components/modal/ChangePlanModal";
 import AccountDeletionRetentionModal from "@/components/modal/AccountDeletionRetentionModal";
+import { trackEcommerce } from "@/lib/analytics";
 import {
   formatSubscriptionLabelForDisplay,
   getSubscriptionDisplayName,
@@ -251,7 +252,10 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
     setShowRetentionModal(true);
   };
 
-  const confirmCancellation = async (flowId?: string | null) => {
+  const confirmCancellation = async (
+    flowId?: string | null,
+    context?: { surveyReason?: string | null },
+  ): Promise<boolean> => {
     try {
       setIsCancelling(true);
       const response = await fetch("/api/users/cancel-subscription", {
@@ -265,17 +269,28 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
         throw new Error(data.error || "Failed to cancel subscription");
       }
 
+      trackEcommerce.subscriptionCancelled(
+        "user_cancelled",
+        planNameDisplay || userPlan || subscriptionData?.planName,
+        subscriptionData?.id,
+        {
+          survey_reason: context?.surveyReason ?? undefined,
+          flow_id: flowId ?? null,
+        },
+      );
+
       setToastType("success");
       setToastMessage("Subscription cancelled successfully");
       setShowToast(true);
       setShowRetentionModal(false);
       await user?.reload();
       router.refresh();
-
+      return true;
     } catch (error: any) {
       setToastType("error");
       setToastMessage(error.message || "Failed to cancel subscription");
       setShowToast(true);
+      return false;
     } finally {
       setIsCancelling(false);
       setTimeout(() => setShowToast(false), 3000);
@@ -1330,9 +1345,9 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
       <SubscriptionRetentionModal
         isOpen={showRetentionModal}
         onClose={() => setShowRetentionModal(false)}
-        onConfirmCancellation={async (flowId) => {
-          await confirmCancellation(flowId);
-          setShowRetentionModal(false);
+        onConfirmCancellation={async (flowId, context) => {
+          const ok = await confirmCancellation(flowId, context);
+          if (ok) setShowRetentionModal(false);
         }}
         loading={isCancelling}
       />

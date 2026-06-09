@@ -825,13 +825,16 @@ export const trackEcommerce = {
   subscriptionCancelled: (
     reason?: "user_cancelled" | "payment_failed" | "admin_cancelled" | "refunded",
     planType?: string,
-    subscriptionId?: string
+    subscriptionId?: string,
+    extra?: { survey_reason?: string; flow_id?: string | null }
   ) => {
     trackEvent({
       event: "subscription_cancelled",
       cancellation_reason: reason,
       plan_type: planType,
       subscription_id: subscriptionId,
+      survey_reason: extra?.survey_reason,
+      flow_id: extra?.flow_id ?? undefined,
     });
   },
 };
