@@ -81,15 +81,6 @@ export default function RefundRequestPortal({
     null
   );
 
-  const [instantRefundLoading, setInstantRefundLoading] = useState(false);
-  const [instantRefundInfo, setInstantRefundInfo] = useState<{
-    amountDisplay: string;
-    paidAtIso: string;
-  } | null>(null);
-  const [instantRefundDone, setInstantRefundDone] = useState(false);
-  const [instantRefundError, setInstantRefundError] = useState("");
-  const [instantRefundSubmitting, setInstantRefundSubmitting] = useState(false);
-
   const detailsLen = form.details.trim().length;
   const detailsMin = 10;
   const meetsDetailsMin = detailsLen >= detailsMin;
@@ -117,12 +108,7 @@ export default function RefundRequestPortal({
     setSubmitError("");
     setSubmittedTrackingCode("");
     setSubmittedStatus("");
-    setInstantRefundInfo(null);
-    setInstantRefundDone(false);
-    setInstantRefundError("");
-    setInstantRefundLoading(false);
 
-    let runInstantEligibilityCheck = false;
     try {
       const res = await fetch("/api/refund-requests", {
         method: "POST",
@@ -146,61 +132,10 @@ export default function RefundRequestPortal({
       setSubmittedStatus(data.request.status);
       trackEngagement.refundRequestSubmitted(form.reason, data.request.trackingCode);
       setForm(initialForm);
-      runInstantEligibilityCheck = true;
     } catch (error) {
       setSubmitError("Failed to submit refund request. Please try again.");
     } finally {
       setIsSubmitting(false);
-    }
-
-    if (runInstantEligibilityCheck) {
-      setInstantRefundInfo(null);
-      setInstantRefundDone(false);
-      setInstantRefundError("");
-      setInstantRefundLoading(true);
-      try {
-        const eligRes = await fetch("/api/users/refund-last-payment-eligibility");
-        const eligData = (await eligRes.json()) as {
-          eligible?: boolean;
-          amountDisplay?: string;
-          paidAtIso?: string;
-        };
-        if (eligRes.ok && eligData.eligible && eligData.amountDisplay && eligData.paidAtIso) {
-          setInstantRefundInfo({
-            amountDisplay: eligData.amountDisplay,
-            paidAtIso: eligData.paidAtIso,
-          });
-        }
-      } catch {
-        // non-blocking
-      } finally {
-        setInstantRefundLoading(false);
-      }
-    }
-  };
-
-  const onInstantRefund = async () => {
-    if (!submittedTrackingCode.trim() || instantRefundSubmitting) return;
-    setInstantRefundSubmitting(true);
-    setInstantRefundError("");
-    try {
-      const res = await fetch("/api/users/refund-last-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ trackingCode: submittedTrackingCode.trim() }),
-      });
-      const data = (await res.json()) as { error?: string; message?: string };
-      if (!res.ok) {
-        setInstantRefundError(data.error || "Could not complete automatic refund.");
-        return;
-      }
-      setInstantRefundDone(true);
-      setInstantRefundInfo(null);
-      setSubmittedStatus("refunded");
-    } catch {
-      setInstantRefundError("Could not complete automatic refund. Please try again.");
-    } finally {
-      setInstantRefundSubmitting(false);
     }
   };
 
@@ -316,43 +251,10 @@ export default function RefundRequestPortal({
                   <p className="mt-[4px] text-[13px] text-[#2F6B40]">
                     Current status: {submittedStatus}
                   </p>
-                  {instantRefundLoading ? (
-                    <p className="mt-[10px] text-[13px] text-[#2F6B40]">
-                      Checking whether your last payment qualifies for an automatic refund…
-                    </p>
-                  ) : null}
-                  {instantRefundDone ? (
-                    <p className="mt-[10px] text-[13px] font-medium text-[#1E4D2B]">
-                      Automatic refund completed. Your last card payment was refunded and any
-                      active subscription was cancelled. It may take a few days for your bank to
-                      show the credit.
-                    </p>
-                  ) : null}
-                  {instantRefundInfo && !instantRefundDone ? (
-                    <Box className="mt-[12px] rounded-[10px] border border-[#B8D4FF] bg-white p-[12px]">
-                      <p className="text-[13px] leading-[20px] text-[#1F2A3D]">
-                        Your most recent card payment ({instantRefundInfo.amountDisplay}, paid{" "}
-                        {new Date(instantRefundInfo.paidAtIso).toLocaleString()}) is within 48
-                        hours. You can refund that payment and cancel your subscription
-                        immediately—no need to wait for manual review.
-                      </p>
-                      {instantRefundError ? (
-                        <p className="mt-[8px] text-[13px] font-medium text-[#D14343]">
-                          {instantRefundError}
-                        </p>
-                      ) : null}
-                      <button
-                        type="button"
-                        onClick={onInstantRefund}
-                        disabled={instantRefundSubmitting}
-                        className="mt-[10px] inline-flex h-[40px] w-full items-center justify-center rounded-[10px] bg-[#1E4D2B] px-[14px] text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 screen744:w-auto!"
-                      >
-                        {instantRefundSubmitting
-                          ? "Processing…"
-                          : "Refund last payment & cancel subscription"}
-                      </button>
-                    </Box>
-                  ) : null}
+                  <p className="mt-[10px] text-[13px] leading-[20px] text-[#2F6B40]">
+                    Our team will review your request. You can track status below using your
+                    tracking code.
+                  </p>
                 </Box>
               )}
 

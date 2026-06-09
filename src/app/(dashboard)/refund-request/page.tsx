@@ -189,7 +189,7 @@ export default async function RefundRequestPage() {
                 id="refund-window-expired-title"
                 className="text-[15px] font-semibold leading-[22px] text-[#7F1D1D] screen744:text-[16px]! screen744:leading-[24px]!"
               >
-                The 48-hour automatic refund window has closed
+                The 48-hour refund window has closed
               </p>
               <p
                 id="refund-window-expired-desc"

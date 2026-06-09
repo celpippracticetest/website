@@ -3,6 +3,9 @@ import "server-only";
 import { stripe } from "@/lib/stripe";
 import type Stripe from "stripe";
 
+/** Self-serve instant refund after submitting a refund request (within {@link LAST_PAYMENT_INSTANT_REFUND_MAX_MS}). */
+export const SELF_SERVICE_INSTANT_REFUND_ENABLED = false;
+
 /** Payments at most this old (ms) qualify for self-serve refund of the latest charge. */
 export const LAST_PAYMENT_INSTANT_REFUND_MAX_MS = 48 * 60 * 60 * 1000;
 
@@ -21,6 +24,7 @@ export type LastPaymentInstantRefundEligibility =
         | "no_charge"
         | "not_refundable"
         | "outside_window"
+        | "disabled"
         | "stripe_error";
       message: string;
     };
@@ -39,6 +43,15 @@ function pickLatestRefundableCharge(charges: Stripe.Charge[]): Stripe.Charge | n
 export async function getLastPaymentInstantRefundEligibility(
   customerId: string
 ): Promise<LastPaymentInstantRefundEligibility> {
+  if (!SELF_SERVICE_INSTANT_REFUND_ENABLED) {
+    return {
+      eligible: false,
+      reason: "disabled",
+      message:
+        "Automatic refunds are not available. Our team will review your refund request.",
+    };
+  }
+
   try {
     const charges = await stripe.charges.list({
       customer: customerId,
