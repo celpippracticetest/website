@@ -1,6 +1,7 @@
 // Browser analytics — GA4 via gtag (no GTM).
 import { track as vercelTrack } from "@vercel/analytics";
 import { sendGa4Event, updateGa4Consent } from "@/lib/ga4Browser";
+import type { GaConsentState } from "@/lib/consent";
 import type {
   AnalyticsEvent,
   UserContext,
@@ -388,14 +389,19 @@ export function trackVercelEvent(
 /**
  * Update consent state
  */
-export function updateConsent(consentState: {
-  ad_storage?: "granted" | "denied";
-  analytics_storage?: "granted" | "denied";
-  ad_user_data?: "granted" | "denied";
-  ad_personalization?: "granted" | "denied";
-}): void {
+export function updateConsent(consentState: GaConsentState): void {
   updateGa4Consent(consentState);
 }
+
+export {
+  acceptEssentialConsent,
+  applyStoredConsent,
+  grantMarketingConsent,
+  ESSENTIAL_CONSENT,
+  MARKETING_CONSENT,
+  type ConsentChoice,
+  type GaConsentState,
+} from "@/lib/consent";
 
 /**
  * Track page view

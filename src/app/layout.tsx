@@ -8,6 +8,7 @@ import AskBeavoModal from "@/components/AskBeavo/AskBeavoModal";
 import TawkLoader from "@/components/TawkLoader";
 import TawkUserSync from "@/components/TawkUserSync";
 import AuthAnalyticsTracker from "@/components/analytics/AuthAnalyticsTracker";
+import ConsentManager from "@/components/analytics/ConsentManager";
 import { LazyPromotionManager } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -243,6 +244,7 @@ export default async function RootLayout({
           <TawkLoader />
           <TawkUserSync />
           <AuthAnalyticsTracker />
+          {enableGaTag && <ConsentManager />}
 
           <NextTopLoaderComponent />
           <AndroidDownloadAppBanner />
