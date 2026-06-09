@@ -199,8 +199,10 @@ async function updateUserPublicMetadata(
     const currentMetadata = user.publicMetadata || {};
     const updatedMetadata = { ...currentMetadata, ...newFields };
 
+    // Patch only `newFields` into Auth — passing the full merged metadata can
+    // race with concurrent webhook updates and overwrite `app_metadata.plan`.
     await authAdmin.users.updateUserMetadata(userId, {
-      publicMetadata: updatedMetadata,
+      publicMetadata: newFields,
     });
     logger.info("Successfully updated metadata for user", {
       component: "stripe_webhook",
