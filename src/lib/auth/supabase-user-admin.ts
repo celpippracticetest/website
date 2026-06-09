@@ -2,6 +2,7 @@ import "server-only";
 
 import { getSql } from "@/lib/pg/pool";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { normalizePlan } from "@/lib/subscriptionAccess";
 import type Stripe from "stripe";
 
 type ProfileRef = {
@@ -98,18 +99,46 @@ export async function grantPlusPlan(
   const sql = getSql();
   const admin = getSupabaseAdmin();
 
-  await Promise.all([
-    sql`
-      UPDATE public.user_profiles
-      SET plan = 'plus', updated_at = NOW()
-      WHERE id = ${profileId}::uuid
-    `.catch(() => undefined),
-    admin
-      ? admin.auth.admin
-          .updateUserById(supabaseAuthUserId, { app_metadata: { plan: "plus" } })
-          .catch(() => undefined)
-      : Promise.resolve(),
-  ]);
+  await sql`
+    UPDATE public.user_profiles
+    SET plan = 'plus', updated_at = NOW()
+    WHERE id = ${profileId}::uuid
+  `.catch(() => undefined);
+
+  if (!admin) return;
+
+  const { data } = await admin.auth.admin.getUserById(supabaseAuthUserId);
+  const currentApp = (data.user?.app_metadata ?? {}) as Record<string, unknown>;
+  await admin.auth.admin
+    .updateUserById(supabaseAuthUserId, {
+      app_metadata: { ...currentApp, plan: "plus" },
+    })
+    .catch(() => undefined);
+}
+
+/** Re-sync auth JWT plan when Postgres profile is plus but app_metadata drifted to free. */
+export async function repairAuthPlanIfProfileIsPlus(
+  supabaseAuthUserId: string,
+): Promise<boolean> {
+  const sql = getSql();
+  const rows = await sql<{ id: string; plan: string | null }[]>`
+    SELECT id, plan
+    FROM public.user_profiles
+    WHERE supabase_auth_user_id = ${supabaseAuthUserId}::uuid
+    LIMIT 1
+  `;
+  const row = rows[0];
+  if (!row || normalizePlan(row.plan) !== "plus") return false;
+
+  const admin = getSupabaseAdmin();
+  if (!admin) return false;
+
+  const { data } = await admin.auth.admin.getUserById(supabaseAuthUserId);
+  const app = (data.user?.app_metadata ?? {}) as Record<string, unknown>;
+  if (normalizePlan(app.plan as string) === "plus") return false;
+
+  await grantPlusPlan(supabaseAuthUserId, row.id);
+  return true;
 }
 
 /** Sets plan = 'free' on both user_profiles and auth.users.raw_app_meta_data. */
@@ -127,9 +156,15 @@ export async function revokePlusPlan(
       WHERE id = ${profileId}::uuid
     `.catch(() => undefined),
     admin
-      ? admin.auth.admin
-          .updateUserById(supabaseAuthUserId, { app_metadata: { plan: "free" } })
-          .catch(() => undefined)
+      ? (async () => {
+          const { data } = await admin.auth.admin.getUserById(supabaseAuthUserId);
+          const currentApp = (data.user?.app_metadata ?? {}) as Record<string, unknown>;
+          await admin.auth.admin
+            .updateUserById(supabaseAuthUserId, {
+              app_metadata: { ...currentApp, plan: "free" },
+            })
+            .catch(() => undefined);
+        })()
       : Promise.resolve(),
   ]);
 }

@@ -187,7 +187,6 @@ export default async function UserProfilePage() {
       if (normalizePlan(appUserRecord.publicMetadata.plan as string) !== shouldBePlan) {
         await client.users.updateUserMetadata(userId, {
           publicMetadata: {
-            ...appUserRecord.publicMetadata,
             plan: shouldBePlan,
           },
         });

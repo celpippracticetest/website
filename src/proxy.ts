@@ -2,12 +2,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import {
   readLegacyImportedExternalUserId,
   readPracticePlanFromSupabaseUser,
+  subscriptionMetadataIndicatesPaidPlan,
 } from "@/lib/auth/supabase-user-plan";
+import { repairAuthPlanIfProfileIsPlus } from "@/lib/auth/supabase-user-admin";
 import { mobileUserBridgeFromSupabaseUser } from "@/lib/auth/supabase-mobile-user-bridge";
 import { readBearerTokenFromRequest } from "@/lib/auth/request-auth";
 import { appUserAdmin } from "@/lib/auth/app-user-admin";
 import { logger, trackUserAction, captureException } from "@/lib/sentry-logger";
-import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import { hasPaidPracticeAccess, normalizePlan } from "@/lib/subscriptionAccess";
 import { PRICING_AB_COOKIE, type PricingAbLayout } from "@/lib/pricingAbTest";
 import { HOME_AB_COOKIE, type HomeAbVariant } from "@/lib/homeAbTest";
 import {
@@ -309,11 +311,9 @@ export default async function proxy(req: NextRequest) {
   if (webStableId && !sessionClaims?.metadata.roles) {
     try {
       const client = await appUserAdmin();
-      const existingPlan = (sessionClaims?.metadata as any)?.plan;
       await client.users.updateUserMetadata(webStableId, {
         publicMetadata: {
           roles: ["user"],
-          plan: existingPlan || "free",
         },
       });
     } catch (error) {
@@ -322,6 +322,16 @@ export default async function proxy(req: NextRequest) {
         action: "bootstrap_user_roles",
         userId: webStableId,
       });
+    }
+  }
+
+  if (supabaseWebUser) {
+    const app = (supabaseWebUser.app_metadata ?? {}) as Record<string, unknown>;
+    if (
+      normalizePlan(app.plan as string) !== "plus" &&
+      subscriptionMetadataIndicatesPaidPlan(app)
+    ) {
+      void repairAuthPlanIfProfileIsPlus(supabaseWebUser.id).catch(() => undefined);
     }
   }
 
@@ -470,7 +480,6 @@ export default async function proxy(req: NextRequest) {
           });
           await client.users.updateUserMetadata(webStableId, {
             publicMetadata: {
-              ...sessionClaims?.metadata,
               onboardingCompleted: true,
               referralCode: referralCode,
               referralActive: true,
@@ -587,7 +596,6 @@ export default async function proxy(req: NextRequest) {
         } else {
           await client.users.updateUserMetadata(webStableId, {
             publicMetadata: {
-              ...sessionClaims?.metadata,
               onboardingCompleted: true,
             },
           });
@@ -595,7 +603,6 @@ export default async function proxy(req: NextRequest) {
       } else {
         await client.users.updateUserMetadata(webStableId, {
           publicMetadata: {
-            ...sessionClaims?.metadata,
             onboardingCompleted: true,
           },
         });

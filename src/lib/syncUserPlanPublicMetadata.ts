@@ -22,7 +22,7 @@ export async function syncUserPlanPublicMetadata(
   const publicMetadata = { ...current, ...patch };
 
   await client.users.updateUserMetadata(userId, {
-    publicMetadata,
+    publicMetadata: patch,
   });
 
   try {

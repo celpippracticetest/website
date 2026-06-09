@@ -1,7 +1,10 @@
 import "server-only";
 
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
-import { readLegacyImportedExternalUserId } from "@/lib/auth/supabase-user-plan";
+import {
+  readLegacyImportedExternalUserId,
+  readPracticePlanFromSupabaseUser,
+} from "@/lib/auth/supabase-user-plan";
 
 /**
  * Minimal bridge user shape for mobile API routes (legacy field compatibility).
@@ -79,9 +82,11 @@ export function mobileUserBridgeFromSupabaseUser(
       ? meta.roles
       : undefined;
 
+  const { plan, purchaseDate } = readPracticePlanFromSupabaseUser(user);
+
   const publicMetadata: Record<string, unknown> = {
     ...meta,
-    plan: app.plan ?? meta.plan ?? "free",
+    plan,
     planType: app.planType ?? meta.planType,
     planSource: app.planSource ?? meta.planSource,
     planCancelled: app.planCancelled ?? meta.planCancelled,
@@ -89,7 +94,7 @@ export function mobileUserBridgeFromSupabaseUser(
     planExpiresAt: app.planExpiresAt ?? meta.planExpiresAt,
     targetCLB: app.targetCLB ?? meta.targetCLB ?? meta.targetClb,
     ...(purchasedMockExamIds !== undefined ? { purchasedMockExamIds } : {}),
-    purchaseDate: app.purchaseDate ?? meta.purchaseDate,
+    purchaseDate,
   };
   if (roleList !== undefined) {
     publicMetadata.roles = roleList;

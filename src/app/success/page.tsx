@@ -183,11 +183,9 @@ export default async function Success({ searchParams }: any) {
   });
 
   if (status === "complete" && paymentIntentExpanded) {
-    const publicMetadata = (await auth()).sessionClaims?.metadata;
     const client = await appUserAdmin();
     await client.users.updateUserMetadata(user.id, {
       publicMetadata: {
-        ...publicMetadata,
         plan: "plus",
         // Ensure referral is disabled immediately after a successful purchase
         referralActive: false,
