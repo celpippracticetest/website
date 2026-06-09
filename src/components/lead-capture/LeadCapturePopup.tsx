@@ -15,7 +15,7 @@ import {
 } from "@mui/material";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { useLeadCaptureTriggers } from "@/hooks/useLeadCaptureTriggers";
-import { trackEngagement } from "@/lib/gtm";
+import { trackEngagement } from "@/lib/analytics";
 type LeadCaptureConfig = {
   id: string;
   name: string;

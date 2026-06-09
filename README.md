@@ -45,22 +45,18 @@ Author majid.
 - Canonical tracking contract: `docs/tracking-spec.md`
 - GTM export snapshot (ops artifact): `GTM_workspace.json`
 
-## Google Analytics Dashboard Setup (GA4 + GTM)
+## Google Analytics Dashboard Setup (GA4)
 
-This project already sends tracking events through Google Tag Manager (GTM) and GA4.
+Events are sent **directly from app code** via gtag (`src/lib/analytics.ts`, `src/lib/ga4Browser.ts`). GTM is not used.
 
 ### 1) Configure environment variables
 
 Set these in your deployment environment (and in local `.env.local` if needed):
 
-- `NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX`
-- `NEXT_PUBLIC_GTM_LEGACY_ID=GTM-XXXXXXX` (optional migration-only secondary container)
 - `GA_MEASUREMENT_ID=G-XXXXXXXXXX` (canonical GA4 Measurement ID)
 - `GA_API_SECRET=xxxxxxxxxxxxxxxx`
-- `NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX` (same value as `GA_MEASUREMENT_ID`; used in the browser so checkout can send GA4 `client_id` / `session_id` into Stripe metadata for Measurement Protocol renewals)
+- `NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX` (same value as `GA_MEASUREMENT_ID`; loads gtag in `src/app/layout.tsx` and enables checkout to send GA4 `client_id` / `session_id` into Stripe metadata for Measurement Protocol renewals)
 
-- `NEXT_PUBLIC_GTM_ID` loads GTM in `src/app/layout.tsx`.
-- `NEXT_PUBLIC_GTM_LEGACY_ID` can load a second GTM container in parallel during migration.
 - `GA_API_SECRET` is required for server-side GA4 events (heartbeat + Stripe webhook events).
 - Server-side GA4 strictly uses `GA_MEASUREMENT_ID`.
 
@@ -74,38 +70,29 @@ In Google Analytics:
 4. In Admin -> Data display -> Events, confirm incoming events after deployment.
 5. For **practice-by-skill** in `/api/analytics/live-stats` and `/api/analytics/reports`, ensure an **event-scoped** custom dimension **`skill_type`** exists (Data API field `customEvent:skill_type`). From the repo root, run: **`yarn ga4:ensure-skill-dimension`** (`tooling/ga4-ensure-skill-type-dimension.js`). The script resolves credentials in this order: `ANALYTICS_CREDENTIALS_FILE` / `GOOGLE_APPLICATION_CREDENTIALS` / `secrets/gcp-bq-mcp-sa.json` / inline `ANALYTICS_CLIENT_EMAIL` + `ANALYTICS_PRIVATE_KEY`; it prefers a key whose `project_id` matches `GTM_PROJECT_ID` or `GOOGLE_CLOUD_PROJECT` (for this repo, `celpip-d8f02`). Ensure that service account has **Editor** (or another role that includes **Edit Google Analytics**) on the GA4 property and that **Google Analytics Admin API** is enabled on its GCP project (the script prints the exact [**APIs dashboard**](https://console.cloud.google.com/apis/dashboard?project=celpip-d8f02) URL).
 
-**Consent Mode:** `public/scripts/gtm-consent-defaults.js` sets **`analytics_storage: granted`** and ad-related defaults **denied** so GA4 can collect while ads stay gated until you call `updateConsent()` (e.g. from a CMP). If you target regions that require opt-in for analytics, add a banner and push **`analytics_storage: denied`** until the user accepts.
+**Consent Mode:** gtag init in `layout.tsx` sets **`analytics_storage: granted`** and ad-related defaults **denied**. Call `updateConsent()` from a CMP when you need opt-in regions or ad consent.
 
-### 3) GTM container wiring
+### 3) Register custom dimensions (GA4 Admin)
 
-1. Open your GTM container (`NEXT_PUBLIC_GTM_ID`).
-2. Ensure a GA4 Configuration tag exists with your Measurement ID.
-3. Ensure event tags map to `dataLayer` events already pushed by the app:
-   - `page_view`
-   - `sign_up`
-   - `begin_checkout`
-   - `purchase`
-   - `practice_started`
-   - `practice_completed`
-4. Register custom dimensions for attribution params used in events:
-   - `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`
-   - `gclid`, `gbraid`, `wbraid`, `fbclid`, `msclkid`, `ttclid`
-   - `purchase_type`, `attribution_source`, `attribution_session_id`
-5. Publish the container.
+Register custom dimensions for attribution params used in events:
+
+- `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`
+- `gclid`, `gbraid`, `wbraid`, `fbclid`, `msclkid`, `ttclid`
+- `purchase_type`, `attribution_source`, `attribution_session_id`, `skill_type`
 
 ### 4) Verify data flow
 
 Use these checks after deploy:
 
 - GA4 -> Realtime: verify active users and `page_view`.
-- GTM Preview mode: verify `dataLayer` events fire.
-- Browser DevTools Network: confirm calls to `/gtm/js` and `/g/collect`.
+- GA4 DebugView: verify `page_view`, `sign_up`, `purchase`, etc.
+- Browser DevTools Network: confirm calls to `/gtag/js` and `/g/collect`.
 - Trigger one conversion path (signup or purchase) and verify the event in GA4 DebugView.
 - Verify Stripe webhook → GA4 Measurement Protocol (when `GA_MEASUREMENT_ID` + `GA_API_SECRET` are set):
   - `purchase` on `checkout.session.completed` (same `transaction_id` as the Stripe Checkout Session id).
   - `purchase` on `invoice.payment_succeeded` for **subscription renewals** only (`billing_reason` = `subscription_cycle`).
   - `subscription_cancelled` on subscription deleted (unchanged).
-- Verify Supabase sign-up: GTM Preview should show dataLayer **`sign_up`** after account creation (browser). Optional server backup: configure a Supabase Database Webhook or Auth hook on `auth.users` **INSERT** → `POST /api/users/webhook` with header `Authorization: Bearer $SUPABASE_AUTH_WEBHOOK_SECRET` (or `x-webhook-secret`) for GA4 MP **`sign_up`** when `GA_MEASUREMENT_ID` + `GA_API_SECRET` are set.
+- Verify Supabase sign-up: GA4 DebugView should show **`sign_up`** after account creation (browser). Optional server backup: configure a Supabase Database Webhook or Auth hook on `auth.users` **INSERT** → `POST /api/users/webhook` with header `Authorization: Bearer $SUPABASE_AUTH_WEBHOOK_SECRET` (or `x-webhook-secret`) for GA4 MP **`sign_up`** when `GA_MEASUREMENT_ID` + `GA_API_SECRET` are set.
 
 ### 5) Build a useful GA4 dashboard
 
@@ -134,8 +121,6 @@ BigQuery receives **analytics events** (including `user_id` when set), not a ful
 The website repo ships [`.cursor/mcp.json`](.cursor/mcp.json) so the agent can run **BigQuery SQL** via MCP (`BIGQUERY_DATASETS` includes `analytics_533185817` and `analytics_celpip`). Add a GCP **service account JSON** at `secrets/gcp-bq-mcp-sa.json` (gitignored); the MCP subprocess does not pick up `gcloud` Application Default Credentials reliably. After changing `mcp.json`, reload MCP. Install steps and the Windows `C:\tmp` note are in **`docs/bigquery-setup-and-kpis.md`** (section _Cursor MCP_).
 
 **Google Analytics (GA4) MCP** is also configured: [googleanalytics/google-analytics-mcp](https://github.com/googleanalytics/google-analytics-mcp) runs from a local venv `.venv-analytics-mcp` (gitignored; install with `pip install analytics-mcp` into that venv if you recreate it). `.cursor/mcp.json` starts it via **`.cursor/run-analytics-mcp.py`**, which sends the package’s startup `print` output to **stderr** so the MCP stdio stream is not corrupted. It uses the same **`secrets/gcp-bq-mcp-sa.json`** as BigQuery MCP for `GOOGLE_APPLICATION_CREDENTIALS`; that service account must have **Viewer** (or higher) on the GA4 property in **Admin → Property access management**. `GOOGLE_PROJECT_ID` and `GOOGLE_CLOUD_PROJECT` are both set to `celpip-d8f02`. On GCP ([**APIs dashboard**](https://console.cloud.google.com/apis/dashboard?project=celpip-d8f02)), enable **Google Analytics Data API** and **Google Analytics Admin API**. For OAuth user JSON instead, point `GOOGLE_APPLICATION_CREDENTIALS` at another path in `.cursor/mcp.json`. See Google’s [Analytics MCP guide](https://developers.google.com/analytics/devguides/MCP).
-
-**Google Tag Manager MCP** uses the community [gtm-mcp](https://pypi.org/project/gtm-mcp/) package in a local venv `.venv-gtm-mcp` (gitignored; recreate with `python -m venv .venv-gtm-mcp` then `pip install gtm-mcp`). `.cursor/mcp.json` starts it via **`.cursor/run-gtm-mcp.py`**, which loads **`GTM_CLIENT_ID`**, **`GTM_CLIENT_SECRET`**, and **`GTM_PROJECT_ID`** from the workspace **`.env`** (if those variables are not already set in the environment). Any still-missing values are taken from optional **`secrets/gtm-client-auth.json`** (gitignored): a Google Cloud **Desktop app** OAuth client JSON with an `installed` object (`client_id`, `client_secret`, `project_id`). Enable the **Tag Manager API** and complete the OAuth consent screen. The first GTM tool call runs a **local browser** flow; refresh tokens live in **`.gtm-mcp-token.json`** in your user profile (see the package README). Optional: run `.venv-gtm-mcp/Scripts/gtm-mcp-setup.exe` for the setup wizard.
 
 **Google Ads MCP** is not enabled in [`.cursor/mcp.json`](.cursor/mcp.json) until you have a **Google Ads developer token**. That token is required by Google for **any** programmatic access (single advertiser account or otherwise); it is **not** the same thing as a manager (MCC) account. You request it once in the [Google Ads API Center](https://ads.google.com/aw/apicenter) (from an Ads account with admin access); new tokens are often issued at Explorer or Test tier first, which is enough to try the API. Without a developer token, [google-ads-mcp](https://github.com/googleads/google-ads-mcp) cannot call the API, so there is nothing useful to put in MCP config yet.
 

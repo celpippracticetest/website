@@ -1,6 +1,6 @@
 /**
- * Google Ads conversion IDs for dataLayer (GTM reads these). Tag + conversions live in GTM.
- * NEXT_PUBLIC_* overrides for staging or account changes.
+ * Google Ads conversion IDs (legacy reference for server-side / CSV exports).
+ * Browser conversions are not loaded via GTM; use Google Ads offline imports or gtag if needed.
  */
 export const GOOGLE_ADS_CONVERSION_ID =
   process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_ID || "AW-18023374877";

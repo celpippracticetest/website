@@ -1,9 +1,9 @@
 "use client";
 
-import { trackAuth } from "@/lib/gtm";
+import { trackAuth } from "@/lib/analytics";
 import type { UserData } from "@/types/analytics";
 
-/** Set after `sign_up` so `AuthGtmTracker` does not also emit `login_completed` for the same session. */
+/** Set after `sign_up` so `AuthAnalyticsTracker` does not also emit `login_completed` for the same session. */
 export const SUPPRESS_LOGIN_COMPLETED_ONCE_KEY = "celpip_suppress_login_completed_once";
 
 /** Set when the user starts sign-up; consumed when a session exists (OAuth, email confirm, etc.). */
@@ -127,7 +127,7 @@ function buildSignupUserData(user: HybridUserForSignupTracking): UserData | unde
 }
 
 /**
- * Push GTM `sign_up` (+ ads enhanced conversion). Idempotent per `userId` via `trackAuth.signUpCompleted`.
+ * Push GA4 `sign_up`. Idempotent per `userId` via `trackAuth.signUpCompleted`.
  */
 export function trackWebSignUpCompleted(
   user: HybridUserForSignupTracking,

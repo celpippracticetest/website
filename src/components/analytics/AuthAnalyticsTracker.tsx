@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Observe auth state and push login / logout / sign_up events to the data layer for GTM.
+ * Observe auth state and track login / logout / sign_up in GA4.
  * `sign_up` fires from `trackWebSignUpCompleted` after Supabase sign-up (or pending OAuth/email confirm).
  */
 
@@ -11,7 +11,8 @@ import {
   tryTrackPendingWebSignup,
 } from "@/lib/analytics/web-signup-tracking";
 import { useEffect, useRef } from "react";
-import { trackAuth } from "@/lib/gtm";
+import { setGa4UserId } from "@/lib/ga4Browser";
+import { trackAuth } from "@/lib/analytics";
 
 export { SUPPRESS_LOGIN_COMPLETED_ONCE_KEY };
 
@@ -30,7 +31,7 @@ function inferAuthMethod(u: {
   return "email";
 }
 
-export default function AuthGtmTracker() {
+export default function AuthAnalyticsTracker() {
   const { user, isLoaded } = useHybridWebUser();
   const prevIdRef = useRef<string | null | undefined>(undefined);
   const initializedRef = useRef(false);
@@ -83,12 +84,14 @@ export default function AuthGtmTracker() {
       const w = window as Window & { __CELPIP_ANALYTICS_USER?: AnalyticsUser | null };
       if (!user) {
         w.__CELPIP_ANALYTICS_USER = null;
+        setGa4UserId(null);
         return;
       }
       w.__CELPIP_ANALYTICS_USER = {
         id: user.id,
         publicMetadata: user.publicMetadata as AnalyticsUser["publicMetadata"],
       };
+      setGa4UserId(user.id);
     } catch {
       // ignore
     }

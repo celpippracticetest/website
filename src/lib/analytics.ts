@@ -1,12 +1,8 @@
-// Google Tag Manager utility functions
+// Browser analytics — GA4 via gtag (no GTM).
 import { track as vercelTrack } from "@vercel/analytics";
-import {
-  GOOGLE_ADS_CONVERSION_ID,
-  GOOGLE_ADS_SIGNUP_LABEL,
-  GOOGLE_ADS_SUBSCRIBE_LABEL,
-} from "@/lib/google-ads-constants";
+import { sendGa4Event, updateGa4Consent } from "@/lib/ga4Browser";
 import type {
-  GTMEvent,
+  AnalyticsEvent,
   UserContext,
   UserData,
   VercelAnalyticsCustomProperties,
@@ -17,11 +13,6 @@ const isBrowser = typeof window !== "undefined";
 
 // Debug mode - logs events to console in development
 const DEBUG = process.env.NODE_ENV === "development";
-const GOOGLE_ADS_PURCHASE_LABEL =
-  process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL ||
-  GOOGLE_ADS_SUBSCRIBE_LABEL;
-const GOOGLE_ADS_BEGIN_CHECKOUT_LABEL =
-  process.env.NEXT_PUBLIC_GOOGLE_ADS_BEGIN_CHECKOUT_LABEL || "";
 const conversionDedupSet = new Set<string>();
 const ATTRIBUTION_STORAGE_KEYS = {
   utmSource: "pending_utm_source",
@@ -84,22 +75,7 @@ function trackRedditEvent(
   }
 }
 
-/**
- * Initialize or get the dataLayer array
- */
-function getDataLayer(): any[] {
-  if (!isBrowser) return [];
-
-  if (!window.dataLayer) {
-    window.dataLayer = [];
-  }
-
-  return window.dataLayer;
-}
-
-/**
- * Browser-side user context for GTM events (set by `AuthGtmTracker` from the active session).
- */
+/** Browser-side user context (set by `AuthAnalyticsTracker` from the active session). */
 function getUserContext(): UserContext {
   if (!isBrowser) return {};
 
@@ -133,25 +109,6 @@ function getUserContext(): UserContext {
   } catch (error) {
     return {};
   }
-}
-
-function getGoogleAdsSendTo(label?: string): string | undefined {
-  if (!GOOGLE_ADS_CONVERSION_ID || !label) return undefined;
-  return `${GOOGLE_ADS_CONVERSION_ID}/${label}`;
-}
-
-function normalizeUserData(userData?: UserData): UserData | undefined {
-  if (!userData || typeof userData !== "object") return undefined;
-
-  const normalized = { ...userData };
-  if (typeof normalized.email === "string") {
-    normalized.email = normalized.email.trim().toLowerCase();
-  }
-  if (typeof normalized.phone_number === "string") {
-    normalized.phone_number = normalized.phone_number.replace(/\s+/g, "");
-  }
-
-  return normalized;
 }
 
 function normalizeString(value: unknown): string | null {
@@ -322,43 +279,12 @@ function buildAttributionEventPayload(attributionData?: Record<string, unknown>)
   };
 }
 
-/**
- * Push a dedicated event for ads platforms (Google Ads Enhanced Conversions, Meta Pixel).
- * This event intentionally contains user_data (PII) and must NOT be sent to GA4.
- * In GTM, configure only Google Ads / Meta tags to listen to "ads_enhanced_conversion".
- */
-function pushAdsEnhancedConversion(params: {
-  conversionEvent: string;
-  conversionLabel?: string;
-  value?: number;
-  currency?: string;
-  transactionId?: string;
-  userData: UserData;
-  purchaseType?: "first_purchase" | "subscription_renewal";
-}): void {
-  const { conversionEvent, conversionLabel, value, currency, transactionId, userData, purchaseType } = params;
-  pushToDataLayer(
-    {
-      event: "ads_enhanced_conversion",
-      conversion_event: conversionEvent,
-      conversion_label: conversionLabel || undefined,
-      google_ads_send_to: getGoogleAdsSendTo(conversionLabel || ""),
-      value,
-      currency,
-      transaction_id: transactionId,
-      purchase_type: purchaseType,
-      user_data: normalizeUserData(userData),
-    },
-    false
-  );
-}
-
 function markDeduplicatedOnce(key: string): boolean {
   if (!key) return false;
   if (conversionDedupSet.has(key)) return true;
 
   if (isBrowser) {
-    const storageKey = `gtm_once_${key}`;
+    const storageKey = `analytics_once_${key}`;
     if (localStorage.getItem(storageKey) === "1") {
       conversionDedupSet.add(key);
       return true;
@@ -370,13 +296,9 @@ function markDeduplicatedOnce(key: string): boolean {
   return false;
 }
 
-/**
- * Push an event to the GTM dataLayer
- * @param event - The GTM event object
- * @param enrichContext - Whether to enrich with user context (default: true)
- */
-export function pushToDataLayer(
-  event: GTMEvent,
+/** Track an analytics event in GA4. */
+export function trackEvent(
+  event: AnalyticsEvent,
   enrichContext: boolean = true
 ): void {
   if (!isBrowser) {
@@ -384,23 +306,22 @@ export function pushToDataLayer(
   }
 
   try {
-    const dataLayer = getDataLayer();
-
-    // Enrich event with user context if requested
     const enrichedEvent = enrichContext
       ? { ...event, ...getUserContext(), timestamp: new Date().toISOString() }
       : event;
 
-    // Push to dataLayer
-    dataLayer.push(enrichedEvent);
+    sendGa4Event(enrichedEvent as Record<string, unknown>);
   } catch (error) {
-    console.error("[GTM] Error pushing event to dataLayer:", error);
+    console.error("[Analytics] Error sending event:", error);
   }
 }
 
+/** @deprecated Use trackEvent */
+export const pushToDataLayer = trackEvent;
+
 const VERCEL_ANALYTICS_MAX_LEN = 255;
 
-function pickVercelPropsForGtm(
+function pickVercelPropsForAnalytics(
   data?: VercelAnalyticsCustomProperties
 ): Record<string, string | number | boolean | null> {
   if (!data) return {};
@@ -426,8 +347,7 @@ function pickVercelPropsForGtm(
 }
 
 /**
- * Vercel Web Analytics custom event, mirrored to GTM (`event`: `vercel_analytics`).
- * Prefer this over calling `@vercel/analytics` `track()` directly when you need GTM/GA4.
+ * Vercel Web Analytics custom event, mirrored to GA4 (`vercel_analytics`).
  * @see https://vercel.com/docs/analytics/custom-events
  */
 export function trackVercelEvent(
@@ -450,17 +370,17 @@ export function trackVercelEvent(
   }
 
   try {
-    pushToDataLayer(
+    trackEvent(
       {
         event: "vercel_analytics",
         vercel_event_name: safeName,
-        ...pickVercelPropsForGtm(data),
-      } as GTMEvent,
+        ...pickVercelPropsForAnalytics(data),
+      } as AnalyticsEvent,
       true
     );
   } catch (error) {
     if (DEBUG) {
-      console.warn("[GTM] vercel_analytics push failed:", error);
+      console.warn("[Analytics] vercel_analytics failed:", error);
     }
   }
 }
@@ -474,10 +394,7 @@ export function updateConsent(consentState: {
   ad_user_data?: "granted" | "denied";
   ad_personalization?: "granted" | "denied";
 }): void {
-  pushToDataLayer({
-    event: "consent_update",
-    ...consentState,
-  });
+  updateGa4Consent(consentState);
 }
 
 /**
@@ -502,14 +419,14 @@ export function trackPageView(
     payload.page_type = "blog_article";
     payload.blog_slug = path.replace(/^\/blog\//, "").split("?")[0];
   }
-  pushToDataLayer(payload as GTMEvent, true);
+  trackEvent(payload as AnalyticsEvent, true);
 }
 
 /**
- * Track blog list view (GTM blog-specific event)
+ * Track blog list view
  */
 export function trackBlogListView(path: string, title?: string): void {
-  pushToDataLayer({
+  trackEvent({
     event: "blog_list_viewed",
     page_path: path,
     page_title: title || (isBrowser ? document.title : undefined),
@@ -517,14 +434,14 @@ export function trackBlogListView(path: string, title?: string): void {
 }
 
 /**
- * Track blog article view (GTM blog-specific event)
+ * Track blog article view
  */
 export function trackBlogArticleView(
   articleTitle: string,
   articleSlug: string,
   options?: { pagePath?: string; pageTitle?: string; categories?: string[] }
 ): void {
-  pushToDataLayer({
+  trackEvent({
     event: "blog_article_viewed",
     article_title: articleTitle,
     article_slug: articleSlug,
@@ -538,7 +455,7 @@ export function trackBlogArticleView(
  * Track CTA click
  */
 export function trackCTAClick(ctaText: string, ctaLocation: string): void {
-  pushToDataLayer({
+  trackEvent({
     event: "cta_click",
     cta_text: ctaText,
     cta_location: ctaLocation,
@@ -553,7 +470,7 @@ export function trackNavClick(
   linkUrl: string,
   navType: "header" | "footer" | "mobile" | "bottom"
 ): void {
-  pushToDataLayer({
+  trackEvent({
     event: "nav_click",
     link_text: linkText,
     link_url: linkUrl,
@@ -566,7 +483,7 @@ export function trackNavClick(
  */
 export const trackAuth = {
   signUpInitiated: (method?: string, source?: string) => {
-    pushToDataLayer({
+    trackEvent({
       event: "sign_up_initiated",
       method,
       source,
@@ -576,49 +493,33 @@ export const trackAuth = {
   signUpCompleted: (
     userId: string,
     method?: string,
-    userData?: UserData,
+    _userData?: UserData,
     attributionData?: Record<string, unknown>
   ) => {
     const dedupeKey = `sign_up_${userId}`;
     if (markDeduplicatedOnce(dedupeKey)) return;
 
-    const conversionLabel = GOOGLE_ADS_SIGNUP_LABEL;
-
-    // Browser `sign_up` drives GTM (GA4 Event, Google Ads, Meta, Microsoft UET). Server-side GA4 MP
-    // from `/api/users/webhook` is optional backup when `GA_MEASUREMENT_ID` + `GA_API_SECRET` are set.
-    pushToDataLayer({
+    // Server-side GA4 MP from `/api/users/webhook` is optional backup when configured.
+    trackEvent({
       event: "sign_up",
       user_id: userId,
       method,
       ...attributionData,
-      conversion_name: "sign_up",
-      conversion_label: conversionLabel || undefined,
-      google_ads_send_to: getGoogleAdsSendTo(conversionLabel),
       value: 1,
       currency: "CAD",
     });
     trackRedditEvent("SignUp");
-
-    if (userData) {
-      pushAdsEnhancedConversion({
-        conversionEvent: "sign_up",
-        conversionLabel,
-        value: 1,
-        currency: "CAD",
-        userData,
-      });
-    }
   },
 
   loginInitiated: (method?: string) => {
-    pushToDataLayer({
+    trackEvent({
       event: "login_initiated",
       method,
     });
   },
 
   loginCompleted: (userId: string, method?: string) => {
-    pushToDataLayer({
+    trackEvent({
       event: "login_completed",
       user_id: userId,
       method,
@@ -626,7 +527,7 @@ export const trackAuth = {
   },
 
   logout: (userId?: string) => {
-    pushToDataLayer({
+    trackEvent({
       event: "logout",
       user_id: userId,
     });
@@ -638,7 +539,7 @@ export const trackAuth = {
  */
 export const trackModal = {
   viewed: (modalName: string, triggerSource?: string) => {
-    pushToDataLayer({
+    trackEvent({
       event: "modal_viewed",
       modal_name: modalName,
       trigger_source: triggerSource,
@@ -646,7 +547,7 @@ export const trackModal = {
   },
 
   closed: (modalName: string, userAction?: "dismissed" | "completed") => {
-    pushToDataLayer({
+    trackEvent({
       event: "modal_closed",
       modal_name: modalName,
       user_action: userAction,
@@ -659,7 +560,7 @@ export const trackModal = {
  */
 export const trackExam = {
   overviewViewed: (userPlan?: string) => {
-    pushToDataLayer({
+    trackEvent({
       event: "exam_overview_viewed",
       user_plan: userPlan,
     });
@@ -671,7 +572,7 @@ export const trackExam = {
     sectionType?: string,
     userPlan?: string
   ) => {
-    pushToDataLayer({
+    trackEvent({
       event: "exam_started",
       exam_id: examId,
       part_id: partId,
@@ -681,7 +582,7 @@ export const trackExam = {
   },
 
   partStarted: (examId: string, partId: string, sectionType: string) => {
-    pushToDataLayer({
+    trackEvent({
       event: "exam_part_started",
       exam_id: examId,
       part_id: partId,
@@ -695,7 +596,7 @@ export const trackExam = {
     questionNumber: number,
     sectionType: string
   ) => {
-    pushToDataLayer({
+    trackEvent({
       event: "exam_question_answered",
       exam_id: examId,
       part_id: partId,
@@ -711,7 +612,7 @@ export const trackExam = {
     timeSpent?: number,
     score?: number
   ) => {
-    pushToDataLayer({
+    trackEvent({
       event: "exam_part_completed",
       exam_id: examId,
       part_id: partId,
@@ -722,7 +623,7 @@ export const trackExam = {
   },
 
   completed: (examId: string, totalScore?: number, timeSpent?: number) => {
-    pushToDataLayer({
+    trackEvent({
       event: "exam_completed",
       exam_id: examId,
       total_score: totalScore,
@@ -731,7 +632,7 @@ export const trackExam = {
   },
 
   resultsViewed: (examId: string, score?: number) => {
-    pushToDataLayer({
+    trackEvent({
       event: "exam_results_viewed",
       exam_id: examId,
       score,
@@ -743,7 +644,7 @@ export const trackExam = {
     partId?: string,
     completionPercentage?: number
   ) => {
-    pushToDataLayer({
+    trackEvent({
       event: "exam_abandoned",
       exam_id: examId,
       part_id: partId,
@@ -757,7 +658,7 @@ export const trackExam = {
  */
 export const trackPractice = {
   overviewViewed: (skillType?: string) => {
-    pushToDataLayer({
+    trackEvent({
       event: "practice_overview_viewed",
       skill_type: skillType,
     });
@@ -768,7 +669,7 @@ export const trackPractice = {
     skillType: string,
     difficultyLevel?: string
   ) => {
-    pushToDataLayer({
+    trackEvent({
       event: "practice_started",
       practice_id: practiceId,
       skill_type: skillType,
@@ -782,7 +683,7 @@ export const trackPractice = {
     score?: number,
     timeSpent?: number
   ) => {
-    pushToDataLayer({
+    trackEvent({
       event: "practice_completed",
       practice_id: practiceId,
       skill_type: skillType,
@@ -792,7 +693,7 @@ export const trackPractice = {
   },
 
   resultsViewed: (practiceId: string, skillType: string, score?: number) => {
-    pushToDataLayer({
+    trackEvent({
       event: "practice_results_viewed",
       practice_id: practiceId,
       skill_type: skillType,
@@ -805,7 +706,7 @@ export const trackPractice = {
     practiceId?: string,
     examId?: string
   ) => {
-    pushToDataLayer({
+    trackEvent({
       event: "ai_feedback_viewed",
       practice_id: practiceId,
       exam_id: examId,
@@ -815,21 +716,11 @@ export const trackPractice = {
 };
 
 /**
- * Clear the ecommerce object before pushing a new ecommerce event.
- * Required by GA4 best practice to prevent data from previous events bleeding in.
- */
-function clearEcommerce(): void {
-  if (!isBrowser) return;
-  getDataLayer().push({ ecommerce: null });
-}
-
-/**
  * Track e-commerce events (GA4 standard)
  */
 export const trackEcommerce = {
   viewItemList: (items: any[], itemListId?: string, itemListName?: string) => {
-    clearEcommerce();
-    pushToDataLayer({
+    trackEvent({
       event: "view_item_list",
       ecommerce: {
         item_list_id: itemListId,
@@ -840,8 +731,7 @@ export const trackEcommerce = {
   },
 
   selectItem: (items: any[], itemListId?: string, itemListName?: string) => {
-    clearEcommerce();
-    pushToDataLayer({
+    trackEvent({
       event: "select_item",
       ecommerce: {
         item_list_id: itemListId,
@@ -856,14 +746,11 @@ export const trackEcommerce = {
     currency: string,
     value: number,
     coupon?: string,
-    userData?: UserData
+    _userData?: UserData
   ) => {
-    const conversionLabel = GOOGLE_ADS_BEGIN_CHECKOUT_LABEL;
     const attributionPayload = buildAttributionEventPayload();
-    clearEcommerce();
-    pushToDataLayer({
+    trackEvent({
       event: "begin_checkout",
-      // Top-level value/currency so GTM vars like {{value}} (eventModel.value) match Ads/Meta tags.
       value,
       currency,
       ecommerce: {
@@ -872,21 +759,8 @@ export const trackEcommerce = {
         items,
         ...(coupon && { coupon }),
       },
-      conversion_name: "begin_checkout",
-      conversion_label: conversionLabel || undefined,
-      google_ads_send_to: getGoogleAdsSendTo(conversionLabel),
       ...attributionPayload,
     });
-
-    if (userData) {
-      pushAdsEnhancedConversion({
-        conversionEvent: "begin_checkout",
-        conversionLabel,
-        value,
-        currency,
-        userData,
-      });
-    }
   },
 
   purchase: (
@@ -895,23 +769,22 @@ export const trackEcommerce = {
     currency: string,
     value: number,
     coupon?: string,
-    userData?: UserData,
+    _userData?: UserData,
     attributionData?: Record<string, unknown>,
     purchaseType: "first_purchase" | "subscription_renewal" = "first_purchase"
   ) => {
     const dedupeKey = `purchase_${transactionId}`;
     if (markDeduplicatedOnce(dedupeKey)) return;
 
-    const conversionLabel = GOOGLE_ADS_PURCHASE_LABEL;
     const attributionPayload = buildAttributionEventPayload(attributionData);
     const resolvedPurchaseType: "first_purchase" | "subscription_renewal" =
       normalizeString(attributionPayload.purchase_type) === "subscription_renewal"
         ? "subscription_renewal"
         : purchaseType;
-    clearEcommerce();
-    pushToDataLayer({
+    const { purchase_type: _ignoredPurchaseType, ...attributionWithoutPurchaseType } =
+      attributionPayload;
+    trackEvent({
       event: "purchase",
-      // Top-level fields for GTM {{value}} / {{currency}} / {{transaction_id}} on Ads tags.
       value,
       currency,
       transaction_id: transactionId,
@@ -922,33 +795,18 @@ export const trackEcommerce = {
         items,
         ...(coupon && { coupon }),
       },
-      conversion_name: "purchase",
-      conversion_label: conversionLabel || undefined,
-      google_ads_send_to: getGoogleAdsSendTo(conversionLabel),
-      ...attributionPayload,
+      ...attributionWithoutPurchaseType,
+      purchase_type: resolvedPurchaseType,
     });
     trackRedditEvent("Purchase", {
       transactionId,
       value,
       currency,
     });
-
-    if (userData) {
-      pushAdsEnhancedConversion({
-        conversionEvent: "purchase",
-        conversionLabel,
-        value,
-        currency,
-        transactionId,
-        userData,
-        purchaseType: resolvedPurchaseType,
-      });
-    }
   },
 
   refund: (transactionId: string, currency: string, value: number) => {
-    clearEcommerce();
-    pushToDataLayer({
+    trackEvent({
       event: "refund",
       ecommerce: {
         transaction_id: transactionId,
@@ -963,7 +821,7 @@ export const trackEcommerce = {
     planType?: string,
     subscriptionId?: string
   ) => {
-    pushToDataLayer({
+    trackEvent({
       event: "subscription_cancelled",
       cancellation_reason: reason,
       plan_type: planType,
@@ -977,7 +835,7 @@ export const trackEcommerce = {
  */
 export const trackEngagement = {
   faqClick: (question: string, category?: string) => {
-    pushToDataLayer({
+    trackEvent({
       event: "faq_click",
       faq_question: question,
       faq_category: category,
@@ -985,7 +843,7 @@ export const trackEngagement = {
   },
 
   videoStarted: (title?: string, url?: string) => {
-    pushToDataLayer({
+    trackEvent({
       event: "video_started",
       video_title: title,
       video_url: url,
@@ -993,7 +851,7 @@ export const trackEngagement = {
   },
 
   videoCompleted: (title?: string, url?: string) => {
-    pushToDataLayer({
+    trackEvent({
       event: "video_completed",
       video_title: title,
       video_url: url,
@@ -1001,14 +859,14 @@ export const trackEngagement = {
   },
 
   chatbotMessageSent: (messageType?: string) => {
-    pushToDataLayer({
+    trackEvent({
       event: "chatbot_message_sent",
       message_type: messageType,
     });
   },
 
   wordViewed: (wordId?: string, wordText?: string) => {
-    pushToDataLayer({
+    trackEvent({
       event: "word_viewed",
       word_id: wordId,
       word_text: wordText,
@@ -1016,7 +874,7 @@ export const trackEngagement = {
   },
 
   wordMastered: (wordId?: string, wordText?: string) => {
-    pushToDataLayer({
+    trackEvent({
       event: "word_mastered",
       word_id: wordId,
       word_text: wordText,
@@ -1024,7 +882,7 @@ export const trackEngagement = {
   },
 
   audioPlayed: (audioType: string, audioSource?: string) => {
-    pushToDataLayer({
+    trackEvent({
       event: "audio_played",
       audio_type: audioType,
       audio_source: audioSource,
@@ -1036,7 +894,7 @@ export const trackEngagement = {
     triggerSource: string,
     leadCaptureId: string
   ) => {
-    pushToDataLayer({
+    trackEvent({
       event: "lead_capture_submitted",
       location,
       trigger_source: triggerSource,
@@ -1048,7 +906,7 @@ export const trackEngagement = {
     requestReason: string,
     trackingCode?: string
   ) => {
-    pushToDataLayer({
+    trackEvent({
       event: "refund_request_submitted",
       refund_request_reason: requestReason,
       refund_tracking_code: trackingCode,
@@ -1056,7 +914,7 @@ export const trackEngagement = {
   },
 
   refundRequestTrackingSearched: (trackingCode: string) => {
-    pushToDataLayer({
+    trackEvent({
       event: "refund_request_tracking_searched",
       refund_tracking_code: trackingCode,
     });
@@ -1066,7 +924,7 @@ export const trackEngagement = {
     status: string,
     rejectionReason?: string
   ) => {
-    pushToDataLayer({
+    trackEvent({
       event: "refund_request_status_viewed",
       refund_request_status: status,
       refund_rejection_reason: rejectionReason,
@@ -1079,38 +937,31 @@ export const trackEngagement = {
  */
 export const trackReferral = {
   pageViewed: (userId?: string) => {
-    pushToDataLayer({
+    trackEvent({
       event: "referral_page_viewed",
       user_id: userId,
     });
   },
 
   codeCopied: (referralCode: string) => {
-    pushToDataLayer({
+    trackEvent({
       event: "referral_code_copied",
       referral_code: referralCode,
     });
   },
 
   inviteSent: (inviteMethod: string) => {
-    pushToDataLayer({
+    trackEvent({
       event: "referral_invite_sent",
       invite_method: inviteMethod,
     });
   },
 
   withdrawalRequested: (amount: number, currency: string) => {
-    pushToDataLayer({
+    trackEvent({
       event: "withdrawal_requested",
       amount,
       currency,
     });
   },
 };
-
-// Declare dataLayer on window
-declare global {
-  interface Window {
-    dataLayer: any[];
-  }
-}

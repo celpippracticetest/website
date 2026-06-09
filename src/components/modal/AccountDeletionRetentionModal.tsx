@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import SvgCloseCircle from "@/components/icons/CloseCircle";
-import { pushToDataLayer } from "@/lib/gtm";
+import { trackEvent } from "@/lib/analytics";
 import { useForm, useWatch } from "react-hook-form";
 import { buildSupportMailto } from "@/lib/contact/support-email";
 import {
@@ -116,7 +116,7 @@ const AccountDeletionRetentionModal: React.FC<AccountDeletionRetentionModalProps
       flowId: extra?.flowId ?? flowId,
     };
 
-    pushToDataLayer({
+    trackEvent({
       event: "account_deletion_retention_event",
       retention_event_name: payload.eventName,
       deletion_reason: payload.reason ?? undefined,

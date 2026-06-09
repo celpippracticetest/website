@@ -2,7 +2,7 @@
 
 import { Box } from "@/components/ui/Box";
 import { FormEvent, useState } from "react";
-import { trackEngagement } from "@/lib/gtm";
+import { trackEngagement } from "@/lib/analytics";
 
 type SubmitResponse = {
   request?: {

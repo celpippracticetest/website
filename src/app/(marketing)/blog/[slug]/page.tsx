@@ -9,7 +9,7 @@ import {
 } from "@/lib/blog/public";
 import { linkContentServer } from "@/lib/content-linker-server";
 import { BlogCtaSection } from "@/components/pages/blog/BlogCtaSection";
-import BlogArticleGtm from "@/components/analytics/BlogArticleGtm";
+import BlogArticleAnalytics from "@/components/analytics/BlogArticleAnalytics";
 import {
   Accordion,
   AccordionContent,
@@ -228,7 +228,7 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
 
   return (
     <Box className="cel-container py-10 md:py-14">
-      <BlogArticleGtm
+      <BlogArticleAnalytics
         articleTitle={post.title}
         articleSlug={post.slug}
         categories={post.categories}

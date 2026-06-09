@@ -2,22 +2,20 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { trackBlogArticleView } from "@/lib/gtm";
+import { trackBlogArticleView } from "@/lib/analytics";
 
-interface BlogArticleGtmProps {
+interface BlogArticleAnalyticsProps {
   articleTitle: string;
   articleSlug: string;
   categories?: string[];
 }
 
-/**
- * Pushes blog_article_viewed to GTM dataLayer when the user views a blog post.
- */
-export default function BlogArticleGtm({
+/** Track blog article views in GA4. */
+export default function BlogArticleAnalytics({
   articleTitle,
   articleSlug,
   categories = [],
-}: BlogArticleGtmProps) {
+}: BlogArticleAnalyticsProps) {
   const pathname = usePathname();
 
   useEffect(() => {

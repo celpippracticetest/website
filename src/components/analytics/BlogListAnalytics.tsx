@@ -2,12 +2,10 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { trackBlogListView } from "@/lib/gtm";
+import { trackBlogListView } from "@/lib/analytics";
 
-/**
- * Pushes blog_list_viewed to GTM dataLayer when the user is on the blog listing page.
- */
-export default function BlogListGtm() {
+/** Track blog list views in GA4. */
+export default function BlogListAnalytics() {
   const pathname = usePathname();
 
   useEffect(() => {

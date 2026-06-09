@@ -34,23 +34,7 @@ const nextConfig: NextConfig = {
 
   async rewrites() {
     return [
-      // Google Tag Gateway — routes GTM & GA4 through first-party domain
-      // to improve ad-blocker bypass and eliminate third-party cookie issues
-      {
-        source: "/gtm/js",
-        destination: "https://www.googletagmanager.com/gtm.js",
-      },
-      {
-        source: "/gtm/ns.html",
-        destination: "https://www.googletagmanager.com/ns.html",
-      },
-      // GTM first-party mode loads `sw_iframe.html` (and related SW assets) under
-      // `/gtm/js/_/service_worker/<version>/…` on the site origin — proxy to Google.
-      {
-        source: "/gtm/js/_/service_worker/:path*",
-        destination:
-          "https://www.googletagmanager.com/static/service_worker/:path*",
-      },
+      // First-party proxy for GA4 gtag.js and collect endpoint
       {
         source: "/gtag/js",
         destination: "https://www.googletagmanager.com/gtag/js",

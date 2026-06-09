@@ -1,9 +1,12 @@
-// TypeScript interfaces for analytics and GTM events
+// TypeScript interfaces for analytics events
 
-export interface GTMEvent {
+export interface AnalyticsEvent {
   event: string;
   [key: string]: any;
 }
+
+/** @deprecated Use AnalyticsEvent */
+export type GTMEvent = AnalyticsEvent;
 
 // Page View Events
 export interface PageViewEvent extends GTMEvent {

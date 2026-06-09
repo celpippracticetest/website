@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
-import { trackPageView } from "@/lib/gtm";
+import { trackPageView } from "@/lib/analytics";
 
 /**
  * PageViewTracker Component

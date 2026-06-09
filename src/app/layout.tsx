@@ -7,7 +7,7 @@ import Script from "next/script";
 import AskBeavoModal from "@/components/AskBeavo/AskBeavoModal";
 import TawkLoader from "@/components/TawkLoader";
 import TawkUserSync from "@/components/TawkUserSync";
-import AuthGtmTracker from "@/components/analytics/AuthGtmTracker";
+import AuthAnalyticsTracker from "@/components/analytics/AuthAnalyticsTracker";
 import { LazyPromotionManager } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -38,8 +38,6 @@ const jakarta = Plus_Jakarta_Sans({
   fallback: ["system-ui", "arial"],
 });
 
-const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID?.trim() ?? "";
-const LEGACY_GTM_ID = process.env.NEXT_PUBLIC_GTM_LEGACY_ID?.trim() ?? "";
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() ?? "";
 const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID?.trim() ?? "";
 const DEFAULT_APP_BASE_URL = "https://celpippracticetest.com";
@@ -66,25 +64,6 @@ function normalizeAppBaseUrl(raw: string | undefined): string {
   }
 
   return `https://${input}`;
-}
-
-function buildGtmAllowedHosts(baseUrl: string): string {
-  try {
-    const host = new URL(baseUrl).hostname.toLowerCase();
-    const hosts = new Set<string>([host]);
-    // `gtm-init.js` skips loading unless the live hostname is in this list.
-    // If `APP_BASE_URL` is www-only we must still allow apex (and vice versa),
-    // otherwise one hostname gets zero GTM/GA4 from the browser.
-    if (host.startsWith("www.")) {
-      const apex = host.slice(4);
-      if (apex) hosts.add(apex);
-    } else {
-      hosts.add(`www.${host}`);
-    }
-    return Array.from(hosts).join(",");
-  } catch {
-    return "celpippracticetest.com,www.celpippracticetest.com";
-  }
 }
 
 export function generateViewport(): Viewport {
@@ -161,14 +140,10 @@ export default async function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const uiVariant = await getUiAbVariant();
   const baseUrl = normalizeAppBaseUrl(process.env.APP_BASE_URL);
-  const gtmAllowedHosts = buildGtmAllowedHosts(baseUrl);
-  // Production builds: skip only Vercel Preview (pollutes analytics).
-  const enableGtm =
+  const isProductionAnalytics =
     process.env.NODE_ENV === "production" &&
-    process.env.VERCEL_ENV !== "preview" &&
-    Boolean(GTM_ID);
-  const enableGaTag = enableGtm && Boolean(GA_MEASUREMENT_ID);
-  const enableLegacyGtm = enableGtm && LEGACY_GTM_ID && LEGACY_GTM_ID !== GTM_ID;
+    process.env.VERCEL_ENV !== "preview";
+  const enableGaTag = isProductionAnalytics && Boolean(GA_MEASUREMENT_ID);
   const enableClarity =
     process.env.NODE_ENV === "production" && Boolean(CLARITY_ID);
 
@@ -215,7 +190,7 @@ export default async function RootLayout({
           `}
         </Script>
 
-        {/* Fix Stripe/Payment Attribution: Hide stripe.com (and other payment gateways) from GTM/GA4/Pixels to prevent session break */}
+        {/* Fix Stripe/Payment Attribution: preserve original referrer after payment gateway return */}
         <Script id="stripe-payment-referrer-fix" strategy="beforeInteractive">
           {`
             if (typeof document !== "undefined" && document.referrer && (document.referrer.includes("stripe.com") || document.referrer.includes("paypal.com"))) {
@@ -229,17 +204,6 @@ export default async function RootLayout({
           `}
         </Script>
 
-        {/* Load analytics bootstrapping from static assets to keep SSR HTML leaner. */}
-        {enableGtm && (
-          <Script
-            id="gtm-consent-defaults"
-            strategy="beforeInteractive"
-            src="/scripts/gtm-consent-defaults.js"
-          />
-        )}
-
-        {/* Direct Google tag so GA4 / Google Ads setup tools detect G-… in page HTML.
-            send_page_view:false — GTM + PageViewTracker own page_view hits. */}
         {enableGaTag && (
           <>
             <Script
@@ -248,30 +212,9 @@ export default async function RootLayout({
               src={`/gtag/js?id=${GA_MEASUREMENT_ID}`}
             />
             <Script id="google-tag-config" strategy="beforeInteractive">
-              {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","${GA_MEASUREMENT_ID}",{send_page_view:false});`}
+              {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("consent","default",{analytics_storage:"granted",ad_storage:"denied",ad_user_data:"denied",ad_personalization:"denied"});gtag("js",new Date());gtag("config","${GA_MEASUREMENT_ID}",{send_page_view:false});`}
             </Script>
           </>
-        )}
-
-        {enableGtm && (
-          <Script
-            id="gtm-head"
-            strategy="afterInteractive"
-            src="/scripts/gtm-init.js"
-            data-gtm-id={GTM_ID}
-            data-layer="dataLayer"
-            data-allowed-hosts={gtmAllowedHosts}
-          />
-        )}
-        {enableLegacyGtm && (
-          <Script
-            id="gtm-head-legacy"
-            strategy="afterInteractive"
-            src="/scripts/gtm-init.js"
-            data-gtm-id={LEGACY_GTM_ID}
-            data-layer="dataLayer"
-            data-allowed-hosts={gtmAllowedHosts}
-          />
         )}
 
         {/* JSON-LD — inline in initial HTML for SEO bots, no JS execution needed */}
@@ -299,27 +242,7 @@ export default async function RootLayout({
           <AskBeavoModal />
           <TawkLoader />
           <TawkUserSync />
-          <AuthGtmTracker />
-          {enableGtm && (
-            <noscript>
-              <iframe
-                src={`/gtm/ns.html?id=${GTM_ID}`}
-                height="0"
-                width="0"
-                style={{ display: "none", visibility: "hidden" }}
-              />
-            </noscript>
-          )}
-          {enableLegacyGtm && (
-            <noscript>
-              <iframe
-                src={`/gtm/ns.html?id=${LEGACY_GTM_ID}`}
-                height="0"
-                width="0"
-                style={{ display: "none", visibility: "hidden" }}
-              />
-            </noscript>
-          )}
+          <AuthAnalyticsTracker />
 
           <NextTopLoaderComponent />
           <AndroidDownloadAppBanner />

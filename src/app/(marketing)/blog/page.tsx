@@ -11,7 +11,7 @@ import Person from "@mui/icons-material/Person";
 import ArrowForward from "@mui/icons-material/ArrowForward";
 import ChevronRight from "@mui/icons-material/ChevronRight";
 import { BlogCtaSection } from "@/components/pages/blog/BlogCtaSection";
-import BlogListGtm from "@/components/analytics/BlogListGtm";
+import BlogListAnalytics from "@/components/analytics/BlogListAnalytics";
 
 export const dynamic = "force-dynamic";
 
@@ -127,7 +127,7 @@ export default async function BlogListingPage() {
 
   return (
     <Box className="min-h-screen bg-slate-50 pb-20">
-      <BlogListGtm />
+      <BlogListAnalytics />
       <JsonLd data={itemListSchema} />
 
       {/* Hero Section */}

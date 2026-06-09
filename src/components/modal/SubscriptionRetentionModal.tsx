@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import SvgCloseCircle from "@/components/icons/CloseCircle";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
 import SvgCopy from "@/components/icons/Copy";
-import { pushToDataLayer } from "@/lib/gtm";
+import { trackEvent } from "@/lib/analytics";
 import { useForm, useWatch } from "react-hook-form";
 import { buildSupportMailto } from "@/lib/contact/support-email";
 import {
@@ -114,7 +114,7 @@ const SubscriptionRetentionModal = ({
       metadata: extra?.metadata,
     };
 
-    pushToDataLayer({
+    trackEvent({
       event: "subscription_retention_event",
       retention_event_name: payload.eventName,
       cancellation_reason: payload.reason ?? undefined,

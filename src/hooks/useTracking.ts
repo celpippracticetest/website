@@ -14,12 +14,12 @@ import {
   trackReferral,
   trackVercelEvent,
   updateConsent,
-} from "@/lib/gtm";
+} from "@/lib/analytics";
 import type { UserData, VercelAnalyticsCustomProperties } from "@/types/analytics";
 
 /**
  * Generic event tracker hook
- * Provides easy access to all GTM tracking functions with user context
+ * Provides easy access to all analytics tracking functions with user context
  */
 export function useEventTracker() {
   const { isSignedIn, user } = useHybridWebUser();
@@ -97,7 +97,7 @@ export function useEventTracker() {
       }, [userId]),
     },
 
-    /** Vercel Web Analytics custom event + same payload on GTM (`vercel_analytics`). */
+    /** Vercel Web Analytics custom event + same payload in GA4 (`vercel_analytics`). */
     trackVercel: useCallback(
       (name: string, data?: VercelAnalyticsCustomProperties) => {
         trackVercelEvent(name, data);

@@ -27,7 +27,7 @@ import {
   MOCK_EXAM_VIEW_MODE_EVENT,
   MOCK_EXAM_VIEW_MODE_STORAGE_KEY,
 } from "./components/useExamViewMode";
-import { trackCTAClick, trackModal } from "@/lib/gtm";
+import { trackCTAClick, trackModal } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import {
   mockExamAttemptGroupKey,

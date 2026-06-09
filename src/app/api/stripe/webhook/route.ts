@@ -74,7 +74,7 @@ function readMetadataValue(
 }
 
 /**
- * Match browser-side `inferAttributionSource` in `gtm.ts` so GA4 Default Channel
+ * Match browser-side `inferAttributionSource` in `analytics.ts` so GA4 Default Channel
  * Group / Primary Channel Group recognize `source` + `medium` on MP hits.
  * Values like `google_ads` + empty medium stay "Unassigned".
  */
