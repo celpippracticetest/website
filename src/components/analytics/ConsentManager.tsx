@@ -35,15 +35,7 @@ export default function ConsentManager() {
       role="dialog"
       aria-label="Cookie consent"
     >
-      <div className="mx-auto flex max-w-screen1280 flex-col gap-4 screen744:flex-row screen744:items-center screen744:justify-between">
-        <p className="text-sm text-text2 screen744:max-w-3xl">
-          We use cookies for analytics and, if you allow, advertising measurement.
-          See our{" "}
-          <Link href="/privacy-policy" className="text-primary1 underline underline-offset-2">
-            Privacy Policy
-          </Link>
-          .
-        </p>
+      <div className="mx-auto flex max-w-screen1280 flex-col gap-4 screen744:flex-row screen744:items-center screen744:justify-start screen744:gap-6">
         <div className="flex shrink-0 flex-wrap gap-2">
           <button
             type="button"
@@ -66,6 +58,14 @@ export default function ConsentManager() {
             Accept all
           </button>
         </div>
+        <p className="text-sm text-text2 screen744:max-w-3xl">
+          We use cookies for analytics and, if you allow, advertising measurement.
+          See our{" "}
+          <Link href="/privacy-policy" className="text-primary1 underline underline-offset-2">
+            Privacy Policy
+          </Link>
+          .
+        </p>
       </div>
     </div>
   );
