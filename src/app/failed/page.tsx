@@ -13,6 +13,10 @@ import {
   safeStripePriceId,
   safeStripeProductId,
 } from "@/lib/checkoutCancelUrl";
+import {
+  buildSignUpUrlForCheckout,
+  getSignedCheckoutSessionBase,
+} from "@/lib/checkoutRequireAuth";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -49,21 +53,23 @@ function FailedPageContent() {
   const retryPrice = safeStripePriceId(searchParams.get("price"));
   const retryProduct = safeStripeProductId(searchParams.get("product"));
   const canStripeRetry = retryPrice !== null || retryProduct !== null;
-  const checkoutSessionBase =
-    !hasMounted || !isLoaded
-      ? null
-      : isSignedIn
-        ? "/api/checkout_session"
-        : "/api/checkout_session/guest";
+  const checkoutSessionBase = getSignedCheckoutSessionBase(isLoaded, isSignedIn);
   const checkoutQuery = retryPrice
     ? `price=${encodeURIComponent(retryPrice)}`
     : retryProduct
       ? `product=${encodeURIComponent(retryProduct)}`
       : "";
   const checkoutAction =
-    canStripeRetry && checkoutSessionBase
+    canStripeRetry &&
+    checkoutSessionBase &&
+    typeof checkoutSessionBase === "string"
       ? `${checkoutSessionBase}?${checkoutQuery}`
       : null;
+  const signUpForRetryHref = buildSignUpUrlForCheckout(
+    canStripeRetry && checkoutQuery
+      ? `/failed?${checkoutQuery}${returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""}`
+      : returnTo ?? "/pricing",
+  );
 
   const stripeCheckoutDiscountLabel = useMemo(
     () =>
@@ -155,6 +161,11 @@ function FailedPageContent() {
                 {checkoutCanceled ? "Continue to plans" : "Try again"}
                 <ChevronRightRounded className="text-[20px]" aria-hidden />
               </button>
+            ) : canStripeRetry && noUser ? (
+              <Link href={signUpForRetryHref} className={primaryCtaClassName}>
+                {checkoutCanceled ? "Continue to plans" : "Try again"}
+                <ChevronRightRounded className="text-[20px]" aria-hidden />
+              </Link>
             ) : checkoutAction ? (
               <form
                 action={checkoutAction}

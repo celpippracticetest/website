@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { useOnlineUsersLiveStat } from "@/hooks/useRecentSignupsLiveStat";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -58,52 +57,6 @@ const mainNav = [
 ] as const;
 
 const NAV_ICON_SIZE = 20;
-
-function HeaderOnlineBadge({
-  compact,
-  className,
-  variant = "default",
-}: {
-  compact?: boolean;
-  className?: string;
-  variant?: "default" | "onNavy";
-}) {
-  const { display } = useOnlineUsersLiveStat("4,100");
-  const label = compact
-    ? `${display}+ practicing right now`
-    : `${display}+ online now`;
-
-  return (
-    <div
-      className={cn(
-        "inline-flex max-w-full items-center gap-2 rounded-full px-2.5 py-1 text-xs font-semibold",
-        variant === "default" && "text-emerald-700",
-        variant === "onNavy" &&
-          "border border-white/20 bg-white/10 text-emerald-50 backdrop-blur-sm",
-        compact && "w-full justify-start py-2 pl-3",
-        className,
-      )}
-    >
-      <span className="relative flex h-2 w-2 shrink-0">
-        <span
-          className={cn(
-            "absolute inline-flex h-full w-full animate-ping rounded-full opacity-75",
-            variant === "default" && "bg-emerald-400",
-            variant === "onNavy" && "bg-emerald-300",
-          )}
-        />
-        <span
-          className={cn(
-            "relative inline-flex h-2 w-2 rounded-full",
-            variant === "default" && "bg-emerald-500",
-            variant === "onNavy" && "bg-emerald-300",
-          )}
-        />
-      </span>
-      <span className="truncate">{label}</span>
-    </div>
-  );
-}
 
 const TopHeader = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -185,9 +138,6 @@ const TopHeader = () => {
           </nav>
 
           <div className="flex flex-1 items-center justify-end gap-2 screen744:gap-3">
-            <div className="hidden screen1280:block">
-              <HeaderOnlineBadge />
-            </div>
             <TopHeaderRightSide />
             <button
               type="button"
@@ -245,9 +195,6 @@ const TopHeader = () => {
             >
               <CloseIcon sx={{ fontSize: 22 }} />
             </button>
-          </div>
-          <div className="mt-4">
-            <HeaderOnlineBadge compact variant="onNavy" className="w-full" />
           </div>
           </div>
         </div>

@@ -10,6 +10,10 @@ import {
 } from "@/lib/pricing";
 import type { PlanBillingInterval } from "@/types/pricing";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import {
+  getSignedCheckoutSessionBase,
+  redirectToSignUpForCheckout,
+} from "@/lib/checkoutRequireAuth";
 import { StripeCheckoutDiscountBadge } from "@/components/checkout/StripeCheckoutDiscountBadge";
 import { getStripeCheckoutAutoDiscountLabel } from "@/lib/stripeCheckoutDiscountLabel";
 
@@ -89,15 +93,22 @@ const PlanCard = ({
     typeof featureLimit === "number" ? features.slice(0, featureLimit) : features;
   const normalizedPrice = parsePrice(price);
   const billingCycle = formatBillingCycle(billingInterval, billingIntervalCount);
-  const checkoutBase = !isLoaded
-    ? ""
-    : isSignedIn
-      ? "/api/checkout_session"
-      : "/api/checkout_session/guest";
+  const checkoutBase = getSignedCheckoutSessionBase(isLoaded, isSignedIn);
   const checkoutAction =
-    stripePriceId && checkoutBase
+    stripePriceId && checkoutBase && typeof checkoutBase === "string"
       ? `${checkoutBase}?price=${encodeURIComponent(stripePriceId)}`
       : "";
+
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    if (!isLoaded) {
+      event.preventDefault();
+      return;
+    }
+    if (!isSignedIn) {
+      event.preventDefault();
+      redirectToSignUpForCheckout();
+    }
+  };
 
   const handlePlanClick = () => {
     const item = {
@@ -127,6 +138,7 @@ const PlanCard = ({
       } ${!compact ? "h-full" : ""}`}
       action={checkoutAction}
       method="POST"
+      onSubmit={handleFormSubmit}
     >
       <CheckoutAttributionFields />
       {checkoutHiddenFields &&
@@ -267,14 +279,14 @@ const PlanCard = ({
                 type="submit"
                 onClick={handlePlanClick}
                 aria-label={`Select ${title} plan`}
-                disabled={!checkoutAction}
+                disabled={!isLoaded || !stripePriceId}
                 className={`relative z-[2] flex h-[38px] w-full shrink-0 items-center justify-center gap-[8px] rounded-[24px] px-[18px] shadow-startButton hover:cursor-pointer ${
                   highlight
                     ? "bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] hover:opacity-95"
                     : muted
                       ? "bg-slate-700 hover:bg-slate-800"
                       : "bg-primary2 hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]"
-                } ${!checkoutAction ? "cursor-not-allowed opacity-60 hover:opacity-60" : ""}`}
+                } ${!isLoaded || !stripePriceId ? "cursor-not-allowed opacity-60 hover:opacity-60" : ""}`}
               >
                 <StripeCheckoutDiscountBadge label={stripeCheckoutDiscountLabel} />
                 <span className="flex items-center justify-center text-[13px] font-normal leading-[16px] text-white">
@@ -344,14 +356,14 @@ const PlanCard = ({
               type="submit"
               onClick={handlePlanClick}
               aria-label={`Select ${title} plan`}
-              disabled={!checkoutAction}
+              disabled={!isLoaded || !stripePriceId}
               className={`relative z-[2] mt-[24px] flex h-[40px] w-full items-center justify-center gap-[8px] rounded-[24px] px-[24px] shadow-startButton hover:cursor-pointer ${
                 highlight
                   ? "bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] hover:opacity-95"
                   : muted
                     ? "bg-slate-700 hover:bg-slate-800"
                     : "bg-primary2 hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]"
-              } ${!checkoutAction ? "cursor-not-allowed opacity-60 hover:opacity-60" : ""}`}
+              } ${!isLoaded || !stripePriceId ? "cursor-not-allowed opacity-60 hover:opacity-60" : ""}`}
             >
               <StripeCheckoutDiscountBadge label={stripeCheckoutDiscountLabel} />
               <span className="flex items-center justify-center text-[14px] font-normal leading-[16px] text-white">

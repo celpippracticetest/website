@@ -12,6 +12,10 @@ import type { PricingPlanSection } from "@/lib/pricingPlanSections";
 import { v2ButtonVariants } from "@/components/v2/Button";
 import { cn } from "@/lib/utils";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import {
+  getSignedCheckoutSessionBase,
+  redirectToSignUpForCheckout,
+} from "@/lib/checkoutRequireAuth";
 import { useEcommerceTracking } from "@/hooks/useTracking";
 import type { DurationGroupKey, SerializedPlan } from "@/types/pricing";
 
@@ -114,14 +118,11 @@ export function PricingPlanCheckoutTile({
     Boolean(recommendedPlanId) &&
     recommendedSectionKey === section.key &&
     item.stableId === recommendedPlanId;
-  const checkoutBase = !isLoaded
-    ? ""
-    : isSignedIn
-      ? "/api/checkout_session"
-      : "/api/checkout_session/guest";
-  const checkoutAction = checkoutBase
-    ? `${checkoutBase}?price=${encodeURIComponent(stripePriceId)}`
-    : "";
+  const checkoutBase = getSignedCheckoutSessionBase(isLoaded, isSignedIn);
+  const checkoutAction =
+    checkoutBase && typeof checkoutBase === "string"
+      ? `${checkoutBase}?price=${encodeURIComponent(stripePriceId)}`
+      : "";
   const normalizedPrice = parsePrice(p.price);
   const trackingItem = {
     item_id: p.planTitle,
@@ -168,6 +169,11 @@ export function PricingPlanCheckoutTile({
   };
 
   const onCheckout = () => {
+    if (!isLoaded) return;
+    if (!isSignedIn) {
+      redirectToSignUpForCheckout();
+      return;
+    }
     trackCheckoutIntent();
     submitStripeCheckout();
   };
@@ -187,7 +193,7 @@ export function PricingPlanCheckoutTile({
       type="button"
       id={isRecommended ? "recommended-plan" : undefined}
       onClick={onCheckout}
-      disabled={!checkoutAction}
+      disabled={!isLoaded}
       aria-label={`Upgrade to Plus, ${section.title}`}
       className={cn(
         "relative flex h-full w-full min-w-0 flex-col rounded-2xl border bg-white p-6 text-left shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B5CF6] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",

@@ -42,6 +42,10 @@ import {
 } from '@/lib/pricing';
 import type { DurationGroupKey, SerializedPlan } from '@/types/pricing';
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import {
+  getSignedCheckoutSessionBase,
+  redirectToSignUpForCheckout,
+} from "@/lib/checkoutRequireAuth";
 import { getStripeCheckoutAutoDiscountLabel } from '@/lib/stripeCheckoutDiscountLabel';
 
 type FunnelStep = 'input' | 'email' | 'result';
@@ -91,7 +95,6 @@ const Page = () => {
     [isSignedIn, user?.publicMetadata],
   );
   /** Avoid SSR vs client mismatch on authentication + checkout action URLs */
-  const [hasMounted, setHasMounted] = useState(false);
   const [currentCLB, setCurrentCLB] = useState(7);
   const [funnelStep, setFunnelStep] = useState<FunnelStep>('input');
   const [email, setEmail] = useState('');
@@ -120,16 +123,18 @@ const Page = () => {
     });
   }, [catalogPlans]);
 
-  const checkoutSessionBase =
-    !hasMounted || !isLoaded
-      ? null
-      : isSignedIn
-        ? '/api/checkout_session'
-        : '/api/checkout_session/guest';
+  const checkoutSessionBase = getSignedCheckoutSessionBase(isLoaded, isSignedIn);
 
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
+  const handlePlanCheckoutSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    if (!isLoaded) {
+      event.preventDefault();
+      return;
+    }
+    if (!isSignedIn) {
+      event.preventDefault();
+      redirectToSignUpForCheckout("/landing/express-entry");
+    }
+  };
 
   useEffect(() => {
     const handleMouseLeave = (e: MouseEvent) => {
@@ -343,7 +348,9 @@ const Page = () => {
                 const showOldPrice =
                   Boolean(plan.oldPrice?.trim()) && parsePrice(plan.oldPrice) > parsePrice(plan.price);
                 const checkoutAction =
-                  plan.stripePriceId && checkoutSessionBase
+                  plan.stripePriceId &&
+                  checkoutSessionBase &&
+                  typeof checkoutSessionBase === "string"
                     ? `${checkoutSessionBase}?price=${encodeURIComponent(plan.stripePriceId)}`
                     : '';
                 return (
@@ -398,7 +405,11 @@ const Page = () => {
                             <Typography sx={{ color: '#64748B' }}>{` / ${billing}`}</Typography>
                           ) : null}
                         </Stack>
-                        <form action={checkoutAction} method="POST">
+                        <form
+                          action={checkoutAction}
+                          method="POST"
+                          onSubmit={handlePlanCheckoutSubmit}
+                        >
                           <Suspense fallback={null}>
                             <CheckoutAttributionFields />
                           </Suspense>
@@ -434,7 +445,7 @@ const Page = () => {
                             <Button
                               type="submit"
                               fullWidth
-                              disabled={!checkoutAction}
+                              disabled={!isLoaded || !plan.stripePriceId}
                               variant={popular ? 'contained' : 'outlined'}
                               sx={
                                 popular

@@ -16,6 +16,10 @@ import { v2ButtonVariants } from "@/components/v2/Button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import {
+  getSignedCheckoutSessionBase,
+  redirectToSignUpForCheckout,
+} from "@/lib/checkoutRequireAuth";
 import { useEcommerceTracking } from "@/hooks/useTracking";
 import type { DurationGroupKey, SerializedPlan } from "@/types/pricing";
 
@@ -130,11 +134,7 @@ export function PricingModalPlanList({
     });
   }, [recommendedSectionKey, sections]);
 
-  const checkoutBase = !isLoaded
-    ? ""
-    : isSignedIn
-      ? "/api/checkout_session"
-      : "/api/checkout_session/guest";
+  const checkoutBase = getSignedCheckoutSessionBase(isLoaded, isSignedIn);
 
   const validatePromoCode = useCallback(async (code: string) => {
     const response = await fetch("/api/promo/validate", {
@@ -188,7 +188,17 @@ export function PricingModalPlanList({
 
   const handleCheckout = async (section: PricingPlanSection) => {
     const item = section.plus;
-    if (!item?.plan.stripePriceId || !checkoutBase) {
+    if (!item?.plan.stripePriceId) {
+      return;
+    }
+    if (!isLoaded) {
+      return;
+    }
+    if (!isSignedIn) {
+      redirectToSignUpForCheckout();
+      return;
+    }
+    if (!checkoutBase) {
       return;
     }
 
@@ -417,7 +427,7 @@ export function PricingModalPlanList({
     </div>
     <button
       type="button"
-      disabled={!checkoutBase || !selectedSection || promoValidating}
+      disabled={!selectedSection || promoValidating || !isLoaded}
       onClick={() => {
         if (selectedSection) {
           void handleCheckout(selectedSection);
