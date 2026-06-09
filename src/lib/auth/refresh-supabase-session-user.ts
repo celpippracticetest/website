@@ -13,11 +13,6 @@ async function readSessionUser(): Promise<SupabaseAuthUser | null> {
   const supabase = createBrowserSupabaseClient();
   if (!supabase) return null;
 
-  const { data: userData, error } = await supabase.auth.getUser();
-  if (!error && userData.user) {
-    return userData.user;
-  }
-
   const { data: sessionData } = await supabase.auth.getSession();
   return sessionData.session?.user ?? null;
 }

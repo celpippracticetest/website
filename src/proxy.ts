@@ -22,6 +22,7 @@ import {
   shouldEnforceAccountSharingSignals,
 } from "@/lib/accountSharingMiddleware";
 import { refreshSupabaseSessionFromRequest } from "@/lib/supabase/middleware-session";
+import { shouldSkipSupabaseSessionInMiddleware } from "@/lib/supabase/middleware-skip-paths";
 
 const isAdminRoute = (req: NextRequest) => req.nextUrl.pathname.startsWith("/cms");
 
@@ -63,7 +64,9 @@ export default async function proxy(req: NextRequest) {
   }
 
   const { user: supabaseWebUser, cookieWrites: supabaseCookieWrites } =
-    await refreshSupabaseSessionFromRequest(req);
+    shouldSkipSupabaseSessionInMiddleware(req)
+      ? { user: null, cookieWrites: [] }
+      : await refreshSupabaseSessionFromRequest(req);
   const webStableId = supabaseWebUser
     ? readLegacyImportedExternalUserId(supabaseWebUser) ?? supabaseWebUser.id
     : null;

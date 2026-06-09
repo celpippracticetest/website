@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createServerClient } from "@supabase/ssr";
+import { getVerifiedSupabaseUserFromClient } from "@/lib/supabase/auth-from-claims";
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 import { parse } from "cookie";
 
@@ -63,10 +64,5 @@ export async function getSupabaseAuthUserFromRequestCookies(
     return null;
   }
 
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) {
-    return null;
-  }
-
-  return data.user;
+  return getVerifiedSupabaseUserFromClient(supabase);
 }

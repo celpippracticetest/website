@@ -135,8 +135,8 @@ function ensureSharedAuthListener() {
     return;
   }
 
-  void supabase.auth.getUser().then(({ data, error }) => {
-    sharedAuth.user = !error && data.user ? data.user : null;
+  void supabase.auth.getSession().then(({ data }) => {
+    sharedAuth.user = data.session?.user ?? null;
     emitAuthChange();
   });
 

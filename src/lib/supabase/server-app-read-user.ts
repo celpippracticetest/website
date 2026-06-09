@@ -4,12 +4,13 @@ import { cache } from "react";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
+import { getVerifiedSupabaseUserFromClient } from "@/lib/supabase/auth-from-claims";
 
 /**
  * Reads the current Supabase Auth user from cookies in a Server Component / RSC.
  * May refresh the session (writes cookies via Next.js cookie store).
  *
- * Wrapped in React `cache()` so a single navigation only hits Supabase Auth once
+ * Wrapped in React `cache()` so a single navigation only validates the session once
  * when both the root layout and nested layouts/pages read the session.
  */
 async function getSupabaseAuthUserFromServerCookiesUncached(): Promise<SupabaseAuthUser | null> {
@@ -38,12 +39,7 @@ async function getSupabaseAuthUserFromServerCookiesUncached(): Promise<SupabaseA
     },
   });
 
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) {
-    return null;
-  }
-
-  return data.user;
+  return getVerifiedSupabaseUserFromClient(supabase);
 }
 
 export const getSupabaseAuthUserFromServerCookies = cache(

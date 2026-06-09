@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth/server-auth";
+import { readLegacyImportedExternalUserId } from "@/lib/auth/supabase-user-plan";
+import { getSupabaseAuthUserFromRequestCookies } from "@/lib/supabase/server-request-client";
 import { sendGa4Events } from "@/lib/ga4MeasurementProtocol";
 import {
   markUserActivityOffline,
@@ -15,7 +16,10 @@ export const revalidate = 0;
  */
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const supabaseUser = await getSupabaseAuthUserFromRequestCookies(request);
+    const userId = supabaseUser
+      ? readLegacyImportedExternalUserId(supabaseUser) ?? supabaseUser.id
+      : null;
 
     const body = await request.json().catch(() => ({}));
     const userAgent = request.headers.get("user-agent") || "unknown";
@@ -69,7 +73,10 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const supabaseUser = await getSupabaseAuthUserFromRequestCookies(request);
+    const userId = supabaseUser
+      ? readLegacyImportedExternalUserId(supabaseUser) ?? supabaseUser.id
+      : null;
     const body = await request.json().catch(() => ({}));
     const sessionId = body.sessionId;
 
