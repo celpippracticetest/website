@@ -308,109 +308,32 @@ export class WritingAndSpeakingAnswerRepository {
         ? { type: { $in: ["WRITING", "SPEAKING"] } }
         : {}),
     };
-    const aggregateFilter = [
-      {
-        $match: {
-          ...matchFilter,
-        },
-      },
-      {
-        $sort: {
-          createdAt: -1,
-        },
-      },
-
-      {
-        $facet: {
-          total: [
-            {
-              $count: "count",
-            },
-          ],
-          data: [
-            {
-              $addFields: {
-                _id: "$_id",
-              },
-            },
-          ],
-        },
-      },
-      {
-        $unwind: "$total",
-      },
-
-      {
-        $project: {
-          items: {
-            $slice: [
-              "$data",
-              skip,
-              {
-                $ifNull: [limit, "$total.count"],
-              },
-            ],
-          },
-          page: {
-            $literal: skip / limit + 1,
-          },
-          hasNextPage: {
-            $lt: [{ $multiply: [limit, Number(page)] }, "$total.count"],
-          },
-          totalPages: {
-            $ceil: {
-              $divide: ["$total.count", limit],
-            },
-          },
-          totalItems: "$total.count",
-        },
-      },
-    ];
-
-    const results = await this.getAnswerCollection().aggregate(aggregateFilter).toArray();
-    if (results.length == 0) {
-      return {
-        items: [],
-        page: 0,
-        totalItems: 0,
-        totalPages: 0,
-        hasNextPage: false,
-      };
-    }
-    const row = results[0] as {
-      items?: TWritingAnswer[];
-      totalItems?: number;
-      totalPages?: number;
-      hasNextPage?: boolean;
-    };
-    const answers = row.items ?? [];
-    const legacyItems = answers.map((answer) => this.convertFromEntity(answer));
 
     if (shouldPersistAnswersInSupabase()) {
-      const sb = await supabaseGetAllWritingAnswers(
+      return supabaseGetAllWritingAnswers(
         sanitizedFilter as Partial<TWritingAnswerDto>,
         page,
-        Math.max(limit, skip + limit)
+        limit
       );
-      const merged = mergeWritingPreferSupabase(legacyItems, sb.items);
-      const totalMerged = merged.length;
-      const slice = merged.slice(skip, skip + limit);
-      const totalPages = limit > 0 ? Math.ceil(totalMerged / limit) : 0;
-      return {
-        items: slice,
-        page,
-        totalItems: totalMerged,
-        totalPages,
-        hasNextPage: skip + slice.length < totalMerged,
-      };
     }
 
+    const [totalItems, raw] = await Promise.all([
+      coll.countDocuments(matchFilter),
+      coll
+        .find(matchFilter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .toArray(),
+    ]);
+    const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 0;
+
     return {
-      items: legacyItems,
+      items: raw.map((answer) => this.convertFromEntity(answer)),
       page,
-      totalItems: row.totalItems ?? 0,
-      totalPages: row.totalPages ?? 0,
-      hasNextPage: row.hasNextPage ?? false,
+      totalItems,
+      totalPages,
+      hasNextPage: skip + raw.length < totalItems,
     };
   }
 

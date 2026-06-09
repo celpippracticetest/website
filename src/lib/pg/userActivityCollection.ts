@@ -178,6 +178,39 @@ function parseTimestampFilter(
   return null;
 }
 
+function userActivityFilterBranchToSql(
+  field: string,
+  value: unknown,
+  paramIndex: number,
+  params: unknown[]
+): { clause: string; nextIndex: number } | null {
+  if (field === "status" && typeof value === "string") {
+    params.push(value);
+    return { clause: `status = $${paramIndex}`, nextIndex: paramIndex + 1 };
+  }
+  if (field === "userId") {
+    if (value === null) {
+      return { clause: "user_id IS NULL", nextIndex: paramIndex };
+    }
+    if (typeof value === "string") {
+      params.push(value);
+      return { clause: `user_id = $${paramIndex}`, nextIndex: paramIndex + 1 };
+    }
+    return null;
+  }
+  if (field === "sessionId" && typeof value === "string") {
+    params.push(value);
+    return { clause: `session_id = $${paramIndex}`, nextIndex: paramIndex + 1 };
+  }
+  if (field === "lastActiveAt" && value && typeof value === "object" && !Array.isArray(value)) {
+    const ops = Object.entries(value as Record<string, unknown>);
+    if (ops.length !== 1) return null;
+    const [op, val] = ops[0]!;
+    return parseTimestampFilter("last_active_at", op, val, paramIndex, params);
+  }
+  return null;
+}
+
 /** SQL for `public.user_activity` filters used by heartbeat / active-users routes. */
 export function userActivityFilterToSql(filter: Record<string, unknown>): SqlParts | null {
   if (Object.keys(filter).length === 0) {
@@ -185,7 +218,24 @@ export function userActivityFilterToSql(filter: Record<string, unknown>): SqlPar
   }
 
   if (Object.keys(filter).length === 1 && "$or" in filter) {
-    return null;
+    const branches = (filter as { $or: unknown[] }).$or;
+    if (!Array.isArray(branches) || branches.length === 0) {
+      return { clause: "false", params: [] };
+    }
+    const parts: string[] = [];
+    const params: unknown[] = [];
+    let paramIndex = 1;
+    for (const branch of branches) {
+      if (!branch || typeof branch !== "object" || Array.isArray(branch)) return null;
+      const entries = Object.entries(branch as Record<string, unknown>);
+      if (entries.length !== 1) return null;
+      const [field, value] = entries[0]!;
+      const parsed = userActivityFilterBranchToSql(field, value, paramIndex, params);
+      if (!parsed) return null;
+      parts.push(parsed.clause);
+      paramIndex = parsed.nextIndex;
+    }
+    return { clause: `(${parts.join(" OR ")})`, params };
   }
 
   const entries = Object.entries(filter);
@@ -197,38 +247,10 @@ export function userActivityFilterToSql(filter: Record<string, unknown>): SqlPar
     if (k.startsWith("$")) {
       return null;
     }
-    if (k === "status" && typeof v === "string") {
-      parts.push(`status = $${paramIndex++}`);
-      params.push(v);
-    } else if (k === "userId") {
-      if (v === null) {
-        parts.push(`user_id IS NULL`);
-      } else if (typeof v === "string") {
-        parts.push(`user_id = $${paramIndex++}`);
-        params.push(v);
-      } else {
-        return null;
-      }
-    } else if (k === "sessionId" && typeof v === "string") {
-      parts.push(`session_id = $${paramIndex++}`);
-      params.push(v);
-    } else if (k === "lastActiveAt" && v && typeof v === "object" && !Array.isArray(v)) {
-      const ops = Object.entries(v as Record<string, unknown>);
-      if (ops.length !== 1) return null;
-      const [op, val] = ops[0]!;
-      const parsed = parseTimestampFilter(
-        "last_active_at",
-        op,
-        val,
-        paramIndex,
-        params
-      );
-      if (!parsed) return null;
-      parts.push(parsed.clause);
-      paramIndex = parsed.nextIndex;
-    } else {
-      return null;
-    }
+    const parsed = userActivityFilterBranchToSql(k, v, paramIndex, params);
+    if (!parsed) return null;
+    parts.push(parsed.clause);
+    paramIndex = parsed.nextIndex;
   }
 
   if (parts.length === 0) return null;
@@ -276,6 +298,9 @@ export class PgUserActivityCollection<T extends AppDoc = AppDoc> {
         sqlParts.params as never[]
       );
       return rows[0]?.c ?? 0;
+    }
+    if (sqlParts?.clause === "true") {
+      return this.countAll();
     }
     return (await this.findDocuments(filter)).length;
   }

@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server-auth";
-import clientPromise from "@/lib/appDocumentsClient";
 import { sendGa4Events } from "@/lib/ga4MeasurementProtocol";
+import {
+  markUserActivityOffline,
+  upsertUserActivityHeartbeat,
+} from "@/lib/pg/userActivityPresence";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,7 +17,6 @@ export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth();
 
-    // Get client info from request
     const body = await request.json().catch(() => ({}));
     const userAgent = request.headers.get("user-agent") || "unknown";
     const ip =
@@ -22,34 +24,16 @@ export async function POST(request: NextRequest) {
       request.headers.get("x-real-ip") ||
       "unknown";
 
-    const client = await clientPromise;
-    const db = client.db("prod");
-    const collection = db.collection("user_activity");
-
     const sessionId = body.sessionId || `session-${Date.now()}`;
     const now = new Date();
 
-    // Update or create user activity record
-    await collection.updateOne(
-      {
-        $or: [{ userId: userId || null }, { sessionId }],
-      },
-      {
-        $set: {
-          userId: userId || null,
-          sessionId,
-          lastActiveAt: now,
-          status: "online",
-          userAgent,
-          ip: ip.split(",")[0].trim(), // Get first IP if multiple
-          updatedAt: now,
-        },
-        $setOnInsert: {
-          createdAt: now,
-        },
-      },
-      { upsert: true },
-    );
+    await upsertUserActivityHeartbeat({
+      userId: userId || null,
+      sessionId,
+      userAgent,
+      ip: ip.split(",")[0].trim(),
+      now,
+    });
 
     void sendGa4Events({
       clientId: userId || sessionId,
@@ -96,21 +80,10 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const client = await clientPromise;
-    const db = client.db("prod");
-    const collection = db.collection("user_activity");
-
-    await collection.updateMany(
-      {
-        $or: [{ userId: userId || null }, { sessionId }],
-      },
-      {
-        $set: {
-          status: "offline",
-          lastOfflineAt: new Date(),
-        },
-      },
-    );
+    await markUserActivityOffline({
+      userId: userId || null,
+      sessionId: typeof sessionId === "string" ? sessionId : null,
+    });
 
     return NextResponse.json({
       success: true,

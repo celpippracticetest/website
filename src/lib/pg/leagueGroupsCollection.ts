@@ -472,6 +472,29 @@ export class PgLeagueGroupsCollection<T extends AppDoc = AppDoc> {
 
   aggregate(pipeline: object[], _options?: { allowDiskUse?: boolean }): PgAggregateCursor {
     return new PgAggregateCursor(async () => {
+      const first = pipeline[0];
+      const match =
+        first && typeof first === "object" && "$match" in (first as object)
+          ? ((first as { $match: Record<string, unknown> }).$match ?? null)
+          : null;
+
+      let docs: AppDoc[];
+      if (match) {
+        const sqlParts = leagueGroupFilterToSql(match);
+        if (sqlParts && sqlParts.clause !== "true") {
+          const rows = await this.sql.unsafe(
+            `SELECT ${LEAGUE_GROUP_COLUMNS} FROM public.league_groups WHERE ${sqlParts.clause} ORDER BY mongo_id`,
+            sqlParts.params as never[]
+          );
+          docs = mapRowsToDocs(rows);
+          const q = new Query(match);
+          docs = docs.filter((doc) => q.test(doc as never));
+          return mingoAggregate(docs, pipeline as never[], {
+            collectionResolver: () => [],
+          });
+        }
+      }
+
       const n = await this.countAll();
       const budget = Number(process.env.APP_AGGREGATE_DOC_BUDGET || maxScan());
       if (n > budget) {
@@ -483,7 +506,7 @@ export class PgLeagueGroupsCollection<T extends AppDoc = AppDoc> {
         `SELECT ${LEAGUE_GROUP_COLUMNS} FROM public.league_groups ORDER BY mongo_id`,
         []
       );
-      const docs = mapRowsToDocs(rows);
+      docs = mapRowsToDocs(rows);
       return mingoAggregate(docs, pipeline as never[], {
         collectionResolver: () => [],
       });

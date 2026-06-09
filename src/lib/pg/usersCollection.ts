@@ -24,7 +24,7 @@ const UUID_RE =
 
 type UserProfileRow = {
   mongo_id: string;
-  legacy_body: unknown;
+  legacy_body?: unknown | null;
   supabase_auth_user_id: string | null;
   legacy_clerk_user_id: string | null;
   email: string | null;
@@ -38,6 +38,22 @@ type UserProfileRow = {
   created_at: Date;
   updated_at: Date;
 };
+
+const USER_PROFILE_COLUMNS_SLIM = `
+  app_document_mongo_id AS mongo_id,
+  supabase_auth_user_id::text AS supabase_auth_user_id,
+  legacy_clerk_user_id,
+  email,
+  first_name,
+  last_name,
+  image_url,
+  plan,
+  plan_type,
+  stripe_customer_id,
+  public_metadata,
+  created_at,
+  updated_at
+`;
 
 const USER_PROFILE_COLUMNS = `
   app_document_mongo_id AS mongo_id,
@@ -118,8 +134,7 @@ function parseUuid(value: unknown): string | null {
   return UUID_RE.test(t) ? t : null;
 }
 
-function userProfileRowToDoc(row: UserProfileRow): AppDoc {
-  const doc = rowToDocument(row.mongo_id, row.legacy_body);
+function applyPromotedUserProfileFields(row: UserProfileRow, doc: AppDoc): AppDoc {
   if (row.email) doc.email = row.email;
   if (row.first_name) doc.firstName = row.first_name;
   if (row.last_name) doc.lastName = row.last_name;
@@ -142,7 +157,22 @@ function userProfileRowToDoc(row: UserProfileRow): AppDoc {
   if (meta && typeof meta === "object" && !Array.isArray(meta)) {
     doc.publicMetadata = meta;
   }
+  if (row.created_at) doc.createdAt = row.created_at;
+  if (row.updated_at) doc.updatedAt = row.updated_at;
   return doc;
+}
+
+function userProfileRowToDoc(row: UserProfileRow): AppDoc {
+  if (row.legacy_body != null) {
+    return applyPromotedUserProfileFields(row, rowToDocument(row.mongo_id, row.legacy_body));
+  }
+
+  const doc: AppDoc = {
+    _id: OID_HEX.test(row.mongo_id) ? new ObjectId(row.mongo_id) : row.mongo_id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+  return applyPromotedUserProfileFields(row, doc);
 }
 
 function mapRowsToDocs<T extends AppDoc = AppDoc>(rows: unknown[]): T[] {
@@ -433,7 +463,7 @@ export function usersFilterToSql(filter: Record<string, unknown>): SqlParts | nu
   return { clause: parts.join(" AND "), params };
 }
 
-/** Full `user_profiles` preload for mingo `$lookup` from other aggregates. */
+/** Slim `user_profiles` preload for mingo `$lookup` (no `legacy_body` blob). */
 export async function loadUserProfilesForAggregateJoin(sql: Sql): Promise<AppDoc[]> {
   const rows = await sql`SELECT COUNT(*)::int AS c FROM public.user_profiles`;
   const n = rows[0]?.c ?? 0;
@@ -444,7 +474,7 @@ export async function loadUserProfilesForAggregateJoin(sql: Sql): Promise<AppDoc
     );
   }
   const all = await sql.unsafe(
-    `SELECT ${USER_PROFILE_COLUMNS} FROM public.user_profiles ORDER BY app_document_mongo_id`,
+    `SELECT ${USER_PROFILE_COLUMNS_SLIM} FROM public.user_profiles ORDER BY app_document_mongo_id`,
     []
   );
   return mapRowsToDocs(all);
@@ -492,6 +522,9 @@ export class PgUsersCollection<T extends AppDoc = AppDoc> {
       );
       return rows[0]?.c ?? 0;
     }
+    if (sqlParts?.clause === "true") {
+      return this.countAll();
+    }
     return (await this.findDocuments(filter)).length;
   }
 
@@ -510,14 +543,14 @@ export class PgUsersCollection<T extends AppDoc = AppDoc> {
 
     if (sqlParts && sqlParts.clause !== "true") {
       const rows = await this.sql.unsafe(
-        `SELECT ${USER_PROFILE_COLUMNS} FROM public.user_profiles WHERE ${sqlParts.clause} ORDER BY app_document_mongo_id`,
+        `SELECT ${USER_PROFILE_COLUMNS_SLIM} FROM public.user_profiles WHERE ${sqlParts.clause} ORDER BY app_document_mongo_id`,
         sqlParts.params as never[]
       );
       return mapRowsToDocs<T>(rows);
     }
 
     const rows = await this.sql.unsafe(
-      `SELECT ${USER_PROFILE_COLUMNS} FROM public.user_profiles ORDER BY app_document_mongo_id`,
+      `SELECT ${USER_PROFILE_COLUMNS_SLIM} FROM public.user_profiles ORDER BY app_document_mongo_id`,
       []
     );
     const docs = mapRowsToDocs<T>(rows);
@@ -720,7 +753,7 @@ export class PgUsersCollection<T extends AppDoc = AppDoc> {
         );
       }
       const rows = await this.sql.unsafe(
-        `SELECT ${USER_PROFILE_COLUMNS} FROM public.user_profiles ORDER BY app_document_mongo_id`,
+        `SELECT ${USER_PROFILE_COLUMNS_SLIM} FROM public.user_profiles ORDER BY app_document_mongo_id`,
         []
       );
       const docs = mapRowsToDocs(rows);

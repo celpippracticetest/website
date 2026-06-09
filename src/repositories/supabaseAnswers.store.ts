@@ -370,32 +370,92 @@ export async function supabaseGetAllListeningAndReadingAnswers(
   const variants = examIdMatchList([examId]);
   const skip = page * limit;
 
-  const { data, error } = await admin
+  const { data, error, count } = await admin
     .from("answers")
-    .select("*")
+    .select("*", { count: "exact" })
     .eq("user_id", userId)
     .in("exam_id", variants)
-    .order("created_at", { ascending: false });
+    .in("type", ["LISTENING", "READING"])
+    .order("created_at", { ascending: false })
+    .range(skip, skip + limit - 1);
 
   if (error || !data) {
     return { items: [], page: 0, totalItems: 0, totalPages: 0, hasNextPage: false };
   }
 
-  const filtered = (data as AnswerRow[]).filter((row) => {
-    const t = String(row.type ?? "").toUpperCase();
-    return t !== "SPEAKING" && t !== "WRITING";
-  });
-
-  const totalItems = filtered.length;
-  const slice = filtered.slice(skip, skip + limit);
+  const totalItems = count ?? 0;
   const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 0;
 
   return {
-    items: slice.map((r) => rowToListeningDto(r)),
+    items: (data as AnswerRow[]).map((r) => rowToListeningDto(r)),
     page,
     totalItems,
     totalPages,
-    hasNextPage: skip + slice.length < totalItems,
+    hasNextPage: skip + data.length < totalItems,
+  };
+}
+
+export async function supabaseListListeningReadingAnswers(
+  filter: Partial<TListeningAndReadingAnswerDto>,
+  page: number,
+  limit: number
+): Promise<{
+  items: TListeningAndReadingAnswerDto[];
+  hasNextPage: boolean;
+  page: number;
+  totalPages: number;
+  totalItems: number;
+}> {
+  const admin = getSupabaseAdmin();
+  if (!admin) {
+    return { items: [], page: 0, totalItems: 0, totalPages: 0, hasNextPage: false };
+  }
+
+  const skip = page * limit;
+  const userIdVal = typeof filter.userId === "string" ? filter.userId : null;
+  const examRaw = typeof filter.examId === "string" ? filter.examId : undefined;
+  const examVariants = examRaw ? examIdMatchList([examRaw]) : [];
+  const partIdVal = typeof filter.partId === "number" ? filter.partId : null;
+  const practiceIdVal =
+    typeof filter.practiceId === "string" && filter.practiceId.length > 0
+      ? filter.practiceId
+      : null;
+  const typeVal =
+    typeof filter.type === "string" ? filter.type.toUpperCase() : null;
+
+  let q = admin
+    .from("answers")
+    .select("*", { count: "exact" })
+    .in("type", typeVal ? [typeVal] : ["LISTENING", "READING"])
+    .order("created_at", { ascending: false });
+
+  if (userIdVal) q = q.eq("user_id", userIdVal);
+  if (examVariants.length === 1) {
+    q = q.eq("exam_id", examVariants[0]);
+  } else if (examVariants.length > 1) {
+    q = q.in("exam_id", examVariants);
+  }
+  if (partIdVal != null) q = q.eq("part_id", partIdVal);
+  if (practiceIdVal) q = q.eq("practice_id", practiceIdVal.toLowerCase());
+  if ("attemptId" in filter) {
+    q = q.eq("attempt_key", attemptKeyFromDto(filter.attemptId));
+  }
+
+  const { data, error, count } = await q.range(skip, skip + limit - 1);
+
+  if (error || !data) {
+    return { items: [], page: 0, totalItems: 0, totalPages: 0, hasNextPage: false };
+  }
+
+  const totalItems = count ?? 0;
+  const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 0;
+
+  return {
+    items: (data as AnswerRow[]).map((r) => rowToListeningDto(r)),
+    page,
+    totalItems,
+    totalPages,
+    hasNextPage: skip + data.length < totalItems,
   };
 }
 

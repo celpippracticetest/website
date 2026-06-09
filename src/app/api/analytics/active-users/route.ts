@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import clientPromise from "@/lib/appDocumentsClient";
+import { countActiveOnlineUsers } from "@/lib/pg/userActivityPresence";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -10,17 +10,8 @@ export const revalidate = 0;
  */
 export async function GET() {
   try {
-    const client = await clientPromise;
-    const db = client.db("prod");
-    const collection = db.collection("user_activity");
-
-    // Count users active in the last 5 minutes
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-
-    const activeUsersCount = await collection.countDocuments({
-      lastActiveAt: { $gte: fiveMinutesAgo },
-      status: "online",
-    });
+    const activeUsersCount = await countActiveOnlineUsers(fiveMinutesAgo);
 
     return NextResponse.json({
       success: true,

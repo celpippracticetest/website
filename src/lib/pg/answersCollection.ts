@@ -254,17 +254,59 @@ export function answersFilterToSql(filter: Record<string, unknown>): SqlParts | 
   for (const [k, v] of Object.entries(filter)) {
     if (k.startsWith("$")) return null;
     if (k === "_id") {
-      const hex = objectIdLikeToHex(v);
-      if (hex) {
-        parts.push(`(legacy_mongo_id = $${paramIndex} OR id::text = $${paramIndex})`);
-        params.push(hex);
-        paramIndex++;
-      } else if (typeof v === "string" && UUID_RE.test(v.trim())) {
-        parts.push(`id = $${paramIndex}::uuid`);
-        params.push(v.trim());
-        paramIndex++;
+      if (
+        v &&
+        typeof v === "object" &&
+        !Array.isArray(v) &&
+        "$in" in (v as object) &&
+        Array.isArray((v as { $in: unknown[] }).$in)
+      ) {
+        const $in = (v as { $in: unknown[] }).$in;
+        if (!$in.length) {
+          return { clause: "false", params: [] };
+        }
+        const hexes: string[] = [];
+        const uuids: string[] = [];
+        for (const item of $in) {
+          const hex = objectIdLikeToHex(item);
+          if (hex) {
+            hexes.push(hex);
+            continue;
+          }
+          if (typeof item === "string" && UUID_RE.test(item.trim())) {
+            uuids.push(item.trim());
+            continue;
+          }
+          return null;
+        }
+        const idParts: string[] = [];
+        if (hexes.length) {
+          params.push(hexes);
+          idParts.push(
+            `(legacy_mongo_id = ANY($${paramIndex}::text[]) OR id::text = ANY($${paramIndex}::text[]))`
+          );
+          paramIndex++;
+        }
+        if (uuids.length) {
+          params.push(uuids);
+          idParts.push(`id = ANY($${paramIndex}::uuid[])`);
+          paramIndex++;
+        }
+        if (!idParts.length) return null;
+        parts.push(idParts.length === 1 ? idParts[0]! : `(${idParts.join(" OR ")})`);
       } else {
-        return null;
+        const hex = objectIdLikeToHex(v);
+        if (hex) {
+          parts.push(`(legacy_mongo_id = $${paramIndex} OR id::text = $${paramIndex})`);
+          params.push(hex);
+          paramIndex++;
+        } else if (typeof v === "string" && UUID_RE.test(v.trim())) {
+          parts.push(`id = $${paramIndex}::uuid`);
+          params.push(v.trim());
+          paramIndex++;
+        } else {
+          return null;
+        }
       }
     } else if (k === "userId" && typeof v === "string") {
       parts.push(`user_id = $${paramIndex++}`);
@@ -313,6 +355,22 @@ export function answersFilterToSql(filter: Record<string, unknown>): SqlParts | 
         if (!$nin.length) return null;
         params.push($nin);
         parts.push(`upper(type) <> ALL($${paramIndex++}::text[])`);
+      } else {
+        return null;
+      }
+    } else if (k === "answers" && v && typeof v === "object" && !Array.isArray(v)) {
+      if ("$ne" in v) {
+        const ne = (v as { $ne: unknown }).$ne;
+        if (
+          ne &&
+          typeof ne === "object" &&
+          !Array.isArray(ne) &&
+          Object.keys(ne as object).length === 0
+        ) {
+          parts.push(`(answers IS NOT NULL AND answers <> '{}'::jsonb)`);
+        } else {
+          return null;
+        }
       } else {
         return null;
       }
@@ -413,6 +471,9 @@ export class PgAnswersCollection<T extends AppDoc = AppDoc> {
         sqlParts.params as never[]
       );
       return rows[0]?.c ?? 0;
+    }
+    if (sqlParts?.clause === "true") {
+      return this.countAll();
     }
     return (await this.findDocuments(filter)).length;
   }

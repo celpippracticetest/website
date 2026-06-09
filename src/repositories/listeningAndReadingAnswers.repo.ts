@@ -16,6 +16,7 @@ import {
   supabaseFindAnswersByExamIdAndUser,
   supabaseGetAllListeningAndReadingAnswers,
   supabaseGetPartitionedMockExamProgressAnswers,
+  supabaseListListeningReadingAnswers,
   supabaseUpdateAnswer,
 } from "@/repositories/supabaseAnswers.store";
 import { ObjectId } from "bson";
@@ -403,11 +404,11 @@ export class ListeningAndReadingAnswerRepository {
         const sb = await supabaseGetAllListeningAndReadingAnswers(
           userIdStr,
           String(sanitizedFilter.examId),
-          0,
-          20_000
+          page,
+          limit
         );
         const merged = mergeListeningPreferSupabase(legacyDtos, sb.items);
-        const totalItems = merged.length;
+        const totalItems = Math.max(merged.length, sb.totalItems);
         const slice = merged.slice(skip, skip + limit);
         const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 0;
         return {
@@ -430,96 +431,81 @@ export class ListeningAndReadingAnswerRepository {
       };
     }
 
-    const aggregateFilter = [
-      {
-        $match: {
-          ...sanitizedFilter,
-          type: { $nin: ["SPEAKING", "WRITING"] },
-        },
-      },
-      {
-        $sort: {
-          createdAt: -1,
-        },
-      },
-      {
-        $facet: {
-          total: [
-            {
-              $count: "count",
-            },
-          ],
-          data: [
-            {
-              $addFields: {
-                _id: "$_id",
-              },
-            },
-          ],
-        },
-      },
-      {
-        $unwind: "$total",
-      },
-      {
-        $project: {
-          items: {
-            $slice: [
-              "$data",
-              skip,
-              {
-                $ifNull: [limit, "$total.count"],
-              },
-            ],
-          },
-          page: {
-            $literal: skip / limit + 1,
-          },
-          hasNextPage: {
-            $lt: [{ $multiply: [limit, Number(page)] }, "$total.count"],
-          },
-          totalPages: {
-            $ceil: {
-              $divide: ["$total.count", limit],
-            },
-          },
-          totalItems: "$total.count",
-        },
-      },
-    ];
-
-    const results = await this.getAnswerCollection()
-      .aggregate(aggregateFilter)
-      .toArray();
-    if (results.length == 0) {
-      return {
-        items: [],
-        page: 0,
-        totalItems: 0,
-        totalPages: 0,
-        hasNextPage: false,
-      };
-    }
-    const row = results[0] as {
-      items?: TListeningAndReadingAnswer[];
-      totalItems?: number;
-      totalPages?: number;
-      hasNextPage?: boolean;
+    const matchFilter = {
+      ...sanitizedFilter,
+      type: { $nin: ["SPEAKING", "WRITING"] },
     };
-    const answers = row.items ?? [];
+
+    if (shouldPersistAnswersInSupabase()) {
+      return supabaseListListeningReadingAnswers(
+        sanitizedFilter as Partial<TListeningAndReadingAnswerDto>,
+        page,
+        limit
+      );
+    }
+
+    const [totalItems, raw] = await Promise.all([
+      coll.countDocuments(matchFilter),
+      coll
+        .find(matchFilter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .toArray(),
+    ]);
+    const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 0;
 
     return {
-      items: answers.map((answer: TListeningAndReadingAnswer) =>
-        this.convertFromEntity(answer)
+      items: raw.map((answer) =>
+        this.convertFromEntity(answer as TListeningAndReadingAnswer)
       ),
       page,
-      totalItems: row.totalItems ?? 0,
-      totalPages: row.totalPages ?? 0,
-      hasNextPage: row.hasNextPage ?? false,
+      totalItems,
+      totalPages,
+      hasNextPage: skip + raw.length < totalItems,
     };
   }
 
   async findAnswersByExamIdAndUser(examId: string, userId: string) {
+    if (shouldPersistAnswersInSupabase()) {
+      const sbRows = await supabaseFindAnswersByExamIdAndUser(examId, userId);
+      const sbKeys = new Set(
+        sbRows
+          .map((r) => listeningDedupeFromLooseRow(r as Record<string, unknown>))
+          .filter((k): k is string => k != null)
+      );
+      const legacyOnly = await this.getAnswerCollection()
+        .find({ examId, userId, answers: { $ne: {} } })
+        .toArray();
+      const legacyOut = legacyOnly
+        .map((ans) => {
+          const idVal = ans._id;
+          const idStr =
+            idVal instanceof ObjectId
+              ? idVal.toHexString()
+              : idVal != null
+                ? String(idVal)
+                : "";
+          return {
+            ...ans,
+            _id: idStr,
+            createdAt:
+              ans.createdAt instanceof Date
+                ? ans.createdAt.toISOString()
+                : ans.createdAt,
+            updatedAt:
+              ans.updatedAt instanceof Date
+                ? ans.updatedAt.toISOString()
+                : ans.updatedAt,
+          };
+        })
+        .filter((r) => {
+          const k = listeningDedupeFromLooseRow(r as Record<string, unknown>);
+          return k == null || !sbKeys.has(k);
+        });
+      return [...sbRows, ...legacyOut];
+    }
+
     const rawAnswers = await this.getAnswerCollection()
       .find({ examId, userId, answers: { $ne: {} } })
       .toArray();
@@ -546,24 +532,7 @@ export class ListeningAndReadingAnswerRepository {
       };
     });
 
-    if (!shouldPersistAnswersInSupabase()) {
-      return legacyOut;
-    }
-
-    const sbRows = await supabaseFindAnswersByExamIdAndUser(examId, userId);
-    const sbKeys = new Set(
-      sbRows
-        .map((r) => listeningDedupeFromLooseRow(r as Record<string, unknown>))
-        .filter((k): k is string => k != null)
-    );
-
-    return [
-      ...sbRows,
-      ...legacyOut.filter((r) => {
-        const k = listeningDedupeFromLooseRow(r as Record<string, unknown>);
-        return k == null || !sbKeys.has(k);
-      }),
-    ];
+    return legacyOut;
   }
 
   async updateAnswer(
