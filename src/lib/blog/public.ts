@@ -1,3 +1,4 @@
+import { cache } from "react";
 import documentsClient from "@/lib/appDocumentsClient";
 import { TBlogSchemaDto } from "@/models/blog.model";
 import { BlogRepository } from "@/repositories/blog.repo";
@@ -44,12 +45,14 @@ export async function getRelatedPublishedPosts(
   }
 }
 
-export async function getPublishedBlogSlugs(): Promise<Array<{ slug: string; updatedAt: Date; canonicalUrl?: string }>> {
-  try {
-    const repo = new BlogRepository(documentsClient);
-    return await repo.getPublishedSlugs();
-  } catch (error) {
-    console.error("Failed to read published blog slugs:", error);
-    return [];
+export const getPublishedBlogSlugs = cache(
+  async (): Promise<Array<{ slug: string; updatedAt: Date; canonicalUrl?: string }>> => {
+    try {
+      const repo = new BlogRepository(documentsClient);
+      return await repo.getPublishedSlugs();
+    } catch (error) {
+      console.error("Failed to read published blog slugs:", error);
+      return [];
+    }
   }
-}
+);

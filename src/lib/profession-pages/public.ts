@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { ProfessionPageConfig } from "@/components/pages/marketing/ProfessionPageTemplate";
 import documentsClient from "@/lib/appDocumentsClient";
 import { TProfessionPageContent } from "@/models/profession-page.model";
@@ -45,7 +46,7 @@ export async function getPublishedProfessionPageBySlug(
   }
 }
 
-export async function getPublishedProfessionPageSlugs(): Promise<string[]> {
+async function getPublishedProfessionPageSlugsUncached(): Promise<string[]> {
   try {
     if (!documentsClient) return [];
     const repo = new ProfessionPageRepository(documentsClient);
@@ -56,6 +57,21 @@ export async function getPublishedProfessionPageSlugs(): Promise<string[]> {
   }
 }
 
+export const getPublishedProfessionPageSlugs = cache(getPublishedProfessionPageSlugsUncached);
+
+export const getPublishedProfessionPageSummaries = cache(
+  async (): Promise<ProfessionPageSummary[]> => {
+    try {
+      if (!documentsClient) return [];
+      const repo = new ProfessionPageRepository(documentsClient);
+      return await repo.listPublishedSummaries();
+    } catch (error) {
+      console.error("Failed to list profession page summaries:", error);
+      return [];
+    }
+  }
+);
+
 export async function getPublishedProfessionPages(): Promise<TProfessionPageContent[]> {
   try {
     if (!documentsClient) return [];
@@ -63,17 +79,6 @@ export async function getPublishedProfessionPages(): Promise<TProfessionPageCont
     return await repo.listPublished();
   } catch (error) {
     console.error("Failed to list profession pages:", error);
-    return [];
-  }
-}
-
-export async function getPublishedProfessionPageSummaries(): Promise<ProfessionPageSummary[]> {
-  try {
-    if (!documentsClient) return [];
-    const repo = new ProfessionPageRepository(documentsClient);
-    return await repo.listPublishedSummaries();
-  } catch (error) {
-    console.error("Failed to list profession page summaries:", error);
     return [];
   }
 }

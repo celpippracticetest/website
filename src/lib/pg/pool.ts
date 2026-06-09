@@ -37,7 +37,9 @@ function resolvedPoolMax(): number {
   const isNextBuild =
     process.env.NEXT_PHASE === "phase-production-build" ||
     process.env.npm_lifecycle_event === "build";
-  return isNextBuild ? 3 : 8;
+  // One connection per build worker — many routes hit Postgres during SSG and
+  // Supabase transaction pooler checkout times out when workers open several at once.
+  return isNextBuild ? 1 : 8;
 }
 
 /** Shared postgres.js client for the app (server-only). */

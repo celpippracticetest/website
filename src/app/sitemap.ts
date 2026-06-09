@@ -2,10 +2,10 @@ import { MetadataRoute } from "next";
 import { isNonIndexableDeployment } from "@/lib/searchIndexing";
 import { getWikiSlugs } from "@/lib/wiki/public";
 import { getPublishedBlogSlugs } from "@/lib/blog/public";
-import {
-  getPublishedProfessionPageBySlug,
-  getPublishedProfessionPageSlugs,
-} from "@/lib/profession-pages/public";
+import { getPublishedProfessionPageSlugs } from "@/lib/profession-pages/public";
+
+/** Generated on demand — avoids exhausting Supabase pooler during `next build`. */
+export const dynamic = "force-dynamic";
 
 /** Practice session URLs `/{skill}/{practiceId}/{taskId}` are noindex—omit from sitemap (hubs only). */
 const BASE_URL = process.env.APP_BASE_URL || "https://celpippracticetest.com";
@@ -21,14 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   const professionSlugs = await getPublishedProfessionPageSlugs();
-  const publishedProfessionSlugs = (
-    await Promise.all(
-      professionSlugs.map(async (slug) =>
-        (await getPublishedProfessionPageBySlug(slug)) ? slug : null
-      )
-    )
-  ).filter((slug): slug is string => Boolean(slug));
-  const professionRoutes = publishedProfessionSlugs.map((slug) => `/${slug}`);
+  const professionRoutes = professionSlugs.map((slug) => `/${slug}`);
 
   const routes = [
     "",

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import documentsClient from "@/lib/appDocumentsClient";
 import { TWikiArticleSchemaDto } from "@/models/wiki.model";
 import { WikiRepository } from "@/repositories/wiki.repo";
@@ -24,17 +25,17 @@ export async function getAllWikiArticles(): Promise<TWikiArticleSchemaDto[]> {
   }
 }
 
-export async function getWikiSlugs(): Promise<
-  Array<{ slug: string; updatedAt: Date }>
-> {
-  try {
-    const repo = new WikiRepository(documentsClient);
-    return await repo.getSlugs();
-  } catch (error) {
-    console.error("Failed to read wiki slugs:", error);
-    return [];
+export const getWikiSlugs = cache(
+  async (): Promise<Array<{ slug: string; updatedAt: Date }>> => {
+    try {
+      const repo = new WikiRepository(documentsClient);
+      return await repo.getSlugs();
+    } catch (error) {
+      console.error("Failed to read wiki slugs:", error);
+      return [];
+    }
   }
-}
+);
 
 export async function getRelatedWikiArticles(
   currentId: string,
