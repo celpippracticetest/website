@@ -223,7 +223,7 @@ export function SupabaseAuthForm({
                 );
               }
             }
-            await navigateAfterWebAuth(dest);
+            await navigateAfterWebAuth(dest, result.session);
             return;
           }
           if (result.isNewSignup) {
@@ -238,12 +238,12 @@ export function SupabaseAuthForm({
 
       setSubmitting(true);
       try {
-        const { error: signErr } = await supabase.auth.signInWithPassword({
+        const { data: signInData, error: signErr } = await supabase.auth.signInWithPassword({
           email: email.trim(),
           password,
         });
         if (signErr) { setError(signErr.message); return; }
-        await navigateAfterWebAuth(dest);
+        await navigateAfterWebAuth(dest, signInData.session);
       } finally {
         setSubmitting(false);
       }

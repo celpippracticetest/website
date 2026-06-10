@@ -31,6 +31,10 @@ export async function POST(request: NextRequest) {
   const supabase = createServerClient(env.url, env.anonKey, {
     cookies: {
       getAll() {
+        const fromRequest = request.cookies.getAll();
+        if (fromRequest.length > 0) {
+          return fromRequest;
+        }
         return cookieStore.getAll();
       },
       setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {

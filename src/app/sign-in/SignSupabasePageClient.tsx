@@ -116,7 +116,7 @@ export default function SignSupabasePageClient() {
         if (data.session?.user) {
           void saveAttribution();
           const dest = redirectAfterAuth ?? "/practice-overview";
-          void navigateAfterWebAuth(dest);
+          void navigateAfterWebAuth(dest, data.session);
           return;
         }
         setReady(true);

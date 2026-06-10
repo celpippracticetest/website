@@ -11,13 +11,12 @@ let browserClient: SupabaseClient | null | undefined;
  * auto token refresh and can hit Auth rate limits (429).
  */
 export function createBrowserSupabaseClient(): SupabaseClient | null {
-  if (browserClient !== undefined) {
+  if (browserClient) {
     return browserClient;
   }
 
   const env = getSupabasePublicEnv();
   if (!env) {
-    browserClient = null;
     return null;
   }
 

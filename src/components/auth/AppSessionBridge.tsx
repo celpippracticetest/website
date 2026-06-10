@@ -82,7 +82,7 @@ function AppSessionBridgeInner() {
         return;
       }
 
-      await syncWebSessionCookies();
+      await syncWebSessionCookies({ access_token, refresh_token });
 
       window.history.replaceState(
         null,
