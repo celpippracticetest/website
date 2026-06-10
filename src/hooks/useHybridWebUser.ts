@@ -6,8 +6,12 @@ import {
   readLegacyImportedExternalUserId,
   readPracticePlanFromSupabaseUser,
 } from "@/lib/auth/supabase-user-plan";
-import { refreshSupabaseSessionUser } from "@/lib/auth/refresh-supabase-session-user";
-import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
+import { useWebAuthInitialUser } from "@/components/auth/WebAuthProvider";
+import {
+  ensureSharedAuthListener,
+  getSharedAuthSnapshot,
+  subscribeSharedAuth,
+} from "@/lib/auth/shared-web-auth";
 
 /**
  * Bridge user for client UI when the session is Supabase Auth.
@@ -96,73 +100,12 @@ function bridgeUserFromSupabase(u: SupabaseAuthUser) {
 
 export type HybridAuthSource = "supabase" | null;
 
-type SharedAuthSnapshot = {
-  user: SupabaseAuthUser | null | undefined;
-};
-
-const sharedAuth: SharedAuthSnapshot = { user: undefined };
-const listeners = new Set<() => void>();
-let authListenerStarted = false;
-
-function emitAuthChange() {
-  // Defer so Supabase auth callbacks never update subscribers mid-mount (React 19).
-  queueMicrotask(() => {
-    for (const listener of listeners) {
-      listener();
-    }
-  });
-}
-
-function subscribeSharedAuth(listener: () => void) {
-  listeners.add(listener);
-  ensureSharedAuthListener();
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-function getSharedAuthSnapshot() {
-  return sharedAuth.user;
-}
-
-function ensureSharedAuthListener() {
-  if (authListenerStarted) return;
-  authListenerStarted = true;
-
-  const supabase = createBrowserSupabaseClient();
-  if (!supabase) {
-    sharedAuth.user = null;
-    emitAuthChange();
-    return;
-  }
-
-  void supabase.auth.getUser().then(({ data, error }) => {
-    sharedAuth.user = !error && data.user ? data.user : null;
-    emitAuthChange();
-  });
-
-  supabase.auth.onAuthStateChange((event, session) => {
-    sharedAuth.user = session?.user ?? null;
-    emitAuthChange();
-    if (
-      session?.user &&
-      (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED")
-    ) {
-      void refreshSupabaseSessionUser({ force: true }).then((refreshed) => {
-        if (refreshed) {
-          sharedAuth.user = refreshed;
-          emitAuthChange();
-        }
-      });
-    }
-  });
-}
-
 export function useHybridWebUser() {
+  const initialUser = useWebAuthInitialUser();
   const supabaseUser = useSyncExternalStore(
     subscribeSharedAuth,
     getSharedAuthSnapshot,
-    () => undefined as SupabaseAuthUser | null | undefined
+    () => initialUser,
   );
 
   useEffect(() => {

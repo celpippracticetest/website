@@ -109,14 +109,15 @@ export default function SignSupabasePageClient() {
     }, hangMs);
 
     void supabase.auth
-      .getSession()
-      .then(({ data }) => {
+      .getUser()
+      .then(async ({ data, error }) => {
         window.clearTimeout(timeoutId);
         if (cancelled) return;
-        if (data.session?.user) {
+        if (!error && data.user) {
+          const { data: sessionData } = await supabase.auth.getSession();
           void saveAttribution();
           const dest = redirectAfterAuth ?? "/practice-overview";
-          void navigateAfterWebAuth(dest, data.session);
+          void navigateAfterWebAuth(dest, sessionData.session);
           return;
         }
         setReady(true);

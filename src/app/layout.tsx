@@ -17,6 +17,8 @@ import AttributionTracker from "@/components/analytics/AttributionTracker";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
 import RedditPixelTracker from "@/components/analytics/RedditPixelTracker";
 import { SupabaseAuthHashRecoveryRedirect } from "@/components/auth/SupabaseAuthHashRecoveryRedirect";
+import { WebAuthProvider } from "@/components/auth/WebAuthProvider";
+import { getSupabaseAuthUserFromServerCookies } from "@/lib/supabase/server-app-read-user";
 import MuiAppRouterCacheProvider from "@/components/MuiAppRouterCacheProvider";
 import AndroidDownloadAppBanner from "@/components/mobile/AndroidDownloadAppBanner";
 import { getHomepageHeroDisplay } from "@/lib/homepage-hero";
@@ -140,6 +142,7 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const uiVariant = await getUiAbVariant();
+  const initialSupabaseUser = await getSupabaseAuthUserFromServerCookies();
   const baseUrl = normalizeAppBaseUrl(process.env.APP_BASE_URL);
   const isProductionAnalytics =
     process.env.NODE_ENV === "production" &&
@@ -240,6 +243,7 @@ export default async function RootLayout({
       <body className={jakarta.className} suppressHydrationWarning>
         <MuiAppRouterCacheProvider>
           <UiVariantProvider variant={uiVariant}>
+          <WebAuthProvider initialUser={initialSupabaseUser}>
           <AskBeavoModal />
           <TawkLoader />
           <TawkUserSync />
@@ -272,6 +276,7 @@ export default async function RootLayout({
           )}
 
           <Script src="/scripts/third-party-loader.js" strategy="lazyOnload" />
+          </WebAuthProvider>
           </UiVariantProvider>
         </MuiAppRouterCacheProvider>
       </body>
