@@ -33,6 +33,11 @@ const ExamSectionCardClassic = ({
         className="relative z-[1] flex h-full w-full flex-col items-center justify-center gap-[16px] rounded-[16px] bg-white"
         aria-label={`Go to ${title} section`}
       >
+        {link === "/learning" && (
+          <span className="absolute right-2 top-2 rounded bg-secondary2 px-1.5 py-0.5 text-[8px] font-bold uppercase leading-none text-white">
+            NEW
+          </span>
+        )}
         <span
           className={cn(
             "flex h-[40px] w-[40px] items-center justify-center rounded-[8px]",

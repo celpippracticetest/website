@@ -53,6 +53,116 @@ function subscriptionCurrentPeriodEndUnix(sub: Stripe.Subscription): number | nu
   return end != null ? end : null;
 }
 
+function serializeWebhookError(error: unknown): {
+  message: string;
+  stack?: string;
+  name?: string;
+} {
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    };
+  }
+  if (typeof error === "string") {
+    return { message: error };
+  }
+  try {
+    return { message: JSON.stringify(error) };
+  } catch {
+    return { message: String(error) };
+  }
+}
+
+function subscriptionCustomerId(subscription: Stripe.Subscription): string | null {
+  return typeof subscription.customer === "string"
+    ? subscription.customer
+    : (subscription.customer as { id?: string } | null)?.id ?? null;
+}
+
+function priceIdFromSubscription(subscription: Stripe.Subscription): string | null {
+  const priceRaw = subscription.items?.data?.[0]?.price;
+  if (typeof priceRaw === "string") return priceRaw;
+  if (priceRaw && typeof priceRaw === "object" && "id" in priceRaw) {
+    return (priceRaw as Stripe.Price).id;
+  }
+  return null;
+}
+
+async function ensureSubscriptionPriceId(
+  subscription: Stripe.Subscription,
+): Promise<string | null> {
+  const fromEvent = priceIdFromSubscription(subscription);
+  if (fromEvent) return fromEvent;
+
+  try {
+    const fresh = await stripe.subscriptions.retrieve(subscription.id, {
+      expand: ["items.data.price"],
+    });
+    return priceIdFromSubscription(fresh);
+  } catch (err) {
+    logger.warn("subscription.updated: failed to retrieve subscription for price id", {
+      component: "stripe_webhook",
+      action: "subscription_price_retrieve_failed",
+      metadata: {
+        subscriptionId: subscription.id,
+        ...serializeWebhookError(err),
+      },
+    });
+    return null;
+  }
+}
+
+async function resolvePlusPlanFromStripePrice(
+  priceId: string,
+  metadata: Stripe.Metadata,
+): Promise<{ plan: string; planType?: string } | null> {
+  const db = documentsClient.db();
+  const planDoc = await db.collection("plans").findOne({
+    isActive: true,
+    stripePriceId: priceId,
+  });
+
+  let plan: string | null = null;
+  let planType: string | undefined;
+
+  if (planDoc) {
+    const planEntity = planDoc as unknown as Plan;
+    const serialized = toSerializedPlan(planEntity);
+    const tier = getAccessTierKey(serialized);
+    planType = planEntity.title;
+    if (tier === "premiumPlus" || tier === "premium") plan = "plus";
+  }
+
+  if (
+    !plan &&
+    typeof metadata.plan_name === "string" &&
+    metadata.plan_name.trim()
+  ) {
+    planType = metadata.plan_name;
+    plan = "plus";
+  }
+
+  if (!plan) return null;
+  return { plan, planType: planType ?? metadata.plan_name };
+}
+
+function subscriptionUpdatedLogContext(
+  subscription: Stripe.Subscription,
+  userId: string,
+  priceId?: string | null,
+) {
+  return {
+    subscriptionId: subscription.id,
+    customerId: subscriptionCustomerId(subscription),
+    userId,
+    priceId: priceId ?? null,
+    status: subscription.status,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end,
+  };
+}
+
 function appendUniqueString(list: unknown, value: string): string[] {
   const base = Array.isArray(list)
     ? list.filter((item): item is string => typeof item === "string")
@@ -963,82 +1073,80 @@ export async function POST(req: Request) {
         (subscription.status === "active" ||
           subscription.status === "trialing")
       ) {
+        const userId = metadata.user_id;
+        let priceId: string | null = null;
+        let resolvedPlan: { plan: string; planType?: string } | null = null;
+
         try {
-          const item = subscription.items.data[0];
-          const priceRaw = item?.price;
-          const priceId =
-            typeof priceRaw === "string"
-              ? priceRaw
-              : priceRaw && typeof priceRaw === "object" && "id" in priceRaw
-                ? (priceRaw as Stripe.Price).id
-                : null;
-
-          if (priceId) {
-            const db = await documentsClient.db();
-            const planDoc = await db.collection("plans").findOne({
-              isActive: true,
-              stripePriceId: priceId,
+          priceId = await ensureSubscriptionPriceId(subscription);
+          if (!priceId) {
+            logger.warn("subscription.updated: no price id on subscription", {
+              component: "stripe_webhook",
+              action: "subscription_updated_missing_price",
+              userId,
+              metadata: subscriptionUpdatedLogContext(subscription, userId),
             });
-
-            let plan: string | null = null;
-            let planType: string | undefined;
-
-            if (planDoc) {
-              const planEntity = planDoc as unknown as Plan;
-              const serialized = toSerializedPlan(planEntity);
-              const tier = getAccessTierKey(serialized);
-              planType = planEntity.title;
-              if (tier === "premiumPlus" || tier === "premium") plan = "plus";
-            }
-
-            if (
-              !plan &&
-              typeof metadata.plan_name === "string" &&
-              metadata.plan_name.trim()
-            ) {
-              planType = metadata.plan_name;
-              plan = "plus";
-            }
-
-            if (plan) {
-              await updateUserPublicMetadata(metadata.user_id, {
-                plan,
-                planType: planType ?? metadata.plan_name,
-                planCancelled: false,
-                planExpiresAt: null,
-              });
-
-              // Supabase direct sync
-              try {
-                const subCustomerId =
-                  typeof subscription.customer === "string"
-                    ? subscription.customer
-                    : (subscription.customer as { id?: string } | null)?.id ?? null;
-                const sbProfile = await resolveUserProfileFromStripe(
-                  subCustomerId,
-                  metadata.user_id,
-                );
-                if (sbProfile) {
-                  await grantPlusPlan(sbProfile.supabaseAuthUserId, sbProfile.profileId);
-                }
-                if (subCustomerId) {
-                  await upsertStripeSubscription(subscription, subCustomerId).catch(() => undefined);
-                }
-              } catch (sbErr) {
-                logger.error("subscription.updated: Supabase plan grant failed", {
-                  component: "stripe_webhook",
-                  action: "supabase_grant_plan_error",
-                  metadata: { error: sbErr },
-                });
-              }
-            }
+          } else {
+            resolvedPlan = await resolvePlusPlanFromStripePrice(priceId, metadata);
           }
-        } catch (syncErr) {
-          logger.error("subscription.updated: plan metadata sync failed", {
+        } catch (lookupErr) {
+          captureException(lookupErr, {
             component: "stripe_webhook",
-            action: "subscription_updated_plan_sync",
-            metadata: { error: syncErr },
+            action: "subscription_updated_plan_lookup",
+            userId,
+            metadata: {
+              ...subscriptionUpdatedLogContext(subscription, userId, priceId),
+              ...serializeWebhookError(lookupErr),
+            },
           });
+        }
+
+        if (resolvedPlan) {
+          try {
+            await updateUserPublicMetadata(userId, {
+              plan: resolvedPlan.plan,
+              planType: resolvedPlan.planType ?? metadata.plan_name,
+              planCancelled: false,
+              planExpiresAt: null,
+            });
+          } catch (metadataErr) {
+            captureException(metadataErr, {
+              component: "stripe_webhook",
+              action: "subscription_updated_metadata_sync",
+              userId,
+              metadata: {
+                ...subscriptionUpdatedLogContext(subscription, userId, priceId),
+                plan: resolvedPlan.plan,
+                ...serializeWebhookError(metadataErr),
+              },
+            });
+          }
+
+          try {
+            const subCustomerId = subscriptionCustomerId(subscription);
+            const sbProfile = await resolveUserProfileFromStripe(
+              subCustomerId,
+              userId,
+            );
+            if (sbProfile) {
+              await grantPlusPlan(sbProfile.supabaseAuthUserId, sbProfile.profileId);
+            }
+            if (subCustomerId) {
+              await upsertStripeSubscription(subscription, subCustomerId).catch(
+                () => undefined,
+              );
+            }
+          } catch (sbErr) {
+            captureException(sbErr, {
+              component: "stripe_webhook",
+              action: "supabase_grant_plan_error",
+              userId,
+              metadata: {
+                ...subscriptionUpdatedLogContext(subscription, userId, priceId),
+                ...serializeWebhookError(sbErr),
+              },
+            });
+          }
         }
       }
 

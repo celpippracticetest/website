@@ -2,9 +2,9 @@ import LayoutLearningClient from "@/components/dashboard-new/LayoutLearningClien
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "CELPIP AI Learning Assistant | Real-time Practice Feedback",
+  title: "Daily CELPIP Learning | CLB-Focused Lessons",
   description:
-    "Ask CELPIP-style questions and get real-time answers. Practice CELPIP strategies, improve task structure, and get targeted guidance.",
+    "Personalized daily CELPIP lessons for Listening, Reading, Writing, and Speaking. Set your CLB goals, study rubric comparisons, vocabulary, and drills — one skill module per day.",
   alternates: {
     canonical: "https://celpippracticetest.com/learning",
   },

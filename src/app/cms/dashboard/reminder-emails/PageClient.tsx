@@ -188,6 +188,7 @@ export default function ReminderEmailConfigPage() {
     const counts: Record<TriggerType, number> = {
       signup_no_activity: 0,
       inactive: 0,
+      subscribed_referral: 0,
     };
     for (const s of config.stages) {
       if (s.enabled) counts[s.triggerType] += 1;
@@ -206,7 +207,8 @@ export default function ReminderEmailConfigPage() {
           engagement.
         </p>
         <p className="text-xs font-medium text-emerald-800">
-          Audience: all users (free and Plus) — stops when the user engages after a reminder.
+          Audience: all users (free and Plus) for activity nudges; Plus-only for the refer-a-friend
+          track — stops when the user engages after an activity reminder.
         </p>
       </Box>
 
@@ -347,6 +349,10 @@ export default function ReminderEmailConfigPage() {
           <li>
             <strong>Inactive track:</strong> day 1 &quot;we miss you&quot; → day 7 gentle come-back
             (after last activity).
+          </li>
+          <li>
+            <strong>Subscribed track:</strong> day 14 referral invite — friends get 20% off, referrer
+            gets 30% off next payment (Plus subscribers only).
           </li>
           <li>Cap: max 4 reminders per 7-day window; 24h cooldown for free users, 7 days for Plus.</li>
           <li>Stops entirely when the user engages after receiving a reminder.</li>

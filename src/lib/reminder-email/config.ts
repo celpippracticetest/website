@@ -3,7 +3,7 @@ import { z } from "zod";
 export const REMINDER_EMAIL_CONFIG_COLLECTION = "reminderEmailConfigs";
 export const REMINDER_EMAIL_CONFIG_KEY = "default";
 
-export const TRIGGER_TYPES = ["signup_no_activity", "inactive"] as const;
+export const TRIGGER_TYPES = ["signup_no_activity", "inactive", "subscribed_referral"] as const;
 export type TriggerType = (typeof TRIGGER_TYPES)[number];
 
 export const TIME_UNITS = ["minutes", "hours", "days"] as const;
@@ -123,6 +123,32 @@ export const REMINDER_EMAIL_DEFAULT_STAGES: ReminderEmailStage[] = [
     enabled: true,
     sortOrder: 5,
   },
+  {
+    id: "subscribed_referral_day14",
+    label: "Subscribed - Refer a Friend",
+    triggerType: "subscribed_referral",
+    delayAmount: 14,
+    delayUnit: "days",
+    subject: "{{first_name}}, refer a friend and get 30% off your next payment",
+    htmlBody: htmlWrap(`
+<div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;padding:32px;border:1px solid #E5E7EB;">
+  <h1 style="color:#212E42;font-size:22px;margin:0 0 12px;">Share CELPIP prep, save 30% on your next bill</h1>
+  <p style="color:#526071;font-size:16px;line-height:1.6;margin:0 0 16px;">Hi {{first_name}},</p>
+  <p style="color:#526071;font-size:15px;line-height:1.6;margin:0 0 16px;">
+    You're on CELPIP Practice Test Plus — great choice! Know someone else preparing for their exam?
+    Refer a friend and you'll get <strong>30% off your next payment</strong> when they subscribe.
+    Your friends get 20% off their first plan, too.
+  </p>
+  <p style="color:#526071;font-size:14px;background:#F2F6FF;border-radius:8px;padding:12px 16px;margin:0 0 24px;line-height:1.5;">
+    Your referral link:<br/>
+    <a href="{{referral_url}}" style="color:#4A7DFF;word-break:break-all;">{{referral_url}}</a>
+  </p>
+  <a href="{{referral_url}}" style="display:inline-block;background:#4A7DFF;color:#fff;text-decoration:none;font-weight:600;padding:14px 28px;border-radius:999px;">Invite a friend</a>
+  <p style="color:#9CA3AF;font-size:12px;margin:24px 0 0;">CelpipPracticeTest.com · Referral program</p>
+</div>`),
+    enabled: true,
+    sortOrder: 6,
+  },
 ];
 
 export const REMINDER_EMAIL_DEFAULT_CONFIG: ReminderEmailConfigInput = {
@@ -173,6 +199,12 @@ export function buildReminderEmailConfigWithDefaults(
   }
 
   const coerced = raw.stages.map((s, i) => coerceStage(s, i));
+  const existingIds = new Set(coerced.map((stage) => stage.id));
+  for (const defaultStage of REMINDER_EMAIL_DEFAULT_STAGES) {
+    if (!existingIds.has(defaultStage.id)) {
+      coerced.push({ ...defaultStage, sortOrder: coerced.length });
+    }
+  }
   const sortedStages = [...coerced].sort((a, b) => a.sortOrder - b.sortOrder);
   sortedStages.forEach((stage, idx) => {
     stage.sortOrder = idx;

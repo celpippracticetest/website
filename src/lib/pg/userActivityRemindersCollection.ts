@@ -11,7 +11,7 @@ import type { SqlParts } from "./whereBuilder";
 import { PgFindCursor } from "./pgCollection";
 
 const OID_HEX = /^[a-f0-9]{24}$/i;
-const REMINDER_FLOWS = ["signup_no_activity", "inactive"] as const;
+const REMINDER_FLOWS = ["signup_no_activity", "inactive", "subscribed_referral"] as const;
 
 type UserActivityReminderRow = {
   user_id: string;

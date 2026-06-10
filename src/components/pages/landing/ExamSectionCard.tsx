@@ -40,6 +40,11 @@ const ExamSectionCard = ({
         className="relative z-[1] flex h-full w-full flex-col items-center justify-center gap-[16px] rounded-[16px] border border-transparent bg-white transition-colors duration-300 group-hover:border-primary5/60"
         aria-label={`Go to ${title} section`}
       >
+        {link === "/learning" && (
+          <span className="absolute right-2 top-2 rounded bg-secondary2 px-1.5 py-0.5 text-[8px] font-bold uppercase leading-none text-white">
+            NEW
+          </span>
+        )}
         <span
           className={cn(
             "flex h-[40px] w-[40px] items-center justify-center rounded-[8px] transition-transform duration-300 ease-out group-hover:scale-110",

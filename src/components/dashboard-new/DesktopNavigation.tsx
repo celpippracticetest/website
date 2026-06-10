@@ -9,14 +9,36 @@ import SvgBook from "../icons/animated/book/Book";
 import SvgArticle from "../icons/animated/article/Article";
 import SvgCheck from "../icons/animated/check/Check";
 import SvgWord from "../icons/Word";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 
 const DesktopNavigation = () => {
   const pathname = usePathname();
+  const { isSignedIn } = useHybridWebUser();
 
   const [practice, setPractice] = useState(false);
   const [mockTest, setMockTest] = useState(false);
   const isLearning = pathname.includes("/learning");
   const [hoveredLabel, setHoveredLabel] = useState<string | null>(null);
+  const [learningPending, setLearningPending] = useState(0);
+
+  useEffect(() => {
+    if (!isSignedIn) {
+      setLearningPending(0);
+      return;
+    }
+    let cancelled = false;
+    void fetch("/api/learning/pending")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.pendingCount != null) {
+          setLearningPending(Number(data.pendingCount) || 0);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isSignedIn, pathname]);
 
   useEffect(() => {
     if (
@@ -108,6 +130,16 @@ const DesktopNavigation = () => {
             >
               {item.label}
             </span>
+            {item.label === "Learning" && !isLearning && (
+              <span className="rounded bg-secondary2 px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none text-white">
+                NEW
+              </span>
+            )}
+            {item.label === "Learning" && learningPending > 0 && !isLearning && (
+              <span className="absolute -right-3 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-error1 px-1 text-[10px] font-bold text-white">
+                {learningPending > 9 ? "9+" : learningPending}
+              </span>
+            )}
           </Link>
         );
       })}

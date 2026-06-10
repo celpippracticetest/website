@@ -24,10 +24,15 @@ export function PrepEcosystemCard({
     <Link
       href={link}
       className={cn(
-        "flex flex-col items-center justify-center p-4 screen744:p-6 rounded-[24px] bg-white border border-primary5 shadow-sm hover:shadow-md transition-all group",
+        "relative flex flex-col items-center justify-center p-4 screen744:p-6 rounded-[24px] bg-white border border-primary5 shadow-sm hover:shadow-md transition-all group",
         className,
       )}
     >
+      {link === "/learning" && (
+        <span className="absolute right-3 top-3 rounded bg-secondary2 px-1.5 py-0.5 text-[8px] font-bold uppercase leading-none text-white screen744:right-4 screen744:top-4">
+          NEW
+        </span>
+      )}
       <div
         className={cn(
           "w-12 h-12 screen744:w-16 screen744:h-16 rounded-2xl flex items-center justify-center mb-3 screen744:mb-4 group-hover:scale-110 transition-transform",

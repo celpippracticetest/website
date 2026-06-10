@@ -96,6 +96,73 @@ function dismissTawkWidget(): void {
 }
 
 let widgetBehaviorInitialized = false;
+let tawkWidgetLoaded = false;
+const tawkAttributeQueue: Array<() => void> = [];
+const ATTRIBUTE_RETRY_MS = [150, 400, 800, 1500] as const;
+
+function flushTawkAttributeQueue(): void {
+  const queue = tawkAttributeQueue.splice(0);
+  for (const fn of queue) {
+    fn();
+  }
+}
+
+function markTawkWidgetLoaded(): void {
+  if (tawkWidgetLoaded) return;
+  tawkWidgetLoaded = true;
+  // Tawk's onLoad fires before i18next is always ready; defer attribute sync.
+  window.setTimeout(flushTawkAttributeQueue, 150);
+}
+
+/** Wait until Tawk onLoad + internal init before setAttributes (avoids i18next races). */
+function runWhenTawkAttributesReady(fn: () => void): void {
+  if (typeof window === "undefined") return;
+  ensureTawkScript();
+  window.Tawk_API = window.Tawk_API || {};
+  chainTawkCallback("onLoad", markTawkWidgetLoaded);
+
+  if (tawkWidgetLoaded) {
+    window.setTimeout(fn, 150);
+    return;
+  }
+
+  tawkAttributeQueue.push(fn);
+}
+
+function invokeTawkSetAttributes(
+  payload: Record<string, string>,
+  attempt = 0,
+): void {
+  const setAttributes = window.Tawk_API?.setAttributes;
+  if (typeof setAttributes !== "function") {
+    if (attempt < ATTRIBUTE_RETRY_MS.length) {
+      window.setTimeout(
+        () => invokeTawkSetAttributes(payload, attempt + 1),
+        ATTRIBUTE_RETRY_MS[attempt],
+      );
+    }
+    return;
+  }
+
+  try {
+    setAttributes(payload, (error?: Error) => {
+      if (!error) return;
+      if (attempt < ATTRIBUTE_RETRY_MS.length) {
+        window.setTimeout(
+          () => invokeTawkSetAttributes(payload, attempt + 1),
+          ATTRIBUTE_RETRY_MS[attempt],
+        );
+      }
+    });
+  } catch {
+    if (attempt < ATTRIBUTE_RETRY_MS.length) {
+      window.setTimeout(
+        () => invokeTawkSetAttributes(payload, attempt + 1),
+        ATTRIBUTE_RETRY_MS[attempt],
+      );
+    }
+  }
+}
 
 /** Keep Tawk's default bubble hidden; reopen from Support FAB / header links. Idempotent. */
 export function initTawkMobileBehavior(): void {
@@ -104,7 +171,10 @@ export function initTawkMobileBehavior(): void {
 
   ensureTawkScript();
   chainTawkCallback("onBeforeLoad", syncTawkWidgetForViewport);
-  chainTawkCallback("onLoad", syncTawkWidgetForViewport);
+  chainTawkCallback("onLoad", () => {
+    syncTawkWidgetForViewport();
+    markTawkWidgetLoaded();
+  });
   chainTawkCallback("onChatMaximized", scheduleHideTawkLauncherBubble);
   chainTawkCallback("onChatMinimized", dismissTawkWidget);
   chainTawkCallback("onChatHidden", dismissTawkWidget);
@@ -188,7 +258,10 @@ export type TawkVisitorAttribute = [string, string | number | boolean];
 
 /**
  * Push visitor profile into Tawk (`setAttributes` + optional visitor name/email).
- * Call after {@link ensureTawkScript} (queued safely before load via `onLoad`).
+ * Call after {@link ensureTawkScript}; sync waits for widget onLoad.
+ *
+ * Uses `display-name` instead of `name` — Tawk's `name` key runs parseVisitorName
+ * via i18next and throws if called before the widget fully initializes (Sentry JAVASCRIPT-NEXTJS-3).
  */
 export function applyTawkVisitorProfile(opts: {
   email?: string | null;
@@ -200,7 +273,7 @@ export function applyTawkVisitorProfile(opts: {
   const { email, nickname, attributes } = opts;
   const payload: Record<string, string> = {};
 
-  if (nickname?.trim()) payload.name = nickname.trim();
+  if (nickname?.trim()) payload["display-name"] = nickname.trim();
   if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     payload.email = email;
   }
@@ -211,8 +284,7 @@ export function applyTawkVisitorProfile(opts: {
 
   if (Object.keys(payload).length === 0) return;
 
-  ensureTawkScript();
-  runWhenTawkReady(() => {
-    window.Tawk_API?.setAttributes?.(payload);
+  runWhenTawkAttributesReady(() => {
+    invokeTawkSetAttributes(payload);
   });
 }

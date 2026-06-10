@@ -108,11 +108,11 @@ function buildSteps(focusSkill: FlowSkill, urgency: UrgencyLevel): Microlearning
     {
       id: "today-learn",
       kind: "learning",
-      title: `${skillLabel} Quick Strategy Warm-up`,
-      description: "Review one tactic and one common trap before timed work.",
+      title: `${skillLabel} Daily Lesson`,
+      description: "Review today's CLB-focused module with rubric tips, vocabulary, and drills.",
       durationMinutes: warmupMinutes,
       skill: focusSkill,
-      ctaLabel: "Open Learning",
+      ctaLabel: "Open Daily Learning",
     },
     {
       id: "today-practice",

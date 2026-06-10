@@ -9,14 +9,36 @@ import SvgBook from "../icons/animated/book/Book";
 import SvgArticle from "../icons/animated/article/Article";
 import SvgCheck from "../icons/animated/check/Check";
 import SvgWord from "../icons/Word";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 
 const BottomNavigation = () => {
   const pathname = usePathname();
   const router = useRouter();
+  const { isSignedIn } = useHybridWebUser();
 
   const [practice, setPractice] = useState(false);
   const [mockTest, setMockTest] = useState(false);
   const isLearning = pathname.includes("/learning");
+  const [learningPending, setLearningPending] = useState(0);
+
+  useEffect(() => {
+    if (!isSignedIn) {
+      setLearningPending(0);
+      return;
+    }
+    let cancelled = false;
+    void fetch("/api/learning/pending")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.pendingCount != null) {
+          setLearningPending(Number(data.pendingCount) || 0);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isSignedIn, pathname]);
 
   useEffect(() => {
     if (
@@ -85,6 +107,11 @@ const BottomNavigation = () => {
         {items.map((item) => {
           const inner = (
             <>
+              {item.label === "Learnings" && !isLearning && (
+                <span className="absolute right-1 top-1.5 rounded bg-secondary2 px-1 py-0.5 text-[8px] font-bold uppercase leading-none text-white">
+                  NEW
+                </span>
+              )}
               {item.isActive && (
                 <span
                   className="absolute -z-10 h-14 w-20 rounded-full bg-[#E8ECF4]"
@@ -92,11 +119,18 @@ const BottomNavigation = () => {
                 />
               )}
               <span className="flex flex-col items-center gap-1">
-                <span className="flex h-6 w-6 items-center justify-center">
+                <span className="relative flex h-6 w-6 items-center justify-center">
                   <item.Icon
                     className={clsx(item.isActive ? "text-black" : "text-[#37465C]")}
                     aria-hidden
                   />
+                  {item.label === "Learnings" &&
+                    learningPending > 0 &&
+                    !isLearning && (
+                      <span className="absolute -right-1 -top-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-error1 px-0.5 text-[9px] font-bold text-white">
+                        {learningPending > 9 ? "9+" : learningPending}
+                      </span>
+                    )}
                 </span>
                 <span
                   className={clsx(

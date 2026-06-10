@@ -125,7 +125,7 @@ export function ReminderStageCard({
                   onChange={(htmlBody) => onUpdate({ htmlBody })}
                   subject={stage.subject}
                   previewMergeFields={previewMergeFields}
-                  placeholder="Full HTML email. Use {{first_name}}, {{practice_url}}, {{listening_url}}."
+                  placeholder="Full HTML email. Use {{first_name}}, {{practice_url}}, {{listening_url}}, {{referral_url}}, {{referral_code}}."
                 />
               </Box>
 

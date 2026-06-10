@@ -8,7 +8,7 @@ import {
 } from "@/lib/email-cron/sql-audience";
 export const REMINDER_CANDIDATE_LOOKBACK_DAYS = 30;
 
-export type ReminderFlow = "signup_no_activity" | "inactive";
+export type ReminderFlow = "signup_no_activity" | "inactive" | "subscribed_referral";
 
 export type ReminderCandidate = {
   userId: string;
@@ -56,7 +56,9 @@ export async function listReminderCandidates(limit: number): Promise<ReminderCan
       isSubscribed: row.is_subscribed,
       lastReminderSentAt: state?.lastReminderSentAt,
       reminderFlow:
-        state?.reminderFlow === "signup_no_activity" || state?.reminderFlow === "inactive"
+        state?.reminderFlow === "signup_no_activity" ||
+        state?.reminderFlow === "inactive" ||
+        state?.reminderFlow === "subscribed_referral"
           ? state.reminderFlow
           : undefined,
       reminderStageId: state?.reminderStageId,
