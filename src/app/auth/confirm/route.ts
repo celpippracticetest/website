@@ -52,6 +52,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 401 });
   }
 
+  // setSession can skip setAll when tokens match request cookies; getUser() forces writes.
+  if (freshCookieNames.size === 0) {
+    await supabase.auth.getUser();
+  }
+
   expireSupersededAuthCookiesOnResponse(request, response, freshCookieNames);
   return response;
 }

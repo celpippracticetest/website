@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
+import { syncWebSessionCookies } from "@/lib/auth/sync-web-session-cookies";
 import { safeAppWebRedirectPath } from "@/lib/auth/safeAppWebRedirect";
 
 type Status = "working" | "error";
@@ -80,6 +81,8 @@ function AppSessionBridgeInner() {
         fail(error.message || "Could not sign you in.");
         return;
       }
+
+      await syncWebSessionCookies();
 
       window.history.replaceState(
         null,

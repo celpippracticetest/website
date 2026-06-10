@@ -19,6 +19,12 @@ export function expireSupersededAuthCookiesOnResponse(
   response: NextResponse,
   freshCookieNames: ReadonlySet<string>
 ): void {
+  // When setSession matches cookies already on the request, Supabase may skip setAll.
+  // Expiring with an empty fresh set would delete the live session (password sign-in bug).
+  if (freshCookieNames.size === 0) {
+    return;
+  }
+
   for (const cookie of request.cookies.getAll()) {
     const { name } = cookie;
     if (!isLegacyClerkCookie(name) && !isSupabaseAuthTokenCookie(name)) continue;
