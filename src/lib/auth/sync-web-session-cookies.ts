@@ -69,16 +69,10 @@ async function resolveSessionTokens(
     return session;
   }
 
-  const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
-  session = refreshed.session;
-  if (session?.access_token && session.refresh_token) {
-    return session;
-  }
-
   if (process.env.NODE_ENV === "development") {
     console.warn(
-      "[syncWebSessionCookies] could not resolve tokens after getUser/refresh:",
-      refreshError?.message ?? "missing refresh_token",
+      "[syncWebSessionCookies] could not resolve tokens after getUser:",
+      "missing refresh_token in browser session",
     );
   }
   return null;

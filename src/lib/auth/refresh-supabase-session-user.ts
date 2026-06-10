@@ -50,7 +50,12 @@ export async function refreshSupabaseSessionUser(
 
   refreshInFlight = (async () => {
     try {
-      await supabase.auth.refreshSession();
+      if (force) {
+        await supabase.auth.refreshSession();
+      } else {
+        // Prefer getUser() — validates JWT without always hitting the refresh_token grant.
+        await supabase.auth.getUser();
+      }
       lastRefreshAt = Date.now();
     } catch {
       // Offline, rate-limited, or blocked — still try to read the current user.

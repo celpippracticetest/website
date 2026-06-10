@@ -3,6 +3,7 @@
 import { TExamSchemaDto } from "@/models/exam.model";
 import { useSelectedExam } from "@/store/useSelectedExam.store";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { isForceSignedOut } from "@/lib/auth/shared-web-auth";
 import {
   Box,
   LinearProgress,
@@ -54,7 +55,11 @@ const ExamOverviewModern = ({
 }) => {
   const router = useRouter();
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
-  const noUser = isLoaded ? !isSignedIn : false;
+  /** Server snapshot from page RSC — keeps mock exam CTAs correct when client auth lags. */
+  const serverSignedIn = Boolean(rscUserAccessSnapshot && showUserProgress);
+  const effectiveSignedIn =
+    isSignedIn || (!isForceSignedOut() && serverSignedIn);
+  const noUser = isLoaded ? !effectiveSignedIn : !serverSignedIn;
   const plan = user?.publicMetadata?.plan as string | undefined;
   const purchaseDate = user?.publicMetadata?.purchaseDate as
     | string
@@ -66,8 +71,7 @@ const ExamOverviewModern = ({
       : rscUserAccessSnapshot?.purchasedMockExamIds;
 
   const signedInFreeUser =
-    isLoaded &&
-    isSignedIn &&
+    effectiveSignedIn &&
     (!plan || normalizePlan(plan) === "free");
   /** Catalog first ready exam (by `order`), not list position — list may put purchased mocks first. */
   const firstReadyExamId = useMemo(() => {
@@ -89,10 +93,6 @@ const ExamOverviewModern = ({
     }
     return best.id;
   }, [exams]);
-  /** Before `useHybridWebUser()` is ready, trust the server snapshot when present (avoids false "Buy" on first paint). */
-  const effectiveSignedIn = !isLoaded
-    ? Boolean(rscUserAccessSnapshot && showUserProgress)
-    : isSignedIn;
   const mockExamUnlocked = (exam: TExamSchemaDto) =>
     Boolean(
       effectiveSignedIn &&

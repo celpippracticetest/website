@@ -11,6 +11,8 @@ type SharedAuthSnapshot = {
 export const sharedAuth: SharedAuthSnapshot = { user: undefined };
 const listeners = new Set<() => void>();
 let authListenerStarted = false;
+/** Set by explicit sign-out so server snapshot cannot keep the UI signed in. */
+let forceSignedOut = false;
 
 export function emitAuthChange() {
   queueMicrotask(() => {
@@ -34,8 +36,22 @@ export function getSharedAuthSnapshot() {
 
 /** Server layout / WebAuthProvider: hydrate header auth before client getUser(). */
 export function seedSharedAuthUser(user: SupabaseAuthUser | null): void {
+  if (user) {
+    forceSignedOut = false;
+  }
   sharedAuth.user = user;
   emitAuthChange();
+}
+
+/** Clears client auth after an explicit sign-out (not Supabase auto events). */
+export function clearSharedAuthUser(): void {
+  forceSignedOut = true;
+  sharedAuth.user = null;
+  emitAuthChange();
+}
+
+export function isForceSignedOut(): boolean {
+  return forceSignedOut;
 }
 
 async function resolveClientAuthUser(
@@ -81,17 +97,23 @@ export function ensureSharedAuthListener() {
 
   supabase.auth.onAuthStateChange((event, session) => {
     if (session?.user) {
+      forceSignedOut = false;
       sharedAuth.user = session.user;
       emitAuthChange();
-    } else if (event === "SIGNED_OUT") {
-      sharedAuth.user = null;
-      emitAuthChange();
+    } else if (event === "SIGNED_OUT" && !forceSignedOut) {
+      // Browser client can emit SIGNED_OUT when only server cookies hold the session.
+      // Ignore unless the user explicitly signed out via clearSharedAuthUser().
+      return;
     }
+
+    // Reload JWT metadata after sign-in or entitlement updates only.
+    // Never on TOKEN_REFRESHED — that event already is a refresh; calling refreshSession
+    // again causes a feedback loop and Supabase Auth 429 rate limits.
     if (
       session?.user &&
-      (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED")
+      (event === "SIGNED_IN" || event === "USER_UPDATED")
     ) {
-      void refreshSupabaseSessionUser({ force: true }).then((refreshed) => {
+      void refreshSupabaseSessionUser().then((refreshed) => {
         if (refreshed) {
           sharedAuth.user = refreshed;
           emitAuthChange();

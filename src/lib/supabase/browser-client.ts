@@ -20,6 +20,11 @@ export function createBrowserSupabaseClient(): SupabaseClient | null {
     return null;
   }
 
-  browserClient = createBrowserClient(env.url, env.anonKey);
+  browserClient = createBrowserClient(env.url, env.anonKey, {
+    auth: {
+      // Middleware refreshes session cookies on navigation; avoid duplicate client refreshes (429).
+      autoRefreshToken: false,
+    },
+  });
   return browserClient;
 }

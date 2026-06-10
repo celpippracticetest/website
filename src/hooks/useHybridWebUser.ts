@@ -10,6 +10,7 @@ import { useWebAuthInitialUser } from "@/components/auth/WebAuthProvider";
 import {
   ensureSharedAuthListener,
   getSharedAuthSnapshot,
+  isForceSignedOut,
   subscribeSharedAuth,
 } from "@/lib/auth/shared-web-auth";
 
@@ -100,13 +101,34 @@ function bridgeUserFromSupabase(u: SupabaseAuthUser) {
 
 export type HybridAuthSource = "supabase" | null;
 
+/** Prefer a verified browser user; fall back to the server cookie session. */
+function mergeWebAuthUser(
+  clientUser: SupabaseAuthUser | null | undefined,
+  serverUser: SupabaseAuthUser | null,
+): SupabaseAuthUser | null | undefined {
+  if (isForceSignedOut()) {
+    return null;
+  }
+  if (clientUser) {
+    return clientUser;
+  }
+  if (clientUser === null && serverUser) {
+    return serverUser;
+  }
+  if (clientUser === undefined) {
+    return serverUser ?? undefined;
+  }
+  return null;
+}
+
 export function useHybridWebUser() {
   const initialUser = useWebAuthInitialUser();
-  const supabaseUser = useSyncExternalStore(
+  const clientUser = useSyncExternalStore(
     subscribeSharedAuth,
     getSharedAuthSnapshot,
     () => initialUser,
   );
+  const supabaseUser = mergeWebAuthUser(clientUser, initialUser);
 
   useEffect(() => {
     ensureSharedAuthListener();
