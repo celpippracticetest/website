@@ -4,6 +4,7 @@ import { cache } from "react";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
+import { getSupabasePublicEnv } from "@/lib/supabase/public-env";
 import { getVerifiedSupabaseUserFromClient } from "@/lib/supabase/auth-from-claims";
 
 /**
@@ -14,11 +15,11 @@ import { getVerifiedSupabaseUserFromClient } from "@/lib/supabase/auth-from-clai
  * when both the root layout and nested layouts/pages read the session.
  */
 async function getSupabaseAuthUserFromServerCookiesUncached(): Promise<SupabaseAuthUser | null> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
-  if (!url || !anonKey) {
+  const env = getSupabasePublicEnv();
+  if (!env) {
     return null;
   }
+  const { url, anonKey } = env;
 
   const cookieStore = await cookies();
 

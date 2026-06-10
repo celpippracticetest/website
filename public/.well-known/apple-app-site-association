@@ -5,6 +5,21 @@
       {
         "appID": "75WJ8ZUJ65.com.celpippt.app",
         "paths": [
+          "/",
+          "/practice-overview",
+          "/exam-overview",
+          "/pricing",
+          "/listening",
+          "/listening/*",
+          "/reading",
+          "/reading/*",
+          "/writing",
+          "/writing/*",
+          "/speaking",
+          "/speaking/*",
+          "/exams/*",
+          "/app",
+          "/app/*",
           "/auth/oauth",
           "/auth/email-link"
         ]

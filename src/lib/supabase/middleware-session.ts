@@ -1,3 +1,4 @@
+import { getSupabasePublicEnv } from "@/lib/supabase/public-env";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import type { NextRequest } from "next/server";
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
@@ -19,11 +20,11 @@ export async function refreshSupabaseSessionFromRequest(
   user: SupabaseAuthUser | null;
   cookieWrites: SupabaseMiddlewareCookieWrite[];
 }> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
-  if (!url || !anonKey) {
+  const env = getSupabasePublicEnv();
+  if (!env) {
     return { user: null, cookieWrites: [] };
   }
+  const { url, anonKey } = env;
 
   const cookieWrites: SupabaseMiddlewareCookieWrite[] = [];
 
@@ -34,6 +35,7 @@ export async function refreshSupabaseSessionFromRequest(
       },
       setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
         for (const { name, value, options } of cookiesToSet) {
+          request.cookies.set(name, value);
           cookieWrites.push({ name, value, options });
         }
       },

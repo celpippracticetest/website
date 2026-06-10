@@ -223,7 +223,7 @@ export function SupabaseAuthForm({
                 );
               }
             }
-            navigateAfterWebAuth(dest);
+            await navigateAfterWebAuth(dest);
             return;
           }
           if (result.isNewSignup) {
@@ -243,7 +243,7 @@ export function SupabaseAuthForm({
           password,
         });
         if (signErr) { setError(signErr.message); return; }
-        navigateAfterWebAuth(dest);
+        await navigateAfterWebAuth(dest);
       } finally {
         setSubmitting(false);
       }

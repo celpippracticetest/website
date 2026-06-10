@@ -1,4 +1,5 @@
 import { expireSupersededAuthCookiesOnResponse } from "@/lib/auth/expire-superseded-auth-cookies";
+import { getSupabasePublicEnv } from "@/lib/supabase/public-env";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -21,12 +22,11 @@ export async function GET(request: NextRequest) {
   }
 
   if (code) {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
-
-    if (!url || !anonKey) {
+    const env = getSupabasePublicEnv();
+    if (!env) {
       return NextResponse.redirect(`${origin}/sign-in?error=supabase_not_configured`);
     }
+    const { url, anonKey } = env;
 
     // Session cookies must be written onto the redirect response (not only `cookies()`).
     const response = NextResponse.redirect(successUrl);

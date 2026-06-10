@@ -34,18 +34,10 @@ export function supabaseUserFromJwtClaims(claims: JwtPayload): SupabaseAuthUser 
   };
 }
 
-/**
- * Verified session user: prefer local JWT validation (`getClaims`), then fall back to
- * `getUser()` so expired sessions refresh and cookie writes still run on the server.
- */
+/** Verified session user; `getUser()` refreshes tokens and writes cookies when needed. */
 export async function getVerifiedSupabaseUserFromClient(
   supabase: SupabaseClient
 ): Promise<SupabaseAuthUser | null> {
-  const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
-  if (!claimsError && claimsData?.claims) {
-    return supabaseUserFromJwtClaims(claimsData.claims);
-  }
-
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) {
     return null;

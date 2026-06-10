@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createServerClient } from "@supabase/ssr";
+import { getSupabasePublicEnv } from "@/lib/supabase/public-env";
 import { getVerifiedSupabaseUserFromClient } from "@/lib/supabase/auth-from-claims";
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 import { parse } from "cookie";
@@ -37,12 +38,11 @@ export function readRequestCookiePairs(request: Request): {
  * Does not refresh tokens or write Set-Cookie (use middleware or a dedicated handler for that).
  */
 export function createSupabaseServerClientReadOnly(request: Request) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
-
-  if (!url || !anonKey) {
+  const env = getSupabasePublicEnv();
+  if (!env) {
     return null;
   }
+  const { url, anonKey } = env;
 
   return createServerClient(url, anonKey, {
     cookies: {
