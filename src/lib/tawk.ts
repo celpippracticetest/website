@@ -45,11 +45,8 @@ function chainTawkCallback(
 }
 
 function syncTawkWidgetForViewport(): void {
-  if (isMobileViewport()) {
-    window.Tawk_API?.hideWidget?.();
-  } else {
-    window.Tawk_API?.showWidget?.();
-  }
+  // Support FAB opens chat; keep Tawk's default bubble hidden on all viewports.
+  window.Tawk_API?.hideWidget?.();
 }
 
 function dismissTawkOnMobile(): void {

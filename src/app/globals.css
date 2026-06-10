@@ -43,15 +43,14 @@ svg {
   bottom: 80px !important;
 }
 
-/* Tawk: no floating bubble on mobile — chat opens from the header Support button */
-@media (max-width: 767px) {
-  #tawkchat-minified-wrapper,
-  #tawkchat-minified-container,
-  .tawk-min-container {
-    display: none !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-  }
+/* Tawk + Sentry: default floating widgets hidden — site SupportFloatButton opens chat/feedback */
+#tawkchat-minified-wrapper,
+#tawkchat-minified-container,
+.tawk-min-container,
+#sentry-feedback {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 /* Critical CSS for above-the-fold content */

@@ -7,6 +7,7 @@ import Script from "next/script";
 import AskBeavoModal from "@/components/AskBeavo/AskBeavoModal";
 import TawkLoader from "@/components/TawkLoader";
 import TawkUserSync from "@/components/TawkUserSync";
+import SupportFloatButton from "@/components/SupportFloatButton";
 import AuthAnalyticsTracker from "@/components/analytics/AuthAnalyticsTracker";
 import ConsentManager from "@/components/analytics/ConsentManager";
 import { LazyPromotionManager } from "@/components/LazyComponents";
@@ -276,6 +277,7 @@ export default async function RootLayout({
           )}
 
           <Script src="/scripts/third-party-loader.js" strategy="lazyOnload" />
+          <SupportFloatButton />
           </WebAuthProvider>
           </UiVariantProvider>
         </MuiAppRouterCacheProvider>
