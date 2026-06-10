@@ -1,7 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import type { NextRequest } from "next/server";
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
-import { getVerifiedSupabaseUserFromClient } from "@/lib/supabase/auth-from-claims";
 
 export type SupabaseMiddlewareCookieWrite = {
   name: string;
@@ -10,8 +9,9 @@ export type SupabaseMiddlewareCookieWrite = {
 };
 
 /**
- * Resolves the Supabase session from request cookies via verified JWT claims.
- * Uses `getClaims()` (local JWKS verify) instead of `getUser()` (Auth API per call).
+ * Resolves and refreshes the Supabase session from request cookies.
+ * Must call `getUser()` (not only `getClaims()`) so token refresh writes updated cookies
+ * onto the outgoing middleware response.
  */
 export async function refreshSupabaseSessionFromRequest(
   request: NextRequest
@@ -40,10 +40,10 @@ export async function refreshSupabaseSessionFromRequest(
     },
   });
 
-  const user = await getVerifiedSupabaseUserFromClient(supabase);
-  if (!user) {
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) {
     return { user: null, cookieWrites };
   }
 
-  return { user, cookieWrites };
+  return { user: data.user, cookieWrites };
 }
