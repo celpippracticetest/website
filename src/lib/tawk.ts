@@ -7,6 +7,15 @@ export const TAWK_EMBED_SRC =
 /** Matches {@link useIsMobile} — floating bubble is header-only below this width. */
 export const TAWK_MOBILE_BREAKPOINT = 768;
 
+/** Below SupportFloatButton (`z-[1150]`) so our FAB stays on top. */
+const TAWK_WIDGET_Z_INDEX = 1140;
+
+const TAWK_LAUNCHER_SELECTORS = [
+  "#tawkchat-minified-wrapper",
+  "#tawkchat-minified-container",
+  ".tawk-min-container",
+] as const;
+
 declare global {
   interface Window {
     Tawk_API?: {
@@ -14,14 +23,18 @@ declare global {
       minimize?: () => void;
       showWidget?: () => void;
       hideWidget?: () => void;
+      isChatMaximized?: () => boolean;
       setAttributes?: (
         attributes: Record<string, string>,
         callback?: (error?: Error) => void,
       ) => void;
+      onBeforeLoad?: () => void;
       onLoad?: () => void;
+      onChatMaximized?: () => void;
       onChatMinimized?: () => void;
       onChatHidden?: () => void;
       visitor?: { name?: string; email?: string };
+      customStyle?: { zIndex?: number | string };
     };
     Tawk_LoadStart?: Date;
   }
@@ -33,7 +46,12 @@ export function isMobileViewport(): boolean {
 }
 
 function chainTawkCallback(
-  key: "onLoad" | "onChatMinimized" | "onChatHidden",
+  key:
+    | "onBeforeLoad"
+    | "onLoad"
+    | "onChatMaximized"
+    | "onChatMinimized"
+    | "onChatHidden",
   fn: () => void,
 ): void {
   window.Tawk_API = window.Tawk_API || {};
@@ -44,28 +62,52 @@ function chainTawkCallback(
   };
 }
 
-function syncTawkWidgetForViewport(): void {
-  // Support FAB opens chat; keep Tawk's default bubble hidden on all viewports.
-  window.Tawk_API?.hideWidget?.();
+/** Hide Tawk's default launcher bubble (Support FAB opens chat instead). */
+function hideTawkLauncherBubble(): void {
+  if (typeof document === "undefined") return;
+
+  for (const selector of TAWK_LAUNCHER_SELECTORS) {
+    document.querySelectorAll(selector).forEach((node) => {
+      const el = node as HTMLElement;
+      el.style.setProperty("display", "none", "important");
+      el.style.setProperty("visibility", "hidden", "important");
+      el.style.setProperty("pointer-events", "none", "important");
+    });
+  }
 }
 
-function dismissTawkOnMobile(): void {
-  if (!isMobileViewport()) return;
+function scheduleHideTawkLauncherBubble(): void {
+  hideTawkLauncherBubble();
+  requestAnimationFrame(hideTawkLauncherBubble);
+  window.setTimeout(hideTawkLauncherBubble, 0);
+  window.setTimeout(hideTawkLauncherBubble, 100);
+  window.setTimeout(hideTawkLauncherBubble, 500);
+}
+
+function syncTawkWidgetForViewport(): void {
+  window.Tawk_API?.hideWidget?.();
+  hideTawkLauncherBubble();
+}
+
+function dismissTawkWidget(): void {
   window.Tawk_API?.minimize?.();
   window.Tawk_API?.hideWidget?.();
+  hideTawkLauncherBubble();
 }
 
-let mobileBehaviorInitialized = false;
+let widgetBehaviorInitialized = false;
 
-/** Hide floating bubble on mobile; reopen from header Support. Idempotent. */
+/** Keep Tawk's default bubble hidden; reopen from Support FAB / header links. Idempotent. */
 export function initTawkMobileBehavior(): void {
-  if (typeof window === "undefined" || mobileBehaviorInitialized) return;
-  mobileBehaviorInitialized = true;
+  if (typeof window === "undefined" || widgetBehaviorInitialized) return;
+  widgetBehaviorInitialized = true;
 
   ensureTawkScript();
+  chainTawkCallback("onBeforeLoad", syncTawkWidgetForViewport);
   chainTawkCallback("onLoad", syncTawkWidgetForViewport);
-  chainTawkCallback("onChatMinimized", dismissTawkOnMobile);
-  chainTawkCallback("onChatHidden", dismissTawkOnMobile);
+  chainTawkCallback("onChatMaximized", scheduleHideTawkLauncherBubble);
+  chainTawkCallback("onChatMinimized", dismissTawkWidget);
+  chainTawkCallback("onChatHidden", dismissTawkWidget);
 
   if (typeof window.Tawk_API?.maximize === "function") {
     syncTawkWidgetForViewport();
@@ -97,6 +139,11 @@ export function ensureTawkScript(): void {
   window.Tawk_API = window.Tawk_API || {};
   window.Tawk_LoadStart = window.Tawk_LoadStart || new Date();
 
+  window.Tawk_API.customStyle = {
+    ...window.Tawk_API.customStyle,
+    zIndex: TAWK_WIDGET_Z_INDEX,
+  };
+
   if (document.getElementById("tawk-chat-script")) return;
 
   const s0 = document.getElementsByTagName("script")[0];
@@ -112,20 +159,29 @@ export function ensureTawkScript(): void {
   s0.parentNode.insertBefore(s1, s0);
 }
 
-/** Open Tawk from header support links (after optional {@link ensureTawkScript}). */
+/** Open Tawk from Support FAB / header links (after optional {@link ensureTawkScript}). */
 export function openTawkChat(): void {
   if (typeof window === "undefined") return;
   ensureTawkScript();
   runWhenTawkReady(() => {
-    window.Tawk_API?.showWidget?.();
+    // maximize() opens the panel without leaving the default launcher visible.
     window.Tawk_API?.maximize?.();
+    scheduleHideTawkLauncherBubble();
+
+    // Fallback when the widget was fully hidden and maximize alone does not surface UI.
+    window.setTimeout(() => {
+      if (window.Tawk_API?.isChatMaximized?.()) return;
+      window.Tawk_API?.showWidget?.();
+      window.Tawk_API?.maximize?.();
+      scheduleHideTawkLauncherBubble();
+    }, 50);
   });
 }
 
-/** Close Tawk chat and hide the widget (mobile dismiss). */
+/** Close Tawk chat and hide the widget. */
 export function closeTawkChat(): void {
   if (typeof window === "undefined") return;
-  runWhenTawkReady(dismissTawkOnMobile);
+  runWhenTawkReady(dismissTawkWidget);
 }
 
 export type TawkVisitorAttribute = [string, string | number | boolean];

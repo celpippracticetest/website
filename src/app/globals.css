@@ -43,14 +43,21 @@ svg {
   bottom: 80px !important;
 }
 
-/* Tawk + Sentry: default floating widgets hidden — site SupportFloatButton opens chat/feedback */
+/* Tawk: default bubble hidden — SupportFloatButton opens chat */
 #tawkchat-minified-wrapper,
 #tawkchat-minified-container,
 .tawk-min-container,
-#sentry-feedback {
+[class*="tawk-min-container"] {
   display: none !important;
   visibility: hidden !important;
   pointer-events: none !important;
+}
+
+/* Keep maximized chat below the site support FAB (z-[1150]) */
+#tawkchat-container,
+#tawkchat-maximized-wrapper,
+#tawkchat-iframe-container {
+  z-index: 1140 !important;
 }
 
 /* Critical CSS for above-the-fold content */

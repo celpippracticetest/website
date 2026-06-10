@@ -3,6 +3,7 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
 import * as Sentry from "@sentry/nextjs";
+import { feedbackIntegration } from "@sentry/browser";
 
 Sentry.init({
   dsn: "https://e636eb1b4412ff93b38e1678151441d9@o4511543115776000.ingest.us.sentry.io/4511543197368320",
@@ -15,9 +16,14 @@ Sentry.init({
   sendDefaultPii: true,
 
   integrations: [
-    Sentry.feedbackIntegration({
+    feedbackIntegration({
       colorScheme: "system",
       autoInject: false,
+      showBranding: false,
+      useSentryUser: {
+        email: "email",
+        name: "username",
+      },
     }),
   ],
 });

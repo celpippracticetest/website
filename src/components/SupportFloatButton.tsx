@@ -5,6 +5,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import HeadsetMicOutlinedIcon from "@mui/icons-material/HeadsetMicOutlined";
 import RateReviewOutlinedIcon from "@mui/icons-material/RateReviewOutlined";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { openSentryFeedback } from "@/lib/sentry-feedback";
 import { openTawkChat } from "@/lib/tawk";
 import { cn } from "@/lib/utils";
@@ -12,10 +13,19 @@ import { cn } from "@/lib/utils";
 const menuItemClass =
   "flex w-full min-w-[168px] items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-text1 transition-colors hover:bg-slate-50";
 
+function feedbackDisplayName(user: {
+  firstName?: string | null;
+  lastName?: string | null;
+}): string | null {
+  const parts = [user.firstName, user.lastName].filter(Boolean);
+  return parts.length > 0 ? parts.join(" ") : null;
+}
+
 export default function SupportFloatButton() {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
+  const { isSignedIn, user } = useHybridWebUser();
 
   useEffect(() => {
     if (!open) return;
@@ -43,8 +53,17 @@ export default function SupportFloatButton() {
 
   const handleFeedback = useCallback(() => {
     setOpen(false);
-    void openSentryFeedback();
-  }, []);
+    void openSentryFeedback({
+      name: isSignedIn ? feedbackDisplayName(user ?? {}) : null,
+      email: isSignedIn ? (user?.primaryEmailAddress?.emailAddress ?? null) : null,
+      userId: isSignedIn ? (user?.id ?? null) : null,
+      pageUrl: window.location.href,
+    }).then((ok) => {
+      if (!ok && process.env.NODE_ENV === "development") {
+        console.warn("[SupportFloatButton] Sentry feedback could not open");
+      }
+    });
+  }, [isSignedIn, user]);
 
   return (
     <div
