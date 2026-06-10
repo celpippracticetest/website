@@ -5,12 +5,10 @@ import dynamic from "next/dynamic";
 import Practice from "./Practice";
 import FAQClassic from "./FAQClassic";
 import { useChunkErrorHandler } from "@/hooks/useChunkErrorHandler";
+import { HomeFeaturesSection } from "@/components/pages/landing/home/HomeFeaturesSection";
 
 const Hero = dynamic(() => import("./HeroClassic"), { ssr: true });
 const Comments = dynamic(() => import("./Comments"), { ssr: false });
-const UserResponseReview = dynamic(() => import("./UserResponseReview"), {
-  ssr: false,
-});
 
 function ErrorFallback() {
   return (
@@ -38,7 +36,7 @@ export default function HomePageClassicClient() {
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div className="bg-[#F4F7FF]">
         <Hero />
-        <UserResponseReview />
+        <HomeFeaturesSection />
         <Comments />
         <Practice />
         {/* <Blog /> */}

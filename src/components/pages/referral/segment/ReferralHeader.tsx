@@ -3,6 +3,7 @@ import Link from "next/link";
 import React from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
+import { FeatureShowcaseCards } from "@/components/pages/landing/FeatureShowcaseCards";
 
 const SvgDiamond = dynamic(() => import("@/components/icons/Diamond"), {
   ssr: false,
@@ -14,18 +15,6 @@ const SvgOffer = dynamic(() => import("@/components/icons/Offer"), {
 const SvgPerson = dynamic(() => import("@/components/icons/Person"), {
   ssr: false,
 });
-
-const AIReviewTest = dynamic(() => import("../segment/AIReviewTest"), {
-  ssr: false,
-});
-const PracticeAndSubmit = dynamic(
-  () => import("../segment/PracticeAndSubmit"),
-  {
-    ssr: false,
-  }
-);
-const Improve = dynamic(() => import("../segment/Improve"), { ssr: false });
-const MockTest = dynamic(() => import("../segment/MockTest"), { ssr: false });
 
 const ReferralHeader = () => {
   const searchParams = useSearchParams();
@@ -105,198 +94,7 @@ const ReferralHeader = () => {
         </span>
       </div>
 
-      <div className="relative flex flex-col overflow-hidden  screen744:!flex-row flex-wrap screen1280:flex-nowrap justify-between screen1280:!gap-[24px] mt-[40px] screen744:!mt-[45px] screen1280:!mt-[62px] bg-[#E1E9EC] border-outline border-solid rounded-[24px] border-[1px] h-[466px] screen744:!h-[300px]">
-        <div className="flex-1 px-[24px] screen744:!px-[40px] pt-[24px] screen744:!pt-[72px] h-[100px] screen744:!h-auto">
-          <div className=" font-semibold text-text1 text-[20px] screen744:!text-[24px]">
-            Mock Exam
-          </div>
-          <div className="mt-[16px] screen744:!mt-[24px] text-text2 font-normal text-[14px] screen744:!text-[16px]">
-            Timed, full-length test that simulates the real CELPIP exam with the
-            most accurate scoring.
-          </div>
-          <div className="flex screen744:!hidden h-[1px] w-full bg-outline rounded-[24px] mt-[16px]"></div>
-        </div>
-        <div className="flex justify-center px-[16px] rotate-[17deg] origin-center absolute left-0 right-0 screen744:!static top-[200px] ">
-          <div className=" max-w-[1160px]  w-[343px] h-[347px]  min-h-[557px] pt-[16px] px-[16px] bg-white rounded-[16px]">
-            <div className="flex justify-between">
-              <Image
-                alt="beaver drink"
-                width={48}
-                height={72}
-                src="/images/BeaverDrink.png"
-              />
-              <div className="flex gap-[8px] screen1280:!gap-[16px] items-center ">
-                <div
-                  className={`bg-purpule_light text-purple  h-[44px] px-[8px] py-[8px] rounded-[24px] flex items-center justify-center `}
-                >
-                  <span
-                    className={`text-[14px] screen1280:!text-[18px] font-normal `}
-                  >
-                    Mock Exam
-                  </span>
-                </div>
-                <div
-                  className={`bg-primary6
-                px-[8px] screen1280:!px-[16px]  py-[8px] rounded-[24px] h-[44px] text-primary2 flex items-center justify-center`}
-                >
-                  <span
-                    className={`text-[14px] screen1280:!text-[18px] font-normal `}
-                  >
-                    Score
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-[8px]">
-              <MockTest />
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="relative overflow-hidden flex flex-col screen744:!flex-row flex-wrap screen1280:flex-nowrap justify-between screen1280:!gap-[24px] mt-[24px] bg-[#E1E9EC] border-outline border-solid rounded-[24px] border-[1px]  h-[466px] screen744:!h-[300px]">
-        <div className="flex justify-center px-[16px] -rotate-[17deg] origin-center  absolute left-0 right-0 screen744:!static top-[180px]  ">
-          <div className=" max-w-[1160px]  w-[343px] h-[547px]  min-h-[557px] pt-[16px] px-[16px] bg-white rounded-[16px]">
-            <div className="flex justify-between">
-              <Image
-                alt="beaver drink"
-                width={48}
-                height={72}
-                src="/images/BeaverDrink.png"
-              />{" "}
-              <div className="flex gap-[8px] screen1280:!gap-[16px] items-center ">
-                <div
-                  className={`bg-[#F0FFFD] text-[#0DAA94]  h-[44px] px-[8px] py-[8px] rounded-[24px] flex items-center justify-center `}
-                >
-                  <span className={`text-[14px] font-normal `}>
-                    Submit Writing
-                  </span>
-                </div>
-                <div
-                  className={`bg-primary6
-                px-[8px] screen1280:!px-[16px]  py-[8px] rounded-[24px] h-[44px] text-primary2 flex items-center justify-center`}
-                >
-                  <span className={`text-[14px]  font-normal `}>
-                    AI Feedback
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-[8px]">
-              <PracticeAndSubmit />,{" "}
-            </div>
-          </div>
-        </div>
-        <div className="flex-1 relative px-[24px] pt-[24px] screen744:!pt-[81px] screen1280:!pt-[90px]">
-          <div className="font-semibold text-text1 text-[20px] screen744:!text-[24px]">
-            Practice & Submit
-          </div>
-          <div className="mt-[24px] text-text2 font-normal text-[14px] screen744:!text-[16px]">
-            Answer real questions and get instant results—perfect for writing
-            improvement.
-          </div>
-          <div className="flex screen744:!hidden h-[1px]  bg-outline rounded-[24px] mt-[16px]"></div>
-        </div>
-      </div>
-      <div className="relative flex overflow-hidden flex-col screen744:!flex-row flex-wrap screen1280:flex-nowrap justify-between screen1280:!gap-[24px] mt-[24px] bg-[#E1E9EC] border-outline border-solid rounded-[24px] border-[1px]  h-[466px] screen744:!h-[300px]">
-        <div className="flex-1  px-[24px] pt-[24px] screen744:!pt-[72px]">
-          <div className="font-semibold text-text1 text-[20px] screen744:!text-[24px]">
-            AI Review
-          </div>
-          <div className="mt-[16px] screen744:!mt-[24px] text-text2 font-normal text-[14px] screen744:!text-[16px]">
-            Receive real-time feedback on your speaking, including
-            pronunciation, fluency, and vocabulary.
-          </div>
-          <div className="flex screen744:!hidden h-[1px]  bg-outline rounded-[24px] mt-[16px]"></div>
-        </div>
-        <div className="flex justify-center px-[16px] rotate-[17deg] origin-center absolute left-0 right-0 screen744:!static top-[200px]  ">
-          <div className=" max-w-[1160px]  w-[343px] h-[463px]  min-h-[557px] pt-[16px] px-[16px] bg-white rounded-[16px]">
-            <div className="flex justify-between">
-              <Image
-                alt="beaver drink"
-                width={48}
-                height={72}
-                src="/images/BeaverDrink.png"
-              />{" "}
-              <div className="flex gap-[8px] screen1280:!gap-[16px] items-center ">
-                <div
-                  className={`bg-[#FFF7EE]  text-[#F4845F]  h-[44px] px-[8px] py-[8px] rounded-[24px] flex items-center justify-center `}
-                >
-                  <span
-                    className={`text-[14px] screen1280:!text-[18px] font-normal `}
-                  >
-                    Speaking{" "}
-                  </span>
-                </div>
-                <div
-                  className={`bg-primary6
-                px-[8px] screen1280:!px-[16px]  py-[8px] rounded-[24px] h-[44px] text-primary2 flex items-center justify-center`}
-                >
-                  <span
-                    className={`text-[14px] screen1280:!text-[18px] font-normal `}
-                  >
-                    AI Feedback
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-[8px]">
-              <AIReviewTest />{" "}
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="relative flex overflow-hidden flex-col screen744:!flex-row flex-wrap screen1280:flex-nowrap justify-between screen1280:!gap-[24px] mt-[24px] bg-[#E1E9EC] border-outline border-solid rounded-[24px] border-[1px]  h-[466px] screen744:!h-[300px]">
-        <div className="flex justify-center px-[16px] -rotate-[17deg] origin-center absolute left-0 right-0 screen744:!static top-[184px] ">
-          <div className=" max-w-[1160px]  w-[343px] h-[463px]  min-h-[557px] pt-[16px] px-[16px] bg-white rounded-[16px]">
-            <div className="flex justify-between">
-              <Image
-                alt="beaver drink"
-                width={48}
-                height={72}
-                src="/images/BeaverDrink.png"
-              />{" "}
-              <div className="flex gap-[8px] screen1280:!gap-[16px] items-center ">
-                <div
-                  className={`bg-[#FFF7EE]  text-[#F4845F]  h-[44px] px-[8px] py-[8px] rounded-[24px] flex items-center justify-center `}
-                >
-                  <span
-                    className={`text-[14px] screen1280:!text-[18px] font-normal `}
-                  >
-                    Speaking{" "}
-                  </span>
-                </div>
-                <div
-                  className={`bg-primary6
-                px-[8px] screen1280:!px-[16px]  py-[8px] rounded-[24px] h-[44px] text-primary2 flex items-center justify-center`}
-                >
-                  <span
-                    className={`text-[14px] screen1280:!text-[18px] font-normal `}
-                  >
-                    AI Feedback
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-[8px]">
-              <Improve />,
-            </div>
-          </div>
-        </div>
-        <div className="flex-1 relative  px-[24px] pt-[63px] screen744:!pt-[108px] screen1280:!pt-[110px]">
-          <div className="font-semibold text-text1 text-[20px] screen744:!text-[24px]">
-            Improve
-          </div>
-          <div className="mt-[16px] screen1280:!mt-[24px] text-text2 font-normal text-[14px] screen744:!text-[16px]">
-            See what to fix and how to fix it, with detailed writing analysis
-            and grammar insights.
-          </div>
-          <div className="screen1280:!static absolute z-[10] left-0 right-0  top-[178px] flex screen744:!hidden h-[1px] mx-[24px]  bg-outline rounded-[24px] mt-[16px]"></div>
-        </div>
-      </div>
+      <FeatureShowcaseCards className="mt-10 screen744:mt-[45px] screen1280:mt-[62px]" />
       <div className="text-center mt-[40px] screen1280:!mt-[80px]">
         <span className=" font-semibold text-[28px]  screen1280:!text-[32px] text-text2">
           How It Works
