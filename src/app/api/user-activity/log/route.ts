@@ -8,6 +8,11 @@ import {
 } from "@/lib/users/userDocumentIdentity";
 
 const REMINDER_STATE_COLLECTION = "useractivityreminders";
+const DEBUG = process.env.NODE_ENV === "development";
+
+function devLog(...args: unknown[]) {
+  if (DEBUG) console.log(...args);
+}
 
 function extractEmailFromClerkUser(user: any): string | null {
   const byId = user?.emailAddresses?.find?.(
@@ -29,18 +34,18 @@ function detectDeviceType(userAgent: string): "mobile" | "desktop" {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("User activity log API called");
+    devLog("User activity log API called");
     const authContext = await getAuthenticatedRequestContext(request);
     const user = authContext?.user;
     if (!user) {
-      console.log("No user found in request");
+      devLog("No user found in request");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const email = extractEmailFromClerkUser(user);
 
     const body = await request.json();
-    console.log("Request body:", body);
+    devLog("Request body:", body);
     const {
       eventType,
       context,
@@ -60,7 +65,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!eventType || !context) {
-      console.log("Missing required fields:", { eventType, context });
+      devLog("Missing required fields:", { eventType, context });
       return NextResponse.json(
         { error: "eventType and context are required" },
         { status: 400 }
@@ -103,7 +108,7 @@ export async function POST(request: NextRequest) {
       timestampUtc: new Date(),
     };
 
-    console.log("Inserting activity log:", activityLog);
+    devLog("Inserting activity log:", activityLog);
     await userActivityCollection.insertOne(activityLog);
     const usersCollection = db.collection("users");
 
@@ -206,7 +211,7 @@ export async function POST(request: NextRequest) {
       },
       { upsert: true }
     );
-    console.log("Activity logged successfully");
+    devLog("Activity logged successfully");
 
     return NextResponse.json({
       success: true,

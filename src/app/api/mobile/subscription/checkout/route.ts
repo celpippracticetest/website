@@ -10,6 +10,7 @@ import {
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
 import { stripeCheckoutPaymentMethodParams } from "@/lib/stripeCheckoutPaymentMethods";
+import { buildChargeAttributionMetadata } from "@/lib/stripeChargeAttribution";
 import {
   ACQUISITION_ATTRIBUTION_COOKIE,
   flatAcquisitionFromCookie,
@@ -431,6 +432,13 @@ export async function POST(request: NextRequest) {
       ...(ga4SessionId ? { ga4_session_id: ga4SessionId } : {}),
     };
 
+    const chargeAttributionMetadata = buildChargeAttributionMetadata({
+      user_id: userId,
+      ...attributionMetadata,
+      ...attributionSnapshot,
+      ...ga4CheckoutMeta,
+    });
+
     const session = await stripe.checkout.sessions.create({
       ...stripeCheckoutPaymentMethodParams(),
       customer_email: email,
@@ -449,6 +457,9 @@ export async function POST(request: NextRequest) {
       ...(promotionCode
         ? { discounts: [{ promotion_code: promotionCode }] }
         : {}),
+      payment_intent_data: {
+        metadata: chargeAttributionMetadata,
+      },
       metadata: {
         user_id: userId,
         plan_name: toMetadataValue(product.name),
@@ -499,6 +510,9 @@ export async function POST(request: NextRequest) {
           user_id: userId,
           checkout_id: session.id,
           origin: "mobile_app",
+          ...ga4CheckoutMeta,
+          ...attributionMetadata,
+          ...attributionSnapshot,
         },
       });
     }

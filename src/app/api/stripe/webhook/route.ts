@@ -32,6 +32,11 @@ import {
 import {
   sendGa4Events,
 } from "@/lib/ga4MeasurementProtocol";
+import {
+  buildChargeAttributionMetadata,
+  resolvePaymentIntentId,
+  stampPaymentIntentAttribution,
+} from "@/lib/stripeChargeAttribution";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -723,6 +728,27 @@ export async function POST(req: Request) {
         },
       });
 
+      const checkoutPaymentIntentId = resolvePaymentIntentId(session.payment_intent);
+      if (checkoutPaymentIntentId) {
+        try {
+          await stampPaymentIntentAttribution(
+            checkoutPaymentIntentId,
+            buildChargeAttributionMetadata(metadata),
+            { checkout_session_id: session.id }
+          );
+        } catch (stampErr) {
+          logger.warn("Failed to stamp charge attribution on checkout payment", {
+            component: "stripe_webhook",
+            action: "stamp_checkout_charge_attribution",
+            metadata: {
+              sessionId: session.id,
+              paymentIntentId: checkoutPaymentIntentId,
+              error: stampErr,
+            },
+          });
+        }
+      }
+
       if (
         metadata?.user_id &&
         typeof session.customer === "string" &&
@@ -1335,6 +1361,37 @@ export async function POST(req: Request) {
           "Failed to process referral rewards for resolved sessionId:",
           err
         );
+      }
+
+      const invoicePaymentIntentId = resolvePaymentIntentId(paymentIntentId);
+      if (invoicePaymentIntentId) {
+        const attributionSources =
+          subscriptionMetadata && Object.keys(subscriptionMetadata).length > 0
+            ? subscriptionMetadata
+            : (await stripe.checkout.sessions
+                .retrieve(sessionId as string)
+                .then((s) => s.metadata as Record<string, string | undefined>)
+                .catch(() => null)) ?? {};
+        try {
+          await stampPaymentIntentAttribution(
+            invoicePaymentIntentId,
+            buildChargeAttributionMetadata(attributionSources),
+            {
+              checkout_session_id: sessionId ?? "",
+              invoice_id: invoiceId ?? "",
+            }
+          );
+        } catch (stampErr) {
+          logger.warn("Failed to stamp charge attribution on invoice payment", {
+            component: "stripe_webhook",
+            action: "stamp_invoice_charge_attribution",
+            metadata: {
+              invoiceId,
+              paymentIntentId: invoicePaymentIntentId,
+              error: stampErr,
+            },
+          });
+        }
       }
 
       return NextResponse.json({ received: true });

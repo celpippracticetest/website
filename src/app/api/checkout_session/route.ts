@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import type Stripe from "stripe";
 
 import { stripe } from "@/lib/stripe";
 import { appUserAdmin, currentUser } from "@/lib/auth/server-auth";
@@ -30,15 +29,10 @@ import {
   matchUsersCollectionByWebUserIds,
   supabaseAuthUserIdFieldsOnUserDoc,
 } from "@/lib/users/userDocumentIdentity";
-
-function recordToStripeMetadata(record: Record<string, unknown>): Stripe.MetadataParam {
-  const out: Stripe.MetadataParam = {};
-  for (const [key, value] of Object.entries(record)) {
-    if (value === undefined) continue;
-    out[key] = value === null ? "" : String(value);
-  }
-  return out;
-}
+import {
+  buildChargeAttributionMetadata,
+  recordToStripeMetadata,
+} from "@/lib/stripeChargeAttribution";
 
 /** GET — same handler as POST (no self-fetch: avoids dev deadlock / invalid response). */
 export async function GET(req: NextRequest) {
@@ -561,20 +555,29 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       gclid:
         readRequestAttribution("gclid") ||
         acqCk.gclid ||
-        lastTouch.gclid ||
+        (typeof lastTouch.gclid === "string" ? lastTouch.gclid : null) ||
         userMetadata?.gclid ||
+        (typeof publicMetaForCheckout?.gclid === "string"
+          ? publicMetaForCheckout.gclid
+          : null) ||
         null,
       gbraid:
         readRequestAttribution("gbraid") ||
         acqCk.gbraid ||
-        lastTouch.gbraid ||
+        (typeof lastTouch.gbraid === "string" ? lastTouch.gbraid : null) ||
         userMetadata?.gbraid ||
+        (typeof publicMetaForCheckout?.gbraid === "string"
+          ? publicMetaForCheckout.gbraid
+          : null) ||
         null,
       wbraid:
         readRequestAttribution("wbraid") ||
         acqCk.wbraid ||
-        lastTouch.wbraid ||
+        (typeof lastTouch.wbraid === "string" ? lastTouch.wbraid : null) ||
         userMetadata?.wbraid ||
+        (typeof publicMetaForCheckout?.wbraid === "string"
+          ? publicMetaForCheckout.wbraid
+          : null) ||
         null,
       fbclid:
         readRequestAttribution("fbclid") ||
@@ -734,6 +737,13 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       ...(ga4SessionId ? { ga4_session_id: ga4SessionId } : {}),
     };
 
+    const chargeAttributionMetadata = buildChargeAttributionMetadata({
+      user_id: user.id,
+      ...attributionMetadata,
+      ...attributionSnapshot,
+      ...ga4CheckoutMeta,
+    });
+
     logger.info("Creating checkout session", {
       component: "checkout_session_api",
       action: "create_checkout_session",
@@ -778,6 +788,9 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
         ? { allow_promotion_codes: !hasChallengePayload }
         : {}),
       ...(checkoutDiscounts.length > 0 ? { discounts: checkoutDiscounts } : {}),
+      payment_intent_data: {
+        metadata: chargeAttributionMetadata,
+      },
       metadata: recordToStripeMetadata({
         user_id: user.id,
         plan_name: productDetails.name,
