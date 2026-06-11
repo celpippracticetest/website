@@ -9,6 +9,7 @@ import TawkLoader from "@/components/TawkLoader";
 import TawkUserSync from "@/components/TawkUserSync";
 import SupportFloatButton from "@/components/SupportFloatButton";
 import AuthAnalyticsTracker from "@/components/analytics/AuthAnalyticsTracker";
+import PricingModelAbAnalyticsTracker from "@/components/analytics/PricingModelAbAnalyticsTracker";
 import ConsentManager from "@/components/analytics/ConsentManager";
 import { LazyPromotionManager } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
@@ -249,6 +250,7 @@ export default async function RootLayout({
           <TawkLoader />
           <TawkUserSync />
           <AuthAnalyticsTracker />
+          <PricingModelAbAnalyticsTracker />
           {enableGaTag && <ConsentManager />}
 
           <NextTopLoaderComponent />

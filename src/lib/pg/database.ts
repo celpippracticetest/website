@@ -19,6 +19,7 @@ import { PgUserNurtureEmailStatsCollection } from "./userNurtureEmailStatsCollec
 import { PgUserNurtureStatesCollection } from "./userNurtureStatesCollection";
 import { PgUserNurtureEmailDispatchLocksCollection } from "./userNurtureEmailDispatchLocksCollection";
 import { PgHomeAbEventsCollection } from "./homeAbEventsCollection";
+import { PgPricingModelAbEventsCollection } from "./pricingModelAbEventsCollection";
 import { PgAccountDeletionFlowEventsCollection } from "./accountDeletionFlowEventsCollection";
 import { PgAbandonedCartEmailConfigsCollection } from "./abandonedCartEmailConfigsCollection";
 import { PgAccountDeletionSurveysCollection } from "./accountDeletionSurveysCollection";
@@ -101,6 +102,9 @@ export class PgDatabase {
     }
     if (name === "home_ab_events") {
       return new PgHomeAbEventsCollection<T>(this.sql) as unknown as PgCollection<T>;
+    }
+    if (name === "pricing_model_ab_events") {
+      return new PgPricingModelAbEventsCollection<T>(this.sql) as unknown as PgCollection<T>;
     }
     if (name === "account_deletion_flow_events") {
       return new PgAccountDeletionFlowEventsCollection<T>(

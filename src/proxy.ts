@@ -10,6 +10,11 @@ import { appUserAdmin } from "@/lib/auth/app-user-admin";
 import { logger, trackUserAction, captureException } from "@/lib/sentry-logger";
 import { hasPaidPracticeAccess, normalizePlan } from "@/lib/subscriptionAccess";
 import { PRICING_AB_COOKIE, type PricingAbLayout } from "@/lib/pricingAbTest";
+import {
+  PRICING_MODEL_AB_COOKIE,
+  isPricingModelAbVariant,
+  pickPricingModelAbVariant,
+} from "@/lib/pricingModelAbTest";
 import { HOME_AB_COOKIE, type HomeAbVariant } from "@/lib/homeAbTest";
 import {
   UI_AB_COOKIE,
@@ -666,6 +671,14 @@ export default async function proxy(req: NextRequest) {
     response.cookies.set("pendingReferralCode", "", {
       path: "/",
       maxAge: 0,
+    });
+  }
+  const existingPricingModel = req.cookies.get(PRICING_MODEL_AB_COOKIE)?.value;
+  if (!isPricingModelAbVariant(existingPricingModel)) {
+    response.cookies.set(PRICING_MODEL_AB_COOKIE, pickPricingModelAbVariant(), {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 180,
+      sameSite: "lax",
     });
   }
   return response;

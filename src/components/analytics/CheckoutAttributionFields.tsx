@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { HOME_AB_COOKIE } from "@/lib/homeAbTest";
+import { PRICING_MODEL_AB_COOKIE } from "@/lib/pricingModelAbTest";
 import { UI_AB_COOKIE } from "@/lib/uiAbTest";
 import {
   loadPendingGa4IdsFromStorage,
@@ -50,6 +51,7 @@ export function useCheckoutAttributionPayload(): Record<string, string> {
   const searchParams = useSearchParams();
   const [fields, setFields] = useState<CheckoutAttributionState>({});
   const [homeAbVariant, setHomeAbVariant] = useState<string | null>(null);
+  const [pricingModelAbVariant, setPricingModelAbVariant] = useState<string | null>(null);
   const [uiAbVariant, setUiAbVariant] = useState<string | null>(null);
 
   useEffect(() => {
@@ -78,6 +80,12 @@ export function useCheckoutAttributionPayload(): Record<string, string> {
       new RegExp(`(?:^|;\\s*)${escaped}=(classic|passport|legacy)`)
     );
     setHomeAbVariant(m?.[1] ?? null);
+
+    const modelEscaped = PRICING_MODEL_AB_COOKIE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const modelMatch = document.cookie.match(
+      new RegExp(`(?:^|;\\s*)${modelEscaped}=(period|weekly_equiv)`),
+    );
+    setPricingModelAbVariant(modelMatch?.[1] ?? null);
 
     const uiEscaped = UI_AB_COOKIE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const uiMatch = document.cookie.match(
@@ -112,6 +120,9 @@ export function useCheckoutAttributionPayload(): Record<string, string> {
   }
   if (homeAbVariant) {
     payload.home_ab_variant = homeAbVariant;
+  }
+  if (pricingModelAbVariant) {
+    payload.pricing_ab_model = pricingModelAbVariant;
   }
   if (uiAbVariant) {
     payload.site_ui_variant = uiAbVariant;

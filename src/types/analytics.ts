@@ -318,6 +318,8 @@ export interface UserContext {
   user_total_spend?: number;
   isAuthenticated?: boolean;
   is_authenticated?: boolean;
+  /** Site UI A/B arm (`classic` | `modern`), auto-attached to GA4 events. */
+  style?: "classic" | "modern";
 }
 
 export interface LeadCaptureSubmittedEvent extends GTMEvent {

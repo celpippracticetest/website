@@ -9,6 +9,9 @@ import {
   buildOriginalPriceFromWeeklyMap,
   formatPlanCadPrice,
   formatPlanCadPriceWhole,
+  getPlanWeeklyEquivalentPrice,
+  getWeeklyCompareAtPrice,
+  getWeeklyEquivalentDiscountPercent,
   parsePrice,
 } from "@/lib/pricing";
 import type { PricingPlanSection } from "@/lib/pricingPlanSections";
@@ -16,6 +19,8 @@ import { v2ButtonVariants } from "@/components/v2/Button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { usePricingModelAbVariant } from "@/hooks/usePricingModelAbVariant";
+import { PricingModelAbExperimentTracker } from "@/components/analytics/PricingModelAbExperimentTracker";
 import {
   getSignedCheckoutSessionBase,
   redirectToSignUpForCheckout,
@@ -87,12 +92,48 @@ function resolvePlanOldPrice(plan: SerializedPlan, computedOriginalPrice: string
   return null;
 }
 
+function PlanListPriceAmount({
+  amount,
+  showWeekSuffix = false,
+}: {
+  amount: number;
+  showWeekSuffix?: boolean;
+}) {
+  const formatted = formatPlanCadPrice(String(amount));
+  const decimalSeparator = formatted.includes(".") ? "." : formatted.includes(",") ? "," : null;
+
+  if (!decimalSeparator) {
+    return (
+      <span className="text-lg font-bold tabular-nums text-slate-900">
+        {formatted}
+        {showWeekSuffix ? (
+          <span className="text-sm font-semibold text-slate-600">/week</span>
+        ) : null}
+      </span>
+    );
+  }
+
+  const [whole, cents] = formatted.split(decimalSeparator);
+
+  return (
+    <span className="text-lg font-bold tabular-nums text-slate-900">
+      {whole}
+      <span className="text-[0.72em] font-bold leading-none">.</span>
+      <sup className="relative -top-1 text-[0.55em] font-bold leading-none">{cents}</sup>
+      {showWeekSuffix ? (
+        <span className="text-sm font-semibold text-slate-600">/week</span>
+      ) : null}
+    </span>
+  );
+}
+
 type PricingModalPlanListProps = {
   plans: SerializedPlan[];
   sections: PricingPlanSection[];
   pricingCheckoutFields?: Record<string, string>;
   recommendedPlanId?: string | null;
   recommendedSectionKey?: DurationGroupKey | null;
+  trackExperimentView?: boolean;
 };
 
 export function PricingModalPlanList({
@@ -101,12 +142,16 @@ export function PricingModalPlanList({
   pricingCheckoutFields,
   recommendedPlanId = null,
   recommendedSectionKey = null,
+  trackExperimentView = true,
 }: PricingModalPlanListProps) {
   const { user, isSignedIn, isLoaded } = useHybridWebUser();
+  const { variant: pricingModelVariant, participatesInExperiment } = usePricingModelAbVariant();
+  const showWeeklyEquivalent = pricingModelVariant === "weekly_equiv";
   const { selectItem, beginCheckout } = useEcommerceTracking();
   const attribution = useCheckoutAttributionPayload();
   const monthlySavingsById = useMemo(() => buildMonthlySavingsMap(plans), [plans]);
   const originalPriceById = useMemo(() => buildOriginalPriceFromWeeklyMap(plans), [plans]);
+  const weeklyCompareAt = useMemo(() => getWeeklyCompareAtPrice(plans), [plans]);
   const [selectedSectionKey, setSelectedSectionKey] = useState<DurationGroupKey | null>(null);
   const [showPromoInput, setShowPromoInput] = useState(false);
   const [promoCodeInput, setPromoCodeInput] = useState("");
@@ -242,6 +287,9 @@ export function PricingModalPlanList({
         if (value) add(name, value);
       }
     }
+    if (participatesInExperiment) {
+      add("pricing_ab_model", pricingModelVariant);
+    }
 
     let promoToSubmit = appliedPromoCode;
     const typedPromo = promoCodeInput.trim();
@@ -269,6 +317,11 @@ export function PricingModalPlanList({
 
   return (
     <div className="flex w-full flex-col">
+    <PricingModelAbExperimentTracker
+      participatesInExperiment={participatesInExperiment}
+      variant={pricingModelVariant}
+      enabled={trackExperimentView}
+    />
     <div
       className="flex w-full flex-col gap-2.5 lg:gap-3"
       role="radiogroup"
@@ -292,13 +345,25 @@ export function PricingModalPlanList({
           monthlySavingsById,
         );
         const computedOriginalPrice = originalPriceById.get(item.stableId);
-        const discountLabel = resolvePlanDiscountLabel(
-          p,
-          savingsText,
-          computedOriginalPrice,
-        );
         const displayOldPrice = resolvePlanOldPrice(p, computedOriginalPrice);
         const displayTitle = getPlanDisplayTitle(section);
+        const displayPrice = showWeeklyEquivalent
+          ? getPlanWeeklyEquivalentPrice(p)
+          : parsePrice(p.price);
+        const discountLabel = showWeeklyEquivalent
+          ? formatOffLabel(
+              getWeeklyEquivalentDiscountPercent(displayPrice, weeklyCompareAt) ?? 0,
+            )
+          : resolvePlanDiscountLabel(p, savingsText, computedOriginalPrice);
+        const strikethroughOldPrice = showWeeklyEquivalent
+          ? weeklyCompareAt > displayPrice
+            ? weeklyCompareAt
+            : null
+          : displayOldPrice
+            ? parsePrice(displayOldPrice)
+            : null;
+        const showStrikethrough =
+          strikethroughOldPrice != null && strikethroughOldPrice > displayPrice;
 
         return (
           <button
@@ -339,16 +404,22 @@ export function PricingModalPlanList({
                 {discountLabel}
               </span>
             ) : null}
-            <div className="ml-auto flex shrink-0 items-baseline justify-end gap-1.5 text-right">
-              <span className="text-sm text-slate-500">CA$</span>
-              <span className="text-lg font-bold tabular-nums text-slate-900">
-                {formatPlanCadPrice(p.price)}
-              </span>
-              {displayOldPrice ? (
-                <span className="text-sm tabular-nums text-slate-400 line-through">
-                  {formatPlanCadPriceWhole(displayOldPrice)}
-                </span>
-              ) : null}
+            <div className="ml-auto flex shrink-0 flex-col items-end text-right">
+              <div className="flex items-baseline justify-end gap-1.5">
+                <span className="text-sm text-slate-500">CA$</span>
+                {showWeeklyEquivalent ? (
+                  <PlanListPriceAmount amount={displayPrice} showWeekSuffix />
+                ) : (
+                  <span className="text-lg font-bold tabular-nums text-slate-900">
+                    {formatPlanCadPrice(String(displayPrice))}
+                  </span>
+                )}
+                {showStrikethrough ? (
+                  <span className="text-sm tabular-nums text-slate-400 line-through">
+                    {formatPlanCadPriceWhole(String(strikethroughOldPrice))}
+                  </span>
+                ) : null}
+              </div>
             </div>
           </button>
         );

@@ -9,6 +9,7 @@ import { appUserAdmin } from "@/lib/auth/server-auth";
 import { ActivityLogger } from "@/lib/userActivity";
 import { isPricingAbLayout } from "@/lib/pricingAbTest";
 import { isHomeAbExperimentVariant } from "@/lib/homeAbTest";
+import { isPricingModelAbVariant } from "@/lib/pricingModelAbTest";
 import { getAccessTierKey } from "@/lib/pricing";
 import { normalizePlan } from "@/lib/subscriptionAccess";
 import { toSerializedPlan } from "@/lib/planSerialization";
@@ -976,6 +977,30 @@ export async function POST(req: Request) {
           });
         } catch (abErr) {
           console.error("home_ab purchase log failed:", abErr);
+        }
+      }
+
+      const pricingModelRaw = metadata?.pricing_ab_model;
+      if (
+        typeof pricingModelRaw === "string" &&
+        isPricingModelAbVariant(pricingModelRaw) &&
+        metadata?.user_id
+      ) {
+        try {
+          const db = await documentsClient.db();
+          await db.collection("pricing_model_ab_events").insertOne({
+            eventType: "purchase",
+            model: pricingModelRaw,
+            userId: metadata.user_id,
+            sessionId: session.id,
+            amountTotal: session.amount_total ?? null,
+            planName: typeof metadata.plan_name === "string" ? metadata.plan_name : null,
+            purchasePage:
+              typeof metadata.purchase_page === "string" ? metadata.purchase_page : null,
+            createdAt: new Date(),
+          });
+        } catch (abErr) {
+          console.error("pricing_model_ab purchase log failed:", abErr);
         }
       }
 

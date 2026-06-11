@@ -1,5 +1,7 @@
 // Browser analytics — GA4 via gtag (no GTM).
 import { track as vercelTrack } from "@vercel/analytics";
+import { getAnalyticsStyleContext } from "@/lib/analyticsStyleContext";
+import { getAnalyticsPricingModelContext } from "@/lib/analyticsPricingModelContext";
 import { sendGa4Event, updateGa4Consent } from "@/lib/ga4Browser";
 import type { GaConsentState } from "@/lib/consent";
 import type {
@@ -307,8 +309,16 @@ export function trackEvent(
   }
 
   try {
+    const styleContext = getAnalyticsStyleContext();
+    const pricingModelContext = getAnalyticsPricingModelContext();
     const enrichedEvent = enrichContext
-      ? { ...event, ...getUserContext(), timestamp: new Date().toISOString() }
+      ? {
+          ...event,
+          ...getUserContext(),
+          ...(event.style === undefined ? styleContext : {}),
+          ...(event.pricing_ab_model === undefined ? pricingModelContext : {}),
+          timestamp: new Date().toISOString(),
+        }
       : event;
 
     sendGa4Event(enrichedEvent as Record<string, unknown>);

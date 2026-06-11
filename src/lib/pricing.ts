@@ -108,6 +108,46 @@ export function formatPlanCadPriceWhole(value: string) {
   }).format(Math.round(numericValue));
 }
 
+/** Weeks per month for per-week price in pricing-model A/B variant B. */
+export const PRICING_WEEKS_PER_MONTH = 52 / 12;
+
+/** Weeks billed in one quarterly charge for per-week price in variant B. */
+export const PRICING_QUARTERLY_BILLING_WEEKS = 13;
+
+/** Per-week display price for modal variant B (weekly shows actual weekly rate). */
+export function getPlanWeeklyEquivalentPrice(plan: SerializedPlan): number {
+  const price = parsePrice(plan.price);
+  if (price <= 0) {
+    return 0;
+  }
+  if (isWeeklyPlan(plan)) {
+    return price;
+  }
+  if (isMonthlyPlan(plan)) {
+    return price / PRICING_WEEKS_PER_MONTH;
+  }
+  if (isThreeMonthPlan(plan)) {
+    return price / PRICING_QUARTERLY_BILLING_WEEKS;
+  }
+  if (isYearlyPlan(plan)) {
+    return price / 52;
+  }
+  return price;
+}
+
+export function getPlanBillingCadenceLabel(sectionKey: DurationGroupKey): string | null {
+  if (sectionKey === "monthly") {
+    return "pay monthly";
+  }
+  if (sectionKey === "threeMonth") {
+    return "pay quarterly";
+  }
+  if (sectionKey === "yearly") {
+    return "pay yearly";
+  }
+  return null;
+}
+
 export function isWeeklyPlan(plan: SerializedPlan) {
   return getDurationGroupKey(plan) === "weekly";
 }
@@ -359,6 +399,28 @@ function weeklyUnitPriceMatchingTier(plan: SerializedPlan, plans: SerializedPlan
   }
   const anyWeekly = plans.find(isWeeklyPlan);
   return parsePrice(anyWeekly?.price || "");
+}
+
+/** Weekly compare-at list price (`oldPrice` on the weekly plan, else live weekly rate). */
+export function getWeeklyCompareAtPrice(plans: SerializedPlan[]): number {
+  const tierWeekly = plans.find((p) => isWeeklyPlan(p) && isPremiumPlusPlan(p));
+  const weekly = tierWeekly ?? plans.find(isWeeklyPlan);
+  const fromOld = parsePrice(weekly?.oldPrice || "");
+  if (fromOld > 0) {
+    return fromOld;
+  }
+  return parsePrice(weekly?.price || "");
+}
+
+/** Discount percent vs weekly compare-at for per-week display prices (variant B). */
+export function getWeeklyEquivalentDiscountPercent(
+  weeklyEquivalentPrice: number,
+  weeklyCompareAt: number,
+): number | null {
+  if (weeklyCompareAt <= weeklyEquivalentPrice || weeklyCompareAt <= 0) {
+    return null;
+  }
+  return ((weeklyCompareAt - weeklyEquivalentPrice) / weeklyCompareAt) * 100;
 }
 
 export function buildMonthlySavingsMap(plans: SerializedPlan[]) {

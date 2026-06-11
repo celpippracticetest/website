@@ -169,3 +169,28 @@ export function setGa4UserId(userId: string | null | undefined): void {
     }
   }
 }
+
+/** Set GA4 user-scoped custom dimensions (e.g. experiment arms). */
+export function setGa4UserProperties(
+  properties: Record<string, string | undefined>,
+): void {
+  const gtag = getGtag();
+  if (!gtag) return;
+
+  const cleaned: Record<string, string> = {};
+  for (const [key, value] of Object.entries(properties)) {
+    const trimmed = value?.trim();
+    if (trimmed) {
+      cleaned[key] = trimmed.slice(0, 36);
+    }
+  }
+  if (Object.keys(cleaned).length === 0) return;
+
+  try {
+    gtag("set", "user_properties", cleaned);
+  } catch (error) {
+    if (DEBUG) {
+      console.warn("[GA4] set user_properties failed:", error);
+    }
+  }
+}
