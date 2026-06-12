@@ -39,7 +39,25 @@ function resolvedPoolMax(): number {
     process.env.npm_lifecycle_event === "build";
   // One connection per build worker — many routes hit Postgres during SSG and
   // Supabase transaction pooler checkout times out when workers open several at once.
-  return isNextBuild ? 1 : 8;
+  // Runtime default stays low: each warm Vercel lambda holds its own pool (max × instances
+  // competes for Supavisor transaction pool slots). Override with PG_POOL_MAX if needed.
+  return isNextBuild ? 1 : 3;
+}
+
+/** True when Postgres/Supavisor is saturated (checkout queue timeout, client cap, etc.). */
+export function isPgPoolPressureError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  const code =
+    error && typeof error === "object" && "code" in error
+      ? String((error as { code?: unknown }).code ?? "")
+      : "";
+  return (
+    message.includes("ECHECKOUTTIMEOUT") ||
+    message.includes("too many clients") ||
+    message.includes("Max client connections") ||
+    code === "53300" ||
+    code === "57P03"
+  );
 }
 
 /** Shared postgres.js client for the app (server-only). */
@@ -58,11 +76,14 @@ export function getSql(): SqlClient {
   }
   if (!globalForSql.__celpipPgSql) {
     const useSsl = !url.includes("localhost") && !url.includes("127.0.0.1");
+    const viaPooler = shouldDisablePrepare(url);
     globalForSql.__celpipPgSql = postgres(url, {
       max: resolvedPoolMax(),
-      idle_timeout: 30,
-      connect_timeout: 15,
-      prepare: !shouldDisablePrepare(url),
+      idle_timeout: 20,
+      connect_timeout: 10,
+      max_lifetime: viaPooler ? 300 : null,
+      prepare: !viaPooler,
+      fetch_types: !viaPooler,
       ssl: useSsl ? "require" : false,
     });
   }

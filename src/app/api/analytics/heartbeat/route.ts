@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { readLegacyImportedExternalUserId } from "@/lib/auth/supabase-user-plan";
 import { getSupabaseAuthUserFromRequestCookies } from "@/lib/supabase/server-request-client";
 import { sendGa4Events } from "@/lib/ga4MeasurementProtocol";
+import { isPgPoolPressureError } from "@/lib/pg/pool";
 import {
   markUserActivityOffline,
   upsertUserActivityHeartbeat,
@@ -31,13 +32,21 @@ export async function POST(request: NextRequest) {
     const sessionId = body.sessionId || `session-${Date.now()}`;
     const now = new Date();
 
-    await upsertUserActivityHeartbeat({
-      userId: userId || null,
-      sessionId,
-      userAgent,
-      ip: ip.split(",")[0].trim(),
-      now,
-    });
+    try {
+      await upsertUserActivityHeartbeat({
+        userId: userId || null,
+        sessionId,
+        userAgent,
+        ip: ip.split(",")[0].trim(),
+        now,
+      });
+    } catch (dbError) {
+      if (isPgPoolPressureError(dbError)) {
+        console.warn("Heartbeat DB skipped (pool pressure):", dbError);
+      } else {
+        throw dbError;
+      }
+    }
 
     void sendGa4Events({
       clientId: userId || sessionId,
@@ -87,10 +96,18 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await markUserActivityOffline({
-      userId: userId || null,
-      sessionId: typeof sessionId === "string" ? sessionId : null,
-    });
+    try {
+      await markUserActivityOffline({
+        userId: userId || null,
+        sessionId: typeof sessionId === "string" ? sessionId : null,
+      });
+    } catch (dbError) {
+      if (isPgPoolPressureError(dbError)) {
+        console.warn("Offline heartbeat DB skipped (pool pressure):", dbError);
+      } else {
+        throw dbError;
+      }
+    }
 
     return NextResponse.json({
       success: true,
