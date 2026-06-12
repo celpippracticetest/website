@@ -436,7 +436,7 @@ export async function countPracticesByTaskIds(
   const rows = await sql<{ task_mongo_id: string; c: number }[]>`
     SELECT task_mongo_id, COUNT(*)::int AS c
     FROM public.practices
-    WHERE task_mongo_id = ANY(${normalized})
+    WHERE task_mongo_id IN ${sql(normalized)}
     GROUP BY task_mongo_id
   `;
 
