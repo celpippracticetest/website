@@ -78,3 +78,103 @@ export function resolvePaymentIntentId(
   if (!paymentIntent) return null;
   return typeof paymentIntent === "string" ? paymentIntent : paymentIntent.id;
 }
+
+function readTrimmedString(value: unknown): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  const trimmed = String(value).trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function pickFromObjects(
+  objects: Array<Record<string, unknown>>,
+  ...keys: string[]
+): string | undefined {
+  for (const object of objects) {
+    for (const key of keys) {
+      const value = readTrimmedString(object[key]);
+      if (value) return value;
+    }
+  }
+  return undefined;
+}
+
+/** Build attribution fields from a stored user profile (publicMetadata + attribution touches). */
+export function extractUserAttributionSources(
+  user: Record<string, unknown>,
+  userId: string
+): Record<string, unknown> {
+  const publicMetadata = (user.publicMetadata ?? {}) as Record<string, unknown>;
+  const legacyPublicMetadata = (publicMetadata.clerk_public_metadata ??
+    {}) as Record<string, unknown>;
+  const attribution = (user.attribution ?? {}) as Record<string, unknown>;
+  const firstTouch = (attribution.firstTouch ?? {}) as Record<string, unknown>;
+  const lastTouch = (attribution.lastTouch ?? {}) as Record<string, unknown>;
+  const objects = [publicMetadata, legacyPublicMetadata, lastTouch, firstTouch];
+
+  const gclid = pickFromObjects(objects, "gclid");
+  const utmSource = pickFromObjects(objects, "utm_source", "source");
+  const utmMedium = pickFromObjects(objects, "utm_medium", "medium");
+  const utmCampaign = pickFromObjects(objects, "utm_campaign", "campaign");
+
+  return {
+    user_id: userId,
+    gclid,
+    gbraid: pickFromObjects(objects, "gbraid"),
+    wbraid: pickFromObjects(objects, "wbraid"),
+    google_ads_campaign_id: pickFromObjects(
+      objects,
+      "google_ads_campaign_id",
+      "googleAdsCampaignId"
+    ),
+    utm_source: utmSource,
+    utm_medium: utmMedium,
+    utm_campaign: utmCampaign,
+    utm_content: pickFromObjects(objects, "utm_content", "content"),
+    utm_term: pickFromObjects(objects, "utm_term", "term"),
+    fbclid: pickFromObjects(objects, "fbclid"),
+    msclkid: pickFromObjects(objects, "msclkid"),
+    ttclid: pickFromObjects(objects, "ttclid"),
+    attribution_source: utmSource ?? pickFromObjects(objects, "source"),
+    attribution_medium: utmMedium ?? pickFromObjects(objects, "medium"),
+    attribution_campaign: utmCampaign ?? pickFromObjects(objects, "campaign"),
+    attribution_gclid: gclid,
+    attribution_gbraid: pickFromObjects(objects, "gbraid"),
+    attribution_wbraid: pickFromObjects(objects, "wbraid"),
+    entry_page: pickFromObjects(objects, "entryPage", "entry_page"),
+    referrer: pickFromObjects(objects, "referrer"),
+  };
+}
+
+export function hasGoogleClickAttribution(metadata: Record<string, string | undefined>): boolean {
+  return Boolean(
+    readTrimmedString(metadata.gclid) ||
+      readTrimmedString(metadata.attribution_gclid) ||
+      readTrimmedString(metadata.gbraid) ||
+      readTrimmedString(metadata.attribution_gbraid) ||
+      readTrimmedString(metadata.wbraid) ||
+      readTrimmedString(metadata.attribution_wbraid)
+  );
+}
+
+export function userHasStoredAttribution(sources: Record<string, unknown>): boolean {
+  const metadata = buildChargeAttributionMetadata(sources);
+  return Object.values(metadata).some((value) => readTrimmedString(value));
+}
+
+/** Fill only empty Stripe metadata keys — never overwrite existing attribution. */
+export function mergeAttributionIntoStripeMetadata(
+  existing: Record<string, string | undefined>,
+  sources: Record<string, unknown>
+): Stripe.MetadataParam {
+  const attribution = buildChargeAttributionMetadata(sources);
+  const merged: Stripe.MetadataParam = {};
+  for (const [key, value] of Object.entries(existing)) {
+    if (readTrimmedString(value)) merged[key] = value as string;
+  }
+  for (const [key, value] of Object.entries(attribution)) {
+    if (!readTrimmedString(value)) continue;
+    if (readTrimmedString(merged[key])) continue;
+    merged[key] = value;
+  }
+  return merged;
+}

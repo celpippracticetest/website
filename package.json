@@ -19,6 +19,7 @@
     "ads:spend-to-bq": "node ./tooling/google-ads-spend-to-bq.js",
     "ads:meta-to-bq": "node ./tooling/meta-ads-spend-to-bq.js",
     "ads:csv-to-bq": "node ./tooling/ad-spend-csv-to-bq.js",
+    "stripe:attribution-backfill": "npx --yes tsx ./tooling/stripe-attribution-backfill.ts",
     "postbuild": "node ./scripts/postbuild-cleanup.js",
     "svgr": "npx @svgr/cli --typescript --out-dir  src/components/icons/ -- icons/svg",
     "test:e2e": "npx playwright test",
@@ -151,6 +152,7 @@
     "globals": "^15.15.0",
     "mongodb": "^6.21.0",
     "postcss": "^8.5.3",
+    "server-only": "^0.0.1",
     "tailwindcss": "^4",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.31.0"
