@@ -788,9 +788,13 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
         ? { allow_promotion_codes: !hasChallengePayload }
         : {}),
       ...(checkoutDiscounts.length > 0 ? { discounts: checkoutDiscounts } : {}),
-      payment_intent_data: {
-        metadata: chargeAttributionMetadata,
-      },
+      ...(mode === "payment"
+        ? {
+            payment_intent_data: {
+              metadata: chargeAttributionMetadata,
+            },
+          }
+        : {}),
       metadata: recordToStripeMetadata({
         user_id: user.id,
         plan_name: productDetails.name,
@@ -854,6 +858,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
                   : "",
             }),
             ...(campaignPromoKey && { campaign_promo: campaignPromoKey }),
+            ...chargeAttributionMetadata,
           }),
         },
       }),

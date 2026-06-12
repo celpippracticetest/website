@@ -457,9 +457,13 @@ export async function POST(request: NextRequest) {
       ...(promotionCode
         ? { discounts: [{ promotion_code: promotionCode }] }
         : {}),
-      payment_intent_data: {
-        metadata: chargeAttributionMetadata,
-      },
+      ...(mode === "payment"
+        ? {
+            payment_intent_data: {
+              metadata: chargeAttributionMetadata,
+            },
+          }
+        : {}),
       metadata: {
         user_id: userId,
         plan_name: toMetadataValue(product.name),
@@ -498,6 +502,7 @@ export async function POST(request: NextRequest) {
                 ...ga4CheckoutMeta,
                 ...attributionMetadata,
                 ...attributionSnapshot,
+                ...chargeAttributionMetadata,
               },
             },
           }
