@@ -129,7 +129,7 @@ const Exam = async ({
     const answers = await answersRepo.getAllListeningAndReadingAnswers({
       examId: examId,
       userId: user.id,
-    });
+    }, 0, 100);
 
     const writingAnswers = await writingRepo.getAllWritingAnswers({
       examId: examId,
@@ -148,10 +148,15 @@ const Exam = async ({
       ...speakingAnswers.items,
     ];
 
+    // Use a type-agnostic check so answers saved without an explicit type
+    // (legacy rows) don't cause hasSavedResults to be false and silently
+    // redirect users away from their completed exam results.
+    const anyAnswersFromLooseQuery = await answersRepo.findAnswersByExamIdAndUser(examId, user.id);
     const hasSavedResults =
       answers.items.length > 0 ||
       writingAnswers.items.length > 0 ||
-      speakingAnswers.items.length > 0;
+      speakingAnswers.items.length > 0 ||
+      anyAnswersFromLooseQuery.length > 0;
 
     if (!canAccessExam && !hasSavedResults) {
       redirect("/exam-overview", RedirectType.push);
