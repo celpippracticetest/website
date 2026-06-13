@@ -8,8 +8,30 @@ import { TExamSchemaDto } from "@/models/exam.model";
 import dynamic from "next/dynamic";
 import { Box, Link, Typography } from "@mui/material";
 import { pageSeo } from "@/lib/seo/pageSeo";
+import { Suspense } from "react";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = pageSeo("/exams/session");
+
+function buildExamSessionReturnPath(
+  slug: string[],
+  searchParams: Record<string, string | string[] | undefined>
+): string {
+  const base = `/exams/${slug.map((segment) => encodeURIComponent(segment)).join("/")}`;
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (typeof value === "string") {
+      query.set(key, value);
+    } else if (Array.isArray(value)) {
+      for (const item of value) {
+        query.append(key, item);
+      }
+    }
+  }
+  const qs = query.toString();
+  return qs ? `${base}?${qs}` : base;
+}
 
 const MockExamView = dynamic(() => import("@/components/dashboard-app/exam-parts/MockExamView"), {
   loading: () => (
@@ -32,8 +54,15 @@ import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import { hasMockExamAccess, normalizeMockExamIdForAccess } from "@/lib/subscriptionAccess";
 import { getFirstReadyMockExamId } from "@/lib/getFirstReadyMockExam";
 
-const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
+const Exam = async ({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string[] }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) => {
   const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
   const examId: string | undefined =
     normalizeMockExamIdForAccess(resolvedParams?.slug?.[0]) ?? undefined;
   const partSlug = resolvedParams?.slug?.[1];
@@ -54,18 +83,19 @@ const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
   const plan: string | undefined = user?.publicMetadata?.plan as
     | string
     | undefined;
-  if (
-    !user ||
-    !hasMockExamAccess(
-      plan,
-      user?.publicMetadata?.purchaseDate as string | undefined,
-      examId,
-      firstReadyExamId,
-      user?.publicMetadata?.purchasedMockExamIds
-    )
-  ) {
-    redirect("/exam-overview", RedirectType.push);
-  }
+  const purchaseDate = user?.publicMetadata?.purchaseDate as string | undefined;
+  const purchasedMockExamIds = user?.publicMetadata?.purchasedMockExamIds;
+  const canAccessExam = Boolean(
+    user &&
+      hasMockExamAccess(
+        plan,
+        purchaseDate,
+        examId,
+        firstReadyExamId,
+        purchasedMockExamIds
+      )
+  );
+
   if (
     !examId ||
     ((!partNumber || Number.isNaN(parseInt(partNumber))) && !isResultPage)
@@ -79,6 +109,17 @@ const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
   }
   const examPartsRepo = new ExamPartsRepository(documentsClient);
   if (isResultPage) {
+    if (!user) {
+      const returnPath = buildExamSessionReturnPath(
+        resolvedParams.slug,
+        resolvedSearchParams
+      );
+      redirect(
+        `/sign-in?redirect_url=${encodeURIComponent(returnPath)}`,
+        RedirectType.push
+      );
+    }
+
     const examParts = await examPartsRepo.getAllExamPart({
       examId: new ObjectId(examId),
     });
@@ -107,6 +148,15 @@ const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
       ...speakingAnswers.items,
     ];
 
+    const hasSavedResults =
+      answers.items.length > 0 ||
+      writingAnswers.items.length > 0 ||
+      speakingAnswers.items.length > 0;
+
+    if (!canAccessExam && !hasSavedResults) {
+      redirect("/exam-overview", RedirectType.push);
+    }
+
     return (
       <Box
         component="main"
@@ -126,16 +176,27 @@ const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
             py: { xs: 3, md: 4 },
           }}
         >
-          <ResultExamView
-            exams={exam}
-            examParts={examParts.items}
-            answers={answers.items}
-            speakingAndWritingAnswers={speakingAndWritingAnswers}
-            firstReadyExamId={firstReadyExamId}
-          />
+          <Suspense
+            fallback={
+              <Typography sx={{ py: 4, textAlign: "center", color: "#526071" }}>
+                Loading Results...
+              </Typography>
+            }
+          >
+            <ResultExamView
+              exams={exam}
+              examParts={examParts.items}
+              answers={answers.items}
+              speakingAndWritingAnswers={speakingAndWritingAnswers}
+            />
+          </Suspense>
         </Box>
       </Box>
     );
+  }
+
+  if (!canAccessExam) {
+    redirect("/exam-overview", RedirectType.push);
   }
 
   const part: TExamPartSchemaDto | null =

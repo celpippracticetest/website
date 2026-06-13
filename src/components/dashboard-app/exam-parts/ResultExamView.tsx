@@ -19,7 +19,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns";
 import { TQuestion } from "@/models/question.model";
 import {
-  hasMockExamAccess,
   hasPaidPracticeAccess,
   isMockExamUnlockedViaPurchase,
 } from "@/lib/subscriptionAccess";
@@ -48,13 +47,11 @@ const ResultExamView = ({
   examParts,
   answers: allAnswers,
   speakingAndWritingAnswers: allSpeakingAndWritingAnswers,
-  firstReadyExamId,
 }: {
   exams: TExamSchemaDto;
   examParts: TExamPartSchemaDto[];
   answers: (TListeningAndReadingAnswerDto & { overalScore?: number })[];
   speakingAndWritingAnswers: TWritingAnswerDto[];
-  firstReadyExamId: string | null;
 }) => {
   const route = useRouter();
   const searchParams = useSearchParams();
@@ -336,19 +333,6 @@ const ResultExamView = ({
     return scaleToBand(weightedPercent);
   })();
 
-  if (
-    isLoaded &&
-    (!user ||
-      !hasMockExamAccess(
-        user.publicMetadata.plan as string | undefined,
-        user.publicMetadata.purchaseDate,
-        exams.id,
-        firstReadyExamId,
-        user?.publicMetadata?.purchasedMockExamIds
-      ))
-  ) {
-    route.push("exam-overview");
-  }
   return (
     <div className=" mx-auto w-full flex flex-col bg-white  rounded-[8px]">
       <div className=" gap-[10px] text-[#212E42] px-[24px] flex items-center bg-[#FFEBD6] h-auto min-h-[56px] py-2 rounded-tl-[8px] rounded-tr-[8px] text-[18px] font-bold justify-between">

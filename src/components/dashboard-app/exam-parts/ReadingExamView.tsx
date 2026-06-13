@@ -300,7 +300,7 @@ const ReadingExamView = ({
             user.publicMetadata.purchaseDate as string | undefined
           )))
   ) {
-    router.push("exam-overview");
+    router.push("/exam-overview");
   }
 
   const [menuShowModal, setMenuShowModal] = useState(false);
