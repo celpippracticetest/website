@@ -5,7 +5,7 @@ import { TExamPartSchemaDto } from "@/models/examParts.model";
 import { PracticeDtoSchema } from "@/models/practice.model";
 import { ExamRepository } from "@/repositories/exams.repo";
 import { TExamSchemaDto } from "@/models/exam.model";
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 import { Box, Link, Typography } from "@mui/material";
 import { pageSeo } from "@/lib/seo/pageSeo";
 import { Suspense } from "react";
@@ -33,14 +33,14 @@ function buildExamSessionReturnPath(
   return qs ? `${base}?${qs}` : base;
 }
 
-const MockExamView = dynamic(() => import("@/components/dashboard-app/exam-parts/MockExamView"), {
+const MockExamView = nextDynamic(() => import("@/components/dashboard-app/exam-parts/MockExamView"), {
   loading: () => (
     <Typography sx={{ py: 4, textAlign: "center", color: "#526071" }}>
       Loading Exam...
     </Typography>
   ),
 });
-const ResultExamView = dynamic(() => import("@/components/dashboard-app/exam-parts/ResultExamView"), {
+const ResultExamView = nextDynamic(() => import("@/components/dashboard-app/exam-parts/ResultExamView"), {
   loading: () => (
     <Typography sx={{ py: 4, textAlign: "center", color: "#526071" }}>
       Loading Results...
