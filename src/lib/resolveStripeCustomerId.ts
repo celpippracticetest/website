@@ -1,10 +1,10 @@
 import "server-only";
 
 import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
-import documentsClient from "@/lib/appDocumentsClient";
 import { stripe } from "@/lib/stripe";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
 import { getSql } from "@/lib/pg/pool";
+import documentsClient from "@/lib/appDocumentsClient";
 
 export function emailsFromAuthUser(user: {
   emailAddresses?: { emailAddress?: string | null }[];
@@ -23,41 +23,11 @@ function normalizeEmails(emails: readonly string[]): string[] {
   return [...out];
 }
 
-function userIdAppDocFilter(userId: string): Record<string, unknown> {
-  if (isLikelySupabaseAuthUserId(userId)) {
-    return { supabaseUserId: userId };
-  }
-  return { clerkUserId: userId };
-}
-
-/** Writes `stripeCustomerId` on the `users` document (by legacy external id or Supabase id). */
+/** Writes `stripe_customer_id` to `public.user_profiles` via Supabase Postgres. */
 export async function persistStripeCustomerIdForUser(
   userId: string,
   stripeCustomerId: string
 ): Promise<void> {
-  // MongoDB side (existing behaviour)
-  if (documentsClient) {
-    try {
-      const filter = userIdAppDocFilter(userId);
-      const insertKey =
-        "supabaseUserId" in filter
-          ? { supabaseUserId: userId }
-          : { clerkUserId: userId };
-      await documentsClient.db().collection("users").updateOne(
-        filter,
-        {
-          $set: { stripeCustomerId, updatedAt: new Date() },
-          $setOnInsert: { ...insertKey, createdAt: new Date() },
-        },
-        { upsert: true }
-      );
-    } catch {
-      // Non-fatal
-    }
-  }
-
-  // PostgreSQL side — populate user_profiles.stripe_customer_id so future
-  // Stripe webhook lookups can use the fast Tier-1 path.
   try {
     const sql = getSql();
     if (isLikelySupabaseAuthUserId(userId)) {
@@ -81,10 +51,8 @@ export async function persistStripeCustomerIdForUser(
 }
 
 /**
- * Stripe customer id for a user — not only `privateMetadata.stripeCustomerId`.
- * Order: `users.stripeCustomerId`, `privateMetadata.stripeCustomerId`,
- * latest completed checkout session, then Stripe customer search by email.
- * Newly resolved ids are written to `users` for later requests.
+ * Resolves the Stripe customer ID for a user.
+ * Order: user_profiles.stripe_customer_id → privateMetadata → latest checkout session → Stripe search by email.
  */
 export async function resolveStripeCustomerId(
   userId: string,
@@ -93,52 +61,53 @@ export async function resolveStripeCustomerId(
     emails: readonly string[];
   }
 ): Promise<string | null> {
-  if (documentsClient) {
-    try {
-      const doc = await documentsClient
-        .db()
-        .collection("users")
-        .findOne(
-          {
-            $or: [{ clerkUserId: userId }, { supabaseUserId: userId }],
-          },
-          { projection: { stripeCustomerId: 1 } }
-        );
-      const fromDb = doc?.stripeCustomerId;
-      if (typeof fromDb === "string" && fromDb.length > 0) {
-        return fromDb;
-      }
-    } catch {
-      // continue
+  // Tier 1: look up from user_profiles table (Supabase Postgres)
+  try {
+    const sql = getSql();
+    const rows = await sql<{ stripe_customer_id: string | null }[]>`
+      SELECT stripe_customer_id
+      FROM public.user_profiles
+      WHERE legacy_clerk_user_id = ${userId}
+         OR (legacy_body ->> 'sub') = ${userId}
+         OR supabase_auth_user_id::text = ${userId}
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `;
+    const fromDb = rows[0]?.stripe_customer_id;
+    if (typeof fromDb === "string" && fromDb.length > 0) {
+      return fromDb;
     }
+  } catch {
+    // continue
   }
 
+  // Tier 2: from auth metadata
   const fromPrivate = options.stripeCustomerIdFromPrivate?.trim();
   if (fromPrivate) {
     await persistStripeCustomerIdForUser(userId, fromPrivate);
     return fromPrivate;
   }
 
-  if (documentsClient) {
-    try {
-      const checkoutRepo = new CheckoutRepository(documentsClient);
-      const lastCheckout = await checkoutRepo.findLatestCheckoutByUserId(userId);
-      if (lastCheckout) {
-        const session = await stripe.checkout.sessions.retrieve(
-          lastCheckout.checkoutId
-        );
-        const cid =
-          typeof session.customer === "string" ? session.customer : null;
-        if (cid) {
-          await persistStripeCustomerIdForUser(userId, cid);
-          return cid;
-        }
+  // Tier 3: latest completed checkout session
+  try {
+    const checkoutRepo = new CheckoutRepository(documentsClient);
+    const lastCheckout = await checkoutRepo.findLatestCheckoutByUserId(userId);
+    if (lastCheckout) {
+      const session = await stripe.checkout.sessions.retrieve(
+        lastCheckout.checkoutId
+      );
+      const cid =
+        typeof session.customer === "string" ? session.customer : null;
+      if (cid) {
+        await persistStripeCustomerIdForUser(userId, cid);
+        return cid;
       }
-    } catch {
-      // continue
     }
+  } catch {
+    // continue
   }
 
+  // Tier 4: Stripe customer search by email
   for (const email of normalizeEmails(options.emails)) {
     try {
       const customers = await stripe.customers.list({ email, limit: 1 });
