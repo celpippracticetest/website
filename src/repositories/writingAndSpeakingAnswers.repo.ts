@@ -263,7 +263,8 @@ export class WritingAndSpeakingAnswerRepository {
       keys.includes("userId") &&
       keys.includes("type")
     ) {
-      const q = { userId: userIdVal, examId: examOid, type: typeVal };
+      const examIdFilter = { $in: [examOid, examOid.toHexString().toLowerCase()] as (ObjectId | string)[] };
+      const q = { userId: userIdVal, examId: examIdFilter, type: typeVal };
       const [totalItems, raw] = await Promise.all([
         coll.countDocuments(q),
         coll.find(q).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(),
