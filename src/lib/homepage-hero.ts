@@ -11,6 +11,32 @@ export const DEFAULT_HOMEPAGE_HERO = {
   altText: "Hero image of CELPIP preparation platform showing student success",
 };
 
+const HOMEPAGE_HERO_DB_TIMEOUT_MS = 900;
+
+async function withPublicContentTimeout<T>(
+  work: Promise<T>,
+  fallback: T
+): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const guardedWork = work.catch((error) => {
+    console.error("[homepage-hero] failed to load active schedule:", error);
+    return fallback;
+  });
+
+  try {
+    return await Promise.race([
+      guardedWork,
+      new Promise<T>((resolve) => {
+        timeout = setTimeout(() => resolve(fallback), HOMEPAGE_HERO_DB_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+  }
+}
+
 export function getDateInHomepageHeroTimezone(date = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: HOMEPAGE_HERO_TIMEZONE,
@@ -30,7 +56,10 @@ export async function getActiveHomepageHeroSchedule(): Promise<THomepageHeroSche
 
     const repo = new HomepageHeroScheduleRepository(documentsClient);
     // Indexes are ensured from CMS/API (`/api/admin/homepage-hero`); avoid DDL on every layout read (DB connection pressure).
-    return await repo.getActiveSchedule(getDateInHomepageHeroTimezone());
+    return await withPublicContentTimeout(
+      repo.getActiveSchedule(getDateInHomepageHeroTimezone()),
+      null
+    );
   } catch (error) {
     console.error("[homepage-hero] failed to load active schedule:", error);
     return null;

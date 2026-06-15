@@ -7,6 +7,72 @@ import {
   type ProfessionPageSummary,
 } from "@/repositories/profession-page.repo";
 
+const PUBLIC_PROFESSION_DB_TIMEOUT_MS = 500;
+
+export const FALLBACK_PROFESSION_PAGE_SUMMARIES: ProfessionPageSummary[] = [
+  { slug: "celpip-for-nurses", title: "CELPIP for Nurses", icon: "stethoscope" },
+  { slug: "celpip-for-doctors", title: "CELPIP for Doctors", icon: "user-round-plus" },
+  {
+    slug: "celpip-for-pharmacists",
+    title: "CELPIP for Pharmacists",
+    icon: "pill",
+  },
+  { slug: "celpip-for-dentists", title: "CELPIP for Dentists", icon: "smile" },
+  {
+    slug: "celpip-for-physiotherapists",
+    title: "CELPIP for Physiotherapists",
+    icon: "activity",
+  },
+  { slug: "celpip-for-teachers", title: "CELPIP for Teachers", icon: "graduation-cap" },
+  {
+    slug: "celpip-for-early-childhood-educators",
+    title: "CELPIP for Early Childhood Educators",
+    icon: "baby",
+  },
+  {
+    slug: "celpip-for-social-workers",
+    title: "CELPIP for Social Workers",
+    icon: "heart-handshake",
+  },
+  { slug: "celpip-for-truck-drivers", title: "CELPIP for Truck Drivers", icon: "truck" },
+  { slug: "celpip-for-caregivers", title: "CELPIP for Caregivers", icon: "hand-heart" },
+  {
+    slug: "celpip-for-real-estate-agents",
+    title: "CELPIP for Real Estate Agents",
+    icon: "home",
+  },
+  {
+    slug: "celpip-for-accountants",
+    title: "CELPIP for Accountants",
+    icon: "calculator",
+  },
+];
+
+async function withPublicProfessionTimeout<T>(
+  label: string,
+  work: Promise<T>,
+  fallback: T
+): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const guardedWork = work.catch((error) => {
+    console.error(label, error);
+    return fallback;
+  });
+
+  try {
+    return await Promise.race([
+      guardedWork,
+      new Promise<T>((resolve) => {
+        timeout = setTimeout(() => resolve(fallback), PUBLIC_PROFESSION_DB_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+  }
+}
+
 export function professionPageToTemplateConfig(doc: TProfessionPageContent): ProfessionPageConfig {
   return {
     slug: doc.slug,
@@ -48,12 +114,17 @@ export async function getPublishedProfessionPageBySlug(
 
 async function getPublishedProfessionPageSlugsUncached(): Promise<string[]> {
   try {
-    if (!documentsClient) return [];
+    const fallbackSlugs = FALLBACK_PROFESSION_PAGE_SUMMARIES.map((page) => page.slug);
+    if (!documentsClient) return fallbackSlugs;
     const repo = new ProfessionPageRepository(documentsClient);
-    return await repo.listPublishedSlugs();
+    return await withPublicProfessionTimeout(
+      "Failed to list profession page slugs:",
+      repo.listPublishedSlugs(),
+      fallbackSlugs
+    );
   } catch (error) {
     console.error("Failed to list profession page slugs:", error);
-    return [];
+    return FALLBACK_PROFESSION_PAGE_SUMMARIES.map((page) => page.slug);
   }
 }
 
@@ -62,12 +133,16 @@ export const getPublishedProfessionPageSlugs = cache(getPublishedProfessionPageS
 export const getPublishedProfessionPageSummaries = cache(
   async (): Promise<ProfessionPageSummary[]> => {
     try {
-      if (!documentsClient) return [];
+      if (!documentsClient) return FALLBACK_PROFESSION_PAGE_SUMMARIES;
       const repo = new ProfessionPageRepository(documentsClient);
-      return await repo.listPublishedSummaries();
+      return await withPublicProfessionTimeout(
+        "Failed to list profession page summaries:",
+        repo.listPublishedSummaries(),
+        FALLBACK_PROFESSION_PAGE_SUMMARIES
+      );
     } catch (error) {
       console.error("Failed to list profession page summaries:", error);
-      return [];
+      return FALLBACK_PROFESSION_PAGE_SUMMARIES;
     }
   }
 );

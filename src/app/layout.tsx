@@ -1,7 +1,7 @@
 import "./globals.css";
 import NextTopLoader from "nextjs-toploader";
-import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import VercelWebAnalytics from "@/components/analytics/VercelWebAnalytics";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import AskBeavoModal from "@/components/AskBeavo/AskBeavoModal";
@@ -23,7 +23,7 @@ import { WebAuthProvider } from "@/components/auth/WebAuthProvider";
 import { getSupabaseAuthUserFromServerCookies } from "@/lib/supabase/server-app-read-user";
 import MuiAppRouterCacheProvider from "@/components/MuiAppRouterCacheProvider";
 import AndroidDownloadAppBanner from "@/components/mobile/AndroidDownloadAppBanner";
-import { getHomepageHeroDisplay } from "@/lib/homepage-hero";
+import { DEFAULT_HOMEPAGE_HERO } from "@/lib/homepage-hero";
 import { getIndexingRobotsDirective } from "@/lib/searchIndexing";
 import { UiVariantProvider } from "@/components/ui-variant/UiVariantProvider";
 import { getUiAbVariant } from "@/lib/uiAbTest.server";
@@ -80,7 +80,7 @@ export function generateViewport(): Viewport {
 
 export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = normalizeAppBaseUrl(process.env.APP_BASE_URL);
-  const homepageHero = await getHomepageHeroDisplay();
+  const homepageHero = DEFAULT_HOMEPAGE_HERO;
 
   // `APP_BASE_URL` is environment-driven and can occasionally be malformed.
   // If `new URL(...)` throws, Next will crash during rendering.
@@ -252,8 +252,12 @@ export default async function RootLayout({
           </ErrorBoundary>
           <LazyPromotionManager />
           <PerformanceMonitor />
-          <Analytics />
-          <SpeedInsights />
+          {isProductionAnalytics && (
+            <>
+              <VercelWebAnalytics />
+              <SpeedInsights />
+            </>
+          )}
           <ActiveUsersTracker />
           <Suspense fallback={null}>
             <AttributionTracker />

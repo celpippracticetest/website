@@ -1,4 +1,4 @@
-import { getPublishedProfessionPageSummaries } from "@/lib/profession-pages/public";
+import { FALLBACK_PROFESSION_PAGE_SUMMARIES } from "@/lib/profession-pages/public";
 import {
   FooterBase,
   GUEST_FOOTER_SECTIONS,
@@ -90,10 +90,8 @@ function buildProfessionSections(items: ProfessionPageLink[]): FooterSection[] {
     .filter((section) => section.links.length > 0);
 }
 
-export async function NoUserFooter() {
-  const professionLinks: ProfessionPageLink[] =
-    await getPublishedProfessionPageSummaries();
-
+export function NoUserFooter() {
+  const professionLinks: ProfessionPageLink[] = FALLBACK_PROFESSION_PAGE_SUMMARIES;
   const professionSections = buildProfessionSections(professionLinks);
 
   return (
