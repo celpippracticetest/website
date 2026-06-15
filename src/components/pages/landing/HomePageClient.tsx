@@ -11,6 +11,7 @@ import {
   HomeTestimonialsSection,
   HomeCtaBanner,
 } from "./home";
+import { HomeHighIntentResources } from "./HomeConversionSections";
 import { HomeHeroAnimatedBackground } from "./home/HomeHeroAnimatedBackground";
 
 const Hero = dynamic(() => import("./Hero"), { ssr: true });
@@ -43,6 +44,7 @@ export default function HomePageClient() {
           <HomeFeaturesSection />
         </div>
       </div>
+      <HomeHighIntentResources />
       <HomeHowItWorksSection />
       <HomeTestimonialsSection />
       <FAQ />

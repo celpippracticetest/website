@@ -29,10 +29,17 @@ const mainNav = [
     ),
   },
   {
+    label: "Free Test",
+    href: "/free-celpip-practice-test",
+    renderIcon: (size: number) => (
+      <SchoolIcon sx={{ fontSize: size, color: "#3B82F6" }} aria-hidden />
+    ),
+  },
+  {
     label: "Practice",
     href: "/practice-overview",
     renderIcon: (size: number) => (
-      <SchoolIcon sx={{ fontSize: size, color: "#3B82F6" }} aria-hidden />
+      <AutoAwesomeIcon sx={{ fontSize: size, color: "#7C3AED" }} aria-hidden />
     ),
   },
   {
@@ -236,6 +243,13 @@ const TopHeader = () => {
             >
               Start free practice
             </Button>
+            <Link
+              href="/celpip-speaking-samples"
+              className="rounded-2xl border border-slate-200/90 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:text-blue-700"
+              onClick={() => setMobileOpen(false)}
+            >
+              View speaking samples
+            </Link>
           </div>
 
           <div className="mt-auto rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-3.5 text-center text-xs leading-relaxed text-slate-600 backdrop-blur-sm">

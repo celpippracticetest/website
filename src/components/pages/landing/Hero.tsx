@@ -32,6 +32,12 @@ const SvgReading = dynamic(() => import("../../icons/Reading"), { ssr: false });
 
 const heroExamSections = [
   {
+    title: "Free test",
+    icon: <SvgMockExamsColorful />,
+    bgColor: "bg-primary5",
+    link: "/free-celpip-practice-test",
+  },
+  {
     title: "Listening",
     icon: <SvgListening className="text-maple-dark" />,
     bgColor: "bg-primary5",
@@ -141,9 +147,13 @@ const Hero = () => {
               </div>
 
               <h1 className="mb-5 w-full text-balance text-[2.5rem] font-extrabold leading-[1.1] screen744:text-[3rem] screen1280:text-[3.75rem]">
-                <span className="text-text1">Reach Your Target CELPIP Score.</span>{" "}
-                <span className="text-secondary2">Faster.</span>
+                <span className="text-text1">CELPIP practice tests with instant AI scoring.</span>{" "}
+                <span className="text-secondary2">Study faster.</span>
               </h1>
+
+              <p className="mb-6 max-w-[580px] text-[1rem] leading-relaxed text-text2 screen744:text-[1.125rem]">
+                Practice Listening, Reading, Writing, and Speaking with timed CELPIP-style tasks, sample answers, and feedback that shows what to fix next.
+              </p>
 
               <div className="mb-8 w-full max-w-[560px] screen1024:max-w-none">
                 <PricingUpgradeModalHeaderList
@@ -158,16 +168,26 @@ const Hero = () => {
                 <Button
                   size="lg"
                   variant="primary"
-                  href={href}
+                  href="/free-celpip-practice-test"
                   className={HERO_CTA_CLASS}
-                  onClick={() => trackClick("hero_main")}
+                  onClick={() => trackClick("hero_free_practice_test")}
                 >
-                  Start Free Practice
+                  Start Free CELPIP Test
                   <SvgArrowRight className="h-5 w-5" />
                 </Button>
               </div>
 
-              <p className="mb-8 text-sm text-text2">No credit card required</p>
+              <div className="mb-8 flex flex-wrap justify-center gap-3 text-sm font-medium text-primary1 screen744:justify-start">
+                <a href="/celpip-writing-task-1-samples" className="hover:underline underline-offset-4">
+                  Writing Task 1 samples
+                </a>
+                <a href="/celpip-writing-task-2-samples" className="hover:underline underline-offset-4">
+                  Writing Task 2 samples
+                </a>
+                <a href="/celpip-speaking-samples" className="hover:underline underline-offset-4">
+                  Speaking samples
+                </a>
+              </div>
 
               <div className="flex flex-wrap items-center justify-center gap-4 screen744:justify-start">
                 <div className="flex -space-x-2">

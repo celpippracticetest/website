@@ -3,9 +3,36 @@ import documentsClient from "@/lib/appDocumentsClient";
 import { TBlogSchemaDto } from "@/models/blog.model";
 import { BlogRepository } from "@/repositories/blog.repo";
 
+const PUBLIC_BLOG_DB_TIMEOUT_MS = 800;
+
 const NON_INDEXABLE_LEGACY_BLOG_SLUGS = new Set([
   "celpip-leauage",
 ]);
+
+async function withPublicBlogTimeout<T>(
+  label: string,
+  work: Promise<T>,
+  fallback: T
+): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const guardedWork = work.catch((error) => {
+    console.error(label, error);
+    return fallback;
+  });
+
+  try {
+    return await Promise.race([
+      guardedWork,
+      new Promise<T>((resolve) => {
+        timeout = setTimeout(() => resolve(fallback), PUBLIC_BLOG_DB_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+  }
+}
 
 export function isIndexablePublishedBlogSlug(slug: string): boolean {
   return !NON_INDEXABLE_LEGACY_BLOG_SLUGS.has(slug.trim().toLowerCase());
@@ -17,7 +44,11 @@ export async function getPublishedBlogPosts(
 ): Promise<{ items: TBlogSchemaDto[]; totalItems: number }> {
   try {
     const repo = new BlogRepository(documentsClient);
-    const result = await repo.getPublishedBlogs(page, limit);
+    const result = await withPublicBlogTimeout(
+      "Failed to read published blog posts:",
+      repo.getPublishedBlogs(page, limit),
+      { items: [], page, totalPages: 0, totalItems: 0, hasNextPage: false }
+    );
     const items = result.items.filter((post) => isIndexablePublishedBlogSlug(post.slug));
     return {
       items,
@@ -32,7 +63,11 @@ export async function getPublishedBlogPosts(
 export async function getPublishedBlogPostBySlug(slug: string): Promise<TBlogSchemaDto | null> {
   try {
     const repo = new BlogRepository(documentsClient);
-    return await repo.findPublishedBySlug(slug);
+    return await withPublicBlogTimeout(
+      "Failed to read published blog post by slug:",
+      repo.findPublishedBySlug(slug),
+      null
+    );
   } catch (error) {
     console.error("Failed to read published blog post by slug:", error);
     return null;
@@ -47,7 +82,11 @@ export async function getRelatedPublishedPosts(
 ): Promise<TBlogSchemaDto[]> {
   try {
     const repo = new BlogRepository(documentsClient);
-    const posts = await repo.findRelatedPublishedBlogs(currentId, categories, tags, limit + 3);
+    const posts = await withPublicBlogTimeout(
+      "Failed to read related published blog posts:",
+      repo.findRelatedPublishedBlogs(currentId, categories, tags, limit + 3),
+      []
+    );
     return posts.filter((post) => isIndexablePublishedBlogSlug(post.slug)).slice(0, limit);
   } catch (error) {
     console.error("Failed to read related published blog posts:", error);
@@ -59,7 +98,11 @@ export const getPublishedBlogSlugs = cache(
   async (): Promise<Array<{ slug: string; updatedAt: Date; canonicalUrl?: string }>> => {
     try {
       const repo = new BlogRepository(documentsClient);
-      const posts = await repo.getPublishedSlugs();
+      const posts = await withPublicBlogTimeout(
+        "Failed to read published blog slugs:",
+        repo.getPublishedSlugs(),
+        []
+      );
       return posts.filter((post) => isIndexablePublishedBlogSlug(post.slug));
     } catch (error) {
       console.error("Failed to read published blog slugs:", error);

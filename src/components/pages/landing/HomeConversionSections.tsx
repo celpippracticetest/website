@@ -76,7 +76,7 @@ const pillars = [
   },
   {
     title: "AI scoring & CLB-style feedback",
-    body: "Writing and Speaking get instant, structured feedback so you know what to fix on the next attempt—not days later.",
+    body: "Writing and Speaking get instant, structured feedback so you know what to fix on the next attempt, not days later.",
     href: "/writing",
     cta: "Try AI feedback",
   },
@@ -87,6 +87,80 @@ const pillars = [
     cta: "Browse practice",
   },
 ];
+
+const highIntentResources = [
+  {
+    title: "Free CELPIP Practice Test",
+    body: "Start with a free online CELPIP practice test covering the four exam skills.",
+    href: "/free-celpip-practice-test",
+  },
+  {
+    title: "Writing Task 1 Samples",
+    body: "Review CELPIP email samples with structure, tone, and scoring guidance.",
+    href: "/celpip-writing-task-1-samples",
+  },
+  {
+    title: "Writing Task 2 Samples",
+    body: "Study survey-response samples and learn how higher-level answers are built.",
+    href: "/celpip-writing-task-2-samples",
+  },
+  {
+    title: "Speaking Samples",
+    body: "See CELPIP speaking sample answers for common prompt types.",
+    href: "/celpip-speaking-samples",
+  },
+];
+
+export function HomeHighIntentResources() {
+  const { ref, inView } = useInView({ rootMargin: "0px 0px -60px 0px", triggerOnce: true });
+  const { trackCTA } = useEventTracker();
+
+  return (
+    <section
+      ref={ref}
+      aria-labelledby="resources-heading"
+      className="max-w-[1440px] mx-auto px-[16px] screen744:!px-[40px] mt-[48px] screen1280:!mt-[72px]">
+      <div className="max-w-[1160px] mx-auto">
+        <div className="mb-[24px] flex flex-col gap-[8px] screen744:!flex-row screen744:!items-end screen744:!justify-between">
+          <div>
+            <h2 id="resources-heading" className="text-[24px] screen744:!text-[32px] font-medium text-text1">
+              Popular CELPIP practice resources
+            </h2>
+            <p className="mt-[8px] max-w-[660px] text-[14px] screen1280:!text-[16px] leading-relaxed text-text2">
+              Free tests, sample answers, and skill guides for the searches CELPIP learners make most.
+            </p>
+          </div>
+          <Link
+            href="/editorial-policy"
+            className="text-[14px] font-semibold text-primary1 hover:underline underline-offset-4"
+            onClick={() => trackCTA("Editorial policy", "home_resources")}>
+            Editorial policy
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 gap-[14px] screen744:!grid-cols-2 screen1280:!grid-cols-4">
+          {highIntentResources.map((resource, index) => (
+            <motion.article
+              key={resource.href}
+              initial={{ opacity: 0, y: 14 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: index * 0.06, duration: 0.3 }}
+              className="flex min-h-[180px] flex-col rounded-[18px] border border-[#E8EDFF] bg-white p-[20px] shadow-sm">
+              <h3 className="text-[17px] font-semibold leading-snug text-text1">{resource.title}</h3>
+              <p className="mt-[10px] flex-1 text-[14px] leading-relaxed text-text2">{resource.body}</p>
+              <Link
+                href={resource.href}
+                className="mt-[18px] text-[14px] font-semibold text-primary1 hover:underline underline-offset-4"
+                onClick={() => trackCTA(resource.title, "home_resources")}>
+                Open resource <span aria-hidden>-&gt;</span>
+              </Link>
+            </motion.article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export function HomeThreePillars() {
   const { ref, inView } = useInView({ rootMargin: "0px 0px -60px 0px", triggerOnce: true });
@@ -102,7 +176,7 @@ export function HomeThreePillars() {
             Everything you need in one place
           </h2>
           <p className="text-center text-text2 text-[14px] screen1280:!text-[16px] max-w-[640px] mx-auto mb-[32px] screen1280:!mb-[40px]">
-            Mock exams, instant AI scoring, and clear explanations—so you spend less time searching and more time improving.
+            Mock exams, instant AI scoring, and clear explanations, so you spend less time searching and more time improving.
           </p>
           <div className="grid grid-cols-1 screen744:!grid-cols-3 gap-[16px] screen1280:!gap-[24px]">
             {pillars.map((p, i) => (
@@ -119,7 +193,7 @@ export function HomeThreePillars() {
                   className="text-[14px] font-semibold text-primary1 hover:underline underline-offset-4 inline-flex items-center gap-[4px] w-fit"
                   onClick={() => trackCTA(p.cta, "home_three_pillars")}>
                   {p.cta}
-                  <span aria-hidden>→</span>
+                  <span aria-hidden>-&gt;</span>
                 </Link>
               </motion.article>
             ))}
@@ -133,7 +207,7 @@ const steps = [
   {
     n: "01",
     title: "Pick a skill or a full mock",
-    body: "Jump into Listening, Reading, Writing, or Speaking—or run a timed mock that mirrors the real CELPIP flow.",
+    body: "Jump into Listening, Reading, Writing, or Speaking, or run a timed mock that mirrors the real CELPIP flow.",
   },
   {
     n: "02",
@@ -161,7 +235,7 @@ export function HomeHowItWorks() {
           How online prep works
         </h2>
         <p className="text-center text-text2 text-[14px] screen1280:!text-[16px] max-w-[560px] mx-auto mb-[32px] screen1280:!mb-[40px]">
-          Start in minutes. No appointments—just structured practice and feedback when you are ready.
+          Start in minutes. No appointments, just structured practice and feedback when you are ready.
         </p>
         <div className="flex flex-col screen744:!flex-row screen744:!gap-[20px] screen1280:!gap-[28px]">
           {steps.map((s, i) => (
