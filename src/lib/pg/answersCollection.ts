@@ -129,7 +129,7 @@ function examIdVariants(value: unknown): string[] | null {
     return [...out];
   }
   const hex = objectIdLikeToHex(value);
-  if (hex) return [hex, hex];
+  if (hex) return [hex];
   return null;
 }
 
@@ -324,8 +324,14 @@ export function answersFilterToSql(filter: Record<string, unknown>): SqlParts | 
     } else if (k === "examId") {
       const variants = examIdInList(v) ?? (examIdVariants(v) ? examIdVariants(v)! : null);
       if (!variants?.length) return null;
-      params.push(variants);
-      parts.push(`exam_id = ANY($${paramIndex++}::text[])`);
+      const unique = [...new Set(variants)];
+      if (unique.length === 1) {
+        params.push(unique[0]);
+        parts.push(`exam_id = $${paramIndex++}`);
+      } else {
+        params.push(unique);
+        parts.push(`exam_id = ANY($${paramIndex++}::text[])`);
+      }
     } else if (k === "partId" && typeof v === "number") {
       parts.push(`part_id = $${paramIndex++}`);
       params.push(v);

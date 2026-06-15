@@ -47,7 +47,7 @@ const ResultExamView = nextDynamic(() => import("@/components/dashboard-app/exam
     </Typography>
   ),
 });
-import { ObjectId } from "bson";
+
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
@@ -121,7 +121,7 @@ const Exam = async ({
     }
 
     const examParts = await examPartsRepo.getAllExamPart({
-      examId: new ObjectId(examId),
+      examId,
     });
     const answersRepo = new ListeningAndReadingAnswerRepository(documentsClient);
     const writingRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
@@ -151,7 +151,17 @@ const Exam = async ({
     // Use a type-agnostic check so answers saved without an explicit type
     // (legacy rows) don't cause hasSavedResults to be false and silently
     // redirect users away from their completed exam results.
-    const anyAnswersFromLooseQuery = await answersRepo.findAnswersByExamIdAndUser(examId, user.id);
+    let anyAnswersFromLooseQuery: Awaited<
+      ReturnType<typeof answersRepo.findAnswersByExamIdAndUser>
+    > = [];
+    try {
+      anyAnswersFromLooseQuery = await answersRepo.findAnswersByExamIdAndUser(
+        examId,
+        user.id
+      );
+    } catch (looseLookupError) {
+      console.error("[exam-results] loose answer lookup failed:", looseLookupError);
+    }
     const hasSavedResults =
       answers.items.length > 0 ||
       writingAnswers.items.length > 0 ||

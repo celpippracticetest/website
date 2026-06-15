@@ -62,6 +62,10 @@ Sentry.init({
         if (event.request?.url?.includes("/api/health")) {
             return null;
         }
+        // Info-level captureMessage events should not become Issues
+        if (event.level === "info" || event.level === "log") {
+            return null;
+        }
         return event;
     },
 });

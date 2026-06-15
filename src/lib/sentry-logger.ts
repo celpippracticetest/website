@@ -107,19 +107,33 @@ export function log(
         metadata: enrichedContext.metadata,
     });
 
-    // Log to Sentry based on level
+    // Log to Sentry based on level.
+    // Info/debug go to Sentry Logs (enableLogs) or breadcrumbs — not Issues (captureMessage).
     switch (level) {
         case "debug":
-            Sentry.captureMessage(message, "debug");
+            if (typeof Sentry.logger?.debug === "function") {
+                Sentry.logger.debug(message, enrichedContext.metadata ?? {});
+            } else {
+                addBreadcrumb(message, enrichedContext.action ?? "debug", enrichedContext.metadata);
+            }
             if (process.env.NODE_ENV === "development") {
                 console.debug(`[${enrichedContext.component}:${stackInfo.lineNumber}]`, message, enrichedContext);
             }
             break;
         case "info":
-            Sentry.captureMessage(message, "info");
-            console.log(`[${enrichedContext.component}:${stackInfo.lineNumber}]`, message, enrichedContext);
+            if (typeof Sentry.logger?.info === "function") {
+                Sentry.logger.info(message, enrichedContext.metadata ?? {});
+            } else {
+                addBreadcrumb(message, enrichedContext.action ?? "info", enrichedContext.metadata);
+            }
+            if (process.env.NODE_ENV === "development") {
+                console.log(`[${enrichedContext.component}:${stackInfo.lineNumber}]`, message, enrichedContext);
+            }
             break;
         case "warn":
+            if (typeof Sentry.logger?.warn === "function") {
+                Sentry.logger.warn(message, enrichedContext.metadata ?? {});
+            }
             Sentry.captureMessage(message, "warning");
             console.warn(`[${enrichedContext.component}:${stackInfo.lineNumber}]`, message, enrichedContext);
             break;
@@ -238,16 +252,11 @@ export class PerformanceTracker {
     finish(metadata?: Record<string, any>) {
         const duration = performance.now() - this.startTime;
 
-        logger.info(`${this.operation} completed`, {
+        addBreadcrumb(`${this.operation} completed`, "performance", {
             component: this.component,
-            action: this.operation,
-            metadata: {
-                ...metadata,
-                durationMs: duration,
-            },
-            tags: {
-                operation: this.operation,
-            },
+            operation: this.operation,
+            durationMs: duration,
+            ...metadata,
         });
 
         return duration;
@@ -266,15 +275,6 @@ export function trackUserAction(
         component,
         ...metadata,
     });
-
-    logger.info(`User action: ${action}`, {
-        component,
-        action,
-        metadata,
-        tags: {
-            action_type: "user_interaction",
-        },
-    });
 }
 
 /**
@@ -289,25 +289,10 @@ export function trackAPICall(
     const stackInfo = getStackInfo();
 
     addBreadcrumb(`API ${method} ${endpoint}`, "api-call", {
+        component: stackInfo.component,
         method,
         endpoint,
         statusCode,
         ...metadata,
-    });
-
-    logger.info(`API call: ${method} ${endpoint}`, {
-        component: stackInfo.component,
-        action: "api_call",
-        metadata: {
-            method,
-            endpoint,
-            statusCode,
-            ...metadata,
-        },
-        tags: {
-            api_method: method,
-            api_endpoint: endpoint,
-            ...(statusCode && { status_code: statusCode.toString() }),
-        },
     });
 }

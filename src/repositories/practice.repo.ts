@@ -64,12 +64,12 @@ type PracticeRow = {
   updated_at: Date;
 };
 
-function rowToDto(row: PracticeRow): TPracticeDto {
+function rowToDto(row: PracticeRow): TPracticeDto | null {
   const instructions =
     row.instructions === null || row.instructions === undefined
       ? undefined
       : (row.instructions as TPracticeDto["instructions"]);
-  return PracticeDtoSchema.parse({
+  const parsed = PracticeDtoSchema.safeParse({
     id: row.mongo_id,
     taskId: row.task_mongo_id,
     title: row.title,
@@ -84,6 +84,16 @@ function rowToDto(row: PracticeRow): TPracticeDto {
     totalQuestion: row.total_question ?? undefined,
     totalPassages: row.total_passages ?? undefined,
   });
+  if (!parsed.success) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn(
+        `[practice.repo] skipping invalid practice row ${row.mongo_id}:`,
+        parsed.error.flatten().fieldErrors
+      );
+    }
+    return null;
+  }
+  return parsed.data;
 }
 
 function practiceWhereSql(filter: Record<string, unknown>) {
@@ -288,7 +298,7 @@ export class PracticeRepository {
 
     const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 0;
     return {
-      items: slice.map((practice) => rowToDto(practice)),
+      items: slice.map((practice) => rowToDto(practice)).filter((p): p is TPracticeDto => p != null),
       page,
       totalItems,
       totalPages,

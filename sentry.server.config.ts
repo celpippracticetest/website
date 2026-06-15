@@ -16,4 +16,14 @@ Sentry.init({
   // Enable sending user PII (Personally Identifiable Information)
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
   sendDefaultPii: true,
+
+  beforeSend(event) {
+    if (event.level === "info" || event.level === "log") {
+      return null;
+    }
+    if (event.request?.url?.includes("/api/health")) {
+      return null;
+    }
+    return event;
+  },
 });
