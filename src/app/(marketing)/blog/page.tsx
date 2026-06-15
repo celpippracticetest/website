@@ -128,7 +128,7 @@ export default async function BlogListingPage() {
   return (
     <Box className="min-h-screen bg-slate-50 pb-20">
       <BlogListAnalytics />
-      <JsonLd data={itemListSchema} />
+      {items.length > 0 ? <JsonLd data={itemListSchema} /> : null}
 
       {/* Hero Section */}
       <Box className="relative isolate overflow-hidden border-b border-slate-200 bg-white pb-16 pt-24">

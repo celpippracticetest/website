@@ -91,6 +91,55 @@ function isHex24(id: string): boolean {
   return /^[a-f0-9]{24}$/i.test(id.trim());
 }
 
+/** When `fetch_types` is off (Supabase pooler), postgres.js returns text[] as `{a,b}` strings. */
+function parsePgTextArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item ?? "").trim()).filter(Boolean);
+  }
+  if (value == null) return [];
+  if (typeof value !== "string") return [];
+
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "{}") return [];
+  if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) {
+    return trimmed
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  const inner = trimmed.slice(1, -1);
+  if (!inner) return [];
+
+  const items: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < inner.length; i += 1) {
+    const ch = inner[i]!;
+    if (inQuotes) {
+      if (ch === "\\" && i + 1 < inner.length) {
+        current += inner[++i];
+      } else if (ch === '"') {
+        inQuotes = false;
+      } else {
+        current += ch;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ",") {
+      const item = current.trim();
+      if (item) items.push(item);
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+
+  const last = current.trim();
+  if (last) items.push(last);
+  return items;
+}
+
 function rowToDto(row: BlogRow): TBlogSchemaDto {
   const faq = Array.isArray(row.faq) ? row.faq : [];
   const seoRaw = row.seo && typeof row.seo === "object" && !Array.isArray(row.seo) ? row.seo : {};
@@ -121,8 +170,8 @@ function rowToDto(row: BlogRow): TBlogSchemaDto {
         : (row.content_json as Record<string, unknown>),
     status: row.status,
     authorName: row.author_name,
-    categories: row.categories ?? [],
-    tags: row.tags ?? [],
+    categories: parsePgTextArray(row.categories),
+    tags: parsePgTextArray(row.tags),
     featuredImage,
     faq,
     aiSnippet,
@@ -381,19 +430,30 @@ export class BlogRepository {
 
   async getPublishedSlugs(): Promise<Array<{ slug: string; updatedAt: Date; canonicalUrl?: string }>> {
     const sql = getSql();
-    const rows = await sql<{ slug: string; updated_at: Date; canonical_url: string | null }[]>`
-      SELECT slug, updated_at, seo ->> 'canonicalUrl' AS canonical_url
+    const rows = await sql<BlogRow[]>`
+      SELECT ${sql.unsafe(BLOG_SELECT_SQL)}
       FROM public.blogs
       WHERE status = 'published'
         AND published_at IS NOT NULL
         AND published_at <= now()
+      ORDER BY published_at DESC NULLS LAST, created_at DESC
     `;
 
-    return rows.map((row) => ({
-      slug: row.slug,
-      updatedAt: row.updated_at,
-      canonicalUrl: row.canonical_url ?? undefined,
-    }));
+    const out: Array<{ slug: string; updatedAt: Date; canonicalUrl?: string }> = [];
+    for (const row of rows) {
+      try {
+        const dto = rowToDto(row);
+        const canonicalUrl = dto.seo?.canonicalUrl?.trim();
+        out.push({
+          slug: dto.slug,
+          updatedAt: dto.updatedAt,
+          ...(canonicalUrl ? { canonicalUrl } : {}),
+        });
+      } catch (error) {
+        console.error(`Omitting blog from sitemap (${row.slug}):`, error);
+      }
+    }
+    return out;
   }
 
   async updateBlog(id: string, dto: Partial<TBlogWriteInput>): Promise<TBlogSchemaDto | null> {

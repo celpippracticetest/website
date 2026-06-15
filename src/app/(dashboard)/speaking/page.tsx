@@ -7,14 +7,28 @@ import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import { permanentRedirect, redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
 import { skillPagesContent } from "@/data/skill-pages-content";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildSkillPageStructuredData } from "@/lib/seo/siteSchema";
 import type { Metadata } from "next";
 import { Box, Typography } from "@mui/material";
 import { skillHubPageMetadata } from "@/lib/skillHubPageMetadata";
 
+const SPEAKING_PAGE_URL = "https://celpippracticetest.com/speaking";
+const SPEAKING_PAGE_TITLE =
+  "CELPIP Practice Exam: Free CELPIP Speaking Practice Test";
+const SPEAKING_PAGE_DESCRIPTION =
+  "CELPIP practice exam for Speaking: timed prompts, AI scoring, and tips for fluency. Train under realistic conditions before your real test.";
+
+const speakingStructuredData = buildSkillPageStructuredData({
+  pageUrl: SPEAKING_PAGE_URL,
+  pageTitle: SPEAKING_PAGE_TITLE,
+  pageDescription: SPEAKING_PAGE_DESCRIPTION,
+  faqs: skillPagesContent.speaking.faqs,
+});
+
 const speakingMetadataBase: Metadata = {
-  title: "CELPIP Practice Exam: Free CELPIP Speaking Practice Test",
-  description:
-    "CELPIP practice exam for Speaking: timed prompts, AI scoring, and tips for fluency. Train under realistic conditions before your real test.",
+  title: SPEAKING_PAGE_TITLE,
+  description: SPEAKING_PAGE_DESCRIPTION,
   keywords: [
     "celpip practice exam",
     "free celpip practice exam",
@@ -27,7 +41,7 @@ const speakingMetadataBase: Metadata = {
     "celpip general speaking sample test",
   ],
   alternates: {
-    canonical: "https://celpippracticetest.com/speaking",
+    canonical: SPEAKING_PAGE_URL,
   },
 };
 
@@ -108,7 +122,16 @@ const SpeakingPage = async ({
         taskNumber: taskItem.taskNumber,
       }));
 
-    return <SkillLandingPage content={skillPagesContent.speaking} skillType="speaking" availableTasks={availableTasks} />;
+    return (
+      <>
+        <JsonLd data={speakingStructuredData} />
+        <SkillLandingPage
+          content={skillPagesContent.speaking}
+          skillType="speaking"
+          availableTasks={availableTasks}
+        />
+      </>
+    );
   }
 
   if (!selectedPracticeId && !taskId) {

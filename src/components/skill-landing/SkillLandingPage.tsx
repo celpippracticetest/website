@@ -93,9 +93,13 @@ const SkillLandingPage: React.FC<SkillLandingPageProps> = ({
     <div className="w-full bg-[#F2F6FF] min-h-screen pb-[120px]">
       {/* Hero Section */}
       <div className="max-w-[1200px] mx-auto px-4 pt-8">
-        <h1 className="text-[32px] font-bold text-[#212E42] mb-8">
+        <h1 className="text-[32px] font-bold text-[#212E42] mb-4">
           {content.title}
         </h1>
+
+        <p className="max-w-3xl text-base leading-relaxed text-text2 screen744:text-lg mb-8">
+          {content.answerFirstIntro}
+        </p>
 
         {/* Tasks Grid — flex wrap replaces CSS grid */}
         <div className="flex flex-wrap gap-4 mb-16">

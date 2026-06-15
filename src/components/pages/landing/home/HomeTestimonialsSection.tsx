@@ -4,7 +4,6 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
-import { JsonLd } from "@/components/seo/JsonLd";
 
 const Svg5Star = dynamic(() => import("../../../icons/5Star"), { ssr: false });
 
@@ -117,29 +116,6 @@ export function HomeTestimonialsSection() {
     rootMargin: "0px 0px 120px 0px",
   });
 
-  const reviewsSchema = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: "CELPIP Practice Test Platform",
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "5",
-      reviewCount: studentReviews.length.toString(),
-    },
-    review: studentReviews.map((person) => ({
-      "@type": "Review",
-      author: {
-        "@type": "Person",
-        name: person.name,
-      },
-      reviewRating: {
-        "@type": "Rating",
-        ratingValue: "5",
-      },
-      reviewBody: person.comment,
-    })),
-  };
-
   useEffect(() => {
     if (inView) {
       const timer = setTimeout(() => setAnimate(true), 50);
@@ -153,7 +129,6 @@ export function HomeTestimonialsSection() {
       aria-labelledby="testimonials-heading"
       className="relative overflow-hidden py-16 screen744:py-24"
     >
-      <JsonLd data={reviewsSchema} />
       <div className="relative z-[1] mx-auto max-w-[1200px] px-4 screen744:px-8">
         <div className="mx-auto mb-10 max-w-2xl text-center screen744:mb-14">
           <span className="mb-3 inline-block rounded-full bg-secondary6 px-3 py-1 text-xs font-semibold text-secondary2">

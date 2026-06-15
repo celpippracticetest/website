@@ -7,6 +7,8 @@ import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import { permanentRedirect, redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
 import { skillPagesContent } from "@/data/skill-pages-content";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildSkillPageStructuredData } from "@/lib/seo/siteSchema";
 import type { Metadata } from "next";
 import { Box, Typography } from "@mui/material";
 import { skillHubPageMetadata } from "@/lib/skillHubPageMetadata";
@@ -20,10 +22,22 @@ interface PracticeSection {
   route: string;
 }
 
+const WRITING_PAGE_URL = "https://celpippracticetest.com/writing";
+const WRITING_PAGE_TITLE =
+  "CELPIP Practice Exam: Free CELPIP Writing Practice Test";
+const WRITING_PAGE_DESCRIPTION =
+  "CELPIP practice exam for Writing: realistic email and survey tasks, instant AI feedback, and model answers. Improve grammar, coherence, and task response.";
+
+const writingStructuredData = buildSkillPageStructuredData({
+  pageUrl: WRITING_PAGE_URL,
+  pageTitle: WRITING_PAGE_TITLE,
+  pageDescription: WRITING_PAGE_DESCRIPTION,
+  faqs: skillPagesContent.writing.faqs,
+});
+
 const writingMetadataBase: Metadata = {
-  title: "CELPIP Practice Exam: Free CELPIP Writing Practice Test",
-  description:
-    "CELPIP practice exam for Writing: realistic email and survey tasks, instant AI feedback, and model answers. Improve grammar, coherence, and task response.",
+  title: WRITING_PAGE_TITLE,
+  description: WRITING_PAGE_DESCRIPTION,
   keywords: [
     "celpip practice exam",
     "free celpip practice exam",
@@ -40,7 +54,7 @@ const writingMetadataBase: Metadata = {
     "celpip general writing sample answers",
   ],
   alternates: {
-    canonical: "https://celpippracticetest.com/writing",
+    canonical: WRITING_PAGE_URL,
   },
 };
 
@@ -113,7 +127,16 @@ const WritingPage = async ({
         taskNumber: taskItem.taskNumber,
       }));
 
-    return <SkillLandingPage content={skillPagesContent.writing} skillType="writing" availableTasks={availableTasks} />;
+    return (
+      <>
+        <JsonLd data={writingStructuredData} />
+        <SkillLandingPage
+          content={skillPagesContent.writing}
+          skillType="writing"
+          availableTasks={availableTasks}
+        />
+      </>
+    );
   }
 
   if (!selectedPracticeId && !taskId) {

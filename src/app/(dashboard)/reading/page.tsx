@@ -8,6 +8,7 @@ import { permanentRedirect, redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
 import { skillPagesContent } from "@/data/skill-pages-content";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { buildSkillPageStructuredData } from "@/lib/seo/siteSchema";
 import type { Metadata } from "next";
 import { skillHubPageMetadata } from "@/lib/skillHubPageMetadata";
 import { Box, Typography } from "@mui/material";
@@ -52,43 +53,12 @@ const readingMetadataBase: Metadata = {
   },
 };
 
-const readingStructuredData = {
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "WebPage",
-      name: READING_PAGE_TITLE,
-      description: READING_PAGE_DESCRIPTION,
-      url: READING_PAGE_URL,
-      inLanguage: "en",
-    },
-    {
-      "@type": "Product",
-      name: "CELPIP Reading Practice Exam",
-      description: READING_PAGE_DESCRIPTION,
-      brand: {
-        "@type": "Brand",
-        name: "CELPIPPRACTICETEST",
-      },
-      aggregateRating: {
-        "@type": "AggregateRating",
-        ratingValue: "5",
-        reviewCount: "8",
-      },
-    },
-    {
-      "@type": "FAQPage",
-      mainEntity: skillPagesContent.reading.faqs.map((faq) => ({
-        "@type": "Question",
-        name: faq.question,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: faq.answer,
-        },
-      })),
-    },
-  ],
-};
+const readingStructuredData = buildSkillPageStructuredData({
+  pageUrl: READING_PAGE_URL,
+  pageTitle: READING_PAGE_TITLE,
+  pageDescription: READING_PAGE_DESCRIPTION,
+  faqs: skillPagesContent.reading.faqs,
+});
 
 export async function generateMetadata({
   searchParams,

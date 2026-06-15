@@ -4,7 +4,9 @@ import { ExamRepository } from "@/repositories/exams.repo";
 import { Metadata } from "next";
 import { getIndexingRobotsDirective } from "@/lib/searchIndexing";
 import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
-import ExamFAQ, { FAQ_DATA } from "@/components/dashboard-app/ExamFAQ";
+import ExamFAQ from "@/components/dashboard-app/ExamFAQ";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildExamOverviewStructuredData } from "@/lib/seo/siteSchema";
 import { Paper, Stack, Typography } from "@mui/material";
 import {
   coercePurchasedMockExamIds,
@@ -73,6 +75,11 @@ const ExamsPage = async () => {
     });
   }
 
+  const examOverviewStructuredData = buildExamOverviewStructuredData(
+    examsForOverview,
+    process.env.APP_BASE_URL,
+  );
+
   return (
     <main
       className={
@@ -88,26 +95,10 @@ const ExamsPage = async () => {
             : "w-full max-w-[1280px] bg-transparent px-4 py-6 md:px-6 md:py-8"
         }
       >
+        <JsonLd data={examOverviewStructuredData} />
         {isClassic ? (
           noUser ? (
             <Box className="mb-8 flex w-full flex-col items-center justify-center gap-4 px-4 text-center">
-              <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{
-                  __html: JSON.stringify({
-                    "@context": "https://schema.org",
-                    "@type": "FAQPage",
-                    mainEntity: FAQ_DATA.map((faq) => ({
-                      "@type": "Question",
-                      name: faq.question,
-                      acceptedAnswer: {
-                        "@type": "Answer",
-                        text: faq.answer,
-                      },
-                    })),
-                  }),
-                }}
-              />
               <h1 className="pt-[20px] text-[32px] font-bold leading-[40px] text-[#37465C] screen744:pt-0 screen744:text-[48px] screen744:leading-[56px]">
                 CELPIP Practice Tests – Full Mock Exams Online
               </h1>
@@ -129,24 +120,6 @@ const ExamsPage = async () => {
           )
         ) : noUser ? (
           <div className="mb-8 md:mb-10">
-            <script
-              type="application/ld+json"
-              dangerouslySetInnerHTML={{
-                __html: JSON.stringify({
-                  "@context": "https://schema.org",
-                  "@type": "FAQPage",
-                  mainEntity: FAQ_DATA.map((faq) => ({
-                    "@type": "Question",
-                    name: faq.question,
-                    acceptedAnswer: {
-                      "@type": "Answer",
-                      text: faq.answer,
-                    },
-                  })),
-                }),
-              }}
-            />
-
             <Paper
               elevation={0}
               sx={{

@@ -17,6 +17,7 @@ const nextConfig: NextConfig = {
       ["/celpip-for-medical-laboratory-technologist", "/celpip-for-medical-radiological-technologists"],
       ["/celpip-vs-ielts", "/blog/celpip-vs-ielts-format-fees-scoring"],
       ["/celpip-speaking-tips-for-healthcare", "/wiki/celpip-speaking-tips-high-score"],
+      ["/celpip-speaking-tips", "/wiki/celpip-speaking-tips-high-score"],
       ["/how-to-score-clb-7-on-celpip-for-nursing", "/celpip-for-nurses"],
       ["/celpip-speaking-for-nurses", "/celpip-for-nurses"],
       ["/ircc-language-requirements-for-nurses", "/blog/celpip-2026-canadian-immigration-updates"],

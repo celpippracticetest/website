@@ -1,5 +1,7 @@
 export interface SkillPageContent {
     title: string;
+    /** 2–3 sentence direct answer for AI/search snippets — shown before CTAs. */
+    answerFirstIntro: string;
     description: string;
     tasks: {
         id: string;
@@ -22,6 +24,8 @@ export interface SkillPageContent {
 export const skillPagesContent: Record<string, SkillPageContent> = {
     writing: {
         title: "Free CELPIP Writing Practice Exam",
+        answerFirstIntro:
+            "The CELPIP Writing test has two tasks—writing an email and responding to survey questions—and takes 53 minutes in total. You type your answers on a computer, and each task is scored on grammar, coherence, vocabulary, and task fulfillment. Scores are reported on the CELPIP scale from 1 to 12.",
         description:
             "Writing is a crucial part of the CELPIP test, since it shows how well you're capable of conveying ideas clearly and properly in written English. This <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP practice exam for Writing</a> uses real test-style email and survey tasks so you feel confident and ready. We also link to our broader <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP practice test</a> hub for full-section preparation.",
         tasks: [
@@ -93,6 +97,8 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
     },
     listening: {
         title: "Free CELPIP Listening Practice Exam",
+        answerFirstIntro:
+            "The CELPIP Listening test has six parts with about 38 questions and takes approximately 47–55 minutes. You listen to conversations, discussions, news items, and problem-solving scenarios through headphones at a computer. Scores are reported on the CELPIP scale from 1 to 12.",
         description:
             "Listening is the most important skill in the CELPIP test, since it shows how well you can hear and understand everyday conversations and English news. This <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP practice exam for Listening</a> gives you realistic audio and tasks to build confidence before test day. You can also explore our full <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP practice test</a> resources from the home page.",
         tasks: [
@@ -141,24 +147,44 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
         },
         faqs: [
             {
-                question: "Is the discount applied automatically?",
+                question:
+                    "Where can I practice CELPIP listening with audio and answers?",
                 answer:
-                    "Yes, if you are eligible for a discount, it will be applied automatically at checkout.",
+                    "You can practice CELPIP listening on our platform with realistic audio, timed tasks, and answer review across all six listening parts.",
             },
             {
-                question: "Can I use this discount later?",
+                question:
+                    "Do your listening practice tests include all 6 parts of the test?",
                 answer:
-                    "This offer is only valid on your first paid subscription and expires soon. Don't miss it.",
+                    "Yes. Our CELPIP listening practice covers all six parts: Problem Solving, Daily Life Conversation, Listening for Information, News Item, Discussion, and Viewpoints.",
             },
             {
-                question: "What if I already have an account?",
+                question: "Are CELPIP listening practice tests timed?",
                 answer:
-                    "You can still upgrade your existing account to premium to access all features.",
+                    "Yes. Timed practice is available so you can train under conditions closer to the real CELPIP listening exam.",
+            },
+            {
+                question:
+                    "Can I replay the audio during CELPIP listening practice?",
+                answer:
+                    "In the real CELPIP test, each audio clip plays once. Our practice tests follow the same rule so you build the note-taking and focus skills you need on exam day.",
+            },
+            {
+                question: "What is the best website for CELPIP listening practice?",
+                answer:
+                    "A strong CELPIP listening site should offer authentic audio, all six task types, timed practice, and detailed review. That is the goal of our platform.",
+            },
+            {
+                question: "How can I improve my CELPIP listening score?",
+                answer:
+                    "Improve by practicing regularly, taking notes on key details, reviewing incorrect answers, and building familiarity with Canadian accents and everyday English contexts.",
             },
         ],
     },
     reading: {
         title: "Free CELPIP Reading Practice Exam",
+        answerFirstIntro:
+            "The CELPIP Reading test consists of scored questions across four task types: Correspondence, Diagram, Information, and Viewpoints. Test-takers have approximately 55 minutes to complete the section on a computer. Scores are reported on the CELPIP scale from 1 to 12.",
         description:
             "This <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP practice exam</a> for reading helps you build the exact skills tested on exam day: understanding correspondence, using diagrams, locating key details in information texts, and comparing viewpoints. Use these CELPIP reading practice tests to improve timing, accuracy, vocabulary recognition, and confidence before the real exam.",
         tasks: [
@@ -243,6 +269,8 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
     },
     speaking: {
         title: "Free CELPIP Speaking Practice Exam",
+        answerFirstIntro:
+            "The CELPIP Speaking test includes eight timed tasks—from giving advice to expressing opinions—and takes about 15–20 minutes. You speak into a microphone while prompts appear on screen, and responses are scored for fluency, pronunciation, vocabulary, and task fulfillment. Scores are reported on the CELPIP scale from 1 to 12.",
         description:
             "Speaking skill is one of the most useful sections of the CELPIP test. This skill will show your natural English speaking ability. Improve fluency with this <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP practice exam for Speaking</a> and timed prompts that mirror the real test. Additional <a href='/' style='color: inherit; text-decoration: underline;'>CELPIP speaking practice test</a> material appears below to prepare you step by step.",
         tasks: [

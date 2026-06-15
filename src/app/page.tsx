@@ -2,7 +2,9 @@ import dynamic from "next/dynamic";
 import type { Metadata } from "next";
 import PublicPageShell from "@/components/pages/landing/PublicPageShell";
 import PublicPageFooter from "@/components/pages/landing/PublicPageFooter";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { pageSeo } from "@/lib/seo/pageSeo";
+import { buildHomepageProductJsonLd } from "@/lib/seo/siteSchema";
 import { getUiAbVariant } from "@/lib/uiAbTest.server";
 import { readUiAbQueryParam } from "@/lib/uiAbTest";
 
@@ -35,13 +37,23 @@ export default async function HomePage({
     }) ?? null;
   const variant = fromQuery ?? (await getUiAbVariant());
 
+  const homepageProductSchema = buildHomepageProductJsonLd();
+
   if (variant === "classic") {
-    return <HomePageClassicClient />;
+    return (
+      <>
+        <JsonLd data={homepageProductSchema} />
+        <HomePageClassicClient />
+      </>
+    );
   }
 
   return (
-    <PublicPageShell footer={<PublicPageFooter />}>
-      <HomePageClient />
-    </PublicPageShell>
+    <>
+      <JsonLd data={homepageProductSchema} />
+      <PublicPageShell footer={<PublicPageFooter />}>
+        <HomePageClient />
+      </PublicPageShell>
+    </>
   );
 }

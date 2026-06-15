@@ -7,6 +7,8 @@ import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import { permanentRedirect, redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
 import { skillPagesContent } from "@/data/skill-pages-content";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildSkillPageStructuredData } from "@/lib/seo/siteSchema";
 import type { Metadata } from "next";
 import { Box, Typography } from "@mui/material";
 import { skillHubPageMetadata } from "@/lib/skillHubPageMetadata";
@@ -21,10 +23,22 @@ interface PracticeSection {
   route: string;
 }
 
+const LISTENING_PAGE_URL = "https://celpippracticetest.com/listening";
+const LISTENING_PAGE_TITLE =
+  "CELPIP Practice Exam: Free CELPIP Listening Practice Test";
+const LISTENING_PAGE_DESCRIPTION =
+  "Free CELPIP practice test and sample test for Listening: authentic audio, timed tasks, and review. Build note-taking, accuracy, and exam-day confidence.";
+
+const listeningStructuredData = buildSkillPageStructuredData({
+  pageUrl: LISTENING_PAGE_URL,
+  pageTitle: LISTENING_PAGE_TITLE,
+  pageDescription: LISTENING_PAGE_DESCRIPTION,
+  faqs: skillPagesContent.listening.faqs,
+});
+
 const listeningMetadataBase: Metadata = {
-  title: "CELPIP Practice Exam: Free CELPIP Listening Practice Test",
-  description:
-    "Free CELPIP practice test and sample test for Listening: authentic audio, timed tasks, and review. Build note-taking, accuracy, and exam-day confidence.",
+  title: LISTENING_PAGE_TITLE,
+  description: LISTENING_PAGE_DESCRIPTION,
   keywords: [
     "celpip practice exam",
     "free celpip practice exam",
@@ -43,7 +57,7 @@ const listeningMetadataBase: Metadata = {
     "celpip audio sample",
   ],
   alternates: {
-    canonical: "https://celpippracticetest.com/listening",
+    canonical: LISTENING_PAGE_URL,
   },
 };
 
@@ -116,7 +130,16 @@ const DashboardApp = async ({
         taskNumber: taskItem.taskNumber,
       }));
 
-    return <SkillLandingPage content={skillPagesContent.listening} skillType="listening" availableTasks={availableTasks} />;
+    return (
+      <>
+        <JsonLd data={listeningStructuredData} />
+        <SkillLandingPage
+          content={skillPagesContent.listening}
+          skillType="listening"
+          availableTasks={availableTasks}
+        />
+      </>
+    );
   }
 
   if (!selectedPracticeId && !taskId) {

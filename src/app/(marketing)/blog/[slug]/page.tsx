@@ -149,16 +149,18 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
   }
 
   const relatedPosts = await getRelatedPublishedPosts(post.id, post.categories, post.tags, 3);
-  const canonicalUrl = post.seo?.canonicalUrl || `https://celpippracticetest.com/blog/${post.slug}`;
+  const siteBase = (process.env.APP_BASE_URL || "https://celpippracticetest.com").replace(/\/$/, "");
+  const canonicalUrl = post.seo?.canonicalUrl || `${siteBase}/blog/${post.slug}`;
   const ogImage = post.seo?.ogImageUrl || post.featuredImage?.url;
   const ogImageAlt = post.seo?.ogImageAlt || post.featuredImage?.alt || post.title;
+  const schemaImage = ogImage || `${siteBase}/images/hero.png`;
 
   const blogPostingSchema = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     headline: post.title,
     description: post.seo?.metaDescription || post.excerpt,
-    ...(ogImage ? { image: ogImage } : {}),
+    image: schemaImage,
     author: {
       "@type": "Person",
       name: post.authorName,
@@ -168,12 +170,17 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
       name: "CELPIP Practice Test",
       logo: {
         "@type": "ImageObject",
-        url: "https://celpippracticetest.com/logo.png",
+        url: new URL("/logo.png", `${siteBase}/`).toString(),
       },
     },
-    datePublished: post.publishedAt ? new Date(post.publishedAt).toISOString() : undefined,
+    ...(post.publishedAt
+      ? { datePublished: new Date(post.publishedAt).toISOString() }
+      : {}),
     dateModified: new Date(post.updatedAt).toISOString(),
-    mainEntityOfPage: canonicalUrl,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": canonicalUrl,
+    },
   };
 
   const breadcrumbSchema = {

@@ -27,6 +27,7 @@ import { getHomepageHeroDisplay } from "@/lib/homepage-hero";
 import { getIndexingRobotsDirective } from "@/lib/searchIndexing";
 import { UiVariantProvider } from "@/components/ui-variant/UiVariantProvider";
 import { getUiAbVariant } from "@/lib/uiAbTest.server";
+import { buildRootLayoutJsonLd } from "@/lib/seo/siteSchema";
 import type { Metadata, Viewport } from "next";
 import { Suspense, type ComponentType } from "react";
 
@@ -227,17 +228,7 @@ export default async function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@graph": [{
-                "@type": "Organization",
-                name: "Celpip Practice Test",
-                url: baseUrl,
-                logo: `${baseUrl}/logo.png`,
-                description:
-                  "CELPIP preparation platform with AI-powered scoring and mock exams.",
-              }],
-            }),
+            __html: JSON.stringify(buildRootLayoutJsonLd(baseUrl)),
           }}
         />
       </head>
