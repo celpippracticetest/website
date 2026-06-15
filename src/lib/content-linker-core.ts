@@ -9,6 +9,9 @@ export interface LinkerConfig {
 
 const CANONICAL_HOST = "celpippracticetest.com";
 const INTERNAL_HOSTS = new Set([CANONICAL_HOST, `www.${CANONICAL_HOST}`]);
+const PUBLIC_SEO_HREF_REWRITES: Record<string, string> = {
+  "/league": "/practice-overview",
+};
 
 /**
  * Escapes special characters in string for RegExp
@@ -67,13 +70,33 @@ function normalizeInternalHref(input: string): string {
   }
 }
 
+function rewritePublicSeoHref(input: string): string {
+  const raw = (input ?? "").trim();
+  if (!raw || !isInternalHref(raw)) return raw;
+
+  const normalizedPath = normalizeToPath(raw);
+  const replacementPath = PUBLIC_SEO_HREF_REWRITES[normalizedPath];
+  if (!replacementPath) return raw;
+
+  if (raw.startsWith("/") || raw.startsWith("#") || raw.startsWith("?")) {
+    return replacementPath;
+  }
+
+  try {
+    const url = new URL(raw);
+    return `https://${CANONICAL_HOST}${replacementPath}${url.search}${url.hash}`;
+  } catch {
+    return replacementPath;
+  }
+}
+
 function sanitizeAnchorTag(tag: string): string {
   const hrefMatch = tag.match(/href\s*=\s*(["'])([^"']+)\1/i);
   let nextTag = tag;
   let normalizedHref = "";
 
   if (hrefMatch) {
-    normalizedHref = normalizeInternalHref(hrefMatch[2] ?? "");
+    normalizedHref = normalizeInternalHref(rewritePublicSeoHref(hrefMatch[2] ?? ""));
     if (normalizedHref && normalizedHref !== hrefMatch[2]) {
       nextTag = nextTag.replace(hrefMatch[0], `href=${hrefMatch[1]}${normalizedHref}${hrefMatch[1]}`);
     }

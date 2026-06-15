@@ -10,13 +10,6 @@ export const SITE_SOCIAL_PROFILES = [
   "https://www.instagram.com/celpippracticetest/",
 ] as const;
 
-export const SITE_AGGREGATE_RATING = {
-  ratingValue: "4.9",
-  bestRating: "5",
-  worstRating: "1",
-  ratingCount: "70000",
-} as const;
-
 const DEFAULT_APP_BASE_URL = "https://celpippracticetest.com";
 
 function normalizeBaseUrl(raw: string | undefined): string {
@@ -49,6 +42,23 @@ export function buildRootLayoutJsonLd(baseUrlRaw?: string) {
         logo: `${baseUrl}/images/logo.png`,
         description:
           "CELPIP preparation platform with AI-powered scoring and mock exams.",
+        contactPoint: [
+          {
+            "@type": "ContactPoint",
+            contactType: "customer support",
+            email: "support@celpippracticetest.com",
+            availableLanguage: ["English"],
+          },
+        ],
+        knowsAbout: [
+          "CELPIP practice tests",
+          "CELPIP Listening",
+          "CELPIP Reading",
+          "CELPIP Writing",
+          "CELPIP Speaking",
+          "Canadian Language Benchmark scores",
+          "Canadian immigration language preparation",
+        ],
         sameAs: [...SITE_SOCIAL_PROFILES],
       },
       {
@@ -70,20 +80,24 @@ export function buildRootLayoutJsonLd(baseUrlRaw?: string) {
   };
 }
 
-export function buildHomepageProductJsonLd() {
+export function buildHomepageProductJsonLd(baseUrlRaw?: string) {
+  const baseUrl = normalizeBaseUrl(baseUrlRaw);
+
   return {
     "@context": "https://schema.org",
-    "@type": "Product",
+    "@type": "Service",
+    "@id": `${baseUrl}/#celpip-practice-service`,
     name: "CELPIP Practice Test Platform",
+    url: baseUrl,
     description:
       "CELPIP practice tests with AI scoring for Listening, Reading, Writing, and Speaking.",
-    brand: {
-      "@type": "Brand",
-      name: SITE_NAME,
+    provider: {
+      "@id": `${baseUrl}/#organization`,
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ...SITE_AGGREGATE_RATING,
+    serviceType: "Online CELPIP exam preparation",
+    areaServed: {
+      "@type": "Country",
+      name: "Canada",
     },
   };
 }

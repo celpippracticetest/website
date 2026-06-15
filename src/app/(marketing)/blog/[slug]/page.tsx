@@ -6,6 +6,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import {
   getPublishedBlogPostBySlug,
   getRelatedPublishedPosts,
+  isIndexablePublishedBlogSlug,
 } from "@/lib/blog/public";
 import { linkContentServer } from "@/lib/content-linker-server";
 import { BlogCtaSection } from "@/components/pages/blog/BlogCtaSection";
@@ -88,6 +89,7 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
       BLOG_META_DESCRIPTION_OVERRIDES[requestedSlug]) ||
     post.seo?.metaDescription ||
     fallbackDescription;
+  const shouldIndex = isIndexablePublishedBlogSlug(post.slug);
   const canonicalPath = `/blog/${post.slug}`;
   const path = post.seo?.canonicalUrl?.startsWith("http") ? null : (post.seo?.canonicalUrl || canonicalPath);
   const canonical = path === null
@@ -129,7 +131,7 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
       images: ogImage ? [ogImage] : undefined,
     },
     robots: {
-      index: true,
+      index: shouldIndex,
       follow: true,
     },
   };
