@@ -3,6 +3,7 @@ import { isNonIndexableDeployment } from "@/lib/searchIndexing";
 import { getWikiSlugs } from "@/lib/wiki/public";
 import { getPublishedBlogSlugs } from "@/lib/blog/public";
 import { getPublishedProfessionPageSlugs } from "@/lib/profession-pages/public";
+import { seoResourcePages } from "@/data/seo-resource-pages";
 
 /** Generated on demand — avoids exhausting Supabase pooler during `next build`. */
 export const dynamic = "force-dynamic";
@@ -57,13 +58,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/speaking",
     "/terms-of-service",
     "/wiki",
+    ...Object.values(seoResourcePages).map((page) => `/${page.slug}`),
     ...professionRoutes,
     "/words",
   ].map((route) => {
     const path = route || "/";
+    const resourcePage = Object.values(seoResourcePages).find(
+      (page) => `/${page.slug}` === path
+    );
     return {
       url: toAbsoluteUrl(path),
       lastModified: new Date(
+        resourcePage?.lastModified ??
         STATIC_ROUTE_LAST_MODIFIED[path as keyof typeof STATIC_ROUTE_LAST_MODIFIED] ??
           "2026-06-10T00:00:00.000Z"
       ),

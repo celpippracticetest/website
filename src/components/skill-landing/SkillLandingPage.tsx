@@ -80,6 +80,60 @@ const SKILL_NAV_ITEMS = [
   },
 ];
 
+const RESOURCE_LINKS: Record<
+  SkillLandingPageProps["skillType"],
+  { label: string; href: string; description: string }[]
+> = {
+  listening: [
+    {
+      label: "Free CELPIP Practice Test",
+      href: "/free-celpip-practice-test",
+      description: "Start with a full four-skill practice path.",
+    },
+    {
+      label: "CELPIP Listening Score Guide",
+      href: "/wiki/celpip-listening-score-guide",
+      description: "Understand how listening performance maps to score levels.",
+    },
+  ],
+  reading: [
+    {
+      label: "Free CELPIP Practice Test",
+      href: "/free-celpip-practice-test",
+      description: "Start with a full four-skill practice path.",
+    },
+    {
+      label: "CELPIP Reading Score Guide",
+      href: "/wiki/celpip-reading-score-guide",
+      description: "Review reading score expectations and task strategy.",
+    },
+  ],
+  writing: [
+    {
+      label: "CELPIP Writing Task 1 Samples",
+      href: "/celpip-writing-task-1-samples",
+      description: "Study email prompts, model answers, and tone guidance.",
+    },
+    {
+      label: "CELPIP Writing Task 2 Samples",
+      href: "/celpip-writing-task-2-samples",
+      description: "Review survey response structure and sample answers.",
+    },
+  ],
+  speaking: [
+    {
+      label: "CELPIP Speaking Samples",
+      href: "/celpip-speaking-samples",
+      description: "Practice sample answers and response structure.",
+    },
+    {
+      label: "Complete CELPIP Speaking Guide",
+      href: "/wiki/complete-celpip-speaking-guide",
+      description: "Review task-by-task speaking strategy.",
+    },
+  ],
+};
+
 const SkillLandingPage: React.FC<SkillLandingPageProps> = ({
   content,
   skillType,
@@ -101,6 +155,20 @@ const SkillLandingPage: React.FC<SkillLandingPageProps> = ({
           {content.answerFirstIntro}
         </p>
 
+        {content.aiAnswer ? (
+          <section className="mb-8 rounded-xl border border-[#D5D6D8] bg-white p-5">
+            <p className="mb-2 text-sm font-semibold uppercase text-primary1">
+              Quick Answer
+            </p>
+            <h2 className="mb-3 text-[22px] font-bold text-[#212E42]">
+              {content.aiAnswer.question}
+            </h2>
+            <p className="max-w-4xl text-[#525D6F] leading-relaxed">
+              {content.aiAnswer.answer}
+            </p>
+          </section>
+        ) : null}
+
         {/* Tasks Grid — flex wrap replaces CSS grid */}
         <div className="flex flex-wrap gap-4 mb-16">
           {content.tasks.map((task) => {
@@ -117,6 +185,7 @@ const SkillLandingPage: React.FC<SkillLandingPageProps> = ({
             return (
               <Link
                 key={task.id}
+                id={`task-${task.id}`}
                 href={href}
                 className="bg-[#FFF9F0] border border-[#FFEBD6] rounded-xl p-6 flex flex-col gap-2 hover:shadow-md transition-shadow cursor-pointer w-full md:w-[calc(50%-8px)] lg:w-[calc(33.333%-11px)]"
               >
@@ -165,6 +234,42 @@ const SkillLandingPage: React.FC<SkillLandingPageProps> = ({
                 <li key={idx}>{point}</li>
               ))}
             </ul>
+
+            {content.scoreFocus ? (
+              <section className="mt-8">
+                <h3 className="text-[18px] font-bold text-[#212E42] mb-4">
+                  {content.scoreFocus.title}
+                </h3>
+                <div className="grid gap-3 screen744:grid-cols-3">
+                  {content.scoreFocus.items.map((item) => (
+                    <div
+                      key={item.label}
+                      className="rounded-xl border border-[#D5D6D8] bg-white p-4"
+                    >
+                      <h4 className="mb-2 text-sm font-bold text-[#212E42]">
+                        {item.label}
+                      </h4>
+                      <p className="text-sm leading-relaxed text-[#525D6F]">
+                        {item.detail}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {content.commonMistakes?.length ? (
+              <section className="mt-8">
+                <h3 className="text-[18px] font-bold text-[#212E42] mb-3">
+                  Common Mistakes to Avoid
+                </h3>
+                <ul className="list-disc pl-5 text-[#525D6F] space-y-2">
+                  {content.commonMistakes.map((mistake) => (
+                    <li key={mistake}>{mistake}</li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
           </div>
 
           {/* Mascot Image — explicit dimensions prevent CLS, priority for LCP */}
@@ -179,6 +284,28 @@ const SkillLandingPage: React.FC<SkillLandingPageProps> = ({
             />
           </div>
         </div>
+
+        <section className="mb-16">
+          <h2 className="text-[24px] font-bold text-[#212E42] mb-4">
+            Related CELPIP Resources
+          </h2>
+          <div className="grid gap-4 screen744:grid-cols-2">
+            {RESOURCE_LINKS[skillType].map((resource) => (
+              <Link
+                key={resource.href}
+                href={resource.href}
+                className="rounded-xl border border-[#D5D6D8] bg-white p-5 transition-shadow hover:shadow-md"
+              >
+                <span className="mb-2 block text-lg font-semibold text-[#212E42]">
+                  {resource.label}
+                </span>
+                <span className="text-sm leading-relaxed text-[#525D6F]">
+                  {resource.description}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
 
         {/* FAQs */}
         <div className="mb-16">

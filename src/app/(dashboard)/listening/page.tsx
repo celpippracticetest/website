@@ -33,6 +33,8 @@ const listeningStructuredData = buildSkillPageStructuredData({
   pageUrl: LISTENING_PAGE_URL,
   pageTitle: LISTENING_PAGE_TITLE,
   pageDescription: LISTENING_PAGE_DESCRIPTION,
+  aiAnswer: skillPagesContent.listening.aiAnswer,
+  tasks: skillPagesContent.listening.tasks,
   faqs: skillPagesContent.listening.faqs,
 });
 

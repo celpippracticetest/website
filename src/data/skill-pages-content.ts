@@ -2,6 +2,10 @@ export interface SkillPageContent {
     title: string;
     /** 2–3 sentence direct answer for AI/search snippets — shown before CTAs. */
     answerFirstIntro: string;
+    aiAnswer?: {
+        question: string;
+        answer: string;
+    };
     description: string;
     tasks: {
         id: string;
@@ -15,6 +19,14 @@ export interface SkillPageContent {
         description: string;
         points: string[];
     };
+    scoreFocus?: {
+        title: string;
+        items: {
+            label: string;
+            detail: string;
+        }[];
+    };
+    commonMistakes?: string[];
     faqs: {
         question: string;
         answer: string;
@@ -24,6 +36,11 @@ export interface SkillPageContent {
 export const skillPagesContent: Record<string, SkillPageContent> = {
     writing: {
         title: "Free CELPIP Writing Practice Exam",
+        aiAnswer: {
+            question: "What is the best way to practice CELPIP Writing?",
+            answer:
+                "The best way to practice CELPIP Writing is to write Task 1 emails and Task 2 survey responses under the official time limits, then review your answer for task fulfillment, paragraph structure, tone, vocabulary range, grammar, and word count. High-scoring practice should include model answers and feedback rather than only writing more responses.",
+        },
         answerFirstIntro:
             "The CELPIP Writing test has two tasks—writing an email and responding to survey questions—and takes 53 minutes in total. You type your answers on a computer, and each task is scored on grammar, coherence, vocabulary, and task fulfillment. Scores are reported on the CELPIP scale from 1 to 12.",
         description:
@@ -61,6 +78,29 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
                 "Task 2: Answering Survey Questions, choose one option, say why, give reasons/examples. You have ~26 minutes. ~150-200 words.",
             ],
         },
+        scoreFocus: {
+            title: "What CELPIP Writing Scoring Rewards",
+            items: [
+                {
+                    label: "Task fulfillment",
+                    detail: "Answer every bullet in the prompt and stay close to the requested purpose, audience, and tone.",
+                },
+                {
+                    label: "Coherence",
+                    detail: "Use clear paragraphs, transitions, and a logical order so the reader can follow your ideas quickly.",
+                },
+                {
+                    label: "Vocabulary and grammar",
+                    detail: "Use accurate everyday English, varied sentence structures, and precise word choices without overcomplicating the response.",
+                },
+            ],
+        },
+        commonMistakes: [
+            "Using a memorized template that does not match the prompt.",
+            "Missing one required bullet point in Task 1.",
+            "Writing too generally in Task 2 instead of giving specific reasons and examples.",
+            "Using a tone that is too casual for formal emails or too stiff for friendly emails.",
+        ],
         faqs: [
             {
                 question: "Where can I practice CELPIP writing with sample answers?",
@@ -97,6 +137,11 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
     },
     listening: {
         title: "Free CELPIP Listening Practice Exam",
+        aiAnswer: {
+            question: "How should I practice for CELPIP Listening?",
+            answer:
+                "Practice CELPIP Listening by completing all six task types with audio that plays once, taking short notes for names, numbers, opinions, and changes in meaning, then reviewing wrong answers by question type. The goal is not just hearing English, but learning to catch paraphrased details under time pressure.",
+        },
         answerFirstIntro:
             "The CELPIP Listening test has six parts with about 38 questions and takes approximately 47–55 minutes. You listen to conversations, discussions, news items, and problem-solving scenarios through headphones at a computer. Scores are reported on the CELPIP scale from 1 to 12.",
         description:
@@ -145,6 +190,29 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
                 "The CELPIP Listening test is approximately 47-55 minutes long and has 6 sections with around 38 questions. You'll listen to conversations, discussions, problem-solving exercises, and news-announcement style reports, all designed to replicate actual use of English in Canada.",
             points: [],
         },
+        scoreFocus: {
+            title: "What CELPIP Listening Scoring Rewards",
+            items: [
+                {
+                    label: "Main idea recognition",
+                    detail: "Understand the overall purpose of a conversation, discussion, or news item before focusing on details.",
+                },
+                {
+                    label: "Detail accuracy",
+                    detail: "Track specific facts, changes, speaker preferences, and implied meanings from a single audio play.",
+                },
+                {
+                    label: "Paraphrase awareness",
+                    detail: "Expect answer choices to use different words from the recording while keeping the same meaning.",
+                },
+            ],
+        },
+        commonMistakes: [
+            "Trying to write full sentences instead of short notes.",
+            "Choosing an answer because it repeats a word from the audio.",
+            "Missing speaker attitude, agreement, or hesitation.",
+            "Practicing with replayable audio and then struggling when the real test plays once.",
+        ],
         faqs: [
             {
                 question:
@@ -183,6 +251,11 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
     },
     reading: {
         title: "Free CELPIP Reading Practice Exam",
+        aiAnswer: {
+            question: "How should I practice for CELPIP Reading?",
+            answer:
+                "Practice CELPIP Reading by drilling all four task types: correspondence, applying a diagram, reading for information, and reading for viewpoints. Use timed passages, scan for details, watch for paraphrases, and review why wrong answer choices are tempting but incorrect.",
+        },
         answerFirstIntro:
             "The CELPIP Reading test consists of scored questions across four task types: Correspondence, Diagram, Information, and Viewpoints. Test-takers have approximately 55 minutes to complete the section on a computer. Scores are reported on the CELPIP scale from 1 to 12.",
         description:
@@ -231,6 +304,29 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
                 "Reading for Viewpoints: compare opinions, attitudes, and arguments across a longer passage.",
             ],
         },
+        scoreFocus: {
+            title: "What CELPIP Reading Scoring Rewards",
+            items: [
+                {
+                    label: "Fast comprehension",
+                    detail: "Identify the purpose, audience, and structure of a passage before answering detailed questions.",
+                },
+                {
+                    label: "Evidence-based answers",
+                    detail: "Choose answers supported by the passage rather than outside knowledge or assumptions.",
+                },
+                {
+                    label: "Viewpoint comparison",
+                    detail: "Separate facts, opinions, tone, and speaker attitudes in longer viewpoint passages.",
+                },
+            ],
+        },
+        commonMistakes: [
+            "Reading every word slowly before looking at the questions.",
+            "Ignoring diagrams, headings, and layout clues.",
+            "Choosing an answer that is true but not supported by the passage.",
+            "Missing synonym and paraphrase relationships between question and passage.",
+        ],
         faqs: [
             {
                 question:
@@ -269,6 +365,11 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
     },
     speaking: {
         title: "Free CELPIP Speaking Practice Exam",
+        aiAnswer: {
+            question: "How should I practice for CELPIP Speaking?",
+            answer:
+                "Practice CELPIP Speaking by recording timed answers for all eight tasks, then reviewing whether each response directly answers the prompt, has a simple structure, uses clear reasons or details, and sounds fluent without long pauses. The best practice combines real prompts, recordings, and feedback on fluency, pronunciation, vocabulary, and task completion.",
+        },
         answerFirstIntro:
             "The CELPIP Speaking test includes eight timed tasks—from giving advice to expressing opinions—and takes about 15–20 minutes. You speak into a microphone while prompts appear on screen, and responses are scored for fluency, pronunciation, vocabulary, and task fulfillment. Scores are reported on the CELPIP scale from 1 to 12.",
         description:
@@ -331,6 +432,29 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
                 "The CELPIP speaking test takes 15 to 20 minutes and includes 8 different tasks. The tasks are set in real-life contexts such as giving advice, describing experiences, making predictions, comparing and persuading, and giving opinions. You will use a microphone and questions are on-screen. Your answers will be recorded and checked by examiners. This test analyzes your Canadian English fluency, pronunciation, vocabulary etc.",
             points: [],
         },
+        scoreFocus: {
+            title: "What CELPIP Speaking Scoring Rewards",
+            items: [
+                {
+                    label: "Task completion",
+                    detail: "Answer the exact situation, include enough detail, and finish within the response time.",
+                },
+                {
+                    label: "Fluency and coherence",
+                    detail: "Speak in organized chunks with natural transitions and few long pauses.",
+                },
+                {
+                    label: "Pronunciation and vocabulary",
+                    detail: "Use clear, understandable speech and precise everyday vocabulary for the situation.",
+                },
+            ],
+        },
+        commonMistakes: [
+            "Starting without a structure and running out of time.",
+            "Speaking too fast, which reduces clarity.",
+            "Giving generic answers that do not match the specific prompt.",
+            "Pausing for too long while searching for advanced vocabulary.",
+        ],
         faqs: [
             {
                 question:

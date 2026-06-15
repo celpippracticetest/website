@@ -23,6 +23,8 @@ const speakingStructuredData = buildSkillPageStructuredData({
   pageUrl: SPEAKING_PAGE_URL,
   pageTitle: SPEAKING_PAGE_TITLE,
   pageDescription: SPEAKING_PAGE_DESCRIPTION,
+  aiAnswer: skillPagesContent.speaking.aiAnswer,
+  tasks: skillPagesContent.speaking.tasks,
   faqs: skillPagesContent.speaking.faqs,
 });
 

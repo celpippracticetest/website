@@ -32,6 +32,8 @@ const writingStructuredData = buildSkillPageStructuredData({
   pageUrl: WRITING_PAGE_URL,
   pageTitle: WRITING_PAGE_TITLE,
   pageDescription: WRITING_PAGE_DESCRIPTION,
+  aiAnswer: skillPagesContent.writing.aiAnswer,
+  tasks: skillPagesContent.writing.tasks,
   faqs: skillPagesContent.writing.faqs,
 });
 

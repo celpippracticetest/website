@@ -276,6 +276,10 @@ export const GUEST_FOOTER_SECTIONS: FooterSection[] = [
         href: "/wiki",
         label: "CELPIP Wiki",
       },
+      {
+        href: "/free-celpip-practice-test",
+        label: "Free Practice Test",
+      },
     ],
   },
   {
@@ -295,6 +299,7 @@ export const GUEST_FOOTER_SECTIONS: FooterSection[] = [
       { href: "/pricing", label: "Pricing" },
       { href: "/blog", label: "Blog" },
       { href: "/contact-us", label: "Contact Us" },
+      { href: "/editorial-policy", label: "Editorial Policy" },
       { href: "/delete-account", label: "Delete Account" },
       { href: "/app", label: "App" },
     ],

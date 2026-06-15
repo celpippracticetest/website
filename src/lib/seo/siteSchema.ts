@@ -106,13 +106,22 @@ export function buildSkillPageStructuredData({
   pageUrl,
   pageTitle,
   pageDescription,
+  aiAnswer,
+  tasks,
   faqs,
 }: {
   pageUrl: string;
   pageTitle: string;
   pageDescription: string;
+  aiAnswer?: SkillPageContent["aiAnswer"];
+  tasks?: SkillPageContent["tasks"];
   faqs: SkillPageContent["faqs"];
 }) {
+  const faqItems = [
+    ...(aiAnswer ? [aiAnswer] : []),
+    ...faqs,
+  ];
+
   return {
     "@context": "https://schema.org",
     "@graph": [
@@ -123,9 +132,23 @@ export function buildSkillPageStructuredData({
         url: pageUrl,
         inLanguage: "en",
       },
+      ...(tasks?.length
+        ? [
+            {
+              "@type": "ItemList",
+              name: `${pageTitle} task list`,
+              itemListElement: tasks.map((task, index) => ({
+                "@type": "ListItem",
+                position: index + 1,
+                name: task.description,
+                url: `${pageUrl}#task-${task.id}`,
+              })),
+            },
+          ]
+        : []),
       {
         "@type": "FAQPage",
-        mainEntity: faqs.map((faq) => ({
+        mainEntity: faqItems.map((faq) => ({
           "@type": "Question",
           name: faq.question,
           acceptedAnswer: {

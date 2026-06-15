@@ -57,6 +57,8 @@ const readingStructuredData = buildSkillPageStructuredData({
   pageUrl: READING_PAGE_URL,
   pageTitle: READING_PAGE_TITLE,
   pageDescription: READING_PAGE_DESCRIPTION,
+  aiAnswer: skillPagesContent.reading.aiAnswer,
+  tasks: skillPagesContent.reading.tasks,
   faqs: skillPagesContent.reading.faqs,
 });
 
