@@ -110,7 +110,7 @@ export function AuthMarketingShell({ children }: { children: React.ReactNode }) 
             <div className="mb-4 inline-flex items-center gap-2 rounded-full px-1 py-0.5">
               <VerifiedIcon sx={{ fontSize: 16, color: "#316BFF" }} aria-hidden />
               <span className="text-[0.813rem] font-semibold text-primary1">
-                #1 Rated CELPIP Prep Platform 2026
+                AI-scored CELPIP prep platform
               </span>
             </div>
             <h1 className="text-balance text-[2rem] font-extrabold leading-[1.12] text-text1 screen744:text-[2.5rem] screen1280:text-[2.75rem]">
@@ -118,8 +118,8 @@ export function AuthMarketingShell({ children }: { children: React.ReactNode }) 
               <span className="text-secondary2">Faster.</span>
             </h1>
             <p className="mt-3 text-base leading-relaxed text-text2 screen744:text-lg">
-              Join 70,000+ test-takers who improved their scores with mock exams, AI
-              feedback, and full exam simulation.
+              Join 70,000+ CELPIP learners practicing with mock exams, AI feedback,
+              and full exam simulation.
             </p>
             <div className="mt-6 max-w-md">
               <PricingUpgradeModalHeaderList

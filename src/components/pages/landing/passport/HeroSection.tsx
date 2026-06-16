@@ -117,7 +117,7 @@ export default function PassportHeroSection() {
                   <Star key={i} className="w-4 h-4 fill-amber-light text-amber-light" />
                 ))}
                 <span className="text-sm text-white/70 ml-2" style={{ fontFamily: "var(--font-body)" }}>
-                  4.9/5 rating
+                  AI feedback included
                 </span>
               </div>
               <div className="h-4 w-px bg-white/30" />

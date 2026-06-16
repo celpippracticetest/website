@@ -14,6 +14,12 @@ export const metadata: Metadata = {
     url: `https://celpippracticetest.com/${page.slug}`,
     type: "article",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: page.title,
+    description: page.description,
+    images: ["/images/hero.png"],
+  },
   robots: { index: true, follow: true },
 };
 

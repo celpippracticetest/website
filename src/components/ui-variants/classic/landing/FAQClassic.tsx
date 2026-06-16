@@ -25,7 +25,7 @@ const FAQClassic = () => {
     {
       question: "How exact are CELPIP practice tests compared to the real test?",
       answer:
-        "Our simulations attempt to replicate the actual CELPIP test format and duration. With AI-based scoring, your scores reflect real exam performance, enabling you to better estimate your CLB levels.",
+        "Our practice tests follow the public CELPIP format and timing closely, but they are independent preparation materials and are not official CELPIP exams. AI scoring is useful for practice and progress tracking, not a guaranteed official score.",
     },
     {
       question: "Will I get instant online CELPIP scores and feedback?",
@@ -35,12 +35,12 @@ const FAQClassic = () => {
     {
       question: "What are the best 4 skills on the CELPIP practice platform?",
       answer:
-        "CelpipPracticeTest.com is Australia and Canada's go-to CELPIP practice platform, preferred by 20,000+ test-takers. Students love us for the largest collection of CELPIP-specific mocks and practice exercises.",
+        "The strongest areas are full CELPIP mock tests, AI-scored Writing practice, AI-assisted Speaking feedback, and skill drills for Listening and Reading. Learners use these together to build timing, structure, vocabulary, and confidence.",
     },
     {
       question: "Do your CELPIP mock tests simulate real exam settings?",
       answer:
-        "Yes. Our mocks are timed and structured similarly to the actual CELPIP test, getting under real exam conditions",
+        "Yes. Our mocks are timed and structured similarly to the CELPIP test so you can practice pacing, focus, and section-by-section strategy.",
     },
     {
       question: "What do you offer on CELPIPPracticeTest.com?",

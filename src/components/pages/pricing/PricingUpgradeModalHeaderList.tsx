@@ -187,7 +187,7 @@ export function PricingUpgradeModalHeaderList({
             4.9/5 — read reviews
           </a>
         ) : (
-          <span>4.9/5 rating</span>
+          <span>Instant AI feedback</span>
         )}
       </HeaderListItem>
     </ul>

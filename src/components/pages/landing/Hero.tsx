@@ -142,7 +142,7 @@ const Hero = () => {
               <div className="mb-6 inline-flex items-center gap-2 rounded-full px-3 py-1.5">
                 <VerifiedIcon sx={{ fontSize: 16, color: "#316BFF" }} />
                 <span className="text-[0.813rem] font-semibold text-primary1">
-                  #1 Rated CELPIP Prep Platform 2026
+                  AI-scored CELPIP prep platform
                 </span>
               </div>
 
@@ -220,20 +220,16 @@ const Hero = () => {
             </div>
 
             <div className="grid w-full grid-cols-2 gap-3 screen744:gap-3 screen1280:gap-4">
-              {heroExamSections.map((exam) => {
-                const isFullRow = exam.link === "/exam-overview";
-                return (
-                  <ExamSectionCard
-                    key={exam.title}
-                    title={exam.title}
-                    icon={exam.icon}
-                    bgColor={exam.bgColor}
-                    link={exam.link}
-                    spanFullRow={isFullRow}
-                    className="min-w-0 w-full screen744:flex-none screen744:!max-w-none screen1280:!max-w-none"
-                  />
-                );
-              })}
+              {heroExamSections.map((exam) => (
+                <ExamSectionCard
+                  key={exam.title}
+                  title={exam.title}
+                  icon={exam.icon}
+                  bgColor={exam.bgColor}
+                  link={exam.link}
+                  className="min-w-0 w-full screen744:flex-none screen744:!max-w-none screen1280:!max-w-none"
+                />
+              ))}
             </div>
           </div>
         </div>

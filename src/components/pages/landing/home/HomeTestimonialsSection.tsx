@@ -11,7 +11,7 @@ const studentReviews = [
   {
     name: "Ravi",
     comment:
-      "The timed practice tests were identical to the real test. That practice enabled me to manage stress and finish each section within the allotted time.",
+      "The timed practice tests felt close to the real CELPIP format. That practice helped me manage stress and finish each section within the allotted time.",
     source: "bear_student.png",
   },
   {
@@ -23,13 +23,13 @@ const studentReviews = [
   {
     name: "Carlos",
     comment:
-      "CELPIPPRACTICETEST.com made my practice a revolutionary process. Practice in speaking and getting instant feedback increased my confidence level. I cleared with 9 in all sections!",
+      "Speaking practice and instant feedback helped me build confidence. My answers became more organized, and I knew what to work on before test day.",
     source: "Carlos.png",
   },
   {
-    name: "Admad",
+    name: "Ahmed",
     comment:
-      "I finally got CLB 9 in writing after doing 2 weeks of practice tests at CELPIPPRACTICETEST.com. The AI feedback was exactly what I needed to improve structure and coherence. I highly recommend it!",
+      "The writing feedback helped me improve structure and coherence. After two weeks of focused practice, I felt much more prepared for the exam.",
     source: "Ahmed.png",
   },
   {
@@ -39,7 +39,7 @@ const studentReviews = [
     source: "bear_student_tablet.png",
   },
   {
-    name: "Lie",
+    name: "Li",
     comment:
       "The practice of speaking on this website is amazing. I practiced and listened to the high-score examples. It was so helpful.",
     source: "Li.png",
@@ -138,11 +138,11 @@ export function HomeTestimonialsSection() {
             id="testimonials-heading"
             className="text-balance text-3xl font-extrabold text-text1 screen744:text-4xl"
           >
-            Join 70,000+ Who{" "}
-            <span className="text-secondary2">Passed CELPIP</span>
+            Trusted by 70,000+{" "}
+            <span className="text-secondary2">CELPIP Learners</span>
           </h2>
           <p className="mt-3 text-base text-text2 screen744:text-lg">
-            Real results from real test-takers who prepared with our platform.
+            Practice stories from test-takers using mock exams, skill drills, and AI feedback.
           </p>
         </div>
 

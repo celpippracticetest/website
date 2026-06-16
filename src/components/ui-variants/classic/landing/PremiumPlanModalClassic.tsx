@@ -212,7 +212,7 @@ export default function PremiumPlanModalClassic({
     {
       name: "Carlos Mendoza",
       comment:
-        "CELPIPPRACTICETEST.com made my practice a revolutionary process. Practice in speaking and getting instant feedback increased my confidence level. I cleared with 9 in all sections!",
+        "Speaking practice and instant feedback helped me build confidence. My answers became more organized, and I knew what to work on before test day.",
       source: "Carlos.png",
     },
     {
@@ -230,7 +230,7 @@ export default function PremiumPlanModalClassic({
     {
       name: "Ahmed El-Sayed",
       comment:
-        "I finally got CLB 9 in writing after doing 2 weeks of practice tests at CELPIPPRACTICETEST.com. The AI feedback was exactly what I needed to improve structure and coherence. I highly recommend it!",
+        "The writing feedback helped me improve structure and coherence. After two weeks of focused practice, I felt much more prepared for the exam.",
       source: "Ahmed.png",
     },
     {

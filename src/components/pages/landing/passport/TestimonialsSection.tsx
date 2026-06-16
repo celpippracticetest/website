@@ -20,7 +20,7 @@ const testimonials = [
     name: "Wei Chen",
     location: "Vancouver, BC",
     score: "L:12 S:11 R:10 W:10",
-    text: "The mock exams are almost identical to the real test. I walked into my CELPIP exam feeling like I'd already done it before. No surprises, no panic. Got my PR approved last month!",
+    text: "The mock exams felt close to the CELPIP format. I walked into my exam understanding the timing and question flow, which made test day much calmer.",
     rating: 5,
     avatar: "WC",
   },
