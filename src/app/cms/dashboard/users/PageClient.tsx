@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Fragment, useCallback } from "react";
+import { useState, useEffect, Fragment, useCallback, useRef } from "react";
 import Search from "@mui/icons-material/Search";
 import Download from "@mui/icons-material/Download";
 import Visibility from "@mui/icons-material/Visibility";
@@ -94,6 +94,7 @@ interface UsersResponse {
 }
 
 const USERS_PAGE_SIZE = 50;
+const USERS_FETCH_TIMEOUT_MS = 120_000;
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -145,12 +146,14 @@ export default function UsersPage() {
   } | null>(null);
 
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const fetchGenerationRef = useRef(0);
 
   const fetchUsers = useCallback(async () => {
+    const generation = ++fetchGenerationRef.current;
     setLoading(true);
     setFetchError(null);
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 45_000);
+    const timeoutId = window.setTimeout(() => controller.abort(), USERS_FETCH_TIMEOUT_MS);
     try {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -166,6 +169,8 @@ export default function UsersPage() {
         signal: controller.signal,
       });
       const data = (await response.json().catch(() => ({}))) as UsersResponse;
+
+      if (generation !== fetchGenerationRef.current) return;
 
       if (!response.ok) {
         setUsers([]);
@@ -184,6 +189,7 @@ export default function UsersPage() {
         totalPages: data.pagination?.totalPages ?? 0,
       }));
     } catch (error) {
+      if (generation !== fetchGenerationRef.current) return;
       console.error("Error fetching users:", error);
       setUsers([]);
       setFetchError(
@@ -193,7 +199,9 @@ export default function UsersPage() {
       );
     } finally {
       window.clearTimeout(timeoutId);
-      setLoading(false);
+      if (generation === fetchGenerationRef.current) {
+        setLoading(false);
+      }
     }
   }, [page, search, sortBy, sortOrder, subscriptionStatus]);
 
@@ -818,10 +826,14 @@ export default function UsersPage() {
                       {/* IPs / user agents */}
                       <TableCell>
                         <Typography variant="body2">
-                          {user.uniqueIpAddresses} IPs
+                          {user.totalActivities > 0 && user.uniqueIpAddresses === 0
+                            ? "—"
+                            : `${user.uniqueIpAddresses} IPs`}
                         </Typography>
                         <Typography variant="caption" className="text-gray-500">
-                          {user.uniqueUserAgents} user agents
+                          {user.totalActivities > 0 && user.uniqueUserAgents === 0
+                            ? "—"
+                            : `${user.uniqueUserAgents} user agents`}
                         </Typography>
                       </TableCell>
 

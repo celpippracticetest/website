@@ -147,11 +147,158 @@ function rowToActivityStats(row: UserActivityStatsRow): AdminUserActivityStats {
   };
 }
 
+const ACTIVITY_STATS_BATCH_SIZE = 50;
+
+function activityLookupIdsFromProfileRow(r: {
+  stable_id: string;
+  legacy_clerk_user_id: string | null;
+  supabase_auth_user_id: string | null;
+}): string[] {
+  return uniqueNonEmptyIds([
+    r.stable_id,
+    r.legacy_clerk_user_id,
+    r.supabase_auth_user_id,
+  ]);
+}
+
+async function queryActivityStatsBatch(
+  sql: Sql,
+  batchIds: string[],
+  options: { includeDetailArrays: boolean; listView: boolean }
+): Promise<UserActivityStatsRow[]> {
+  const { includeDetailArrays, listView } = options;
+  if (batchIds.length === 0) return [];
+
+  if (includeDetailArrays) {
+    return sql<UserActivityStatsRow[]>`
+      SELECT
+        user_id,
+        COUNT(*)::int AS total_activities,
+        COALESCE(
+          SUM(COALESCE(llm_tokens_prompt, 0) + COALESCE(llm_tokens_completion, 0)),
+          0
+        ) AS total_tokens,
+        COUNT(*) FILTER (WHERE event_type = 'practice_attempt_started')::int AS practice_attempts,
+        COUNT(*) FILTER (WHERE event_type = 'practice_attempt_completed')::int AS practice_completions,
+        COUNT(*) FILTER (WHERE event_type = 'mock_attempt_started')::int AS mock_attempts,
+        COUNT(*) FILTER (WHERE event_type = 'mock_attempt_completed')::int AS mock_completions,
+        COUNT(*) FILTER (
+          WHERE event_type IN (
+            'payment_successful',
+            'payment_failed',
+            'subscription_created',
+            'subscription_cancelled'
+          )
+        )::int AS payment_events,
+        COUNT(*) FILTER (
+          WHERE event_type IN ('dispute_created', 'dispute_resolved')
+        )::int AS dispute_events,
+        COUNT(DISTINCT NULLIF(TRIM(ip_address), '')) FILTER (
+          WHERE ip_address IS NOT NULL AND TRIM(ip_address) <> ''
+        )::int AS unique_ip_addresses_count,
+        COUNT(DISTINCT NULLIF(TRIM(user_agent), '')) FILTER (
+          WHERE user_agent IS NOT NULL AND TRIM(user_agent) <> ''
+        )::int AS unique_user_agents_count,
+        MAX(timestamp_utc) AS last_activity,
+        MIN(timestamp_utc) AS first_activity,
+        COALESCE(
+          array_agg(DISTINCT NULLIF(TRIM(ip_address), '')) FILTER (
+            WHERE ip_address IS NOT NULL AND TRIM(ip_address) <> ''
+          ),
+          ARRAY[]::text[]
+        ) AS ip_addresses,
+        COALESCE(
+          array_agg(DISTINCT NULLIF(TRIM(user_agent), '')) FILTER (
+            WHERE user_agent IS NOT NULL AND TRIM(user_agent) <> ''
+          ),
+          ARRAY[]::text[]
+        ) AS user_agents
+      FROM public.user_activities
+      WHERE user_id IN ${sql(batchIds)}
+      GROUP BY user_id
+    `;
+  }
+
+  if (listView) {
+    return sql<UserActivityStatsRow[]>`
+      SELECT
+        user_id,
+        COUNT(*)::int AS total_activities,
+        COALESCE(
+          SUM(COALESCE(llm_tokens_prompt, 0) + COALESCE(llm_tokens_completion, 0)),
+          0
+        ) AS total_tokens,
+        COUNT(*) FILTER (WHERE event_type = 'practice_attempt_started')::int AS practice_attempts,
+        COUNT(*) FILTER (WHERE event_type = 'practice_attempt_completed')::int AS practice_completions,
+        COUNT(*) FILTER (WHERE event_type = 'mock_attempt_started')::int AS mock_attempts,
+        COUNT(*) FILTER (WHERE event_type = 'mock_attempt_completed')::int AS mock_completions,
+        COUNT(*) FILTER (
+          WHERE event_type IN (
+            'payment_successful',
+            'payment_failed',
+            'subscription_created',
+            'subscription_cancelled'
+          )
+        )::int AS payment_events,
+        COUNT(*) FILTER (
+          WHERE event_type IN ('dispute_created', 'dispute_resolved')
+        )::int AS dispute_events,
+        0::int AS unique_ip_addresses_count,
+        0::int AS unique_user_agents_count,
+        MAX(timestamp_utc) AS last_activity,
+        MIN(timestamp_utc) AS first_activity,
+        ARRAY[]::text[] AS ip_addresses,
+        ARRAY[]::text[] AS user_agents
+      FROM public.user_activities
+      WHERE user_id IN ${sql(batchIds)}
+      GROUP BY user_id
+    `;
+  }
+
+  return sql<UserActivityStatsRow[]>`
+    SELECT
+      user_id,
+      COUNT(*)::int AS total_activities,
+      COALESCE(
+        SUM(COALESCE(llm_tokens_prompt, 0) + COALESCE(llm_tokens_completion, 0)),
+        0
+      ) AS total_tokens,
+      COUNT(*) FILTER (WHERE event_type = 'practice_attempt_started')::int AS practice_attempts,
+      COUNT(*) FILTER (WHERE event_type = 'practice_attempt_completed')::int AS practice_completions,
+      COUNT(*) FILTER (WHERE event_type = 'mock_attempt_started')::int AS mock_attempts,
+      COUNT(*) FILTER (WHERE event_type = 'mock_attempt_completed')::int AS mock_completions,
+      COUNT(*) FILTER (
+        WHERE event_type IN (
+          'payment_successful',
+          'payment_failed',
+          'subscription_created',
+          'subscription_cancelled'
+        )
+      )::int AS payment_events,
+      COUNT(*) FILTER (
+        WHERE event_type IN ('dispute_created', 'dispute_resolved')
+      )::int AS dispute_events,
+      COUNT(DISTINCT NULLIF(TRIM(ip_address), '')) FILTER (
+        WHERE ip_address IS NOT NULL AND TRIM(ip_address) <> ''
+      )::int AS unique_ip_addresses_count,
+      COUNT(DISTINCT NULLIF(TRIM(user_agent), '')) FILTER (
+        WHERE user_agent IS NOT NULL AND TRIM(user_agent) <> ''
+      )::int AS unique_user_agents_count,
+      MAX(timestamp_utc) AS last_activity,
+      MIN(timestamp_utc) AS first_activity,
+      ARRAY[]::text[] AS ip_addresses,
+      ARRAY[]::text[] AS user_agents
+    FROM public.user_activities
+    WHERE user_id IN ${sql(batchIds)}
+    GROUP BY user_id
+  `;
+}
+
 /** Batch aggregate from `public.user_activities` keyed by `user_id`. */
 export async function fetchActivityStatsByUserIds(
   sql: Sql,
   userIds: string[],
-  options?: { includeDetailArrays?: boolean }
+  options?: { includeDetailArrays?: boolean; listView?: boolean }
 ): Promise<Map<string, AdminUserActivityStats>> {
   const uniqueIds = uniqueNonEmptyIds(userIds);
   if (uniqueIds.length === 0) return new Map();
@@ -160,96 +307,24 @@ export async function fetchActivityStatsByUserIds(
   if (!exists) return new Map();
 
   const includeDetailArrays = options?.includeDetailArrays ?? false;
+  const listView = options?.listView ?? false;
 
-  const rows = includeDetailArrays
-    ? await sql<UserActivityStatsRow[]>`
-        SELECT
-          user_id,
-          COUNT(*)::int AS total_activities,
-          COALESCE(
-            SUM(COALESCE(llm_tokens_prompt, 0) + COALESCE(llm_tokens_completion, 0)),
-            0
-          ) AS total_tokens,
-          COUNT(*) FILTER (WHERE event_type = 'practice_attempt_started')::int AS practice_attempts,
-          COUNT(*) FILTER (WHERE event_type = 'practice_attempt_completed')::int AS practice_completions,
-          COUNT(*) FILTER (WHERE event_type = 'mock_attempt_started')::int AS mock_attempts,
-          COUNT(*) FILTER (WHERE event_type = 'mock_attempt_completed')::int AS mock_completions,
-          COUNT(*) FILTER (
-            WHERE event_type IN (
-              'payment_successful',
-              'payment_failed',
-              'subscription_created',
-              'subscription_cancelled'
-            )
-          )::int AS payment_events,
-          COUNT(*) FILTER (
-            WHERE event_type IN ('dispute_created', 'dispute_resolved')
-          )::int AS dispute_events,
-          COUNT(DISTINCT NULLIF(TRIM(ip_address), '')) FILTER (
-            WHERE ip_address IS NOT NULL AND TRIM(ip_address) <> ''
-          )::int AS unique_ip_addresses_count,
-          COUNT(DISTINCT NULLIF(TRIM(user_agent), '')) FILTER (
-            WHERE user_agent IS NOT NULL AND TRIM(user_agent) <> ''
-          )::int AS unique_user_agents_count,
-          MAX(timestamp_utc) AS last_activity,
-          MIN(timestamp_utc) AS first_activity,
-          COALESCE(
-            array_agg(DISTINCT NULLIF(TRIM(ip_address), '')) FILTER (
-              WHERE ip_address IS NOT NULL AND TRIM(ip_address) <> ''
-            ),
-            ARRAY[]::text[]
-          ) AS ip_addresses,
-          COALESCE(
-            array_agg(DISTINCT NULLIF(TRIM(user_agent), '')) FILTER (
-              WHERE user_agent IS NOT NULL AND TRIM(user_agent) <> ''
-            ),
-            ARRAY[]::text[]
-          ) AS user_agents
-        FROM public.user_activities
-        WHERE user_id IN ${sql(uniqueIds)}
-        GROUP BY user_id
-      `
-    : await sql<UserActivityStatsRow[]>`
-        SELECT
-          user_id,
-          COUNT(*)::int AS total_activities,
-          COALESCE(
-            SUM(COALESCE(llm_tokens_prompt, 0) + COALESCE(llm_tokens_completion, 0)),
-            0
-          ) AS total_tokens,
-          COUNT(*) FILTER (WHERE event_type = 'practice_attempt_started')::int AS practice_attempts,
-          COUNT(*) FILTER (WHERE event_type = 'practice_attempt_completed')::int AS practice_completions,
-          COUNT(*) FILTER (WHERE event_type = 'mock_attempt_started')::int AS mock_attempts,
-          COUNT(*) FILTER (WHERE event_type = 'mock_attempt_completed')::int AS mock_completions,
-          COUNT(*) FILTER (
-            WHERE event_type IN (
-              'payment_successful',
-              'payment_failed',
-              'subscription_created',
-              'subscription_cancelled'
-            )
-          )::int AS payment_events,
-          COUNT(*) FILTER (
-            WHERE event_type IN ('dispute_created', 'dispute_resolved')
-          )::int AS dispute_events,
-          COUNT(DISTINCT NULLIF(TRIM(ip_address), '')) FILTER (
-            WHERE ip_address IS NOT NULL AND TRIM(ip_address) <> ''
-          )::int AS unique_ip_addresses_count,
-          COUNT(DISTINCT NULLIF(TRIM(user_agent), '')) FILTER (
-            WHERE user_agent IS NOT NULL AND TRIM(user_agent) <> ''
-          )::int AS unique_user_agents_count,
-          MAX(timestamp_utc) AS last_activity,
-          MIN(timestamp_utc) AS first_activity,
-          ARRAY[]::text[] AS ip_addresses,
-          ARRAY[]::text[] AS user_agents
-        FROM public.user_activities
-        WHERE user_id IN ${sql(uniqueIds)}
-        GROUP BY user_id
-      `;
+  const batches: string[][] = [];
+  for (let i = 0; i < uniqueIds.length; i += ACTIVITY_STATS_BATCH_SIZE) {
+    batches.push(uniqueIds.slice(i, i + ACTIVITY_STATS_BATCH_SIZE));
+  }
+
+  const batchResults = await Promise.all(
+    batches.map((batchIds) =>
+      queryActivityStatsBatch(sql, batchIds, { includeDetailArrays, listView })
+    )
+  );
 
   const map = new Map<string, AdminUserActivityStats>();
-  for (const row of rows) {
-    map.set(row.user_id, rowToActivityStats(row));
+  for (const rows of batchResults) {
+    for (const row of rows) {
+      map.set(row.user_id, rowToActivityStats(row));
+    }
   }
   return map;
 }
@@ -420,17 +495,17 @@ export async function listAdminUsersFromUserProfiles(
     OFFSET ${offset}
   `;
 
-  const candidateIdsByStableId = dataRows.map((r) =>
-    uniqueNonEmptyIds([
-      r.stable_id,
-      r.legacy_clerk_user_id,
-      r.supabase_auth_user_id,
-      r.profile_id,
-      r.app_document_mongo_id,
-    ])
-  );
+  const candidateIdsByStableId = dataRows.map((r) => activityLookupIdsFromProfileRow(r));
   const allCandidateIds = uniqueNonEmptyIds(candidateIdsByStableId.flat());
-  const statsByUserId = await fetchActivityStatsByUserIds(sql, allCandidateIds);
+  const tStats = Date.now();
+  const statsByUserId = await fetchActivityStatsByUserIds(sql, allCandidateIds, {
+    listView: true,
+  });
+  if (process.env.NODE_ENV === "development") {
+    console.info(
+      `[admin/users] activity stats ids=${allCandidateIds.length} users=${dataRows.length} ${Date.now() - tStats}ms`
+    );
+  }
 
   const rows = dataRows.map((r, index) => {
     const meta = asRecord(r.public_metadata);
@@ -574,14 +649,15 @@ export async function listAdminUsersFromUsersDocuments(
       r.mongo_id;
     return uniqueNonEmptyIds([
       stable,
-      r.mongo_id,
       typeof b.supabaseUserId === "string" ? b.supabaseUserId : null,
-      typeof b.sub === "string" ? b.sub : null,
       typeof b.clerkUserId === "string" ? b.clerkUserId : null,
+      typeof b.sub === "string" ? b.sub : null,
     ]);
   });
   const allCandidateIds = uniqueNonEmptyIds(candidateIdsByStableId.flat());
-  const statsByUserId = await fetchActivityStatsByUserIds(sql, allCandidateIds);
+  const statsByUserId = await fetchActivityStatsByUserIds(sql, allCandidateIds, {
+    listView: true,
+  });
 
   const rows = dataRows.map((r, index) => {
     const b = asRecord(r.body);

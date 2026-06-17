@@ -17,34 +17,37 @@ export const FALLBACK_PROFESSION_PAGE_SUMMARIES: ProfessionPageSummary[] = [
     title: "CELPIP for Pharmacists",
     icon: "pill",
   },
-  { slug: "celpip-for-dentists", title: "CELPIP for Dentists", icon: "smile" },
   {
-    slug: "celpip-for-physiotherapists",
-    title: "CELPIP for Physiotherapists",
+    slug: "celpip-for-dentist-dental-hygienist",
+    title: "CELPIP for Dentists & Dental Hygienists",
+    icon: "smile",
+  },
+  {
+    slug: "celpip-for-physiotherapist",
+    title: "CELPIP for Physiotherapist",
     icon: "activity",
   },
   { slug: "celpip-for-teachers", title: "CELPIP for Teachers", icon: "graduation-cap" },
   {
-    slug: "celpip-for-early-childhood-educators",
-    title: "CELPIP for Early Childhood Educators",
+    slug: "celpip-for-educators",
+    title: "CELPIP for Educators",
     icon: "baby",
   },
   {
-    slug: "celpip-for-social-workers",
-    title: "CELPIP for Social Workers",
+    slug: "celpip-for-social-worker",
+    title: "CELPIP for Social Worker",
     icon: "heart-handshake",
   },
-  { slug: "celpip-for-truck-drivers", title: "CELPIP for Truck Drivers", icon: "truck" },
+  {
+    slug: "celpip-for-commercial-truck-driver",
+    title: "CELPIP for Commercial Truck Driver",
+    icon: "truck",
+  },
   { slug: "celpip-for-caregivers", title: "CELPIP for Caregivers", icon: "hand-heart" },
   {
-    slug: "celpip-for-real-estate-agents",
-    title: "CELPIP for Real Estate Agents",
+    slug: "celpip-for-real-estate",
+    title: "CELPIP for Real Estate",
     icon: "home",
-  },
-  {
-    slug: "celpip-for-accountants",
-    title: "CELPIP for Accountants",
-    icon: "calculator",
   },
 ];
 

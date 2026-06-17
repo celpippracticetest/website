@@ -31,6 +31,12 @@ const nextConfig: NextConfig = {
       ["/sign-up/clerk", "/sign-up/legacy"],
       ["/celpip-writing-email-tips", "/blog/celpip-writing-task-1-samples-email-tone-clb-9-2026"],
       ["/blog/celpip-leauage", "/blog/complete-guide-celpip-test-booking-results-clb"],
+      ["/celpip-for-dentists", "/celpip-for-dentist-dental-hygienist"],
+      ["/celpip-for-physiotherapists", "/celpip-for-physiotherapist"],
+      ["/celpip-for-real-estate-agents", "/celpip-for-real-estate"],
+      ["/celpip-for-early-childhood-educators", "/celpip-for-educators"],
+      ["/celpip-for-social-workers", "/celpip-for-social-worker"],
+      ["/celpip-for-truck-drivers", "/celpip-for-commercial-truck-driver"],
     ].map(([source, destination]) => ({ source, destination, permanent: true }));
     return fixes;
   },
