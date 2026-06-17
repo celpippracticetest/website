@@ -2,8 +2,17 @@
 
 import React from "react";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import PublicPageShell from "./PublicPageShell";
 import { Box } from "@/components/ui/Box";
+
+const recoveryLinks = [
+  { href: "/free-celpip-practice-test", label: "Free CELPIP practice test" },
+  { href: "/celpip-writing-task-1-samples", label: "Writing Task 1 samples" },
+  { href: "/celpip-speaking-samples", label: "Speaking samples" },
+  { href: "/wiki/celpip-score-guide", label: "CELPIP score guide" },
+  { href: "/exam-overview", label: "Exam overview" },
+];
 
 const NotFoundPage = () => {
   return (
@@ -17,6 +26,22 @@ const NotFoundPage = () => {
           The page you are looking for may have been moved, renamed, or no
           longer exists.
         </p>
+
+        <Box className="mt-[28px] grid gap-[10px] screen744:grid-cols-2">
+          {recoveryLinks.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="group flex min-h-[52px] items-center justify-between rounded-[8px] border border-outline bg-white px-[16px] py-[12px] text-[15px] font-medium text-text1 transition-colors hover:border-primary1 hover:text-primary1"
+            >
+              <span>{item.label}</span>
+              <ArrowRight
+                aria-hidden="true"
+                className="h-[18px] w-[18px] flex-shrink-0 transition-transform group-hover:translate-x-[2px]"
+              />
+            </Link>
+          ))}
+        </Box>
 
         <Box className="mt-[32px] flex flex-wrap gap-[12px]">
           <Link
