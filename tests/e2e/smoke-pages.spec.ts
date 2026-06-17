@@ -24,13 +24,11 @@ const dashboardPaths = [
   "/writing",
   "/speaking",
   "/words",
-  "/plans",
   "/profile",
   "/earn100",
 ];
 
 const expectedUrlPatterns: Record<string, RegExp[]> = {
-  "/plans": [/\/plans(\/)?$/, /\/practice-overview(\/)?$/, /\/$/],
   "/profile": [/\/profile(\/)?$/, /\/practice-overview(\/)?$/, /\/$/],
   "/earn100": [/\/earn100(\/)?$/, /\/$/],
 };

@@ -519,9 +519,6 @@ const LayoutClient = ({ children }: any) => {
           setSubmenuActive(route.submenu);
           setActive(route.active);
           break;
-        } else if (pathname.includes("plans")) {
-          setActive("Plans");
-          setSubmenuActive("");
         }
       }
     }

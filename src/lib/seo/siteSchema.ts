@@ -193,11 +193,19 @@ export function buildExamOverviewStructuredData(
           "@type": "ListItem",
           position: index + 1,
           item: {
-            "@type": "Course",
+            "@type": "LearningResource",
             name: exam.name,
             description:
               "Full-length CELPIP mock exam with Listening, Reading, Writing, and Speaking sections.",
             url: `${baseUrl}/exams/exam_${exam.id}/part1`,
+            learningResourceType: "Practice test",
+            educationalUse: "Practice",
+            assesses: [
+              "CELPIP Listening",
+              "CELPIP Reading",
+              "CELPIP Writing",
+              "CELPIP Speaking",
+            ],
             provider: {
               "@type": "Organization",
               name: SITE_NAME,

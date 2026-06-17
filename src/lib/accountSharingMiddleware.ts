@@ -45,7 +45,6 @@ export function shouldEnforceAccountSharingSignals(
     "/writing",
     "/listening",
     "/speaking",
-    "/plans",
     "/referral",
     "/learning",
     "/league",

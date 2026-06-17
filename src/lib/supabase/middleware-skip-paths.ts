@@ -12,7 +12,6 @@ const SESSION_REQUIRED_PATH_PREFIXES = [
   "/cms",
   "/api",
   "/profile",
-  "/plans",
   "/practice-overview",
   "/speaking",
   "/reading",

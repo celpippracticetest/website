@@ -237,13 +237,6 @@ export const PAGE_SEO_REGISTRY: Record<string, PageSeoItem> = {
     description: "Manage your CELPIP Practice Test account, subscription, and billing details.",
     indexability: "noindex",
   },
-  "/plans": {
-    path: "/plans",
-    title: "Subscription Plans | CELPIP Practice Test",
-    description:
-      "View and manage your CELPIP Practice Test subscription. Compare plans and upgrade for full mock exams and AI feedback.",
-    indexability: "noindex",
-  },
   "/earn100": {
     path: "/earn100",
     title: "Earn $100 Referral Program | CELPIP Practice Test",

@@ -19,7 +19,7 @@ export function safeAppWebRedirectPath(
     "/writing/",
     "/speaking/",
     "/profile",
-    "/plans",
+    "/pricing",
   ];
 
   if (!allowedPrefixes.some((p) => t.startsWith(p))) {

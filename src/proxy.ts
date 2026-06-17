@@ -45,7 +45,6 @@ function metadataRolesIncludeAdmin(
 }
 const isProfileRoute = (req: NextRequest) => req.nextUrl.pathname.startsWith("/profile");
 const isReferralRoute = (req: NextRequest) => req.nextUrl.pathname.startsWith("/referral");
-const isPlansRoute = (req: NextRequest) => req.nextUrl.pathname.startsWith("/plans");
 
 const PRACTICE_HUB_PATHS = new Set([
   "/speaking",
@@ -303,24 +302,6 @@ export default async function proxy(req: NextRequest) {
     }
     // All authenticated users can access their profile regardless of plan
   }
-  if (isPlansRoute(req)) {
-    if (!hasWebAuth) {
-      const dashboard = new URL("/practice-overview", req.url);
-      return end(NextResponse.redirect(dashboard));
-    }
-    let plan: string | undefined;
-    let purchaseDate: string | undefined;
-    if (supabaseWebUser) {
-      const sp = readPracticePlanFromSupabaseUser(supabaseWebUser);
-      plan = sp.plan;
-      purchaseDate = sp.purchaseDate;
-    }
-    if (!hasPaidPracticeAccess(plan, purchaseDate)) {
-      const homeUrl = new URL("/", req.url);
-      return end(NextResponse.redirect(homeUrl));
-    }
-  }
-
   if (isReferralRoute(req)) {
     // Allow public access to referral page for non-authenticated users
     // They need to see the referral page to sign up
