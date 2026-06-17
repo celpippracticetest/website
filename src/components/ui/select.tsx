@@ -1,8 +1,6 @@
 import * as React from "react";
 import * as SelectPrimitive from "@radix-ui/react-select";
-import Check from "@mui/icons-material/Check";
-import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
-import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
+import { Check, ChevronDown, ChevronUp } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 

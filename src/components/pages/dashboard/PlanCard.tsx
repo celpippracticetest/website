@@ -1,10 +1,5 @@
 "use client";
-import React, { useMemo } from "react";
-import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
-import { useEcommerceTracking } from "@/hooks/useTracking";
-import { useHybridWebUser } from "@/hooks/useHybridWebUser";
-import { StripeCheckoutDiscountBadge } from "@/components/checkout/StripeCheckoutDiscountBadge";
-import { getStripeCheckoutAutoDiscountLabel } from "@/lib/stripeCheckoutDiscountLabel";
+import React from "react";
 
 interface IPlanCard {
   title: string;
@@ -15,7 +10,6 @@ interface IPlanCard {
   icon: React.ReactNode;
   iconWrapperColor: string;
   id: number;
-  stripePriceId?: string;
 }
 const PlanCard = ({
   title,
@@ -26,46 +20,27 @@ const PlanCard = ({
   icon,
   iconWrapperColor,
   id,
-  stripePriceId,
 }: IPlanCard) => {
-  const { beginCheckout, selectItem } = useEcommerceTracking();
-  const { user } = useHybridWebUser();
-  const stripeCheckoutDiscountLabel = useMemo(
-    () =>
-      type !== "Free"
-        ? getStripeCheckoutAutoDiscountLabel({ userPublicMetadata: user?.publicMetadata })
-        : null,
-    [type, user?.publicMetadata]
-  );
-
-  const handleCheckoutTracking = () => {
-    const amount = Number.parseFloat(price);
-    if (!Number.isFinite(amount) || amount <= 0 || type === "Free") return;
-
-    const item = {
-      item_id: type,
-      item_name: title,
-      price: amount,
-      quantity: 1,
-      item_brand: "CELPIP Practice Test",
-      item_category: "Subscription",
-    };
-
-    selectItem([item], "dashboard_pricing", "Dashboard Pricing Plans");
-    beginCheckout([item], "CAD", amount);
-  };
-
-  const checkoutAction = stripePriceId
-    ? `/api/checkout_session?price=${stripePriceId}`
-    : "";
-
   return (
     <form
       className="relative mt-[12px] screen1280:!mt-[32px] w-full screen744:!w-[176px] screen744:!h-[214px] screen1280:!w-[202px] screen1280:!h-[215px]"
-      action={checkoutAction}
+      action={
+        type == "Easy Start"
+          ? "/api/checkout_session?product=" +
+            process.env.NEXT_PUBLIC_MONTHLY_ACCESS_PRODUCT
+          : type == "Weekly"
+          ? "/api/checkout_session?product=" +
+            process.env.NEXT_PUBLIC_WEEKLY_ACCESS_PRODUCT
+          : type == "Best Seller"
+          ? "/api/checkout_session?product=" +
+            process.env.NEXT_PUBLIC_QUARTER_ACCESS_PRODUCT
+          : type == "Best Value"
+          ? "/api/checkout_session?product=" +
+            process.env.NEXT_PUBLIC_YEARLY_ACCESS_PRODUCT
+          : ""
+      }
       method="POST"
     >
-      <CheckoutAttributionFields />
       <article
         aria-label={`Plan card for ${title} plan`}
         className="relative  mx-[16px]  z-[1] before:absolute before:rounded-[24px]  hover:before:shadow-[6px_4px_16px_0px_#FC7A5066,_-6px_-4px_16px_0px_#4A7DFF66] before:transition-shadow before:duration-300 before:ease before:content-[''] before:inset-0 before:transform before:translate-z-[-1px] hover:cursor-pointer screen744:!w-[176px] screen744:!h-[211px] screen1280:!w-[202px] screen1280:!h-[215px] rounded-[24px] px-[12px] py-[16px] screen1280:!p-[16px] bg-white"
@@ -125,16 +100,9 @@ const PlanCard = ({
 
         <button
           type="submit"
-          onClick={handleCheckoutTracking}
           aria-label={`Select ${title} plan`}
-          disabled={!checkoutAction}
-          className={`relative z-[2] mt-[24px] shadow-startButton flex gap-[8px] px-[24px] w-full mw-full h-[40px] rounded-[24px] items-center justify-center ${
-            checkoutAction
-              ? "bg-primary2 hover:cursor-pointer hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]"
-              : "cursor-not-allowed bg-slate-400 opacity-60"
-          }`}
+          className="relative z-[2] mt-[24px] hover:cursor-pointer hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]  shadow-startButton  flex gap-[8px] px-[24px] w-full bg-primary2 mw-full h-[40px] rounded-[24px] items-center justify-center"
         >
-          <StripeCheckoutDiscountBadge label={stripeCheckoutDiscountLabel} />
           <span className="text-white text-[14px] font-normal leading-[16px] flex items-center justify-center">
             {buttonTitle}
           </span>

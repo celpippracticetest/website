@@ -3,11 +3,9 @@ import React from "react";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useEventTracker } from "@/hooks/useTracking";
 
 const Footer = () => {
   const isMobile = useIsMobile();
-  const { trackNav } = useEventTracker();
 
   return (
     <footer className="bg-gray-800 text-white py-8">
@@ -24,7 +22,6 @@ const Footer = () => {
                   <Link
                     href="/terms-of-service"
                     className="text-blue-300 hover:underline"
-                    onClick={() => trackNav("Terms of Service", "/terms-of-service", "footer")}
                   >
                     Terms of Service
                   </Link>{" "}
@@ -32,7 +29,6 @@ const Footer = () => {
                   <Link
                     href="/privacy-policy"
                     className="text-blue-300 hover:underline"
-                    onClick={() => trackNav("Privacy Policy", "/privacy-policy", "footer")}
                   >
                     Privacy Policy
                   </Link>{" "}
@@ -45,7 +41,6 @@ const Footer = () => {
                   <Link
                     href="/terms-of-service"
                     className="text-blue-300 hover:underline"
-                    onClick={() => trackNav("Terms of Service", "/terms-of-service", "footer")}
                   >
                     Terms of Service
                   </Link>{" "}
@@ -53,7 +48,6 @@ const Footer = () => {
                   <Link
                     href="/privacy-policy"
                     className="text-blue-300 hover:underline"
-                    onClick={() => trackNav("Privacy Policy", "/privacy-policy", "footer")}
                   >
                     Privacy Policy
                   </Link>

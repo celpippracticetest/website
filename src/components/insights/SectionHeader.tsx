@@ -1,3 +1,6 @@
+
+import { LucideIcon } from "lucide-react";
+
 type SectionHeaderProps = {
   title: string;
   icon: React.ReactNode;

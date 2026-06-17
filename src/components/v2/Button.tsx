@@ -35,19 +35,17 @@ const v2ButtonVariants = cva(
 );
 
 type AnchorProps = React.AnchorHTMLAttributes<HTMLAnchorElement>;
-type LinkProps = React.ComponentPropsWithoutRef<typeof Link>;
 type ButtonBaseProps = VariantProps<typeof v2ButtonVariants> & {
   asChild?: boolean;
   className?: string;
   children?: React.ReactNode;
 };
 type ButtonLinkProps = ButtonBaseProps &
-  Omit<LinkProps, "href" | "className" | "children" | "onClick"> &
-  Omit<AnchorProps, "href" | "className" | "children"> & {
+  Omit<AnchorProps, keyof React.ButtonHTMLAttributes<HTMLButtonElement>> & {
     href: string;
   };
 type ButtonButtonProps = ButtonBaseProps &
-  Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "className" | "children"> & {
+  React.ButtonHTMLAttributes<HTMLButtonElement> & {
     href?: undefined;
   };
 export type ButtonProps = ButtonLinkProps | ButtonButtonProps;
@@ -55,9 +53,8 @@ export type ButtonProps = ButtonLinkProps | ButtonButtonProps;
 const Button = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonProps>(
   ({ className, variant, size, round, asChild = false, href, children, ...props }, ref) => {
     const classes = cn(
-      v2ButtonVariants({ variant, size, round }),
-      round && round !== "none" ? "shadow-[2.67px_2.67px_0_0_rgba(117,156,255,1)]" : undefined,
-      className,
+      v2ButtonVariants({ variant, size, round, className }),
+      round && round !== "none" ? "shadow-[2.67px_2.67px_0_0_rgba(117,156,255,1)]" : undefined
     );
 
     if (asChild) {

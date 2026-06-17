@@ -1,5 +1,7 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
+import TopHeader from "./TopHeader";
+import Footer from "./Footer";
 
 const TermsOfService = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -90,19 +92,17 @@ You are granted a limited, non-exclusive, non-transferable, revocable license to
           title: "6.1 Subscription and Billing",
           description: `Subscription plans, pricing, and features are displayed on the Site and may change from time to time.
 Subscriptions renew automatically unless canceled before the renewal date. Canceling a subscription prevents future charges only and does not reverse, void, or refund any completed or pending charges, including subscription renewals.
-Service delivery occurs immediately upon successful payment, at which point access to digital content and platform features is granted.
-Each Subscriber subscription plan includes access on up to two (2) devices.
-If you exceed the two-device limit, you must purchase an additional subscription of the same plan for each extra device.`,
+Service delivery occurs immediately upon successful payment, at which point access to digital content and platform features is granted.`,
         },
         {
           title: "6.2 Refund Eligibility and Process",
           description: `Refunds are only eligible for the first subscription purchase and only if all of the following conditions are met:`,
           lists: [
             "The request relates to the user’s first successful payment",
-            "The refund request is submitted within 48 hours of the charge date",
+            "The refund request is submitted within 7 days of the charge date",
             "The user has not completed more than one mock exam",
             "The user has not completed more than two practice activities in any single skill",
-            "Refund requests submitted more than 48 hours after the charge date are automatically rejected and not reviewed, regardless of usage.",
+            "Refund requests submitted more than 7 days after the charge date are automatically rejected and not reviewed, regardless of usage.",
             "Refunds are not available for subscription renewals, second or subsequent payments, or accounts that exceed the usage limits described above.",
             "The refund request platform is the sole and exclusive method for submitting a refund request. Requests made through customer chat, email, social media, or any other communication channel are not considered valid refund requests and do not initiate the refund review process.",
             "Refund eligibility does not create an obligation to issue a refund. All refund requests are reviewed at our sole discretion based on the criteria outlined in these Terms and the Refund Policy.",
@@ -142,12 +142,15 @@ If you exceed the two-device limit, you must purchase an additional subscription
   ];
 
   return (
-    <div className="flex flex-col max-w-[1156px] mx-auto justify-center mt-[120px] px-[16px] mb-[116px]">
+    <>
+      <TopHeader />
+
+      <div className="flex flex-col max-w-[1156px] mx-auto justify-center mt-[120px] px-[16px] mb-[116px]">
         <h1 className="text-primary1 font-bold text-[28px]">
           Terms of Service
         </h1>
         <span className="mt-[16px] font-normal text-[16px] text-text3">
-          Last Updated: Apr 15, 2026
+          Last Updated: Jan 08, 2026
         </span>
         {data?.map((element, index) => (
           <div key={index} className="mt-[40px]">
@@ -201,6 +204,8 @@ If you exceed the two-device limit, you must purchase an additional subscription
           sponsored by any official testing organization.
         </p>
       </div>
+      <Footer />
+    </>
   );
 };
 

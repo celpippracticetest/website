@@ -8,9 +8,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import Visibility from "@mui/icons-material/Visibility";
-import Edit from "@mui/icons-material/Edit";
-import Delete from "@mui/icons-material/Delete";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 import {
   Pagination,
   PaginationContent,
@@ -21,8 +19,7 @@ import {
 } from "@/components/ui/pagination";
 import { Badge } from "@/components/ui/badge";
 import { Practice } from "./types/practiceTypes";
-import Link from "next/link";
-import { practicePath, categoryToSkillRoute } from "@/lib/practiceRoutes";
+import { redirect, RedirectType } from "next/navigation";
 
 interface CmsPracticesTableProps {
   practices: Practice[];
@@ -132,16 +129,21 @@ const CmsPracticesTable = ({
                 </Badge>
               </TableCell>
               <TableCell className="text-right">
-                <Button variant="ghost" size="icon" asChild title="View Practice">
-                  <Link
-                    href={practicePath(
-                      categoryToSkillRoute(practice.type),
-                      practice.id,
-                      practice.taskId
-                    )}
-                  >
-                    <Visibility className="h-4 w-4" />
-                  </Link>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    redirect(
+                      `/${practice.type.toLowerCase()}?selectedPracticeId=${
+                        practice.id
+                      }`,
+                      RedirectType.push
+                    );
+                    // onEdit(practice.id, practice.type)
+                  }}
+                  title="View Practice"
+                >
+                  <Eye className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -149,7 +151,7 @@ const CmsPracticesTable = ({
                   onClick={() => onEdit(practice.id, practice.type)}
                   title="Edit practice"
                 >
-                  <Edit className="h-4 w-4" />
+                  <Pencil className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -166,7 +168,7 @@ const CmsPracticesTable = ({
                   title="Delete practice"
                   className="text-red-500 hover:text-red-700"
                 >
-                  <Delete className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </TableCell>
             </TableRow>

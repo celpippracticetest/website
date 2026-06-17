@@ -1,12 +1,13 @@
 import Referral from "@/components/dashboard-new/Referral";
-import { getDashboardLayoutAuthContext } from "@/lib/auth/web-session-server";
+import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import { redirect } from "next/navigation";
 
 export default async function UserRefferalPage() {
-  const ctx = await getDashboardLayoutAuthContext();
+  const hybridUser = await getHybridCurrentUser();
+  const userId = hybridUser?.userId;
 
-  if (!ctx?.userId) {
-    redirect("/sign-in");
+  if (!userId) {
+    redirect("/");
   }
 
   try {

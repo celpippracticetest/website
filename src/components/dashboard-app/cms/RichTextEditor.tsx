@@ -1,9 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import FormatBold from "@mui/icons-material/FormatBold";
-import FormatListBulleted from "@mui/icons-material/FormatListBulleted";
-import FormatItalic from "@mui/icons-material/FormatItalic";
-import FormatUnderlined from "@mui/icons-material/FormatUnderlined";
+import { Bold, List, Italic, Underline } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface RichTextEditorProps {
@@ -83,7 +80,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           onClick={() => handleCommand('bold')}
           className="p-1 h-8 w-8"
         >
-          <FormatBold className="h-4 w-4" />
+          <Bold className="h-4 w-4" />
         </Button>
         <Button
         disabled
@@ -93,7 +90,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           onClick={() => handleCommand('italic')}
           className="p-1 h-8 w-8"
         >
-          <FormatItalic className="h-4 w-4" />
+          <Italic className="h-4 w-4" />
         </Button>
         <Button
         disabled
@@ -103,7 +100,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           onClick={() => handleCommand('underline')}
           className="p-1 h-8 w-8"
         >
-          <FormatUnderlined className="h-4 w-4" />
+          <Underline className="h-4 w-4" />
         </Button>
         <Button
         disabled
@@ -113,7 +110,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           onClick={() => handleCommand('insertOrderedList')}
           className="p-1 h-8 w-8"
         >
-          <FormatListBulleted className="h-4 w-4" />
+          <List className="h-4 w-4" />
         </Button>
 
         {insertQuestionMark && (

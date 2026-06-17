@@ -1,53 +1,15 @@
 "use client";
 
-import { useState, useEffect, Fragment } from "react";
-import Search from "@mui/icons-material/Search";
-import Download from "@mui/icons-material/Download";
-import Visibility from "@mui/icons-material/Visibility";
-import Warning from "@mui/icons-material/Warning";
-import Shield from "@mui/icons-material/Shield";
-import Schedule from "@mui/icons-material/Schedule";
-import Refresh from "@mui/icons-material/Refresh";
-import Close from "@mui/icons-material/Close";
-import Logout from "@mui/icons-material/Logout";
-import WorkspacePremium from "@mui/icons-material/WorkspacePremium";
-import People from "@mui/icons-material/People";
-import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
-import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
-import MenuBook from "@mui/icons-material/MenuBook";
-import Description from "@mui/icons-material/Description";
-import Language from "@mui/icons-material/Language";
-import Insights from "@mui/icons-material/Insights";
-import { Box } from "@/components/ui/Box";
+import { useState, useEffect } from "react";
 import {
-  Typography,
-  Paper,
-  TextField,
-  InputAdornment,
-  IconButton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Chip,
-  Tooltip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  CircularProgress,
-  Pagination,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  Button,
-  Collapse,
-  Divider,
-} from "@mui/material";
+  Search,
+  Download,
+  Eye,
+  AlertTriangle,
+  Shield,
+  Clock,
+  RotateCw,
+} from "lucide-react";
 
 interface User {
   userId: string;
@@ -69,14 +31,6 @@ interface User {
   userAgents: string[];
   plan?: string;
   planType?: string;
-  totalSpend?: number;
-  utm_source?: string;
-  utm_medium?: string;
-  utm_campaign?: string;
-  subscriptionStatus?: "active" | "unsubscribed" | "never";
-  subscriptionDurationDays?: number;
-  subscriptionStartDate?: string;
-  subscriptionEndDate?: string;
 }
 
 interface UsersResponse {
@@ -87,7 +41,6 @@ interface UsersResponse {
     totalCount: number;
     totalPages: number;
   };
-  listMode?: "profiles_sql" | "users_documents_sql" | "activity_aggregate";
 }
 
 export default function UsersPage() {
@@ -96,47 +49,28 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState("lastActivity");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [subscriptionStatus, setSubscriptionStatus] = useState("all");
+  const [sortOrder, setSortOrder] = useState("desc");
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 50,
+    limit: 20,
     totalCount: 0,
     totalPages: 0,
   });
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [canceling, setCanceling] = useState(false);
-  const [grantPlusDialogOpen, setGrantPlusDialogOpen] = useState(false);
-  const [selectedGrantUser, setSelectedGrantUser] = useState<User | null>(null);
-  const [grantingPlus, setGrantingPlus] = useState(false);
-  const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
-  const [selectedRevokeUser, setSelectedRevokeUser] = useState<User | null>(null);
-  const [revoking, setRevoking] = useState(false);
-  const [syncDialogOpen, setSyncDialogOpen] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<{
-    totalAuthUsers?: number;
-    totalUsersInDocuments?: number;
-    missingUsers?: number;
-  } | null>(null);
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: pagination.limit.toString(),
         search,
         sortBy,
         sortOrder,
-        subscriptionStatus,
       });
 
       const response = await fetch(`/api/admin/users?${params}`);
       if (response.ok) {
         const data: UsersResponse = await response.json();
+
         setUsers(data.users);
         setPagination(data.pagination);
       }
@@ -149,8 +83,7 @@ export default function UsersPage() {
 
   useEffect(() => {
     fetchUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search, sortBy, sortOrder, subscriptionStatus, pagination.limit]);
+  }, [page, search, sortBy, sortOrder]);
 
   const getRiskColor = (riskScore: number) => {
     if (riskScore >= 70) return "text-red-600 bg-red-50";
@@ -159,9 +92,9 @@ export default function UsersPage() {
   };
 
   const getRiskIcon = (riskScore: number) => {
-    if (riskScore >= 70) return <Warning className="w-4 h-4" />;
+    if (riskScore >= 70) return <AlertTriangle className="w-4 h-4" />;
     if (riskScore >= 40) return <Shield className="w-4 h-4" />;
-    return <Schedule className="w-4 h-4" />;
+    return <Clock className="w-4 h-4" />;
   };
 
   const formatDate = (dateString: string) => {
@@ -174,15 +107,6 @@ export default function UsersPage() {
     });
   };
 
-  const formatPlanType = (planType?: string | null): string => {
-    if (!planType) return "";
-    // Capitalize first letter of each word
-    return planType
-      .split(" ")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(" ");
-  };
-
   const exportUserData = async (identifier: string) => {
     try {
       const response = await fetch(`/api/admin/users/${identifier}/export`);
@@ -190,7 +114,9 @@ export default function UsersPage() {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
-        const safe = identifier.includes("@") ? identifier.split("@")[0] : identifier;
+        const safe = identifier.includes("@")
+          ? identifier.split("@")[0]
+          : identifier;
         a.href = url;
         a.download = `user-${safe}-activity-export.xlsx`;
         document.body.appendChild(a);
@@ -203,1133 +129,292 @@ export default function UsersPage() {
     }
   };
 
-  const handlePageChange = (_: unknown, value: number) => {
-    setPage(value);
-  };
-
-  const handleCancelSubscriptionClick = (user: User) => {
-    setSelectedUser(user);
-    setCancelDialogOpen(true);
-  };
-
-  const handleCancelSubscriptionConfirm = async () => {
-    if (!selectedUser) return;
-
-    setCanceling(true);
-    try {
-      const response = await fetch(
-        `/api/admin/users/${selectedUser.userId}/cancel-subscription`,
-        {
-          method: "POST",
-        }
-      );
-
-      if (response.ok) {
-        // Refresh users list
-        await fetchUsers();
-        setCancelDialogOpen(false);
-        setSelectedUser(null);
-      } else {
-        const data = await response.json();
-        alert(`Failed to cancel subscription: ${data.error || "Unknown error"}`);
-      }
-    } catch (error) {
-      console.error("Error canceling subscription:", error);
-      alert("Failed to cancel subscription. Please try again.");
-    } finally {
-      setCanceling(false);
-    }
-  };
-
-  const handleCancelDialogClose = () => {
-    if (!canceling) {
-      setCancelDialogOpen(false);
-      setSelectedUser(null);
-    }
-  };
-
-  const handleGrantPlusClick = (user: User) => {
-    setSelectedGrantUser(user);
-    setGrantPlusDialogOpen(true);
-  };
-
-  const handleGrantPlusDialogClose = () => {
-    if (!grantingPlus) {
-      setGrantPlusDialogOpen(false);
-      setSelectedGrantUser(null);
-    }
-  };
-
-  const handleGrantPlusConfirm = async () => {
-    if (!selectedGrantUser) return;
-
-    setGrantingPlus(true);
-    try {
-      const response = await fetch(
-        `/api/admin/users/${selectedGrantUser.userId}/grant-plus`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ planType: "Admin Grant" }),
-        }
-      );
-
-      if (response.ok) {
-        await fetchUsers();
-        setGrantPlusDialogOpen(false);
-        setSelectedGrantUser(null);
-      } else {
-        const data = await response.json();
-        alert(`Failed to grant Plus plan: ${data.error || "Unknown error"}`);
-      }
-    } catch (error) {
-      console.error("Error granting Plus plan:", error);
-      alert("Failed to grant Plus plan. Please try again.");
-    } finally {
-      setGrantingPlus(false);
-    }
-  };
-
-  const handleRevokeSessionsClick = (user: User) => {
-    setSelectedRevokeUser(user);
-    setRevokeDialogOpen(true);
-  };
-
-  const handleRevokeDialogClose = () => {
-    if (!revoking) {
-      setRevokeDialogOpen(false);
-      setSelectedRevokeUser(null);
-    }
-  };
-
-  const handleRevokeSessionsConfirm = async () => {
-    if (!selectedRevokeUser) return;
-
-    setRevoking(true);
-    try {
-      const response = await fetch(
-        `/api/admin/users/${selectedRevokeUser.userId}/revoke-sessions`,
-        { method: "POST" }
-      );
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to revoke sessions");
-      }
-
-      const data = await response.json();
-      await fetchUsers();
-      setRevokeDialogOpen(false);
-      setSelectedRevokeUser(null);
-      alert(data.message || "All sessions revoked successfully.");
-    } catch (error) {
-      console.error("Error revoking sessions:", error);
-      alert(error instanceof Error ? error.message : "Failed to revoke sessions.");
-    } finally {
-      setRevoking(false);
-    }
-  };
-
-  const toggleRow = (userId: string) => {
-    setExpandedRows((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(userId)) {
-        newSet.delete(userId);
-      } else {
-        newSet.add(userId);
-      }
-      return newSet;
-    });
-  };
-
-  const checkSyncStatus = async () => {
-    try {
-      const response = await fetch("/api/admin/users/sync-missing");
-      if (response.ok) {
-        const data = await response.json();
-        setSyncStatus(data);
-      }
-    } catch (error) {
-      console.error("Error checking sync status:", error);
-    }
-  };
-
-  const handleSyncAllClick = async () => {
-    setSyncing(true);
-    try {
-      const response = await fetch("/api/admin/users/sync-all", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          batchSize: 100,
-          maxBatches: 50,
-          forceUpdate: false,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Refresh users list
-        await fetchUsers();
-        // Update sync status
-        await checkSyncStatus();
-        // Show success message
-        alert(
-          `Sync completed!\n\n` +
-            `✅ Synced: ${data.synced} new users\n` +
-            `🔄 Updated: ${data.updated} users\n` +
-            `⏭️ Skipped: ${data.skipped} users\n` +
-            `📊 Total processed: ${data.totalProcessed} users`
-        );
-        setSyncDialogOpen(false);
-      } else {
-        const errorData = await response.json();
-        alert(`Failed to sync users: ${errorData.error || "Unknown error"}`);
-      }
-    } catch (error) {
-      console.error("Error syncing users:", error);
-      alert("Failed to sync users. Please try again.");
-    } finally {
-      setSyncing(false);
-    }
-  };
-
-  useEffect(() => {
-    // Check sync status on mount
-    checkSyncStatus();
-  }, []);
-
   return (
-    <Box className="p-6">
-      {/* Header */}
-      <Box className="mb-6">
-        <Typography variant="h4" component="h1" className="font-bold text-gray-900 mb-1">
+    <div className="p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">
           User Management
-        </Typography>
-        <Typography variant="body2" className="text-gray-600">
+        </h1>
+        <p className="text-gray-600">
           Monitor user activity and prevent fraud/disputes
-        </Typography>
-      </Box>
+        </p>
+      </div>
 
-      {/* Search & Filters */}
-      <Paper
-        elevation={0}
-        className="mb-6 border"
-        sx={{ borderRadius: 2, p: 2.5 }}
-      >
-        <Box className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <Box className="flex-1">
-            <TextField
-              fullWidth
-              placeholder="Search by User ID, Email, IP, or User Agent..."
-              value={search}
-              onChange={(e) => {
-                setPage(1);
-                setSearch(e.target.value);
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search className="w-4 h-4 text-gray-400" />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Box>
-
-          <Box className="flex flex-wrap gap-2">
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>Plan Status</InputLabel>
-              <Select
-                label="Plan Status"
-                value={subscriptionStatus}
-                onChange={(e) => {
-                  setPage(1);
-                  setSubscriptionStatus(e.target.value);
-                }}
-              >
-                <MenuItem value="all">All Users</MenuItem>
-                <MenuItem value="active">Active Plan</MenuItem>
-                <MenuItem value="unsubscribed">Unsubscribed</MenuItem>
-                <MenuItem value="never">Never Subscribed</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl size="small" sx={{ minWidth: 180 }}>
-              <InputLabel>Sort By</InputLabel>
-              <Select
-                label="Sort By"
-                value={sortBy}
-                onChange={(e) => {
-                  setPage(1);
-                  setSortBy(e.target.value);
-                }}
-              >
-                <MenuItem value="createdAt">First Activity</MenuItem>
-                <MenuItem value="lastActivity">Last Activity</MenuItem>
-                <MenuItem value="totalActivities">Total Activities</MenuItem>
-                <MenuItem value="riskScore">Risk Score</MenuItem>
-                <MenuItem value="plan">Plan (Premium)</MenuItem>
-                <MenuItem value="totalSpend">Total Spend</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl size="small" sx={{ minWidth: 140 }}>
-              <InputLabel>Order</InputLabel>
-              <Select
-                label="Order"
-                value={sortOrder}
-                onChange={(e) => {
-                  setPage(1);
-                  setSortOrder(e.target.value as "asc" | "desc");
-                }}
-              >
-                <MenuItem value="desc">Descending</MenuItem>
-                <MenuItem value="asc">Ascending</MenuItem>
-              </Select>
-            </FormControl>
-
-            <Tooltip title="Refresh">
-              <span>
-                <IconButton
-                  onClick={fetchUsers}
-                  size="small"
-                  disabled={loading}
-                  className="border border-gray-300"
-                >
-                  <Refresh
-                    className={`w-5 h-5 text-gray-600 ${loading ? "animate-spin" : ""}`}
-                  />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Sync all users from auth into the document store">
-              <span>
-                <IconButton
-                  onClick={() => {
-                    checkSyncStatus();
-                    setSyncDialogOpen(true);
-                  }}
-                  size="small"
-                  disabled={loading || syncing}
-                  className="border border-gray-300"
-                >
-                  <Refresh
-                    className={`w-5 h-5 text-blue-600 ${syncing ? "animate-spin" : ""}`}
-                  />
-                </IconButton>
-              </span>
-            </Tooltip>
-          </Box>
-        </Box>
-      </Paper>
+      {/* Search and Filters */}
+      <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search by User ID, Email, IP, or User Agent..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="createdAt">First Activity</option>
+              <option value="lastActivity">Last Activity</option>
+              <option value="totalActivities">Total Activities</option>
+              <option value="riskScore">Risk Score</option>
+              <option value="plan">Plan (Premium)</option>
+            </select>
+            <select
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="desc">Descending</option>
+              <option value="asc">Ascending</option>
+            </select>
+            <button
+              onClick={fetchUsers}
+              className="p-2 text-gray-600 hover:text-blue-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+              title="Refresh"
+            >
+              <RotateCw
+                className={`w-5 h-5 ${loading ? "animate-spin" : ""}`}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Users Table */}
-      <Paper elevation={0} className="border overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
         {loading ? (
-          <Box className="p-8 text-center flex flex-col items-center justify-center">
-            <CircularProgress color="primary" size={32} />
-            <Typography variant="body2" className="mt-2 text-gray-600">
-              Loading users...
-            </Typography>
-          </Box>
+          <div className="p-8 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-gray-600">Loading users...</p>
+          </div>
         ) : (
           <>
-            <TableContainer sx={{ maxHeight: 640 }}>
-              <Table stickyHeader size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell width={40}></TableCell>
-                    <TableCell>Email</TableCell>
-                    <TableCell>Risk Score</TableCell>
-                    <TableCell>Plan</TableCell>
-                    <TableCell>Revenue</TableCell>
-                    <TableCell>Source</TableCell>
-                    <TableCell>Activities</TableCell>
-                    <TableCell>Tokens</TableCell>
-                    <TableCell>IPs / Devices</TableCell>
-                    <TableCell>Last Active</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {users.map((user) => {
-                    const isExpanded = expandedRows.has(user.userId);
-                    return (
-                      <Fragment key={user.userId}>
-                        <TableRow hover>
-                          {/* Expand/Collapse Button */}
-                          <TableCell sx={{ width: 40, padding: "8px !important" }}>
-                            <Tooltip title={isExpanded ? "Collapse details" : "Expand details"}>
-                              <IconButton
-                                size="small"
-                                onClick={() => toggleRow(user.userId)}
-                                sx={{
-                                  padding: "4px",
-                                  minWidth: "32px",
-                                  minHeight: "32px",
-                                }}
-                              >
-                                {isExpanded ? (
-                                  <ChevronUp className="w-5 h-5 text-gray-700" />
-                                ) : (
-                                  <ChevronDown className="w-5 h-5 text-gray-700" />
-                                )}
-                              </IconButton>
-                            </Tooltip>
-                          </TableCell>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Email
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Risk Score
+                    </th>
+
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Plan
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Activities
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Practice
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Exams
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Tokens
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      IPs/Devices
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Last Active
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {users.map((user) => (
+                    <tr key={user.userId} className="hover:bg-gray-50">
+
 
                       {/* Email */}
-                      <TableCell>
-                        <Typography variant="body2">
-                          {user.email ?? "-"}
-                        </Typography>
-                      </TableCell>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {user.email ?? "-"}
+                      </td>
 
                       {/* Risk Score */}
-                      <TableCell>
-                        <Box
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRiskColor(
                             user.riskScore
                           )}`}
                         >
                           {getRiskIcon(user.riskScore)}
                           <span className="ml-1">{user.riskScore}%</span>
-                        </Box>
-                      </TableCell>
+                        </span>
+                      </td>
 
-                      {/* Plan */}
-                      <TableCell>
-                        <Box className="flex flex-col items-start gap-0.5">
-                          <Chip
-                            size="small"
-                            label={
-                              user.plan === "plus"
-                                ? user.planType
-                                  ? formatPlanType(user.planType)
-                                  : "Plus"
-                                : "Free"
-                            }
-                            color={
-                              user.plan === "plus" ? "secondary" : "default"
-                            }
-                            variant="outlined"
-                          />
-                          {user.subscriptionStatus === "unsubscribed" && (
-                            <Typography
-                              variant="caption"
-                              className="text-red-600 font-medium"
-                            >
-                              Unsubscribed · {user.subscriptionDurationDays} days
-                            </Typography>
-                          )}
-                          {user.subscriptionStatus === "active" &&
-                            (user.subscriptionDurationDays || 0) > 0 && (
-                              <Typography
-                                variant="caption"
-                                className="text-green-600 font-medium"
-                              >
-                                Active · {user.subscriptionDurationDays} days
-                              </Typography>
-                            )}
-                        </Box>
-                      </TableCell>
 
-                      {/* Revenue */}
-                      <TableCell>
-                        <Typography variant="body2">
-                          ${(user.totalSpend || 0).toFixed(2)}
-                        </Typography>
-                      </TableCell>
 
-                      {/* Source */}
-                      <TableCell>
-                        <Box className="flex flex-col max-w-[180px]">
-                          {user.utm_source ? (
-                            <>
-                              <Typography
-                                variant="body2"
-                                className="font-medium text-gray-900"
-                              >
-                                {user.utm_source}
-                              </Typography>
-                              {user.utm_medium && (
-                                <Typography
-                                  variant="caption"
-                                  className="text-gray-500"
-                                >
-                                  {user.utm_medium}
-                                </Typography>
-                              )}
-                              {user.utm_campaign && (
-                                <Tooltip title={user.utm_campaign}>
-                                  <Typography
-                                    variant="caption"
-                                    noWrap
-                                    className="text-gray-400"
-                                  >
-                                    {user.utm_campaign}
-                                  </Typography>
-                                </Tooltip>
-                              )}
-                            </>
-                          ) : (
-                            <Typography variant="caption" className="text-gray-400">
-                              -
-                            </Typography>
-                          )}
-                        </Box>
-                      </TableCell>
+                      {/* Plan Type */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.plan === "premium" || user.plan === "pro"
+                            ? "bg-purple-100 text-purple-800"
+                            : "bg-gray-100 text-gray-800"
+                            }`}
+                        >
+                          {user.plan === "premium" || user.plan === "pro"
+                            ? `Premium ${user.planType ? `(${user.planType})` : ""}`
+                            : "Free"}
+                        </span>
+                      </td>
 
                       {/* Activities */}
-                      <TableCell>
-                        <Typography variant="body2">
-                          {user.totalActivities.toLocaleString()}
-                        </Typography>
-                      </TableCell>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {user.totalActivities.toLocaleString()}
+                      </td>
+
+                      {/* Practice */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div>
+                          {user.practiceAttempts} / {user.practiceCompletions}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {user.practiceAttempts > 0
+                            ? Math.round(
+                              (user.practiceCompletions /
+                                user.practiceAttempts) *
+                              100
+                            )
+                            : 0}
+                          % completion
+                        </div>
+                      </td>
+
+                      {/* Mock Exams */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div>
+                          {user.mockAttempts} / {user.mockCompletions}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {user.mockAttempts > 0
+                            ? Math.round(
+                              (user.mockCompletions / user.mockAttempts) * 100
+                            )
+                            : 0}
+                          % completion
+                        </div>
+                      </td>
 
                       {/* Tokens */}
-                      <TableCell>
-                        <Typography variant="body2">
-                          {user.totalTokens.toLocaleString()}
-                        </Typography>
-                      </TableCell>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {user.totalTokens.toLocaleString()}
+                      </td>
 
-                      {/* IPs / user agents */}
-                      <TableCell>
-                        <Typography variant="body2">
-                          {user.uniqueIpAddresses} IPs
-                        </Typography>
-                        <Typography variant="caption" className="text-gray-500">
-                          {user.uniqueUserAgents} user agents
-                        </Typography>
-                      </TableCell>
+                      {/* IPs/Devices */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div>{user.uniqueIpAddresses} IPs</div>
+                        <div className="text-xs text-gray-500">
+                          {user.uniqueUserAgents} devices
+                        </div>
+                      </td>
 
                       {/* Last Active */}
-                      <TableCell>
-                        <Typography variant="body2" className="text-gray-600">
-                          {formatDate(user.lastActivity)}
-                        </Typography>
-                      </TableCell>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(user.lastActivity)}
+                      </td>
 
                       {/* Actions */}
-                      <TableCell>
-                        <Box className="flex gap-1">
-                          <Tooltip title="View Details">
-                            <IconButton
-                              size="small"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                const url = `/cms/dashboard/users/${encodeURIComponent(user.userId)}`;
-                                window.open(url, "_blank", "noopener,noreferrer");
-                              }}
-                            >
-                              <Visibility className="w-4 h-4 text-blue-600" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Export Data">
-                            <IconButton
-                              size="small"
-                              onClick={() => exportUserData(user.userId)}
-                            >
-                              <Download className="w-4 h-4 text-green-600" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Revoke all active sessions">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleRevokeSessionsClick(user)}
-                              disabled={revoking}
-                            >
-                              <Logout className="w-4 h-4 text-orange-600" />
-                            </IconButton>
-                          </Tooltip>
-                          {user.plan !== "plus" && (
-                            <Tooltip title="Grant Plus plan">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleGrantPlusClick(user)}
-                                disabled={grantingPlus}
-                              >
-                                <WorkspacePremium className="w-4 h-4 text-amber-600" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                          {user.subscriptionStatus === "active" &&
-                            user.plan === "plus" && (
-                              <Tooltip title="Cancel Subscription">
-                                <IconButton
-                                  size="small"
-                                  onClick={() =>
-                                    handleCancelSubscriptionClick(user)
-                                  }
-                                  disabled={canceling}
-                                >
-                                  <Close className="w-4 h-4 text-red-600" />
-                                </IconButton>
-                              </Tooltip>
-                            )}
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-
-                    {/* Expanded Row Details */}
-                    <TableRow>
-                      <TableCell
-                        colSpan={11}
-                        className="p-0"
-                        sx={{ borderBottom: isExpanded ? 1 : 0 }}
-                      >
-                        <Collapse in={isExpanded} timeout="auto" unmountOnExit>
-                          <Box className="p-4 bg-gray-50">
-                            <Box className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                              {/* Practice Details */}
-                              <Paper
-                                elevation={0}
-                                className="p-4 border border-gray-200"
-                                sx={{ borderRadius: 2 }}
-                              >
-                                <Box className="flex items-center gap-2 mb-3">
-                                  <MenuBook className="w-5 h-5 text-blue-600" />
-                                  <Typography variant="subtitle2" className="font-semibold">
-                                    Practice
-                                  </Typography>
-                                </Box>
-                                <Box className="space-y-2">
-                                  <Box className="flex justify-between">
-                                    <Typography variant="body2" className="text-gray-600">
-                                      Attempts:
-                                    </Typography>
-                                    <Typography variant="body2" className="font-medium">
-                                      {user.practiceAttempts.toLocaleString()}
-                                    </Typography>
-                                  </Box>
-                                  <Box className="flex justify-between">
-                                    <Typography variant="body2" className="text-gray-600">
-                                      Completions:
-                                    </Typography>
-                                    <Typography variant="body2" className="font-medium">
-                                      {user.practiceCompletions.toLocaleString()}
-                                    </Typography>
-                                  </Box>
-                                  {user.practiceAttempts > 0 && (
-                                    <Box className="flex justify-between pt-2 border-t">
-                                      <Typography variant="body2" className="text-gray-600">
-                                        Completion Rate:
-                                      </Typography>
-                                      <Typography variant="body2" className="font-medium text-blue-600">
-                                        {Math.round(
-                                          (user.practiceCompletions / user.practiceAttempts) * 100
-                                        )}
-                                        %
-                                      </Typography>
-                                    </Box>
-                                  )}
-                                </Box>
-                              </Paper>
-
-                              {/* Exam Details */}
-                              <Paper
-                                elevation={0}
-                                className="p-4 border border-gray-200"
-                                sx={{ borderRadius: 2 }}
-                              >
-                                <Box className="flex items-center gap-2 mb-3">
-                                  <Description className="w-5 h-5 text-purple-600" />
-                                  <Typography variant="subtitle2" className="font-semibold">
-                                    Exams
-                                  </Typography>
-                                </Box>
-                                <Box className="space-y-2">
-                                  <Box className="flex justify-between">
-                                    <Typography variant="body2" className="text-gray-600">
-                                      Attempts:
-                                    </Typography>
-                                    <Typography variant="body2" className="font-medium">
-                                      {user.mockAttempts.toLocaleString()}
-                                    </Typography>
-                                  </Box>
-                                  <Box className="flex justify-between">
-                                    <Typography variant="body2" className="text-gray-600">
-                                      Completions:
-                                    </Typography>
-                                    <Typography variant="body2" className="font-medium">
-                                      {user.mockCompletions.toLocaleString()}
-                                    </Typography>
-                                  </Box>
-                                  {user.mockAttempts > 0 && (
-                                    <Box className="flex justify-between pt-2 border-t">
-                                      <Typography variant="body2" className="text-gray-600">
-                                        Completion Rate:
-                                      </Typography>
-                                      <Typography variant="body2" className="font-medium text-purple-600">
-                                        {Math.round(
-                                          (user.mockCompletions / user.mockAttempts) * 100
-                                        )}
-                                        %
-                                      </Typography>
-                                    </Box>
-                                  )}
-                                </Box>
-                              </Paper>
-
-                              {/* Additional Details */}
-                              <Paper
-                                elevation={0}
-                                className="p-4 border border-gray-200"
-                                sx={{ borderRadius: 2 }}
-                              >
-                                <Box className="flex items-center gap-2 mb-3">
-                                  <Insights className="w-5 h-5 text-green-600" />
-                                  <Typography variant="subtitle2" className="font-semibold">
-                                    Activity Details
-                                  </Typography>
-                                </Box>
-                                <Box className="space-y-2">
-                                  <Box className="flex justify-between">
-                                    <Typography variant="body2" className="text-gray-600">
-                                      First Activity:
-                                    </Typography>
-                                    <Typography variant="body2" className="font-medium">
-                                      {formatDate(user.firstActivity)}
-                                    </Typography>
-                                  </Box>
-                                  <Box className="flex justify-between">
-                                    <Typography variant="body2" className="text-gray-600">
-                                      Total Activities:
-                                    </Typography>
-                                    <Typography variant="body2" className="font-medium">
-                                      {user.totalActivities.toLocaleString()}
-                                    </Typography>
-                                  </Box>
-                                  <Box className="flex justify-between">
-                                    <Typography variant="body2" className="text-gray-600">
-                                      Total Tokens:
-                                    </Typography>
-                                    <Typography variant="body2" className="font-medium">
-                                      {user.totalTokens.toLocaleString()}
-                                    </Typography>
-                                  </Box>
-                                </Box>
-                              </Paper>
-
-                              {/* Payment & Risk Details */}
-                              <Paper
-                                elevation={0}
-                                className="p-4 border border-gray-200"
-                                sx={{ borderRadius: 2 }}
-                              >
-                                <Box className="flex items-center gap-2 mb-3">
-                                  <Shield className="w-5 h-5 text-orange-600" />
-                                  <Typography variant="subtitle2" className="font-semibold">
-                                    Payment & Risk
-                                  </Typography>
-                                </Box>
-                                <Box className="space-y-2">
-                                  <Box className="flex justify-between">
-                                    <Typography variant="body2" className="text-gray-600">
-                                      Payment Events:
-                                    </Typography>
-                                    <Typography variant="body2" className="font-medium">
-                                      {user.paymentEvents}
-                                    </Typography>
-                                  </Box>
-                                  <Box className="flex justify-between">
-                                    <Typography variant="body2" className="text-gray-600">
-                                      Dispute Events:
-                                    </Typography>
-                                    <Typography variant="body2" className="font-medium text-red-600">
-                                      {user.disputeEvents}
-                                    </Typography>
-                                  </Box>
-                                  <Box className="flex justify-between pt-2 border-t">
-                                    <Typography variant="body2" className="text-gray-600">
-                                      Risk Score:
-                                    </Typography>
-                                    <Box
-                                      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getRiskColor(
-                                        user.riskScore
-                                      )}`}
-                                    >
-                                      {getRiskIcon(user.riskScore)}
-                                      <span className="ml-1">{user.riskScore}%</span>
-                                    </Box>
-                                  </Box>
-                                </Box>
-                              </Paper>
-
-                              {/* Network Details */}
-                              <Paper
-                                elevation={0}
-                                className="p-4 border border-gray-200"
-                                sx={{ borderRadius: 2 }}
-                              >
-                                <Box className="flex items-center gap-2 mb-3">
-                                  <Language className="w-5 h-5 text-indigo-600" />
-                                  <Typography variant="subtitle2" className="font-semibold">
-                                    Network & Devices
-                                  </Typography>
-                                </Box>
-                                <Box className="space-y-2">
-                                  <Box className="flex justify-between">
-                                    <Typography variant="body2" className="text-gray-600">
-                                      Unique IPs:
-                                    </Typography>
-                                    <Typography variant="body2" className="font-medium">
-                                      {user.uniqueIpAddresses}
-                                    </Typography>
-                                  </Box>
-                                  <Box className="flex justify-between">
-                                    <Typography variant="body2" className="text-gray-600">
-                                      Distinct user agents:
-                                    </Typography>
-                                    <Typography variant="body2" className="font-medium">
-                                      {user.uniqueUserAgents}
-                                    </Typography>
-                                  </Box>
-                                  {user.ipAddresses && user.ipAddresses.length > 0 && (
-                                    <Box className="pt-2 border-t">
-                                      <Typography variant="caption" className="text-gray-600 block mb-1">
-                                        Recent IPs:
-                                      </Typography>
-                                      <Typography variant="caption" className="text-gray-500">
-                                        {user.ipAddresses.slice(0, 3).join(", ")}
-                                        {user.ipAddresses.length > 3 && "..."}
-                                      </Typography>
-                                    </Box>
-                                  )}
-                                </Box>
-                              </Paper>
-
-                              {/* Subscription Details */}
-                              {(user.subscriptionStatus === "active" ||
-                                user.subscriptionStatus === "unsubscribed") && (
-                                <Paper
-                                  elevation={0}
-                                  className="p-4 border border-gray-200"
-                                  sx={{ borderRadius: 2 }}
-                                >
-                                  <Box className="flex items-center gap-2 mb-3">
-                                    <Schedule className="w-5 h-5 text-teal-600" />
-                                    <Typography variant="subtitle2" className="font-semibold">
-                                      Subscription
-                                    </Typography>
-                                  </Box>
-                                  <Box className="space-y-2">
-                                    <Box className="flex justify-between">
-                                      <Typography variant="body2" className="text-gray-600">
-                                        Status:
-                                      </Typography>
-                                      <Chip
-                                        size="small"
-                                        label={
-                                          user.subscriptionStatus === "active"
-                                            ? "Active"
-                                            : "Unsubscribed"
-                                        }
-                                        color={
-                                          user.subscriptionStatus === "active"
-                                            ? "success"
-                                            : "default"
-                                        }
-                                        variant="outlined"
-                                      />
-                                    </Box>
-                                    {user.subscriptionStartDate && (
-                                      <Box className="flex justify-between">
-                                        <Typography variant="body2" className="text-gray-600">
-                                          Start Date:
-                                        </Typography>
-                                        <Typography variant="body2" className="font-medium">
-                                          {formatDate(user.subscriptionStartDate)}
-                                        </Typography>
-                                      </Box>
-                                    )}
-                                    {user.subscriptionEndDate && (
-                                      <Box className="flex justify-between">
-                                        <Typography variant="body2" className="text-gray-600">
-                                          End Date:
-                                        </Typography>
-                                        <Typography variant="body2" className="font-medium">
-                                          {formatDate(user.subscriptionEndDate)}
-                                        </Typography>
-                                      </Box>
-                                    )}
-                                    {user.subscriptionDurationDays && (
-                                      <Box className="flex justify-between pt-2 border-t">
-                                        <Typography variant="body2" className="text-gray-600">
-                                          Duration:
-                                        </Typography>
-                                        <Typography variant="body2" className="font-medium">
-                                          {user.subscriptionDurationDays} days
-                                        </Typography>
-                                      </Box>
-                                    )}
-                                  </Box>
-                                </Paper>
-                              )}
-                            </Box>
-                          </Box>
-                        </Collapse>
-                      </TableCell>
-                    </TableRow>
-                  </Fragment>
-                  );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() =>
+                              window.open(
+                                `/cms/dashboard/users/${user.userId}`,
+                                "_blank"
+                              )
+                            }
+                            className="text-blue-600 cursor-pointer hover:text-blue-900"
+                            title="View Details"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => exportUserData(user.userId)}
+                            className="text-green-600 cursor-pointer hover:text-green-900"
+                            title="Export Data"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             {/* Pagination */}
-            <Box className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 border-t gap-3">
-              <Typography variant="caption" className="text-gray-700">
-                Showing{" "}
-                <span className="font-medium">
-                  {users.length === 0
-                    ? 0
-                    : (page - 1) * pagination.limit + 1}
-                </span>{" "}
-                to{" "}
-                <span className="font-medium">
-                  {Math.min(page * pagination.limit, pagination.totalCount)}
-                </span>{" "}
-                of{" "}
-                <span className="font-medium">{pagination.totalCount}</span>{" "}
-                results
-              </Typography>
-              <Pagination
-                count={pagination.totalPages || 1}
-                page={page}
-                onChange={handlePageChange}
-                size="small"
-                color="primary"
-                showFirstButton
-                showLastButton
-              />
-            </Box>
+            <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+              <div className="flex-1 cursor-pointer flex justify-between sm:hidden">
+                <button
+                  onClick={() => setPage(page - 1)}
+                  disabled={page === 1}
+                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setPage(page + 1)}
+                  disabled={page >= pagination.totalPages}
+                  className="ml-3 cursor-pointer relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Showing{" "}
+                    <span className="font-medium">
+                      {(page - 1) * pagination.limit + 1}
+                    </span>{" "}
+                    to{" "}
+                    <span className="font-medium">
+                      {Math.min(page * pagination.limit, pagination.totalCount)}
+                    </span>{" "}
+                    of{" "}
+                    <span className="font-medium">{pagination.totalCount}</span>{" "}
+                    results
+                  </p>
+                </div>
+                <div>
+                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                    <button
+                      onClick={() => setPage(page - 1)}
+                      disabled={page === 1}
+                      className="relative cursor-pointer inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setPage(page + 1)}
+                      disabled={page >= pagination.totalPages}
+                      className="relative cursor-pointer  inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </nav>
+                </div>
+              </div>
+            </div>
           </>
         )}
-      </Paper>
-
-      {/* Grant Plus Confirmation Dialog */}
-      <Dialog
-        open={grantPlusDialogOpen}
-        onClose={handleGrantPlusDialogClose}
-        aria-labelledby="grant-plus-dialog-title"
-        aria-describedby="grant-plus-dialog-description"
-      >
-        <DialogTitle id="grant-plus-dialog-title">
-          Grant Plus Plan
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="grant-plus-dialog-description">
-            Grant Plus access to{" "}
-            <strong>{selectedGrantUser?.email || selectedGrantUser?.userId}</strong>?
-            <br />
-            <br />
-            This will:
-            <ul style={{ marginTop: "8px", paddingLeft: "20px" }}>
-              <li>Update the user&apos;s plan to &quot;plus&quot; in auth metadata</li>
-              <li>Update the user&apos;s plan in the database</li>
-              <li>Not create a Stripe subscription or charge the user</li>
-            </ul>
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={handleGrantPlusDialogClose}
-            disabled={grantingPlus}
-            color="inherit"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleGrantPlusConfirm}
-            disabled={grantingPlus}
-            color="primary"
-            variant="contained"
-          >
-            {grantingPlus ? "Granting..." : "Grant Plus"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Cancel Subscription Confirmation Dialog */}
-      <Dialog
-        open={cancelDialogOpen}
-        onClose={handleCancelDialogClose}
-        aria-labelledby="cancel-subscription-dialog-title"
-        aria-describedby="cancel-subscription-dialog-description"
-      >
-        <DialogTitle id="cancel-subscription-dialog-title">
-          Cancel Subscription
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="cancel-subscription-dialog-description">
-            Are you sure you want to cancel the subscription for{" "}
-            <strong>{selectedUser?.email || selectedUser?.userId}</strong>?
-            <br />
-            <br />
-            This will:
-            <ul style={{ marginTop: "8px", paddingLeft: "20px" }}>
-              <li>Immediately cancel the subscription in Stripe</li>
-              <li>Update the user's plan to &quot;free&quot; in auth metadata</li>
-              <li>Update the user's plan in the database</li>
-            </ul>
-            This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={handleCancelDialogClose}
-            disabled={canceling}
-            color="inherit"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleCancelSubscriptionConfirm}
-            disabled={canceling}
-            color="error"
-            variant="contained"
-          >
-            {canceling ? "Canceling..." : "Confirm Cancel"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Revoke Sessions Confirmation Dialog */}
-      <Dialog
-        open={revokeDialogOpen}
-        onClose={handleRevokeDialogClose}
-        aria-labelledby="revoke-sessions-dialog-title"
-        aria-describedby="revoke-sessions-dialog-description"
-      >
-        <DialogTitle id="revoke-sessions-dialog-title">
-          Revoke All Active Sessions
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="revoke-sessions-dialog-description">
-            Revoke all active sessions for{" "}
-            <strong>{selectedRevokeUser?.email || selectedRevokeUser?.userId}</strong>?
-            <br />
-            <br />
-            This admin action:
-            <ul style={{ marginTop: "8px", paddingLeft: "20px" }}>
-              <li>Revokes all active sessions immediately</li>
-              <li>Does not apply the 48-hour device restriction</li>
-              <li>Clears existing 48-hour device restrictions for this user</li>
-            </ul>
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={handleRevokeDialogClose}
-            disabled={revoking}
-            color="inherit"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleRevokeSessionsConfirm}
-            disabled={revoking}
-            color="warning"
-            variant="contained"
-          >
-            {revoking ? "Revoking..." : "Confirm Revoke"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Sync All Users Dialog */}
-      <Dialog
-        open={syncDialogOpen}
-        onClose={() => !syncing && setSyncDialogOpen(false)}
-        aria-labelledby="sync-users-dialog-title"
-        aria-describedby="sync-users-dialog-description"
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle id="sync-users-dialog-title">
-          <Box className="flex items-center gap-2">
-            <People className="w-5 h-5" />
-            Sync all users from Supabase Auth
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="sync-users-dialog-description">
-            {syncStatus && (
-              <Box className="mb-4 p-3 bg-gray-50 rounded-lg">
-                <Typography variant="body2" className="font-medium mb-2">
-                  Current Status:
-                </Typography>
-                <Box className="space-y-1">
-                  <Typography variant="body2">
-                    📊 Auth directory users:{" "}
-                    <strong>{syncStatus.totalAuthUsers || 0}</strong>
-                  </Typography>
-                  <Typography variant="body2">
-                    💾 Users in documents:{" "}
-                    <strong>{syncStatus.totalUsersInDocuments || 0}</strong>
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    className={
-                      syncStatus.missingUsers && syncStatus.missingUsers > 0
-                        ? "text-orange-600 font-medium"
-                        : "text-green-600 font-medium"
-                    }
-                  >
-                    {syncStatus.missingUsers && syncStatus.missingUsers > 0
-                      ? `⚠️ Missing: ${syncStatus.missingUsers} users`
-                      : "✅ All users synced"}
-                  </Typography>
-                </Box>
-              </Box>
-            )}
-            <Typography variant="body2" className="mb-2">
-              This will sync all users from Supabase Auth into the `users` collection. This is useful to
-              catch up on failed webhooks.
-            </Typography>
-            <Typography variant="body2" className="mb-2">
-              The sync will:
-            </Typography>
-            <ul style={{ marginTop: "8px", paddingLeft: "20px" }}>
-              <li>Process users in batches of 100</li>
-              <li>Only sync users missing from the document store</li>
-              <li>Preserve existing user data</li>
-              <li>Update the users list automatically</li>
-            </ul>
-            {syncing && (
-              <Box className="mt-4 p-3 bg-blue-50 rounded-lg">
-                <Typography variant="body2" className="text-blue-700">
-                  <CircularProgress size={16} className="mr-2" />
-                  Syncing users... This may take a few minutes.
-                </Typography>
-              </Box>
-            )}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setSyncDialogOpen(false)}
-            disabled={syncing}
-            color="inherit"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSyncAllClick}
-            disabled={syncing}
-            color="primary"
-            variant="contained"
-            startIcon={syncing ? <CircularProgress size={16} /> : <Refresh />}
-          >
-            {syncing ? "Syncing..." : "Start Sync"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+      </div>
+    </div>
   );
 }
-

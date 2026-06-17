@@ -14,6 +14,8 @@ interface StoreState {
   listenings: TPracticeDto[];
   tasks: Record<string, TTaskSchemaDto[]>;
   setTasks: (tasks: Record<string, TTaskSchemaDto[]>) => void;
+  isPremiumPlanModalOpen: boolean;
+  setPremiumPlanModalState: () => void;
 }
 
 const useStore = create<StoreState>((set) => ({
@@ -32,6 +34,10 @@ const useStore = create<StoreState>((set) => ({
     set((state) => ({ listenings: listening ? [...listening] : state.listenings })),
   tasks: { listening: [], reading: [], writing: [], speaking: [] },
   setTasks: (tasks: Record<string, TTaskSchemaDto[]>) => set((state) => ({ tasks: tasks ? tasks : state.tasks })),
+  isPremiumPlanModalOpen: false,
+  setPremiumPlanModalState: () => {
+    set((state) => ({ isPremiumPlanModalOpen: !state.isPremiumPlanModalOpen }));
+  },
 }));
 
 export default useStore;

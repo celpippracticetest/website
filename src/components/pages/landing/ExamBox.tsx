@@ -25,44 +25,25 @@ const ExamBox = () => {
           title: "Listening",
           icon: <SvgListening />,
           bgColor: "bg-primary5",
-          link: "/listening",
         },
         {
           title: "Speaking",
           icon: <SvgSpeaking />,
           bgColor: "bg-secondary5",
-          link: "/speaking",
         },
-        {
-          title: "Writing",
-          icon: <SvgWriting />,
-          bgColor: "bg-success5",
-          link: "/writing",
-        },
-        {
-          title: "Reading",
-          icon: <SvgReading />,
-          bgColor: "bg-error5",
-          link: "/reading",
-        },
+        { title: "Writing", icon: <SvgWriting />, bgColor: "bg-success5" },
+        { title: "Reading", icon: <SvgReading />, bgColor: "bg-error5" },
         {
           title: "Mock Exams",
-          icon: (
-            <SvgMockExamsColorful
-              className="text-[#DA2AFE]"
-              aria-hidden={true}
-            />
-          ),
+          icon: <SvgMockExamsColorful />,
           bgColor: "bg-purple5",
-          link: "/exam-overview",
         },
       ].map((exam, index) => (
         <ExamSectionCard
-          key={exam.link}
+          key={index}
           title={exam.title}
           icon={exam.icon}
           bgColor={exam.bgColor}
-          link={exam.link}
         />
       ))}
     </section>

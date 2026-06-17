@@ -1,7 +1,7 @@
 import LayoutClient from "@/components/dashboard-new/LayoutClient";
-import Footer from "@/components/pages/landing/Footer";
-import ReactQueryProvider from "@/components/ReactQueryProvider";
-import { getDashboardLayoutAuthContext } from "@/lib/auth/web-session-server";
+import IntercomLoader from "@/components/IntercomLoader";
+import { daysSince } from "@/lib/utils";
+import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import { Metadata } from "next";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -15,19 +15,45 @@ export async function generateMetadata(): Promise<Metadata> {
     },
   };
 }
+type OnboardingMetadata = {
+  completed?: boolean;
+  askedLaterAt?: string;
+};
+
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const ctx = await getDashboardLayoutAuthContext();
+  let user = null;
+  try {
+    user = await currentUser();
+  } catch (error) {}
 
+  const publicMetadata = user?.publicMetadata || {};
+  const privateMetadata = user?.privateMetadata || {};
+
+  const onboarding: OnboardingMetadata = privateMetadata.onboarding || {};
+  const onboardingNew: any = privateMetadata.onboardingNew || {};
+
+  const showSurvey =
+    publicMetadata.plan === "free" &&
+    onboardingNew.completed !== true &&
+    (!onboardingNew.askedLaterAt || daysSince(onboardingNew.askedLaterAt) >= 7);
+
+  const showCompletedModal =
+    !showSurvey &&
+    publicMetadata.plan === "free" &&
+    (onboardingNew.completed === true ||
+      (onboardingNew.askedLaterAt && daysSince(onboardingNew.askedLaterAt) < 7));
   return (
     <>
-      <ReactQueryProvider>
-        <LayoutClient>{children}</LayoutClient>
-      </ReactQueryProvider>
-      {!ctx && <Footer isSignedIn={false} />}
+      <IntercomLoader />
+      <LayoutClient
+        showSurvey={showSurvey}
+        showCompletedModal={showCompletedModal}
+        children={children}
+      />
     </>
   );
 }

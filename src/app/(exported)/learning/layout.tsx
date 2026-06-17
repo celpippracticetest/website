@@ -1,21 +1,59 @@
 import LayoutLearningClient from "@/components/dashboard-new/LayoutLearningClient";
+import IntercomLoader from "@/components/IntercomLoader";
+import { daysSince } from "@/lib/utils";
+import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "CELPIP AI Learning Assistant | Real-time Practice Feedback",
-  description:
-    "Ask CELPIP-style questions and get real-time answers. Practice CELPIP strategies, improve task structure, and get targeted guidance.",
-  alternates: {
-    canonical: "https://celpippracticetest.com/learning",
-  },
+export async function generateMetadata(): Promise<Metadata> {
+  const appBaseUrl = process.env.APP_BASE_URL || "";
+  const isPreview = appBaseUrl.includes("vercel.app");
+  return {
+    title: "Dashboard",
+    robots: {
+      index: !isPreview,
+      follow: !isPreview,
+    },
+  };
+}
+type OnboardingMetadata = {
+  completed?: boolean;
+  askedLaterAt?: string;
 };
 
-export default async function LearningLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  let user = null;
+  try {
+    user = await currentUser();
+  } catch (error) {}
+
+  const publicMetadata = user?.publicMetadata || {};
+  const privateMetadata = user?.privateMetadata || {};
+
+  const onboarding: OnboardingMetadata = privateMetadata.onboarding || {};
+  const onboardingNew: any = privateMetadata.onboardingNew || {};
+
+  const showSurvey =
+    publicMetadata.plan === "free" &&
+    onboardingNew.completed !== true &&
+    (!onboardingNew.askedLaterAt || daysSince(onboardingNew.askedLaterAt) >= 7);
+
+  const showCompletedModal =
+    !showSurvey &&
+    publicMetadata.plan === "free" &&
+    (onboardingNew.completed === true ||
+      (onboardingNew.askedLaterAt && daysSince(onboardingNew.askedLaterAt) < 7));
   return (
-    <LayoutLearningClient>{children}</LayoutLearningClient>
+    <>
+      <IntercomLoader />
+      <LayoutLearningClient
+        showSurvey={showSurvey}
+        showCompletedModal={showCompletedModal}
+        children={children}
+      />
+    </>
   );
 }

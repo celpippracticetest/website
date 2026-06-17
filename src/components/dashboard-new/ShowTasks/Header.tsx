@@ -1,24 +1,16 @@
 "use client";
+import React from "react";
 
-import { Box } from "@mui/material";
-import type { ReactNode } from "react";
-
-const ShowTaskHeader = ({ children }: { children: ReactNode }) => {
+const ShowTaskHeader = ({ children }: any) => {
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        width: 1,
-        px: 2,
-        py: 4,
-        minHeight: "100vh",
-        m: { lg: 0 },
-      }}
+    <div
+      className={`
+    
+
+    flex flex-col h-screen items-center w-full px-[16px] screen1024:m-0 pb-[20px]`}
     >
       {children}
-    </Box>
+    </div>
   );
 };
 

@@ -1,272 +1,233 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { useOnlineUsersLiveStat } from "@/hooks/useRecentSignupsLiveStat";
 import Link from "next/link";
-import Image from "next/image";
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
-import QuizIcon from "@mui/icons-material/Quiz";
-import SchoolIcon from "@mui/icons-material/School";
-import MenuBookIcon from "@mui/icons-material/MenuBook";
-import AbcIcon from "@mui/icons-material/Abc";
-import MenuIcon from "@mui/icons-material/Menu";
-import CloseIcon from "@mui/icons-material/Close";
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import Image from "next/image";
+import SvgLearning from "@/components/icons/Learning";
+import SvgPractice from "@/components/icons/Practice";
+import SvgMockTest from "@/components/icons/MockTest";
+import {
+  SvgMockTestTopNavigationHover,
+  SvgPracticeBlueHover,
+} from "@/components/icons";
 import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
-import { cn } from "@/lib/utils";
+import SvgWord from "@/components/icons/Word";
+import SvgReferral from "@/components/icons/Referral";
 
-const mainNav = [
-  {
-    label: "Mock Exams",
-    href: "/exam-overview",
-    icon: QuizIcon,
-  },
-  {
-    label: "Practice",
-    href: "/practice-overview",
-    icon: SchoolIcon,
-  },
-  {
-    label: "Learning",
-    href: "/learning",
-    icon: MenuBookIcon,
-  },
-  {
-    label: "Words",
-    href: "/words",
-    icon: AbcIcon,
-  },
-] as const;
-
-function HeaderOnlineBadge({
-  compact,
-  className,
-  variant = "default",
-}: {
-  compact?: boolean;
-  className?: string;
-  variant?: "default" | "onNavy";
-}) {
-  const { display } = useOnlineUsersLiveStat("4,100");
-  const label = compact
-    ? `${display}+ practicing right now`
-    : `${display}+ online now`;
-
-  return (
-    <div
-      className={cn(
-        "inline-flex max-w-full items-center gap-2 rounded-full px-2.5 py-1 text-xs font-semibold",
-        variant === "default" &&
-          "border border-emerald-200 bg-emerald-50 text-emerald-700",
-        variant === "onNavy" &&
-          "border border-white/20 bg-white/10 text-emerald-50 backdrop-blur-sm",
-        compact && "w-full justify-start py-2 pl-3",
-        className,
-      )}
-    >
-      <span className="relative flex h-2 w-2 shrink-0">
-        <span
-          className={cn(
-            "absolute inline-flex h-full w-full animate-ping rounded-full opacity-75",
-            variant === "default" && "bg-emerald-400",
-            variant === "onNavy" && "bg-emerald-300",
-          )}
-        />
-        <span
-          className={cn(
-            "relative inline-flex h-2 w-2 rounded-full",
-            variant === "default" && "bg-emerald-500",
-            variant === "onNavy" && "bg-emerald-300",
-          )}
-        />
-      </span>
-      <span className="truncate">{label}</span>
-    </div>
-  );
-}
-
+const SvgClose = dynamic(() => import("../../icons/Close"), { ssr: false });
+const SvgHamburger = dynamic(() => import("../../icons/Hamburger"), {
+  ssr: true,
+});
 const TopHeader = () => {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const drawerRef = useRef<HTMLDivElement>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const hrefs = ["/exam-overview", "/practice-overview", "/learning", "/words", "/earn100"];
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const sidebarMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (mobileOpen) {
+    const checkMenu = (event: MouseEvent) => {
+      if (sidebarMenuRef?.current) {
+        const target = event.target as Node | null;
+        if (!sidebarMenuRef?.current.contains(target)) {
+          setIsMenuOpen(false);
+        }
+      }
+    };
+
+    window.document.addEventListener("mousedown", checkMenu);
+  }, []);
+
+  useEffect(() => {
+    if (isMenuOpen === true && dimensions.width <= 1279) {
       document.body.classList.add("overflow-hidden");
-    } else {
+    } else if (isMenuOpen === false && dimensions.width <= 1279) {
       document.body.classList.remove("overflow-hidden");
     }
-    return () => document.body.classList.remove("overflow-hidden");
-  }, [mobileOpen]);
+    if (isMenuOpen === true && dimensions.width > 1279) {
+      setIsMenuOpen(false);
+    }
+  }, [isMenuOpen, dimensions]);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMobileOpen(false);
+    const handleSize = () => {
+      setDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
     };
-    if (mobileOpen) window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [mobileOpen]);
+    window.addEventListener("resize", handleSize);
+  }, []);
 
-  useEffect(() => {
-    const onDown = (e: MouseEvent) => {
-      if (!mobileOpen || !drawerRef.current) return;
-      const t = e.target as Node;
-      if (!drawerRef.current.contains(t)) setMobileOpen(false);
-    };
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
-  }, [mobileOpen]);
+  const icons = [
+    <div key="mock-exam-icon" className="relative  flex items-center justify-center">
+      <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
+        <SvgMockTest className="  text-[#76808F]  duration-200 " />
+      </div>
+      <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
+        <SvgMockTestTopNavigationHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
+      </div>
+    </div>,
+    <div key="practice-icon" className="relative w-[24px] h-[24px] flex items-center justify-center">
+      <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
+        <SvgPractice
+          fill="transparent"
+          stroke={"#76808F"}
+          className="duration-200"
+        />
+      </div>
+      <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
+        <SvgPracticeBlueHover className="text-[#316BFF]   duration-200 group-hover:opacity-100" />
+      </div>
+    </div>,
+    <div key="learn-icon" className="relative  flex items-center justify-center">
+      <div className="flex group-hover:hidden w-[24px] h-[24px]  items-center justify-center">
+        <SvgLearning
+          stroke="#76808F"
+          fill="#76808F"
+          className="text-[#76808F] group-hover:text-[#316BFF]"
+        />
+      </div>
+
+      <div className="hidden group-hover:flex w-[24px] h-[24px]  items-center justify-center">
+        <SvgWord
+          stroke="#76808F"
+          fill="#76808F"
+          className="text-[#316BFF]"
+        />
+      </div>
+    </div>,
+    <div key="mock-exam-icon" className="relative  flex items-center justify-center">
+      <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
+        <SvgMockTest className="  text-[#76808F]  duration-200 " />
+      </div>
+      <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
+        <SvgMockTestTopNavigationHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
+      </div>
+    </div>,
+    <div key="earn-icon" className="relative  flex items-center justify-center">
+      <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
+        <SvgReferral className="  text-[#76808F]  duration-200 " />
+      </div>
+      <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
+        <SvgReferral className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
+      </div>
+    </div>
+  ];
 
   return (
-    <>
-      <header
-        className={cn(
-          "fixed inset-x-0 top-0 z-[1200] border-b border-slate-200/90",
-          "bg-white/95 backdrop-blur-[16px] supports-[backdrop-filter]:bg-white/90",
-        )}
-      >
-        <div className="mx-auto flex h-16 min-h-[64px] w-full max-w-[1200px] items-center justify-between gap-3 px-4 screen744:h-[72px] screen744:min-h-[72px] screen744:px-8">
-          <Link
-            className="flex shrink-0 flex-row items-center gap-2"
-            href="/"
-            aria-label="CELPIP Practice Test home"
-            onClick={() => setMobileOpen(false)}
+    <div className="max-w-[1440px] w-full flex justify-center mx-auto ">
+      <div
+        className="z-3 px-[16px] screen744:!px-[24px] screen1280:!px-[40px] max-w-[1156px] w-full screen1280:!h-[80px] h-[72px] flex items-center justify-between text-center border-solid fixed top-0 border-[1.5px] backdrop-blur-[8px] border-primary5 rounded-es-[32px] rounded-ee-[32px]"
+        style={{
+          background:
+            "linear-gradient(90deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.2) 100%)",
+        }}>
+        <div className="flex items-center gap-[12px] screen744:!gap-[24px]">
+          <span
+            className="screen1280:!hidden flex"
+            onClick={() => setIsMenuOpen && setIsMenuOpen(!isMenuOpen)}
+            aria-label="Open menu"
           >
+            <SvgHamburger />
+          </span>
+          <Link className="shrink-0 flex flex-row items-center" href={"/"}>
             <Image
               src="/images/header-logo-left.png"
-              alt=""
+              alt="logo"
               width={32}
               height={32}
-              className="block h-8 w-8 shrink-0"
-              priority
+              className="w-[32px] h-[32px] max-[375px]:hidden min-[376px]:inline"
+              priority={true}
               sizes="32px"
+              quality={90}
+              loading="eager"
+              fetchPriority="high"
             />
             <Image
               src="/images/header-logo-right.png"
-              alt=""
+              alt="logo"
               width={84}
               height={40}
-              className="hidden h-8 w-auto min-[376px]:block"
-              priority
-              sizes="84px"
+              className="w-[63px] screen744:!w-[84px] h-auto"
+              priority={true}
+              sizes="(max-width: 743px) 63px, 84px"
+              quality={90}
+              loading="eager"
+              fetchPriority="high"
             />
           </Link>
-
-          <nav className="hidden items-center gap-1 screen1280:flex">
-            {mainNav.map(({ label, href, icon: Icon }) => (
-              <Link
-                key={label}
-                href={href}
-                className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-[15px] font-medium text-slate-800 transition-colors hover:bg-slate-100 hover:text-[#2563EB]"
-              >
-                <Icon sx={{ fontSize: 18, color: "#3B82F6" }} aria-hidden />
-                {label}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="flex flex-1 items-center justify-end gap-2 screen744:gap-3">
-            <div className="hidden screen1280:block">
-              <HeaderOnlineBadge />
-            </div>
-            <TopHeaderRightSide />
-            <button
-              type="button"
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-800 transition-colors hover:bg-slate-100 screen1280:hidden"
-              aria-label="Open menu"
-              aria-expanded={mobileOpen}
-              onClick={() => setMobileOpen(true)}
-            >
-              <MenuIcon />
-            </button>
-          </div>
         </div>
-      </header>
+        <nav className="gap-[24px] hidden screen1280:!flex">
+          {["Mock Exams", "Practice Overview", "Learning", "Words"].map(
+            (label, index) => (
+              <React.Fragment key={label}>
+                <Link
+                  className="group gap-[10px] h-[36px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
+                  href={hrefs[index]}
+                >
+                  <span className=" text-[16px] font-normal">{label}</span>
+                </Link>
+                {index != 3 && (
+                  <div className="bg-outline w-[1px] h-[35px] rounded-[15px]"></div>
+                )}
+              </React.Fragment>
+            )
+          )}
+        </nav>
+        <TopHeaderRightSide />
+      </div>
 
-      {mobileOpen ? (
-        <div
-          className="fixed inset-0 z-[1199] bg-[#0F172A]/45 backdrop-blur-[6px] screen1280:hidden"
-          aria-hidden
-        />
-      ) : null}
-
+      {isMenuOpen && (
+        <div className="fixed top-0 w-full h-full  backdrop-blur-[20px] z-[9999999]"></div>
+      )}
       <motion.div
-        ref={drawerRef}
-        initial={false}
-        animate={{ x: mobileOpen ? 0 : "100%" }}
-        transition={{ type: "tween", duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
-        className={cn(
-          "fixed right-0 top-0 z-[1201] flex h-[100dvh] max-h-[100dvh] w-[min(100%,400px)] flex-col overflow-hidden rounded-l-3xl border-l border-slate-200/90 bg-[#FAFBFF] shadow-[-12px_0_40px_rgba(15,23,42,0.12)] screen1280:hidden",
-          mobileOpen ? "pointer-events-auto" : "pointer-events-none",
-        )}
+        ref={sidebarMenuRef}
+        initial={{ x: "100%" }}
+        animate={{ x: isMenuOpen ? "0%" : "100%" }}
+        transition={{ duration: 0.5, ease: "easeInOut" }}
+        className={` z-[9999999] fixed right-0 top-0 flex flex-col text-[#3D3B3B] bg-[#f9f9f9] p-[24px] w-full max-w-[720px] h-[100vh]`}
       >
-        <div className="shrink-0 bg-gradient-to-br from-[#1B2B5A] via-[#2E4494] to-[#3B5998] px-5 pb-5 pt-[max(1rem,env(safe-area-inset-top))]">
-          <div
-            className="mb-4 mr-auto h-1 w-10 rounded-full bg-white/30"
-            aria-hidden
-          />
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
-                CELPIP Practice
-              </p>
-              <h2 className="mt-1 text-xl font-bold tracking-tight text-white">Menu</h2>
-              <p className="mt-1 text-sm text-white/75">Mock exams, practice, and study tools.</p>
-            </div>
-            <button
-              type="button"
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white transition-colors hover:bg-white/15"
-              aria-label="Close menu"
-              onClick={() => setMobileOpen(false)}
-            >
-              <CloseIcon sx={{ fontSize: 22 }} />
-            </button>
-          </div>
-          <div className="mt-4">
-            <HeaderOnlineBadge compact variant="onNavy" className="w-full" />
-          </div>
+        <div className="flex justify-between">
+          <span
+            className={` "text-[#232222] text-[20px]  screen1280:flex !font-lobster`}
+          >
+            <Link className="shrink-0" href={"/"}>
+              <Image
+                alt="logo"
+                width={133}
+                height={40}
+                src="/images/logo.png"
+              />
+            </Link>
+          </span>
+          <span
+            className={`cursor-pointer  text-[#232222]`}
+            onClick={() => setIsMenuOpen(false)}
+          >
+            <SvgClose />
+          </span>
         </div>
+        <div className=" mt-[32px] gap-[16px]">
+          {["Mock Exams", "Practice Overview", "Learning", "Words"].map(
+            (label, index) => (
+              <React.Fragment key={label}>
+                <Link
+                  key={label}
+                  className="h-[36px] group gap-[10px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
+                  href={hrefs[index]}
+                >
+                  {icons[index]}
 
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-y-contain px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
-          <nav className="flex flex-col gap-2">
-            {mainNav.map(({ label, href, icon: Icon }) => (
-              <Link
-                key={label}
-                href={href}
-                className="flex items-center gap-3 rounded-2xl border border-slate-200/90 bg-white px-3.5 py-3.5 text-[15px] font-semibold text-slate-800 shadow-sm transition-[border-color,box-shadow] hover:border-slate-300 hover:shadow-md active:scale-[0.99]"
-                onClick={() => setMobileOpen(false)}
-              >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#EFF6FF] to-[#E0E7FF] text-[#2563EB]">
-                  <Icon sx={{ fontSize: 22 }} aria-hidden />
-                </span>
-                {label}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="flex flex-col gap-2.5">
-            <Link
-              href="/pricing"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-amber-400/90 bg-white px-4 py-3.5 text-sm font-semibold text-amber-950 shadow-sm transition-colors hover:bg-amber-50/80"
-              onClick={() => setMobileOpen(false)}
-            >
-              <AutoAwesomeIcon sx={{ fontSize: 20 }} />
-              View pricing
-            </Link>
-            <Link
-              href="/practice-overview"
-              className="inline-flex w-full items-center justify-center rounded-full bg-gradient-to-br from-[#1B2B5A] to-[#2E4494] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(27,43,90,0.35)] transition-[transform,box-shadow] hover:shadow-[0_10px_28px_rgba(27,43,90,0.42)] active:scale-[0.99]"
-              onClick={() => setMobileOpen(false)}
-            >
-              Start free practice
-            </Link>
-          </div>
-
-          <div className="mt-auto rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-3.5 text-center text-xs leading-relaxed text-slate-600 backdrop-blur-sm">
-            Trusted by <strong className="text-slate-800">70,000+</strong> test-takers worldwide
-          </div>
+                  <span className=" text-[16px] font-normal">{label}</span>
+                </Link>
+              </React.Fragment>
+            )
+          )}
         </div>
       </motion.div>
-    </>
+    </div>
   );
 };
 

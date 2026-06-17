@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { Button } from "@/components/ui/button";
-import ArrowForward from "@mui/icons-material/ArrowForward";
+import { ArrowRight } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter } from "nextjs-toploader/app";
 
@@ -37,7 +37,7 @@ const CTASection = () => {
                   className="bg-[#3ebbf3] hover:bg-[#3ebbf3]/90 rounded-full text-white font-semibold text-lg px-8 py-3 h-auto shadow-md"
                 >
                   Start Your Free Practice
-                  <ArrowForward className="ml-2" />
+                  <ArrowRight className="ml-2" />
                 </Button>
                 <p className="text-[14px] text-gray-500 mt-2">
                   No credit card required
@@ -66,7 +66,7 @@ const CTASection = () => {
               className="bg-[#3ebbf3] hover:bg-[#3ebbf3]/90 rounded-full text-white font-semibold text-lg px-8 py-3 h-auto shadow-md"
             >
               Start Your Free Practice
-              <ArrowForward className="ml-2" />
+              <ArrowRight className="ml-2" />
             </Button>
             <p className="text-[14px] text-gray-500 mt-3">
               No credit card required

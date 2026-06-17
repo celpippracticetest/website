@@ -1,18 +1,14 @@
 "use client";
 import { Dispatch, JSX, SetStateAction, useState } from "react";
 import { Button } from "@/components/ui/button";
-import WorkspacePremium from "@mui/icons-material/WorkspacePremium";
-import Menu from "@mui/icons-material/Menu";
-import Close from "@mui/icons-material/Close";
+import { Gem, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 import { useIsMobile } from "@/hooks/use-mobile";
 import useStore from "@/store";
 import { useRouter } from "nextjs-toploader/app";
-import { useEventTracker } from "@/hooks/useTracking";
-import { isPaidSubscriptionPlan } from "@/lib/subscriptionPlan";
-import { signOutWebSession } from "@/lib/auth/client-sign-out";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { signOutWebSession } from "@/lib/auth/client-sign-out";
 // import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 
 interface NavLinks {
@@ -30,17 +26,19 @@ const MobileHeader = (props: {
   viewMode: "practice" | "exams" | null;
   currentPage: string | null;
 }) => {
+  
   const router = useRouter();
-  const { trackNav, trackCTA, auth } = useEventTracker();
   const isMobile = useIsMobile();
   const [isUserDropDownOpen, setUserDropDownOpen] = useState(false);
   const { user, isSignedIn } = useHybridWebUser();
+  const setPremiumPlanModalState = useStore(
+    (state) => state.setPremiumPlanModalState
+  );
   let headerButton: JSX.Element;
   const dashboard = useStore((state) => state.dashboard);
   const setViewMode = useStore((state) => state.dashboard.setView);
   const setCurrentPage = useStore((state) => state.dashboard.setCurrentPage);
   const onViewModeChange = (value: string | undefined) => {
-    trackNav(`View Mode: ${value}`, value === "practice" ? "/practice-overview" : "/exam-overview", "header");
     if (value === "practice") {
       setViewMode("practice");
       setCurrentPage("practice-overview");
@@ -136,15 +134,22 @@ const MobileHeader = (props: {
           {/* Auth buttons */}
           <div className="flex items-right gap-4 lg:gap-5 md:gap-3 ">
             {(!user ||
-              !isPaidSubscriptionPlan(user.publicMetadata?.plan)) && (
+              (user && !user.publicMetadata.plan) ||
+              (user &&
+                user.publicMetadata.plan &&
+                user?.publicMetadata.plan !== "premium" && 
+                user?.publicMetadata.plan !== "pro")) && (
               <div
                 onClick={() => {
-                  trackCTA("Upgrade Button", "header");
-                  router.push("/pricing");
+                  setPremiumPlanModalState();
                 }}
                 className="relative border border-slate-300 rounded-full pl-1 pr-1 shadow-sm min-w-13 min-h-10 justify-center outline-none flex items-center gap-2 cursor-pointer hover:-translate-y-0.5 transition-all duration-300 hover:shadow-md"
               >
-                <WorkspacePremium className="w-5 h-5 flex-shrink-0 text-blue-400 ml-1" />
+                <Gem
+                  className=" w-5 h-5 flex-shrink-0 text-blue-400 fill-primary ml-1"
+                  fill="none"
+                  strokeWidth={2}
+                ></Gem>
                 <div
                   hidden={user === null || isMobile}
                   className="flex flex-col justify-start mr-1"
@@ -161,31 +166,30 @@ const MobileHeader = (props: {
             <div className="flex items-center space-x-1">
               {!isSignedIn && (
                 <>
-                  <div onClick={() => auth.loginInitiated("header")}>
-                    <a href="/sign-in">
-                      <Button
-                        hidden={isMobile}
-                        variant="outline"
-                        className="rounded-full border-2 border-gray-200 font-medium cursor-pointer"
-                      >
-                        Log in
-                      </Button>
-                    </a>
-                  </div>
-                  <div onClick={() => auth.signUpInitiated("header")}>
-                    <a href="/sign-in?mode=sign-up">
-                      <Button className="bg-slate-800 hover:bg-slate-800/90 rounded-full text-white font-medium cursor-pointer">
-                        Signup
-                      </Button>
-                    </a>
-                  </div>
+                  <Link href="/sign-in">
+                    <Button
+                      hidden={isMobile}
+                      variant="outline"
+                      className="rounded-full border-2 border-gray-200 font-medium cursor-pointer"
+                    >
+                      Log in
+                    </Button>
+                  </Link>
+                  <Link href="/sign-in?mode=sign-up">
+                    <Button className="bg-slate-800 hover:bg-slate-800/90 rounded-full text-white font-medium  cursor-pointer">
+                      Signup
+                    </Button>
+                  </Link>
                 </>
               )}
               {isSignedIn && (
                 <button
                   id="dropdownDefaultButton"
+                  data-dropdown-toggle="dropdown"
                   type="button"
-                  onClick={() => setUserDropDownOpen(!isUserDropDownOpen)}
+                  onClick={() => {
+                    setUserDropDownOpen(!isUserDropDownOpen);
+                  }}
                   className="cursor-pointer"
                 >
                   {user && user.imageUrl ? (
@@ -197,7 +201,7 @@ const MobileHeader = (props: {
                   ) : (
                     <div className="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
                       <span className="font-medium text-gray-600 dark:text-gray-300">
-                        {(user?.firstName ?? user?.primaryEmailAddress?.emailAddress ?? "U")[0].toLocaleUpperCase()}
+                        {(user?.name ?? "user")[0].toLocaleUpperCase()}
                       </span>
                     </div>
                   )}
@@ -237,7 +241,6 @@ const MobileHeader = (props: {
           <div className="py-1" role="none">
             <a
               href="/profile"
-              onClick={() => trackNav("Profile", "/profile", "header")}
               className="block px-4 py-2 text-[14px] text-gray-700"
               role="menuitem"
               tabIndex={-1}
@@ -247,7 +250,6 @@ const MobileHeader = (props: {
             </a>
             <button
               onClick={() => {
-                trackNav("Support", "chat:open", "header");
                 if (typeof window !== "undefined" && (window as any).$crisp) {
                   (window as any).$crisp.push(["do", "chat:show"]);
                   (window as any).$crisp.push(["do", "chat:open"]);
@@ -265,7 +267,6 @@ const MobileHeader = (props: {
               user.publicMetadata.roles.includes("admin") && (
                 <a
                   href="/cms/practice"
-                  onClick={() => trackNav("CMS Practices", "/cms/practice", "header")}
                   className="block px-4 py-2 text-[14px] text-gray-700"
                   role="menuitem"
                   tabIndex={-1}
@@ -278,8 +279,7 @@ const MobileHeader = (props: {
               user.publicMetadata.roles &&
               user.publicMetadata.roles.includes("admin") && (
                 <a
-                  href="/cms/exam"
-                  onClick={() => trackNav("CMS Exam", "/cms/exam", "header")}
+                  href="/cms/practice"
                   className="block px-4 py-2 text-[14px] text-gray-700"
                   role="menuitem"
                   tabIndex={-1}
@@ -290,10 +290,7 @@ const MobileHeader = (props: {
               )}
 
             <button
-              onClick={async () => {
-                auth.logout();
-                await signOutWebSession(router, "/sign-in");
-              }}
+              onClick={() => signOutWebSession()}
               className="block px-4 py-2 text-[14px] text-gray-700 cursor-pointer"
               role="menuitem"
               tabIndex={-1}

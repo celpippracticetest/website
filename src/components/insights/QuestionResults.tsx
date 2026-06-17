@@ -1,4 +1,4 @@
-import CheckCircle from "@mui/icons-material/CheckCircle";
+import { CheckCircle2 } from "lucide-react";
 import { QuestionResult } from "./skillTypes";
 
 type QuestionResultsProps = {
@@ -14,7 +14,7 @@ const QuestionResults = ({ results }: QuestionResultsProps) => {
           className="flex justify-between items-center py-1.5 border-b border-gray-100 last:border-0"
         >
           <div className="flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-green-500" />
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
             <span className="text-[14px] text-gray-700">{result.type}</span>
           </div>
           <span className="font-medium text-gray-900 bg-gray-100 px-3 py-1 rounded-full text-[14px]">

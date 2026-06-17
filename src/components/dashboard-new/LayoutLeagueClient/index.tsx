@@ -3,10 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import clsx from "clsx";
-import { useHybridWebUser } from "@/hooks/useHybridWebUser";
-import { signOutWebSession } from "@/lib/auth/client-sign-out";
 import { useHasEverPurchased } from "@/hooks/useHasEverPurchased";
-import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
 import SvgChevronRight from "@/components/icons/ChevronRight";
 import SvgPractice from "@/components/icons/Practice";
@@ -22,13 +19,19 @@ import { usePathname, useRouter } from "next/navigation";
 import { useSelectedTask } from "@/store/useSelectedTask.store";
 import { useSelectedExam } from "@/store/useSelectedExam.store";
 import PlanCard from "@/components/pages/dashboard/PlanCard";
+import ExtraDiscountModal from "@/components/modal/ExtraDiscountModal";
 import { useExtraDiscountStore } from "@/store/useExtraDiscount.store";
+import { useCreateDiscountCoupon } from "@/hooks/useCreateDiscountCoupon";
 import SvgCopy from "@/components/icons/Copy";
 import React from "react";
 import { motion } from "framer-motion";
 import SvgClose from "@/components/icons/Close";
+import UpgradeModal from "../../modal/UpgradeModal";
+
+
 import { useMenuCollapsedStore } from "@/store/menuCollapsed.store";
 import CountdownTimer from "@/components/dashboard-app/CounterDownTimer";
+import OnboardingSurvey from "@/components/onboardingSurvey";
 import SvgReferral from "@/components/icons/Referral";
 import SvgLearning from "@/components/icons/Learning";
 import SvgMockTestNavigation from "@/components/icons/MockTestNavigation";
@@ -47,6 +50,7 @@ import SvgLeagueLogo from "@/components/icons/LeagueLogo";
 import BottomNavigation from "@/components/dashboard-new/BottomNavigation";
 import DesktopNavigation from "@/components/dashboard-new/DesktopNavigation";
 import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 
 const NavItem = ({
   icon,
@@ -184,20 +188,24 @@ const NavItem = ({
   );
 };
 
-const LayoutClient = ({ children }: any) => {
+const LayoutClient = ({ children, showSurvey }: any) => {
   const sidebarMenuRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const couponId = useExtraDiscountStore((state) => state.couponId);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [surveyVisible, setSurveyVisible] = useState(showSurvey);
   const [couponModal, setCouponModal] = useState(false);
   const [hasClosedModal, setHasClosedModal] = useState(false);
-  const { user, isLoaded, isSignedIn } = useHybridWebUser();
+  const { user, isLoaded, isSignedIn }: any = useHybridWebUser();
   const { hasEverPurchased } = useHasEverPurchased();
 
   const router = useRouter();
 
   const setShowExtraDiscount = useExtraDiscountStore(
     (state) => state.setShowExtraDiscount
+  );
+  const showExtraDiscount = useExtraDiscountStore(
+    (state) => state.showExtraDiscount
   );
   const visibleHorizontalCoupon = useExtraDiscountStore(
     (state) => state.visibleHorizontalCoupon
@@ -208,7 +216,9 @@ const LayoutClient = ({ children }: any) => {
 
   const noUser = isLoaded ? !isSignedIn : false;
 
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
   const loginRef = useRef<HTMLDivElement>(null);
   const { collapsed, setCollapsed } = useMenuCollapsedStore((state) => state);
   const [open, setOpen] = useState(false);
@@ -224,10 +234,7 @@ const LayoutClient = ({ children }: any) => {
     new Date().getTime() - new Date(user.createdAt).getTime() <
     24 * 60 * 60 * 1000;
   const freeUser = user?.publicMetadata.plan == "free";
-  const proUser = hasPaidPracticeAccess(
-    user?.publicMetadata?.plan as string | undefined,
-    user?.publicMetadata?.purchaseDate
-  );
+  const proUser = user?.publicMetadata.plan == "premium";
 
   const { selectedTask, setSelectedTask } = useSelectedTask();
   const { selectedExam, setSelectedExam } = useSelectedExam();
@@ -280,7 +287,12 @@ const LayoutClient = ({ children }: any) => {
     }
   }, [hasClosedModal]);
 
+  const upgradeModalOpenRef = useRef(showUpgradeModal);
   const loginModalOpenRef = useRef(showLoginModal);
+
+  useEffect(() => {
+    upgradeModalOpenRef.current = showUpgradeModal;
+  }, [showUpgradeModal]);
 
   useEffect(() => {
     loginModalOpenRef.current = showLoginModal;
@@ -293,7 +305,9 @@ const LayoutClient = ({ children }: any) => {
         !sidebarMenuRef.current.contains(event.target)
       ) {
         if (freeUser) {
-          setIsMenuOpen(false);
+          if (!upgradeModalOpenRef.current) {
+            setIsMenuOpen(false);
+          }
         } else if (noUser) {
           if (!loginModalOpenRef.current) {
             setIsMenuOpen(false);
@@ -303,6 +317,9 @@ const LayoutClient = ({ children }: any) => {
         }
       }
 
+      if (ref.current && !ref.current.contains(event.target)) {
+        setShowUpgradeModal(false);
+      }
       if (loginRef.current && !loginRef.current.contains(event.target)) {
         setShowLoginModal(false);
       }
@@ -366,6 +383,14 @@ const LayoutClient = ({ children }: any) => {
     );
   };
 
+  const { mutate: createCoupon } = useCreateDiscountCoupon();
+
+  useEffect(() => {
+    if (freeUser && isNewUser) {
+      createCoupon(user.id);
+    }
+  }, [user]);
+
   const showPlansForUsers = () => {
     return (
       <>
@@ -394,7 +419,7 @@ const LayoutClient = ({ children }: any) => {
               <div
                 onClick={() => {
                   if (freeUser) {
-                    router.push("/pricing");
+                    setShowUpgradeModal(true);
                   } else {
                     setShowLoginModal(true);
                   }
@@ -441,15 +466,20 @@ const LayoutClient = ({ children }: any) => {
                 </div>
                 <div
                   onClick={() => {
-                    if (noUser) {
-                      setShowLoginModal(true);
+                    if (freeUser) {
+                      setShowUpgradeModal(true);
                     } else {
-                      router.push("/earn100");
+                      setShowLoginModal(true);
                     }
                   }}
                   className="cursor-pointer max-w-[95px]  screen1280:!max-w-[95px] screen744:!w-full  flex items-center justify-center text-white border-[1px]  h-[24px] w-full rounded-[24px] "
                 >
-                  <span className="text-[14px] font-normal">see details</span>
+                  <Link
+                    href={"/earn100"}
+                    className=" text-[14px] font-normal ]"
+                  >
+                    see details
+                  </Link>
                 </div>
               </div>
             </>
@@ -473,9 +503,7 @@ const LayoutClient = ({ children }: any) => {
     }
   }, [isLoaded, isSignedIn, isNewUser, user, setShowExtraDiscount]);
 
-  const signOut = async (opts?: { redirectUrl?: string }) => {
-    await signOutWebSession(router, opts?.redirectUrl ?? "/sign-in");
-  };
+  
   const [practice, setPractice] = useState(false);
   const [mockTest, setMockTest] = useState(false);
   const [learning, setLearning] = useState(false);
@@ -619,7 +647,12 @@ const LayoutClient = ({ children }: any) => {
 
   return (
     <>
-      {noUser ? (
+      {freeUser ? (
+        <>
+          {showUpgradeModal && <UpgradeModal setShowModal={setShowUpgradeModal} />}
+          {!surveyVisible && showExtraDiscount && <ExtraDiscountModal />}
+        </>
+      ) : noUser ? (
         showLoginModal && <LoginModal />
       ) : (
         <></>
@@ -837,6 +870,11 @@ const LayoutClient = ({ children }: any) => {
             </div>
           </div>
 
+          {surveyVisible && (
+            <div className="fixed inset-0 z-[99] flex screen1280:!pt-[101px] justify-center bg-[#F4F7FF]">
+              <OnboardingSurvey onComplete={() => setSurveyVisible(false)} />
+            </div>
+          )}
           {children}
           {copied && (
             <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-[#37465C] text-white px-4 py-2 rounded-[8px] text-[14px] shadow-lg z-[9999] transition-opacity duration-300">

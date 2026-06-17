@@ -1,10 +1,10 @@
 import { WikiArticle } from "../index";
 
 export const celpipOverview: WikiArticle = {
-  title: "CELPIP Exam: General Test, LS & Format Guide",
+  title: "What Is the CELPIP Exam?",
   slug: "celpip-exam-overview",
   description:
-    "CELPIP exam explained: CELPIP-General vs CELPIP-General LS, IRCC uses, sections, timing, scoring to CLB, and how to prepare for the Canadian English test.",
+    "Learn about the CELPIP test versions, format, scoring system, and how to prepare effectively for this Canadian English language proficiency exam.",
   category: "General",
   color: "#f39d3e", // Orange color for general guides
   summary:

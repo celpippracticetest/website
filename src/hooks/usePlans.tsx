@@ -17,37 +17,10 @@ export const usePlans = () => {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const botUserAgentRegex =
-            /bot|crawler|spider|googlebot|bingbot|slurp|duckduckbot|baiduspider|yandex/i;
-
-        const isBot =
-            typeof navigator !== "undefined" &&
-            botUserAgentRegex.test(navigator.userAgent || "");
-
-        // Avoid noisy bot fetches (e.g., Search Console render) and blocked API requests.
-        if (isBot) {
-            setIsLoading(false);
-            return;
-        }
-
         const fetchPlans = async () => {
             try {
                 const response = await fetch("/api/plans");
-                if (!response.ok) {
-                    return;
-                }
-
-                const contentType = response.headers.get("content-type") || "";
-                if (!contentType.toLowerCase().includes("application/json")) {
-                    return;
-                }
-
-                const raw = await response.text();
-                if (!raw.trim()) {
-                    return;
-                }
-
-                const data = JSON.parse(raw);
+                const data = await response.json();
                 if (data.plans) {
                     const mappedPlans = data.plans.map((plan: Plan) => ({
                         ...plan,
@@ -56,9 +29,7 @@ export const usePlans = () => {
                     setPlans(mappedPlans);
                 }
             } catch (error) {
-                if (process.env.NODE_ENV === "development") {
-                    console.error("Error fetching plans:", error);
-                }
+                console.error("Error fetching plans:", error);
             } finally {
                 setIsLoading(false);
             }

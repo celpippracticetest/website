@@ -2,20 +2,22 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import Download from "@mui/icons-material/Download";
-import CalendarToday from "@mui/icons-material/CalendarToday";
-import Schedule from "@mui/icons-material/Schedule";
-import TrendingUp from "@mui/icons-material/TrendingUp";
-import Warning from "@mui/icons-material/Warning";
-import CheckCircle from "@mui/icons-material/CheckCircle";
-import HighlightOff from "@mui/icons-material/HighlightOff";
-import Insights from "@mui/icons-material/Insights";
-import Psychology from "@mui/icons-material/Psychology";
-import MenuBook from "@mui/icons-material/MenuBook";
-import Description from "@mui/icons-material/Description";
-import People from "@mui/icons-material/People";
-import Language from "@mui/icons-material/Language";
-import Smartphone from "@mui/icons-material/Smartphone";
+import {
+  Download,
+  Calendar,
+  Clock,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Activity,
+  Brain,
+  BookOpen,
+  FileText,
+  Users,
+  Globe,
+  Smartphone,
+} from "lucide-react";
 
 interface ActivitySummary {
   practiceAttempted: number;
@@ -48,23 +50,9 @@ interface Activity {
   timestampUtc: string;
 }
 
-interface ChallengeProfile {
-  mode?: string;
-  status?: string;
-  targetClb?: number;
-  windowDays?: number;
-  refundPercent?: number;
-  offerSource?: string;
-  tierKey?: string;
-  startsAt?: string;
-  deadlineAt?: string | null;
-  updatedAt?: string;
-}
-
 interface UserActivitiesResponse {
   activities: Activity[];
   summary: ActivitySummary;
-  challengeProfile?: ChallengeProfile | null;
   pagination: {
     page: number;
     limit: number;
@@ -106,7 +94,6 @@ export default function UserDetailPage() {
   const [status, setStatus] = useState("");
   const [hasScore, setHasScore] = useState("");
   const [search, setSearch] = useState("");
-  const [challengeProfile, setChallengeProfile] = useState<ChallengeProfile | null>(null);
 
   const fetchActivities = async () => {
     setLoading(true);
@@ -162,13 +149,6 @@ export default function UserDetailPage() {
         setActivities(data.activities);
         setSummary(data.summary);
         setPagination(data.pagination);
-        setChallengeProfile(
-          data.challengeProfile &&
-            typeof data.challengeProfile === "object" &&
-            data.challengeProfile.mode
-            ? data.challengeProfile
-            : null
-        );
       }
     } catch (error) {
       console.error("Error fetching activities:", error);
@@ -269,22 +249,22 @@ export default function UserDetailPage() {
     switch (eventType) {
       case "practice_attempt_started":
       case "practice_attempt_completed":
-        return <MenuBook className="w-4 h-4" />;
+        return <BookOpen className="w-4 h-4" />;
       case "mock_attempt_started":
       case "mock_attempt_completed":
-        return <Description className="w-4 h-4" />;
+        return <FileText className="w-4 h-4" />;
       case "ai_feedback_generated":
-        return <Psychology className="w-4 h-4" />;
+        return <Brain className="w-4 h-4" />;
       case "learning_attempt_started":
-        return <Insights className="w-4 h-4" />;
+        return <Activity className="w-4 h-4" />;
       case "login":
       case "logout":
-        return <People className="w-4 h-4" />;
+        return <Users className="w-4 h-4" />;
       case "payment_successful":
       case "payment_failed":
         return <CheckCircle className="w-4 h-4" />;
       default:
-        return <Insights className="w-4 h-4" />;
+        return <Activity className="w-4 h-4" />;
     }
   };
 
@@ -293,11 +273,11 @@ export default function UserDetailPage() {
       case "completed":
         return <CheckCircle className="w-4 h-4 text-green-500" />;
       case "failed":
-        return <HighlightOff className="w-4 h-4 text-red-500" />;
+        return <XCircle className="w-4 h-4 text-red-500" />;
       case "abandoned":
-        return <Warning className="w-4 h-4 text-yellow-500" />;
+        return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
       default:
-        return <Schedule className="w-4 h-4 text-gray-500" />;
+        return <Clock className="w-4 h-4 text-gray-500" />;
     }
   };
 
@@ -321,70 +301,12 @@ export default function UserDetailPage() {
         </div>
       </div>
 
-      {challengeProfile ? (
-        <div className="mb-6 rounded-xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-5 shadow-sm">
-          <div className="flex flex-wrap items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-indigo-600" />
-            <h2 className="text-lg font-bold text-indigo-950">Final-offer refund challenge</h2>
-            <span className="rounded-full bg-indigo-600 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-white">
-              {challengeProfile.status ?? "unknown"}
-            </span>
-          </div>
-          <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <dt className="font-medium text-slate-500">Target CLB</dt>
-              <dd className="font-semibold text-slate-900">
-                {challengeProfile.targetClb ?? "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-medium text-slate-500">Window</dt>
-              <dd className="font-semibold text-slate-900">
-                {challengeProfile.windowDays != null ? `${challengeProfile.windowDays} days` : "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-medium text-slate-500">Refund tier</dt>
-              <dd className="font-semibold text-slate-900">
-                {challengeProfile.refundPercent != null
-                  ? `Up to ${challengeProfile.refundPercent}%`
-                  : "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-medium text-slate-500">Offer source</dt>
-              <dd className="font-mono text-xs font-semibold text-slate-900">
-                {challengeProfile.offerSource ?? "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-medium text-slate-500">Tier key</dt>
-              <dd className="font-mono text-xs font-semibold text-slate-900">
-                {challengeProfile.tierKey ?? "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-medium text-slate-500">Deadline</dt>
-              <dd className="font-semibold text-slate-900">
-                {challengeProfile.deadlineAt
-                  ? formatDate(
-                      typeof challengeProfile.deadlineAt === "string"
-                        ? challengeProfile.deadlineAt
-                        : String(challengeProfile.deadlineAt)
-                    )
-                  : "—"}
-              </dd>
-            </div>
-          </dl>
-        </div>
-      ) : null}
-
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg">
-              <MenuBook className="w-6 h-6 text-blue-600" />
+              <BookOpen className="w-6 h-6 text-blue-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Practice</p>
@@ -407,7 +329,7 @@ export default function UserDetailPage() {
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
-              <Description className="w-6 h-6 text-green-600" />
+              <FileText className="w-6 h-6 text-green-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Exams</p>
@@ -429,7 +351,7 @@ export default function UserDetailPage() {
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <div className="flex items-center">
             <div className="p-2 bg-purple-100 rounded-lg">
-              <Psychology className="w-6 h-6 text-purple-600" />
+              <Brain className="w-6 h-6 text-purple-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">LLM Tokens</p>
@@ -451,7 +373,7 @@ export default function UserDetailPage() {
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <div className="flex items-center">
             <div className="p-2 bg-orange-100 rounded-lg">
-              <Schedule className="w-6 h-6 text-orange-600" />
+              <Clock className="w-6 h-6 text-orange-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Last Active</p>

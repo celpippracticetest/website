@@ -1,22 +1,15 @@
 "use client";
-import Headphones from "@mui/icons-material/Headphones";
-import MenuBook from "@mui/icons-material/MenuBook";
-import Draw from "@mui/icons-material/Draw";
-import Mic from "@mui/icons-material/Mic";
-import LibraryAddCheck from "@mui/icons-material/LibraryAddCheck";
-import LocalLibrary from "@mui/icons-material/LocalLibrary";
+import { Headphones, BookOpen, Pen, Mic, BookOpenCheck, Library } from "lucide-react";
 import DesktopHeader from "./desktopHeader";
 import MobileHeader from "./mobileHeader";
 import { useState } from "react";
 import useStore from "@/store";
 import { useRouter } from 'nextjs-toploader/app';
-import { useEventTracker } from "@/hooks/useTracking";
 
 
 const Header = ({ viewMode, currentPage }: { viewMode: "practice" | "exams" | null; currentPage: string | null }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
-  const { trackNav } = useEventTracker();
   const setViewMode = useStore((state) => state.dashboard.setView);
   const setCurrentPage = useStore((state) => state.dashboard.setCurrentPage);
   const navLinks = [
@@ -24,9 +17,8 @@ const Header = ({ viewMode, currentPage }: { viewMode: "practice" | "exams" | nu
       name: "Mock Exams",
       mobileName: 'Exams',
       path: "/exams",
-      icon: <LibraryAddCheck className="w-5 h-5 text-orange-500" />,
+      icon: <BookOpenCheck className="w-5 h-5 text-orange-500" />,
       onClick: () => {
-        trackNav("Mock Exams", "/exam-overview", "header");
         setViewMode("exams");
         setCurrentPage("exams");
         router.push("/exam-overview");
@@ -38,7 +30,6 @@ const Header = ({ viewMode, currentPage }: { viewMode: "practice" | "exams" | nu
       path: "/practice-overview",
       icon: <Headphones className="w-5 h-5 text-blue-500" />,
       onClick: () => {
-        trackNav("Practice Overview", "/practice-overview", "header");
         setViewMode("practice");
         setCurrentPage("practice-overview");
         router.push("/practice-overview");
@@ -48,9 +39,8 @@ const Header = ({ viewMode, currentPage }: { viewMode: "practice" | "exams" | nu
       name: "CELPIP Wiki",
       mobileName: 'Wiki',
       path: "/wiki",
-      icon: <LocalLibrary className="w-5 h-5 text-yellow-500" />,
+      icon: <Library className="w-5 h-5 text-yellow-500" />,
       onClick: () => {
-        trackNav("CELPIP Wiki", "/wiki", "header");
         router.push("/wiki");
       },
     },

@@ -1,6 +1,5 @@
 
 import { useState, useRef, useEffect } from "react";
-import { safePlayMedia } from "@/lib/media";
 
 interface UseListeningAudioPlayerProps {
   audioUrl: string;
@@ -59,17 +58,16 @@ export const useListeningAudioPlayer = ({ audioUrl, maxPlays = 2 }: UseListening
       if (playCount >= maxPlays) {
         return; // Max plays reached
       }
-
-      void safePlayMedia(audioRef.current, {
-        onPlayStart: () => {
+      
+      audioRef.current.play()
+        .then(() => {
           setIsPlaying(true);
-          setPlayCount((prev) => prev + 1);
-        },
-        onError: (err) => {
+          setPlayCount(prev => prev + 1);
+        })
+        .catch(err => {
           console.error("Error playing audio:", err);
           setError("Failed to play audio. Please try again.");
-        },
-      });
+        });
     }
   };
   

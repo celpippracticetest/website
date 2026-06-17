@@ -5,7 +5,6 @@ import { Upload } from "@aws-sdk/lib-storage";
 import { createReadStream } from "fs";
 import axios from "axios";
 import { redirect, RedirectType } from "next/navigation";
-import { practicePath } from "@/lib/practiceRoutes";
 
 export interface SpeakingQuestion {
   id: string;
@@ -83,14 +82,9 @@ export const saveSpeakingPractice = async (
 
   try {
     const response = await axios.request(config);
-    const origin =
-      typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
-    const path = practicePath(
-      "speaking",
-      response.data.id as string,
-      String(data.taskId ?? "")
+    alert(
+      `http://localhost:3000/speaking?selectedPracticeId=${response.data.id}`
     );
-    alert(`${origin}${path}`);
     redirect("/cms/practice", RedirectType.push);
   } catch (error) {
     console.error("Error uploading data:", error);

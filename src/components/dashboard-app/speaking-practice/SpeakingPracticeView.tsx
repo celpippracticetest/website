@@ -1,37 +1,30 @@
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
-import ChevronUp from "@mui/icons-material/KeyboardArrowUp";
-import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
-import Close from "@mui/icons-material/Close";
-import ErrorOutline from "@mui/icons-material/ErrorOutline";
+import { ChevronUp, ChevronDown, X, CircleAlert } from "lucide-react";
 import { TPracticeDto } from "@/models/practice.model";
 import ListeningSideMenu from "../listening-practice/ListeningSideMenu";
 import ListeningAnswerList from "./components/ListeningAnswers";
 import { TPassage } from "@/models/listenExam.model";
 import { useEffect } from "react";
+import useStore from "@/store";
+
 import { cn } from "@/lib/utils";
 import { useRouter } from "nextjs-toploader/app";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import { TTaskSchemaDto } from "@/models/tasks.model";
+import UpgradeModal from "@/components/modal/UpgradeModal";
 import { TWritingAnswerDto } from "@/models/answer";
 import LoginModal from "@/components/modal/LoginModal";
-import { SupabaseAuthForm } from "@/components/auth/SupabaseAuthForm";
 import SvgRecording from "@/components/icons/Recording";
 import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
-import { runPracticeSubmitSideEffects } from "@/lib/practiceSubmitSideEffects";
-import { startPracticeSubmitProgress } from "@/lib/practiceSubmitProgress";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import StatBadge from "@/components/shared/StatBadge";
-import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
-import CheckoutAttributionFields from "@/components/analytics/CheckoutAttributionFields";
-import { StripeCheckoutDiscountBadge } from "@/components/checkout/StripeCheckoutDiscountBadge";
-import { getStripeCheckoutAutoDiscountLabel } from "@/lib/stripeCheckoutDiscountLabel";
-import { practicePath } from "@/lib/practiceRoutes";
+import Link from "next/link";
 
 interface SpeakingPracticeViewProps {
   practice: TPracticeDto;
@@ -83,20 +76,9 @@ const SpeakingPracticeView = ({
   };
 
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showSignUpModal, setShowSignUpModal] = useState(false);
-  const [quickSubscribeAction, setQuickSubscribeAction] = useState("");
   const [pointsAwarded, setPointsAwarded] = useState(false);
   const [aiFeedbackPointsAwarded, setAiFeedbackPointsAwarded] = useState(false);
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
-  const stripeCheckoutDiscountLabel = useMemo(
-    () =>
-      isSignedIn &&
-      quickSubscribeAction.includes("/api/checkout_session") &&
-      !quickSubscribeAction.includes("/guest")
-        ? getStripeCheckoutAutoDiscountLabel({ userPublicMetadata: user?.publicMetadata })
-        : null,
-    [isSignedIn, quickSubscribeAction, user?.publicMetadata]
-  );
   const { addPoints } = useLeaguePoints();
   const {
     isModalOpen,
@@ -108,6 +90,7 @@ const SpeakingPracticeView = ({
   } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
+  const [showModal, setShowModal] = useState(false);
   const router = useRouter();
   const [isPlaying] = useState(false);
   const [page, setPage] = useState("question");
@@ -132,40 +115,16 @@ const SpeakingPracticeView = ({
   const shouldShowPractice: any =
     practice.isFree ||
     (!practice.isFree &&
-      hasPaidPracticeAccess(
-        user?.publicMetadata.plan as string | undefined,
-        user?.publicMetadata.purchaseDate as string | undefined
-      ));
+      user &&
+      user.publicMetadata.plan &&
+      user.publicMetadata.plan === "premium");
   const [answers, setAnswers] = useState<any[]>([]);
   const [freeAttempts, setFreeAttempts] = useState<number | null>(3);
   const [errorAccessingMicrophone, setErrorAccessingMicrophone] =
     useState(false);
-  const [needsUserInteraction, setNeedsUserInteraction] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!isLoaded) return;
-
-    (async () => {
-      try {
-        const res = await fetch("/api/plans/express-entry");
-        const data = (await res.json()) as {
-          plans?: Array<{ stripePriceId?: string }>;
-        };
-        if (!res.ok) return;
-        const stripePriceId = data.plans?.find((plan) => plan.stripePriceId)?.stripePriceId;
-        if (!stripePriceId || cancelled) return;
-        const checkoutBase = isSignedIn ? "/api/checkout_session" : "/api/checkout_session/guest";
-        setQuickSubscribeAction(`${checkoutBase}?price=${encodeURIComponent(stripePriceId)}`);
-      } catch {
-        // Fall back to /pricing when quick checkout cannot be prepared.
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isLoaded, isSignedIn]);
+  const setPremiumPlanModalState = useStore(
+    (state) => state.setPremiumPlanModalState
+  );
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
     let recordingTimer: NodeJS.Timeout | null = null;
@@ -207,50 +166,14 @@ const SpeakingPracticeView = ({
     if (time === 0) {
       if (freeAttempts === 0) {
         if (freeUser) {
-          router.push("/pricing");
+          setShowModal(true);
         }
         if (noUser) {
           setShowLoginModal(true);
         }
         return;
       }
-      
-      // Check if microphone permission is already granted before auto-starting
-      // On mobile, we should require user interaction to request permissions
-      const checkPermissionAndStart = async () => {
-        try {
-          if (navigator.permissions && navigator.permissions.query) {
-            const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
-            if (permissionStatus.state === 'granted') {
-              // Permission already granted, safe to auto-start
-              startRecording();
-            } else {
-              // Permission not granted, require user interaction
-              setNeedsUserInteraction(true);
-            }
-          } else {
-            // Permissions API not supported, check if we're on mobile
-            // On mobile, require user interaction to avoid unexpected permission prompts
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            if (isMobile) {
-              setNeedsUserInteraction(true);
-            } else {
-              // On desktop, try to auto-start (will prompt if needed)
-              startRecording();
-            }
-          }
-        } catch (error) {
-          // If permission check fails, require user interaction on mobile
-          const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-          if (isMobile) {
-            setNeedsUserInteraction(true);
-          } else {
-            startRecording();
-          }
-        }
-      };
-      
-      checkPermissionAndStart();
+      startRecording();
     }
   }, [time]);
 
@@ -271,7 +194,6 @@ const SpeakingPracticeView = ({
     setIsSubmit(false);
     setPointsAwarded(false);
     setAiFeedbackPointsAwarded(false);
-    setNeedsUserInteraction(false);
     if (isRecording) {
       cancelRecording();
     }
@@ -332,11 +254,11 @@ const SpeakingPracticeView = ({
   const startRecording = async () => {
     try {
       if (!user) {
-        router.push("/pricing");
+        setPremiumPlanModalState();
         return;
       }
       if (!shouldShowPractice) {
-        router.push("/pricing");
+        setPremiumPlanModalState();
         return;
       }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -359,46 +281,76 @@ const SpeakingPracticeView = ({
         const formData = new FormData();
         formData.append("audio", blob, "recording.m4a");
         formData.append("practiceId", selectedPracticeId ?? "");
-        const stopProgress = startPracticeSubmitProgress(setProgressBar);
+        const progressInterval = setInterval(() => {
+          setProgressBar((prev) => (prev < 100 ? prev + 1 : prev));
+        }, 320); // Increment every 300ms to reach 100 in ~30s
 
         fetch("/api/answers/speaking", {
           method: "POST",
-          credentials: "include",
           body: formData,
         })
           .then((response) => {
-            stopProgress();
+            clearInterval(progressInterval);
+            setProgressBar(100);
             if (!response.ok) {
               throw new Error("Failed to upload audio");
             }
             return response.json();
           })
-          .then((data) => {
-            setProgressBar(100);
+          .then(async (data) => {
+            // Log practice completed
+            const attemptId = `practice_${practice.id}_${Date.now()}`;
+            await ActivityLogger.practiceCompleted(
+              attemptId,
+              practice.id,
+              "Speaking",
+              data.overall,
+              data,
+              recordingTime
+            );
+
+            // Add league points for practice completion (only once)
+            if (!pointsAwarded) {
+              await addPoints(
+                10,
+                "practiceSessions",
+                `${Math.floor(recordingTime / 60)} minutes`
+              );
+              setPointsAwarded(true);
+            }
+
+            // Log AI feedback generation
+            if (data.usage) {
+              await ActivityLogger.aiFeedbackGenerated(
+                "practice",
+                "Speaking",
+                data.usage.prompt_tokens || 0,
+                data.usage.completion_tokens || 0,
+                attemptId
+              );
+
+              // Add league points for AI feedback (only once)
+              if (!aiFeedbackPointsAwarded) {
+                await addPoints(5, "aiFeedback");
+                setAiFeedbackPointsAwarded(true);
+              }
+            }
+
+            // Check for trophy achievements
+            await checkTrophyAchievements(
+              10,
+              "practiceSessions",
+              `${Math.floor(recordingTime / 60)}:${recordingTime % 60}`
+            );
+
             setIsSubmit(false);
             onAnswerButtonClick(practice, data);
-
-            runPracticeSubmitSideEffects({
-              practiceId: practice.id,
-              skill: "Speaking",
-              overallScore: data.overall ?? data.overalScore ?? 0,
-              result: data,
-              durationSeconds: recordingTime,
-              usage: data.usage,
-              pointsAwarded,
-              aiFeedbackPointsAwarded,
-              addPoints,
-              checkTrophyAchievements,
-              onPointsAwarded: () => setPointsAwarded(true),
-              onAiFeedbackPointsAwarded: () => setAiFeedbackPointsAwarded(true),
-            });
           })
           .catch((error) => {
             console.error("Error uploading audio:", error);
-            stopProgress();
           })
           .finally(() => {
-            setTimeout(() => setProgressBar(0), 600);
+            setTimeout(() => setProgressBar(0), 1000);
           });
         mediaRecorderRef.current?.stream
           .getTracks()
@@ -442,25 +394,12 @@ const SpeakingPracticeView = ({
 
   return (
     <div className="h-full mx-auto w-full transition-all duration-300 flex gap-5 mb-[120px]">
-      {noUser ? (
+      {freeUser ? (
+        showModal && <UpgradeModal setShowModal={setShowModal} />
+      ) : noUser ? (
         showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />
       ) : (
         <></>
-      )}
-      {showSignUpModal && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 px-4">
-          <div className="relative w-full max-w-md">
-            <button
-              type="button"
-              className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-600 shadow hover:bg-slate-100"
-              onClick={() => setShowSignUpModal(false)}
-              aria-label="Close sign up modal"
-            >
-              ×
-            </button>
-            <SupabaseAuthForm className="shadow-xl" initialMode="sign-up" />
-          </div>
-        </div>
       )}
 
       <ListeningSideMenu
@@ -474,7 +413,7 @@ const SpeakingPracticeView = ({
         selectedTaskId={selectedTaskId}
         completedPractice={completedPractice}
       />
-      <div className="bg-white rounded-xl flex min-h-0 flex-col overflow-hidden border border-[#D5D6D8] w-full screen1280:!h-[920px]">
+      <div className="bg-white rounded-xl flex flex-col screen1280:!h-[920px] overflow-scroll border border-[#D5D6D8] w-full">
         <div className="flex justify-between lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b pb-[10px]  border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
           <div className="flex gap-2 flex-col screen744:!shrink-0">
             <h1 className="text-[18px] font-bold text-[#212E42]">
@@ -519,16 +458,15 @@ const SpeakingPracticeView = ({
                       allPractices[practiceIndex + 1].taskId.toString()
                       ]
                     );
+                    const taskUrl = selectedTaskId
+                      ? "&taskId=" + selectedTaskId
+                      : "";
                     setPage("question");
-                    if (selectedTaskId) {
-                      router.push(
-                        practicePath(
-                          "speaking",
-                          allPractices[practiceIndex + 1].id,
-                          selectedTaskId
-                        )
-                      );
-                    }
+                    router.push(
+                      "/speaking?selectedPracticeId=" +
+                      allPractices[practiceIndex + 1].id +
+                      taskUrl
+                    );
                   } else {
                   }
                 }}
@@ -541,7 +479,7 @@ const SpeakingPracticeView = ({
             </div>
           }
         </div>
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden w-full">
+        <div className="flex flex-col h-full overflow-hidden w-full">
           {page == "question" && (
             <div className="h-full overflow-hidden ">
               <div className="grid lg:grid-cols-2 grid-cols-1 h-full w-full">
@@ -605,35 +543,16 @@ const SpeakingPracticeView = ({
                           className="flex mt-[32px] gap-[8px] text-white items-center text-[14px] font-normal justify-center cursor-pointer rounded-[24px] bg-[#4A7DFF]"
                           aria-label="Next testimonial"
                           onClick={() => {
-                            if (noUser) {
-                              setShowSignUpModal(true);
-                            } else if (freeUser) {
-                              router.push("/pricing");
+                            if (freeUser) {
+                              setShowModal(true);
                             } else {
                               setShowLoginModal(true);
                             }
                           }}
                         >
-                          Sign up free
+                          Upgrade to Pro
                           <SvgArrowRight />
                         </Button>
-                        <form
-                          action={quickSubscribeAction || "/pricing"}
-                          method={quickSubscribeAction ? "POST" : "GET"}
-                        >
-                          <CheckoutAttributionFields />
-                          <div className="relative">
-                            <StripeCheckoutDiscountBadge label={stripeCheckoutDiscountLabel} />
-                            <Button
-                              type="submit"
-                              variant="outline"
-                              className="flex w-full gap-[8px] text-white border-[#F79D65] items-center text-[14px] font-normal justify-center cursor-pointer rounded-[24px] bg-[#F79D65] hover:bg-[#ea8d53]"
-                            >
-                              Subscribe to continue
-                              <SvgArrowRight />
-                            </Button>
-                          </div>
-                        </form>
                       </div>
                     )}
                   </div>
@@ -728,7 +647,12 @@ const SpeakingPracticeView = ({
                             className="relative h-[204px] border border-[#FF8FA7] rounded-[12px]"
                           >
                             <div className="flex px-[16px] items-center gap-2 h-[44px] bg-[#FFE2E8] rounded-tl-[12px] rounded-tr-[12px]">
-                              <ErrorOutline sx={{ fontSize: 24, color: "#EE4266" }} />
+                              <CircleAlert
+                                width={24}
+                                height={24}
+                                viewBox="0 0 24 24"
+                                className="text-[#EE4266] "
+                              />
                               <h5 className=" font-semibold text-[14px]">
                                 Can&apos;t Use Microphone!
                               </h5>
@@ -772,25 +696,16 @@ const SpeakingPracticeView = ({
                                   cancelRecording();
                                 }}
                               >
-                                <Close className="h-8 w-8 text-gray-600" />
+                                <X
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="lucide lucide-x w-8 h-8 text-gray-600"
+                                />
                               </button>
                             </div>
-                          </div>
-                        ) : needsUserInteraction && time === 0 ? (
-                          <div className="flex flex-col items-center relative justify-center w-full">
-                            <div className="text-[16px] text-[#212E42] font-semibold text-center w-full mb-4">
-                              Preparation time is over
-                            </div>
-                            <button
-                              className="flex items-center justify-center gap-2 px-6 py-3 bg-[#316BFF] text-white rounded-[24px] font-medium text-[14px] hover:bg-[#2556E6] transition-colors"
-                              onClick={() => {
-                                setNeedsUserInteraction(false);
-                                startRecording();
-                              }}
-                            >
-                              <SvgRecording />
-                              Start Recording
-                            </button>
                           </div>
                         ) : (
                           <div className="flex flex-col items-center relative justify-center w-full">
@@ -887,10 +802,8 @@ const SpeakingPracticeView = ({
                           className="flex mt-[32px] gap-[8px] text-white items-center text-[14px] font-normal justify-center cursor-pointer rounded-[24px] bg-[#4A7DFF]"
                           aria-label="Next testimonial"
                           onClick={() => {
-                            if (noUser) {
-                              setShowSignUpModal(true);
-                            } else if (freeUser) {
-                              router.push("/pricing");
+                            if (freeUser) {
+                              setShowModal(true);
                             } else {
                               setShowLoginModal(true);
                             }
@@ -918,22 +831,7 @@ const SpeakingPracticeView = ({
                         <h3 className="text-[14px] font-semibold text-slate-800 mb-1">
                           Your Submissions:
                         </h3>
-                        {answers.map((answer: TWritingAnswerDto, index) => {
-                          const overallScore =
-                            typeof answer.overalScore === "number"
-                              ? answer.overalScore
-                              : 0;
-                          const percentage = (overallScore / 12) * 100;
-                          const scoreColor =
-                            percentage >= 66.7
-                              ? "text-green-500"
-                              : percentage >= 50
-                                ? "text-yellow-500"
-                                : percentage >= 33.3
-                                  ? "text-orange-500"
-                                  : "text-red-500";
-
-                          return (
+                        {answers.map((answer: TWritingAnswerDto, index) => (
                           <div
                             key={index}
                             className="flex px-3 py-1 justify-between border flex-shrink-0 flex-grow-0 bg-white shadow-sm cursor-pointer items-center transition-all hover:shadow-md rounded-xl h-14"
@@ -945,7 +843,7 @@ const SpeakingPracticeView = ({
                               {index + 1}.{" "}
                               {(() => {
                                 const now = new Date();
-                                const createdAt = new Date(answer.createdAt ?? Date.now());
+                                const createdAt = new Date(answer.createdAt);
                                 const diffInMs =
                                   now.getTime() - createdAt.getTime();
                                 const diffInMinutes = Math.floor(
@@ -1002,27 +900,49 @@ const SpeakingPracticeView = ({
                                   cy="20"
                                   className={cn(
                                     "stroke-current transition-all duration-500 ease-in-out",
-                                    scoreColor
+                                    (() => {
+                                      const percentage =
+                                        (answer.overalScore / 12) * 100;
+                                      if (percentage >= 66.7)
+                                        return "text-green-500"; // High score (8+ out of 12)
+                                      if (percentage >= 50)
+                                        return "text-yellow-500"; // Medium score (6-8 out of 12)
+                                      if (percentage >= 33.3)
+                                        return "text-orange-500"; // Low-medium score (4-6 out of 12)
+                                      return "text-red-500"; // Low score (0-4 out of 12)
+                                    })()
                                   )}
                                   style={{
                                     strokeDasharray: 120,
                                     strokeDashoffset:
-                                      120 - overallScore * 10,
+                                      120 - answer.overalScore * 10,
                                     transition: "stroke-dashoffset 0.5s",
                                   }}
                                 ></circle>
                               </svg>
                               <div className="absolute inset-0 flex items-center justify-center">
                                 <span
-                                  className={cn("font-bold text-[14px]", scoreColor)}
+                                  className={cn(
+                                    "font-bold text-[14px]",
+                                    (() => {
+                                      const percentage =
+                                        (answer.overalScore / 12) * 100;
+                                      if (percentage >= 66.7)
+                                        return "text-green-500"; // High score (8+ out of 12)
+                                      if (percentage >= 50)
+                                        return "text-yellow-500"; // Medium score (6-8 out of 12)
+                                      if (percentage >= 33.3)
+                                        return "text-orange-500"; // Low-medium score (4-6 out of 12)
+                                      return "text-red-500"; // Low score (0-4 out of 12)
+                                    })()
+                                  )}
                                 >
-                                  {overallScore}
+                                  {answer.overalScore}
                                 </span>
                               </div>
                             </div>
                           </div>
-                          );
-                        })}
+                        ))}
                       </div>
                     )}
                   </div>
@@ -1031,7 +951,7 @@ const SpeakingPracticeView = ({
             </div>
           )}
           {page == "answer" && (
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto w-full [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-track]:bg-slate-100">
+            <div className="flex flex-col h-full  w-full">
               <ListeningAnswerList
                 questionIndex={questionIndex}
                 questions={practice.passages.reduce(

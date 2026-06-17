@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import ArrowBack from "@mui/icons-material/ArrowBack";
-import ArrowForward from "@mui/icons-material/ArrowForward";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import AudioPlayer from "./components/AudioPlayer";
 import ListeningQuestionList from "./components/ListeningQuestionList";
 import { TPracticeDto } from "@/models/practice.model";
@@ -16,19 +15,17 @@ import { TTaskSchemaDto } from "@/models/tasks.model";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
 import SvgArrowRight from "@/components/icons/ArrowRight";
+import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
-import { SupabaseAuthForm } from "@/components/auth/SupabaseAuthForm";
 import SvgChevronRight from "@/components/icons/ChevronRight";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
+import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
-import { runPracticeSubmitSideEffects } from "@/lib/practiceSubmitSideEffects";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import StatBadge from "@/components/shared/StatBadge";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
-import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
-import { practicePath } from "@/lib/practiceRoutes";
-import { ActivityLogger } from "@/lib/userActivity";
+import Link from "next/link";
 
 interface ListeningPracticeViewProps {
   practice: TPracticeDto;
@@ -44,7 +41,6 @@ interface ListeningPracticeViewProps {
   onNextPractice: () => void;
   isFromFirstPage: boolean;
   setIsFromFirstPage: React.Dispatch<React.SetStateAction<boolean>>;
-  hideLegacyBreadcrumb?: boolean;
 }
 
 const ListeningPracticeView = ({
@@ -58,21 +54,13 @@ const ListeningPracticeView = ({
   isFromFirstPage,
   setIsFromFirstPage,
   onBackClick,
-  onComplete,
-  onUpgrade,
-  onNextPractice,
-  hideLegacyBreadcrumb,
 }: ListeningPracticeViewProps) => {
   const practiceCount = usePracticeCount(task.id, practice.id, task.taskNumber);
   const task5or6 = ["67ebeffe187829d27daac3c8", "67ebf003187829d27daac3c9"];
   const taskNum = parseInt(task.taskNumber.replace(/\D/g, "") || "0", 10);
   const useDropdownForQuestions = taskNum > 3;
-  const initialTime = task5or6.includes(practice.taskId)
-    ? 240 + (task5or6[1] === practice.taskId ? 30 : 0)
-    : 30;
 
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showSignUpModal, setShowSignUpModal] = useState(false);
   const [pointsAwarded, setPointsAwarded] = useState(false);
   const { user, isSignedIn, isLoaded } = useHybridWebUser();
   const { addPoints } = useLeaguePoints();
@@ -86,6 +74,7 @@ const ListeningPracticeView = ({
   } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
+  const [showModal, setShowModal] = useState(false);
   const router = useRouter();
   const [isPlaying] = useState(false);
   const [page, setPage] = useState("instructions");
@@ -98,7 +87,9 @@ const ListeningPracticeView = ({
     Record<string, string>
   >({});
   const [time, setTime] = useState(
-    initialTime
+    task5or6.includes(practice.taskId)
+      ? 240 + (task5or6[1] === practice.taskId ? 30 : 0)
+      : 30
   );
 
   // Safe helpers to avoid optional-undefined issues
@@ -145,8 +136,7 @@ const ListeningPracticeView = ({
           const data = await response.json();
           if (data.answers) {
             setSelectedAnswers(data.answers);
-            // Keep instructions so returning users can retake; "See Result" still uses loaded answers.
-            setPage("instructions");
+            setPage("answer");
             return;
           }
         }
@@ -164,21 +154,17 @@ const ListeningPracticeView = ({
     // Log practice started
     if (user && selectedPracticeId) {
       const attemptId = `practice_${selectedPracticeId}_${Date.now()}`;
-      void ActivityLogger.practiceStarted(
+      ActivityLogger.practiceStarted(
         attemptId,
         selectedPracticeId,
         "Listening"
-      ).catch(() => {});
+      );
     }
   }, [selectedPracticeId, user]);
 
   useEffect(() => {
     if (page === "answer" && user) {
       const submitAnswers = async () => {
-        // "See Result" sets isFromFirstPage — only re-displaying saved attempt, do not re-POST or re-award points
-        if (isFromFirstPage) {
-          return;
-        }
         try {
           const response = await fetch("/api/answers", {
             method: "POST",
@@ -193,17 +179,36 @@ const ListeningPracticeView = ({
 
           if (response.ok) {
             const result = await response.json();
-            runPracticeSubmitSideEffects({
-              practiceId: practice.id,
-              skill: "Listening",
-              overallScore: result.overall ?? 0,
+            // Log practice completed
+            const attemptId = `practice_${practice.id}_${Date.now()}`;
+            await ActivityLogger.practiceCompleted(
+              attemptId,
+              practice.id,
+              "Listening",
+              result.overall,
               result,
-              durationSeconds: time,
-              pointsAwarded,
-              addPoints,
-              checkTrophyAchievements,
-              onPointsAwarded: () => setPointsAwarded(true),
-            });
+              time
+            );
+
+            // Add league points (only once) and confirm success
+            if (!pointsAwarded) {
+              const res = await addPoints(
+                10,
+                "practiceSessions",
+                `${Math.floor(time / 60)} minutes`
+              );
+              if (res && (res as any).success) {
+                setPointsAwarded(true);
+                // Check for trophy achievements only after success
+                await checkTrophyAchievements(
+                  10,
+                  "practiceSessions",
+                  `${Math.floor(time / 60)}:${time % 60}`
+                );
+              } else {
+                console.warn("addPoints failed; skipping trophy check and award flag");
+              }
+            }
           }
         } catch (error) {
           // Optionally handle error
@@ -219,7 +224,7 @@ const ListeningPracticeView = ({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, user, isFromFirstPage]);
+  }, [page, user]);
 
 
 
@@ -234,17 +239,6 @@ const ListeningPracticeView = ({
     (p) => p.id == selectedPracticeId
   );
 
-  const resetToStart = () => {
-    setSelectedAnswers({});
-    setPage("problem");
-    setPassageIndex(0);
-    setQuestionIndex(0);
-    setQuestionIndexInPractice(0);
-    setTime(initialTime);
-    setIsOpen(false);
-    setIsFromFirstPage(false);
-  };
-
   if (!isLoaded || (user && user.publicMetadata?.plan === undefined)) {
     return (
       <div className="text-center py-10 text-gray-500 w-full">Loading...</div>
@@ -253,54 +247,39 @@ const ListeningPracticeView = ({
 
   return (
     <div className="">
-      {noUser ? (
+      {freeUser ? (
+        showModal && <UpgradeModal setShowModal={setShowModal} />
+      ) : noUser ? (
         showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />
       ) : (
         <></>
       )}
-      {showSignUpModal && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 px-4">
-          <div className="relative w-full max-w-md">
-            <button
-              type="button"
-              className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-600 shadow hover:bg-slate-100"
-              onClick={() => setShowSignUpModal(false)}
-              aria-label="Close sign up modal"
-            >
-              ×
-            </button>
-            <SupabaseAuthForm className="shadow-xl" initialMode="sign-up" />
-          </div>
+      <div className="pl-[40px] text-[#76808F] text-[14px] mt-[24px] mb-[28px] items-center flex gap-[8px]">
+        <div
+          className="cursor-pointer"
+          onClick={() => {
+            router.push("/practice-overview");
+          }}
+        >
+          Practice
         </div>
-      )}
-      {!hideLegacyBreadcrumb && (
-        <div className="w-full min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1 pl-0 screen744:pl-[40px] text-[#76808F] text-[14px] mt-[-35px] mb-[28px]">
-          <div
-            className="cursor-pointer"
-            onClick={() => {
-              router.push("/practice-overview");
-            }}
-          >
-            Practice
-          </div>
-          <SvgChevronRightForTitle />
-          <div
-            className="cursor-pointer"
-            onClick={() => {
-              router.push("/listening");
-            }}
-          >
-            Listening
-          </div>
-          <SvgChevronRightForTitle />
-          <span className="min-w-0 max-w-full break-words text-[#212E42]">
-            <span className="text-[#76808F]">
-              {task.taskNumber?.replace(" #", "")}
-            </span>
-            .{task.name}
+        <SvgChevronRightForTitle />
+        <div
+          className="cursor-pointer"
+          onClick={() => {
+            router.push("/listening");
+          }}
+        >
+          Listening
+        </div>
+        <SvgChevronRightForTitle />
+        <span className="text-[#212E42]">
+          <span className="text-[#76808F]">
+            {task.taskNumber?.replace(" #", "")}
           </span>
-        </div>
-      )}
+          .{task.name}
+        </span>
+      </div>
       <div className=" mx-auto w-full flex-col screen1280:!flex-row   transition-all duration-300 flex gap-[20px]">
         <ListeningSideMenu
           allPractices={allPractices}
@@ -313,10 +292,10 @@ const ListeningPracticeView = ({
           selectedTaskId={selectedTaskId}
           completedPractice={completedPractice}
         />
-        <Card className="bg-white/90 flex min-h-0 flex-col overflow-hidden border border-[#D5D6D8] w-full screen1280:!h-[920px]">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 lg:gap-4 px-6 py-4 border-b border-[#D5D6D8] w-full min-w-0 h-auto bg-[#FFEBD6]">
-            <div className="flex w-full min-w-0 flex-col items-start gap-2 lg:flex-1 lg:w-auto lg:min-w-0">
-              <h1 className="text-[18px] font-bold text-[#212E42] break-words">
+        <Card className="bg-white/90 flex flex-col overflow-scroll border border-[#D5D6D8] w-full">
+          <div className="flex justify-between lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row  w-full  h-auto bg-[#FFEBD6]">
+            <div className="flex gap-2 w-full items-start justify-between flex-col">
+              <h1 className="text-[18px] font-bold text-[#212E42]">
                 {page === "instructions"
                   ? "Instruction"
                   : practice.passages[passageIndex].title}
@@ -327,23 +306,23 @@ const ListeningPracticeView = ({
               />
             </div>
 
-            {page !== "instructions" ? (
-              <div className="flex w-full min-w-0 shrink-0 flex-row flex-nowrap items-center justify-end gap-2 overflow-x-auto pb-[10px] lg:w-auto lg:min-w-fit lg:flex-none lg:gap-2 lg:overflow-visible lg:pb-0">
-                  {page === "question" && (
-                    <div className="flex shrink-0 justify-center items-center lg:flex-row flex-col">
-                      <div className="text-[14px] font-semibold gap-2 text-center text-[#EE4266] flex items-center">
-                        <p>
-                          {time > 0
-                            ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
-                            }`
-                            : "Time's Up!"}
-                        </p>
-                      </div>
+            {page !== "instructions" &&
+              !(page == "answer" && practiceIndex >= allPractices.length - 1) ? (
+              <div className="flex items-center gap-2 justify-end pb-[10px] ">
+                {page === "question" && (
+                  <div className="flex justify-center items-center lg:flex-row flex-col">
+                    <div className="text-[14px] font-semibold gap-2 text-center text-[#EE4266] flex items-center">
+                      <p>
+                        {time > 0
+                          ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
+                          }`
+                          : "Time's Up!"}
+                      </p>
                     </div>
-                  )}
-                  <button
-                    hidden={page === "problem" && passageIndex === 0}
-                    onClick={() => {
+                  </div>
+                )}
+                <button
+                  onClick={() => {
                     if (page == "problem" && passageIndex == 0) {
                       setPage("instructions");
                     } else if (page == "problem" && passageIndex > 0) {
@@ -381,10 +360,10 @@ const ListeningPracticeView = ({
                         : 30
                     );
                   }}
-                    className="cursor-pointer shrink-0 w-[40px] h-[40px] border flex items-center justify-center border-[#37465C] rounded-[100%]"
-                  >
-                    <ArrowBack sx={{ fontSize: 18 }} />
-                  </button>
+                  className="cursor-pointer shrink-0 w-[40px] h-[40px] border flex items-center justify-center border-[#37465C] rounded-[100%]"
+                >
+                  <ArrowLeft size={18} strokeWidth={1.7}></ArrowLeft>
+                </button>
                 <button
                   onClick={() => {
                     if (page == "instructions" && passageIndex == 0) {
@@ -417,39 +396,45 @@ const ListeningPracticeView = ({
                     } else if (page == "question") {
                       setPage("answer");
                     } else if (page === "answer") {
-                      if (practiceIndex < allPractices.length - 1 && selectedTaskId) {
+                      const practiceIndex = allPractices.findIndex(
+                        (p) => p.id == selectedPracticeId
+                      );
+                      if (practiceIndex < allPractices.length - 1) {
+                        const taskUrl = selectedTaskId
+                          ? "&taskId=" + selectedTaskId
+                          : "";
                         setPage("instructions");
                         setQuestionIndex(0);
                         setPassageIndex(0);
                         router.push(
-                          practicePath(
-                            "listening",
-                            allPractices[practiceIndex + 1].id,
-                            selectedTaskId
-                          )
+                          "/listening?selectedPracticeId=" +
+                          allPractices[practiceIndex + 1].id +
+                          taskUrl
                         );
                       } else {
-                        resetToStart();
+                        setPage("finish");
                       }
                     }
-                    setTime(initialTime);
+                    setTime(
+                      task5or6.includes(practice.taskId)
+                        ? 240 + (task5or6[1] === practice.taskId ? 30 : 0)
+                        : 30
+                    );
                   }}
-                  className={`cursor-pointer shrink-0 text-[14px] font-medium inline-flex items-center justify-center gap-1 rounded-[24px] w-[96px] min-h-[40px] px-2 sm:px-3 ${page !== "answer"
-                    ? "bg-[#4A7DFF] text-white lg:bg-white lg:text-[#212E42] lg:font-normal"
-                    : "bg-green-100 text-gray-900"
-                    }`}
+                  className={`cursor-pointer text-[14px] font-normal  inline-flex items-center justify-center rounded-[24px] ${page !== "answer"
+                    ? "bg-white"
+                    : "bg-green-100 text-gray-900 "
+                    } bg-white w-[96px] h-[40px]`}
                 >
-                  {page === "answer" && practiceIndex >= allPractices.length - 1
-                    ? "Start again"
-                    : "Next"}
-                  <ArrowForward sx={{ fontSize: 18 }} />
+                  {page !== "answer" ? "Next" : "Next"}
+                  <ArrowRight size={18} strokeWidth={1.7}></ArrowRight>
                 </button>
               </div>
             ) : (
               <></>
             )}
           </div>
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto w-full [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-track]:bg-slate-100">
+          <div className="flex flex-col  w-full">
             {page == "instructions" ? (
               <div className="px-[24px] py-[16px] w-full">
                 <div className="text-[#212E42]  font-normal prose max-w-none text-[14px]  marker:text-blue-600">
@@ -465,10 +450,9 @@ const ListeningPracticeView = ({
                 </div>
                 {practice.isFree ||
                   (!practice.isFree &&
-                    hasPaidPracticeAccess(
-                      user?.publicMetadata.plan as string | undefined,
-                      user?.publicMetadata.purchaseDate as string | undefined
-                    )) ? (
+                    user &&
+                    user.publicMetadata.plan &&
+                    user.publicMetadata.plan === "premium") ? (
                   <div>
                     {completedPractice.includes(practice.id) ? (
                       <div className="flex flex-col gap-[16px] mt-[23px]">
@@ -479,7 +463,6 @@ const ListeningPracticeView = ({
                         <div className="flex gap-[10px]">
                           <Button
                             onClick={() => {
-                              setIsFromFirstPage(false);
                               setPage("problem");
                             }}
                             variant="outline"
@@ -504,11 +487,10 @@ const ListeningPracticeView = ({
                     ) : (
                       <Button
                         onClick={() => {
-                          setIsFromFirstPage(false);
                           setPage("problem");
                         }}
                         variant="outline"
-                        className="cursor-pointer rounded-[24px] text-[14px] bg-[#4A7DFF] inline-flex items-center justify-center font-normal text-white h-[40px] w-full max-w-full screen744:w-[96px] mt-[32px]"
+                        className="cursor-pointer rounded-[24px] text-[14px] bg-[#4A7DFF] inline-flex items-center justify-center  font-normal text-white  h-[40px] w-[96px] mt-[32px]"
                         aria-label="Next testimonial"
                       >
                         Next
@@ -522,10 +504,8 @@ const ListeningPracticeView = ({
                     className="flex mt-[32px] gap-[8px] text-white items-center text-[14px] font-normal justify-center cursor-pointer rounded-[24px] bg-[#4A7DFF]"
                     aria-label="Next testimonial"
                     onClick={() => {
-                      if (noUser) {
-                        setShowSignUpModal(true);
-                      } else if (freeUser) {
-                        router.push("/pricing");
+                      if (freeUser) {
+                        setShowModal(true);
                       } else {
                         setShowLoginModal(true);
                       }
@@ -559,24 +539,10 @@ const ListeningPracticeView = ({
                         {isOpen ? "Hide Transcript" : "Show Transcript"}
                       </button>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPage("question");
-                          setQuestionIndexInPractice(questionIndexInPractice + 1);
-                          setTime(initialTime);
-                        }}
-                        className="cursor-pointer text-[14px] font-medium inline-flex items-center justify-center gap-1 rounded-[24px] w-full max-w-[153px] h-[40px] px-4 bg-[#4A7DFF] text-white mt-4"
-                        aria-label="Go to questions"
-                      >
-                        Next
-                        <ArrowForward sx={{ fontSize: 18 }} />
-                      </button>
-
                       {isOpen && (
-                        <div className="w-full mx-auto mt-[16px] border-0 sm:border sm:border-[#D5D6D8] rounded-none sm:rounded-[12px]">
+                        <div className="w-full mx-auto mt-[16px] border border-[#D5D6D8] rounded-[12px]">
                           <div className="">
-                            <div className="max-w-[450px] flex flex-col gap-[16px] p-0 sm:p-[16px]">
+                            <div className="max-w-[450px] flex flex-col gap-[16px] p-[16px]">
                               {practice.passages[
                                 passageIndex
                               ].conversation?.map((con, index) => {
@@ -586,11 +552,11 @@ const ListeningPracticeView = ({
                                       className={`${index % 2 == 0
                                         ? "bg-[#FFEBD6]"
                                         : "bg-[#D1DEFF]"
-                                        } inline-block align-top leading-tight mr-[6px] sm:mr-[8px] p-[6px] sm:p-[8px] rounded-[6px] sm:rounded-[8px] text-black min-h-[26px] h-auto sm:h-[32px] sm:leading-[16px] text-[12px] sm:text-[14px] font-normal`}
+                                        }   inline-block leading-[16px] mr-[8px] p-[8px] rounded-[8px]  text-black h-[32px] text-[14px]  font-normal `}
                                     >
                                       {con.name}:
                                     </span>
-                                    <span className="text-[12px] font-normal leading-[18px] sm:text-[14px] sm:leading-[20px]">
+                                    <span className="text-[14px]  font-normal leading-[20px]">
                                       {" "}
                                       {con.text}
                                     </span>
@@ -635,29 +601,12 @@ const ListeningPracticeView = ({
                     }
                     onAnswerSelect={handleAnswerSelect}
                     selectedAnswers={selectedAnswers}
-                    onNext={() => {
-                      if (
-                        questionIndex <
-                        (practice.passages[passageIndex].questions?.length ?? 0) - 1
-                      ) {
-                        setQuestionIndex(questionIndex + 1);
-                        setQuestionIndexInPractice(questionIndexInPractice + 1);
-                      } else if (passageIndex < practice.passages.length - 1) {
-                        setPage("problem");
-                        setPassageIndex(passageIndex + 1);
-                        setQuestionIndex(0);
-                      } else {
-                        setPage("answer");
-                      }
-
-                      setTime(initialTime);
-                    }}
                   />
                 )}
               </div>
             )}
             {page == "answer" && (
-              <div className="flex min-h-0 w-full flex-col pb-[50px]">
+              <div className="flex flex-col h-full w-full pb-[50px]">
                 <ListeningAnswerList
                   questionIndex={questionIndex}
                   questions={practice.passages.reduce(

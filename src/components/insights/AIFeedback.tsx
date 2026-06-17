@@ -1,6 +1,5 @@
 import { Progress } from "@/components/ui/progress";
-import CheckCircle from "@mui/icons-material/CheckCircle";
-import TrackChanges from "@mui/icons-material/TrackChanges";
+import { CheckCircle2, Target } from "lucide-react";
 import { FeedbackItem } from "./skillTypes";
 
 type AIFeedbackProps = {
@@ -20,7 +19,7 @@ const AIFeedback = ({ feedback, focusAreas }: AIFeedbackProps) => {
           {feedback.map((item, index) => (
             <div key={index} className="space-y-1">
               <div className="flex items-center gap-2 mb-1">
-                <CheckCircle className="h-4 w-4 text-green-500" />
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
                 <h4 className="font-medium text-[14px] text-gray-500">
                   {item.label}
                 </h4>
@@ -36,7 +35,7 @@ const AIFeedback = ({ feedback, focusAreas }: AIFeedbackProps) => {
 
           <div className="mt-8">
             <div className="flex items-center gap-2 mb-2">
-              <TrackChanges className="h-4 w-4 text-blue-500" />
+              <Target className="h-4 w-4 text-blue-500" />
               <h4 className="font-medium text-[14px] text-gray-500">
                 FOCUS AREAS
               </h4>

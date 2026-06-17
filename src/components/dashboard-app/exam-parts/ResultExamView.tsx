@@ -12,30 +12,12 @@ import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 import { ActivityLogger } from "@/lib/userActivity";
-import { useEffect, useLayoutEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import IncompletePartsModal from "@/components/modal/IncompletePartsModal";
 import { useSearchParams } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { TQuestion } from "@/models/question.model";
-import {
-  hasMockExamAccess,
-  hasPaidPracticeAccess,
-  isMockExamUnlockedViaPurchase,
-} from "@/lib/subscriptionAccess";
-import {
-  MOCK_EXAM_VIEW_MODE_EVENT,
-  MOCK_EXAM_VIEW_MODE_STORAGE_KEY,
-} from "./components/useExamViewMode";
-import { trackCTAClick, trackModal } from "@/lib/gtm";
-import { Button } from "@/components/ui/button";
-import {
-  mockExamAttemptGroupKey,
-  mockExamContinueToSectionHref,
-  parseMockExamSkillSection,
-  sanitizeMockExamAttemptIdParam,
-  type MockExamSkillSection,
-} from "@/lib/mockExamAttemptId";
 
 function scaleToBand(weightedPercent: number): number {
   if (isNaN(weightedPercent)) return 0;
@@ -47,26 +29,20 @@ const ResultExamView = ({
   examParts,
   answers: allAnswers,
   speakingAndWritingAnswers: allSpeakingAndWritingAnswers,
-  firstReadyExamId,
 }: {
   exams: TExamSchemaDto;
   examParts: TExamPartSchemaDto[];
   answers: (TListeningAndReadingAnswerDto & { overalScore?: number })[];
   speakingAndWritingAnswers: TWritingAnswerDto[];
-  firstReadyExamId: string | null;
 }) => {
   const route = useRouter();
   const searchParams = useSearchParams();
-  const rawAttemptFromUrl = searchParams.get("attemptId");
-  const currentAttemptFromUrl =
-    rawAttemptFromUrl === "legacy"
-      ? "legacy"
-      : sanitizeMockExamAttemptIdParam(rawAttemptFromUrl);
+  const currentAttemptId = searchParams.get("attemptId") === "null" ? null : searchParams.get("attemptId");
 
   const attempts = useMemo(() => {
     const attemptMap = new Map<string, Date>();
     [...allAnswers, ...allSpeakingAndWritingAnswers].forEach((a) => {
-      const id = mockExamAttemptGroupKey(a.attemptId);
+      const id = a.attemptId || "legacy";
       const date = a.createdAt ? new Date(a.createdAt) : new Date(0);
       if (!attemptMap.has(id) || date > attemptMap.get(id)!) {
         attemptMap.set(id, date);
@@ -79,88 +55,23 @@ const ResultExamView = ({
   }, [allAnswers, allSpeakingAndWritingAnswers]);
 
   const selectedAttemptId = useMemo(() => {
-    if (
-      currentAttemptFromUrl !== undefined &&
-      attempts.some((a) => a.id === currentAttemptFromUrl)
-    ) {
-      return currentAttemptFromUrl;
+    if (currentAttemptId && attempts.some((a) => a.id === currentAttemptId)) {
+      return currentAttemptId;
     }
     return attempts[0]?.id;
-  }, [currentAttemptFromUrl, attempts]);
+  }, [currentAttemptId, attempts]);
 
   const answers = useMemo(() => {
     if (!selectedAttemptId) return allAnswers;
-    return allAnswers.filter((a) => mockExamAttemptGroupKey(a.attemptId) === selectedAttemptId);
+    return allAnswers.filter((a) => (a.attemptId || "legacy") === selectedAttemptId);
   }, [allAnswers, selectedAttemptId]);
 
   const speakingAndWritingAnswers = useMemo(() => {
     if (!selectedAttemptId) return allSpeakingAndWritingAnswers;
-    return allSpeakingAndWritingAnswers.filter(
-      (a) => mockExamAttemptGroupKey(a.attemptId) === selectedAttemptId
-    );
+    return allSpeakingAndWritingAnswers.filter((a) => (a.attemptId || "legacy") === selectedAttemptId);
   }, [allSpeakingAndWritingAnswers, selectedAttemptId]);
 
   const { user, isLoaded } = useHybridWebUser();
-
-  const plan = user?.publicMetadata?.plan as string | undefined;
-  const purchaseDate = user?.publicMetadata?.purchaseDate as string | undefined;
-  const purchasedMockExamIds = user?.publicMetadata?.purchasedMockExamIds;
-
-  const showSubscriptionUpsell = Boolean(
-    isLoaded &&
-      user &&
-      !hasPaidPracticeAccess(plan, purchaseDate) &&
-      isMockExamUnlockedViaPurchase(exams.id, purchasedMockExamIds)
-  );
-
-  const postExamUpsellVisible = showSubscriptionUpsell;
-
-  const upsellSessionKey = useMemo(
-    () =>
-      `celpip_post_exam_upsell_dismissed:${exams.id}:${selectedAttemptId ?? "legacy"}`,
-    [exams.id, selectedAttemptId]
-  );
-
-  const [postExamUpsellDismissed, setPostExamUpsellDismissed] = useState(false);
-  const postExamUpsellViewTrackedRef = useRef<string | null>(null);
-
-  useLayoutEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    try {
-      setPostExamUpsellDismissed(window.sessionStorage.getItem(upsellSessionKey) === "1");
-    } catch {
-      setPostExamUpsellDismissed(false);
-    }
-  }, [upsellSessionKey]);
-
-  useEffect(() => {
-    if (!postExamUpsellVisible || postExamUpsellDismissed) {
-      return;
-    }
-    if (postExamUpsellViewTrackedRef.current === upsellSessionKey) {
-      return;
-    }
-    postExamUpsellViewTrackedRef.current = upsellSessionKey;
-    const name = "post_exam_upsell_subscription";
-    trackModal.viewed(name, "mock_exam_results");
-  }, [
-    postExamUpsellDismissed,
-    postExamUpsellVisible,
-    upsellSessionKey,
-  ]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    window.localStorage.setItem(MOCK_EXAM_VIEW_MODE_STORAGE_KEY, "classic");
-    window.dispatchEvent(
-      new CustomEvent(MOCK_EXAM_VIEW_MODE_EVENT, { detail: "classic" })
-    );
-  }, []);
 
   // Log score report viewed
   useEffect(() => {
@@ -168,17 +79,6 @@ const ResultExamView = ({
       ActivityLogger.scoreReportViewed(exams.id, "mock");
     }
   }, [user, exams]);
-
-  const dismissPostExamUpsell = () => {
-    const name = "post_exam_upsell_subscription";
-    trackModal.closed(name, "dismissed");
-    try {
-      window.sessionStorage.setItem(upsellSessionKey, "1");
-    } catch {
-      /* ignore */
-    }
-    setPostExamUpsellDismissed(true);
-  };
 
   // Detect incomplete sections
   const getIncompleteSections = () => {
@@ -212,31 +112,7 @@ const ResultExamView = ({
   };
 
   const incompleteSections = getIncompleteSections();
-  const sectionFromUrl = parseMockExamSkillSection(searchParams.get("section"));
-  const continueSection = parseMockExamSkillSection(searchParams.get("continue"));
-  const continueHref =
-    continueSection && exams?.id
-      ? mockExamContinueToSectionHref(
-          String(exams.id),
-          continueSection,
-          selectedAttemptId === "legacy" ? undefined : selectedAttemptId
-        )
-      : null;
-  const continueSectionLabel =
-    continueSection &&
-    continueSection.charAt(0).toUpperCase() + continueSection.slice(1);
-  const [showIncompleteModal, setShowIncompleteModal] = useState(
-    incompleteSections.length > 0 && !continueSection
-  );
-  const [activeTab, setActiveTab] = useState<MockExamSkillSection>(
-    sectionFromUrl ?? "listening"
-  );
-
-  useEffect(() => {
-    if (sectionFromUrl) {
-      setActiveTab(sectionFromUrl);
-    }
-  }, [sectionFromUrl]);
+  const [showIncompleteModal, setShowIncompleteModal] = useState(incompleteSections.length > 0);
 
   const listeningAverage = (() => {
     const average = Array.from({ length: 6 })
@@ -335,17 +211,7 @@ const ResultExamView = ({
     return scaleToBand(weightedPercent);
   })();
 
-  if (
-    isLoaded &&
-    (!user ||
-      !hasMockExamAccess(
-        user.publicMetadata.plan as string | undefined,
-        user.publicMetadata.purchaseDate,
-        exams.id,
-        firstReadyExamId,
-        user?.publicMetadata?.purchasedMockExamIds
-      ))
-  ) {
+  if (isLoaded && (!user || (user && user.publicMetadata.plan !== "premium"))) {
     route.push("exam-overview");
   }
   return (
@@ -363,9 +229,7 @@ const ResultExamView = ({
             <Select
               value={selectedAttemptId || ""}
               onValueChange={(val) => {
-                route.push(
-                  `/exams/exam_${exams.id}/results?attemptId=${encodeURIComponent(val)}`
-                );
+                route.push(`/exams/exam_${exams.id}/results?attemptId=${val}`);
               }}
             >
               <SelectTrigger className="w-[200px] h-[36px] bg-white border-[#D5D6D8]">
@@ -383,61 +247,8 @@ const ResultExamView = ({
         )}
       </div>
 
-      {postExamUpsellVisible && !postExamUpsellDismissed && (
-        <div className="mx-[16px] screen744:!mx-[24px] mt-[16px] rounded-[12px] border border-[#C7D6F8] bg-gradient-to-br from-[#4A7DFF]/12 to-[#0DAA94]/8 px-[16px] py-[14px] screen744:!px-[20px]">
-          <div className="flex flex-col gap-[10px] screen744:!flex-row screen744:!items-start screen744:!justify-between">
-            <div className="min-w-0 flex-1 space-y-[6px]">
-              <p className="text-[16px] font-bold text-[#2F3A4C]">Keep the momentum</p>
-              <p className="text-[14px] leading-snug text-[#5A6678]">
-                A subscription unlocks every mock exam and practice features so you can prepare
-                for test day without buying exams one at a time.
-              </p>
-            </div>
-            <div className="flex shrink-0 flex-col gap-[8px] screen744:!items-end">
-              <Button
-                type="button"
-                className="h-10 rounded-full bg-[#4A7DFF] px-5 font-bold text-white hover:bg-[#3A6DEB]"
-                onClick={() => {
-                  trackCTAClick("View plans", "post_exam_results");
-                  route.push("/pricing");
-                }}
-              >
-                View plans
-              </Button>
-              <button
-                type="button"
-                className="text-left text-[13px] font-medium text-[#5A6678] underline screen744:!text-right"
-                onClick={dismissPostExamUpsell}
-              >
-                Not now
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {continueHref && continueSectionLabel && (
-        <div className="mx-[16px] screen744:!mx-[24px] mt-[16px] rounded-[12px] border border-[#C7D6F8] bg-[#F2F6FF] px-[16px] py-[14px] screen744:!px-[20px] flex flex-col gap-[10px] screen744:!flex-row screen744:!items-center screen744:!justify-between">
-          <p className="text-[14px] text-[#37465C]">
-            Ready for the next section? Continue to{" "}
-            <strong>{continueSectionLabel}</strong> when you are done reviewing.
-          </p>
-          <Button
-            type="button"
-            className="h-10 shrink-0 rounded-full bg-[#4A7DFF] px-5 font-bold text-white hover:bg-[#3A6DEB]"
-            onClick={() => route.push(continueHref)}
-          >
-            Continue to {continueSectionLabel}
-          </Button>
-        </div>
-      )}
-
       <div className="px-[16px] screen744:!px-[24px] mt-[24px]">
-        <Tabs
-          value={activeTab}
-          onValueChange={(v) => setActiveTab(v as MockExamSkillSection)}
-          className="w-full pb-[100px] "
-        >
+        <Tabs defaultValue="listening" className="w-full pb-[100px] ">
           <TabsList className="screen744:!grid grid-cols-4 flex justify-start shrink-0 overflow-x-auto px-[8px] w-full gap-[0]">
             <TabsTrigger
               className="max-w-[160px]  screen744:!max-w-full shrink-0"
@@ -549,9 +360,6 @@ const ResultExamView = ({
                     key={11 + index}
                     examPart={examParts.find((e) => e.partId == index + 11)}
                     attemptId={selectedAttemptId}
-                    initialAnswer={speakingAndWritingAnswers.find(
-                      (a) => a.partId === index + 11
-                    )}
                   />
                 ))}
               </div>
@@ -582,9 +390,6 @@ const ResultExamView = ({
                     key={13 + index}
                     examPart={examParts.find((e) => e.partId == index + 13)}
                     attemptId={selectedAttemptId}
-                    initialAnswer={speakingAndWritingAnswers.find(
-                      (a) => a.partId === index + 13
-                    )}
                   />
                 ))}
               </div>

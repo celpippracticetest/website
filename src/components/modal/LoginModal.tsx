@@ -2,6 +2,7 @@ import Link from "next/link";
 import { useAuthModalStore } from "@/store/useAuthModal.store";
 import Close from "../icons/Close";
 import { useRef, useEffect } from "react";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 
 const LoginModal = (params: any) => {
   const { setShowLoginModal } = params;
@@ -33,10 +34,10 @@ const LoginModal = (params: any) => {
           <Close />
         </div>
         <div className="text-[#212E42] text-[20px] text-center font-semibold">
-          Sign up to continue
+          Login to your account
         </div>
         <div className="text-[#76808F] mt-[12px] text-[14px] text-center font-normal">
-          {loginMessage || "Please create an account to start the exam"}
+          {loginMessage || "Please log in to start the exam"}{" "}
           <Link href="/sign-in?mode=sign-up">
             <div className="text-[14px] mx-[16px] cursor-pointer flex items-center justify-center text-white bg-[#4A7DFF] rounded-[24px] h-[40px] mt-[12px]  text-center font-normal">
               Create a free account
@@ -49,9 +50,10 @@ const LoginModal = (params: any) => {
           <span className="text-[#37465C] text-[14px]">Or</span>
           <div className="h-[1px] w-full bg-[#D5D6D8]"></div>
         </div>
-        <div className="text-[16px] mt-[32px] text-center font-medium">
-          <Link href="/sign-in?mode=sign-up">
-            <span className="text-[#316BFF] cursor-pointer">Sign up</span>
+        <div className="text-[16px]   mt-[32px]  text-center font-medium">
+          <span>Do you have an account? </span>{" "}
+          <Link href="/sign-in">
+            <span className="text-[#316BFF] cursor-pointer"> Login </span>
           </Link>
         </div>
       </div>

@@ -30,8 +30,7 @@ interface EligibleWinner {
 }
 
 export default function AdminLeaguePage() {
-  const { isLoaded, user } = useHybridWebUser();
-  const userId = user?.id ?? null;
+  const { isLoaded, userId } = useHybridWebUser();
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [selectedSeasonId, setSelectedSeasonId] = useState<string>("");
   const [seasonStats, setSeasonStats] = useState<any>(null);

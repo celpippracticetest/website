@@ -2,10 +2,9 @@
 import { WikiArticle } from '../index';
 
 export const readingScoreGuide: WikiArticle = {
-  title: "CELPIP Reading Score Chart, Levels & IELTS Conversion",
+  title: "CELPIP Reading Score Guide: Understanding Your Score and Its Equivalencies",
   slug: "celpip-reading-score-guide",
-  description:
-    "CELPIP Reading scores decoded: level chart, raw-to-level conversion, CLB ties, and CELPIP to IELTS comparison—with strategies to improve your reading result.",
+  description: "Understand how your CELPIP Reading score is calculated and how it compares to other English proficiency tests like IELTS, TOEFL, and CLB.",
   category: "Reading",
   color: "#41b883", // Green color for reading
   summary: "A comprehensive guide to CELPIP Reading scores, equivalencies, and improvement strategies.",

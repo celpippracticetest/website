@@ -2,17 +2,17 @@
 
 import { ErrorBoundary } from "react-error-boundary";
 import dynamic from "next/dynamic";
+import Practice from "./Practice";
+import Blog from "./Blog";
 import FAQ from "./FAQ";
-import { HomeCelpipVsIeltsBand } from "./HomeConversionSections";
 import { useChunkErrorHandler } from "@/hooks/useChunkErrorHandler";
-import {
-  HomeFeaturesSection,
-  HomeHowItWorksSection,
-  HomeTestimonialsSection,
-  HomeCtaBanner,
-} from "./home";
 
 const Hero = dynamic(() => import("./Hero"), { ssr: true });
+const Comments = dynamic(() => import("./Comments"), { ssr: false });
+const UserResponseReview = dynamic(() => import("./UserResponseReview"), {
+  ssr: false,
+});
+const Footer = dynamic(() => import("./Footer"), { ssr: true });
 const FloatingChatIcon = dynamic(() => import("../../AskBeavo/FloatingChatIcon"), {
   ssr: false,
 });
@@ -43,12 +43,12 @@ export default function HomePageClient() {
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div className="bg-[#F4F7FF]">
         <Hero />
-        <HomeFeaturesSection />
-        <HomeHowItWorksSection />
-        <HomeTestimonialsSection />
-        <HomeCelpipVsIeltsBand />
+        <UserResponseReview />
+        <Comments />
+        <Practice />
+        {/* <Blog /> */}
         <FAQ />
-        <HomeCtaBanner />
+        <Footer />
         <FloatingChatIcon autoOpen={false} />
       </div>
     </ErrorBoundary>

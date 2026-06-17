@@ -1,32 +1,15 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
 import PlanCard from "./PlanCard";
 import { usePlans } from "@/hooks/usePlans";
-import { useEcommerceTracking } from "@/hooks/useTracking";
 
 const Plan = () => {
   const { plans, isLoading } = usePlans();
-  const { viewItemList } = useEcommerceTracking();
-
-  useEffect(() => {
-    if (!isLoading && plans.length > 0) {
-      const items = plans.map((plan) => ({
-        item_id: plan.type,
-        item_name: plan.title,
-        price: parseFloat(plan.price),
-        quantity: 1,
-        item_brand: "CELPIP Practice Test",
-        item_category: "Subscription",
-      }));
-      
-      viewItemList(items, "landing_page", "Landing Page Plans");
-    }
-  }, [isLoading, plans, viewItemList]);
 
   if (isLoading) {
     return (
-      <section id="plans" className="mb-[104px] flex justify-center scroll-mt-24">
+      <section id="plans" className="mb-[104px] flex justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mt-20"></div>
       </section>
     );
@@ -36,7 +19,7 @@ const Plan = () => {
     <>
       <section
         id="plans"
-        className="mb-[104px] scroll-mt-24"
+        className="mb-[104px]"
         aria-labelledby="plans-heading"
       >
         <h2
@@ -58,7 +41,6 @@ const Plan = () => {
               discount={item.discount}
               buttonTitle={item.buttonTitle}
               features={item.features}
-              stripePriceId={item.stripePriceId}
               icon={item.icon}
               iconWrapperColor={item.iconWrapperColor}
             />

@@ -3,109 +3,58 @@
 import React, { useEffect } from "react";
 import SvgBeavo from "../icons/Beavo";
 import { cn } from "@/lib/utils";
-import { useEngagementTracking } from "@/hooks/useTracking";
-import { useHybridWebUser } from "@/hooks/useHybridWebUser";
-import { useRouter } from "next/navigation";
-import { useAskBeavoStore } from "@/stores/askBeavoStore";
-import { ensureCrispScript, openCrispChat } from "@/lib/crisp";
-import ChatOutlined from "@mui/icons-material/ChatOutlined";
 
 interface FloatingChatIconProps {
-  autoOpen?: boolean;
-  className?: string;
-  onClick?: (e: React.MouseEvent) => void;
+    autoOpen?: boolean;
+    className?: string;
+    onClick?: (e: React.MouseEvent) => void;
 }
 
-const FloatingChatIcon: React.FC<FloatingChatIconProps> = ({
-  autoOpen = false,
-  className,
-  onClick,
-}) => {
-  const { chatbotMessageSent } = useEngagementTracking();
-  const { isSignedIn, isLoaded } = useHybridWebUser();
-  const router = useRouter();
-  const openAskBeavo = useAskBeavoStore((s) => s.openAskBeavo);
+const FloatingChatIcon: React.FC<FloatingChatIconProps> = ({ autoOpen = false, className, onClick }) => {
+    // Auto-open Intercom on mount if autoOpen is true
+    useEffect(() => {
+        if (autoOpen && typeof window !== "undefined" && (window as any).Intercom) {
+            const timer = setTimeout(() => {
+                (window as any).Intercom("show");
+            }, 500); // Small delay for better UX
+            return () => clearTimeout(timer);
+        }
+    }, [autoOpen]);
 
-  useEffect(() => {
-    if (autoOpen) {
-      const timer = setTimeout(() => {
-        chatbotMessageSent("auto_open");
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [autoOpen, chatbotMessageSent]);
+    const handleClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (onClick) {
+            onClick(e);
+            return;
+        }
+        if (typeof window !== "undefined" && (window as any).Intercom) {
+            (window as any).Intercom("show");
+        }
+    };
 
-  const handleCrispClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!isLoaded) return;
-    if (!isSignedIn) {
-      router.push("/sign-in");
-      return;
-    }
-    ensureCrispScript();
-    openCrispChat();
-  };
-
-  const handleBeavoClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-
-    chatbotMessageSent("manual_open");
-
-    if (onClick) {
-      onClick(e);
-      return;
-    }
-
-    if (!isLoaded) return;
-
-    if (!isSignedIn) {
-      router.push("/sign-in");
-      return;
-    }
-
-    openAskBeavo();
-  };
-
-  return (
-    <div
-      className={cn(
-        "fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3",
-        className,
-      )}
-    >
-      {isSignedIn && (
-        <button
-          id="crisp-support-fab"
-          type="button"
-          data-support-chat="crisp"
-          onClick={handleCrispClick}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-[#212E42] text-white shadow-lg transition-transform duration-200 hover:scale-110"
-          aria-label="Open live support chat"
-          title="Live support (Crisp)"
-        >
-          <ChatOutlined sx={{ fontSize: 26, color: "#fff" }} />
-        </button>
-      )}
-      <button
-        type="button"
-        data-support-chat="ask-beavo"
-        onClick={handleBeavoClick}
-        className="relative flex h-16 w-16 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-white shadow-lg transition-transform duration-200 hover:scale-110"
-        aria-label="Open Ask Beavo"
-      >
-        <span
-          className="absolute inset-0 rounded-full bg-gradient-to-r from-[#F79D65] via-[#759CFF] to-[#F79D65] bg-[length:200%_200%] p-[2px] animate-gradientBorder"
-        >
-          <span className="flex h-full w-full items-center justify-center rounded-full bg-white">
-            <div className="scale-[2] text-2xl">
-              <SvgBeavo />
-            </div>
-          </span>
-        </span>
-      </button>
-    </div>
-  );
+    return (
+        <div className={cn("fixed bottom-6 right-6 z-50", className)}>
+            <button
+                id="support-button"
+                onClick={handleClick}
+                className="relative flex items-center justify-center w-[64px] h-[64px] rounded-full cursor-pointer
+              overflow-hidden shadow-lg hover:scale-110 transition-transform duration-200
+              bg-white"
+                aria-label="Open support chat"
+            >
+                <span
+                    className="absolute inset-0 rounded-full p-[2px] bg-[length:200%_200%] animate-gradientBorder 
+                   bg-gradient-to-r from-[#F79D65] via-[#759CFF] to-[#F79D65]"
+                >
+                    <span className="flex items-center justify-center w-full h-full rounded-full bg-white">
+                        <div className="text-2xl scale-[2]">
+                            <SvgBeavo />
+                        </div>
+                    </span>
+                </span>
+            </button>
+        </div>
+    );
 };
 
 export default FloatingChatIcon;

@@ -7,3 +7,4 @@ Host: https://celpippracticetest.com
 
 # Sitemaps
 Sitemap: https://celpippracticetest.com/sitemap.xml
+Sitemap: https://blog.celpippracticetest.com/sitemap_index.xml

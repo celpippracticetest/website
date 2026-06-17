@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import ChevronRight from "@mui/icons-material/ChevronRight";
+import { ChevronRight } from "lucide-react";
 
 interface ResultsDisplayProps {
   score: number;

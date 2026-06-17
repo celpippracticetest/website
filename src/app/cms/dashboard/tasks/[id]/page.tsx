@@ -1,17 +1,16 @@
 "use client";
 
-import React, { use, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import TaskForm from "@/components/dashboard-app/cms/TaskForm";
 import { Button } from "@/components/ui/button";
-import ChevronLeft from "@mui/icons-material/ChevronLeft";
-import Autorenew from "@mui/icons-material/Autorenew";
+import { ChevronLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "@/components/ui/use-toast";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 
-const EditTaskPage = ({ params }: { params: Promise<{ id: string }> }) => {
-    const { id } = use(params);
+const EditTaskPage = ({ params }: { params: { id: string } }) => {
+    const { id } = params;
     const router = useRouter();
     const [task, setTask] = useState<TTaskSchemaDto | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -79,7 +78,7 @@ const EditTaskPage = ({ params }: { params: Promise<{ id: string }> }) => {
     if (isLoading) {
         return (
             <div className="flex h-screen items-center justify-center">
-                <Autorenew className="h-8 w-8 animate-spin text-gray-400" />
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
             </div>
         );
     }

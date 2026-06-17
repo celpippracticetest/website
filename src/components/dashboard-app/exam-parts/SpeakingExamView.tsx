@@ -2,14 +2,15 @@
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
-import ArrowBack from "@mui/icons-material/ArrowBack";
-import ErrorOutline from "@mui/icons-material/ErrorOutline";
-import Autorenew from "@mui/icons-material/Autorenew";
+import { ArrowLeft, CircleAlert, LoaderCircle } from "lucide-react";
 import { TPracticeDto } from "@/models/practice.model";
-import { useRouter, useSearchParams } from "next/navigation";
+import useStore from "@/store";
+
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 
+import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
 import SvgRecording from "@/components/icons/Recording";
@@ -23,62 +24,23 @@ import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import { PRACTICE_PARTS } from "@/constants";
 import ExamHeader from "./components/ExamHeader";
-import {
-  hasMockExamAccess,
-  hasPremiumPlusAccess,
-} from "@/lib/subscriptionAccess";
-import SpeakingOfficialView from "./components/official/SpeakingOfficialView";
-import {
-  buildOfficialExamTitle,
-  OfficialStatusText,
-} from "./components/official/shared";
-import {
-  useExamViewMode,
-  type MockExamViewMode,
-} from "./components/useExamViewMode";
-import { Box, Typography } from "@mui/material";
-import {
-  createMockPracticeSections,
-  getMockExamPartsForSection,
-  type PracticeSectionItem,
-} from "./mockExamShared";
-import {
-  mockExamResultsHref,
-  sanitizeMockExamAttemptIdParam,
-} from "@/lib/mockExamAttemptId";
+import Link from "next/link";
 
 interface SpeakingExamViewProps {
   practice: TPracticeDto;
   partId: number;
-  examId?: string;
-  examName?: string;
-  partNumber?: string;
   examNumber?: number;
-  hideHeader?: boolean;
-  viewMode?: MockExamViewMode;
-  setViewMode?: (mode: MockExamViewMode) => void;
-  practiceSections?: PracticeSectionItem[];
-  getPartsForSection?: (route: string) => { title: string; index: number }[];
-  firstReadyExamId?: string | null;
 }
 
 const SpeakingExamView = ({
   practice,
   partId,
-  examId,
-  examName,
   examNumber,
-  hideHeader = false,
-  viewMode,
-  setViewMode,
-  practiceSections,
-  getPartsForSection,
-  firstReadyExamId,
 }: SpeakingExamViewProps) => {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const section = searchParams.get("section");
-  const browserAttemptId = sanitizeMockExamAttemptIdParam(searchParams.get("attemptId"));
   const [sendingResult] = useState(false);
   const [passageIndex, setPassageIndex] = useState(0);
 
@@ -100,19 +62,12 @@ const SpeakingExamView = ({
   } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
+  const [showModal, setShowModal] = useState(false);
   const [page, setPage] = useState(partId == 13 ? "description" : "question");
   const [progressBar, setProgressBar] = useState(0);
   const [isSubmit, setIsSubmit] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [audioURL, setAudioURL] = useState<string | null>(null);
-  const localExamViewMode = useExamViewMode();
-  const resolvedViewMode = viewMode ?? localExamViewMode.viewMode;
-  const isOfficialMode = resolvedViewMode === "official";
-  const resolvedSetViewMode = setViewMode ?? localExamViewMode.setViewMode;
-  const resolvedPracticeSections =
-    practiceSections ?? createMockPracticeSections();
-  const resolvedGetPartsForSection =
-    getPartsForSection ?? getMockExamPartsForSection;
   useEffect(() => {
     if (audioURL) {
       console.log("Audio recorded:", audioURL);
@@ -127,48 +82,26 @@ const SpeakingExamView = ({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const hasStartedRecordingRef = useRef(false);
   const audioChunks = useRef<Blob[]>([]);
-  const resolvedExamId = examId ?? practice.taskId;
-  const shouldShowPractice: boolean =
+  const shouldShowPractice =
     practice.isFree ||
     (!practice.isFree &&
-      (hideHeader
-        ? hasMockExamAccess(
-            user?.publicMetadata.plan as string | undefined,
-            user?.publicMetadata.purchaseDate,
-            resolvedExamId,
-            firstReadyExamId ?? null,
-            user?.publicMetadata?.purchasedMockExamIds
-          )
-        : hasPremiumPlusAccess(
-            user?.publicMetadata.plan as string | undefined,
-            user?.publicMetadata.purchaseDate as string | undefined
-          )));
+      user &&
+      user.publicMetadata.plan &&
+      user.publicMetadata.plan === "premium");
 
   const [errorAccessingMicrophone, setErrorAccessingMicrophone] =
     useState(false);
-  const [needsUserInteraction, setNeedsUserInteraction] = useState(false);
-  if (
-    isLoaded &&
-    (!user ||
-      !(hideHeader
-        ? hasMockExamAccess(
-            user.publicMetadata.plan as string | undefined,
-            user.publicMetadata.purchaseDate,
-            resolvedExamId,
-            firstReadyExamId ?? null,
-            user?.publicMetadata?.purchasedMockExamIds
-          )
-        : hasPremiumPlusAccess(
-            user.publicMetadata.plan as string | undefined,
-            user.publicMetadata.purchaseDate as string | undefined
-          )))
-  ) {
+  const setPremiumPlanModalState = useStore(
+    (state) => state.setPremiumPlanModalState
+  );
+
+  if (isLoaded && (!user || (user && user.publicMetadata.plan !== "premium"))) {
     router.push("/exam-overview");
   }
   const startRecording = async () => {
     try {
       if (!user) {
-        router.push("/pricing");
+        setPremiumPlanModalState();
         return;
       }
 
@@ -222,7 +155,7 @@ const SpeakingExamView = ({
     formData.append("audio", blob, "recording.m4a");
     formData.append("examId", practice.taskId);
     formData.append("partId", partId.toString());
-    if (browserAttemptId) formData.append("attemptId", browserAttemptId);
+    formData.append("attemptId", searchParams.get("attemptId") || "");
 
     const progressInterval = setInterval(() => {
       setProgressBar((prev) => (prev < 100 ? prev + 1 : prev));
@@ -244,7 +177,7 @@ const SpeakingExamView = ({
 
       await response.json();
       // Log mock exam part completed
-      const loggerAttemptId = browserAttemptId || `mock_${practice.taskId}_${Date.now()}`;
+      const loggerAttemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
       await ActivityLogger.mockCompleted(
         loggerAttemptId,
         practice.taskId.toString(),
@@ -306,51 +239,10 @@ const SpeakingExamView = ({
       !isRecording &&
       !hasStartedRecordingRef.current
     ) {
-      // Check if microphone permission is already granted before auto-starting
-      // On mobile, we should require user interaction to request permissions
-      const checkPermissionAndStart = async () => {
-        try {
-          if (navigator.permissions && navigator.permissions.query) {
-            const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
-            if (permissionStatus.state === 'granted') {
-              // Permission already granted, safe to auto-start
-              hasStartedRecordingRef.current = true;
-              setProgressBar(1);
-              setIsRecording(true);
-              startRecording();
-            } else {
-              // Permission not granted, require user interaction
-              setNeedsUserInteraction(true);
-            }
-          } else {
-            // Permissions API not supported, check if we're on mobile
-            // On mobile, require user interaction to avoid unexpected permission prompts
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            if (isMobile) {
-              setNeedsUserInteraction(true);
-            } else {
-              // On desktop, try to auto-start (will prompt if needed)
-              hasStartedRecordingRef.current = true;
-              setProgressBar(1);
-              setIsRecording(true);
-              startRecording();
-            }
-          }
-        } catch (error) {
-          // If permission check fails, require user interaction on mobile
-          const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-          if (isMobile) {
-            setNeedsUserInteraction(true);
-          } else {
-            hasStartedRecordingRef.current = true;
-            setProgressBar(1);
-            setIsRecording(true);
-            startRecording();
-          }
-        }
-      };
-      
-      checkPermissionAndStart();
+      hasStartedRecordingRef.current = true;
+      setProgressBar(1);
+      setIsRecording(true);
+      startRecording();
     }
   }, [time, page, isSubmit, isRecording]);
 
@@ -376,7 +268,6 @@ const SpeakingExamView = ({
     setProgressBar(0);
     setAudioURL(null);
     setPage(partId === 13 ? "description" : "question");
-    setNeedsUserInteraction(false);
     if (isRecording) {
       cancelRecording();
     }
@@ -386,12 +277,19 @@ const SpeakingExamView = ({
 
     // Log mock exam started when component mounts
     if (user && practice.taskId) {
-      const loggerAttemptId = browserAttemptId || `mock_${practice.taskId}_${Date.now()}`;
+      const loggerAttemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
       ActivityLogger.mockStarted(loggerAttemptId, practice.taskId.toString());
     }
   }, [practice.taskId, partId, user]);
 
   const [menuShowModal, setMenuShowModal] = useState(false);
+  interface PracticeSection {
+    title: string;
+    color: string;
+    icon: React.ReactNode;
+    route: string;
+    bgColor: string;
+  }
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -406,135 +304,67 @@ const SpeakingExamView = ({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-  const buildFinalQuery = () => {
-    const params = new URLSearchParams();
+  const practiceSections: PracticeSection[] = [
+    {
+      title: "Listening",
+      color: "text-[#316BFF]",
+      icon: <SvgListeningPart />,
+      bgColor: "bg-[#D1DEFF]",
+      route: "listening",
+    },
+    {
+      title: "Reading",
+      color: "text-[#F27059]",
+      bgColor: "bg-[#FFE2E8]",
+      icon: <SvgReadingPart />,
+      route: "reading",
+    },
+    {
+      title: "Writing",
+      color: "text-[#0DAA94]",
+      icon: <SvgWritingPart />,
+      bgColor: "bg-[#F0FFFD]",
+      route: "writing",
+    },
 
-    if (browserAttemptId) params.set("attemptId", browserAttemptId);
-    if (section) params.set("section", section);
+    {
+      title: "Speaking",
+      color: "text-[#EE4266]",
+      icon: <SvgSpeakingPart />,
+      bgColor: "bg-[#FFEBD6]",
 
-    const query = params.toString();
-    return query ? `?${query}` : "";
+      route: "speaking",
+    },
+  ];
+  const sectionRanges: Record<string, { start: number; end: number }> = {
+    listening: { start: 0, end: 6 },
+    reading: { start: 6, end: 10 },
+    writing: { start: 10, end: 12 },
+    speaking: { start: 12, end: 20 },
   };
 
-  const resetSpeakingTimers = () => {
-    setTime(partId == 17 || partId == 18 ? 60 : 30);
+  const getPartsForSection = (route: string) => {
+    const range = sectionRanges[route];
+    if (!range) return [] as { title: string; index: number }[];
+    const slice = PRACTICE_PARTS.slice(range.start, range.end);
+    return slice.map((title, i) => ({ title, index: range.start + i + 1 }));
   };
-
-  const handleBack = () => {
-    const finalQuery = buildFinalQuery();
-
-    if (isRecording) {
-      void cancelRecording();
-    }
-
-    if (page == "description" && passageIndex == 0) {
-      if (partId === 1 || (section === "speaking" && partId === 13)) {
-        router.push("/exam-overview");
-      } else {
-        router.push(
-          `/exams/exam_${practice.taskId}/part${partId - 1}${finalQuery}`
-        );
-      }
-    } else if (page == "question" && partId === 13) {
-      setPage("description");
-    } else if (page == "question") {
-      router.push(
-        `/exams/exam_${practice.taskId}/part${partId - 1}${finalQuery}`
-      );
-    } else if (page == "evaluateResult") {
-      setPage("question");
-    }
-
-    resetSpeakingTimers();
-  };
-
-  const handleHeaderNext = () => {
-    const finalQuery = buildFinalQuery();
-
-    if (isRecording) {
-      void cancelRecording();
-    }
-
-    if (page == "description") {
-      setPage("question");
-      resetSpeakingTimers();
-    } else if (page == "question") {
-      if (partId == 20) {
-        setPage("evaluateResult");
-        setTime(10);
-      } else {
-        router.push(
-          `/exams/exam_${practice.taskId}/part${partId + 1}${finalQuery}`
-        );
-        resetSpeakingTimers();
-      }
-    } else if (page == "evaluateResult") {
-      router.push(mockExamResultsHref(String(practice.taskId), browserAttemptId));
-      resetSpeakingTimers();
-    }
-  };
-
-  const officialFrameTitle = buildOfficialExamTitle(
-    examName ?? practice.name,
-    `Practice Test ${examNumber ?? ""}`.trim() || "Practice Test",
-    "Speaking Test"
-  );
-
-  const officialStatusSlot =
-    page === "question" ? (
-      <OfficialStatusText>
-        Preparation: {partId == 17 || partId == 18 ? 60 : 30} seconds Recording:{" "}
-        {partId == 18 || partId == 19 ? 90 : 60} seconds
-      </OfficialStatusText>
-    ) : null;
 
   return (
     <div className="h-full mx-auto w-full  transition-all duration-300 flex gap-5">
-      {noUser ? (
+      {freeUser ? (
+        showModal && <UpgradeModal setShowModal={setShowModal} />
+      ) : noUser ? (
         showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />
       ) : (
         <></>
       )}
 
       <div className="flex flex-col w-full">
-        {!hideHeader && (
-          <ExamHeader examPractice="Speaking" ref={ref} setShowModal={setMenuShowModal} menuShowModal={menuShowModal} examId={practice.taskId} partId={partId} examName={examName ?? practice.name} examNumber={examNumber} practiceSections={resolvedPracticeSections} getPartsForSection={resolvedGetPartsForSection} viewMode={resolvedViewMode} setViewMode={resolvedSetViewMode} />
-        )}
+        <ExamHeader examPractice="Speaking" ref={ref} setShowModal={setMenuShowModal} menuShowModal={menuShowModal} examId={practice.taskId} partId={partId} examName={practice.name} examNumber={examNumber} practiceSections={practiceSections} getPartsForSection={getPartsForSection} />
 
-        {isOfficialMode ? (
-          <SpeakingOfficialView
-            title={officialFrameTitle}
-            page={page as "description" | "question" | "evaluateResult"}
-            practice={practice}
-            partId={partId}
-            shouldShowPractice={shouldShowPractice}
-            sendingResult={sendingResult}
-            time={time}
-            recordingTime={recordingTime}
-            progressBar={progressBar}
-            isSubmit={isSubmit}
-            isRecording={isRecording}
-            errorAccessingMicrophone={errorAccessingMicrophone}
-            needsUserInteraction={needsUserInteraction}
-            resultHref={mockExamResultsHref(String(practice.taskId), browserAttemptId)}
-            onLockedAction={() => router.push("/pricing")}
-            onStartRecording={() => {
-              setNeedsUserInteraction(false);
-              hasStartedRecordingRef.current = true;
-              setProgressBar(1);
-              setIsRecording(true);
-              startRecording();
-            }}
-            onStopRecording={() => {
-              stopRecording();
-            }}
-            primaryActionLabel={page == "evaluateResult" ? "View Results" : section === "speaking" && partId >= 20 ? "Finish Exam" : "Next"}
-            onPrimaryAction={handleHeaderNext}
-            onBack={handleBack}
-            statusSlot={officialStatusSlot}
-          />
-        ) : (
-        <div className="bg-white rounded-xl flex flex-col screen1280:!h-[920px] overflow-auto border border-[#D5D6D8] w-full">
+
+        <div className="bg-white rounded-xl flex flex-col screen1280:!h-[920px] overflow-scroll border border-[#D5D6D8] w-full">
           <div className="flex justify-between pb-[21px]  lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
             <div className="flex screen744:!items-center flex-col-reverse screen744:!flex-row gap-[16px]">
               <div className="flex gap-2 flex-col screen744:!shrink-0">
@@ -547,13 +377,80 @@ const SpeakingExamView = ({
             {
               <div className="flex items-center gap-2 justify-end pb-[10px] ">
                 <button
-                  onClick={handleBack}
+                  onClick={() => {
+                    const query = section ? `?section=${section}` : "";
+                    if (isRecording) cancelRecording();
+                    if (page == "description" && passageIndex == 0) {
+                      if (partId === 1 || (section === "speaking" && partId === 13)) {
+                        router.push("/exam-overview");
+                      } else {
+                        const attemptId = searchParams.get("attemptId");
+                        const attemptQuery = attemptId ? `attemptId=${attemptId}` : "";
+                        const finalQuery = query
+                          ? (attemptQuery ? `?${attemptQuery}&${query.replace("?", "")}` : query)
+                          : (attemptQuery ? `?${attemptQuery}` : "");
+
+                        const prevPartId = partId - 1;
+                        const prevUrl = pathname.includes(`/part${partId}`)
+                          ? pathname.replace(`/part${partId}`, `/part${prevPartId}`) + finalQuery
+                          : `/exams/exam_${practice.taskId}/part${prevPartId}${finalQuery}`;
+                        router.push(prevUrl);
+                      }
+                    } else if (page == "question" && partId === 13) {
+                      setPage("description");
+                    } else if (page == "question") {
+                      const attemptId = searchParams.get("attemptId");
+                      const attemptQuery = attemptId ? `attemptId=${attemptId}` : "";
+                      const finalQuery = query
+                        ? (attemptQuery ? `?${attemptQuery}&${query.replace("?", "")}` : query)
+                        : (attemptQuery ? `?${attemptQuery}` : "");
+
+                      const prevPartId = partId - 1;
+                      const prevUrl = pathname.includes(`/part${partId}`)
+                        ? pathname.replace(`/part${partId}`, `/part${prevPartId}`) + finalQuery
+                        : `/exams/exam_${practice.taskId}/part${prevPartId}${finalQuery}`;
+                      router.push(prevUrl);
+                    } else if (page == "evaluateResult") {
+                      setPage("question");
+                    }
+                    setTime(partId == 17 || partId == 18 ? 60 : 30);
+                  }}
                   className="cursor-pointer inline-flex items-center justify-center border-[1px] border-[#37465C] rounded-[100%]  w-[40px] h-[40px]"
                 >
-                  <ArrowBack sx={{ fontSize: 18 }} />
+                  <ArrowLeft size={18} strokeWidth={1.7}></ArrowLeft>
                 </button>
                 <button
-                  onClick={handleHeaderNext}
+                  onClick={() => {
+                    const query = section ? `?section=${section}` : "";
+                    if (isRecording) cancelRecording();
+                    if (page == "description") {
+                      setPage("question");
+                      setTime(partId == 17 || partId == 18 ? 60 : 30);
+                    } else if (page == "question") {
+                      if (partId == 20) {
+                        setPage("evaluateResult");
+                        setTime(10);
+                      } else {
+                        const attemptId = searchParams.get("attemptId");
+                        const attemptQuery = attemptId ? `attemptId=${attemptId}` : "";
+                        const finalQuery = query
+                          ? (attemptQuery ? `?${attemptQuery}&${query.replace("?", "")}` : query)
+                          : (attemptQuery ? `?${attemptQuery}` : "");
+
+                        const nextPartId = partId + 1;
+                        const nextUrl = pathname.includes(`/part${partId}`)
+                          ? pathname.replace(`/part${partId}`, `/part${nextPartId}`) + finalQuery
+                          : `/exams/exam_${practice.taskId}/part${nextPartId}${finalQuery}`;
+                        router.push(nextUrl);
+                        setTime(partId == 17 || partId == 18 ? 60 : 30);
+                      }
+                    } else if (page == "evaluateResult") {
+                      router.push(
+                        `/exams/exam_${practice.taskId}/results?attemptId=${searchParams.get("attemptId")}`
+                      );
+                      setTime(partId == 17 || partId == 18 ? 60 : 30);
+                    }
+                  }}
                   className={
                     "cursor-pointer flex items-center gap-[8px] justify-center h-[40px] font-normal text-[#212E42] text-[14px] w-[96px] bg-white rounded-[24px]"
                   }
@@ -570,7 +467,7 @@ const SpeakingExamView = ({
                 <p className="text-[16px] font-bold text-[#212E42] mb-4">
                   Evaluation Complete!
                 </p>
-                <a href={mockExamResultsHref(String(practice.taskId), browserAttemptId)}>
+                <a href={`/exams/exam_${practice.taskId}/results?attemptId=${searchParams.get("attemptId")}`}>
                   <button className="bg-[#4A7DFF] text-white flex items-center rounded-[24px] px-[24px] h-[40px] cursor-pointer ">
                     View Results
                   </button>
@@ -671,7 +568,7 @@ const SpeakingExamView = ({
                             aria-label="Next testimonial"
                             onClick={() => {
                               if (freeUser) {
-                                router.push("/pricing");
+                                setShowModal(true);
                               } else {
                                 setShowLoginModal(true);
                               }
@@ -696,7 +593,12 @@ const SpeakingExamView = ({
                               className="relative h-[204px] border border-[#FF8FA7] rounded-[12px]"
                             >
                               <div className="flex px-[16px] items-center gap-2 h-[44px] bg-[#FFE2E8] rounded-tl-[12px] rounded-tr-[12px]">
-                                <ErrorOutline sx={{ fontSize: 24, color: "#EE4266" }} />
+                                <CircleAlert
+                                  width={24}
+                                  height={24}
+                                  viewBox="0 0 24 24"
+                                  className="text-[#EE4266] "
+                                />
                                 <h5 className=" font-semibold text-[14px]">
                                   Can&apos;t Use Microphone!
                                 </h5>
@@ -715,25 +617,6 @@ const SpeakingExamView = ({
                                   <li>Refresh the page.</li>
                                 </ol>
                               </div>
-                            </div>
-                          ) : needsUserInteraction && time === 0 ? (
-                            <div className="flex flex-col items-center relative justify-center w-full">
-                              <div className="text-[16px] text-[#212E42] font-semibold text-center w-full mb-4">
-                                Preparation time is over
-                              </div>
-                              <button
-                                className="flex items-center justify-center gap-2 px-6 py-3 bg-[#316BFF] text-white rounded-[24px] font-medium text-[14px] hover:bg-[#2556E6] transition-colors"
-                                onClick={() => {
-                                  setNeedsUserInteraction(false);
-                                  hasStartedRecordingRef.current = true;
-                                  setProgressBar(1);
-                                  setIsRecording(true);
-                                  startRecording();
-                                }}
-                              >
-                                <SvgRecording />
-                                Start Recording
-                              </button>
                             </div>
                           ) : isRecording ? (
                             <div className="flex flex-col items-center relative justify-center w-full gap-4">
@@ -820,7 +703,7 @@ const SpeakingExamView = ({
                               <div className="text-center text-[14px] font-medium text-gray-800 mb-2 w-full">
                                 Upload recording...
                               </div>
-                              <Autorenew className="w-8 h-8 text-gray-800 animate-spin" />
+                              <LoaderCircle className="w-8 h-8 text-gray-800 animate-spin"></LoaderCircle>
                             </div>
                           )}
                         </div>
@@ -832,7 +715,6 @@ const SpeakingExamView = ({
             )}
           </div>
         </div>
-        )}
       </div>
 
       {/* Trophy Modal */}

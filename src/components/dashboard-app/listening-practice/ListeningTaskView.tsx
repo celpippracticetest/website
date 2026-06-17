@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { TPracticeDto } from "@/models/practice.model";
 import { useSearchParams } from "next/navigation";
 import { TTaskSchemaDto } from "@/models/tasks.model";
@@ -10,7 +10,6 @@ import SvgCheckSquare from "@/components/icons/CheckSquare";
 import SvgLock from "@/components/icons/Lock";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
 import SvgConfirmCheck from "@/components/icons/ConfirmCheck";
-import { categoryToSkillRoute, practicePath } from "@/lib/practiceRoutes";
 
 interface ListeningTaskViewProps {
   allPractices: TPracticeDto[];
@@ -27,14 +26,9 @@ const ListeningTaskView = ({
 }: ListeningTaskViewProps) => {
   const router = useRouter();
   const { user, isLoaded } = useHybridWebUser();
-  const [hasMounted, setHasMounted] = useState(false);
 
   const searchParams = useSearchParams();
   const selectedTaskId = searchParams.get("taskId");
-
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!selectedTaskId) {
@@ -42,11 +36,7 @@ const ListeningTaskView = ({
     }
   }, [selectedTaskId, router]);
 
-  if (
-    !hasMounted ||
-    !isLoaded ||
-    (user && user.publicMetadata?.plan === undefined)
-  ) {
+  if (!isLoaded || (user && user.publicMetadata?.plan === undefined)) {
     return <div className="text-center py-10 text-gray-500">Loading...</div>;
   }
   return (
@@ -65,11 +55,9 @@ const ListeningTaskView = ({
             <a
               key={p.id || index}
               className="flex w-full gap-[4px] bg-white h-[48px] items-center justify-start p-[12px] shadow-[0px_4px_10px_0px_#0000000F] rounded-[12px] cursor-pointer relative"
-              href={practicePath(
-                categoryToSkillRoute(task.category),
-                p.id,
-                task.id
-              )}
+              href={`/${task.category.toLowerCase()}?selectedPracticeId=${
+                p.id
+              }&taskId=${task.id}`}
             >
               {completedPractice.includes(p.id) ? (
                 <SvgConfirmCheck />

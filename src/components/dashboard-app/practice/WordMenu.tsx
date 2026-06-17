@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
-import Add from "@mui/icons-material/Add";
-import AutoAwesome from "@mui/icons-material/AutoAwesome";
-import VolumeUp from "@mui/icons-material/VolumeUp";
+import { Plus, Sparkles, Volume2 } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { useAuthModalStore } from "@/store/useAuthModal.store";
 import clsx from "clsx";
+import Link from "next/link";
 
 interface WordMenuProps {
     word: string;
@@ -179,7 +178,7 @@ export const WordMenu: React.FC<WordMenuProps> = ({
                                 className="cursor-pointer flex items-center gap-3 w-full px-3 py-2 text-sm text-slate-700 hover:bg-[#F2FFFD] hover:text-[#0DAA94] rounded-lg transition-colors text-left disabled:opacity-50"
                             >
                                 <div className="bg-[#0DAA94] text-white p-1 rounded-md">
-                                    {isSaved ? <AutoAwesome sx={{ fontSize: 14 }} /> : <Add sx={{ fontSize: 14 }} />}
+                                    {isSaved ? <Sparkles size={14} strokeWidth={3} /> : <Plus size={14} strokeWidth={3} />}
                                 </div>
                                 <span className="font-medium">{isSaved ? "Show in words" : "Add to words"}</span>
                             </button>
@@ -188,7 +187,7 @@ export const WordMenu: React.FC<WordMenuProps> = ({
                                 onClick={handleAskAI}
                                 className="cursor-pointer flex items-center gap-3 w-full px-3 py-2 text-sm text-slate-700 hover:bg-[#F2FFFD] hover:text-[#0DAA94] rounded-lg transition-colors text-left"
                             >
-                                <AutoAwesome sx={{ fontSize: 20 }} className="text-blue-500" />
+                                <Sparkles size={20} className="text-blue-500" />
                                 <span className="font-medium">Ask AI</span>
                             </button>
 
@@ -197,7 +196,7 @@ export const WordMenu: React.FC<WordMenuProps> = ({
                                 className="cursor-pointer flex items-center gap-3 w-full px-3 py-2 text-sm text-slate-700 hover:bg-[#F2FFFD] hover:text-[#0DAA94] rounded-lg transition-colors text-left"
                             >
                                 <div className="text-[#0DAA94]">
-                                    <VolumeUp size={20} className="" />
+                                    <Volume2 size={20} className="" />
                                 </div>
                                 <span className="font-medium">Pronunciation</span>
                             </button>

@@ -2,17 +2,17 @@
 
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import ArrowBack from "@mui/icons-material/ArrowBack";
-import Autorenew from "@mui/icons-material/Autorenew";
+import { ArrowLeft, LoaderCircle } from "lucide-react";
 import { TPracticeDto } from "@/models/practice.model";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import ReadingQuestionList from "../reading-practice/components/ReadingQuestionList";
+import useStore from "@/store";
 import { Popover } from "radix-ui";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import React from "react";
-import Image from "next/image";
 import SvgArrowRight from "@/components/icons/ArrowRight";
+import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
 import SvgCircle from "@/components/icons/Circle";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
@@ -22,35 +22,12 @@ import SvgWritingPart from "@/components/icons/WritingPart";
 import SvgReadingPart from "@/components/icons/ReadingPart";
 import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
-import {
-  hasMockExamAccess,
-  hasPremiumPlusAccess,
-} from "@/lib/subscriptionAccess";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import { PRACTICE_PARTS } from "@/constants";
 import ContinueExamModal from "@/components/modal/ContinueExamModal";
 import ExamHeader from "./components/ExamHeader";
-import { formatOfficialTimeRemaining } from "./components/officialTimerText";
-import ReadingOfficialView from "./components/official/ReadingOfficialView";
-import {
-  buildOfficialExamTitle,
-  OfficialStatusText,
-} from "./components/official/shared";
-import {
-  useExamViewMode,
-  type MockExamViewMode,
-} from "./components/useExamViewMode";
-import { Box, Stack, Typography } from "@mui/material";
-import {
-  createMockPracticeSections,
-  getMockExamPartsForSection,
-  type PracticeSectionItem,
-} from "./mockExamShared";
-import {
-  mockExamSectionResultsHref,
-  sanitizeMockExamAttemptIdParam,
-} from "@/lib/mockExamAttemptId";
+import Link from "next/link";
 
 interface ReadingExamViewProps {
   practice: TPracticeDto;
@@ -59,21 +36,7 @@ interface ReadingExamViewProps {
   examName?: string;
   partNumber?: string;
   examNumber?: number;
-  hideHeader?: boolean;
-  viewMode?: MockExamViewMode;
-  setViewMode?: (mode: MockExamViewMode) => void;
-  practiceSections?: PracticeSectionItem[];
-  getPartsForSection?: (route: string) => { title: string; index: number }[];
-  firstReadyExamId?: string | null;
 }
-
-const formatTime = (value: number) => {
-  if (value <= 0) {
-    return "Time's Up!";
-  }
-
-  return `${Math.floor(value / 60)}:${value % 60 < 10 ? `0${value % 60}` : value % 60}`;
-};
 
 const ReadingExamView = ({
   practice,
@@ -82,12 +45,6 @@ const ReadingExamView = ({
   examName,
   partNumber,
   examNumber,
-  hideHeader = false,
-  viewMode,
-  setViewMode,
-  practiceSections,
-  getPartsForSection,
-  firstReadyExamId,
 }: ReadingExamViewProps) => {
   const timerTime = partId == 10 ? 780 : 660;
   const router = useRouter();
@@ -107,26 +64,17 @@ const ReadingExamView = ({
   } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
+  const [showModal, setShowModal] = useState(false);
   const [showContinueModal, setShowContinueModal] = useState(false);
-  const localExamViewMode = useExamViewMode();
-  const resolvedViewMode = viewMode ?? localExamViewMode.viewMode;
-  const isOfficialMode = resolvedViewMode === "official";
-  const resolvedSetViewMode = setViewMode ?? localExamViewMode.setViewMode;
-  const resolvedPracticeSections =
-    practiceSections ?? createMockPracticeSections();
-  const resolvedGetPartsForSection =
-    getPartsForSection ?? getMockExamPartsForSection;
   const [page, setPage] = useState(partId == 7 ? "description" : "question");
   const [passageIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<
     Record<string, string>
   >({});
   const [time, setTime] = useState(timerTime);
-  const officialAutoAdvanceTriggeredRef = useRef(false);
-  const examAnswerPersistDoneRef = useRef(false);
-  const examAnswerPersistInFlightRef = useRef(false);
-  const [readingPersistError, setReadingPersistError] = useState<string | null>(null);
-  const [readingPersistRetryNonce, setReadingPersistRetryNonce] = useState(0);
+  const setPremiumPlanModalState = useStore(
+    (state) => state.setPremiumPlanModalState
+  );
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
 
@@ -148,128 +96,83 @@ const ReadingExamView = ({
     };
   }, [page, time]);
   useEffect(() => {
-    if (!isOfficialMode || page !== "question" || time > 0) {
-      officialAutoAdvanceTriggeredRef.current = false;
-      return;
-    }
-
-    if (officialAutoAdvanceTriggeredRef.current) {
-      return;
-    }
-
-    officialAutoAdvanceTriggeredRef.current = true;
-    handleNext();
-  }, [isOfficialMode, page, time]);
-  useEffect(() => {
     // Log mock exam started when component mounts
     if (user && practice.taskId) {
-      const loggerAttemptId =
-        sanitizeMockExamAttemptIdParam(searchParams.get("attemptId")) ||
-        `mock_${practice.taskId}_${Date.now()}`;
+      const loggerAttemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
       ActivityLogger.mockStarted(loggerAttemptId, practice.taskId.toString());
     }
   }, [user, practice.taskId, searchParams]);
 
   useEffect(() => {
-    examAnswerPersistDoneRef.current = false;
-    setReadingPersistError(null);
-  }, [partId, practice.taskId]);
+    if (page === "answer" && user) {
+      const submitAnswers = async () => {
+        try {
+          const response = await fetch("/api/exams/answers", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              examId: practice.taskId,
+              partId: partId,
+              answers: selectedAnswers,
+              attemptId: searchParams.get("attemptId"),
+            }),
+          });
 
-  useEffect(() => {
-    if (page !== "answer" || !user) {
-      return;
-    }
-    if (examAnswerPersistDoneRef.current || examAnswerPersistInFlightRef.current) {
-      return;
-    }
+          if (response.ok) {
+            const result = await response.json();
+            // Log mock exam part completed
+            const loggerAttemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
+            await ActivityLogger.mockCompleted(
+              loggerAttemptId,
+              practice.taskId.toString(),
+              result.overall,
+              result,
+              time
+            );
 
-    examAnswerPersistInFlightRef.current = true;
-    setReadingPersistError(null);
+            // Add league points for mock exam completion
+            await addPoints(
+              20,
+              "mockExams",
+              `${Math.floor(time / 60)} minutes`
+            );
 
-    const attemptIdParam = sanitizeMockExamAttemptIdParam(searchParams.get("attemptId"));
-    const query =
-      section && attemptIdParam
-        ? `?section=${section}&attemptId=${attemptIdParam}`
-        : attemptIdParam
-          ? `?attemptId=${attemptIdParam}`
-          : section
-            ? `?section=${section}`
-            : "";
-
-    const submitAnswers = async () => {
-      try {
-        const response = await fetch("/api/exams/answers", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            examId: practice.taskId,
-            partId: partId,
-            answers: selectedAnswers,
-            attemptId: attemptIdParam,
-          }),
-        });
-
-        if (!response.ok) {
-          console.error("Exam reading save failed:", response.status);
-          setReadingPersistError(
-            "We could not save your answers yet. Check your connection, then tap Try again."
-          );
-          return;
+            // Check for trophy achievements (only for complete exam mode)
+            if (!section) {
+              await checkTrophyAchievements(
+                20,
+                "mockExams",
+                `${Math.floor(time / 60)}:${time % 60}`
+              );
+            }
+          }
+        } catch (error) {
+          // Optionally handle error
+          console.error("Failed to submit answers:", error);
         }
-
-        const result = await response.json();
-        const loggerAttemptId = attemptIdParam || `mock_${practice.taskId}_${Date.now()}`;
-        await ActivityLogger.mockCompleted(
-          loggerAttemptId,
-          practice.taskId.toString(),
-          result.overall,
-          result,
-          time
-        );
-
-        await addPoints(
-          20,
-          "mockExams",
-          `${Math.floor(time / 60)} minutes`
-        );
-
-        if (!section) {
-          await checkTrophyAchievements(
-            20,
-            "mockExams",
-            `${Math.floor(time / 60)}:${time % 60}`
-          );
-        }
-
-        examAnswerPersistDoneRef.current = true;
-
+        const attemptId = searchParams.get("attemptId");
+        const query = section ? `?section=${section}&attemptId=${attemptId}` : `?attemptId=${attemptId}`;
         if (section === "reading" && partId >= 10) {
           setShowContinueModal(true);
         } else {
+          const attemptId = searchParams.get("attemptId");
+          const query = section ? `?section=${section}&attemptId=${attemptId}` : `?attemptId=${attemptId}`;
           router.push(
             "/exams/exam_" +
-              practice.taskId +
-              "/part" +
-              (partId + 1).toString() +
-              query
+            practice.taskId +
+            "/part" +
+            (partId + 1).toString() +
+            query
           );
         }
-      } catch (error) {
-        console.error("Failed to submit answers:", error);
-        setReadingPersistError(
-          "We could not save your answers yet. Check your connection, then tap Try again."
-        );
-      } finally {
-        examAnswerPersistInFlightRef.current = false;
-      }
-    };
+      };
 
-    void submitAnswers();
+      submitAnswers();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, user, readingPersistRetryNonce]);
+  }, [page, user]);
 
   const handleAnswerSelect = (questionId: number, answerId: string) => {
     setSelectedAnswers((prev) => ({
@@ -278,44 +181,26 @@ const ReadingExamView = ({
     }));
   };
 
-  const resolvedExamId = examId ?? practice.taskId;
   const shouldShowPractice: boolean =
     practice.isFree ||
     !!(!practice.isFree &&
-      (hideHeader
-        ? hasMockExamAccess(
-            user?.publicMetadata.plan as string | undefined,
-            user?.publicMetadata.purchaseDate,
-            resolvedExamId,
-            firstReadyExamId ?? null,
-            user?.publicMetadata?.purchasedMockExamIds
-          )
-        : hasPremiumPlusAccess(
-            user?.publicMetadata.plan as string | undefined,
-            user?.publicMetadata.purchaseDate as string | undefined
-          )));
+      user &&
+      user.publicMetadata.plan &&
+      user.publicMetadata.plan === "premium");
 
-  if (
-    isLoaded &&
-    (!user ||
-      !(hideHeader
-        ? hasMockExamAccess(
-            user.publicMetadata.plan as string | undefined,
-            user.publicMetadata.purchaseDate,
-            resolvedExamId,
-            firstReadyExamId ?? null,
-            user?.publicMetadata?.purchasedMockExamIds
-          )
-        : hasPremiumPlusAccess(
-            user.publicMetadata.plan as string | undefined,
-            user.publicMetadata.purchaseDate as string | undefined
-          )))
-  ) {
+  if (isLoaded && (!user || (user && user.publicMetadata.plan !== "premium"))) {
     router.push("exam-overview");
   }
 
   const [menuShowModal, setMenuShowModal] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  interface PracticeSection {
+    title: string;
+    color: string;
+    icon: React.ReactNode;
+    route: string;
+    bgColor: string;
+  }
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -329,101 +214,66 @@ const ReadingExamView = ({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-  const buildCurrentQuery = () => {
-    const params = new URLSearchParams();
-    const attemptId = sanitizeMockExamAttemptIdParam(searchParams.get("attemptId"));
+  const practiceSections: PracticeSection[] = [
+    {
+      title: "Listening",
+      color: "text-[#316BFF]",
+      icon: <SvgListeningPart />,
+      bgColor: "bg-[#D1DEFF]",
+      route: "listening",
+    },
+    {
+      title: "Reading",
+      color: "text-[#F27059]",
+      bgColor: "bg-[#FFE2E8]",
+      icon: <SvgReadingPart />,
+      route: "reading",
+    },
+    {
+      title: "Writing",
+      color: "text-[#0DAA94]",
+      icon: <SvgWritingPart />,
+      bgColor: "bg-[#F0FFFD]",
+      route: "writing",
+    },
 
-    if (section) params.set("section", section);
-    if (attemptId) params.set("attemptId", attemptId);
+    {
+      title: "Speaking",
+      color: "text-[#EE4266]",
+      icon: <SvgSpeakingPart />,
+      bgColor: "bg-[#FFEBD6]",
 
-    const query = params.toString();
-    return query ? `?${query}` : "";
+      route: "speaking",
+    },
+  ];
+  const sectionRanges: Record<string, { start: number; end: number }> = {
+    listening: { start: 0, end: 6 },
+    reading: { start: 6, end: 10 },
+    writing: { start: 10, end: 12 },
+    speaking: { start: 12, end: 20 },
   };
 
-  const handleBack = () => {
-    const query = buildCurrentQuery();
-
-    if (page == "description" && passageIndex == 0) {
-      if (partId === 1 || (section === "reading" && partId === 7)) {
-        router.push("/exam-overview");
-      } else {
-        router.push(
-          "/exams/exam_" +
-            practice.taskId +
-            "/part" +
-            (partId - 1).toString() +
-            query
-        );
-      }
-    } else if (page == "question" && partId === 7) {
-      setPage("description");
-    } else if (page == "question") {
-      router.push(
-        "/exams/exam_" +
-          practice.taskId +
-          "/part" +
-          (partId - 1).toString() +
-          query
-      );
-    }
-
-    setTime(timerTime);
+  const getPartsForSection = (route: string) => {
+    const range = sectionRanges[route];
+    if (!range) return [] as { title: string; index: number }[];
+    const slice = PRACTICE_PARTS.slice(range.start, range.end);
+    return slice.map((title, i) => ({ title, index: range.start + i + 1 }));
   };
-
-  const handleNext = () => {
-    if (page == "description") {
-      setPage("question");
-    } else if (page == "question") {
-      setPage("answer");
-    }
-
-    setTime(timerTime);
-  };
-
-  const officialFrameTitle = buildOfficialExamTitle(
-    examName ?? practice.name,
-    `Practice Test ${examNumber ?? ""}`.trim() || "Practice Test",
-    "Reading Test"
-  );
-
-  const officialStatusSlot =
-    shouldShowPractice && page === "question" ? (
-      <OfficialStatusText>
-        {formatOfficialTimeRemaining(time)}
-      </OfficialStatusText>
-    ) : null;
 
   return (
     <div className="w-full p-2  transition-all duration-300 flex gap-5">
-      {noUser ? (
+      {freeUser ? (
+        showModal && <UpgradeModal setShowModal={setShowModal} />
+      ) : noUser ? (
         showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />
       ) : (
         <></>
       )}
       <div className="flex flex-col w-full">
 
-        {!hideHeader && (
-          <ExamHeader examPractice="Reading" ref={ref} setShowModal={setMenuShowModal} menuShowModal={menuShowModal} examId={practice.taskId} partId={partId} examName={examName ?? practice.name} examNumber={examNumber} practiceSections={resolvedPracticeSections} getPartsForSection={resolvedGetPartsForSection} viewMode={resolvedViewMode} setViewMode={resolvedSetViewMode} />
-        )}
+        <ExamHeader examPractice="Reading" ref={ref} setShowModal={setMenuShowModal} menuShowModal={menuShowModal} examId={practice.taskId} partId={partId} examName={practice.name} examNumber={examNumber} practiceSections={practiceSections} getPartsForSection={getPartsForSection} />
 
-        {isOfficialMode ? (
-          <ReadingOfficialView
-            title={officialFrameTitle}
-            page={page as "description" | "question" | "answer"}
-            practice={practice}
-            shouldShowPractice={shouldShowPractice}
-            selectedAnswers={selectedAnswers}
-            onAnswerSelect={handleAnswerSelect}
-            onLockedAction={() => router.push("/pricing")}
-            primaryActionLabel={page == "answer" ? undefined : "Next"}
-            onPrimaryAction={page == "answer" ? undefined : handleNext}
-            primaryActionDisabled={page == "answer"}
-            onBack={handleBack}
-            backDisabled={page == "answer"}
-            statusSlot={officialStatusSlot}
-          />
-        ) : (
-        <div className="bg-white rounded-xl flex flex-col screen1280:!h-[920px] overflow-auto border border-[#D5D6D8] w-full">
+        <div className="bg-white rounded-xl flex flex-col screen1280:!h-[920px] overflow-scroll border border-[#D5D6D8] w-full">
           <div className="flex justify-between pb-[21px]  lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
             <div className="flex screen744:!items-center flex-col-reverse screen744:!flex-row gap-[16px]">
               <div className="flex gap-2 flex-col screen744:!shrink-0 shrink-0">
@@ -450,14 +300,47 @@ const ReadingExamView = ({
 
                 <button
                   disabled={page == "answer"}
-                  onClick={handleBack}
+                  onClick={() => {
+                    const query = section ? `?section=${section}` : "";
+                    if (page == "description" && passageIndex == 0) {
+                      if (partId === 1 || (section === "reading" && partId === 7)) {
+                        router.push("/exam-overview");
+                      } else {
+                        router.push(
+                          "/exams/exam_" +
+                          practice.taskId +
+                          "/part" +
+                          (partId - 1).toString() +
+                          query
+                        );
+                      }
+                    } else if (page == "question" && partId === 7) {
+                      setPage("description");
+                    } else if (page == "question") {
+                      router.push(
+                        "/exams/exam_" +
+                        practice.taskId +
+                        "/part" +
+                        (partId - 1).toString() +
+                        (query ? query + "&" : "?") + `attemptId=${searchParams.get("attemptId")}`
+                      );
+                    }
+                    setTime(timerTime);
+                  }}
                   className="cursor-pointer inline-flex items-center justify-center border-[1px] border-[#37465C] rounded-[100%]  w-[40px] h-[40px]"
                 >
-                  <ArrowBack sx={{ fontSize: 18 }} />
+                  <ArrowLeft size={18} strokeWidth={1.7}></ArrowLeft>
                 </button>
                 <button
                   disabled={page == "answer"}
-                  onClick={handleNext}
+                  onClick={() => {
+                    if (page == "description") {
+                      setPage("question");
+                    } else if (page == "question") {
+                      setPage("answer");
+                    }
+                    setTime(timerTime);
+                  }}
                   className={
                     "cursor-pointer flex items-center gap-[8px] justify-center h-[40px] font-normal text-[#212E42] text-[14px] w-[96px] bg-white rounded-[24px]"
                   }
@@ -471,28 +354,11 @@ const ReadingExamView = ({
           <div className="flex flex-col h-full overflow-hidden w-full">
             {page == "answer" && (
               <div className="flex flex-col justify-center items-center grow p-4  overflow-y-scroll [&::-webkit-scrollbar]:w-2  [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full  [&::-webkit-scrollbar-track]:bg-slate-100">
-                <div className="flex flex-col items-center justify-center mx-auto space-y-4 w-full max-w-md text-center">
-                  {readingPersistError ? (
-                    <>
-                      <div className="text-base font-semibold text-red-700">
-                        {readingPersistError}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setReadingPersistRetryNonce((n) => n + 1)}
-                        className="rounded-full bg-[#316BFF] px-6 py-2 text-sm font-bold text-white hover:bg-[#255CE0]"
-                      >
-                        Try again
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-center text-base font-medium text-gray-800 w-full">
-                        Saving your results...
-                      </div>
-                      <Autorenew className="w-8 h-8 text-gray-800 animate-spin" />
-                    </>
-                  )}
+                <div className="flex flex-col items-center justify-center mx-auto space-y-2 w-full">
+                  <div className="text-center text-base font-medium text-gray-800 mb-2 w-full">
+                    Upload Answers...
+                  </div>
+                  <LoaderCircle className="w-8 h-8 text-gray-800 animate-spin"></LoaderCircle>
                 </div>
               </div>
             )}
@@ -525,16 +391,12 @@ const ReadingExamView = ({
                           <p className="text-[14px] text-gray-400 mb-2">
                             Read the following Message, Photo or Diagram
                           </p>
-                          <div className={`relative w-full mb-4 rounded-lg shadow-md overflow-hidden ${!shouldShowPractice ? "blur-sm" : ""}`}>
-                            <Image
-                              src={practice.passages[0].pictureUrl}
-                              alt={practice.passages[0].title || "Reading passage image"}
-                              width={800}
-                              height={600}
-                              className="w-full h-auto"
-                              priority={true}
-                            />
-                          </div>
+                          <img
+                            src={practice.passages[0].pictureUrl}
+                            alt={practice.passages[0].title}
+                            className={`w-full h-auto mb-4 rounded-lg shadow-md ${!shouldShowPractice ? "blur-sm" : ""
+                              }`}
+                          />
                         </>
                       )}
                       {practice.passages[0].body &&
@@ -570,7 +432,7 @@ const ReadingExamView = ({
                             aria-label="Next testimonial"
                             onClick={() => {
                               if (freeUser) {
-                                router.push("/pricing");
+                                setShowModal(true);
                               } else {
                                 setShowLoginModal(true);
                               }
@@ -599,7 +461,7 @@ const ReadingExamView = ({
                               if (shouldShowPractice) {
                                 handleAnswerSelect(questionId, answerId);
                               } else {
-                                router.push("/pricing");
+                                setPremiumPlanModalState();
                               }
                             }}
                             selectedAnswers={selectedAnswers}
@@ -621,7 +483,7 @@ const ReadingExamView = ({
                                       {p}
                                       {index !== arr.length - 1 && (
                                         <Popover.Root>
-                                          <Popover.Trigger className="PopoverTrigger bg-[#F7B267] cursor-pointer px-3 py-2 rounded font-semibold text-[#212E42] text-[14px] leading-none mx-1 touch-manipulation">
+                                          <Popover.Trigger className="PopoverTrigger bg-[#F7B267] cursor-pointer px-2 rounded font-semibold text-[#212E42] text-[14px] py-1">
                                             {parseInt(
                                               practice.passages[1]?.questions?.[0]?.id || "0"
                                             ) + index}
@@ -656,7 +518,7 @@ const ReadingExamView = ({
                                                       key={indexChoice}
                                                     >
                                                       <div
-                                                        className="flex items-center p-3 rounded-md transition-all cursor-pointer hover:bg-blue-50 active:bg-blue-100 min-h-[44px]"
+                                                        className="flex items-center p-2 rounded-md transition-all cursor-pointer hover:bg-blue-50 "
                                                         onClick={(e) => {
                                                           if (
                                                             shouldShowPractice
@@ -666,7 +528,7 @@ const ReadingExamView = ({
                                                               choice.id
                                                             );
                                                           } else {
-                                                            router.push("/pricing");
+                                                            setPremiumPlanModalState();
                                                           }
                                                         }}
                                                       >
@@ -760,7 +622,7 @@ const ReadingExamView = ({
                                     answerId
                                   );
                                 } else {
-                                  router.push("/pricing");
+                                  setPremiumPlanModalState();
                                 }
                               }}
                               selectedAnswers={selectedAnswers}
@@ -774,7 +636,6 @@ const ReadingExamView = ({
             )}
           </div>
         </div>
-        )}
       </div>
 
       {/* Trophy Modal */}
@@ -787,25 +648,10 @@ const ReadingExamView = ({
       />
       {showContinueModal && (
         <ContinueExamModal
-          completedSectionName="Reading"
-          onViewResults={() => {
-            setShowContinueModal(false);
-            router.push(
-              mockExamSectionResultsHref(
-                String(practice.taskId),
-                "reading",
-                searchParams.get("attemptId")
-              )
-            );
-          }}
           onContinue={() => {
             setShowContinueModal(false);
-            const params = new URLSearchParams();
-            params.set("section", "writing");
-            const aid = sanitizeMockExamAttemptIdParam(searchParams.get("attemptId"));
-            if (aid) params.set("attemptId", aid);
             router.push(
-              `/exams/exam_${practice.taskId}/part11?${params.toString()}`
+              `/exams/exam_${practice.taskId}/part11?section=writing&attemptId=${searchParams.get("attemptId")}`
             );
           }}
           onFinish={() => {

@@ -9,8 +9,7 @@ import {
     TableCell,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import Edit from "@mui/icons-material/Edit";
-import Delete from "@mui/icons-material/Delete";
+import { Pencil, Trash2 } from "lucide-react";
 import {
     Pagination,
     PaginationContent,
@@ -140,7 +139,7 @@ const CmsTasksTable = ({
                                     onClick={() => onEdit(task.id)}
                                     title="Edit task"
                                 >
-                                    <Edit className="h-4 w-4" />
+                                    <Pencil className="h-4 w-4" />
                                 </Button>
                                 <Button
                                     variant="ghost"
@@ -157,7 +156,7 @@ const CmsTasksTable = ({
                                     title="Delete task"
                                     className="text-red-500 hover:text-red-700"
                                 >
-                                    <Delete className="h-4 w-4" />
+                                    <Trash2 className="h-4 w-4" />
                                 </Button>
                             </TableCell>
                         </TableRow>

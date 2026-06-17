@@ -1,5 +1,8 @@
-import { useEffect, useRef } from "react";
-import { safePlayMedia } from "@/lib/media";
+
+import { useListeningAudioPlayer } from "../hooks/useListeningAudioPlayer";
+import { Button } from "@/components/ui/button";
+import { Play, Pause, Volume2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -8,26 +11,19 @@ interface AudioPlayerProps {
 }
 
 const QuestionPlayer = ({ audioUrl, maxPlays = 2, className }: AudioPlayerProps) => {
-  const audioRef = useRef<HTMLAudioElement>(null);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    void safePlayMedia(audio, {
-      onError: (error) => {
-        console.error("Error playing audio:", error);
-      },
-    });
-
-    return () => {
-      audio.pause();
-    };
-  }, [audioUrl]);
+  const {
+    audioRef,
+    isPlaying,
+    playCount,
+    isLoading,
+    error,
+    handlePlayPause
+  } = useListeningAudioPlayer({ audioUrl, maxPlays });
   
   return (
     <div className={"rounded-lg "+className}>
-      <audio ref={audioRef} src={audioUrl} preload="auto" className="w-full" controls />
+      
+      <audio src={audioUrl} preload="auto" className="w-full" controls autoPlay/>
     </div>
   );
 };

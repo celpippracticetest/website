@@ -1,5 +1,5 @@
 import React from "react";
-import Check from "@mui/icons-material/Check";
+import { Check } from "lucide-react";
 
 interface WordPillProps {
     word: string;

@@ -1,25 +1,5 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# BigQuery MCP (local venv; see docs/bigquery-setup-and-kpis.md)
-/.venv-bq-mcp/
-# Google Ads MCP (local venv; see README Cursor MCP section)
-/.venv-google-ads-mcp/
-# Google Analytics MCP (local venv; see README Cursor MCP section)
-/.venv-analytics-mcp/
-# Google Tag Manager MCP (local venv; see README Cursor MCP section)
-/.venv-gtm-mcp/
-# Service account JSON for BigQuery MCP (never commit)
-secrets/gcp-bq-mcp-sa.json
-# ADC / OAuth client JSON for Google Ads MCP (never commit)
-secrets/google-ads-mcp-credentials.json
-# Service account or ADC JSON for Google Analytics MCP (never commit)
-secrets/ga-mcp-credentials.json
-# GTM OAuth desktop client JSON for gtm-mcp (never commit)
-secrets/gtm-client-auth.json
-
-# Windows: optional repo-root junction `templates` -> `supabase/templates` for Supabase CLI (auth email content_path)
-/templates
-
 # dependencies
 /node_modules
 /.pnp
@@ -39,14 +19,7 @@ secrets/gtm-client-auth.json
 /public/fallback-*.js
 # testing
 /coverage
-/playwright-report
-/test-results
-/.playwright
 
-*.sql
-/sql
-/scripts
-/docs
 # next.js
 /.next/
 /out/
@@ -54,13 +27,10 @@ secrets/gtm-client-auth.json
 # production
 /build
 
-# Clerk full-user exports (PII)
-clerk-users-export-*.json
-
 # misc
 .DS_Store
 *.pem
-celpiplive-d6171ab7a52e.json
+
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -69,7 +39,6 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
-!.env.production
 
 # vercel
 .vercel
@@ -83,5 +52,3 @@ next-env.d.ts
 # clerk configuration (can include secrets)
 /.clerk/
 
-.env*.local
-.env.local

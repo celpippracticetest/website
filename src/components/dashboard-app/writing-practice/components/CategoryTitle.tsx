@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import ChevronLeft from "@mui/icons-material/ChevronLeft";
+import { ChevronLeft } from "lucide-react";
 
 interface CategoryTitleProps {
   title: string;

@@ -1,4 +1,5 @@
 import dynamic from "next/dynamic";
+import React from "react";
 import { Metadata } from "next";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -6,8 +7,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const isPreview = appBaseUrl.includes("vercel.app");
   return {
     title: "Terms of Service | CELPIPPRACTICETEST.com",
-    description:
-      "Read CELPIP Practice Test Terms of Service covering account use, subscriptions, payments, prohibited conduct, intellectual property, and dispute resolution.",
+    description: "Review the Terms of Service for CELPIP preparation platform.",
     alternates: {
       canonical: "https://celpippracticetest.com/terms-of-service",
     },
@@ -25,6 +25,8 @@ const TermsOfServiceComponent = dynamic(
   }
 );
 
-export default function TermsOfServicePage() {
+const TermsOfService = () => {
   return <TermsOfServiceComponent />;
-}
+};
+
+export default TermsOfService;

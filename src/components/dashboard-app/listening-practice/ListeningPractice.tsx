@@ -8,7 +8,6 @@ import { TTaskSchemaDto } from "@/models/tasks.model";
 import { useRouter } from "nextjs-toploader/app";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
 import { useEffect, useState } from "react";
-import { practicePath } from "@/lib/practiceRoutes";
 
 interface ListeningPracticeProps {
   showHeader?: boolean;
@@ -17,8 +16,6 @@ interface ListeningPracticeProps {
   task: TTaskSchemaDto;
   previousAnswer: TListeningAndReadingAnswerDto | null;
   completedPractice: string[];
-  routePracticeId?: string;
-  routeTaskId?: string;
 }
 
 const ListeningPractice = ({
@@ -27,14 +24,11 @@ const ListeningPractice = ({
   task,
   previousAnswer,
   completedPractice,
-  routePracticeId,
-  routeTaskId,
 }: ListeningPracticeProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const selectedPracticeId =
-    routePracticeId ?? searchParams.get("selectedPracticeId");
-  const selectedTaskId = routeTaskId ?? searchParams.get("taskId");
+  const selectedPracticeId = searchParams.get("selectedPracticeId");
+  const selectedTaskId = searchParams.get("taskId");
   const { handlePracticeComplete } = useListeningPracticeCompletion();
   const [isFromFirstPage, setIsFromFirstPage] = useState(false);
 
@@ -63,9 +57,9 @@ const ListeningPractice = ({
     const nextPractice = allPractices[currentPracticeIndex + 1];
 
     setIsFromFirstPage(false);
-    if (selectedTaskId) {
-      router.push(practicePath("listening", nextPractice.id, selectedTaskId));
-    }
+    router.push(
+      `/listening?selectedPracticeId=${nextPractice.id}&taskId=${selectedTaskId}`
+    );
   };
 
   return (
@@ -87,7 +81,6 @@ const ListeningPractice = ({
           }
           previousAnswer={previousAnswer}
           completedPractice={completedPractice}
-          hideLegacyBreadcrumb={Boolean(routePracticeId)}
         />
       ) : (
         <ListeningTaskView

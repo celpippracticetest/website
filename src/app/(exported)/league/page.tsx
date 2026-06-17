@@ -14,13 +14,14 @@ import SvgSvgBeforeTypingWord from "@/components/icons/SvgBeforeTypingWord";
 import SvgLearningArrowUp from "@/components/icons/LearningArrowUp";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
 import { ActivityLogger } from "@/lib/userActivity";
 import SvgLeagueKados from "@/components/icons/LeagueKados";
-import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import SvgLeagueKados24 from "@/components/icons/LeagueKados24";
 import SvgCheck from "@/components/icons/Check";
 import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 
 type Skill = {
   label: string;
@@ -84,6 +85,7 @@ const Page = () => {
   const [isInConversation, setIsInConversation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isChatLocked, setIsChatLocked] = useState(false);
   const [serverMessageCount, setServerMessageCount] = useState(0);
@@ -108,12 +110,8 @@ const Page = () => {
 
   // Check if user is free or premium
   const isFreeUser = user?.publicMetadata?.plan === "free";
-  const isPremiumUser = hasPaidPracticeAccess(
-    user?.publicMetadata?.plan as string | undefined,
-    user?.publicMetadata?.purchaseDate as string | undefined
-  );
+  const isPremiumUser = user?.publicMetadata?.plan === "premium";
   const noUser = isLoaded ? !isSignedIn : false;
-  const showSeoContent = !isSignedIn;
 
   const isFetchingRef = useRef(false);
   const lastFetchedUserIdRef = useRef<string | null | undefined>(null);
@@ -1283,7 +1281,7 @@ const Page = () => {
     const currentMessageCount =
       serverMessageCount + messages.filter((m) => m.type === "user").length;
     if (isFreeUser && !isPremiumUser && currentMessageCount >= 1) {
-      router.push("/pricing");
+      setShowUpgradeModal(true);
       return;
     }
 
@@ -1310,7 +1308,7 @@ const Page = () => {
         if (noUser) {
           setShowLoginModal(true);
         } else if (isFreeUser) {
-          router.push("/pricing");
+          setShowUpgradeModal(true);
         }
         setIsChatLocked(true);
         return;
@@ -1367,7 +1365,7 @@ const Page = () => {
           if (noUser) {
             setShowLoginModal(true);
           } else if (isFreeUser) {
-            router.push("/pricing");
+            setShowUpgradeModal(true);
           }
           setIsChatLocked(true);
           throw new Error("Upgrade required");
@@ -1426,8 +1424,8 @@ const Page = () => {
   if (isLoadingLeague) {
     return (
       <section className="relative w-full transition-all duration-300 overflow-hidden">
-        <h1 className="sr-only">CELPIP League</h1>
         {/* Modals */}
+        {showUpgradeModal && <UpgradeModal setShowModal={setShowUpgradeModal} />}
         {showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />}
         <MedalModal />
         <TaskCompletionModal />
@@ -1475,22 +1473,6 @@ const Page = () => {
                           "Unlock this league by completing the tasks and earning trophies along the way!"}
                     </span>
                   </div>
-                  {showSeoContent && (
-                    <div className="mt-[12px] text-left">
-                      <p className="text-[14px] leading-[22px] text-[#526071]">
-                        The CELPIP League helps you stay consistent with preparation by turning weekly
-                        study habits into visible progress. Complete skill tasks, earn points, and
-                        track your position against other learners in your league group. This system
-                        rewards consistency, not just one high score.
-                      </p>
-                      <p className="text-[14px] leading-[22px] text-[#526071] mt-2">
-                        Use the league table as a motivation tool: focus on task completion, regular
-                        mock exams, and practical skill improvement across Listening, Reading,
-                        Writing, and Speaking. The best strategy is simple: complete required tasks
-                        each week, review weak areas, and keep your pace steady.
-                      </p>
-                    </div>
-                  )}
 
                   {/* League Table - Loading */}
                   <div className="mt-[24px]">
@@ -1567,8 +1549,8 @@ const Page = () => {
 
   return (
     <section className="relative w-full transition-all duration-300 overflow-hidden">
-      <h1 className="sr-only">CELPIP League</h1>
       {/* Modals */}
+      {showUpgradeModal && <UpgradeModal setShowModal={setShowUpgradeModal} />}
       {showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />}
       <MedalModal />
       <TaskCompletionModal />
@@ -1656,22 +1638,6 @@ const Page = () => {
                         "Unlock this league by completing the tasks and earning trophies along the way!"}
                   </span>
                 </div>
-                {showSeoContent && (
-                  <div className="mt-[12px] text-left">
-                    <p className="text-[14px] leading-[22px] text-[#526071]">
-                      The league model is designed to keep your CELPIP preparation structured over
-                      time. Instead of random practice, you follow milestones that reflect real test
-                      readiness, such as mock exam completion, regular skill practice, and feedback
-                      improvement tasks.
-                    </p>
-                    <p className="text-[14px] leading-[22px] text-[#526071] mt-2">
-                      Promotion requires consistent progress, while staying in a higher league
-                      requires maintaining momentum. If you use this system weekly, it becomes easier
-                      to build discipline, measure improvement, and prepare confidently for your
-                      target CELPIP score.
-                    </p>
-                  </div>
-                )}
 
                 {/* Show Get Trophy button only if user has no points yet */}
                 {!currentLeague && (leagueData?.userPoints || 0) === 0 && (

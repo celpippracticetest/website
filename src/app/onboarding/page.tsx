@@ -2,15 +2,55 @@
 
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
 export default function OnboardingPage() {
   const { user, isSignedIn } = useHybridWebUser();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
 
-  const applyReferralDiscount = useCallback(async (referralCode: string) => {
+  useEffect(() => {
+    if (!isSignedIn) {
+      router.push("/sign-up");
+      return;
+    }
+
+    const hasCompletedOnboarding = (user?.publicMetadata as any)
+      ?.onboardingCompleted;
+
+    if (hasCompletedOnboarding) {
+      router.push("/practice-overview");
+      return;
+    }
+
+    const pendingReferralCode = localStorage.getItem("pendingReferralCode");
+    console.log(
+      "🔍 Onboarding - Pending referral code from localStorage:",
+      pendingReferralCode
+    );
+
+    if (pendingReferralCode) {
+      console.log("✅ Onboarding - Referral code found:", pendingReferralCode);
+      applyReferralDiscount(pendingReferralCode);
+      localStorage.removeItem("pendingReferralCode");
+      localStorage.removeItem("pendingInviterName");
+    } else {
+      console.log(
+        "❌ Onboarding - No pending referral code found in localStorage"
+      );
+    }
+
+    setLoading(false);
+  }, [isSignedIn, user, router]);
+
+  const applyReferralDiscount = async (referralCode: string) => {
     try {
+      console.log(
+        "🔄 Onboarding - Starting referral discount process for code:",
+        referralCode
+      );
+
       const processResponse = await fetch("/api/referrals/process-signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -19,74 +59,42 @@ export default function OnboardingPage() {
         }),
       });
 
-      if (!processResponse.ok) {
-        const errorData = await processResponse.json().catch(() => ({}));
-        console.warn(
-          "Onboarding - referral process-signup did not complete:",
-          errorData
+      if (processResponse.ok) {
+        console.log(
+          "✅ Onboarding - Referral relationship established successfully"
         );
-      }
 
-      const discountResponse = await fetch("/api/referrals/apply-discount", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          referralCode,
-          userId: user?.id,
-          userEmail: user?.primaryEmailAddress?.emailAddress,
-        }),
-      });
+        console.log("🔄 Onboarding - Applying referral discount...");
+        const discountResponse = await fetch("/api/referrals/apply-discount", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            referralCode,
+            userId: user?.id,
+            userEmail: user?.primaryEmailAddress?.emailAddress,
+          }),
+        });
 
-      if (!discountResponse.ok) {
-        const errorData = await discountResponse.json().catch(() => ({}));
+        if (discountResponse.ok) {
+          console.log("✅ Onboarding - Referral discount applied successfully");
+        } else {
+          const errorData = await discountResponse.json();
+          console.error(
+            "❌ Onboarding - Failed to apply referral discount:",
+            errorData
+          );
+        }
+      } else {
+        const errorData = await processResponse.json();
         console.error(
-          "❌ Onboarding - Failed to apply referral discount:",
+          "❌ Onboarding - Failed to establish referral relationship:",
           errorData
         );
       }
     } catch (error) {
       console.error("❌ Onboarding - Failed to process referral:", error);
     }
-  }, [user?.id, user?.primaryEmailAddress?.emailAddress]);
-
-  useEffect(() => {
-    if (!isSignedIn) {
-      router.push("/sign-up");
-      return;
-    }
-
-    void (async () => {
-      const hasCompletedOnboarding = (user?.publicMetadata as any)
-        ?.onboardingCompleted;
-
-      if (hasCompletedOnboarding) {
-        router.push("/practice-overview");
-        return;
-      }
-
-      const pendingReferralCode = localStorage.getItem("pendingReferralCode");
-
-      if (pendingReferralCode) {
-        try {
-          const res = await fetch("/api/partners/apply-pending-code", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code: pendingReferralCode }),
-          });
-          const data = (await res.json()) as { kind?: string };
-          if (data.kind !== "partner") {
-            await applyReferralDiscount(pendingReferralCode);
-          }
-        } catch {
-          await applyReferralDiscount(pendingReferralCode);
-        }
-        localStorage.removeItem("pendingReferralCode");
-        localStorage.removeItem("pendingInviterName");
-      }
-
-      setLoading(false);
-    })();
-  }, [isSignedIn, user, router, applyReferralDiscount]);
+  };
 
   const completeOnboarding = async () => {
     try {

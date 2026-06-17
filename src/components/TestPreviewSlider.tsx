@@ -1,13 +1,7 @@
 
 "use client"
 import { useState, useEffect, JSX } from "react";
-import ChevronLeft from "@mui/icons-material/ChevronLeft";
-import ChevronRight from "@mui/icons-material/ChevronRight";
-import Headphones from "@mui/icons-material/Headphones";
-import MenuBook from "@mui/icons-material/MenuBook";
-import Draw from "@mui/icons-material/Draw";
-import Mic from "@mui/icons-material/Mic";
-import Description from "@mui/icons-material/Description";
+import { ChevronLeft, ChevronRight, Headphones, BookOpen, Pen, Mic, FileText } from "lucide-react";
 
 interface Slide {
   id: number;
@@ -27,14 +21,14 @@ const TestPreviewSlider = () => {
       title: "Writing",
       image: "/lovable-uploads/a405b3a2-88a1-4bb2-96f9-34bbedcf1ca0.png",
       bgColor: "bg-amber-500",
-      icon: <Draw className="h-8 w-8 text-amber-500" />,
+      icon: <Pen className="h-8 w-8 text-amber-500" />,
     },
     {
       id: 2,
       title: "Reading",
       image: "/lovable-uploads/119d3814-03c3-4e99-9c86-01119a1ee447.png",
       bgColor: "bg-blue-500",
-      icon: <MenuBook className="h-8 w-8 text-blue-500" />,
+      icon: <BookOpen className="h-8 w-8 text-blue-500" />,
     },
     {
       id: 3,
@@ -55,7 +49,7 @@ const TestPreviewSlider = () => {
       title: "Mock Exams",
       image: "/lovable-uploads/804d9063-852c-47ed-a2e2-cab2e892d6e4.png",
       bgColor: "bg-purple-500",
-      icon: <Description className="h-8 w-8 text-purple-500" />,
+      icon: <FileText className="h-8 w-8 text-purple-500" />,
     },
   ];
 

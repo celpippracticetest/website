@@ -3,40 +3,21 @@
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import useStore from "@/store";
+import { LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useEngagementTracking, usePracticeTracking } from "@/hooks/useTracking";
 import SvgListeningPart from "../icons/ListeningPart";
 import SvgReadingPart from "../icons/ReadingPart";
 import SvgWritingPart from "../icons/WritingPart";
 import SvgSpeakingPart from "../icons/SpeakingPart";
-import {
-  Box,
-  Button,
-  Chip,
-  CircularProgress,
-  Collapse,
-  Paper,
-  Stack,
-  Typography,
-} from "@mui/material";
-import ExpandLessIcon from "@mui/icons-material/ExpandLess";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import { categoryToSkillRoute, practicePath } from "@/lib/practiceRoutes";
-
-const practiceNavy = "#1B2B5A";
-const practiceMuted = "#475569";
-const practicePrimaryGradient =
-  "linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #3B82F6 100%)";
 
 interface PracticeSection {
   title: string;
-  iconColor: string;
-  iconBg: string;
+  color: string;
   icon: React.ReactNode;
   tasks: TTaskSchemaDto[];
   route: string;
+  bgColor: string;
 }
 
 const PracticeOverview = ({
@@ -53,14 +34,8 @@ const PracticeOverview = ({
   const [selectedTask, setSelectedTask] = useState<TTaskSchemaDto | null>(null);
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
   const setTaskInStore = useStore((state) => state.setTasks);
+  setTaskInStore(tasks);
   const isMobile = useIsMobile();
-  const { started } = usePracticeTracking();
-  const { faqClick } = useEngagementTracking();
-
-  useEffect(() => {
-    setTaskInStore(tasks);
-  }, [setTaskInStore, tasks]);
-
   useEffect(() => {
     if (!selectedTask) {
       return;
@@ -68,7 +43,6 @@ const PracticeOverview = ({
     if (!isMobile) {
       fetchPractices(selectedTask);
     } else {
-      started(selectedTask?.id || "unknown", selectedTask?.category || "unknown");
       setRedirectUrl(selectedTask?.category + "?taskId=" + selectedTask.id);
     }
   }, [selectedTask]);
@@ -85,7 +59,7 @@ const PracticeOverview = ({
 
       const response = await fetch(
         `/api/practices?type=${task.category}&page=0&limit=1&taskId=${task.id}`
-      );
+      ); // Replace with your API endpoint
       if (!response.ok) {
         throw new Error("Network response was not ok.");
       }
@@ -94,22 +68,19 @@ const PracticeOverview = ({
         return;
       }
 
-      started(data.items[0].id, task.category);
-
       setRedirectUrl(
-        practicePath(
-          categoryToSkillRoute(task.category),
-          data.items[0].id,
-          task.id
-        )
+        task.category +
+        "?selectedPracticeId=" +
+        data.items[0].id +
+        "&taskId=" +
+        task.id
       );
-    } catch (error) {}
+    } catch (error) { }
   };
 
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
   const toggleSection = (title: string) => {
-    faqClick(title, "practice_overview_accordion");
     const newExpanded = new Set(expandedSections);
     if (newExpanded.has(title)) {
       newExpanded.delete(title);
@@ -122,9 +93,9 @@ const PracticeOverview = ({
   const practiceSections: PracticeSection[] = [
     {
       title: "Listening",
-      iconColor: "#0DAA94",
-      iconBg: "#E6F6F4",
+      color: "text-[#0DAA94]",
       icon: <SvgListeningPart />,
+      bgColor: "bg-[#E6F6F4]",
       route: "listening",
       tasks:
         tasks["listening"]?.sort((a, b) => {
@@ -136,8 +107,8 @@ const PracticeOverview = ({
     },
     {
       title: "Reading",
-      iconColor: "#EE4266",
-      iconBg: "#FEECEF",
+      color: "text-[#EE4266]",
+      bgColor: "bg-[#FEECEF]",
       icon: <SvgReadingPart />,
       route: "reading",
       tasks:
@@ -150,9 +121,9 @@ const PracticeOverview = ({
     },
     {
       title: "Writing",
-      iconColor: "#F27059",
-      iconBg: "#FFF1EE",
+      color: "text-[#F27059]",
       icon: <SvgWritingPart />,
+      bgColor: "bg-[#FFF1EE]",
       route: "writing",
       tasks:
         tasks["writing"]?.sort((a, b) => {
@@ -164,9 +135,9 @@ const PracticeOverview = ({
     },
     {
       title: "Speaking",
-      iconColor: "#7C3AED",
-      iconBg: "#F1E9FE",
+      color: "text-[#7C3AED]",
       icon: <SvgSpeakingPart />,
+      bgColor: "bg-[#F1E9FE]",
       route: "speaking",
       tasks:
         tasks["speaking"]?.sort((a, b) => {
@@ -178,356 +149,142 @@ const PracticeOverview = ({
     },
   ];
 
-  const taskCardSx = {
-    position: "relative" as const,
-    cursor: "pointer",
-    borderRadius: 3,
-    p: 2.5,
-    bgcolor: "#FFFFFF",
-    boxShadow: "0 12px 36px rgba(15, 23, 42, 0.06)",
-    border: "1px solid rgba(27, 43, 90, 0.10)",
-    transition: "box-shadow 0.2s, border-color 0.2s, transform 0.2s",
-    "&:hover": {
-      boxShadow: "0 20px 48px rgba(15, 23, 42, 0.10)",
-      borderColor: "rgba(37, 99, 235, 0.28)",
-      transform: "translateY(-1px)",
-    },
-  };
-
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        width: 1,
-        px: { xs: 2, xl: 5 },
-        bgcolor: "transparent",
-        pt: { xs: 2, xl: 3 },
-        pb: { xs: 9, xl: 12 },
-        gap: 3,
-      }}
-    >
-      <Typography
-        sx={{
-          fontSize: 18,
-          color: practiceNavy,
-          fontWeight: 700,
-          display: "block",
-          "@media (min-width: 1280px)": { display: "none" },
-        }}
-      >
-        Practices
-      </Typography>
+    <div className="flex flex-col w-full px-[16px] screen1280:!px-[40px] bg-[#F4F7FF] pt-[16px] gap-6 pb-20">
+      {/* Mobile Header (Hidden on Desktop) */}
+      <div className="flex h-[52px] screen1280:hidden gap-[8px] flex-col w-full items-start">
+        <span className="text-[18px] text-[#37465C] font-semibold">
+          Practice
+        </span>
+        <span className="text-[14px] text-[#76808F] font-normal">All</span>
+      </div>
 
-      <Box
-        sx={{
-          display: "none",
-          "@media (min-width: 1280px)": {
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: 4,
-          },
-        }}
-      >
-          {practiceSections.map((section) => (
-            <Stack key={section.title} spacing={4}>
-              <Stack alignItems="center" spacing={1}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: 72,
-                    height: 72,
-                    borderRadius: "50%",
-                    bgcolor: section.iconBg,
-                    color: section.iconColor,
-                    "& svg": { transform: "scale(1.5)" },
+      {/* Desktop Grid Layout (>= 1280px) */}
+      <div className="hidden screen1280:grid grid-cols-4 gap-8">
+        {practiceSections.map((section) => (
+          <div key={section.title} className="flex flex-col gap-8">
+            {/* Desktop Header */}
+            <div className="flex flex-col items-center gap-2">
+              <div className={`flex items-center justify-center w-[72px] h-[72px] rounded-full ${section.bgColor} ${section.color}`}>
+                <div className="scale-150">{section.icon}</div>
+              </div>
+              <h2 className={`text-[20px] font-bold ${section.color}`}>
+                {section.title}
+              </h2>
+            </div>
+
+            {/* Desktop Tasks List */}
+            <div className="flex flex-col gap-4">
+              {section.tasks.map((task, index) => (
+                <div
+                  key={`${section.title}-${index}`}
+                  onClick={() => {
+                    if (!task?.id) return;
+                    setSelectedTask(task);
                   }}
+                  className="group flex flex-col p-5 bg-white rounded-[16px] shadow-sm hover:shadow-md transition-all cursor-pointer border border-transparent hover:border-[#0DAA94]/20 relative"
                 >
-                  {section.icon}
-                </Box>
-                <Typography sx={{ fontSize: 20, fontWeight: 800, color: practiceNavy }}>
-                  {section.title}
-                </Typography>
-              </Stack>
+                  {selectedTask?.id == task?.id && (
+                    <div className="absolute inset-0 bg-white/80 rounded-[16px] flex items-center justify-center z-10">
+                      <LoaderCircle className="w-6 h-6 animate-spin text-blue-500" />
+                    </div>
+                  )}
 
-              <Stack spacing={2}>
-                {section.tasks.map((task, index) => (
-                  <Paper
-                    key={`${section.title}-${index}`}
-                    elevation={0}
-                    onClick={() => {
-                      if (!task?.id) return;
-                      setSelectedTask(task);
-                    }}
-                    sx={{ ...taskCardSx, borderRadius: 3 }}
-                  >
-                    {selectedTask?.id === task?.id && (
-                      <Box
-                        sx={{
-                          position: "absolute",
-                          inset: 0,
-                          bgcolor: "rgba(255,255,255,0.8)",
-                          borderRadius: 3,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          zIndex: 1,
-                        }}
-                      >
-                        <CircularProgress size={24} />
-                      </Box>
-                    )}
-                    <Chip
-                      label={`Task ${index + 1}`}
-                      size="small"
-                      sx={{
-                        mb: 1.5,
-                        height: 22,
-                        fontSize: 11,
-                        fontWeight: 700,
-                        bgcolor: "#F1F5F9",
-                        color: "#64748B",
-                      }}
-                    />
-                    <Typography
-                      sx={{
-                        color: practiceNavy,
-                        fontWeight: 700,
-                        fontSize: 18,
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      {task.name}
-                    </Typography>
-                  </Paper>
-                ))}
-              </Stack>
-            </Stack>
-          ))}
-      </Box>
+                  <div className="mb-3">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-[#F1F5F9] text-[#64748B]">
+                      Task {index + 1}
+                    </span>
+                  </div>
 
-      <Stack
-        spacing={1.5}
-        sx={{
-          display: "flex",
-          "@media (min-width: 1280px)": { display: "none" },
-        }}
-      >
-          {practiceSections.map((section) => {
-            const isExpanded = expandedSections.has(section.title);
-            return (
-              <Paper
-                key={section.title}
-                elevation={0}
-                sx={{
-                  borderRadius: 3,
-                  border: "1px solid rgba(27, 43, 90, 0.10)",
-                  boxShadow: "0 12px 36px rgba(15, 23, 42, 0.06)",
-                  overflow: "hidden",
-                  bgcolor: "#FFFFFF",
-                }}
+                  <h3 className="text-[#212E42] font-bold text-[18px] leading-snug">
+                    {task.name}
+                  </h3>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Mobile Accordion Layout (< 1280px) */}
+      <div className="flex flex-col gap-3 screen1280:hidden">
+        {practiceSections.map((section) => {
+          const isExpanded = expandedSections.has(section.title);
+          return (
+            <div key={section.title} className="flex flex-col w-full bg-white rounded-[16px] border border-[#E5E7EB] shadow-sm overflow-hidden">
+              {/* Accordion Header */}
+              <div
+                onClick={() => toggleSection(section.title)}
+                className="flex items-center justify-between p-4 screen1280:p-6 cursor-pointer hover:bg-gray-50 transition-colors"
               >
-                <Box
-                  onClick={() => toggleSection(section.title)}
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    p: 2,
-                    cursor: "pointer",
-                    "&:hover": { bgcolor: "rgba(248, 250, 252, 0.95)" },
-                  }}
-                >
-                  <Stack direction="row" alignItems="center" spacing={2}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: { xs: 40, xl: 48 },
-                        height: { xs: 40, xl: 48 },
-                        borderRadius: "50%",
-                        bgcolor: section.iconBg,
-                        color: section.iconColor,
-                      }}
-                    >
-                      {section.icon}
-                    </Box>
-                    <Typography
-                      sx={{
-                        fontSize: { xs: 18, xl: 22 },
-                        color: practiceNavy,
-                        fontWeight: 700,
-                      }}
-                    >
-                      {section.title}
-                    </Typography>
-                  </Stack>
-                  <Box sx={{ color: practiceMuted }}>
-                    {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                  </Box>
-                </Box>
+                <div className="flex items-center gap-4">
+                  <div className={`flex items-center justify-center w-10 h-10 screen1280:w-12 screen1280:h-12 rounded-full ${section.bgColor} ${section.color}`}>
+                    {section.icon}
+                  </div>
+                  <h2 className="text-[18px] screen1280:!text-[22px] text-[#212E42] font-semibold">
+                    {section.title}
+                  </h2>
+                </div>
+                <div className="text-[#37465C]">
+                  {isExpanded ? (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6" /></svg>
+                  ) : (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                  )}
+                </div>
+              </div>
 
-                <Collapse in={isExpanded}>
-                  <Box sx={{ borderTop: "1px solid rgba(27, 43, 90, 0.08)" }}>
-                    <Box sx={{ bgcolor: section.iconBg, p: { xs: 2, xl: 3 } }}>
-                      <Box
-                        sx={{
-                          display: "grid",
-                          gridTemplateColumns: {
-                            xs: "1fr",
-                            sm: "repeat(2, 1fr)",
-                          },
-                          gap: { xs: 2, sm: 3 },
-                        }}
-                      >
-                        {section.tasks.map((task, index) => (
-                          <Paper
-                            key={`${section.title}-${index}`}
-                            elevation={0}
-                            onClick={() => {
-                              if (!task?.id) return;
-                              setSelectedTask(task);
-                            }}
-                            sx={{
-                              ...taskCardSx,
-                              p: { xs: 2.5, xl: 3 },
-                              borderRadius: 2.5,
-                              display: "flex",
-                              flexDirection: "column",
-                              "&:hover .practice-overview-select-arrow": {
-                                transform: "translateX(4px)",
-                              },
-                            }}
-                          >
-                            {selectedTask?.id === task?.id && (
-                              <Box
-                                sx={{
-                                  position: "absolute",
-                                  inset: 0,
-                                  bgcolor: "rgba(255,255,255,0.8)",
-                                  borderRadius: 2.5,
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  zIndex: 1,
-                                }}
-                              >
-                                <CircularProgress size={24} />
-                              </Box>
-                            )}
-                            <Chip
-                              label={task.taskNumber}
-                              size="small"
-                              sx={{
-                                mb: 2,
-                                alignSelf: "flex-start",
-                                bgcolor: "#F1F5F9",
-                                color: "#64748B",
-                                fontWeight: 500,
-                                fontSize: 12,
-                              }}
-                            />
-                            <Typography
-                              sx={{
-                                color: practiceNavy,
-                                fontWeight: 700,
-                                fontSize: { xs: 18, xl: 22 },
-                                lineHeight: 1.25,
-                                mb: 3,
-                              }}
-                            >
-                              {task.name}
-                            </Typography>
-                            <Stack
-                              direction="row"
-                              alignItems="center"
-                              spacing={1}
-                              sx={{
-                                mt: "auto",
-                                color: "#2563EB",
-                                fontWeight: 600,
-                                fontSize: { xs: 14, xl: 16 },
-                              }}
-                            >
-                              <span>Select</span>
-                              <ArrowForwardIcon
-                                className="practice-overview-select-arrow"
-                                sx={{ fontSize: 18, transition: "transform 0.2s" }}
-                              />
-                            </Stack>
-                          </Paper>
-                        ))}
-                      </Box>
-                    </Box>
-                  </Box>
-                </Collapse>
-              </Paper>
-            );
-          })}
-      </Stack>
+              {/* Accordion Content */}
+              <div className={`grid transition-all duration-300 ease-in-out ${isExpanded ? "grid-rows-[1fr] opacity-100 border-t border-[#E5E7EB]" : "grid-rows-[0fr] opacity-0"}`}>
+                <div className="overflow-hidden">
+                  <div className={`${section.bgColor} p-4 screen1280:p-6`}>
+                    <div className="grid grid-cols-1 screen744:grid-cols-2 screen1024:grid-cols-2 screen1440:grid-cols-2 gap-4 screen744:gap-6">
+                      {section.tasks.map((task, index) => (
+                        <div
+                          key={`${section.title}-${index}`}
+                          onClick={() => {
+                            if (!task?.id) return;
+                            setSelectedTask(task);
+                          }}
+                          className="group flex flex-col p-5 screen1280:p-6 cursor-pointer bg-white rounded-[20px] shadow-sm hover:shadow-md transition-all border border-transparent hover:border-[#0DAA94]/20 relative"
+                        >
+                          {selectedTask?.id == task?.id && (
+                            <div className="absolute inset-0 bg-white/80 rounded-[20px] flex items-center justify-center z-10">
+                              <LoaderCircle className="w-6 h-6 animate-spin text-blue-500" />
+                            </div>
+                          )}
 
-      <Paper
-        component="section"
-        elevation={0}
-        aria-label="PrepHere CELPIP promotion"
-        sx={{
-          borderRadius: 3,
-          border: "1px solid rgba(27, 43, 90, 0.10)",
-          background:
-            "linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(238, 242, 255, 0.95) 100%)",
-          boxShadow: "0 12px 40px rgba(15, 23, 42, 0.06)",
-          p: { xs: 2.5, md: 3 },
-          display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
-          alignItems: { xs: "stretch", sm: "center" },
-          justifyContent: "space-between",
-          gap: 2,
-        }}
-      >
-        <Stack spacing={0.75} sx={{ minWidth: 0 }}>
-          <Typography sx={{ fontWeight: 800, fontSize: { xs: 16, md: 17 }, color: practiceNavy }}>
-            Improve your CLB for free on PrepHere
-          </Typography>
-          <Typography sx={{ fontSize: { xs: 14, md: 15 }, color: practiceMuted, lineHeight: 1.55 }}>
-            Use{" "}
-            <Box
-              component="span"
-              sx={{ color: "#2563EB", fontWeight: 600, wordBreak: "break-all" }}
-            >
-              PrepHere.ai/celpip
-            </Box>{" "}
-            to practice and build the skills that support a higher Canadian Language Benchmark
-            score—designed for learning and CLB growth, not a replacement for the official exam.
-          </Typography>
-        </Stack>
-        <Button
-          component="a"
-          href="https://PrepHere.ai/celpip"
-          target="_blank"
-          rel="noopener noreferrer"
-          variant="contained"
-          sx={{
-            flexShrink: 0,
-            alignSelf: { xs: "stretch", sm: "center" },
-            background: practicePrimaryGradient,
-            color: "#fff",
-            textTransform: "none",
-            fontWeight: 700,
-            fontSize: 15,
-            py: 1.25,
-            px: 2.5,
-            boxShadow: "none",
-            borderRadius: 999,
-            "&:hover": { opacity: 0.96, boxShadow: "none" },
-          }}
-        >
-          Open PrepHere — free
-        </Button>
-      </Paper>
-    </Box>
+                          {/* Task Number Badge */}
+                          <div className="mb-4">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-[12px] font-medium bg-[#F1F5F9] text-[#64748B]">
+                              {task.taskNumber}
+                            </span>
+                          </div>
+
+                          {/* Task Name */}
+                          <h3 className="text-[#212E42] font-bold text-[18px] screen1280:text-[22px] leading-tight mb-6">
+                            {task.name}
+                          </h3>
+
+                          {/* Action Link */}
+                          <div className="mt-auto flex items-center gap-2 text-[#316BFF] font-semibold text-[14px] screen1280:text-[16px]">
+                            <span>Select</span>
+                            <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="5" y1="12" x2="19" y2="12"></line>
+                              <polyline points="12 5 19 12 12 19"></polyline>
+                            </svg>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 };
 

@@ -1,6 +1,5 @@
 
-import Menu from "@mui/icons-material/Menu";
-import Close from "@mui/icons-material/Close";
+import { Menu, X } from "lucide-react";
 import Logo from "@/components/ui/logo";
 
 interface MobileHeaderProps {
@@ -25,7 +24,7 @@ const MobileHeader = ({ sidebarVisible, toggleSidebar, handleNavigation }: Mobil
         onClick={toggleSidebar}
         className="text-white"
       >
-        {sidebarVisible ? <Close sx={{ fontSize: 24 }} /> : <Menu sx={{ fontSize: 24 }} />}
+        {sidebarVisible ? <X size={24} /> : <Menu size={24} />}
       </button>
     </div>
   );

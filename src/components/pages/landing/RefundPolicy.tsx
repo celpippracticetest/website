@@ -1,5 +1,7 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import TopHeader from "./TopHeader";
+import Footer from "./Footer";
 
 const RefundPolicy = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -45,18 +47,17 @@ const RefundPolicy = () => {
     {
       title: "Overview",
       description: `This Refund Policy explains when refunds may be granted and how refund requests are handled for CELPIPPRACTICETEST.com.
-The Services are digital, non-tangible services delivered electronically and accessed immediately upon payment. Submitting a refund request does not guarantee approval.
-Each Subscriber subscription plan includes up to 2 devices. If you exceed 2 devices, you must purchase another subscription of the same plan for each additional device.`,
+The Services are digital, non-tangible services delivered electronically and accessed immediately upon payment. Submitting a refund request does not guarantee approval.`,
     },
     {
       title: "Eligibility",
       description: `Refunds are eligible only for the first subscription purchase and only if all of the following conditions are met:`,
       lists: [
         "The request relates to the user’s first successful payment",
-        "The refund request is submitted within 48 hours of the charge date",
+        "The refund request is submitted within 7 days of the charge date",
         "The user has not completed more than one mock exam",
         "The user has not completed more than two practice activities in any single skill",
-        "Refund requests submitted outside the 48-hour submission window are automatically rejected and not eligible for review.",
+        "Refund requests submitted outside the 7-day submission window are automatically rejected and not eligible for review.",
       ],
       sub: [
         {
@@ -66,21 +67,17 @@ Each Subscriber subscription plan includes up to 2 devices. If you exceed 2 devi
             "Subscription renewals or repeat payments",
             "Accounts that exceed the usage limits above",
             "Requests based solely on forgetting to cancel a subscription",
-            "Requests submitted outside the 48-hour submission window",
+            "Requests submitted outside the 7-day submission window",
           ],
         },
       ],
     },
     {
       title: "Refund Request Process",
-      description: `All refund requests must be submitted exclusively through your account refund page: https://celpippracticetest.com/refund-request
-This page is the only accepted method for submitting and tracking refund requests.
+      description: `All refund requests must be submitted exclusively through our refund request platform: https://refund.celpippractice.ca
+This platform is the only accepted method for submitting and tracking refund requests.
 Requests submitted through customer chat, email, or any other communication channel are not considered refund requests, do not initiate review, and will not be processed.
-After submission, a tracking code is generated and shown in your account. You can use this tracking code on the same page to check your request status.`,
-      link: {
-        href: "/refund-request",
-        text: "Go to Refund Request Page",
-      },
+After submission, you will receive a tracking code by email. This tracking code allows you to view the current status and message history related to your request.`,
     },
     {
       title: "Review Process",
@@ -88,8 +85,8 @@ After submission, a tracking code is generated and shown in your account. You ca
       lists: [
         "Account activity and usage may be evaluated",
         "Eligibility criteria will be verified",
-        "Additional information may be requested through your account refund page",
-        "You may track the status of your request at any time using your tracking code on your account refund page.",
+        "Additional information may be requested through the refund platform",
+        "You may track the status of your request at any time using your tracking code on the refund platform.",
       ],
     },
     {
@@ -105,12 +102,15 @@ Initiating a chargeback, payment dispute, or bank claim does not override this p
   ];
 
   return (
-    <div className="flex flex-col max-w-[1156px] mx-auto justify-center mt-[120px] px-[16px] mb-[116px]">
+    <>
+      <TopHeader />
+
+      <div className="flex flex-col max-w-[1156px] mx-auto justify-center mt-[120px] px-[16px] mb-[116px]">
         <h1 className="text-primary1 font-bold text-[28px]">
           Refund Policy
         </h1>
         <span className="mt-[16px] font-normal text-[16px] text-text3">
-          Last Updated: Apr 15, 2026
+          Last Updated: Jan 08, 2026
         </span>
         {data?.map((element, index) => (
           <div key={index} className="mt-[40px]">
@@ -119,14 +119,6 @@ Initiating a chargeback, payment dispute, or bank claim does not override this p
               <p className="font-normal text-[18px] mt-[17px] whitespace-pre-wrap">
                 {element?.description}
               </p>
-              {(element as any)?.link && (
-                <a
-                  href={(element as any).link.href}
-                  className="mt-[12px] inline-flex text-[16px] font-semibold text-[#316BFF] underline underline-offset-2"
-                >
-                  {(element as any).link.text}
-                </a>
-              )}
               {element?.lists && (
                 <ul className="pl-20 mt-4">
                   {element?.lists?.map((list, index) => (
@@ -168,6 +160,8 @@ Initiating a chargeback, payment dispute, or bank claim does not override this p
           </div>
         ))}
       </div>
+      <Footer />
+    </>
   );
 };
 

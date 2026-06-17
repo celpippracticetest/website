@@ -150,10 +150,6 @@ svg {
   }
 }
 
-.passport-home {
-  --font-body: var(--font-passport-body);
-}
-
 @layer base {
   * {
     @apply border-border;
@@ -163,33 +159,9 @@ svg {
     @apply bg-background text-foreground;
   }
 
-  button:not(:disabled) {
-    cursor: pointer;
-  }
-
-  button:disabled {
-    cursor: not-allowed;
-  }
-
   /* Add prose styles for the wiki content */
   .prose {
     @apply text-foreground;
-  }
-
-  /* Ensure long wiki/blog editor content wraps nicely on mobile.
-     Some wiki articles include long text blocks inside `.article-content`
-     that are not headings (e.g. `<div class="p-6 py-0">...`), so we add
-     word-breaking here rather than relying only on `.prose` typography. */
-  .article-content {
-    overflow-wrap: anywhere;
-    word-break: break-word;
-  }
-
-  @media (max-width: 640px) {
-    .article-content .p-6.py-0 {
-      font-size: 0.875rem; /* text-sm */
-      line-height: 1.5rem; /* leading-6 */
-    }
   }
 
   .prose h1,
@@ -234,51 +206,12 @@ svg {
     @apply mb-2;
   }
 
-  .prose table,
-  .article-content table {
-    @apply w-full my-6 border-collapse text-left table-auto;
+  .prose table {
+    @apply w-full my-6 border-collapse;
   }
 
-  .prose table thead,
-  .article-content table thead {
-    @apply bg-slate-100 dark:bg-gray-800;
-  }
-
-  .prose table th,
-  .article-content table th {
-    @apply border border-slate-300 dark:border-gray-600 px-4 py-3 text-sm font-semibold text-slate-900 dark:text-slate-100;
-  }
-
-  .prose table td,
-  .article-content table td {
-    @apply border border-slate-300 dark:border-gray-600 px-4 py-3 text-sm text-slate-700 dark:text-slate-300;
-  }
-
-  .prose table tbody tr:nth-child(even),
-  .article-content table tbody tr:nth-child(even) {
-    @apply bg-slate-50 dark:bg-gray-900/50;
-  }
-
-  .prose table tbody tr:hover,
-  .article-content table tbody tr:hover {
-    @apply bg-slate-50/80 dark:bg-gray-800/50;
-  }
-
-  /* Table styles inside Tiptap blog editor (create/edit) so pasted/inserted tables look correct */
-  .tiptap table {
-    @apply w-full my-4 border-collapse text-left table-auto;
-  }
-  .tiptap table thead {
-    @apply bg-slate-100 dark:bg-gray-800;
-  }
-  .tiptap table th {
-    @apply border border-slate-300 dark:border-gray-600 px-3 py-2 text-sm font-semibold text-slate-900 dark:text-slate-100;
-  }
-  .tiptap table td {
-    @apply border border-slate-300 dark:border-gray-600 px-3 py-2 text-sm text-slate-700 dark:text-slate-300;
-  }
-  .tiptap table tbody tr:nth-child(even) {
-    @apply bg-slate-50 dark:bg-gray-900/50;
+  .dark .prose table thead {
+    @apply bg-gray-800;
   }
 
   .prose blockquote {
@@ -287,13 +220,6 @@ svg {
 
   .prose a {
     @apply text-blue-600 dark:text-blue-400 hover:underline;
-  }
-
-  /* Internal auto-links (content linker): color only, no underline on keywords.
-     Blog uses .article-content.prose on one element; wiki nests .article-content inside .prose. */
-  a.cel-internal-kw-link,
-  a.cel-internal-kw-link:hover {
-    text-decoration-line: none;
   }
 
   /* Utility for schema markup */

@@ -1,8 +1,3 @@
-"use client";
-
-import { useHybridWebUser } from "@/hooks/useHybridWebUser";
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
 import QuestionOption from "./QuestionOption";
 import { TQuestion } from "@/models/question.model";
 
@@ -17,8 +12,6 @@ const ListeningAnswerList = ({
   questions,
   selectedAnswers,
 }: ListeningAnswerListProps) => {
-  const { isLoaded, isSignedIn } = useHybridWebUser();
-
   const isAnswerCorrect = (questionId: number, answerId: string) => {
     const question = questions[questionId];
     if (!question) return false;
@@ -33,105 +26,6 @@ const ListeningAnswerList = ({
   const notAnswered = questions.filter(
     (q, index) => selectedAnswers[index] === undefined
   ).length;
-
-  const noUser = isLoaded ? !isSignedIn : false;
-
-  const STORAGE_LAST_ATTEMPT_KEY = "celpip_listening_last_result_v1";
-  const STORAGE_PENDING_IMPROVEMENT_KEY =
-    "celpip_listening_pending_improvement_v1";
-
-  const [improvementDelta, setImprovementDelta] = useState<number | null>(null);
-  const [showSavedImprovement, setShowSavedImprovement] = useState(false);
-
-  const scorePayload = useMemo(() => {
-    return {
-      correct: numberOfCorrect,
-      wrong: numberOfWrong,
-      notAnswered,
-      total: questions.length,
-      attemptAt: Date.now(),
-    };
-  }, [numberOfCorrect, numberOfWrong, notAnswered, questions.length]);
-
-  const savePendingImprovement = () => {
-    if (typeof window === "undefined") return;
-    try {
-      const rawLast = window.localStorage.getItem(STORAGE_LAST_ATTEMPT_KEY);
-      const last = rawLast
-        ? (JSON.parse(rawLast) as { correct?: number })
-        : null;
-
-      const lastCorrect = typeof last?.correct === "number" ? last.correct : null;
-      const delta =
-        lastCorrect === null ? null : scorePayload.correct - lastCorrect;
-
-      window.localStorage.setItem(
-        STORAGE_PENDING_IMPROVEMENT_KEY,
-        JSON.stringify({
-          ...scorePayload,
-          improvementDelta: delta,
-        })
-      );
-
-      window.localStorage.setItem(
-        STORAGE_LAST_ATTEMPT_KEY,
-        JSON.stringify({
-          correct: scorePayload.correct,
-          wrong: scorePayload.wrong,
-          notAnswered: scorePayload.notAnswered,
-          total: scorePayload.total,
-          attemptAt: scorePayload.attemptAt,
-        })
-      );
-    } catch (e) {
-      // Non-blocking: CTA should still work even if storage fails.
-      // eslint-disable-next-line no-console
-      console.warn("Failed saving listening results for improvement", e);
-    }
-  };
-
-  useEffect(() => {
-    if (!isLoaded || !isSignedIn) return;
-    if (typeof window === "undefined") return;
-
-    try {
-      const raw = window.localStorage.getItem(
-        STORAGE_PENDING_IMPROVEMENT_KEY
-      );
-      if (!raw) return;
-
-      const parsed = JSON.parse(raw) as { improvementDelta?: number | null };
-      setImprovementDelta(
-        typeof parsed.improvementDelta === "number" ? parsed.improvementDelta : null
-      );
-      setShowSavedImprovement(true);
-      // One-time banner; keep last attempt for future deltas.
-      window.localStorage.removeItem(STORAGE_PENDING_IMPROVEMENT_KEY);
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.warn("Failed loading pending listening improvement", e);
-    }
-  }, [isLoaded, isSignedIn]);
-
-  const signupKeepResultCard = (marginClass: string) => (
-    <div
-      className={`${marginClass} border border-[#D5D6D8] rounded-[12px] bg-white px-[16px] py-[14px]`}
-    >
-      <div className="text-[#212E42] font-semibold text-[16px]">
-        Sign up to keep your result
-      </div>
-      <div className="text-[#76808F] mt-[6px] text-[14px] font-normal">
-        Create a free account to track your improvement over time.
-      </div>
-      <div className="mt-[12px]">
-        <Link href="/sign-in?mode=sign-up" onClick={() => savePendingImprovement()}>
-          <div className="text-[14px] cursor-pointer flex items-center justify-center text-white bg-[#4A7DFF] rounded-[24px] h-[40px] w-full text-center font-normal">
-            Sign up
-          </div>
-        </Link>
-      </div>
-    </div>
-  );
 
   return (
     <div className="w-full  ">
@@ -161,32 +55,6 @@ const ListeningAnswerList = ({
             </div>
           </div>
         </div>
-
-        {noUser && signupKeepResultCard("mt-[16px]")}
-
-        {!noUser && showSavedImprovement && (
-          <div className="mt-[16px] border border-[#D5D6D8] rounded-[12px] bg-white px-[16px] py-[14px]">
-            <div className="text-[#212E42] font-semibold text-[16px]">
-              Saved! Your improvement is captured.
-            </div>
-            <div className="text-[#76808F] mt-[6px] text-[14px] font-normal">
-              {improvementDelta === null ? (
-                <>
-                  Great work this time. Your next try will show improvement.
-                </>
-              ) : improvementDelta > 0 ? (
-                <>You improved by {improvementDelta} correct answers.</>
-              ) : improvementDelta < 0 ? (
-                <>
-                  You're {Math.abs(improvementDelta)} correct answers away from
-                  your last score.
-                </>
-              ) : (
-                <>Your score matched your last attempt.</>
-              )}
-            </div>
-          </div>
-        )}
 
         <div className="flex flex-col gap-3 mt-[24px]">
           {questions.map((question, index) => (
@@ -223,12 +91,12 @@ const ListeningAnswerList = ({
                         selectedAnswers[index] === option.id) ||
                       question.answer === option.id
                   )
-                  .map((option, optIndex, arr) => (
+                  .map((option) => (
                     <QuestionOption
                       key={option.id}
                       option={option}
                       questionId={question.id}
-                      isLastItem={optIndex === arr.length - 1}
+                      isLastItem={index === questions.length - 1}
                       isSelected={selectedAnswers[index] === option.id}
                       showResults={true}
                       isCorrect={isAnswerCorrect(index, option.id)}
@@ -260,8 +128,6 @@ const ListeningAnswerList = ({
             );
           })} */}
         </div>
-
-        {noUser && signupKeepResultCard("mt-[24px]")}
       </div>
     </div>
   );

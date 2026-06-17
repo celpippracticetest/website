@@ -2,8 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import ErrorOutline from "@mui/icons-material/ErrorOutline";
-import ChevronRight from "@mui/icons-material/ChevronRight";
+import { AlertCircle, ChevronRight } from "lucide-react";
 import SvgListening from "../icons/Listening";
 import SvgReading from "../icons/Reading";
 import SvgWriting from "../icons/Writing";
@@ -64,7 +63,7 @@ const IncompletePartsModal: React.FC<IncompletePartsModalProps> = ({
                 {/* Icon */}
                 <div className="flex justify-center mb-4">
                     <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg">
-                        <ErrorOutline className="w-8 h-8 text-white" />
+                        <AlertCircle className="w-8 h-8 text-white" />
                     </div>
                 </div>
 

@@ -1,4 +1,5 @@
 import dynamic from "next/dynamic";
+import React from "react";
 import { Metadata } from "next";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -25,6 +26,6 @@ const PrivacyPolicyComponent = dynamic(
   }
 );
 
-export default function PrivacyPolicyPage() {
-  return <PrivacyPolicyComponent />;
-}
+const PrivacyPolicy = () => <PrivacyPolicyComponent />;
+
+export default PrivacyPolicy;

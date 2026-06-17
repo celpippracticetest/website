@@ -53,14 +53,6 @@
     {
       "path": "/api/cron/end-season?token=Z3x!9pTq@L1mN8",
       "schedule": "0 0 * * *"
-    },
-    {
-      "path": "/api/cron/generate-blog?token=Z3x!9pTq@L1mN8",
-      "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/cron/word-study-reminder",
-      "schedule": "0 * * * *"
     }
   ]
 }

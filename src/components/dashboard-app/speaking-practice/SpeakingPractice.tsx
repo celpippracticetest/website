@@ -10,7 +10,6 @@ import ListeningTaskView from "../listening-practice/ListeningTaskView";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
-import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
 interface SpeakingPracticeProps {
   showHeader?: boolean;
@@ -18,9 +17,6 @@ interface SpeakingPracticeProps {
   selectedPractice: TPracticeDto | null;
   task: TTaskSchemaDto;
   completedPracticeId: string[];
-  /** When set (path-based URL), use these instead of search params and hide duplicate crumb row. */
-  routePracticeId?: string;
-  routeTaskId?: string;
 }
 
 const SpeakingPractice = ({
@@ -29,14 +25,11 @@ const SpeakingPractice = ({
   selectedPractice,
   task,
   completedPracticeId,
-  routePracticeId,
-  routeTaskId,
 }: SpeakingPracticeProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const selectedPracticeId =
-    routePracticeId ?? searchParams.get("selectedPracticeId");
-  const selectedTaskId = routeTaskId ?? searchParams.get("taskId");
+  const selectedPracticeId = searchParams.get("selectedPracticeId");
+  const selectedTaskId = searchParams.get("taskId");
 
   useEffect(() => {
     if (!selectedPracticeId && !selectedTaskId) {
@@ -53,10 +46,9 @@ const SpeakingPractice = ({
     (selectedPractice && selectedPractice.isFree) ||
     (selectedPractice &&
       !selectedPractice.isFree &&
-      hasPaidPracticeAccess(
-        user?.publicMetadata.plan as string | undefined,
-        user?.publicMetadata.purchaseDate as string | undefined
-      ));
+      user &&
+      user.publicMetadata.plan &&
+      user.publicMetadata.plan === "premium");
   const onAnswerButtonClick = (
     practice: TPracticeDto,
     result: Record<string, any>
@@ -91,34 +83,32 @@ const SpeakingPractice = ({
 
   return selectedPractice ? (
     <div className="flex flex-col w-full max-w-[1280px]">
-      {!routePracticeId && (
-        <div className="pl-[40px] text-[#76808F] text-[14px] mt-[24px] mb-[28px] items-center flex gap-[8px]">
-          <div
-            className="cursor-pointer"
-            onClick={() => {
-              router.push("/practice-overview");
-            }}
-          >
-            Practice
-          </div>
-          <SvgChevronRightForTitle />
-          <div
-            className="cursor-pointer"
-            onClick={() => {
-              router.push("/speaking");
-            }}
-          >
-            Speaking
-          </div>
-          <SvgChevronRightForTitle />
-          <span className="text-[#212E42]">
-            <span className="text-[#76808F]">
-              {task.taskNumber?.replace(" #", "")}
-            </span>
-            .{task.name}
-          </span>
+      <div className="pl-[40px] text-[#76808F] text-[14px] mt-[24px] mb-[28px] items-center flex gap-[8px]">
+        <div
+          className="cursor-pointer"
+          onClick={() => {
+            router.push("/practice-overview");
+          }}
+        >
+          Practice
         </div>
-      )}
+        <SvgChevronRightForTitle />
+        <div
+          className="cursor-pointer"
+          onClick={() => {
+            router.push("/speaking");
+          }}
+        >
+          Speaking
+        </div>
+        <SvgChevronRightForTitle />
+        <span className="text-[#212E42]">
+          <span className="text-[#76808F]">
+            {task.taskNumber?.replace(" #", "")}
+          </span>
+          .{task.name}
+        </span>
+      </div>
 
       <SpeakingPracticeView
         onAnswerButtonClick={onAnswerButtonClick}

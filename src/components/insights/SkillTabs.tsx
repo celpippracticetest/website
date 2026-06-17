@@ -1,7 +1,4 @@
-import Headphones from "@mui/icons-material/Headphones";
-import Mic from "@mui/icons-material/Mic";
-import Draw from "@mui/icons-material/Draw";
-import MenuBook from "@mui/icons-material/MenuBook";
+import { Headphones, Mic, Pen, BookOpen } from "lucide-react";
 import { useIsMobile } from "../../hooks/use-mobile";
 
 type SectionColors = {
@@ -41,8 +38,8 @@ const SkillTabs = ({
 
   const skillIcons = {
     speaking: <Mic className="h-5 w-5" />,
-    writing: <Draw className="h-5 w-5" />,
-    reading: <MenuBook className="h-5 w-5" />,
+    writing: <Pen className="h-5 w-5" />,
+    reading: <BookOpen className="h-5 w-5" />,
     listening: <Headphones className="h-5 w-5" />,
   };
 

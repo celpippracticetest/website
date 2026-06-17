@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import LeaguePromotionModal from "@/components/modal/LeaguePromotionModal";
+import Link from "next/link";
 
 const PromotionManager = () => {
     const { user, isLoaded, isSignedIn } = useHybridWebUser();
@@ -31,8 +32,6 @@ const PromotionManager = () => {
     }, []);
 
     useEffect(() => {
-        const abortController = new AbortController();
-
         const checkPromotion = async () => {
             if (!isLoaded || !isSignedIn || !user?.id || !isPageReady) {
                 return;
@@ -42,7 +41,7 @@ const PromotionManager = () => {
 
             try {
                 isFetching.current = true;
-                const response = await fetch("/api/league", { signal: abortController.signal });
+                const response = await fetch("/api/league");
 
                 if (response.ok) {
                     const data = await response.json();
@@ -68,22 +67,10 @@ const PromotionManager = () => {
                         setShowModal(true);
                     }
                 }
-            } catch (error: any) {
-                // Ignore AbortError (component unmounted) or simple fetch failures (network blip)
-                if (error.name === 'AbortError' || error.message === 'Failed to fetch') {
-                    return;
-                }
+            } catch (error) {
                 console.error("PromotionManager: Error checking league promotion:", error);
             } finally {
-                // Only reset if we are still mounted/not aborted to avoid race conditions with next effect
-                if (!abortController.signal.aborted) {
-                    isFetching.current = false;
-                } else {
-                    // Even if aborted, we should reset it because the next effect (using same ref) needs to be able to fetch.
-                    // Actually, if aborted, it means this specific fetch cycle is dead.
-                    // The ref persists across renders.
-                    isFetching.current = false;
-                }
+                isFetching.current = false;
             }
         };
 
@@ -91,19 +78,9 @@ const PromotionManager = () => {
         checkPromotion();
 
         // Polling for immediate feedback
-        const interval = setInterval(() => {
-            // Only poll if the document is visible
-            if (document.visibilityState === 'visible') {
-                checkPromotion();
-            }
-        }, 60000); // Poll every 60 seconds instead of 10s
+        const interval = setInterval(() => checkPromotion(), 10000);
 
-        return () => {
-            abortController.abort();
-            clearInterval(interval);
-            // Reset fetching state on unmount/cleanup to allow future fetches if component remounts immediately
-            isFetching.current = false;
-        };
+        return () => clearInterval(interval);
     }, [isLoaded, isSignedIn, user?.id, isPageReady]);
 
     const handleClose = async () => {

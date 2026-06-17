@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import LockOpen from "@mui/icons-material/LockOpen";
+import { LockOpen } from "lucide-react";
 import { ListeningCategory } from "./types/ListeningPractice";
 import { cn } from "@/lib/utils";
 import PremiumBadge from "../PremiumBadge";

@@ -8,9 +8,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import Visibility from "@mui/icons-material/Visibility";
-import Edit from "@mui/icons-material/Edit";
-import Delete from "@mui/icons-material/Delete";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 import {
   Pagination,
   PaginationContent,
@@ -121,7 +119,7 @@ const CmsExamPartsTable = ({
                   }}
                   title="View exam part"
                 >
-                  <Visibility className="h-4 w-4" />
+                  <Eye className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -129,7 +127,7 @@ const CmsExamPartsTable = ({
                   onClick={() => onEdit(examPart.id, examPart.type)}
                   title="Edit exam part"
                 >
-                  <Edit className="h-4 w-4" />
+                  <Pencil className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -146,7 +144,7 @@ const CmsExamPartsTable = ({
                   title="Delete exam part"
                   className="text-red-500 hover:text-red-700"
                 >
-                  <Delete className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </TableCell>
             </TableRow>

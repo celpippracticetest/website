@@ -1,61 +1,14 @@
 import React, { useState } from "react";
 import SvgChevronDown from "../../icons/ChevronDown";
-import { useEngagementTracking } from "@/hooks/useTracking";
 
 const FAQ = () => {
     const [openIndex, setOpenIndex] = useState<number | null>(null);
-    const { faqClick } = useEngagementTracking();
 
-    const toggleAccordion = (index: number, question: string) => {
-        if (openIndex !== index) {
-            // Track FAQ click when opening
-            faqClick(question, "Landing Page");
-        }
+    const toggleAccordion = (index: number) => {
         setOpenIndex(openIndex === index ? null : index);
     };
 
     const faqs = [
-        {
-            question: "Can I try the platform before I pay?",
-            answer:
-                "Yes. Create a free account to explore practice across Listening, Reading, Writing, and Speaking. When you are ready for the full mock library, the complete question bank, and unlimited AI feedback, you can upgrade to Plus from <a href='/pricing' style='color: inherit; text-decoration: underline;'>Pricing</a>—no credit card is required to get started.",
-        },
-        {
-            question: "Do you offer native mobile apps?",
-            answer:
-                "Yes. Practice on the go with our iOS and Android apps. Download links and details are on the <a href='/app' style='color: inherit; text-decoration: underline;'>mobile app</a> page; your progress stays in sync with the web experience when you use the same account.",
-        },
-        {
-            question: "What CLB score do I need for Canadian immigration?",
-            answer:
-                "Requirements depend on your program (Express Entry, PNPs, citizenship, etc.). Use our free <a href='/score-calculator' style='color: inherit; text-decoration: underline;'>CELPIP score calculator</a> to relate section scores to CLB-style levels, then confirm targets with your immigration pathway or consultant.",
-        },
-        {
-            question: "What is your refund policy?",
-            answer:
-                "Refunds are limited to your <strong>first</strong> subscription purchase and must be requested within <strong>48 hours</strong> of payment, with usage caps (for example, at most one completed mock exam and limited practice activity per skill). Renewals and late requests are not eligible. Full terms are in our <a href='/refund-policy' style='color: inherit; text-decoration: underline;'>Refund Policy</a>; submit a request only through the <a href='/refund-request' style='color: inherit; text-decoration: underline;'>refund request</a> page so we can track it.",
-        },
-        {
-            question: "What makes CELPIPPracticeTest.com different from other prep sites?",
-            answer:
-                "We focus on realistic, timed CELPIP-style practice, instant AI feedback on Writing and Speaking, detailed explanations on Listening and Reading, and a large bank of mocks and questions—so you can diagnose weaknesses quickly and study with a clear plan.",
-        },
-        {
-            question: "Where can I try a CELPIP reading practice test for free?",
-            answer:
-                "Start with our <a href='/reading' style='color: inherit; text-decoration: underline;'>CELPIP reading practice</a> hub: timed passages and question types that mirror the real reading section, with scoring feedback on your attempts.",
-        },
-        {
-            question: "Is there a CELPIP score calculator for my overall score?",
-            answer:
-                "Yes. Use the free <a href='/score-calculator' style='color: inherit; text-decoration: underline;'>CELPIP score calculator</a> to estimate your overall performance and see how section scores relate to CLB-style levels.",
-        },
-        {
-            question:
-                "Where can I find CELPIP Writing Task 2 samples with answers?",
-            answer:
-                "Our <a href='/wiki/celpip-writing-task-2-template' style='color: inherit; text-decoration: underline;'>CELPIP Writing Task 2 template guide</a> walks through survey responses with sample sentences, structure, and vocabulary. Pair it with timed <a href='/writing' style='color: inherit; text-decoration: underline;'>writing practice</a> for full responses and AI feedback.",
-        },
         {
             question:
                 "Where can one take a full CELPIP practice test free of charge online?",
@@ -96,56 +49,52 @@ const FAQ = () => {
 
     return (
         <section
-            id="faq"
             aria-labelledby="faq-heading"
-            className="border-t border-slate-200 bg-white py-12 screen744:py-16 scroll-mt-24"
+            className="mt-[80px] screen1280:!mt-[104px] mb-[80px] max-w-[1440px] mx-auto px-[20px] screen1280:!px-[40px]"
         >
-            <div className="mx-auto max-w-[1120px] px-4 screen744:px-8">
-                <h2
-                    id="faq-heading"
-                    className="mb-8 text-center text-2xl font-bold text-slate-900 screen744:mb-10 screen744:text-3xl"
-                >
-                    FAQ
-                </h2>
+            <h2
+                id="faq-heading"
+                className="text-center text-[24px] screen744:!text-[32px] font-medium text-text1 mb-[40px]"
+            >
+                FAQs
+            </h2>
 
-                <div className="grid grid-cols-1 gap-3 screen744:grid-cols-2 screen744:gap-4">
-                    {faqs.map((faq, index) => (
-                        <div
-                            key={index}
-                            className={`overflow-hidden rounded-lg border bg-white ${openIndex === index ? "border-slate-300" : "border-slate-200"}`}
+            <div className="flex flex-col gap-[16px]">
+                {faqs.map((faq, index) => (
+                    <div
+                        key={index}
+                        className="border border-[#E0E0E0] rounded-[16px] overflow-hidden bg-[#F8F9FC]"
+                    >
+                        <button
+                            onClick={() => toggleAccordion(index)}
+                            className="w-full flex justify-between items-center p-[24px] text-left bg-[#F8F9FC] hover:bg-[#F1F3F9] transition-colors"
+                            aria-expanded={openIndex === index}
                         >
-                            <button
-                                type="button"
-                                onClick={() => toggleAccordion(index, faq.question)}
-                                className="flex w-full items-start justify-between gap-3 p-4 text-left hover:bg-slate-50/60"
-                                aria-expanded={openIndex === index}
-                            >
-                                <span className="text-sm font-semibold leading-snug text-slate-900">
-                                    {faq.question}
-                                </span>
-                                <span
-                                    className={`mt-0.5 flex shrink-0 text-slate-400 transition-transform duration-200 ${openIndex === index ? "rotate-180" : ""}`}
-                                >
-                                    <SvgChevronDown />
-                                </span>
-                            </button>
-                            <div
-                                className={`grid transition-all duration-200 ease-in-out ${openIndex === index
-                                    ? "grid-rows-[1fr] opacity-100"
-                                    : "grid-rows-[0fr] opacity-0"
+                            <span className="text-[16px] screen744:!text-[18px] font-medium text-text1 pr-[16px]">
+                                {faq.question}
+                            </span>
+                            <span
+                                className={`transform transition-transform duration-300 min-w-[20px] ${openIndex === index ? "rotate-180" : ""
                                     }`}
                             >
-                                <div className="overflow-hidden">
-                                    <div
-                                        className="border-t border-slate-100 px-4 pb-4 text-sm leading-relaxed text-slate-600"
-                                        dangerouslySetInnerHTML={{ __html: faq.answer }}
-                                    />
-                                </div>
+                                <SvgChevronDown />
+                            </span>
+                        </button>
+                        <div
+                            className={`grid transition-all duration-300 ease-in-out ${openIndex === index
+                                ? "grid-rows-[1fr] opacity-100"
+                                : "grid-rows-[0fr] opacity-0"
+                                }`}
+                        >
+                            <div className="overflow-hidden">
+                                <div
+                                    className="p-[24px] pt-0 text-[16px] text-[#5F6D7E] leading-[24px]"
+                                    dangerouslySetInnerHTML={{ __html: faq.answer }}
+                                />
                             </div>
                         </div>
-                    ))}
-                </div>
-
+                    </div>
+                ))}
             </div>
         </section>
     );

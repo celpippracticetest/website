@@ -1,8 +1,7 @@
 
 import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import Add from "@mui/icons-material/Add";
-import ChevronDown from "@mui/icons-material/KeyboardArrowDown";
+import { Plus, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,7 +27,7 @@ const CmsPracticesHeader = ({ onCreatePractice }: CmsPracticesHeaderProps) => {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button className="flex items-center">
-              <Add className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 h-4 w-4" />
               Create New Practice/Exam
               <ChevronDown className="ml-2 h-4 w-4" />
             </Button>

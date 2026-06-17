@@ -6,8 +6,6 @@ import SvgCheckSquare from "@/components/icons/CheckSquare";
 import SvgLock from "@/components/icons/Lock";
 import SvgPlay from "@/components/icons/Play";
 import SvgConfirmCheck from "@/components/icons/ConfirmCheck";
-import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
-import { categoryToSkillRoute, practicePath } from "@/lib/practiceRoutes";
 
 const ListeningSideMenu = ({
   completedPractice,
@@ -28,7 +26,7 @@ const ListeningSideMenu = ({
   const { user } = useHybridWebUser();
 
   return (
-    <aside className="sticky top-0 hidden bg-white screen1280:!h-[920px] overflow-auto screen1280:!flex shrink-0 border-[1px] border-[#D5D6D8] max-w-[305px] rounded-lg w-full flex-col items-center ">
+    <aside className="sticky top-0 hidden bg-white screen1280:!h-[920px] overflow-scroll screen1280:!flex shrink-0 border-[1px] border-[#D5D6D8] max-w-[305px] rounded-lg w-full flex-col items-center ">
       <div className="bg-white gap-[16px] overflow-y-auto  flex flex-col w-full [&::-webkit-scrollbar]:w-2 p-[16px] [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full  [&::-webkit-scrollbar-track]:bg-slate-100">
         {allPractices.map((p: TPracticeDto, index: number) => (
           <a
@@ -41,18 +39,14 @@ const ListeningSideMenu = ({
                 : "font-normal"
             } `}
             href={
-              selectedTaskId
-                ? practicePath(
-                    categoryToSkillRoute(p.type.toLowerCase()),
-                    p.id,
-                    selectedTaskId
-                  )
-                : `/${p.type.toLowerCase()}`
+              "/" +
+              p.type.toLowerCase() +
+              "?selectedPracticeId=" +
+              p.id +
+              `${selectedTaskId ? "&taskId=" + selectedTaskId : ""}`
             }
           >
-            {selectedPracticeId === p.id && (
-              <SvgPlay className="shrink-0 text-[#F27059]" />
-            )}
+            {selectedPracticeId === p.id && <SvgPlay className=" shrink-0 " />}
             {selectedPracticeId !== p.id &&
               (completedPractice.includes(p.id) ? (
                 <SvgConfirmCheck className="mr-[4px]" />
@@ -73,10 +67,7 @@ const ListeningSideMenu = ({
               <div className="flex items-center rounded-[24px] bg-[#F0FFFD] h-[33px] px-[16px] text-[12px] font-semibold text-[#0DAA94]">
                 Completed
               </div>
-            ) : !hasPaidPracticeAccess(
-                user?.publicMetadata.plan as string | undefined,
-                user?.publicMetadata.purchaseDate as string | undefined
-              ) ? (
+            ) : user?.publicMetadata.plan !== "premium" ? (
               p.isFree ? (
                 <div className="flex shrink-0 bg-[#F0FFFD] rounded-[24px] text-[12px] justify-center items-center px-[16px] py-[8px]">
                   <span className="text-[12px] font-medium text-[#0DAA94]">

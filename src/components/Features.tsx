@@ -1,10 +1,5 @@
 
-import Check from "@mui/icons-material/Check";
-import Language from "@mui/icons-material/Language";
-import EmojiEvents from "@mui/icons-material/EmojiEvents";
-import MenuBook from "@mui/icons-material/MenuBook";
-import People from "@mui/icons-material/People";
-import Schedule from "@mui/icons-material/Schedule";
+import { Check, Globe, Award, BookOpen, Users, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const Features = () => {
@@ -17,27 +12,27 @@ const Features = () => {
     {
       title: "Multiple Languages",
       description: "Support for various language pairs to assess interpreters across different linguistic contexts.",
-      icon: <Language className="h-10 w-10 text-celblue-600" />
+      icon: <Globe className="h-10 w-10 text-celblue-600" />
     },
     {
       title: "Industry Recognition",
       description: "Certification recognized by professional interpretation organizations and institutions.",
-      icon: <EmojiEvents className="h-10 w-10 text-celblue-600" />
+      icon: <Award className="h-10 w-10 text-celblue-600" />
     },
     {
       title: "Educational Framework",
       description: "Designed with educational objectives to help interpreters identify areas for improvement.",
-      icon: <MenuBook className="h-10 w-10 text-celblue-600" />
+      icon: <BookOpen className="h-10 w-10 text-celblue-600" />
     },
     {
       title: "Expert Evaluation",
       description: "Tests assessed by qualified professionals with extensive experience in interpretation.",
-      icon: <People className="h-10 w-10 text-celblue-600" />
+      icon: <Users className="h-10 w-10 text-celblue-600" />
     },
     {
       title: "Efficient Testing",
       description: "Streamlined process that ensures thorough assessment without unnecessary time commitment.",
-      icon: <Schedule className="h-10 w-10 text-celblue-600" />
+      icon: <Clock className="h-10 w-10 text-celblue-600" />
     }
   ];
 

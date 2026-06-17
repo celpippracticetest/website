@@ -1,26 +1,13 @@
 import dynamic from "next/dynamic";
+import React from "react";
 import { Metadata } from "next";
 
 export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "";
   const isPreview = appBaseUrl.includes("vercel.app");
-  const description =
-    "Understand CELPIP Practice Test refund rules, eligibility windows, non-refundable cases, and steps to submit, review, and track your refund request online.";
   return {
     title: "Refund Policy | CELPIPPRACTICETEST.com",
-    description,
-    keywords: [
-      "CELPIP refund policy",
-      "CELPIP subscription refund",
-      "refund request terms",
-      "CELPIP Practice Test refund",
-    ],
-    openGraph: {
-      title: "Refund Policy | CELPIPPRACTICETEST.com",
-      description,
-      type: "article",
-      url: "https://celpippracticetest.com/refund-policy",
-    },
+    description: "Review the Refund Policy for CELPIP preparation platform.",
     alternates: {
       canonical: "https://celpippracticetest.com/refund-policy",
     },
@@ -38,6 +25,8 @@ const RefundPolicyComponent = dynamic(
   }
 );
 
-export default function RefundPolicyPage() {
+const RefundPolicy = () => {
   return <RefundPolicyComponent />;
-}
+};
+
+export default RefundPolicy;

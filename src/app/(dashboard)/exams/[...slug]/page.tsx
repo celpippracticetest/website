@@ -3,64 +3,40 @@ import documentsClient from "@/lib/appDocumentsClient";
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
 import { TExamPartSchemaDto } from "@/models/examParts.model";
 import { PracticeDtoSchema } from "@/models/practice.model";
+import ListeningExamView from "@/components/dashboard-app/exam-parts/ListeningExamView";
 import { ExamRepository } from "@/repositories/exams.repo";
 import { TExamSchemaDto } from "@/models/exam.model";
-import dynamic from "next/dynamic";
-import { Box, Link, Typography } from "@mui/material";
-
-const MockExamView = dynamic(() => import("@/components/dashboard-app/exam-parts/MockExamView"), {
-  loading: () => (
-    <Typography sx={{ py: 4, textAlign: "center", color: "#526071" }}>
-      Loading Exam...
-    </Typography>
-  ),
-});
-const ResultExamView = dynamic(() => import("@/components/dashboard-app/exam-parts/ResultExamView"), {
-  loading: () => (
-    <Typography sx={{ py: 4, textAlign: "center", color: "#526071" }}>
-      Loading Results...
-    </Typography>
-  ),
-});
+import ReadingExamView from "@/components/dashboard-app/exam-parts/ReadingExamView";
+import WritingExamView from "@/components/dashboard-app/exam-parts/WritingExamView";
+import SpeakingExamView from "@/components/dashboard-app/exam-parts/SpeakingExamView";
+import ResultExamView from "@/components/dashboard-app/exam-parts/ResultExamView";
 import { ObjectId } from "bson";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
-import { hasMockExamAccess, normalizeMockExamIdForAccess } from "@/lib/subscriptionAccess";
-import { getFirstReadyMockExamId } from "@/lib/getFirstReadyMockExam";
 
-const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
+const Exam = async ({ params }: { params: { slug: string[] } }) => {
   const resolvedParams = await params;
   const examId: string | undefined =
-    normalizeMockExamIdForAccess(resolvedParams?.slug?.[0]) ?? undefined;
-  const partSlug = resolvedParams?.slug?.[1];
-  const partMatch =
-    typeof partSlug === "string" ? /^part(\d+)$/i.exec(partSlug) : null;
-  const partNumber: string | undefined = partMatch?.[1];
-  const isResultPage: boolean =
-    typeof partSlug === "string" && partSlug.toLowerCase() === "results";
+    resolvedParams?.slug?.[0]?.split("exam_")?.[1];
+  const partNumber: string | undefined =
+    resolvedParams?.slug?.[1]?.split("part")?.[1];
+  const isResultPage: boolean = resolvedParams?.slug?.[1] === "results";
   let user: any = null;
   try {
-    const hybridUser = await getHybridCurrentUser();
-    user = hybridUser?.user ?? null;
+    user = await currentUser();
   } catch (e) {
     // Fallback: treat as unauthenticated
     user = null;
   }
-  const firstReadyExamId = await getFirstReadyMockExamId();
   const plan: string | undefined = user?.publicMetadata?.plan as
     | string
     | undefined;
-  if (
-    !user ||
-    !hasMockExamAccess(
-      plan,
-      user?.publicMetadata?.purchaseDate as string | undefined,
-      examId,
-      firstReadyExamId,
-      user?.publicMetadata?.purchasedMockExamIds
-    )
-  ) {
+  const roleValue = user?.publicMetadata?.role as unknown;
+  const isAdmin: boolean = Array.isArray(roleValue)
+    ? roleValue.includes("admin")
+    : roleValue === "admin";
+  if (!user || (plan !== "premium" && !isAdmin)) {
     redirect("/exam-overview", RedirectType.push);
   }
   if (
@@ -105,33 +81,16 @@ const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
     ];
 
     return (
-      <Box
-        component="main"
-        sx={{
-          width: "100%",
-          minHeight: "100vh",
-          display: "flex",
-          justifyContent: "center",
-          backgroundColor: "#F2F6FF",
-        }}
-      >
-        <Box
-          sx={{
-            width: "100%",
-            maxWidth: "1280px",
-            px: { xs: 2, md: 3 },
-            py: { xs: 3, md: 4 },
-          }}
-        >
+      <main className=" bg-[#F2F6FF] min-h-screen flex w-full justify-center  max-w-[1280px] mx-auto">
+        <div className=" mx-auto w-full flex flex-col rounded-lg">
           <ResultExamView
             exams={exam}
             examParts={examParts.items}
             answers={answers.items}
             speakingAndWritingAnswers={speakingAndWritingAnswers}
-            firstReadyExamId={firstReadyExamId}
           />
-        </Box>
-      </Box>
+        </div>
+      </main>
     );
   }
 
@@ -142,70 +101,17 @@ const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
     );
   if (!part) {
     return (
-      <Box
-        component="main"
-        sx={{
-          minHeight: "100vh",
-          px: 2,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "#F2F6FF",
-        }}
-      >
-        <Box
-          sx={{
-            width: "100%",
-            maxWidth: "540px",
-            p: { xs: 3, md: 4 },
-            borderRadius: "28px",
-            border: "1px solid #E2EAF6",
-            backgroundColor: "#FFFFFF",
-            boxShadow: "0 18px 40px rgba(55, 70, 92, 0.08)",
-            textAlign: "center",
-          }}
-        >
-          <Typography
-            component="h1"
-            sx={{
-              mb: 1.5,
-              fontSize: { xs: "1.6rem", md: "2rem" },
-              fontWeight: 800,
-              color: "#D14343",
-            }}
-          >
-            Exam Part Not Found
-          </Typography>
-          <Typography sx={{ mb: 1, color: "#526071" }}>
-            Could not find exam part for:
-          </Typography>
-          <Box
-            component="ul"
-            sx={{
-              mb: 3,
-              pl: 3,
-              textAlign: "left",
-              color: "#6B7888",
-              "& li": {
-                mb: 0.75,
-              },
-            }}
-          >
-            <li>Exam ID: {examId}</li>
-            <li>Part Number: {partNumber}</li>
-          </Box>
-          <Link
-            href="/exam-overview"
-            underline="hover"
-            sx={{
-              fontWeight: 700,
-              color: "#316BFF",
-            }}
-          >
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <h1 className="text-2xl font-bold text-red-600 mb-4">Exam Part Not Found</h1>
+        <p className="text-gray-700 mb-2">Could not find exam part for:</p>
+        <ul className="text-sm text-gray-600 list-disc mb-6">
+          <li>Exam ID: {examId}</li>
+          <li>Part Number: {partNumber}</li>
+        </ul>
+        <a href="/exam-overview" className="text-blue-600 hover:underline">
           Return to Exam Overview
-          </Link>
-        </Box>
-      </Box>
+        </a>
+      </div>
     );
   }
   const practice = PracticeDtoSchema.parse({
@@ -214,35 +120,50 @@ const Exam = async ({ params }: { params: Promise<{ slug: string[] }> }) => {
   });
 
   return (
-    <Box
-      component="main"
-      sx={{
-        width: "100%",
-        minHeight: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        backgroundColor: "#F2F6FF",
-      }}
-    >
-      <Box
-        sx={{
-          width: "100%",
-          maxWidth: "1280px",
-          px: { xs: 2, md: 3 },
-          py: { xs: 3, md: 4 },
-        }}
-      >
-        <MockExamView
-          practice={practice}
-          partId={parseInt(partNumber)}
-          examId={examId}
-          partNumber={partNumber}
-          examName={exam?.name}
-          examNumber={exam?.order}
-          firstReadyExamId={firstReadyExamId}
-        />
-      </Box>
-    </Box>
+    <main className="max-w-[1200px] w-full h-full mx-auto">
+      <div className=" w-full pb-[24px] px-[16px] screen744:!px-0 flex h-full flex-col rounded-lg">
+        {practice.type == "LISTENING" && (
+          <ListeningExamView
+            examId={examId}
+            partNumber={partNumber}
+            practice={practice}
+            partId={parseInt(partNumber)}
+            examName={exam?.name}
+            examNumber={exam?.order}
+          />
+        )}
+        {practice.type == "READING" && (
+          <ReadingExamView
+            practice={practice}
+            partNumber={partNumber}
+            partId={parseInt(partNumber)}
+            examId={examId}
+            examName={exam?.name}
+            examNumber={exam?.order}
+          />
+        )}
+        {practice.type == "WRITING" && (
+          <WritingExamView
+            practice={practice}
+            partId={parseInt(partNumber)}
+            partNumber={partNumber}
+            examId={examId}
+            examName={exam?.name}
+            examNumber={exam?.order}
+          />
+        )}
+        {practice.type == "SPEAKING" && (
+          <SpeakingExamView
+            practice={practice}
+            partId={parseInt(partNumber)}
+            examId={examId}
+            partNumber={partNumber}
+            examName={exam?.name}
+            examNumber={exam?.order}
+          />
+        )}
+      </div>
+    </main>
   );
 };
 

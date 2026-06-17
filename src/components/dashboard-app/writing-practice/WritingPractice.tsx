@@ -11,7 +11,6 @@ import ListeningTaskView from "../listening-practice/ListeningTaskView";
 import { useRouter } from "nextjs-toploader/app";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
-import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
 interface WritingPracticeProps {
   showHeader?: boolean;
@@ -19,8 +18,6 @@ interface WritingPracticeProps {
   selectedPractice: TPracticeDto | null;
   task: TTaskSchemaDto;
   completedPracticeId: string[];
-  routePracticeId?: string;
-  routeTaskId?: string;
 }
 
 const WritingPractice = ({
@@ -29,14 +26,11 @@ const WritingPractice = ({
   selectedPractice,
   task,
   completedPracticeId,
-  routePracticeId,
-  routeTaskId,
 }: WritingPracticeProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const selectedPracticeId =
-    routePracticeId ?? searchParams.get("selectedPracticeId");
-  const selectedTaskId = routeTaskId ?? searchParams.get("taskId");
+  const selectedPracticeId = searchParams.get("selectedPracticeId");
+  const selectedTaskId = searchParams.get("taskId");
   const { completedPractices, handlePracticeComplete } =
     useListeningPracticeCompletion();
   const [isAnswerModalOpen, setAnswerModalOpen] = useState(false);
@@ -46,10 +40,9 @@ const WritingPractice = ({
     (selectedPractice && selectedPractice.isFree) ||
     (selectedPractice &&
       !selectedPractice.isFree &&
-      hasPaidPracticeAccess(
-        user?.publicMetadata.plan as string | undefined,
-        user?.publicMetadata.purchaseDate as string | undefined
-      ));
+      user &&
+      user.publicMetadata.plan &&
+      user.publicMetadata.plan === "premium");
   const onAnswerButtonClick = (
     practice: TPracticeDto,
     result: Record<string, any>
@@ -72,34 +65,32 @@ const WritingPractice = ({
 
   return selectedPractice ? (
     <div className="flex flex-col  w-full max-w-[1280px]">
-      {!routePracticeId && (
-        <div className="pl-[40px] text-[#76808F] text-[14px] mt-[24px] mb-[28px] items-center flex gap-[8px]">
-          <div
-            className="cursor-pointer"
-            onClick={() => {
-              router.push("/practice-overview");
-            }}
-          >
-            Practice
-          </div>
-          <SvgChevronRightForTitle />
-          <div
-            className="cursor-pointer"
-            onClick={() => {
-              router.push("/writing");
-            }}
-          >
-            Writing
-          </div>
-          <SvgChevronRightForTitle />{" "}
-          <span className="text-[#212E42]">
-            <span className="text-[#76808F]">
-              {task.taskNumber?.replace(" #", "")}
-            </span>
-            .{task.name}
-          </span>
+      <div className="pl-[40px] text-[#76808F] text-[14px] mt-[24px] mb-[28px] items-center flex gap-[8px]">
+        <div
+          className="cursor-pointer"
+          onClick={() => {
+            router.push("/practice-overview");
+          }}
+        >
+          Practice
         </div>
-      )}
+        <SvgChevronRightForTitle />
+        <div
+          className="cursor-pointer"
+          onClick={() => {
+            router.push("/writing");
+          }}
+        >
+          Writing
+        </div>
+        <SvgChevronRightForTitle />{" "}
+        <span className="text-[#212E42]">
+          <span className="text-[#76808F]">
+            {task.taskNumber?.replace(" #", "")}
+          </span>
+          .{task.name}
+        </span>
+      </div>
       <WritingPracticeView
         onAnswerButtonClick={onAnswerButtonClick}
         practice={selectedPractice}

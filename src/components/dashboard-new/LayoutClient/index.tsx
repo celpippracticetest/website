@@ -3,10 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import clsx from "clsx";
-import { useHybridWebUser } from "@/hooks/useHybridWebUser";
-import { signOutWebSession } from "@/lib/auth/client-sign-out";
 import { useHasEverPurchased } from "@/hooks/useHasEverPurchased";
-import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
 import SvgChevronRight from "@/components/icons/ChevronRight";
 import SvgPractice from "@/components/icons/Practice";
@@ -21,26 +18,29 @@ import SvgAllSkills from "@/components/icons/AllSkills";
 import { usePathname, useRouter } from "next/navigation";
 import { useSelectedTask } from "@/store/useSelectedTask.store";
 import { useSelectedExam } from "@/store/useSelectedExam.store";
+import ExtraDiscountModal from "@/components/modal/ExtraDiscountModal";
 import { useExtraDiscountStore } from "@/store/useExtraDiscount.store";
 import { useAuthModalStore } from "@/store/useAuthModal.store";
+import { useCreateDiscountCoupon } from "@/hooks/useCreateDiscountCoupon";
 import SvgCopy from "@/components/icons/Copy";
 import React from "react";
 import { motion } from "framer-motion";
 import SvgClose from "@/components/icons/Close";
+import UpgradeModal from "../../modal/UpgradeModal";
+
+
 import { useMenuCollapsedStore } from "@/store/menuCollapsed.store";
 import CountdownTimer from "@/components/dashboard-app/CounterDownTimer";
+import OnboardingSurvey from "@/components/onboardingSurvey";
 import SvgReferral from "@/components/icons/Referral";
 
 import BottomNavigation from "@/components/dashboard-new/BottomNavigation";
 import DesktopNavigation from "@/components/dashboard-new/DesktopNavigation";
 import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";
-import FloatingChatIcon from "@/components/AskBeavo/FloatingChatIcon";
+import AskBeavoModal from "@/components/AskBeavo/AskBeavoModal";
 import { GlobalInteractiveProvider } from "@/components/dashboard-app/practice/GlobalInteractiveProvider";
-import {
-  MOCK_EXAM_VIEW_MODE_EVENT,
-  MOCK_EXAM_VIEW_MODE_STORAGE_KEY,
-} from "@/components/dashboard-app/exam-parts/components/useExamViewMode";
 import { cn } from "@/lib/utils";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 
 const NavItem = ({
   icon,
@@ -178,15 +178,19 @@ const NavItem = ({
   );
 };
 
-const LayoutClient = ({ children }: any) => {
+const LayoutClient = ({ children, showCompletedModal, showSurvey }: any) => {
   const sidebarMenuRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const couponId = useExtraDiscountStore((state) => state.couponId);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [surveyVisible, setSurveyVisible] = useState(showSurvey);
   const router = useRouter();
 
   const setShowExtraDiscount = useExtraDiscountStore(
     (state) => state.setShowExtraDiscount
+  );
+  const showExtraDiscount = useExtraDiscountStore(
+    (state) => state.showExtraDiscount
   );
   const visibleHorizontalCoupon = useExtraDiscountStore(
     (state) => state.visibleHorizontalCoupon
@@ -196,12 +200,12 @@ const LayoutClient = ({ children }: any) => {
   );
   const { user, isLoaded, isSignedIn }: any = useHybridWebUser();
   const { hasEverPurchased } = useHasEverPurchased();
-  const [hasHydrated, setHasHydrated] = useState(false);
-  const displayUser = hasHydrated ? user : null;
 
-  const noUser = hasHydrated && isLoaded ? !isSignedIn : false;
+  const noUser = isLoaded ? !isSignedIn : false;
 
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { showLoginModal, setShowLoginModal, loginMessage } = useAuthModalStore();
+  const ref = useRef<HTMLDivElement>(null);
   const loginRef = useRef<HTMLDivElement>(null);
   const { collapsed, setCollapsed } = useMenuCollapsedStore((state) => state);
   const [open, setOpen] = useState(false);
@@ -209,27 +213,18 @@ const LayoutClient = ({ children }: any) => {
   const [submenuActive, setSubmenuActive] = useState("");
   const [copied, setCopied] = useState(false);
   const pathname = usePathname();
-  const [isOfficialExamView, setIsOfficialExamView] = useState(false);
 
   const [isUserDropDownOpen, setUserDropDownOpen] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const isNewUser =
-    displayUser?.createdAt &&
-    new Date().getTime() - new Date(displayUser.createdAt).getTime() <
+    user?.createdAt &&
+    new Date().getTime() - new Date(user.createdAt).getTime() <
     24 * 60 * 60 * 1000;
-  const freeUser = displayUser?.publicMetadata.plan == "free";
-  const proUser = hasPaidPracticeAccess(
-    displayUser?.publicMetadata?.plan as string | undefined,
-    displayUser?.publicMetadata?.purchaseDate
-  );
+  const freeUser = user?.publicMetadata.plan == "free";
+  const proUser = user?.publicMetadata.plan == "premium";
 
   const { selectedTask, setSelectedTask } = useSelectedTask();
   const { selectedExam, setSelectedExam } = useSelectedExam();
-
-  useEffect(() => {
-    setHasHydrated(true);
-  }, []);
-
 
   useEffect(() => {
     const handleSize = () => {
@@ -263,7 +258,12 @@ const LayoutClient = ({ children }: any) => {
     }
   }, [user]);
 
+  const upgradeModalOpenRef = useRef(showUpgradeModal);
   const loginModalOpenRef = useRef(showLoginModal);
+
+  useEffect(() => {
+    upgradeModalOpenRef.current = showUpgradeModal;
+  }, [showUpgradeModal]);
 
   useEffect(() => {
     loginModalOpenRef.current = showLoginModal;
@@ -276,7 +276,9 @@ const LayoutClient = ({ children }: any) => {
         !sidebarMenuRef.current.contains(event.target)
       ) {
         if (freeUser) {
-          setIsMenuOpen(false);
+          if (!upgradeModalOpenRef.current) {
+            setIsMenuOpen(false);
+          }
         } else if (noUser) {
           if (!loginModalOpenRef.current) {
             setIsMenuOpen(false);
@@ -286,6 +288,9 @@ const LayoutClient = ({ children }: any) => {
         }
       }
 
+      if (ref.current && !ref.current.contains(event.target)) {
+        setShowUpgradeModal(false);
+      }
       if (loginRef.current && !loginRef.current.contains(event.target)) {
         setShowLoginModal(false);
       }
@@ -310,7 +315,7 @@ const LayoutClient = ({ children }: any) => {
 
   const LoginModal = () => {
     return (
-      <div className="z-[999] pb-[100px] px-[16px] fixed top-0 left-0 right-0 mx-auto w-full h-full bg-[#17161680] flex justify-center items-center">
+      <div className="z-[999] px-[16px] fixed top-0 left-0 right-0 mx-auto w-full h-full bg-[#17161680] flex justify-center items-center">
         <div
           ref={loginRef}
           className="flex-col mx-[16px] relative w-[440px] pt-[24px] px-[16px] pb-[18px]  h-[270px] rounded-[24px] bg-white"
@@ -349,6 +354,13 @@ const LayoutClient = ({ children }: any) => {
     );
   };
 
+  const { mutate: createCoupon } = useCreateDiscountCoupon();
+
+  useEffect(() => {
+    if (freeUser && isNewUser) {
+      createCoupon(user.id);
+    }
+  }, [user]);
 
   const showPlansForUsers = () => {
     return (
@@ -378,7 +390,7 @@ const LayoutClient = ({ children }: any) => {
               <div
                 onClick={() => {
                   if (freeUser) {
-                    router.push("/pricing");
+                    setShowUpgradeModal(true);
                   } else {
                     setShowLoginModal(true);
                   }
@@ -393,7 +405,7 @@ const LayoutClient = ({ children }: any) => {
           </>
         )}
 
-        {displayUser && (
+        {user && (
           <>
             <div
               className={`relative p-[8px] flex flex-col z-[999] justify-none screen744:!justify-start screen1280:!justify-none items-start left-0 right-0 mx-auto  mt-[40px] rounded-[8px] max-w-[202px] screen744:!max-w-[132px] screen1280:!max-w-[202px] h-[114px] screen744:!h-[202px]  screen1280:!h-[114px] bg-[#B86DF9]`}
@@ -424,15 +436,17 @@ const LayoutClient = ({ children }: any) => {
               </div>
               <div
                 onClick={() => {
-                  if (noUser) {
-                    setShowLoginModal(true);
+                  if (freeUser) {
+                    setShowUpgradeModal(true);
                   } else {
-                    router.push("/earn100");
+                    setShowLoginModal(true);
                   }
                 }}
                 className="cursor-pointer max-w-[95px]  screen1280:!max-w-[95px] screen744:!w-full  flex items-center justify-center text-white border-[1px]  h-[24px] w-full rounded-[24px] "
               >
-                <span className="text-[14px] font-normal">see details</span>
+                <Link href={"/earn100"} className=" text-[14px] font-normal ]">
+                  see details
+                </Link>
               </div>
             </div>
           </>
@@ -456,9 +470,7 @@ const LayoutClient = ({ children }: any) => {
     }
   }, [isLoaded, isSignedIn, isNewUser, user, setShowExtraDiscount]);
 
-  const signOut = async (opts?: { redirectUrl?: string }) => {
-    await signOutWebSession(router, opts?.redirectUrl ?? "/sign-in");
-  };
+  
   const [practice, setPractice] = useState(false);
   const [mockTest, setMockTest] = useState(false);
 
@@ -591,35 +603,14 @@ const LayoutClient = ({ children }: any) => {
     }
   }, [pathname]);
 
-  useEffect(() => {
-    const syncExamViewMode = () => {
-      if (typeof window === "undefined") {
-        return;
-      }
-
-      const storedMode = window.localStorage.getItem(
-        MOCK_EXAM_VIEW_MODE_STORAGE_KEY
-      );
-      setIsOfficialExamView(storedMode === "official");
-    };
-
-    syncExamViewMode();
-
-    window.addEventListener(MOCK_EXAM_VIEW_MODE_EVENT, syncExamViewMode);
-    window.addEventListener("storage", syncExamViewMode);
-
-    return () => {
-      window.removeEventListener(MOCK_EXAM_VIEW_MODE_EVENT, syncExamViewMode);
-      window.removeEventListener("storage", syncExamViewMode);
-    };
-  }, []);
-
-  const hideMainHeaderForOfficialExam =
-    pathname.includes("exams") && isOfficialExamView;
-
   return (
     <>
-      {noUser ? (
+      {freeUser ? (
+        <>
+          {showUpgradeModal && <UpgradeModal setShowModal={setShowUpgradeModal} />}
+          {!surveyVisible && showExtraDiscount && <ExtraDiscountModal />}
+        </>
+      ) : noUser ? (
         showLoginModal && <LoginModal />
       ) : (
         <></>
@@ -706,7 +697,7 @@ const LayoutClient = ({ children }: any) => {
             submenuActive={submenuActive}
             setSubmenuActive={setSubmenuActive}
           />
-          {displayUser && (
+          {user && (
             <NavItem
               link="/profile"
               icon={<SvgProfile />}
@@ -723,7 +714,7 @@ const LayoutClient = ({ children }: any) => {
             />
           )}
 
-          {displayUser && (
+          {user && (
             <NavItem
               link="/earn100"
               icon={<SvgReferral />}
@@ -751,7 +742,7 @@ const LayoutClient = ({ children }: any) => {
           </div>
         </div>
       </motion.div>
-      {displayUser && visibleHorizontalCoupon && (
+      {user && visibleHorizontalCoupon && (
         <div className="flex items-center flex-wrap justify-between screen744:!justify-center px-[8px] screen1280:!px-[16px] py-[14px] gap-[5px] screen1280:!gap-[32px] bg-[#37465C]  h-auto min-h-[64px] ">
           <div className="flex flex-col screen744:!flex-row gap-[2px] items-center justify-center text-white h-auto text-[12px]   screen744:!text-[20px] font-bold">
             Extra 10% Discount
@@ -787,71 +778,66 @@ const LayoutClient = ({ children }: any) => {
             <span className="text-[14px]  text-white font-semibold ">
               Expires in
             </span>
-            <CountdownTimer userCreatedAt={displayUser?.createdAt} />
+            <CountdownTimer userCreatedAt={user?.createdAt} />
           </div>
         </div>
       )}
 
       <div className="flex w-full justify-center max-w-[1440px] mx-auto z-[99999999]">
         <div
-          className={cn(
-            "flex flex-col w-full h-full screen744:!w-[calc(100%-84px)] bg-[#F4F7FF] items-end screen1280:!pt-0",
-            {
-              "screen1280:m-0 mb-[120px] pt-[96px]":
-                !pathname.includes("words") && !hideMainHeaderForOfficialExam,
-              "pt-[96px]":
-                pathname.includes("words") && !hideMainHeaderForOfficialExam,
-              "screen744:pt-0 pt-0": hideMainHeaderForOfficialExam,
-            }
-          )}
+          className={cn("flex flex-col w-full h-full screen744:!w-[calc(100%-84px)] bg-[#F4F7FF] items-end screen744:pt-[96px] pt-[50px] screen1280:!pt-0", { "screen1280:m-0 mb-[120px] screen744:pt-[96px] pt-[50px]": !pathname.includes('words'), "pt-[96px]": pathname.includes('words') })}
         >
-          {!hideMainHeaderForOfficialExam && (
-            <div className="px-[16px] screen744:!px-0 w-full mb-[16px]">
-              <div
-                className={clsx(
-                  "transition-all flex justify-between w-full duration-1000 ease-in-out",
-                  // Mobile (< 1280)
-                  "fixed top-0 left-0 right-0 z-[50] h-[72px] px-[16px] screen744:!px-[24px] rounded-b-[32px] border-b border-[#D1DEFF] backdrop-blur-[8px]",
-                  "bg-[linear-gradient(90deg,_rgba(255,_255,_255,_0.65)_0%,_rgba(255,_255,_255,_0.2)_100%)]",
-                  // Desktop (>= 1280)
-                  "screen1280:!relative screen1280:!z-[50] screen1280:!mt-[24px] screen1280:!rounded-[32px] screen1280:!h-[80px] screen1280:!max-w-[1280px] screen1280:!mx-auto screen1280:!pl-[24px] screen1280:!border screen1280:!px-[16px]",
-                  "items-center"
-                )}
-              >
-                <div className="flex gap-[12px] screen744:!gap-[24px] screen1280:!gap-[64px] items-center w-full">
-                  <Image
-                    onClick={() => router.push("/")}
-                    alt="full logo"
-                    width={133}
-                    height={40}
-                    className={clsx(
-                      "opacity-100 delay-300 hover:!cursor-pointer screen1280:block hidden"
-                    )}
-                    src="/images/logo.png"
-                  />
+          <div className="px-[16px] screen744:!px-0 w-full mb-[16px]">
+            <div
+              className={clsx(
+                "transition-all flex justify-between w-full duration-1000 ease-in-out",
+                // Mobile (< 1280)
+                "fixed top-0 left-0 right-0 z-[50] h-[72px] px-[16px] screen744:!px-[24px] rounded-b-[32px] border-b border-[#D1DEFF] backdrop-blur-[8px]",
+                "bg-[linear-gradient(90deg,_rgba(255,_255,_255,_0.65)_0%,_rgba(255,_255,_255,_0.2)_100%)]",
+                // Desktop (>= 1280)
+                "screen1280:!relative screen1280:!z-[50] screen1280:!mt-[24px] screen1280:!rounded-[32px] screen1280:!h-[80px] screen1280:!max-w-[1280px] screen1280:!mx-auto screen1280:!pl-[24px] screen1280:!border screen1280:!px-[16px]",
+                "items-center"
+              )}
+            >
+              <div className="flex gap-[12px] screen744:!gap-[24px] screen1280:!gap-[64px] items-center w-full">
+                <Image
+                  onClick={() => router.push("/")}
+                  alt="full logo"
+                  width={133}
+                  height={40}
+                  className={clsx(
+                    "opacity-100 delay-300 hover:!cursor-pointer screen1280:block hidden"
+                  )}
+                  src="/images/logo.png"
+                />
 
-                  <Image
-                    onClick={() => router.push("/")}
-                    alt="full logo"
-                    width={35}
-                    height={35}
-                    className={clsx(
-                      "opacity-100 delay-300 hover:!cursor-pointer screen1280:hidden block"
-                    )}
-                    src="/images/header-logo-left.png"
-                  />
+                <Image
+                  onClick={() => router.push("/")}
+                  alt="full logo"
+                  width={35}
+                  height={35}
+                  className={clsx(
+                    "opacity-100 delay-300 hover:!cursor-pointer screen1280:hidden block"
+                  )}
+                  src="/images/header-logo-left.png"
+                />
 
-                  <DesktopNavigation />
+                <DesktopNavigation />
 
-                </div>
-
-                <div className="flex items-center justify-between h-[48px]">
-                  <div className="hidden screen744:!flex flex-col"></div>
-
-                  {/* right side */}
-                  <TopHeaderRightSide />
-                </div>
               </div>
+
+              <div className="flex items-center justify-between h-[48px]">
+                <div className="hidden screen744:!flex flex-col"></div>
+
+                {/* right side */}
+                <TopHeaderRightSide />
+              </div>
+            </div>
+          </div>
+
+          {surveyVisible && (
+            <div className="fixed inset-0 z-[99] flex screen1280:!pt-[101px] justify-center bg-[#F4F7FF]">
+              <OnboardingSurvey onComplete={() => setSurveyVisible(false)} />
             </div>
           )}
 
@@ -864,9 +850,9 @@ const LayoutClient = ({ children }: any) => {
         </div>
 
         {/* bottom menu for mobile */}
-        {!hideMainHeaderForOfficialExam && <BottomNavigation />}
+        <BottomNavigation />
       </div >
-      {isSignedIn && <FloatingChatIcon autoOpen={false} />}
+      <AskBeavoModal />
       <GlobalInteractiveProvider />
     </>
   );

@@ -1,9 +1,7 @@
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import LockOpen from "@mui/icons-material/LockOpen";
-import Schedule from "@mui/icons-material/Schedule";
-import BarChart from "@mui/icons-material/BarChart";
+import { LockOpen, Clock, BarChart2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PremiumBadge from "../PremiumBadge";
 import { TPracticeDto } from "@/models/practice.model";
@@ -98,7 +96,7 @@ const ListeningPracticeCard = ({
             {numberOfQuestions} question{numberOfQuestions !== 1 ? "s" : ""}
           </div>
           <div className="flex items-center mr-3">
-            <Schedule className="h-3 w-3 mr-1" /> {practice.duration}
+            <Clock className="h-3 w-3 mr-1" /> {practice.duration}
           </div>
         </div>
         <div className="flex items-center text-xs text-[#616161] mt-auto mb-1">
@@ -109,7 +107,7 @@ const ListeningPracticeCard = ({
                 practice.difficulty
               )} text-xs px-2 py-0 h-5`}
             >
-              <BarChart className="h-3 w-3 mr-1" />{" "}
+              <BarChart2 className="h-3 w-3 mr-1" />{" "}
               {getDifficultyLabel(practice.difficulty)}
             </Badge>
           </div>

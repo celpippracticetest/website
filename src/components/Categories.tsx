@@ -1,10 +1,6 @@
 
 "use client"
-import Headphones from "@mui/icons-material/Headphones";
-import MenuBook from "@mui/icons-material/MenuBook";
-import Draw from "@mui/icons-material/Draw";
-import Mic from "@mui/icons-material/Mic";
-import LibraryAddCheck from "@mui/icons-material/LibraryAddCheck";
+import { Headphones, BookOpen, Pen, Mic, BookOpenCheck } from "lucide-react";
 import Link from "next/link";
 
 const Categories = () => {
@@ -12,26 +8,26 @@ const Categories = () => {
     {
       name: "Listening",
       icon: <Headphones className="w-10 h-10 text-blue-500 group-hover:text-white transition-colors" />,
-      path: "/listening",
+      path: "/practice-overview"
     },
     {
       name: "Speaking",
       icon: <Mic className="w-10 h-10 text-purple-500 group-hover:text-white transition-colors" />,
-      path: "/speaking",
+      path: "/practice-overview"
     },
     {
       name: "Writing",
-      icon: <Draw className="w-10 h-10 text-green-500 group-hover:text-white transition-colors" />,
-      path: "/writing",
+      icon: <Pen className="w-10 h-10 text-green-500 group-hover:text-white transition-colors" />,
+      path: "/practice-overview"
     },
     {
       name: "Reading",
-      icon: <MenuBook className="w-10 h-10 text-red-500 group-hover:text-white transition-colors" />,
-      path: "/reading",
+      icon: <BookOpen className="w-10 h-10 text-red-500 group-hover:text-white transition-colors" />,
+      path: "/practice-overview"
     }//,
     // {
     //   name: "Mock Exams",
-    //   icon: <LibraryAddCheck className="w-10 h-10 text-orange-500 group-hover:text-white transition-colors" />,
+    //   icon: <BookOpenCheck className="w-10 h-10 text-orange-500 group-hover:text-white transition-colors" />,
     //   path: "/exams"
     // }
   ];
