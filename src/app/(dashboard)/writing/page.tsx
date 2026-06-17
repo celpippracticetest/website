@@ -9,30 +9,23 @@ import { TaskRepository } from "@/repositories/tasks.repo";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import { ObjectId } from "bson";
-import { permanentRedirect, redirect, RedirectType } from "next/navigation";
+import { redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
 import { skillPagesContent } from "@/data/skill-pages-content";
-import type { Metadata } from "next";
-import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
-import { Box, Typography } from "@mui/material";
-import { skillHubPageMetadata } from "@/lib/skillHubPageMetadata";
+interface PracticeTask {
+  taskNumber: string;
+  name: string;
+}
 interface PracticeSection {
-  tasks: {
-    id: string;
-    category: string;
-    taskNumber: string;
-    name: string;
-  }[];
+  tasks: PracticeTask[];
   route: string;
 }
 
-const writingMetadataBase: Metadata = {
-  title: "CELPIP Practice Exam: Free CELPIP Writing Practice Test",
+export const metadata = {
+  title: "Free CELPIP Writing Practice Tests & Mock Exams | CELPIPPRACTICETEST",
   description:
-    "CELPIP practice exam for Writing: realistic email and survey tasks, instant AI feedback, and model answers. Improve grammar, coherence, and task response.",
+    "Get higher CELPIP Writing marks with practice prompts, instant AI feedback, and model answers. Hone grammar, coherence, task response fast | CELPIPPRACTICETEST.com",
   keywords: [
-    "celpip practice exam",
-    "free celpip practice exam",
     "celpip writing practice test",
     "celpip sample writing test",
     "celpip writing practice",
@@ -49,24 +42,6 @@ const writingMetadataBase: Metadata = {
     canonical: "https://celpippracticetest.com/writing",
   },
 };
-
-export async function generateMetadata({
-  searchParams,
-}: {
-  searchParams: Promise<{ [key: string]: string | undefined }>;
-}): Promise<Metadata> {
-  const { taskId } = await searchParams;
-  const hubMeta = await skillHubPageMetadata(
-    "writing",
-    taskId,
-    writingMetadataBase.title as string,
-    writingMetadataBase.description as string
-  );
-  return {
-    keywords: writingMetadataBase.keywords,
-    ...hubMeta,
-  };
-}
 
 const WritingPage = async ({
   searchParams,
@@ -118,53 +93,29 @@ const WritingPage = async ({
   if (!selectedPracticeId && !taskId) {
     return (
       <ShowTaskHeader>
-        <Box
-          sx={{
-            display: "flex",
-            mt: { xs: 4, sm: 0 },
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 1,
-            maxWidth: 1200,
-            width: 1,
-            height: 60,
-            flexShrink: 0,
-            borderRadius: 1.5,
-            bgcolor: "#D5F5F0",
-          }}
-        >
-          <Box sx={{ color: "#0DAA94", display: "flex", alignItems: "center" }}>
-            <SvgWritingPart />
-          </Box>
-          <Typography component="h1" sx={{ color: "#37465C", fontWeight: 600, fontSize: 20 }}>
-            Writing Practice
-          </Typography>
-        </Box>
-        <ShowTasks tasks={writingTasks} />
+        <div className="flex  h-[52px] screen744:!hidden gap-[8px] flex-col w-full items-start">
+          <span className="text-[18px] text-[#37465C] font-semibold">
+            Practice
+          </span>
+          <span className="text-[14px] text-[#76808F] font-normal">
+            Writing
+          </span>
+        </div>
+        <ShowTasks tasks={writingTasks.map(t => ({ ...t, icon: <SvgWritingPart className="text-[#0DAA94]" />, title: "Writing Practice" }))} />
       </ShowTaskHeader>
     );
   }
 
-  if (selectedPracticeId && taskId) {
-    permanentRedirect(`/writing/${selectedPracticeId}/${taskId}`);
-  }
-  if (selectedPracticeId && !taskId) {
-    redirect("/practice-overview", RedirectType.replace);
-  }
-  if (!taskId) {
-    redirect("/practice-overview", RedirectType.replace);
-  }
-
-  const task: TTaskSchemaDto | null = await taskRepo.findTaskById(taskId);
+  const task: TTaskSchemaDto | null = await taskRepo.findTaskById(taskId ?? "");
   if (!task) {
-    redirect("/practice-overview", RedirectType.push);
+    redirect("practice-overview", RedirectType.push);
   }
 
   const practiceRepo = new PracticeRepository(documentsClient);
   const practices = await practiceRepo.getAllPractice(
     {
       type: "WRITING",
-      taskId: new ObjectId(taskId) as unknown as string,
+      taskId: taskId ? (new ObjectId(taskId) as unknown as string) : undefined,
     },
     0,
     200
@@ -176,10 +127,9 @@ const WritingPage = async ({
     selectedPractice = await practiceRepo.findPractice(selectedPracticeId);
 
     if (
-      !hasPaidPracticeAccess(
-        user?.publicMetadata.plan as string | undefined,
-        user?.publicMetadata.purchaseDate as string | undefined
-      ) &&
+      (!user ||
+        !user.publicMetadata.plan ||
+        user.publicMetadata.plan !== "premium") &&
       selectedPractice &&
       !selectedPractice.isFree
     ) {
@@ -203,81 +153,16 @@ const WritingPage = async ({
       );
   }
 
-  const strategyBodySx = {
-    mt: 2,
-    fontSize: 15,
-    lineHeight: "24px",
-    color: "#526071",
-  };
-
   return (
-    <Box
-      component="main"
-      sx={{
-        bgcolor: "#F2F6FF",
-        minHeight: "100vh",
-        display: "flex",
-        width: 1,
-        justifyContent: "center",
-      }}
-    >
-      <Box sx={{ width: 1, maxWidth: 1280 }}>
-        <Typography
-          component="h1"
-          sx={{
-            position: "absolute",
-            width: "1px",
-            height: "1px",
-            p: 0,
-            m: "-1px",
-            overflow: "hidden",
-            clip: "rect(0, 0, 0, 0)",
-            whiteSpace: "nowrap",
-            border: 0,
-          }}
-        >
-          CELPIP Writing Practice
-        </Typography>
-        <WritingPractice
-          showHeader={true}
-          allPractices={practices.items}
-          selectedPractice={selectedPractice}
-          task={task}
-          completedPracticeId={completedPracticeId}
-        />
-        {!user && !selectedPractice?.isFree && (
-          <Box component="section" sx={{ px: 2, pb: 5 }}>
-            <Typography component="h2" sx={{ fontSize: 22, fontWeight: 600, color: "#37465C" }}>
-              CELPIP Writing practice strategy
-            </Typography>
-            <Typography component="p" sx={strategyBodySx}>
-              Raise Writing performance by organizing each response with a clear purpose, logical
-              paragraph flow, and accurate grammar under exam timing.
-            </Typography>
-            <Typography component="p" sx={strategyBodySx}>
-              After each task, review coherence, task response, vocabulary variety, and sentence
-              control to identify one priority fix for your next attempt.
-            </Typography>
-            <Typography component="p" sx={strategyBodySx}>
-              A reliable method is to plan before you write. Spend one to two minutes defining your
-              purpose, main points, and tone. This short planning step prevents off-topic responses
-              and improves organization, which is critical for higher band scoring in CELPIP tasks.
-            </Typography>
-            <Typography component="p" sx={strategyBodySx}>
-              During revision, prioritize high-impact edits: sentence clarity, verb tense
-              consistency, and linking phrases that improve flow. You do not need advanced language
-              in every sentence. You need clear, correct, and relevant communication from start to
-              finish.
-            </Typography>
-            <Typography component="p" sx={strategyBodySx}>
-              Build confidence by comparing older and newer responses side by side. When you can see
-              stronger structure and fewer repeated errors over time, your writing process becomes
-              faster and more stable under exam timing.
-            </Typography>
-          </Box>
-        )}
-      </Box>
-    </Box>
+    <main className=" bg-[#F2F6FF] min-h-screen flex w-full justify-center ">
+      <WritingPractice
+        showHeader={true}
+        allPractices={practices.items}
+        selectedPractice={selectedPractice}
+        task={task}
+        completedPracticeId={completedPracticeId}
+      />
+    </main>
   );
 };
 

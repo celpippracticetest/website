@@ -1,63 +1,45 @@
 "use client";
 
 import PracticeOverview from "@/components/dashboard-app/PracticeOverview";
-import PendingDiagnosticBanner from "@/components/dashboard-app/PendingDiagnosticBanner";
 import { useEffect, useState } from "react";
-import { TTaskSchemaDto } from "@/models/tasks.model";
-import { useHybridWebUser } from "@/hooks/useHybridWebUser";
-import { Box, Skeleton, Stack, Typography } from "@mui/material";
 
-const practiceOverviewPageBg =
-  "linear-gradient(135deg, #FAFBFF 0%, #EEF2FF 50%, #F8FAFC 100%)";
-const practiceOverviewNavy = "#1B2B5A";
-const practiceOverviewMuted = "#475569";
+type TaskCategory = "speaking" | "listening" | "writing" | "reading";
 
-interface TasksList {
-  speaking: TTaskSchemaDto[];
-  listening: TTaskSchemaDto[];
-  writing: TTaskSchemaDto[];
-  reading: TTaskSchemaDto[];
+interface TaskItem {
+  category: TaskCategory;
+  [key: string]: any;
 }
 
+interface TasksList {
+  speaking: TaskItem[];
+  listening: TaskItem[];
+  writing: TaskItem[];
+  reading: TaskItem[];
+}
+
+// Skeleton loader component
 const PracticeSkeletonLoader = () => (
-  <Stack spacing={3} sx={{ width: 1, maxWidth: 1200, alignSelf: "flex-end", px: 2, pt: 2, pb: 3 }}>
-    <Skeleton
-      variant="rounded"
-      height={48}
-      width={256}
-      sx={{ bgcolor: "rgba(15, 23, 42, 0.08)" }}
-    />
-    <Box
-      sx={{
-        display: "grid",
-        gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
-        gap: 2,
-      }}
-    >
-      {[...Array(6)].map((_, i) => (
-        <Stack
-          key={i}
-          spacing={1.5}
-          sx={{
-            bgcolor: "rgba(255, 255, 255, 0.85)",
-            p: 3,
-            borderRadius: 3,
-            border: "1px solid rgba(27, 43, 90, 0.10)",
-            boxShadow: "0 12px 36px rgba(15, 23, 42, 0.06)",
-          }}
-        >
-          <Skeleton variant="rounded" height={24} width="75%" />
-          <Skeleton variant="rounded" height={16} />
-          <Skeleton variant="rounded" height={16} width="83%" />
-          <Skeleton variant="rounded" height={40} width={128} sx={{ mt: 1 }} />
-        </Stack>
-      ))}
-    </Box>
-  </Stack>
+  <div className="flex flex-col w-full items-end p-6 animate-pulse">
+    <div className="w-full max-w-6xl space-y-6">
+      {/* Header skeleton */}
+      <div className="h-12 bg-gray-200 rounded-lg w-64"></div>
+
+      {/* Grid skeleton */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="bg-white p-6 rounded-xl shadow-sm space-y-3">
+            <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+            <div className="h-4 bg-gray-100 rounded w-full"></div>
+            <div className="h-4 bg-gray-100 rounded w-5/6"></div>
+            <div className="h-10 bg-gray-200 rounded w-32 mt-4"></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
 );
 
 const DashboardApp = () => {
-  const { isSignedIn } = useHybridWebUser();
   const [tasks, setTasks] = useState<TasksList>({
     speaking: [],
     listening: [],
@@ -73,7 +55,7 @@ const DashboardApp = () => {
         if (response.ok) {
           const data = await response.json();
           const tasksList = data.items.reduce(
-            (current: TasksList, taskItem: TTaskSchemaDto) => {
+            (current: TasksList, taskItem: TaskItem) => {
               current[taskItem.category].push(taskItem);
               return current;
             },
@@ -91,86 +73,15 @@ const DashboardApp = () => {
     fetchTasks();
   }, []);
 
-  const bodySx = {
-    color: practiceOverviewMuted,
-    fontSize: { xs: 15, sm: 16 },
-    lineHeight: 1.625,
-    mt: 2,
-  };
+  // Show skeleton loader while fetching - page renders instantly
+  if (isLoading) {
+    return <PracticeSkeletonLoader />;
+  }
 
   return (
-    <Box
-      component="main"
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        width: 1,
-        alignItems: "flex-end",
-        mb: "120px",
-        background: practiceOverviewPageBg,
-        minHeight: "100%",
-      }}
-    >
-      <Typography
-        component="h1"
-        sx={{
-          position: "absolute",
-          width: "1px",
-          height: "1px",
-          p: 0,
-          m: -1,
-          overflow: "hidden",
-          clip: "rect(0, 0, 0, 0)",
-          whiteSpace: "nowrap",
-          border: 0,
-        }}
-      >
-        CELPIP Practice Test — Skill Overview & Sample Tasks
-      </Typography>
-      <PendingDiagnosticBanner />
-      {isLoading ? <PracticeSkeletonLoader /> : <PracticeOverview tasks={tasks} />}
-      {!isSignedIn && (
-        <Box
-          component="section"
-          sx={{ width: 1, maxWidth: 1200, mx: "auto", px: 2, pt: 3, pb: 2 }}
-        >
-          <Typography
-            component="h2"
-            sx={{
-              fontWeight: 800,
-              color: practiceOverviewNavy,
-              fontSize: { xs: 28, sm: 34 },
-              letterSpacing: "-0.02em",
-            }}
-          >
-            CELPIP Practice Test — By Skill
-          </Typography>
-          <Typography component="p" sx={{ ...bodySx, mt: 1.5, fontSize: 16, lineHeight: 1.625 }}>
-            Choose focused CELPIP practice by skill and train with realistic task formats for
-            Listening, Reading, Writing, and Speaking. This page helps you plan daily study, pick the
-            next task quickly, and build confidence before full mock exams.
-          </Typography>
-          <Typography component="p" sx={bodySx}>
-            The most effective preparation combines deliberate practice and repetition. Start with
-            your weakest skill, complete one timed task, and review every incorrect answer or weak
-            response. Then move to a second skill to improve stamina and concentration across
-            multiple sections, similar to the real CELPIP exam experience.
-          </Typography>
-          <Typography component="p" sx={bodySx}>
-            Use short cycles: practice, review, correct, and repeat. In Listening and Reading, track
-            question types you miss most often. In Writing and Speaking, focus on structure,
-            grammar control, and idea development. Small targeted improvements in each cycle are
-            more reliable than random high-volume practice.
-          </Typography>
-          <Typography component="p" sx={bodySx}>
-            If your exam date is close, prioritize consistency over intensity. Daily focused sessions
-            of 45 to 90 minutes usually outperform occasional long sessions. Keep notes on recurring
-            mistakes, revisit them weekly, and measure progress by accuracy, timing, and confidence
-            under test-like conditions.
-          </Typography>
-        </Box>
-      )}
-    </Box>
+    <div className="flex flex-col w-full items-end mb-[120px]">
+      <PracticeOverview tasks={tasks} />
+    </div>
   );
 };
 

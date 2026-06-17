@@ -9,21 +9,16 @@ import { TaskRepository } from "@/repositories/tasks.repo";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import { ObjectId } from "bson";
-import { permanentRedirect, redirect, RedirectType } from "next/navigation";
+import { redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
 import { skillPagesContent } from "@/data/skill-pages-content";
-import type { Metadata } from "next";
-import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
-import { Box, Typography } from "@mui/material";
-import { skillHubPageMetadata } from "@/lib/skillHubPageMetadata";
 
-const speakingMetadataBase: Metadata = {
-  title: "CELPIP Practice Exam: Free CELPIP Speaking Practice Test",
+export const metadata = {
+  title:
+    "Free CELPIP Speaking Practice Tests & Mock Exams | CELPIPPRACTICETEST",
   description:
-    "CELPIP practice exam for Speaking: timed prompts, AI scoring, and tips for fluency. Train under realistic conditions before your real test.",
+    "Simulate the real CELPIP Speaking test with timed tasks, AI grading, and expert tips. Track progress, boost fluency, and hit your target score | CELPIPPRACTICETEST.com",
   keywords: [
-    "celpip practice exam",
-    "free celpip practice exam",
     "celpip speaking practice test",
     "celpip speaking test",
     "celpip speaking practice",
@@ -36,31 +31,12 @@ const speakingMetadataBase: Metadata = {
     canonical: "https://celpippracticetest.com/speaking",
   },
 };
-
-export async function generateMetadata({
-  searchParams,
-}: {
-  searchParams: Promise<{ [key: string]: string | undefined }>;
-}): Promise<Metadata> {
-  const { taskId } = await searchParams;
-  const hubMeta = await skillHubPageMetadata(
-    "speaking",
-    taskId,
-    speakingMetadataBase.title as string,
-    speakingMetadataBase.description as string
-  );
-  return {
-    keywords: speakingMetadataBase.keywords,
-    ...hubMeta,
-  };
+interface PracticeTask {
+  taskNumber: string;
+  name: string;
 }
 interface PracticeSection {
-  tasks: {
-    id: string;
-    category: string;
-    taskNumber: string;
-    name: string;
-  }[];
+  tasks: PracticeTask[];
   route: string;
 }
 const SpeakingPage = async ({
@@ -112,53 +88,35 @@ const SpeakingPage = async ({
   if (!selectedPracticeId && !taskId) {
     return (
       <ShowTaskHeader>
-        <Box
-          sx={{
-            display: "flex",
-            mt: { xs: 4, sm: 0 },
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 1,
-            maxWidth: 1200,
-            width: 1,
-            height: 60,
-            flexShrink: 0,
-            borderRadius: 1.5,
-            bgcolor: "#FFEBD6",
-          }}
-        >
-          <Box sx={{ color: "#F27059", display: "flex", alignItems: "center" }}>
-            <SvgSpeakingPart />
-          </Box>
-          <Typography component="h1" sx={{ color: "#37465C", fontWeight: 600, fontSize: 20 }}>
+        <div className="flex  h-[52px] screen744:!hidden gap-[8px] flex-col w-full items-start">
+          <span className="text-[18px] text-[#37465C] font-semibold">
+            Practice
+          </span>
+          <span className="text-[14px] text-[#76808F] font-normal">
+            Speaking
+          </span>
+        </div>
+        <div className="flex mt-[32px]  screen744:!mt-[0] items-center justify-center gap-[8px] max-w-[1200px] w-full h-[60px] rounded-[12px] bg-[#FFEBD6]">
+          <SvgSpeakingPart className="text-[#F27059]" />
+          <span className="text-[#37465C] font-semibold text-[20px]">
             Speaking Practice
-          </Typography>
-        </Box>
+          </span>
+        </div>
         <ShowTasks tasks={speakingTasks} />
       </ShowTaskHeader>
     );
   }
-
-  if (selectedPracticeId && taskId) {
-    permanentRedirect(`/speaking/${selectedPracticeId}/${taskId}`);
-  }
-  if (selectedPracticeId && !taskId) {
-    redirect("/practice-overview", RedirectType.replace);
-  }
-  if (!taskId) {
-    redirect("/practice-overview", RedirectType.replace);
-  }
-
-  const task: TTaskSchemaDto | null = await taskRepo.findTaskById(taskId);
+  const task: TTaskSchemaDto | null = await taskRepo.findTaskById(taskId ?? "");
   if (!task) {
-    redirect("/practice-overview", RedirectType.replace);
+    redirect("practice-overview", RedirectType.replace);
+    return <div></div>;
   }
 
   const practiceRepo = new PracticeRepository(documentsClient);
   const practices = await practiceRepo.getAllPractice(
     {
       type: "SPEAKING",
-      taskId: new ObjectId(taskId) as unknown as string,
+      taskId: taskId ? (new ObjectId(taskId) as unknown as string) : undefined,
     },
     0,
     200
@@ -170,10 +128,9 @@ const SpeakingPage = async ({
     selectedPractice = await practiceRepo.findPractice(selectedPracticeId);
 
     if (
-      !hasPaidPracticeAccess(
-        user?.publicMetadata.plan as string | undefined,
-        user?.publicMetadata.purchaseDate as string | undefined
-      ) &&
+      (!user ||
+        !user.publicMetadata.plan ||
+        user.publicMetadata.plan !== "premium") &&
       selectedPractice &&
       !selectedPractice.isFree
     ) {
@@ -197,80 +154,16 @@ const SpeakingPage = async ({
       );
   }
 
-  const strategyBodySx = {
-    mt: 2,
-    fontSize: 15,
-    lineHeight: "24px",
-    color: "#526071",
-  };
-
   return (
-    <Box
-      component="main"
-      sx={{
-        bgcolor: "#F2F6FF",
-        minHeight: "100vh",
-        display: "flex",
-        width: 1,
-        justifyContent: "center",
-      }}
-    >
-      <Box sx={{ width: 1, maxWidth: 1280 }}>
-        <Typography
-          component="h1"
-          sx={{
-            position: "absolute",
-            width: "1px",
-            height: "1px",
-            p: 0,
-            m: "-1px",
-            overflow: "hidden",
-            clip: "rect(0, 0, 0, 0)",
-            whiteSpace: "nowrap",
-            border: 0,
-          }}
-        >
-          CELPIP Speaking Practice
-        </Typography>
-        <SpeakingPractice
-          showHeader={true}
-          allPractices={practices.items}
-          selectedPractice={selectedPractice}
-          task={task}
-          completedPracticeId={completedPracticeId}
-        />
-        {!user && !selectedPractice?.isFree && (
-          <Box component="section" sx={{ px: 2, pb: 5 }}>
-            <Typography component="h2" sx={{ fontSize: 22, fontWeight: 600, color: "#37465C" }}>
-              CELPIP Speaking practice strategy
-            </Typography>
-            <Typography component="p" sx={strategyBodySx}>
-              Improve Speaking scores by using clear structure, natural pacing, and relevant
-              supporting details for each task prompt.
-            </Typography>
-            <Typography component="p" sx={strategyBodySx}>
-              Practice with a timer, then review pronunciation clarity, grammar control, and idea
-              development to make targeted improvements before the next response.
-            </Typography>
-            <Typography component="p" sx={strategyBodySx}>
-              Start each answer with a simple framework: opening point, supporting detail, and brief
-              conclusion. This structure helps you avoid long pauses and keeps your response focused
-              even when the prompt topic feels unfamiliar.
-            </Typography>
-            <Typography component="p" sx={strategyBodySx}>
-              Record practice responses and listen critically. Note where your ideas lose clarity,
-              where grammar breaks under pressure, and where pronunciation affects understanding. Fix
-              one pattern at a time, then re-record the same prompt to confirm improvement.
-            </Typography>
-            <Typography component="p" sx={strategyBodySx}>
-              The goal is not perfect accent. The goal is clear communication with stable pacing and
-              relevant content. Consistent practice with timed tasks builds the confidence needed to
-              deliver complete, coherent answers on exam day.
-            </Typography>
-          </Box>
-        )}
-      </Box>
-    </Box>
+    <main className=" bg-[#F2F6FF] min-h-screen flex w-full justify-center ">
+      <SpeakingPractice
+        showHeader={true}
+        allPractices={practices.items}
+        selectedPractice={selectedPractice}
+        task={task}
+        completedPracticeId={completedPracticeId}
+      />
+    </main>
   );
 };
 
