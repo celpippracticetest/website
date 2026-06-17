@@ -9,7 +9,6 @@ import {
   getRelatedPublishedPosts,
   isIndexablePublishedBlogSlug,
 } from "@/lib/blog/public";
-import { PUBLIC_PAGE_REVALIDATE_SECONDS } from "@/lib/publicPageCache";
 import { linkContentServer } from "@/lib/content-linker-server";
 import { BlogCtaSection } from "@/components/pages/blog/BlogCtaSection";
 import BlogArticleAnalytics from "@/components/analytics/BlogArticleAnalytics";
@@ -24,7 +23,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import ChevronRight from "@mui/icons-material/ChevronRight";
 import { normalizeWikiSlug } from "@/lib/wiki/slug";
 
-export const revalidate = PUBLIC_PAGE_REVALIDATE_SECONDS;
+/** Keep in sync with `PUBLIC_PAGE_REVALIDATE_SECONDS` in `@/lib/publicPageCache`. */
+export const revalidate = 3600;
 
 interface BlogPageProps {
   params: Promise<{ slug: string }>;

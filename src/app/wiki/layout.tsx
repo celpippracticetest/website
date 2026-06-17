@@ -4,10 +4,10 @@ import PublicPageShell from "@/components/pages/landing/PublicPageShell";
 import PublicPageFooter from "@/components/pages/landing/PublicPageFooter";
 import {
   PUBLIC_PAGE_CACHE_HEADERS,
-  PUBLIC_PAGE_REVALIDATE_SECONDS,
 } from "@/lib/publicPageCache";
 
-export const revalidate = PUBLIC_PAGE_REVALIDATE_SECONDS;
+/** Keep in sync with `PUBLIC_PAGE_REVALIDATE_SECONDS` in `@/lib/publicPageCache`. */
+export const revalidate = 3600;
 
 export async function headers() {
   return PUBLIC_PAGE_CACHE_HEADERS;

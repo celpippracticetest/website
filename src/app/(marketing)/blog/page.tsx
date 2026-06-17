@@ -12,9 +12,9 @@ import ArrowForward from "@mui/icons-material/ArrowForward";
 import ChevronRight from "@mui/icons-material/ChevronRight";
 import { BlogCtaSection } from "@/components/pages/blog/BlogCtaSection";
 import BlogListAnalytics from "@/components/analytics/BlogListAnalytics";
-import { PUBLIC_PAGE_REVALIDATE_SECONDS } from "@/lib/publicPageCache";
 
-export const revalidate = PUBLIC_PAGE_REVALIDATE_SECONDS;
+/** Keep in sync with `PUBLIC_PAGE_REVALIDATE_SECONDS` in `@/lib/publicPageCache`. */
+export const revalidate = 3600;
 
 const DEFAULT_APP_BASE_URL = "https://celpippracticetest.com";
 

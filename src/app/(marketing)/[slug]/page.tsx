@@ -5,9 +5,9 @@ import {
   getPublishedProfessionPageBySlug,
   professionPageToTemplateConfig,
 } from "@/lib/profession-pages/public";
-import { PUBLIC_PAGE_REVALIDATE_SECONDS } from "@/lib/publicPageCache";
 
-export const revalidate = PUBLIC_PAGE_REVALIDATE_SECONDS;
+/** Keep in sync with `PUBLIC_PAGE_REVALIDATE_SECONDS` in `@/lib/publicPageCache`. */
+export const revalidate = 3600;
 
 const BASE_URL = process.env.APP_BASE_URL || "https://celpippracticetest.com";
 
