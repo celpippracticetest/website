@@ -38,21 +38,20 @@ const WIKI_SEO_BY_SLUG: Record<
   },
 };
 
-const WIKI_TITLE_SUFFIX = " | CELPIP Wiki";
+const WIKI_TITLE_SUFFIX = " | Guide";
+const WIKI_TITLE_MAX_LENGTH = 60;
 
 function buildWikiTitle(title: string): string {
   const trimmed = title.trim();
   const withSuffix = `${trimmed}${WIKI_TITLE_SUFFIX}`;
 
-  if (withSuffix.length <= 55) {
+  if (withSuffix.length <= WIKI_TITLE_MAX_LENGTH) {
     return withSuffix;
   }
 
-  if (trimmed.length <= 55) {
-    return trimmed;
-  }
-
-  return `${trimmed.slice(0, 52).trim()}...`;
+  const availableTitleLength =
+    WIKI_TITLE_MAX_LENGTH - WIKI_TITLE_SUFFIX.length - 3;
+  return `${trimmed.slice(0, availableTitleLength).trim()}...${WIKI_TITLE_SUFFIX}`;
 }
 
 export async function generateMetadata({

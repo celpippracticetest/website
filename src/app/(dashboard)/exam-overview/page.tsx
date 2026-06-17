@@ -116,9 +116,9 @@ const ExamsPage = async () => {
               </p>
             </Box>
           ) : (
-            <h1 className="mb-4 text-center text-2xl font-bold text-[#37465C] screen744:text-left">
+            <h2 className="mb-4 text-center text-2xl font-bold text-[#37465C] screen744:text-left">
               CELPIP Mock Exams
-            </h1>
+            </h2>
           )
         ) : noUser ? (
           <div className="mb-8 md:mb-10">
@@ -174,7 +174,7 @@ const ExamsPage = async () => {
           >
             <Stack spacing={1}>
               <Typography
-                component="h1"
+                component="h2"
                 sx={{
                   fontSize: { xs: "1.75rem", md: "2rem" },
                   lineHeight: 1.2,
