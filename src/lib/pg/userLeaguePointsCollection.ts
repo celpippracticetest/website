@@ -10,6 +10,7 @@ import {
   type AppDoc,
 } from "./document";
 import type { SqlParts } from "./whereBuilder";
+import { bindUnsafeParams } from "./bindUnsafeParams";
 import { PgAggregateCursor, PgFindCursor } from "./pgCollection";
 
 const OID_HEX = /^[a-f0-9]{24}$/i;
@@ -338,7 +339,7 @@ export class PgUserLeaguePointsCollection<T extends AppDoc = AppDoc> {
     if (sqlParts && sqlParts.clause !== "true") {
       const rows = await this.sql.unsafe(
         `SELECT COUNT(*)::int AS c FROM public.user_league_points WHERE ${sqlParts.clause}`,
-        sqlParts.params as never[]
+        bindUnsafeParams(this.sql, sqlParts.params) as never[]
       );
       return rows[0]?.c ?? 0;
     }
@@ -361,7 +362,7 @@ export class PgUserLeaguePointsCollection<T extends AppDoc = AppDoc> {
     if (sqlParts && sqlParts.clause !== "true") {
       const rows = await this.sql.unsafe(
         `SELECT ${USER_LEAGUE_POINTS_COLUMNS} FROM public.user_league_points WHERE ${sqlParts.clause} ORDER BY mongo_id`,
-        sqlParts.params as never[]
+        bindUnsafeParams(this.sql, sqlParts.params) as never[]
       );
       return mapRowsToDocs<T>(rows);
     }
@@ -554,7 +555,7 @@ export class PgUserLeaguePointsCollection<T extends AppDoc = AppDoc> {
         if (sqlParts && sqlParts.clause !== "true") {
           const rows = await this.sql.unsafe(
             `SELECT ${USER_LEAGUE_POINTS_COLUMNS} FROM public.user_league_points WHERE ${sqlParts.clause} ORDER BY mongo_id`,
-            sqlParts.params as never[]
+            bindUnsafeParams(this.sql, sqlParts.params) as never[]
           );
           docs = mapRowsToDocs(rows);
           return mingoAggregate(docs, pipeline as never[], {

@@ -8,6 +8,7 @@ import {
   type AppDoc,
 } from "./document";
 import type { SqlParts } from "./whereBuilder";
+import { bindUnsafeParams } from "./bindUnsafeParams";
 import { PgFindCursor } from "./pgCollection";
 
 const OID_HEX = /^[a-f0-9]{24}$/i;
@@ -195,7 +196,7 @@ export class PgOnboardingNewResultsCollection<T extends AppDoc = AppDoc> {
     if (sqlParts && sqlParts.clause !== "true") {
       const rows = await this.sql.unsafe(
         `SELECT ${ONBOARDING_NEW_RESULT_COLUMNS} FROM public.onboarding_new_results WHERE ${sqlParts.clause} ORDER BY answered_at DESC`,
-        sqlParts.params as never[]
+        bindUnsafeParams(this.sql, sqlParts.params) as never[]
       );
       return mapRowsToDocs<T>(rows).filter((doc) => q.test(doc as never));
     }
@@ -234,7 +235,7 @@ export class PgOnboardingNewResultsCollection<T extends AppDoc = AppDoc> {
     if (sqlParts && sqlParts.clause !== "true") {
       const rows = await this.sql.unsafe(
         `SELECT COUNT(*)::int AS c FROM public.onboarding_new_results WHERE ${sqlParts.clause}`,
-        sqlParts.params as never[]
+        bindUnsafeParams(this.sql, sqlParts.params) as never[]
       );
       return rows[0]?.c ?? 0;
     }

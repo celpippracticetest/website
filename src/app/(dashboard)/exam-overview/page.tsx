@@ -16,6 +16,8 @@ import type { TExamSchemaDto } from "@/models/exam.model";
 import { getUiAbVariant } from "@/lib/uiAbTest.server";
 import { Box } from "@/components/ui/Box";
 
+export const revalidate = 3600;
+
 const examOverviewTimingLog =
   process.env.NODE_ENV === "development" ||
   process.env.EXAM_OVERVIEW_TIMING_LOG === "1";

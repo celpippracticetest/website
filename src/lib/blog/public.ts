@@ -5,9 +5,12 @@ import { BlogRepository } from "@/repositories/blog.repo";
 
 const PUBLIC_BLOG_DB_TIMEOUT_MS = 800;
 
-const NON_INDEXABLE_LEGACY_BLOG_SLUGS = new Set([
-  "celpip-leauage",
-]);
+/** Typo / retired CMS slugs → permanent redirect targets. */
+const LEGACY_BLOG_SLUG_REDIRECTS: Record<string, string> = {
+  "celpip-leauage": "/blog/complete-guide-celpip-test-booking-results-clb",
+};
+
+const NON_INDEXABLE_LEGACY_BLOG_SLUGS = new Set(Object.keys(LEGACY_BLOG_SLUG_REDIRECTS));
 
 async function withPublicBlogTimeout<T>(
   label: string,
@@ -36,6 +39,10 @@ async function withPublicBlogTimeout<T>(
 
 export function isIndexablePublishedBlogSlug(slug: string): boolean {
   return !NON_INDEXABLE_LEGACY_BLOG_SLUGS.has(slug.trim().toLowerCase());
+}
+
+export function getLegacyBlogSlugRedirect(slug: string): string | null {
+  return LEGACY_BLOG_SLUG_REDIRECTS[slug.trim().toLowerCase()] ?? null;
 }
 
 export async function getPublishedBlogPosts(

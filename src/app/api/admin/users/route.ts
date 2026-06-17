@@ -21,14 +21,19 @@ const ADMIN_USERS_SORT_FIELDS = new Set([
 ]);
 
 function normalizeAdminSortBy(raw: string | null): string {
-  const v = (raw || "lastActivity").trim();
-  return ADMIN_USERS_SORT_FIELDS.has(v) ? v : "lastActivity";
+  const v = (raw || "createdAt").trim();
+  return ADMIN_USERS_SORT_FIELDS.has(v) ? v : "createdAt";
 }
 
 function toDate(value: unknown): Date | null {
   if (!value) return null;
   const date = value instanceof Date ? value : new Date(String(value));
   return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function toIsoOrNull(value: unknown): string | null {
+  const date = toDate(value);
+  return date ? date.toISOString() : null;
 }
 
 function diffDays(start: Date, end: Date) {
@@ -59,6 +64,7 @@ export async function GET(request: NextRequest) {
 
     try {
       const sql = getSql();
+      const t0 = Date.now();
       const hasProfiles = await userProfilesTableExists(sql);
       const { rows: lightweightRows, totalCount } = hasProfiles
         ? await listAdminUsersFromUserProfiles(sql, {
@@ -78,9 +84,26 @@ export async function GET(request: NextRequest) {
             subscriptionStatus,
           });
 
-      const formattedUsers = lightweightRows.map((user: any) =>
-        formatAdminUserResponse(user)
-      );
+      const listMode = hasProfiles ? "profiles_sql" : "users_documents_sql";
+      if (process.env.NODE_ENV === "development") {
+        console.info(
+          `[admin/users] ${listMode} page=${page} limit=${limit} rows=${lightweightRows.length} total=${totalCount} ${Date.now() - t0}ms`
+        );
+      }
+
+      const formattedUsers = lightweightRows.map((user: Record<string, unknown>) => {
+        try {
+          return formatAdminUserResponse(user);
+        } catch (formatErr) {
+          console.warn("[admin/users] row format skipped:", user._id, formatErr);
+          return formatAdminUserResponse({
+            ...user,
+            subscriptionHistory: [],
+            ipAddresses: [],
+            userAgents: [],
+          });
+        }
+      });
 
       return NextResponse.json({
         users: formattedUsers,
@@ -90,12 +113,32 @@ export async function GET(request: NextRequest) {
           totalCount,
           totalPages: Math.ceil(totalCount / limit),
         },
-        listMode: hasProfiles ? "profiles_sql" : "users_documents_sql",
+        listMode,
       });
     } catch (e) {
-      console.warn(
-        "[admin/users] Supabase/SQL paginated list unavailable; falling back to in-process aggregate (loads all activity docs):",
+      console.error(
+        "[admin/users] SQL paginated list failed:",
         e instanceof Error ? e.message : e
+      );
+      const allowAggregateFallback =
+        process.env.ADMIN_USERS_AGGREGATE_FALLBACK === "1" ||
+        process.env.ADMIN_USERS_AGGREGATE_FALLBACK === "true";
+      if (!allowAggregateFallback) {
+        return NextResponse.json(
+          {
+            error: "Failed to load users list",
+            detail:
+              process.env.NODE_ENV === "development"
+                ? e instanceof Error
+                  ? e.message
+                  : String(e)
+                : undefined,
+          },
+          { status: 503 }
+        );
+      }
+      console.warn(
+        "[admin/users] ADMIN_USERS_AGGREGATE_FALLBACK enabled; using in-process aggregate (loads all activity docs)"
       );
     }
 
@@ -537,8 +580,8 @@ function formatAdminUserResponse(user: Record<string, any>) {
   return {
     userId: user._id,
     email: user.email ?? null,
-    lastActivity: user.lastActivity || null,
-    firstActivity: user.firstActivity || user.createdAt || null,
+    lastActivity: toIsoOrNull(user.lastActivity ?? user.createdAt),
+    firstActivity: toIsoOrNull(user.firstActivity ?? user.createdAt),
     totalActivities: user.totalActivities || 0,
     uniqueIpAddresses: user.uniqueIpAddressesCount || 0,
     uniqueUserAgents: user.uniqueUserAgentsCount || 0,

@@ -1,6 +1,7 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 import { isNonIndexableDeployment } from "./src/lib/searchIndexing";
+import { PUBLIC_PAGE_CACHE_CONTROL } from "./src/lib/publicPageCache";
 
 const withBundleAnalyzer = require("@next/bundle-analyzer")({
   enabled: process.env.ANALYZE === "true",
@@ -29,6 +30,7 @@ const nextConfig: NextConfig = {
       ["/sign-in/clerk", "/sign-in/legacy"],
       ["/sign-up/clerk", "/sign-up/legacy"],
       ["/celpip-writing-email-tips", "/blog/celpip-writing-task-1-samples-email-tone-clb-9-2026"],
+      ["/blog/celpip-leauage", "/blog/complete-guide-celpip-test-booking-results-clb"],
     ].map(([source, destination]) => ({ source, destination, permanent: true }));
     return fixes;
   },
@@ -96,6 +98,35 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         headers: globalHeaders,
+      },
+      {
+        source:
+          "/:path(blog|wiki|pricing|score-calculator|privacy-policy|terms-of-service|contact-us|refund-policy|editorial-policy|free-celpip-practice-test|celpip-speaking-samples|celpip-writing-task-1-samples|celpip-writing-task-2-samples)/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: PUBLIC_PAGE_CACHE_CONTROL,
+          },
+        ],
+      },
+      {
+        source:
+          "/:path(blog|wiki|pricing|score-calculator|privacy-policy|terms-of-service|contact-us|refund-policy|editorial-policy|free-celpip-practice-test|celpip-speaking-samples|celpip-writing-task-1-samples|celpip-writing-task-2-samples)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: PUBLIC_PAGE_CACHE_CONTROL,
+          },
+        ],
+      },
+      {
+        source: "/",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: PUBLIC_PAGE_CACHE_CONTROL,
+          },
+        ],
       },
     ];
   },

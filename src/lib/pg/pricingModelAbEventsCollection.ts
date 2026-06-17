@@ -3,6 +3,7 @@ import { Query, aggregate as mingoAggregate } from "mingo";
 import type { Sql } from "postgres";
 import { prepareInsertDocument, type AppDoc } from "./document";
 import type { SqlParts } from "./whereBuilder";
+import { bindUnsafeParams } from "./bindUnsafeParams";
 import { PgAggregateCursor } from "./pgCollection";
 
 const OID_HEX = /^[a-f0-9]{24}$/i;
@@ -227,7 +228,7 @@ export class PgPricingModelAbEventsCollection<T extends AppDoc = AppDoc> {
     if (sqlParts && sqlParts.clause !== "true") {
       const rows = await this.sql.unsafe(
         `SELECT ${PRICING_MODEL_AB_EVENT_COLUMNS} FROM public.pricing_model_ab_events WHERE ${sqlParts.clause} ORDER BY created_at DESC`,
-        sqlParts.params as never[],
+        bindUnsafeParams(this.sql, sqlParts.params) as never[],
       );
       return mapRowsToDocs<T>(rows).filter((doc) => q.test(doc as never));
     }
@@ -312,7 +313,7 @@ export class PgPricingModelAbEventsCollection<T extends AppDoc = AppDoc> {
         if (sqlParts && sqlParts.clause !== "true") {
           const rows = await this.sql.unsafe(
             `SELECT ${PRICING_MODEL_AB_EVENT_COLUMNS} FROM public.pricing_model_ab_events WHERE ${sqlParts.clause} ORDER BY created_at DESC`,
-            sqlParts.params as never[],
+            bindUnsafeParams(this.sql, sqlParts.params) as never[],
           );
           docs = mapRowsToDocs(rows);
           const q = new Query(match);

@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, startTransition } from "react";
 import SvgChevronDown from "../../icons/ChevronDown";
 import { useEngagementTracking } from "@/hooks/useTracking";
+import { scheduleIdleTask } from "@/lib/scheduleIdle";
 
 const FAQ = () => {
     const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -8,10 +9,12 @@ const FAQ = () => {
 
     const toggleAccordion = (index: number, question: string) => {
         const isClosing = openIndex === index;
+        startTransition(() => {
+            setOpenIndex(isClosing ? null : index);
+        });
         if (!isClosing) {
-            faqClick(question, "Landing Page");
+            scheduleIdleTask(() => faqClick(question, "Landing Page"));
         }
-        setOpenIndex(isClosing ? null : index);
     };
 
     const faqs = [

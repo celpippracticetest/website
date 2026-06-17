@@ -28,7 +28,9 @@ import { getIndexingRobotsDirective } from "@/lib/searchIndexing";
 import { UiVariantProvider } from "@/components/ui-variant/UiVariantProvider";
 import { getUiAbVariant } from "@/lib/uiAbTest.server";
 import { buildRootLayoutJsonLd } from "@/lib/seo/siteSchema";
+import { PUBLIC_PAGE_SKIP_AUTH_HEADER } from "@/lib/publicPageCache";
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Suspense, type ComponentType } from "react";
 
 const NextTopLoaderComponent =
@@ -144,8 +146,12 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const headerStore = await headers();
+  const skipServerAuth = headerStore.get(PUBLIC_PAGE_SKIP_AUTH_HEADER) === "1";
   const uiVariant = await getUiAbVariant();
-  const initialSupabaseUser = await getSupabaseAuthUserFromServerCookies();
+  const initialSupabaseUser = skipServerAuth
+    ? null
+    : await getSupabaseAuthUserFromServerCookies();
   const baseUrl = normalizeAppBaseUrl(process.env.APP_BASE_URL);
   const isProductionAnalytics =
     process.env.NODE_ENV === "production" &&

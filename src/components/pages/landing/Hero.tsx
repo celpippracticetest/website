@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect } from "react";
-import dynamic from "next/dynamic";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import StarIcon from "@mui/icons-material/Star";
 import ExamSectionCard from "./ExamSectionCard";
@@ -10,25 +9,16 @@ import { useInView } from "react-intersection-observer";
 import { Button } from "@/components/v2/Button";
 import { SvgLearning } from "@/components/icons";
 import SvgWord from "@/components/icons/Word";
+import SvgMockExamsColorful from "@/components/icons/MockExamsColorful";
+import SvgListening from "@/components/icons/Listening";
+import SvgSpeaking from "@/components/icons/Speaking";
+import SvgWriting from "@/components/icons/Writing";
+import SvgReading from "@/components/icons/Reading";
 import { cn } from "@/lib/utils";
 import { useHomepageCta } from "@/hooks/useHomepageCta";
-import { useRecentVisitsLiveStat } from "@/hooks/useRecentSignupsLiveStat";
-import { PricingUpgradeModalHeaderList } from "@/components/pages/pricing/PricingUpgradeModalHeaderList";
+import HeroLiveStatsStrip from "./HeroLiveStatsStrip";
 import SvgPlus from "../../icons/Plus";
 import SvgArrowRight from "../../icons/ArrowRight";
-
-const SvgMockExamsColorful = dynamic(
-  () => import("../../icons/MockExamsColorful"),
-  { ssr: false },
-);
-const SvgListening = dynamic(() => import("../../icons/Listening"), {
-  ssr: false,
-});
-const SvgSpeaking = dynamic(() => import("../../icons/Speaking"), {
-  ssr: false,
-});
-const SvgWriting = dynamic(() => import("../../icons/Writing"), { ssr: false });
-const SvgReading = dynamic(() => import("../../icons/Reading"), { ssr: false });
 
 const heroExamSections = [
   {
@@ -94,7 +84,6 @@ const Hero = () => {
     (state) => state,
   );
   const { href, label, shortLabel, trackClick } = useHomepageCta();
-  const { count: visitsCount, display: visitsDisplay } = useRecentVisitsLiveStat("");
 
   useEffect(() => {
     const onScroll = () => {
@@ -156,8 +145,7 @@ const Hero = () => {
               </p>
 
               <div className="mb-8 w-full max-w-[560px] screen1024:max-w-none">
-                <PricingUpgradeModalHeaderList
-                  visitsDisplay={visitsCount != null ? visitsDisplay : undefined}
+                <HeroLiveStatsStrip
                   className="mx-auto screen744:mx-0"
                   itemTextClassName="text-text2 screen744:text-base"
                   emphasisTextClassName="font-semibold text-text2 screen744:text-base"
@@ -196,9 +184,11 @@ const Hero = () => {
                     <img
                       key={src}
                       src={src}
-                      alt="Student"
+                      alt=""
                       width={36}
                       height={36}
+                      loading="lazy"
+                      decoding="async"
                       className="h-9 w-9 rounded-full border-2 border-white object-cover"
                     />
                   ))}

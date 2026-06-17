@@ -16,7 +16,7 @@ type Props = {
   targetClb?: ClbScores;
 };
 
-function buildMessages(targetClb?: ClbScores): string[] {
+function buildMessages(currentClb?: ClbScores, targetClb?: ClbScores): string[] {
   const messages = [
     "We are creating learning content based on your targets…",
     "Aligning lessons to real CELPIP tasks…",
@@ -27,7 +27,16 @@ function buildMessages(targetClb?: ClbScores): string[] {
 
   if (targetClb) {
     for (const skill of LEARNING_SKILLS) {
-      const target = targetClb[skillToKey(skill)];
+      const key = skillToKey(skill);
+      const current = currentClb?.[key];
+      const target = targetClb[key];
+      if (
+        current != null &&
+        target != null &&
+        target === current
+      ) {
+        continue;
+      }
       messages.push(`Tailoring ${skillLabel(skill)} toward CLB ${target}…`);
     }
   }
@@ -40,7 +49,10 @@ export default function LearningContentLoading({
   currentClb,
   targetClb,
 }: Props) {
-  const messages = useMemo(() => buildMessages(targetClb), [targetClb]);
+  const messages = useMemo(
+    () => buildMessages(currentClb, targetClb),
+    [currentClb, targetClb]
+  );
   const [messageIndex, setMessageIndex] = useState(0);
   const [progress, setProgress] = useState(8);
   const [visible, setVisible] = useState(true);
@@ -75,6 +87,8 @@ export default function LearningContentLoading({
           const meta = getSkillMeta(skill);
           const current = currentClb?.[skillToKey(skill)];
           const target = targetClb?.[skillToKey(skill)];
+          const skipped =
+            current != null && target != null && target === current;
 
           return (
             <motion.div
@@ -96,7 +110,9 @@ export default function LearningContentLoading({
                 {meta.icon}
               </div>
               <p className="text-sm font-semibold text-text1">{meta.label}</p>
-              {current != null && target != null ? (
+              {skipped ? (
+                <p className="mt-1 text-xs text-text3">Skipped</p>
+              ) : current != null && target != null ? (
                 <p className="mt-1 text-xs text-text3">
                   CLB {current}
                   <span className="mx-1 text-primary1">→</span>

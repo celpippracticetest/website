@@ -70,8 +70,16 @@ export type SkillLessonState =
   | "active"
   | "completed_today"
   | "subscription_required"
+  | "skipped"
   | "loading"
   | "error";
+
+export function isSkillPracticeSkipped(
+  current: number,
+  target: number
+): boolean {
+  return target === current;
+}
 
 export type UserLearningProfile = {
   userId: string;

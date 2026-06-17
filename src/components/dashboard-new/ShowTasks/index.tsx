@@ -2,7 +2,7 @@
 
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, startTransition } from "react";
 import { useSelectedTask } from "@/store/useSelectedTask.store";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -42,13 +42,17 @@ const ShowTasks = ({ tasks }: { tasks: TaskSection[] }) => {
   const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set([0]));
 
   const toggleSection = (index: number) => {
-    const newExpanded = new Set(expandedSections);
-    if (newExpanded.has(index)) {
-      newExpanded.delete(index);
-    } else {
-      newExpanded.add(index);
-    }
-    setExpandedSections(newExpanded);
+    startTransition(() => {
+      setExpandedSections((prev) => {
+        const next = new Set(prev);
+        if (next.has(index)) {
+          next.delete(index);
+        } else {
+          next.add(index);
+        }
+        return next;
+      });
+    });
   };
 
   useEffect(() => {

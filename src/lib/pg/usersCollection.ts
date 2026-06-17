@@ -11,6 +11,7 @@ import {
   type AppDoc,
 } from "./document";
 import type { SqlParts } from "./whereBuilder";
+import { bindUnsafeParams } from "./bindUnsafeParams";
 import {
   collectJoinCollectionShortNames,
   PgAggregateCursor,
@@ -514,7 +515,7 @@ export class PgUsersCollection<T extends AppDoc = AppDoc> {
     if (sqlParts && sqlParts.clause !== "true") {
       const rows = await this.sql.unsafe(
         `SELECT COUNT(*)::int AS c FROM public.user_profiles WHERE ${sqlParts.clause}`,
-        sqlParts.params as never[]
+        bindUnsafeParams(this.sql, sqlParts.params) as never[]
       );
       return rows[0]?.c ?? 0;
     }
@@ -540,7 +541,7 @@ export class PgUsersCollection<T extends AppDoc = AppDoc> {
     if (sqlParts && sqlParts.clause !== "true") {
       const rows = await this.sql.unsafe(
         `SELECT ${USER_PROFILE_COLUMNS_SLIM} FROM public.user_profiles WHERE ${sqlParts.clause} ORDER BY app_document_mongo_id`,
-        sqlParts.params as never[]
+        bindUnsafeParams(this.sql, sqlParts.params) as never[]
       );
       return mapRowsToDocs<T>(rows);
     }

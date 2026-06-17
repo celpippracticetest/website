@@ -4,10 +4,12 @@ import { notFound, redirect } from "next/navigation";
 import { Box } from "@/components/ui/Box";
 import { JsonLd } from "@/components/seo/JsonLd";
 import {
+  getLegacyBlogSlugRedirect,
   getPublishedBlogPostBySlug,
   getRelatedPublishedPosts,
   isIndexablePublishedBlogSlug,
 } from "@/lib/blog/public";
+import { PUBLIC_PAGE_REVALIDATE_SECONDS } from "@/lib/publicPageCache";
 import { linkContentServer } from "@/lib/content-linker-server";
 import { BlogCtaSection } from "@/components/pages/blog/BlogCtaSection";
 import BlogArticleAnalytics from "@/components/analytics/BlogArticleAnalytics";
@@ -22,7 +24,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import ChevronRight from "@mui/icons-material/ChevronRight";
 import { normalizeWikiSlug } from "@/lib/wiki/slug";
 
-export const dynamic = "force-dynamic";
+export const revalidate = PUBLIC_PAGE_REVALIDATE_SECONDS;
 
 interface BlogPageProps {
   params: Promise<{ slug: string }>;
@@ -139,6 +141,11 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
 
 export default async function BlogPostPage({ params }: BlogPageProps) {
   const { slug: requestedSlug } = await params;
+  const legacyRedirect = getLegacyBlogSlugRedirect(requestedSlug);
+  if (legacyRedirect) {
+    redirect(legacyRedirect);
+  }
+
   const slug = normalizeWikiSlug(requestedSlug);
   const post = await getPublishedBlogPostBySlug(requestedSlug);
 

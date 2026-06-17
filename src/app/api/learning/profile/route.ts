@@ -8,6 +8,8 @@ function validateClbPair(
   target: Record<string, number>
 ): string | null {
   const skills = ["listening", "reading", "writing", "speaking"] as const;
+  let activeSkillCount = 0;
+
   for (const skill of skills) {
     const c = current[skill];
     const t = target[skill];
@@ -20,10 +22,19 @@ function validateClbPair(
       }
       continue;
     }
-    if (t <= c) {
-      return `Target CLB for ${skill} must be at least one level above current (${c + 1}+)`;
+    if (t === c) {
+      continue;
     }
+    if (t < c + 1) {
+      return `Target CLB for ${skill} must match current (skip) or be at least one level above (${c + 1}+)`;
+    }
+    activeSkillCount += 1;
   }
+
+  if (activeSkillCount === 0) {
+    return "Choose at least one skill for daily practice.";
+  }
+
   return null;
 }
 

@@ -5,8 +5,9 @@ import {
   getPublishedProfessionPageBySlug,
   professionPageToTemplateConfig,
 } from "@/lib/profession-pages/public";
+import { PUBLIC_PAGE_REVALIDATE_SECONDS } from "@/lib/publicPageCache";
 
-export const dynamic = "force-dynamic";
+export const revalidate = PUBLIC_PAGE_REVALIDATE_SECONDS;
 
 const BASE_URL = process.env.APP_BASE_URL || "https://celpippracticetest.com";
 

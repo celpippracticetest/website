@@ -10,6 +10,7 @@ import {
   type AppDoc,
 } from "./document";
 import type { SqlParts } from "./whereBuilder";
+import { bindUnsafeParams } from "./bindUnsafeParams";
 import { PgAggregateCursor, PgFindCursor } from "./pgCollection";
 
 type LeagueGroupRow = {
@@ -320,7 +321,7 @@ export class PgLeagueGroupsCollection<T extends AppDoc = AppDoc> {
     if (sqlParts && sqlParts.clause !== "true") {
       const rows = await this.sql.unsafe(
         `SELECT ${LEAGUE_GROUP_COLUMNS} FROM public.league_groups WHERE ${sqlParts.clause} ORDER BY mongo_id`,
-        sqlParts.params as never[]
+        bindUnsafeParams(this.sql, sqlParts.params) as never[]
       );
       return mapRowsToDocs<T>(rows);
     }
@@ -484,7 +485,7 @@ export class PgLeagueGroupsCollection<T extends AppDoc = AppDoc> {
         if (sqlParts && sqlParts.clause !== "true") {
           const rows = await this.sql.unsafe(
             `SELECT ${LEAGUE_GROUP_COLUMNS} FROM public.league_groups WHERE ${sqlParts.clause} ORDER BY mongo_id`,
-            sqlParts.params as never[]
+            bindUnsafeParams(this.sql, sqlParts.params) as never[]
           );
           docs = mapRowsToDocs(rows);
           const q = new Query(match);

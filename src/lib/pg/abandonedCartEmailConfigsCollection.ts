@@ -9,6 +9,7 @@ import {
   type AppDoc,
 } from "./document";
 import type { SqlParts } from "./whereBuilder";
+import { bindUnsafeParams } from "./bindUnsafeParams";
 import { PgFindCursor } from "./pgCollection";
 
 const OID_HEX = /^[a-f0-9]{24}$/i;
@@ -191,7 +192,7 @@ export class PgAbandonedCartEmailConfigsCollection<T extends AppDoc = AppDoc> {
     if (sqlParts && sqlParts.clause !== "true") {
       const rows = await this.sql.unsafe(
         `SELECT ${ABANDONED_CART_EMAIL_CONFIG_COLUMNS} FROM public.abandoned_cart_email_configs WHERE ${sqlParts.clause} ORDER BY updated_at DESC`,
-        sqlParts.params as never[]
+        bindUnsafeParams(this.sql, sqlParts.params) as never[]
       );
       return mapRowsToDocs<T>(rows).filter((doc) => q.test(doc as never));
     }

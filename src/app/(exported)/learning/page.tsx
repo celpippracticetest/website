@@ -1,61 +1,19 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import LoginModal from "@/components/modal/LoginModal";
-import LearningProfileSetup from "@/components/learning/LearningProfileSetup";
 import DailyLearningDashboard from "@/components/learning/DailyLearningDashboard";
+import LearningContentLoading from "@/components/learning/LearningContentLoading";
 import { Button } from "@/components/v2/Button";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { parseLearningDayOffset } from "@/lib/learning/dates";
-import type { ClbScores } from "@/lib/learning/types";
-
-type ProfileResponse = {
-  configured: boolean;
-  currentClb?: ClbScores;
-  targetClb?: ClbScores;
-};
 
 function LearningPageContent() {
   const searchParams = useSearchParams();
   const dayOffset = parseLearningDayOffset(searchParams.get("d"));
   const { isLoaded, isSignedIn } = useHybridWebUser();
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [profile, setProfile] = useState<ProfileResponse | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(false);
-  const [showSetup, setShowSetup] = useState(false);
-  const [dashboardKey, setDashboardKey] = useState(0);
-
-  const loadProfile = useCallback(async () => {
-    setLoadingProfile(true);
-    try {
-      const res = await fetch("/api/learning/profile");
-      if (res.ok) {
-        const data = (await res.json()) as ProfileResponse;
-        setProfile(data);
-        setShowSetup(!data.configured);
-      }
-    } catch {
-      setProfile({ configured: false });
-      setShowSetup(true);
-    } finally {
-      setLoadingProfile(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      void loadProfile();
-    } else {
-      setProfile(null);
-    }
-  }, [isLoaded, isSignedIn, loadProfile]);
-
-  const handleProfileComplete = () => {
-    setShowSetup(false);
-    setDashboardKey((k) => k + 1);
-    void loadProfile();
-  };
 
   const showSeoContent = isLoaded && !isSignedIn;
 
@@ -104,25 +62,7 @@ function LearningPageContent() {
 
             {isLoaded && isSignedIn && (
               <div className="mx-auto max-w-screen1280 text-left">
-                {loadingProfile ? (
-                  <div className="flex justify-center py-20">
-                    <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary1 border-t-transparent" />
-                  </div>
-                ) : showSetup ? (
-                  <LearningProfileSetup
-                    initialCurrent={profile?.currentClb}
-                    initialTarget={profile?.targetClb}
-                    onComplete={handleProfileComplete}
-                  />
-                ) : (
-                  <DailyLearningDashboard
-                    key={dashboardKey}
-                    dayOffset={dayOffset}
-                    currentClb={profile?.currentClb}
-                    targetClb={profile?.targetClb}
-                    onEditProfile={() => setShowSetup(true)}
-                  />
-                )}
+                <DailyLearningDashboard dayOffset={dayOffset} />
               </div>
             )}
           </div>
@@ -137,9 +77,7 @@ export default function LearningPage() {
     <Suspense
       fallback={
         <section className="relative w-full overflow-hidden">
-          <div className="flex justify-center py-20">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary1 border-t-transparent" />
-          </div>
+          <LearningContentLoading />
         </section>
       }
     >

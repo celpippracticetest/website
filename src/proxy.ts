@@ -28,7 +28,11 @@ import {
   shouldEnforceAccountSharingSignals,
 } from "@/lib/accountSharingMiddleware";
 import { refreshSupabaseSessionFromRequest } from "@/lib/supabase/middleware-session";
-import { shouldSkipSupabaseSessionInMiddleware } from "@/lib/supabase/middleware-skip-paths";
+import {
+  shouldSkipSupabaseSessionInMiddleware,
+  shouldUsePublicPageCache,
+} from "@/lib/supabase/middleware-skip-paths";
+import { PUBLIC_PAGE_SKIP_AUTH_HEADER } from "@/lib/publicPageCache";
 
 const isAdminRoute = (req: NextRequest) => req.nextUrl.pathname.startsWith("/cms");
 
@@ -57,6 +61,7 @@ export default async function proxy(req: NextRequest) {
   let clearPendingReferralCookie = false;
 
   const uiAb = resolveUiAbMiddleware(req);
+  const publicPageCache = shouldUsePublicPageCache(req);
   if (uiAb.stripQueryRedirect) {
     const redirect = NextResponse.redirect(uiAb.stripQueryRedirect);
     redirect.headers.set(UI_AB_HEADER, uiAb.variant);
@@ -98,6 +103,24 @@ export default async function proxy(req: NextRequest) {
       response.cookies.set(w.name, w.value, w.options);
     }
     return applyMarketingCookiesToResponse(req, response);
+  };
+
+  const nextWithHints = (extraRequestHeaders?: Record<string, string>) => {
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set(UI_AB_HEADER, uiAb.variant);
+    if (publicPageCache) {
+      requestHeaders.set(PUBLIC_PAGE_SKIP_AUTH_HEADER, "1");
+    }
+    if (extraRequestHeaders) {
+      for (const [key, value] of Object.entries(extraRequestHeaders)) {
+        requestHeaders.set(key, value);
+      }
+    }
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
   };
 
   const practiceId = req.nextUrl.searchParams.get("selectedPracticeId");
@@ -177,6 +200,10 @@ export default async function proxy(req: NextRequest) {
       const cookieAddition = `${PRICING_AB_COOKIE}=${layout}`;
       const newCookies = currentCookies ? `${currentCookies}; ${cookieAddition}` : cookieAddition;
       newReqHeaders.set("cookie", newCookies);
+      newReqHeaders.set(UI_AB_HEADER, uiAb.variant);
+      if (publicPageCache) {
+        newReqHeaders.set(PUBLIC_PAGE_SKIP_AUTH_HEADER, "1");
+      }
 
       const response = NextResponse.next({
         request: {
@@ -198,6 +225,10 @@ export default async function proxy(req: NextRequest) {
 
     const newReqHeaders = new Headers(req.headers);
     newReqHeaders.set("x-home-ab-variant", variant);
+    newReqHeaders.set(UI_AB_HEADER, uiAb.variant);
+    if (publicPageCache) {
+      newReqHeaders.set(PUBLIC_PAGE_SKIP_AUTH_HEADER, "1");
+    }
 
     const response = NextResponse.next({
       request: {
@@ -295,7 +326,7 @@ export default async function proxy(req: NextRequest) {
     // They need to see the referral page to sign up
     if (!hasWebAuth) {
       // Don't redirect, allow access to referral page
-      return end(NextResponse.next());
+      return end(nextWithHints());
     }
 
     // For authenticated users, check plan
@@ -658,7 +689,7 @@ export default async function proxy(req: NextRequest) {
     }
   }
 
-  const response = end(NextResponse.next());
+  const response = end(nextWithHints());
   if (setReferralCreateCooldown) {
     response.cookies.set(REFERRAL_CREATE_COOLDOWN_COOKIE, "1", {
       path: "/",

@@ -4,6 +4,7 @@ import { Query, aggregate as mingoAggregate, update as mingoUpdate } from "mingo
 import type { Sql } from "postgres";
 import { serializeDocument } from "./ejson";
 import { documentFilterToSql } from "./whereBuilder";
+import { bindUnsafeParams } from "./bindUnsafeParams";
 import { prepareInsertDocument, rowToDocument, documentRowKey, type AppDoc } from "./document";
 
 export type { AppDoc } from "./document";
@@ -406,7 +407,7 @@ export class PgCollection<T extends AppDoc = AppDoc> {
       }
       const rows = await this.sql.unsafe(
         `SELECT mongo_id, body FROM app_documents WHERE ${sqlParts.clause} ORDER BY mongo_id`,
-        sqlParts.params as never[]
+        bindUnsafeParams(this.sql, sqlParts.params) as never[]
       );
       return mapRowsToAppDocs<T>(rows);
     }
@@ -612,7 +613,7 @@ export class PgCollection<T extends AppDoc = AppDoc> {
     if (sqlParts) {
       const rows = await this.sql.unsafe(
         `SELECT COUNT(*)::int AS c FROM app_documents WHERE ${sqlParts.clause}`,
-        sqlParts.params as never[]
+        bindUnsafeParams(this.sql, sqlParts.params) as never[]
       );
       return rows[0]?.c ?? 0;
     }

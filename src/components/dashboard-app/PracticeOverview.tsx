@@ -4,8 +4,9 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import useStore from "@/store";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, startTransition } from "react";
 import { useEngagementTracking, usePracticeTracking } from "@/hooks/useTracking";
+import { scheduleIdleTask } from "@/lib/scheduleIdle";
 import SvgListeningPart from "../icons/ListeningPart";
 import SvgReadingPart from "../icons/ReadingPart";
 import SvgWritingPart from "../icons/WritingPart";
@@ -108,14 +109,18 @@ const PracticeOverview = ({
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
   const toggleSection = (title: string) => {
-    faqClick(title, "practice_overview_accordion");
-    const newExpanded = new Set(expandedSections);
-    if (newExpanded.has(title)) {
-      newExpanded.delete(title);
-    } else {
-      newExpanded.add(title);
-    }
-    setExpandedSections(newExpanded);
+    startTransition(() => {
+      setExpandedSections((prev) => {
+        const next = new Set(prev);
+        if (next.has(title)) {
+          next.delete(title);
+        } else {
+          next.add(title);
+        }
+        return next;
+      });
+    });
+    scheduleIdleTask(() => faqClick(title, "practice_overview_accordion"));
   };
 
   const practiceSections: PracticeSection[] = [
@@ -185,11 +190,10 @@ const PracticeOverview = ({
     bgcolor: "#FFFFFF",
     boxShadow: "0 12px 36px rgba(15, 23, 42, 0.06)",
     border: "1px solid rgba(27, 43, 90, 0.10)",
-    transition: "box-shadow 0.2s, border-color 0.2s, transform 0.2s",
+    transition: "box-shadow 0.2s, border-color 0.2s",
     "&:hover": {
       boxShadow: "0 20px 48px rgba(15, 23, 42, 0.10)",
       borderColor: "rgba(37, 99, 235, 0.28)",
-      transform: "translateY(-1px)",
     },
   };
 

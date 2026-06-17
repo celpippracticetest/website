@@ -15,6 +15,7 @@ import {
   type LearningSkill,
 } from "@/lib/learning/types";
 import { resolveOpenRouterEvalModel } from "@/lib/openrouterEvaluation";
+import { startLearningTimer } from "@/lib/learning/learningTimingLog";
 
 const LEARNING_MAX_TOKENS = 4096;
 const LEARNING_TEMPERATURE = 0.7;
@@ -67,6 +68,11 @@ export async function generateLessonContent(input: {
     throw new Error("OPENROUTER_API_KEY is not configured");
   }
 
+  const endOpenRouter = startLearningTimer("generateLessonContent.openRouter", {
+    skill: input.skill,
+    sequenceNumber: input.sequenceNumber,
+    model,
+  });
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -86,6 +92,8 @@ export async function generateLessonContent(input: {
       max_tokens: LEARNING_MAX_TOKENS,
     }),
   });
+
+  endOpenRouter({ status: response.status, ok: response.ok });
 
   if (!response.ok) {
     const errText = await response.text().catch(() => "");
@@ -110,17 +118,25 @@ export async function getOrCreatePoolLesson(input: {
   targetClb: number;
   sequenceNumber: number;
 }): Promise<{ poolId: string; content: DailyLessonContent }> {
+  const endPool = startLearningTimer("getOrCreatePoolLesson", input);
+  const endFind = startLearningTimer("getOrCreatePoolLesson.findPoolContent", input);
   const existing = await findPoolContent(
     input.skill,
     input.currentClb,
     input.targetClb,
     input.sequenceNumber
   );
+  endFind({ hit: Boolean(existing) });
   if (existing) {
+    endPool({ source: "pool_cache", poolId: existing.id });
     return { poolId: existing.id, content: existing.content };
   }
 
+  const endGenerate = startLearningTimer("getOrCreatePoolLesson.generate", input);
   const { content, model } = await generateLessonContent(input);
+  endGenerate({ model });
+
+  const endInsert = startLearningTimer("getOrCreatePoolLesson.insertPoolContent", input);
   const inserted = await insertPoolContent({
     skill: input.skill,
     currentClb: input.currentClb,
@@ -129,5 +145,7 @@ export async function getOrCreatePoolLesson(input: {
     content,
     model,
   });
+  endInsert({ poolId: inserted.id });
+  endPool({ source: "generated", poolId: inserted.id });
   return { poolId: inserted.id, content: inserted.content };
 }

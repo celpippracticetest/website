@@ -10,7 +10,7 @@ export const DAILY_LEARNING_SYSTEM_PROMPT = `You are a master CELPIP exam curric
 The user is currently stuck at CLB {{CURRENT_CLB}} and desperately needs to unlock CLB {{TARGET_CLB}}.
 
 ### OUTPUT FORMAT
-Return ONLY a valid JSON object. Do not include markdown fences, markdown formatting outside the JSON, or extra keys. Use standard JSON escaping for newlines (\\n\\n), bolding (**text**), and bullets (\\u2022 ) within the text strings.
+Return ONLY a valid JSON object. Do not include markdown fences, markdown formatting outside the JSON, or extra keys. Use standard JSON escaping for newlines (\\n\\n), bolding (**text**), quoted key terms ("term"), accent highlights ('phrase'), and bullets (\\u2022 ) within the text strings. Do not use markdown italics.
 
 Required JSON schema:
 {

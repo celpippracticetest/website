@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, appUserAdmin, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
 import client from "@/lib/appDocumentsClient";
+import { userProfilesTableExists } from "@/lib/admin/adminUsersDataSource";
+import { getSql } from "@/lib/pg/pool";
 import {
   matchUsersCollectionByWebUserIds,
   supabaseAuthUserIdFieldsOnUserDoc,
@@ -143,23 +145,29 @@ export async function GET(request: NextRequest) {
     }
 
     const adminClient = await appUserAdmin();
-    const db = client.db();
-    const usersCollection = db.collection("users");
 
-    // Total users in Supabase Auth (directory)
-    const authDirectoryPage = await adminClient.users.getUserList({
-      limit: 1,
-    });
+    // Total users in Supabase Auth directory (single lightweight request).
+    const authDirectoryPage = await adminClient.users.getUserList({ limit: 1 });
     const totalAuthUsers = authDirectoryPage.totalCount || 0;
 
-    // Get count from the document store
-    const usersInDocumentsCount = await usersCollection.countDocuments({
-      $or: [
-        { clerkUserId: { $exists: true, $nin: [null, ""] } },
-        { supabaseUserId: { $exists: true, $nin: [null, ""] } },
-        { sub: { $exists: true, $nin: [null, ""] } },
-      ],
-    });
+    let usersInDocumentsCount = 0;
+    const sql = getSql();
+    if (await userProfilesTableExists(sql)) {
+      const rows = await sql<{ c: number }[]>`
+        SELECT COUNT(*)::int AS c FROM public.user_profiles
+      `;
+      usersInDocumentsCount = rows[0]?.c ?? 0;
+    } else {
+      const db = client.db();
+      const usersCollection = db.collection("users");
+      usersInDocumentsCount = await usersCollection.countDocuments({
+        $or: [
+          { clerkUserId: { $exists: true, $nin: [null, ""] } },
+          { supabaseUserId: { $exists: true, $nin: [null, ""] } },
+          { sub: { $exists: true, $nin: [null, ""] } },
+        ],
+      });
+    }
 
     const missingCount = Math.max(0, totalAuthUsers - usersInDocumentsCount);
 

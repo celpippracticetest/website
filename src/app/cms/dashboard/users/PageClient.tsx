@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, Fragment, useCallback } from "react";
 import Search from "@mui/icons-material/Search";
 import Download from "@mui/icons-material/Download";
 import Visibility from "@mui/icons-material/Visibility";
@@ -89,19 +89,24 @@ interface UsersResponse {
     totalPages: number;
   };
   listMode?: "profiles_sql" | "users_documents_sql" | "activity_aggregate";
+  error?: string;
+  detail?: string;
 }
+
+const USERS_PAGE_SIZE = 50;
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState("lastActivity");
+  const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [subscriptionStatus, setSubscriptionStatus] = useState("all");
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 50,
+    limit: USERS_PAGE_SIZE,
     totalCount: 0,
     totalPages: 0,
   });
@@ -141,35 +146,60 @@ export default function UsersPage() {
 
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
+    setFetchError(null);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 45_000);
     try {
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: pagination.limit.toString(),
+        limit: USERS_PAGE_SIZE.toString(),
         search,
         sortBy,
         sortOrder,
         subscriptionStatus,
       });
 
-      const response = await fetch(`/api/admin/users?${params}`);
-      if (response.ok) {
-        const data: UsersResponse = await response.json();
-        setUsers(data.users);
-        setPagination(data.pagination);
+      const response = await fetch(`/api/admin/users?${params}`, {
+        credentials: "include",
+        signal: controller.signal,
+      });
+      const data = (await response.json().catch(() => ({}))) as UsersResponse;
+
+      if (!response.ok) {
+        setUsers([]);
+        setFetchError(
+          data.detail || data.error || `Failed to load users (${response.status})`
+        );
+        return;
       }
+
+      setUsers(Array.isArray(data.users) ? data.users : []);
+      setPagination((prev) => ({
+        ...prev,
+        page: data.pagination?.page ?? page,
+        limit: USERS_PAGE_SIZE,
+        totalCount: data.pagination?.totalCount ?? 0,
+        totalPages: data.pagination?.totalPages ?? 0,
+      }));
     } catch (error) {
       console.error("Error fetching users:", error);
+      setUsers([]);
+      setFetchError(
+        error instanceof DOMException && error.name === "AbortError"
+          ? "Request timed out. The server may be overloaded — try again."
+          : "Failed to load users. Check your connection and try again."
+      );
     } finally {
+      window.clearTimeout(timeoutId);
       setLoading(false);
     }
-  };
+  }, [page, search, sortBy, sortOrder, subscriptionStatus]);
 
   useEffect(() => {
-    fetchUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search, sortBy, sortOrder, subscriptionStatus, pagination.limit]);
+    void fetchUsers();
+  }, [fetchUsers]);
 
   const getRiskColor = (riskScore: number) => {
     if (riskScore >= 70) return "text-red-600 bg-red-50";
@@ -183,8 +213,11 @@ export default function UsersPage() {
     return <Schedule className="w-4 h-4" />;
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString("en-US", {
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return "—";
+    const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -454,11 +487,6 @@ export default function UsersPage() {
     }
   };
 
-  useEffect(() => {
-    // Check sync status on mount
-    checkSyncStatus();
-  }, []);
-
   return (
     <Box className="p-6">
       {/* Header */}
@@ -525,8 +553,8 @@ export default function UsersPage() {
                   setSortBy(e.target.value);
                 }}
               >
-                <MenuItem value="createdAt">First Activity</MenuItem>
-                <MenuItem value="lastActivity">Last Activity</MenuItem>
+                <MenuItem value="createdAt">Signup date</MenuItem>
+                <MenuItem value="lastActivity">Last activity</MenuItem>
                 <MenuItem value="totalActivities">Total Activities</MenuItem>
                 <MenuItem value="riskScore">Risk Score</MenuItem>
                 <MenuItem value="plan">Plan (Premium)</MenuItem>
@@ -606,6 +634,24 @@ export default function UsersPage() {
             <Typography variant="body2" className="mt-2 text-gray-600">
               Loading users...
             </Typography>
+          </Box>
+        ) : fetchError ? (
+          <Box className="p-8 text-center flex flex-col items-center justify-center gap-3">
+            <Typography variant="body1" className="text-red-600 font-medium">
+              {fetchError}
+            </Typography>
+            <Button variant="outlined" onClick={fetchUsers} startIcon={<Refresh />}>
+              Retry
+            </Button>
+          </Box>
+        ) : users.length === 0 ? (
+          <Box className="p-8 text-center flex flex-col items-center justify-center gap-3">
+            <Typography variant="body1" className="text-gray-600">
+              No users found{search ? " for this search" : ""}.
+            </Typography>
+            <Button variant="outlined" onClick={fetchUsers} startIcon={<Refresh />}>
+              Refresh
+            </Button>
           </Box>
         ) : (
           <>

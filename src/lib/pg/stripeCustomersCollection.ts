@@ -4,6 +4,7 @@ import type { Sql } from "postgres";
 import { serializeDocument } from "./ejson";
 import type { AppDoc } from "./document";
 import type { SqlParts } from "./whereBuilder";
+import { bindUnsafeParams } from "./bindUnsafeParams";
 import { PgFindCursor } from "./pgCollection";
 
 type StripeCustomerRow = {
@@ -221,7 +222,7 @@ export class PgStripeCustomersCollection<T extends AppDoc = AppDoc> {
     if (sqlParts && sqlParts.clause !== "true") {
       const rows = await this.sql.unsafe(
         `SELECT ${STRIPE_CUSTOMER_COLUMNS} FROM public.stripe_customers WHERE ${sqlParts.clause} ORDER BY created_at DESC`,
-        sqlParts.params as never[]
+        bindUnsafeParams(this.sql, sqlParts.params) as never[]
       );
       return mapRowsToDocs<T>(rows).filter((doc) => q.test(doc as never));
     }
@@ -260,7 +261,7 @@ export class PgStripeCustomersCollection<T extends AppDoc = AppDoc> {
     if (sqlParts && sqlParts.clause !== "true") {
       const rows = await this.sql.unsafe(
         `SELECT COUNT(*)::int AS c FROM public.stripe_customers WHERE ${sqlParts.clause}`,
-        sqlParts.params as never[]
+        bindUnsafeParams(this.sql, sqlParts.params) as never[]
       );
       return rows[0]?.c ?? 0;
     }

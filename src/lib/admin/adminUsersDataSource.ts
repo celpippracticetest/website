@@ -150,7 +150,8 @@ function rowToActivityStats(row: UserActivityStatsRow): AdminUserActivityStats {
 /** Batch aggregate from `public.user_activities` keyed by `user_id`. */
 export async function fetchActivityStatsByUserIds(
   sql: Sql,
-  userIds: string[]
+  userIds: string[],
+  options?: { includeDetailArrays?: boolean }
 ): Promise<Map<string, AdminUserActivityStats>> {
   const uniqueIds = uniqueNonEmptyIds(userIds);
   if (uniqueIds.length === 0) return new Map();
@@ -158,53 +159,93 @@ export async function fetchActivityStatsByUserIds(
   const exists = await userActivitiesTableExists(sql);
   if (!exists) return new Map();
 
-  const rows = await sql<UserActivityStatsRow[]>`
-    SELECT
-      user_id,
-      COUNT(*)::int AS total_activities,
-      COALESCE(
-        SUM(COALESCE(llm_tokens_prompt, 0) + COALESCE(llm_tokens_completion, 0)),
-        0
-      ) AS total_tokens,
-      COUNT(*) FILTER (WHERE event_type = 'practice_attempt_started')::int AS practice_attempts,
-      COUNT(*) FILTER (WHERE event_type = 'practice_attempt_completed')::int AS practice_completions,
-      COUNT(*) FILTER (WHERE event_type = 'mock_attempt_started')::int AS mock_attempts,
-      COUNT(*) FILTER (WHERE event_type = 'mock_attempt_completed')::int AS mock_completions,
-      COUNT(*) FILTER (
-        WHERE event_type IN (
-          'payment_successful',
-          'payment_failed',
-          'subscription_created',
-          'subscription_cancelled'
-        )
-      )::int AS payment_events,
-      COUNT(*) FILTER (
-        WHERE event_type IN ('dispute_created', 'dispute_resolved')
-      )::int AS dispute_events,
-      COUNT(DISTINCT NULLIF(TRIM(ip_address), '')) FILTER (
-        WHERE ip_address IS NOT NULL AND TRIM(ip_address) <> ''
-      )::int AS unique_ip_addresses_count,
-      COUNT(DISTINCT NULLIF(TRIM(user_agent), '')) FILTER (
-        WHERE user_agent IS NOT NULL AND TRIM(user_agent) <> ''
-      )::int AS unique_user_agents_count,
-      MAX(timestamp_utc) AS last_activity,
-      MIN(timestamp_utc) AS first_activity,
-      COALESCE(
-        array_agg(DISTINCT NULLIF(TRIM(ip_address), '')) FILTER (
-          WHERE ip_address IS NOT NULL AND TRIM(ip_address) <> ''
-        ),
-        ARRAY[]::text[]
-      ) AS ip_addresses,
-      COALESCE(
-        array_agg(DISTINCT NULLIF(TRIM(user_agent), '')) FILTER (
-          WHERE user_agent IS NOT NULL AND TRIM(user_agent) <> ''
-        ),
-        ARRAY[]::text[]
-      ) AS user_agents
-    FROM public.user_activities
-    WHERE user_id = ANY(${uniqueIds})
-    GROUP BY user_id
-  `;
+  const includeDetailArrays = options?.includeDetailArrays ?? false;
+
+  const rows = includeDetailArrays
+    ? await sql<UserActivityStatsRow[]>`
+        SELECT
+          user_id,
+          COUNT(*)::int AS total_activities,
+          COALESCE(
+            SUM(COALESCE(llm_tokens_prompt, 0) + COALESCE(llm_tokens_completion, 0)),
+            0
+          ) AS total_tokens,
+          COUNT(*) FILTER (WHERE event_type = 'practice_attempt_started')::int AS practice_attempts,
+          COUNT(*) FILTER (WHERE event_type = 'practice_attempt_completed')::int AS practice_completions,
+          COUNT(*) FILTER (WHERE event_type = 'mock_attempt_started')::int AS mock_attempts,
+          COUNT(*) FILTER (WHERE event_type = 'mock_attempt_completed')::int AS mock_completions,
+          COUNT(*) FILTER (
+            WHERE event_type IN (
+              'payment_successful',
+              'payment_failed',
+              'subscription_created',
+              'subscription_cancelled'
+            )
+          )::int AS payment_events,
+          COUNT(*) FILTER (
+            WHERE event_type IN ('dispute_created', 'dispute_resolved')
+          )::int AS dispute_events,
+          COUNT(DISTINCT NULLIF(TRIM(ip_address), '')) FILTER (
+            WHERE ip_address IS NOT NULL AND TRIM(ip_address) <> ''
+          )::int AS unique_ip_addresses_count,
+          COUNT(DISTINCT NULLIF(TRIM(user_agent), '')) FILTER (
+            WHERE user_agent IS NOT NULL AND TRIM(user_agent) <> ''
+          )::int AS unique_user_agents_count,
+          MAX(timestamp_utc) AS last_activity,
+          MIN(timestamp_utc) AS first_activity,
+          COALESCE(
+            array_agg(DISTINCT NULLIF(TRIM(ip_address), '')) FILTER (
+              WHERE ip_address IS NOT NULL AND TRIM(ip_address) <> ''
+            ),
+            ARRAY[]::text[]
+          ) AS ip_addresses,
+          COALESCE(
+            array_agg(DISTINCT NULLIF(TRIM(user_agent), '')) FILTER (
+              WHERE user_agent IS NOT NULL AND TRIM(user_agent) <> ''
+            ),
+            ARRAY[]::text[]
+          ) AS user_agents
+        FROM public.user_activities
+        WHERE user_id IN ${sql(uniqueIds)}
+        GROUP BY user_id
+      `
+    : await sql<UserActivityStatsRow[]>`
+        SELECT
+          user_id,
+          COUNT(*)::int AS total_activities,
+          COALESCE(
+            SUM(COALESCE(llm_tokens_prompt, 0) + COALESCE(llm_tokens_completion, 0)),
+            0
+          ) AS total_tokens,
+          COUNT(*) FILTER (WHERE event_type = 'practice_attempt_started')::int AS practice_attempts,
+          COUNT(*) FILTER (WHERE event_type = 'practice_attempt_completed')::int AS practice_completions,
+          COUNT(*) FILTER (WHERE event_type = 'mock_attempt_started')::int AS mock_attempts,
+          COUNT(*) FILTER (WHERE event_type = 'mock_attempt_completed')::int AS mock_completions,
+          COUNT(*) FILTER (
+            WHERE event_type IN (
+              'payment_successful',
+              'payment_failed',
+              'subscription_created',
+              'subscription_cancelled'
+            )
+          )::int AS payment_events,
+          COUNT(*) FILTER (
+            WHERE event_type IN ('dispute_created', 'dispute_resolved')
+          )::int AS dispute_events,
+          COUNT(DISTINCT NULLIF(TRIM(ip_address), '')) FILTER (
+            WHERE ip_address IS NOT NULL AND TRIM(ip_address) <> ''
+          )::int AS unique_ip_addresses_count,
+          COUNT(DISTINCT NULLIF(TRIM(user_agent), '')) FILTER (
+            WHERE user_agent IS NOT NULL AND TRIM(user_agent) <> ''
+          )::int AS unique_user_agents_count,
+          MAX(timestamp_utc) AS last_activity,
+          MIN(timestamp_utc) AS first_activity,
+          ARRAY[]::text[] AS ip_addresses,
+          ARRAY[]::text[] AS user_agents
+        FROM public.user_activities
+        WHERE user_id IN ${sql(uniqueIds)}
+        GROUP BY user_id
+      `;
 
   const map = new Map<string, AdminUserActivityStats>();
   for (const row of rows) {

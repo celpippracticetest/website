@@ -8,7 +8,9 @@ import { skillToKey } from "@/lib/learning/types";
 
 type Variant = "prose" | "compact" | "drill" | "checklist" | "template";
 
-export const LESSON_BOLD_CLASS = "font-semibold text-text1";
+export const LESSON_BOLD_CLASS = "font-bold text-text1";
+export const LESSON_TERM_CLASS = "font-bold text-primary1";
+export const LESSON_ACCENT_CLASS = "font-semibold text-[#C2410C]";
 
 const SITE_DOMAIN =
   /(?:on\s+)?(?:CelpipPracticeTest\.com|celpippracticetest\.com)/gi;
@@ -32,7 +34,6 @@ function isSingleQuoted(segment: string) {
 
 function parseStyledInline(
   text: string,
-  boldClass: string,
   keyId: string | number = 0
 ): ReactNode[] {
   const segments = text.split(INLINE_STYLE_PATTERN);
@@ -45,7 +46,7 @@ function parseStyledInline(
 
       if (/^\*\*.+\*\*$/.test(segment)) {
         return (
-          <strong key={key} className={boldClass}>
+          <strong key={key} className={LESSON_BOLD_CLASS}>
             {segment.slice(2, -2)}
           </strong>
         );
@@ -53,7 +54,7 @@ function parseStyledInline(
 
       if (isDoubleQuoted(segment)) {
         return (
-          <strong key={key} className={boldClass}>
+          <strong key={key} className={LESSON_TERM_CLASS}>
             {segment.slice(1, -1)}
           </strong>
         );
@@ -61,9 +62,9 @@ function parseStyledInline(
 
       if (isSingleQuoted(segment)) {
         return (
-          <em key={key} className="italic text-text1">
+          <strong key={key} className={LESSON_ACCENT_CLASS}>
             {segment.slice(1, -1)}
-          </em>
+          </strong>
         );
       }
 
@@ -74,12 +75,11 @@ function parseStyledInline(
 
 function parseInlineContent(
   text: string,
-  boldClass: string,
   skill?: LearningSkill
 ): ReactNode[] {
   if (!skill || !SITE_DOMAIN.test(text)) {
     SITE_DOMAIN.lastIndex = 0;
-    return parseStyledInline(text, boldClass);
+    return parseStyledInline(text);
   }
 
   SITE_DOMAIN.lastIndex = 0;
@@ -96,7 +96,6 @@ function parseInlineContent(
       nodes.push(
         ...parseStyledInline(
           text.slice(lastIndex, match.index),
-          boldClass,
           styledPartId++
         )
       );
@@ -120,7 +119,7 @@ function parseInlineContent(
 
   if (lastIndex < text.length) {
     nodes.push(
-      ...parseStyledInline(text.slice(lastIndex), boldClass, styledPartId++)
+      ...parseStyledInline(text.slice(lastIndex), styledPartId++)
     );
   }
 
@@ -155,10 +154,15 @@ function splitTemplateSteps(text: string): string[] | null {
     .map((line) => line.trim())
     .filter(Boolean);
 
-  if (lines.length < 2 || !lines.every(isTemplateStepLine)) return null;
+  if (lines.length >= 2 && lines.every(isTemplateStepLine)) {
+    const steps = lines.map(stripTemplateStepPrefix).filter(isValidListStep);
+    if (steps.length >= 2) return steps;
+  }
 
-  const steps = lines.map(stripTemplateStepPrefix).filter(isValidListStep);
-  return steps.length >= 2 ? steps : null;
+  const numbered = splitNumberedListLines(text);
+  if (numbered) return numbered.steps;
+
+  return null;
 }
 
 function parseTemplateStep(text: string) {
@@ -273,37 +277,84 @@ function isValidListStep(step: string) {
   return trimmed.length >= 12 && !/^\d+[.)]?$/.test(trimmed);
 }
 
-/** Numbered lists only when each item starts on its own line — avoids splitting "under 2. 3 minutes" mid-sentence. */
+/** Split "1. First. 2. Second." style lists in a single paragraph. Requires sequential numbering from 1. */
+function splitInlineNumberedSteps(
+  text: string
+): { intro: string; steps: string[] } | null {
+  if (/[✓✔☑]/.test(text)) return null;
+
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+
+  const markerRegex = /(?<![\d.])(\d+)[.)]\s+/g;
+  const markers: { index: number; number: number }[] = [];
+
+  let match: RegExpExecArray | null;
+  while ((match = markerRegex.exec(trimmed)) !== null) {
+    const index = match.index;
+    if (index > 0 && !/\s/.test(trimmed[index - 1]!)) continue;
+
+    markers.push({ index, number: parseInt(match[1]!, 10) });
+  }
+
+  if (markers.length < 2) return null;
+
+  const numbers = markers.map((marker) => marker.number);
+  if (numbers[0] !== 1 || !numbers.every((number, index) => number === index + 1)) {
+    return null;
+  }
+
+  const intro =
+    markers[0]!.index > 0 ? trimmed.slice(0, markers[0]!.index).trim() : "";
+
+  const steps: string[] = [];
+  for (let i = 0; i < markers.length; i++) {
+    const start = markers[i]!.index;
+    const end = i + 1 < markers.length ? markers[i + 1]!.index : trimmed.length;
+    const chunk = trimmed.slice(start, end).trim();
+    const step = chunk.replace(/^\d+[.)]\s+/, "").trim();
+    if (isValidListStep(step)) steps.push(step);
+  }
+
+  if (steps.length < 2) return null;
+
+  return { intro, steps };
+}
+
+/** Numbered lists when each item is on its own line, or inline in one paragraph. */
 function splitNumberedListLines(
   text: string
 ): { intro: string; steps: string[] } | null {
   if (/[✓✔☑]/.test(text)) return null;
 
-  const lines = text
+  const trimmed = text.trim();
+  const lines = trimmed
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
 
-  if (lines.length < 2) return null;
+  if (lines.length >= 2) {
+    const firstNumberedIndex = lines.findIndex(isNumberedListLine);
+    if (firstNumberedIndex !== -1) {
+      const introLines = lines.slice(0, firstNumberedIndex);
+      const listLines = lines.slice(firstNumberedIndex);
 
-  const firstNumberedIndex = lines.findIndex(isNumberedListLine);
-  if (firstNumberedIndex === -1) return null;
+      if (listLines.every(isNumberedListLine)) {
+        const steps = listLines
+          .map((line) => line.replace(/^\d+[.)]\s+/, "").trim())
+          .filter(isValidListStep);
 
-  const introLines = lines.slice(0, firstNumberedIndex);
-  const listLines = lines.slice(firstNumberedIndex);
+        if (steps.length >= 2) {
+          return {
+            intro: introLines.join(" ").trim(),
+            steps,
+          };
+        }
+      }
+    }
+  }
 
-  if (!listLines.every(isNumberedListLine)) return null;
-
-  const steps = listLines
-    .map((line) => line.replace(/^\d+[.)]\s+/, "").trim())
-    .filter(isValidListStep);
-
-  if (steps.length < 2) return null;
-
-  return {
-    intro: introLines.join(" ").trim(),
-    steps,
-  };
+  return splitInlineNumberedSteps(trimmed);
 }
 
 function parseStepQuote(text: string) {
@@ -319,7 +370,6 @@ function parseStepQuote(text: string) {
 
 function StepContent({ text, skill }: { text: string; skill?: LearningSkill }) {
   const { quote, note } = parseStepQuote(text);
-  const boldClass = "font-semibold text-text1";
 
   if (quote) {
     return (
@@ -328,14 +378,14 @@ function StepContent({ text, skill }: { text: string; skill?: LearningSkill }) {
           <span className="mr-1 text-primary1" aria-hidden>
             &ldquo;
           </span>
-          {parseInlineContent(quote, boldClass, skill)}
+          {parseInlineContent(quote, skill)}
           <span className="ml-0.5 text-primary1" aria-hidden>
             &rdquo;
           </span>
         </p>
         {note && (
           <p className="text-sm leading-relaxed text-text2">
-            {parseInlineContent(note, boldClass, skill)}
+            {parseInlineContent(note, skill)}
           </p>
         )}
       </div>
@@ -344,7 +394,7 @@ function StepContent({ text, skill }: { text: string; skill?: LearningSkill }) {
 
   return (
     <p className="min-w-0 flex-1 text-[15px] leading-relaxed text-text2 screen744:text-base">
-      {parseInlineContent(note, boldClass, skill)}
+      {parseInlineContent(note, skill)}
     </p>
   );
 }
@@ -356,8 +406,6 @@ function ChecklistList({
   items: string[];
   skill?: LearningSkill;
 }) {
-  const boldClass = "font-semibold text-text1";
-
   return (
     <ul className="space-y-2.5">
       {items.map((item, index) => (
@@ -369,7 +417,7 @@ function ChecklistList({
             ✓
           </span>
           <span className="min-w-0 flex-1 text-sm leading-relaxed text-text2 screen744:text-[15px]">
-            {parseInlineContent(item, boldClass, skill)}
+            {parseInlineContent(item, skill)}
           </span>
         </li>
       ))}
@@ -384,8 +432,6 @@ function TemplateStepList({
   steps: string[];
   skill?: LearningSkill;
 }) {
-  const boldClass = "font-semibold text-text1";
-
   return (
     <ol className="space-y-3">
       {steps.map((step, index) => {
@@ -408,7 +454,7 @@ function TemplateStepList({
                 </p>
               )}
               <p className="text-[15px] leading-relaxed text-text2 screen744:text-base">
-                {parseInlineContent(body, boldClass, skill)}
+                {parseInlineContent(body, skill)}
               </p>
             </div>
           </li>
@@ -427,13 +473,11 @@ function ProseOrderedList({
   steps: string[];
   skill?: LearningSkill;
 }) {
-  const boldClass = "font-semibold text-text1";
-
   return (
     <div className="space-y-3">
       {intro && (
         <p className="text-[15px] leading-relaxed text-text2 screen744:text-base">
-          {parseInlineContent(intro, boldClass, skill)}
+          {parseInlineContent(intro, skill)}
         </p>
       )}
       <ol className="list-decimal space-y-2 pl-5 marker:font-semibold marker:text-primary1">
@@ -442,7 +486,7 @@ function ProseOrderedList({
             key={index}
             className="pl-1 text-[15px] leading-[1.7] text-text2 screen744:text-base"
           >
-            {parseInlineContent(step, boldClass, skill)}
+            {parseInlineContent(step, skill)}
           </li>
         ))}
       </ol>
@@ -462,7 +506,6 @@ function NumberedStepList({
   skill?: LearningSkill;
 }) {
   const isDrill = variant === "drill";
-  const boldClass = "font-semibold text-text1";
 
   return (
     <div className={cn("space-y-3", isDrill && "mt-3")}>
@@ -474,7 +517,7 @@ function NumberedStepList({
               : "text-[15px] leading-relaxed text-text2 screen744:text-base"
           )}
         >
-          {parseInlineContent(intro, boldClass, skill)}
+          {parseInlineContent(intro, skill)}
         </p>
       )}
       <ol className="space-y-2.5">
@@ -541,11 +584,7 @@ function BulletList({
             aria-hidden
           />
           <span>
-            {parseInlineContent(
-              stripBulletPrefix(line),
-              "font-semibold text-text1",
-              skill
-            )}
+            {parseInlineContent(stripBulletPrefix(line), skill)}
           </span>
         </li>
       ))}
@@ -583,7 +622,7 @@ function Paragraph({
         !isProse && !isDrill && "text-sm leading-relaxed text-text2"
       )}
     >
-      {parseInlineContent(text, "font-semibold text-text1", skill)}
+      {parseInlineContent(text, skill)}
     </p>
   );
 }
@@ -656,6 +695,19 @@ export default function FormattedLessonText({
               />
             );
           }
+
+          const inlineBullets = splitInlineBullets(trimmed);
+          if (inlineBullets) {
+            return (
+              <BulletList
+                key={blockIndex}
+                lines={inlineBullets}
+                isProse={useRichProse}
+                skill={skill}
+              />
+            );
+          }
+
           return (
             <Paragraph
               key={blockIndex}
@@ -803,6 +855,41 @@ export default function FormattedLessonText({
         const isLead = isProse && !isDrill && paragraphIndex === 0;
         paragraphIndex += 1;
 
+        const inlineBullets = splitInlineBullets(trimmed);
+        if (inlineBullets) {
+          return (
+            <BulletList
+              key={blockIndex}
+              lines={inlineBullets}
+              isProse={useRichProse}
+              skill={skill}
+            />
+          );
+        }
+
+        const trailingNumbered = splitNumberedListLines(trimmed);
+        if (trailingNumbered) {
+          if (isDrill) {
+            return (
+              <NumberedStepList
+                key={blockIndex}
+                intro={trailingNumbered.intro || undefined}
+                steps={trailingNumbered.steps}
+                variant={variant}
+                skill={skill}
+              />
+            );
+          }
+          return (
+            <ProseOrderedList
+              key={blockIndex}
+              intro={trailingNumbered.intro || undefined}
+              steps={trailingNumbered.steps}
+              skill={skill}
+            />
+          );
+        }
+
         return (
           <Paragraph
             key={blockIndex}
@@ -818,7 +905,7 @@ export default function FormattedLessonText({
   );
 }
 
-/** Inline `"bold"` / `'italic'` / **markdown** parsing for any lesson text field. */
+/** Inline **bold**, "terms", and 'highlights' parsing for any lesson text field. */
 export function LessonInlineText({
   text,
   skill,
@@ -828,7 +915,7 @@ export function LessonInlineText({
   skill?: LearningSkill;
   className?: string;
 }) {
-  const content = parseInlineContent(text, LESSON_BOLD_CLASS, skill);
+  const content = parseInlineContent(text, skill);
   if (className) {
     return <span className={className}>{content}</span>;
   }
