@@ -125,9 +125,17 @@ const ListeningPracticeView = ({
     setQuestionIndexInPractice(0);
     setPassageIndex(0);
     setQuestionIndex(0);
+    setPage("instructions");
+
+    if (previousAnswer?.answers) {
+      setSelectedAnswers(previousAnswer.answers);
+    } else {
+      setSelectedAnswers({});
+    }
 
     const fetchPreviousAnswers = async () => {
       if (!user || !selectedPracticeId) return;
+      if (previousAnswer?.answers) return;
       try {
         const response = await fetch(
           `/api/answers?practiceId=${selectedPracticeId}&userId=${user.id}&type=LISTENING`
@@ -136,16 +144,10 @@ const ListeningPracticeView = ({
           const data = await response.json();
           if (data.answers) {
             setSelectedAnswers(data.answers);
-            setPage("answer");
-            return;
           }
         }
-        setSelectedAnswers({});
-        setPage("instructions");
       } catch (error) {
         console.error("Error fetching previous answers:", error);
-        setSelectedAnswers({});
-        setPage("instructions");
       }
     };
 
@@ -160,10 +162,10 @@ const ListeningPracticeView = ({
         "Listening"
       );
     }
-  }, [selectedPracticeId, user]);
+  }, [selectedPracticeId, user, previousAnswer]);
 
   useEffect(() => {
-    if (page === "answer" && user) {
+    if (page === "answer" && user && !isFromFirstPage) {
       const submitAnswers = async () => {
         try {
           const response = await fetch("/api/answers", {
@@ -224,7 +226,7 @@ const ListeningPracticeView = ({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, user]);
+  }, [page, user, isFromFirstPage]);
 
 
 
@@ -463,6 +465,7 @@ const ListeningPracticeView = ({
                         <div className="flex gap-[10px]">
                           <Button
                             onClick={() => {
+                              setIsFromFirstPage(false);
                               setPage("problem");
                             }}
                             variant="outline"
@@ -487,6 +490,7 @@ const ListeningPracticeView = ({
                     ) : (
                       <Button
                         onClick={() => {
+                          setIsFromFirstPage(false);
                           setPage("problem");
                         }}
                         variant="outline"

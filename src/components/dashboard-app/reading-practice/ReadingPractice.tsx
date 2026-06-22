@@ -1,7 +1,7 @@
 "use client";
 import { useListeningPracticeCompletion } from "./hooks/useListeningPracticeCompletion";
 import { TPracticeDto } from "@/models/practice.model";
-import { redirect, RedirectType, useSearchParams } from "next/navigation";
+import { redirect, RedirectType } from "next/navigation";
 import ReadingPracticeView from "./ReadingPracticeView";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import ListeningTaskView from "../listening-practice/ListeningTaskView";
@@ -9,6 +9,7 @@ import { useRouter } from "nextjs-toploader/app";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
 import { useEffect } from "react";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
+import { usePracticeDeepLinkParams } from "@/hooks/usePracticeDeepLinkParams";
 
 interface ReadingPracticeProps {
   allPractices: TPracticeDto[];
@@ -26,9 +27,7 @@ const ReadingPractice = ({
   completedPractice,
 }: ReadingPracticeProps) => {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const selectedPracticeId = searchParams.get("selectedPracticeId");
-  const selectedTaskId = searchParams.get("taskId");
+  const { selectedPracticeId, taskId: selectedTaskId } = usePracticeDeepLinkParams();
 
   useEffect(() => {
     if (!selectedPracticeId && !selectedTaskId) {

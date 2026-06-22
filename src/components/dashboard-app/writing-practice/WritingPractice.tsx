@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 // import { allListeningPractices } from "./data";
 import { useListeningPracticeCompletion } from "./hooks/useListeningPracticeCompletion";
 import { TPracticeDto } from "@/models/practice.model";
-import { useSearchParams } from "next/navigation";
+import { usePracticeDeepLinkParams } from "@/hooks/usePracticeDeepLinkParams";
 import WritingPracticeView from "./WritingPracticeView";
 import WritingAnswerModal from "./answerModal";
 import { TTaskSchemaDto } from "@/models/tasks.model";
@@ -28,9 +28,7 @@ const WritingPractice = ({
   completedPracticeId,
 }: WritingPracticeProps) => {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const selectedPracticeId = searchParams.get("selectedPracticeId");
-  const selectedTaskId = searchParams.get("taskId");
+  const { selectedPracticeId, taskId: selectedTaskId } = usePracticeDeepLinkParams();
   const { completedPractices, handlePracticeComplete } =
     useListeningPracticeCompletion();
   const [isAnswerModalOpen, setAnswerModalOpen] = useState(false);

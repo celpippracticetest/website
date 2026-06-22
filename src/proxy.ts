@@ -35,6 +35,9 @@ const PRACTICE_HUB_PATHS = new Set([
   "/writing",
   "/listening",
 ]);
+/** `/listening/:practiceId/:taskId` — rewritten to query params for hub pages. */
+const PRACTICE_HUB_DEEP_LINK =
+  /^\/(listening|reading|speaking|writing)\/([^/]+)\/([^/]+)$/;
 const REFERRAL_CREATE_COOLDOWN_COOKIE = "referralCodeCreateCooldown";
 const REFERRAL_CREATE_COOLDOWN_SECONDS = 60;
 
@@ -71,6 +74,17 @@ export default async function middleware(req: NextRequest) {
       url.search = "";
       return end(NextResponse.redirect(url, 301));
     }
+  }
+
+  const practiceHubDeepLink = req.nextUrl.pathname.match(PRACTICE_HUB_DEEP_LINK);
+  if (practiceHubDeepLink) {
+    const [, skill, practiceId, taskId] = practiceHubDeepLink;
+    const url = req.nextUrl.clone();
+    url.pathname = `/${skill}`;
+    url.search = "";
+    url.searchParams.set("selectedPracticeId", practiceId);
+    url.searchParams.set("taskId", taskId);
+    return end(NextResponse.rewrite(url));
   }
 
   const practiceMetaForSharing = supabaseWebUser

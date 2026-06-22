@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useListeningPracticeCompletion } from "./hooks/useListeningPracticeCompletion";
 import { TPracticeDto } from "@/models/practice.model";
-import { useSearchParams } from "next/navigation";
+import { usePracticeDeepLinkParams } from "@/hooks/usePracticeDeepLinkParams";
 import { useRouter } from "nextjs-toploader/app";
 import SpeakingPracticeView from "./SpeakingPracticeView";
 import SpeakingAnswerModal from "./AnswerModal";
@@ -27,9 +27,7 @@ const SpeakingPractice = ({
   completedPracticeId,
 }: SpeakingPracticeProps) => {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const selectedPracticeId = searchParams.get("selectedPracticeId");
-  const selectedTaskId = searchParams.get("taskId");
+  const { selectedPracticeId, taskId: selectedTaskId } = usePracticeDeepLinkParams();
 
   useEffect(() => {
     if (!selectedPracticeId && !selectedTaskId) {

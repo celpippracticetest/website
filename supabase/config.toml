@@ -149,15 +149,23 @@ max_indexes = 5
 
 [auth]
 enabled = true
-# The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
-# in emails.
-site_url = "env(NEXT_PUBLIC_SITE_URL)"
-# A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-# Add your production domain, preview URLs, and local dev URL here.
+# Default redirect when no redirectTo is specified (email links, recovery, etc.).
+site_url = "https://celpippracticetest.com"
+# Allow-list for redirectTo / emailRedirectTo (wildcards supported — see Supabase redirect URL docs).
+# Web + mobile OAuth redirect allow-list (wildcards: https://supabase.com/docs/guides/auth/redirect-urls)
 additional_redirect_urls = [
-  "http://localhost:3000/auth/callback",
-  "https://localhost:3000/auth/callback",
-  "http://127.0.0.1:3000/auth/callback",
+  "https://celpippracticetest.com/**",
+  "https://www.celpippracticetest.com/**",
+  "https://pre.celpippracticetest.com/**",
+  "http://localhost:3000/**",
+  "http://localhost:3002/**",
+  "http://127.0.0.1:3000/**",
+  "http://127.0.0.1:3002/**",
+  "celpipapp://auth/oauth",
+  "celpipapp://auth**",
+  "celpipapp://auth",
+  "clerk://com.celpippt.app.callback",
+  "com.clerk.flutter://callback",
 ]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600

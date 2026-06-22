@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { TPracticeDto } from "@/models/practice.model";
-import { useSearchParams } from "next/navigation";
+import { usePracticeDeepLinkParams } from "@/hooks/usePracticeDeepLinkParams";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { useRouter } from "nextjs-toploader/app";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
@@ -27,8 +27,7 @@ const ListeningTaskView = ({
   const router = useRouter();
   const { user, isLoaded } = useHybridWebUser();
 
-  const searchParams = useSearchParams();
-  const selectedTaskId = searchParams.get("taskId");
+  const { taskId: selectedTaskId } = usePracticeDeepLinkParams();
 
   useEffect(() => {
     if (!selectedTaskId) {
