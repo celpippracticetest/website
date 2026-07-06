@@ -2,6 +2,7 @@ import { TPracticeDto } from "@/models/practice.model";
 import { Badge } from "@/components/ui/badge";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import SvgCheckSquare from "@/components/icons/CheckSquare";
 import SvgLock from "@/components/icons/Lock";
 import SvgPlay from "@/components/icons/Play";
@@ -67,7 +68,7 @@ const ListeningSideMenu = ({
               <div className="flex items-center rounded-[24px] bg-[#F0FFFD] h-[33px] px-[16px] text-[12px] font-semibold text-[#0DAA94]">
                 Completed
               </div>
-            ) : user?.publicMetadata.plan !== "premium" ? (
+            ) : !hasPaidPracticeAccess(user?.publicMetadata?.plan) ? (
               p.isFree ? (
                 <div className="flex shrink-0 bg-[#F0FFFD] rounded-[24px] text-[12px] justify-center items-center px-[16px] py-[8px]">
                   <span className="text-[12px] font-medium text-[#0DAA94]">

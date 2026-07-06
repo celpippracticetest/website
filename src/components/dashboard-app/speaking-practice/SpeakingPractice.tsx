@@ -8,6 +8,7 @@ import SpeakingPracticeView from "./SpeakingPracticeView";
 import SpeakingAnswerModal from "./AnswerModal";
 import ListeningTaskView from "../listening-practice/ListeningTaskView";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 
@@ -27,7 +28,8 @@ const SpeakingPractice = ({
   completedPracticeId,
 }: SpeakingPracticeProps) => {
   const router = useRouter();
-  const { selectedPracticeId, taskId: selectedTaskId } = usePracticeDeepLinkParams();
+  const { selectedPracticeId, taskId: selectedTaskId } =
+    usePracticeDeepLinkParams();
 
   useEffect(() => {
     if (!selectedPracticeId && !selectedTaskId) {
@@ -42,14 +44,10 @@ const SpeakingPractice = ({
   const { user } = useHybridWebUser();
   const shouldShowPractice =
     (selectedPractice && selectedPractice.isFree) ||
-    (selectedPractice &&
-      !selectedPractice.isFree &&
-      user &&
-      user.publicMetadata.plan &&
-      user.publicMetadata.plan === "premium");
+    (selectedPractice && hasPaidPracticeAccess(user?.publicMetadata?.plan));
   const onAnswerButtonClick = (
     practice: TPracticeDto,
-    result: Record<string, any>
+    result: Record<string, any>,
   ) => {
     if (shouldShowPractice) {
       setAnswerModalOpen(true);
@@ -63,7 +61,7 @@ const SpeakingPractice = ({
 
   const handleNavigateToNextPractice = (currentPracticeId: string) => {
     const currentPracticeIndex = allPractices.findIndex(
-      (p) => p.id === currentPracticeId
+      (p) => p.id === currentPracticeId,
     );
 
     if (
@@ -117,7 +115,7 @@ const SpeakingPractice = ({
         selectedTaskId={selectedTaskId}
         onBackClick={handleBackToPracticeList}
         onComplete={() => handlePracticeComplete(selectedPractice.id)}
-        onUpgrade={() => { }}
+        onUpgrade={() => {}}
         onNextPractice={() => handleNavigateToNextPractice(selectedPractice.id)}
         completedPractice={completedPracticeId}
       />

@@ -12,12 +12,18 @@ export function planNameIndicatesPremiumPlus(planName: string | null | undefined
   return lower.includes("pro") || /\bplus\b/.test(lower);
 }
 
-/** Paid subscriber: only `plus` is stored after migration (legacy `premium` / `pro` / `enterprise` normalized in DB). */
+/** Paid subscriber: `plus` after migration; legacy `premium` / `pro` / `enterprise` still honored. */
 export function hasPaidPracticeAccess(
   plan: string | null | undefined,
   _purchaseDate?: unknown
 ) {
-  return normalizePlan(plan) === "plus";
+  const normalized = normalizePlan(plan);
+  return (
+    normalized === "plus" ||
+    normalized === "premium" ||
+    normalized === "pro" ||
+    normalized === "enterprise"
+  );
 }
 
 /** Same as {@link hasPaidPracticeAccess} — kept for call sites that distinguish “full library” gating. */

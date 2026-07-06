@@ -10,6 +10,7 @@ import { TTaskSchemaDto } from "@/models/tasks.model";
 import ListeningTaskView from "../listening-practice/ListeningTaskView";
 import { useRouter } from "nextjs-toploader/app";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 
 interface WritingPracticeProps {
@@ -28,7 +29,8 @@ const WritingPractice = ({
   completedPracticeId,
 }: WritingPracticeProps) => {
   const router = useRouter();
-  const { selectedPracticeId, taskId: selectedTaskId } = usePracticeDeepLinkParams();
+  const { selectedPracticeId, taskId: selectedTaskId } =
+    usePracticeDeepLinkParams();
   const { completedPractices, handlePracticeComplete } =
     useListeningPracticeCompletion();
   const [isAnswerModalOpen, setAnswerModalOpen] = useState(false);
@@ -36,14 +38,10 @@ const WritingPractice = ({
   const { user } = useHybridWebUser();
   const shouldShowPractice =
     (selectedPractice && selectedPractice.isFree) ||
-    (selectedPractice &&
-      !selectedPractice.isFree &&
-      user &&
-      user.publicMetadata.plan &&
-      user.publicMetadata.plan === "premium");
+    (selectedPractice && hasPaidPracticeAccess(user?.publicMetadata?.plan));
   const onAnswerButtonClick = (
     practice: TPracticeDto,
-    result: Record<string, any>
+    result: Record<string, any>,
   ) => {
     if (shouldShowPractice) {
       setAnswerModalOpen(true);
@@ -97,8 +95,8 @@ const WritingPractice = ({
         selectedTaskId={selectedTaskId}
         onBackClick={handleBackToPracticeList}
         onComplete={() => handlePracticeComplete(selectedPractice.id)}
-        onUpgrade={() => { }}
-        onNextPractice={() => { }}
+        onUpgrade={() => {}}
+        onNextPractice={() => {}}
         task={task}
         completedPracticeId={completedPracticeId}
       />

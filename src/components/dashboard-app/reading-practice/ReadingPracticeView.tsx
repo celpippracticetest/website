@@ -31,6 +31,7 @@ import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import StatBadge from "@/components/shared/StatBadge";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import Link from "next/link";
 
 interface ReadingPracticeViewProps {
@@ -75,7 +76,10 @@ const ReadingPracticeView = ({
 
   // Reset pointsAwarded when practice changes
   useEffect(() => {
-    console.log("Reading practice: Resetting pointsAwarded for practice:", selectedPracticeId);
+    console.log(
+      "Reading practice: Resetting pointsAwarded for practice:",
+      selectedPracticeId,
+    );
     setPointsAwarded(false);
   }, [selectedPracticeId]);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -88,7 +92,7 @@ const ReadingPracticeView = ({
   >({});
   const [time, setTime] = useState(timerTime);
   const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState
+    (state) => state.setPremiumPlanModalState,
   );
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
@@ -120,7 +124,7 @@ const ReadingPracticeView = ({
       if (!user || !selectedPracticeId) return;
       try {
         const response = await fetch(
-          `/api/answers?practiceId=${selectedPracticeId}&userId=${user.id}&type=${practice.type}`
+          `/api/answers?practiceId=${selectedPracticeId}&userId=${user.id}&type=${practice.type}`,
         );
         if (response.ok) {
           const data = await response.json();
@@ -172,14 +176,14 @@ const ReadingPracticeView = ({
               "Reading",
               result.overall,
               result,
-              time
+              time,
             );
 
             // Check for trophy achievements
             await checkTrophyAchievements(
               10,
               "practiceSessions",
-              `${Math.floor(time / 60)}:${time % 60}`
+              `${Math.floor(time / 60)}:${time % 60}`,
             );
           }
         } catch (error) {
@@ -206,11 +210,7 @@ const ReadingPracticeView = ({
   }
 
   const shouldShowPractice: any =
-    practice.isFree ||
-    (!practice.isFree &&
-      user &&
-      user.publicMetadata.plan &&
-      user.publicMetadata.plan === "premium");
+    practice.isFree || hasPaidPracticeAccess(user?.publicMetadata?.plan);
   return (
     <>
       <div className="w-full transition-all duration-300 flex gap-5 items-center ">
@@ -240,10 +240,7 @@ const ReadingPracticeView = ({
                 <h1 className="w-full max-w-[330px] text-[18px] font-bold text-[#212E42]">
                   {practice.passages[passageIndex].title}
                 </h1>
-                <StatBadge
-                  count={practiceCount}
-                  label="answered today"
-                />
+                <StatBadge count={practiceCount} label="answered today" />
               </div>
             </div>
             {page !== "answer" && shouldShowPractice && (
@@ -257,7 +254,7 @@ const ReadingPracticeView = ({
                           let answersData = null;
                           try {
                             const getRes = await fetch(
-                              `/api/answers?practiceId=${practice.id}&userId=${user?.id}&type=${practice.type}`
+                              `/api/answers?practiceId=${practice.id}&userId=${user?.id}&type=${practice.type}`,
                             );
                             if (getRes.ok) {
                               const json = await getRes.json();
@@ -267,7 +264,7 @@ const ReadingPracticeView = ({
                           } catch (err) {
                             console.error(
                               "Error checking existing answers:",
-                              err
+                              err,
                             );
                           }
                           if (!answersData) {
@@ -296,7 +293,7 @@ const ReadingPracticeView = ({
                           (page == "question" && !shouldShowPractice)
                         ) {
                           const practiceIndex = allPractices.findIndex(
-                            (p) => p.id == selectedPracticeId
+                            (p) => p.id == selectedPracticeId,
                           );
                           if (practiceIndex < allPractices.length - 1) {
                             const taskUrl = selectedTaskId
@@ -305,23 +302,27 @@ const ReadingPracticeView = ({
                             setPage("question");
                             router.push(
                               "/reading?selectedPracticeId=" +
-                              allPractices[practiceIndex + 1].id +
-                              taskUrl
+                                allPractices[practiceIndex + 1].id +
+                                taskUrl,
                             );
                           } else {
                           }
                           setTime(30);
                         }
                       }}
-                      className={`cursor-pointer shrink-0 border border-[#76808F] px-[24px] text-[14px] font-normal h-[40px] rounded-[24px] ${page !== "answer" && shouldShowPractice
-                        ? "bg-white"
-                        : "bg-white"
-                        }`}
+                      className={`cursor-pointer shrink-0 border border-[#76808F] px-[24px] text-[14px] font-normal h-[40px] rounded-[24px] ${
+                        page !== "answer" && shouldShowPractice
+                          ? "bg-white"
+                          : "bg-white"
+                      }`}
                     >
                       <span className="hidden screen1280:!flex">
                         View Answers &amp; Score
                       </span>
-                      <span className="flex screen1280:!hidden"> Score</span>{" "}
+                      <span className="flex screen1280:!hidden">
+                        {" "}
+                        Score
+                      </span>{" "}
                     </button>
                   </>
                 )}
@@ -331,8 +332,9 @@ const ReadingPracticeView = ({
                       <div className="text-[14px] shrink-0 font-semibold gap-2 text-center text-[#EE4266] flex items-center">
                         <p>
                           {time > 0
-                            ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
-                            }`
+                            ? `${Math.floor(time / 60)}:${
+                                time % 60 < 10 ? `0${time % 60}` : time % 60
+                              }`
                             : "Time's Up!"}
                         </p>
                       </div>
@@ -342,7 +344,7 @@ const ReadingPracticeView = ({
                   <button
                     onClick={() => {
                       const practiceIndex = allPractices.findIndex(
-                        (p) => p.id == selectedPracticeId
+                        (p) => p.id == selectedPracticeId,
                       );
                       if (practiceIndex > 0) {
                         const taskUrl = selectedTaskId
@@ -351,8 +353,8 @@ const ReadingPracticeView = ({
                         setPage("question");
                         router.push(
                           "/reading?selectedPracticeId=" +
-                          allPractices[practiceIndex - 1].id +
-                          taskUrl
+                            allPractices[practiceIndex - 1].id +
+                            taskUrl,
                         );
                       } else {
                         // Optionally handle the case where there is no previous practice
@@ -379,7 +381,9 @@ const ReadingPracticeView = ({
 
                           // Add league points when practice is completed
                           if (!pointsAwarded) {
-                            console.log("Reading practice: Adding league points on Next click...");
+                            console.log(
+                              "Reading practice: Adding league points on Next click...",
+                            );
 
                             // Log practice completed
                             const attemptId = `practice_${practice.id}_${Date.now()}`;
@@ -389,28 +393,31 @@ const ReadingPracticeView = ({
                               "Reading",
                               100, // Assuming 100% score for now
                               { overall: 100 },
-                              time
+                              time,
                             );
 
                             const pointsResult = await addPoints(
                               10,
                               "practiceSessions",
-                              `${Math.floor(time / 60)} minutes`
+                              `${Math.floor(time / 60)} minutes`,
                             );
-                            console.log("Reading practice: Points result:", pointsResult);
+                            console.log(
+                              "Reading practice: Points result:",
+                              pointsResult,
+                            );
                             setPointsAwarded(true);
 
                             // Check for trophy achievements
                             await checkTrophyAchievements(
                               10,
                               "practiceSessions",
-                              `${Math.floor(time / 60)}:${time % 60}`
+                              `${Math.floor(time / 60)}:${time % 60}`,
                             );
                           }
                         } catch (err) {
                           console.error(
                             "Failed to save answers before navigating:",
-                            err
+                            err,
                           );
                         }
                       }
@@ -420,7 +427,7 @@ const ReadingPracticeView = ({
                         (page === "question" && shouldShowPractice)
                       ) {
                         const practiceIndex = allPractices.findIndex(
-                          (p) => p.id == selectedPracticeId
+                          (p) => p.id == selectedPracticeId,
                         );
                         if (practiceIndex < allPractices.length - 1) {
                           const taskUrl = selectedTaskId
@@ -429,16 +436,17 @@ const ReadingPracticeView = ({
                           setPage("question");
                           router.push(
                             "/reading?selectedPracticeId=" +
-                            allPractices[practiceIndex + 1].id +
-                            taskUrl
+                              allPractices[practiceIndex + 1].id +
+                              taskUrl,
                           );
                         }
                       }
                     }}
-                    className={`cursor-pointer shrink-0 border border-[#76808F] px-[24px] text-[14px] font-normal h-[40px] rounded-[24px] ${page !== "answer" && shouldShowPractice
-                      ? "bg-white"
-                      : "bg-white"
-                      }`}
+                    className={`cursor-pointer shrink-0 border border-[#76808F] px-[24px] text-[14px] font-normal h-[40px] rounded-[24px] ${
+                      page !== "answer" && shouldShowPractice
+                        ? "bg-white"
+                        : "bg-white"
+                    }`}
                   >
                     Next
                   </button>
@@ -453,8 +461,9 @@ const ReadingPracticeView = ({
                     <div className="text-[14px] font-semibold gap-2 text-center text-[#EE4266] flex items-center">
                       <p>
                         {time > 0
-                          ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
-                          }`
+                          ? `${Math.floor(time / 60)}:${
+                              time % 60 < 10 ? `0${time % 60}` : time % 60
+                            }`
                           : "Time's Up!"}
                       </p>
                     </div>
@@ -523,8 +532,9 @@ const ReadingPracticeView = ({
                           <img
                             src={practice.passages[0].pictureUrl}
                             alt={practice.passages[0].title}
-                            className={`w-full h-auto mb-4 rounded-lg shadow-md ${!shouldShowPractice ? "blur-sm" : ""
-                              }`}
+                            className={`w-full h-auto mb-4 rounded-lg shadow-md ${
+                              !shouldShowPractice ? "blur-sm" : ""
+                            }`}
                           />
                         </>
                       )}
@@ -584,7 +594,7 @@ const ReadingPracticeView = ({
                           question={question}
                           onAnswerSelect={(
                             questionId: number,
-                            answerId: string
+                            answerId: string,
                           ) => {
                             if (shouldShowPractice) {
                               handleAnswerSelect(questionId, answerId);
@@ -612,23 +622,24 @@ const ReadingPracticeView = ({
                                       <Popover.Root>
                                         <Popover.Trigger className="PopoverTrigger bg-[#F7B267] cursor-pointer px-2 rounded font-semibold text-[#212E42] text-[14px] py-1">
                                           {parseInt(
-                                            practice.passages[1].questions[0].id
+                                            practice.passages[1].questions[0]
+                                              .id,
                                           ) + index}
                                           {selectedAnswers[
                                             practice.passages[0].questions
                                               .length + index
                                           ]
                                             ? ". " +
-                                            practice.passages[1].questions[
-                                              index
-                                            ].choices.find(
-                                              (choice) =>
-                                                choice.id ===
-                                                selectedAnswers[
-                                                practice.passages[0]
-                                                  .questions.length + index
-                                                ]
-                                            )?.text
+                                              practice.passages[1].questions[
+                                                index
+                                              ].choices.find(
+                                                (choice) =>
+                                                  choice.id ===
+                                                  selectedAnswers[
+                                                    practice.passages[0]
+                                                      .questions.length + index
+                                                  ],
+                                              )?.text
                                             : "..."}
                                         </Popover.Trigger>
                                         <Popover.Portal>
@@ -656,7 +667,7 @@ const ReadingPracticeView = ({
                                                             practice.passages[0]
                                                               .questions
                                                               .length + index,
-                                                            choice.id
+                                                            choice.id,
                                                           );
                                                         } else {
                                                           setPremiumPlanModalState();
@@ -666,7 +677,7 @@ const ReadingPracticeView = ({
                                                       {selectedAnswers[
                                                         practice.passages[0]
                                                           .questions.length +
-                                                        index
+                                                          index
                                                       ] === choice.id ? (
                                                         <SvgCheckCircle className=" shrink-0 mr-2" />
                                                       ) : (
@@ -678,7 +689,7 @@ const ReadingPracticeView = ({
                                                       </span>
                                                     </div>
                                                   </Popover.Close>
-                                                )
+                                                ),
                                               )}
                                             </div>
                                             <Popover.Arrow className="PopoverArrow" />
@@ -745,14 +756,14 @@ const ReadingPracticeView = ({
                               question={question}
                               onAnswerSelect={(
                                 questionId: number,
-                                answerId: string
+                                answerId: string,
                               ) => {
                                 if (shouldShowPractice) {
                                   handleAnswerSelect(
                                     practice.passages[0].questions?.length +
-                                    practice.passages[1].questions?.length +
-                                    index,
-                                    answerId
+                                      practice.passages[1].questions?.length +
+                                      index,
+                                    answerId,
                                   );
                                 } else {
                                   setPremiumPlanModalState();
@@ -760,7 +771,7 @@ const ReadingPracticeView = ({
                               }}
                               selectedAnswers={selectedAnswers}
                             />
-                          )
+                          ),
                         )}
                     </div>
                   </div>
@@ -775,9 +786,9 @@ const ReadingPracticeView = ({
                     (current: Array<any>, passage: TPassage) => {
                       return current.concat(passage.questions);
                     },
-                    []
+                    [],
                   )}
-                  onAnswerSelect={() => { }}
+                  onAnswerSelect={() => {}}
                   selectedAnswers={selectedAnswers}
                 />
               </div>

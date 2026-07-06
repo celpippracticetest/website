@@ -36,23 +36,24 @@ import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import StatBadge from "@/components/shared/StatBadge";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 const SvgBestValuePlan = dynamic(
   () => import("../../../components/icons/BestValuePlan"),
   {
     ssr: true,
-  }
+  },
 );
 const SvgPopularPlan = dynamic(
   () => import("../../../components/icons/PopularPlan"),
   {
     ssr: true,
-  }
+  },
 );
 const SvgFreePlan = dynamic(
   () => import("../../../components/icons/FreePlan"),
   {
     ssr: true,
-  }
+  },
 );
 interface WritingPracticeViewProps {
   practice: TPracticeDto;
@@ -63,7 +64,7 @@ interface WritingPracticeViewProps {
   completedPracticeId: string[];
   onAnswerButtonClick: (
     practice: TPracticeDto,
-    result: Record<string, any>
+    result: Record<string, any>,
   ) => void;
   onBackClick: () => void;
   onComplete: () => void;
@@ -104,7 +105,7 @@ const WritingPracticeView = ({
   const searchParams = useSearchParams();
   const attemptId = searchParams.get("attemptId");
   const [page, setPage] = useState(
-    practice.id.includes("part11") ? "description" : "question"
+    practice.id.includes("part11") ? "description" : "question",
   );
   const [passageIndex, setPassageIndex] = useState(0);
   const [time, setTime] = useState(1620);
@@ -122,15 +123,11 @@ const WritingPracticeView = ({
   const [isPlaying, setIsPlaying] = useState(false);
 
   const shouldShowPractice: any =
-    practice.isFree ||
-    (!practice.isFree &&
-      user &&
-      user.publicMetadata.plan &&
-      user.publicMetadata.plan === "premium");
+    practice.isFree || hasPaidPracticeAccess(user?.publicMetadata?.plan);
   const [answers, setAnswers] = useState<any[]>([]);
   const [freeAttempts, setFreeAttempts] = useState<number | null>(3);
   const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState
+    (state) => state.setPremiumPlanModalState,
   );
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
@@ -155,7 +152,8 @@ const WritingPracticeView = ({
   useEffect(() => {
     // Log mock exam started when component mounts
     if (user && practice.taskId) {
-      const loggerAttemptId = attemptId || `mock_${practice.taskId}_${Date.now()}`;
+      const loggerAttemptId =
+        attemptId || `mock_${practice.taskId}_${Date.now()}`;
       ActivityLogger.mockStarted(loggerAttemptId, practice.taskId.toString());
     }
   }, [user, practice.taskId, attemptId]);
@@ -236,7 +234,7 @@ const WritingPracticeView = ({
         "Writing",
         result.overall,
         result,
-        time
+        time,
       );
 
       // Add league points for practice completion (only once)
@@ -244,7 +242,7 @@ const WritingPracticeView = ({
         await addPoints(
           10,
           "practiceSessions",
-          `${Math.floor(time / 60)} minutes`
+          `${Math.floor(time / 60)} minutes`,
         );
         setPointsAwarded(true);
       }
@@ -256,7 +254,7 @@ const WritingPracticeView = ({
           "Writing",
           result.usage.prompt_tokens || 0,
           result.usage.completion_tokens || 0,
-          logAttemptId
+          logAttemptId,
         );
 
         // Add league points for AI feedback
@@ -267,7 +265,7 @@ const WritingPracticeView = ({
       await checkTrophyAchievements(
         10,
         "practiceSessions",
-        `${Math.floor(time / 60)}:${time % 60}`
+        `${Math.floor(time / 60)}:${time % 60}`,
       );
 
       // Allow trophy modal to render before navigation to results
@@ -298,7 +296,11 @@ const WritingPracticeView = ({
     // Log practice started
     if (user && selectedPracticeId) {
       const practiceAttemptId = `practice_${selectedPracticeId}_${Date.now()}`;
-      ActivityLogger.practiceStarted(practiceAttemptId, selectedPracticeId, "Writing").catch(error => {
+      ActivityLogger.practiceStarted(
+        practiceAttemptId,
+        selectedPracticeId,
+        "Writing",
+      ).catch((error) => {
         console.error("Error logging practice started:", error);
       });
     }
@@ -353,10 +355,7 @@ const WritingPracticeView = ({
             <h1 className="text-[18px] font-bold text-[#212E42]">
               {practice.passages[passageIndex].title}
             </h1>
-            <StatBadge
-              count={practiceCount}
-              label="answered today"
-            />
+            <StatBadge count={practiceCount} label="answered today" />
           </div>
           {
             <div className="flex items-center gap-2 justify-end pb-[10px] ">
@@ -365,8 +364,9 @@ const WritingPracticeView = ({
                   <div className="text-[14px] font-bold gap-2 text-center text-[#EE4266] flex items-center">
                     <p>
                       {time > 0
-                        ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
-                        }`
+                        ? `${Math.floor(time / 60)}:${
+                            time % 60 < 10 ? `0${time % 60}` : time % 60
+                          }`
                         : "Time's Up!"}
                     </p>
                   </div>
@@ -375,40 +375,40 @@ const WritingPracticeView = ({
 
               {allPractices.findIndex((p) => p.id == selectedPracticeId) <
                 allPractices.length - 1 && (
-                  <button
-                    onClick={() => {
-                      const practiceIndex = allPractices.findIndex(
-                        (p) => p.id == selectedPracticeId
-                      );
-                      if (practiceIndex < allPractices.length - 1) {
-                        const taskUrl = selectedTaskId
-                          ? "&taskId=" + selectedTaskId
-                          : "";
-                        setPage("question");
-                        setTime(1620);
-                        setText("");
-                        setWordCount(0);
-                        setProgressBar(0);
-                        setIsSubmit(false);
-                        setTryToSubmit(false);
-                        router.push(
-                          "/writing?selectedPracticeId=" +
+                <button
+                  onClick={() => {
+                    const practiceIndex = allPractices.findIndex(
+                      (p) => p.id == selectedPracticeId,
+                    );
+                    if (practiceIndex < allPractices.length - 1) {
+                      const taskUrl = selectedTaskId
+                        ? "&taskId=" + selectedTaskId
+                        : "";
+                      setPage("question");
+                      setTime(1620);
+                      setText("");
+                      setWordCount(0);
+                      setProgressBar(0);
+                      setIsSubmit(false);
+                      setTryToSubmit(false);
+                      router.push(
+                        "/writing?selectedPracticeId=" +
                           allPractices[practiceIndex + 1].id +
-                          taskUrl
-                        );
-                      } else {
-                      }
-                    }}
-                    className={`cursor-pointer text-[14px] font-normal  inline-flex items-center justify-center rounded-[24px] bg-white  w-[96px] h-[40px]`}
-                  >
-                    {"Next"}
-                    <ArrowRight
-                      size={18}
-                      strokeWidth={1.7}
-                      className="ml-2"
-                    ></ArrowRight>
-                  </button>
-                )}
+                          taskUrl,
+                      );
+                    } else {
+                    }
+                  }}
+                  className={`cursor-pointer text-[14px] font-normal  inline-flex items-center justify-center rounded-[24px] bg-white  w-[96px] h-[40px]`}
+                >
+                  {"Next"}
+                  <ArrowRight
+                    size={18}
+                    strokeWidth={1.7}
+                    className="ml-2"
+                  ></ArrowRight>
+                </button>
+              )}
             </div>
           }
         </div>
@@ -519,7 +519,7 @@ const WritingPracticeView = ({
                             )}
                           </div>
                         );
-                      }
+                      },
                     )}
                   </div>
                 </div>
@@ -680,13 +680,13 @@ const WritingPracticeView = ({
                                   const diffInMs =
                                     now.getTime() - createdAt.getTime();
                                   const diffInMinutes = Math.floor(
-                                    diffInMs / (1000 * 60)
+                                    diffInMs / (1000 * 60),
                                   );
                                   const diffInHours = Math.floor(
-                                    diffInMs / (1000 * 60 * 60)
+                                    diffInMs / (1000 * 60 * 60),
                                   );
                                   const diffInDays = Math.floor(
-                                    diffInMs / (1000 * 60 * 60 * 24)
+                                    diffInMs / (1000 * 60 * 60 * 24),
                                   );
 
                                   if (diffInMinutes < 60) {
@@ -696,12 +696,12 @@ const WritingPracticeView = ({
                                   } else if (diffInDays < 365) {
                                     return createdAt.toLocaleDateString(
                                       "en-US",
-                                      { month: "short", day: "2-digit" }
+                                      { month: "short", day: "2-digit" },
                                     );
                                   } else {
                                     return createdAt.toLocaleDateString(
                                       "en-US",
-                                      { year: "2-digit", month: "short" }
+                                      { year: "2-digit", month: "short" },
                                     );
                                   }
                                 })()}
@@ -743,7 +743,7 @@ const WritingPracticeView = ({
                                         if (percentage >= 33.3)
                                           return "text-orange-500"; // Low-medium score (4-6 out of 12)
                                         return "text-red-500"; // Low score (0-4 out of 12)
-                                      })()
+                                      })(),
                                     )}
                                     style={{
                                       strokeDasharray: 120,
@@ -767,7 +767,7 @@ const WritingPracticeView = ({
                                         if (percentage >= 33.3)
                                           return "text-orange-500"; // Low-medium score (4-6 out of 12)
                                         return "text-red-500"; // Low score (0-4 out of 12)
-                                      })()
+                                      })(),
                                     )}
                                   >
                                     {answer.overalScore}
@@ -792,7 +792,7 @@ const WritingPracticeView = ({
                   (current: Array<any>, passage: TPassage) => {
                     return current.concat(passage.questions);
                   },
-                  []
+                  [],
                 )}
                 onAnswerSelect={handleAnswerSelect}
                 selectedAnswers={selectedAnswers}

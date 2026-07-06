@@ -6,6 +6,7 @@ import { usePracticeDeepLinkParams } from "@/hooks/usePracticeDeepLinkParams";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { useRouter } from "nextjs-toploader/app";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import SvgCheckSquare from "@/components/icons/CheckSquare";
 import SvgLock from "@/components/icons/Lock";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
@@ -34,6 +35,8 @@ const ListeningTaskView = ({
       router.push("/practice-overview");
     }
   }, [selectedTaskId, router]);
+
+  const hasPaidAccess = hasPaidPracticeAccess(user?.publicMetadata?.plan);
 
   if (!isLoaded || (user && user.publicMetadata?.plan === undefined)) {
     return <div className="text-center py-10 text-gray-500">Loading...</div>;
@@ -76,10 +79,7 @@ const ListeningTaskView = ({
                 {index + 1}. {p.title.split(" ").slice(0, 5).join(" ")}
                 {p.title.split(" ").length > 4 ? "..." : ""}
               </div>
-              {((user &&
-                user.publicMetadata.plan &&
-                user.publicMetadata.plan === "free") ||
-                !user) &&
+              {(!user || !hasPaidAccess) &&
                 (p.isFree ? (
                   <div className="flex shrink-0 bg-[#F0FFFD] rounded-[24px] text-[12px] justify-center items-center px-[16px] py-[8px]">
                     <span className="text-[12px] font-medium text-[#0DAA94]">

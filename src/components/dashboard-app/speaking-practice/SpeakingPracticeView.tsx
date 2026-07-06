@@ -24,6 +24,7 @@ import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import StatBadge from "@/components/shared/StatBadge";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import Link from "next/link";
 
 interface SpeakingPracticeViewProps {
@@ -35,7 +36,7 @@ interface SpeakingPracticeViewProps {
   completedPractice: string[];
   onAnswerButtonClick: (
     practice: TPracticeDto,
-    result: Record<string, any>
+    result: Record<string, any>,
   ) => void;
   onBackClick: () => void;
   onComplete: () => void;
@@ -103,7 +104,7 @@ const SpeakingPracticeView = ({
   >({});
   const [time, setTime] = useState(preparationTime[practice.taskId.toString()]);
   const [recordingTime, setRecordingTime] = useState(
-    recordingTimePerTask[practice.taskId.toString()]
+    recordingTimePerTask[practice.taskId.toString()],
   );
   const [progressBar, setProgressBar] = useState(0);
   const [isSubmit, setIsSubmit] = useState(false);
@@ -113,17 +114,13 @@ const SpeakingPracticeView = ({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunks = useRef<Blob[]>([]);
   const shouldShowPractice: any =
-    practice.isFree ||
-    (!practice.isFree &&
-      user &&
-      user.publicMetadata.plan &&
-      user.publicMetadata.plan === "premium");
+    practice.isFree || hasPaidPracticeAccess(user?.publicMetadata?.plan);
   const [answers, setAnswers] = useState<any[]>([]);
   const [freeAttempts, setFreeAttempts] = useState<number | null>(3);
   const [errorAccessingMicrophone, setErrorAccessingMicrophone] =
     useState(false);
   const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState
+    (state) => state.setPremiumPlanModalState,
   );
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
@@ -306,7 +303,7 @@ const SpeakingPracticeView = ({
               "Speaking",
               data.overall,
               data,
-              recordingTime
+              recordingTime,
             );
 
             // Add league points for practice completion (only once)
@@ -314,7 +311,7 @@ const SpeakingPracticeView = ({
               await addPoints(
                 10,
                 "practiceSessions",
-                `${Math.floor(recordingTime / 60)} minutes`
+                `${Math.floor(recordingTime / 60)} minutes`,
               );
               setPointsAwarded(true);
             }
@@ -326,7 +323,7 @@ const SpeakingPracticeView = ({
                 "Speaking",
                 data.usage.prompt_tokens || 0,
                 data.usage.completion_tokens || 0,
-                attemptId
+                attemptId,
               );
 
               // Add league points for AI feedback (only once)
@@ -340,7 +337,7 @@ const SpeakingPracticeView = ({
             await checkTrophyAchievements(
               10,
               "practiceSessions",
-              `${Math.floor(recordingTime / 60)}:${recordingTime % 60}`
+              `${Math.floor(recordingTime / 60)}:${recordingTime % 60}`,
             );
 
             setIsSubmit(false);
@@ -419,10 +416,7 @@ const SpeakingPracticeView = ({
             <h1 className="text-[18px] font-bold text-[#212E42]">
               {practice.passages[passageIndex].title}
             </h1>
-            <StatBadge
-              count={practiceCount}
-              label="answered today"
-            />
+            <StatBadge count={practiceCount} label="answered today" />
           </div>
           {
             <div className="flex items-center gap-2 justify-end pb-[10px] ">
@@ -431,8 +425,9 @@ const SpeakingPracticeView = ({
                   <div className="text-[14px] font-bold gap-2 text-center text-[#EE4266] flex items-center">
                     <p>
                       {time > 0
-                        ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
-                        }`
+                        ? `${Math.floor(time / 60)}:${
+                            time % 60 < 10 ? `0${time % 60}` : time % 60
+                          }`
                         : "Time's Up!"}
                     </p>
                   </div>
@@ -442,7 +437,7 @@ const SpeakingPracticeView = ({
               <button
                 onClick={() => {
                   const practiceIndex = allPractices.findIndex(
-                    (p) => p.id == selectedPracticeId
+                    (p) => p.id == selectedPracticeId,
                   );
                   if (practiceIndex < allPractices.length - 1) {
                     if (isRecording) {
@@ -450,13 +445,13 @@ const SpeakingPracticeView = ({
                     }
                     setTime(
                       preparationTime[
-                      allPractices[practiceIndex + 1].taskId.toString()
-                      ]
+                        allPractices[practiceIndex + 1].taskId.toString()
+                      ],
                     );
                     setRecordingTime(
                       recordingTimePerTask[
-                      allPractices[practiceIndex + 1].taskId.toString()
-                      ]
+                        allPractices[practiceIndex + 1].taskId.toString()
+                      ],
                     );
                     const taskUrl = selectedTaskId
                       ? "&taskId=" + selectedTaskId
@@ -464,8 +459,8 @@ const SpeakingPracticeView = ({
                     setPage("question");
                     router.push(
                       "/speaking?selectedPracticeId=" +
-                      allPractices[practiceIndex + 1].id +
-                      taskUrl
+                        allPractices[practiceIndex + 1].id +
+                        taskUrl,
                     );
                   } else {
                   }
@@ -486,7 +481,7 @@ const SpeakingPracticeView = ({
                 <div className="p-4 overflow-y-auto lg:border-r border-r-0 border-b lg:border-b-0 border-slate-300 [&::-webkit-scrollbar]:w-2  [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full  [&::-webkit-scrollbar-track]:bg-slate-100">
                   <div className="relative">
                     {practice.passages[0].body &&
-                      practice.passages[0].body?.length > 30 ? (
+                    practice.passages[0].body?.length > 30 ? (
                       <>
                         {!practice.passages[0].pictureUrl && (
                           <p className="text-[14px] text-gray-400 mb-2">
@@ -518,8 +513,9 @@ const SpeakingPracticeView = ({
                         <img
                           src={practice.passages[0].pictureUrl}
                           alt={practice.passages[0].title}
-                          className={`w-full h-auto mb-4 rounded-lg shadow-md ${!shouldShowPractice ? "blur-sm" : ""
-                            }`}
+                          className={`w-full h-auto mb-4 rounded-lg shadow-md ${
+                            !shouldShowPractice ? "blur-sm" : ""
+                          }`}
                         />
                       </>
                     )}
@@ -620,7 +616,7 @@ const SpeakingPracticeView = ({
                             )}
                           </div>
                         );
-                      }
+                      },
                     )}
                   </div>
                 </div>
@@ -637,8 +633,9 @@ const SpeakingPracticeView = ({
                       </h3>
                     </div>
                     <div
-                      className={`${errorAccessingMicrophone ? "mt-0" : "mt-[24px]"
-                        } w-full flex flex-col items-center`}
+                      className={`${
+                        errorAccessingMicrophone ? "mt-0" : "mt-[24px]"
+                      } w-full flex flex-col items-center`}
                     >
                       <div className="flex flex-col items-center w-full justify-center">
                         {errorAccessingMicrophone ? (
@@ -847,13 +844,13 @@ const SpeakingPracticeView = ({
                                 const diffInMs =
                                   now.getTime() - createdAt.getTime();
                                 const diffInMinutes = Math.floor(
-                                  diffInMs / (1000 * 60)
+                                  diffInMs / (1000 * 60),
                                 );
                                 const diffInHours = Math.floor(
-                                  diffInMs / (1000 * 60 * 60)
+                                  diffInMs / (1000 * 60 * 60),
                                 );
                                 const diffInDays = Math.floor(
-                                  diffInMs / (1000 * 60 * 60 * 24)
+                                  diffInMs / (1000 * 60 * 60 * 24),
                                 );
 
                                 if (diffInMinutes < 60) {
@@ -910,7 +907,7 @@ const SpeakingPracticeView = ({
                                       if (percentage >= 33.3)
                                         return "text-orange-500"; // Low-medium score (4-6 out of 12)
                                       return "text-red-500"; // Low score (0-4 out of 12)
-                                    })()
+                                    })(),
                                   )}
                                   style={{
                                     strokeDasharray: 120,
@@ -934,7 +931,7 @@ const SpeakingPracticeView = ({
                                       if (percentage >= 33.3)
                                         return "text-orange-500"; // Low-medium score (4-6 out of 12)
                                       return "text-red-500"; // Low score (0-4 out of 12)
-                                    })()
+                                    })(),
                                   )}
                                 >
                                   {answer.overalScore}
@@ -958,7 +955,7 @@ const SpeakingPracticeView = ({
                   (current: Array<any>, passage: TPassage) => {
                     return current.concat(passage.questions);
                   },
-                  []
+                  [],
                 )}
                 onAnswerSelect={handleAnswerSelect}
                 selectedAnswers={selectedAnswers}

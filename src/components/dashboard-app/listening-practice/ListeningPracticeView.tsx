@@ -25,6 +25,7 @@ import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
 import StatBadge from "@/components/shared/StatBadge";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import Link from "next/link";
 
 interface ListeningPracticeViewProps {
@@ -89,7 +90,7 @@ const ListeningPracticeView = ({
   const [time, setTime] = useState(
     task5or6.includes(practice.taskId)
       ? 240 + (task5or6[1] === practice.taskId ? 30 : 0)
-      : 30
+      : 30,
   );
 
   // Safe helpers to avoid optional-undefined issues
@@ -97,8 +98,8 @@ const ListeningPracticeView = ({
     practice.totalQuestion !== undefined
       ? practice.totalQuestion
       : practice.passages.reduce((sum: number, p: TPassage) => {
-        return sum + (p.questions?.length ?? 0);
-      }, 0);
+          return sum + (p.questions?.length ?? 0);
+        }, 0);
 
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
@@ -138,7 +139,7 @@ const ListeningPracticeView = ({
       if (previousAnswer?.answers) return;
       try {
         const response = await fetch(
-          `/api/answers?practiceId=${selectedPracticeId}&userId=${user.id}&type=LISTENING`
+          `/api/answers?practiceId=${selectedPracticeId}&userId=${user.id}&type=LISTENING`,
         );
         if (response.ok) {
           const data = await response.json();
@@ -159,7 +160,7 @@ const ListeningPracticeView = ({
       ActivityLogger.practiceStarted(
         attemptId,
         selectedPracticeId,
-        "Listening"
+        "Listening",
       );
     }
   }, [selectedPracticeId, user, previousAnswer]);
@@ -189,7 +190,7 @@ const ListeningPracticeView = ({
               "Listening",
               result.overall,
               result,
-              time
+              time,
             );
 
             // Add league points (only once) and confirm success
@@ -197,7 +198,7 @@ const ListeningPracticeView = ({
               const res = await addPoints(
                 10,
                 "practiceSessions",
-                `${Math.floor(time / 60)} minutes`
+                `${Math.floor(time / 60)} minutes`,
               );
               if (res && (res as any).success) {
                 setPointsAwarded(true);
@@ -205,10 +206,12 @@ const ListeningPracticeView = ({
                 await checkTrophyAchievements(
                   10,
                   "practiceSessions",
-                  `${Math.floor(time / 60)}:${time % 60}`
+                  `${Math.floor(time / 60)}:${time % 60}`,
                 );
               } else {
-                console.warn("addPoints failed; skipping trophy check and award flag");
+                console.warn(
+                  "addPoints failed; skipping trophy check and award flag",
+                );
               }
             }
           }
@@ -219,7 +222,7 @@ const ListeningPracticeView = ({
       };
 
       // Only submit if we are NOT in viewed mode (i.e., user just finished)
-      // We can check if selectedAnswers is not empty as a heuristic, 
+      // We can check if selectedAnswers is not empty as a heuristic,
       // but it's better to have a flag. For now, just ensuring it's not a fresh navigation.
       if (Object.keys(selectedAnswers).length > 0) {
         submitAnswers();
@@ -227,8 +230,6 @@ const ListeningPracticeView = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, user, isFromFirstPage]);
-
-
 
   const handleAnswerSelect = (questionId: number, answerId: string) => {
     setSelectedAnswers((prev) => ({
@@ -238,7 +239,7 @@ const ListeningPracticeView = ({
   };
 
   const practiceIndex = allPractices.findIndex(
-    (p) => p.id == selectedPracticeId
+    (p) => p.id == selectedPracticeId,
   );
 
   if (!isLoaded || (user && user.publicMetadata?.plan === undefined)) {
@@ -302,22 +303,20 @@ const ListeningPracticeView = ({
                   ? "Instruction"
                   : practice.passages[passageIndex].title}
               </h1>
-              <StatBadge
-                count={practiceCount}
-                label="answered today"
-              />
+              <StatBadge count={practiceCount} label="answered today" />
             </div>
 
             {page !== "instructions" &&
-              !(page == "answer" && practiceIndex >= allPractices.length - 1) ? (
+            !(page == "answer" && practiceIndex >= allPractices.length - 1) ? (
               <div className="flex items-center gap-2 justify-end pb-[10px] ">
                 {page === "question" && (
                   <div className="flex justify-center items-center lg:flex-row flex-col">
                     <div className="text-[14px] font-semibold gap-2 text-center text-[#EE4266] flex items-center">
                       <p>
                         {time > 0
-                          ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
-                          }`
+                          ? `${Math.floor(time / 60)}:${
+                              time % 60 < 10 ? `0${time % 60}` : time % 60
+                            }`
                           : "Time's Up!"}
                       </p>
                     </div>
@@ -333,9 +332,9 @@ const ListeningPracticeView = ({
                       setQuestionIndex(
                         Math.max(
                           0,
-                          (practice.passages[passageIndex - 1].questions?.length ?? 1) -
-                          1
-                        )
+                          (practice.passages[passageIndex - 1].questions
+                            ?.length ?? 1) - 1,
+                        ),
                       );
                       // setQuestionIndexInPractice(questionIndexInPractice - 1);
                     } else if (page == "question" && questionIndex > 0) {
@@ -350,16 +349,16 @@ const ListeningPracticeView = ({
                       setQuestionIndex(
                         Math.max(
                           0,
-                          (practice.passages[passageIndex].questions?.length ?? 1) -
-                          1
-                        )
+                          (practice.passages[passageIndex].questions?.length ??
+                            1) - 1,
+                        ),
                       );
                       setPassageIndex(practice.passages.length - 1);
                     }
                     setTime(
                       task5or6.includes(practice.taskId)
                         ? 240 + (task5or6[1] === practice.taskId ? 30 : 0)
-                        : 30
+                        : 30,
                     );
                   }}
                   className="cursor-pointer shrink-0 w-[40px] h-[40px] border flex items-center justify-center border-[#37465C] rounded-[100%]"
@@ -374,15 +373,14 @@ const ListeningPracticeView = ({
                     } else if (page == "problem") {
                       setPage("question");
                       setQuestionIndexInPractice(questionIndexInPractice + 1);
-                    } else if (
-                      page == "question" &&
-                      useDropdownForQuestions
-                    ) {
+                    } else if (page == "question" && useDropdownForQuestions) {
                       setPage("answer");
                     } else if (
                       page == "question" &&
                       questionIndex <
-                      (practice.passages[passageIndex].questions?.length ?? 0) - 1 &&
+                        (practice.passages[passageIndex].questions?.length ??
+                          0) -
+                          1 &&
                       !useDropdownForQuestions
                     ) {
                       setQuestionIndex(questionIndex + 1);
@@ -399,7 +397,7 @@ const ListeningPracticeView = ({
                       setPage("answer");
                     } else if (page === "answer") {
                       const practiceIndex = allPractices.findIndex(
-                        (p) => p.id == selectedPracticeId
+                        (p) => p.id == selectedPracticeId,
                       );
                       if (practiceIndex < allPractices.length - 1) {
                         const taskUrl = selectedTaskId
@@ -410,8 +408,8 @@ const ListeningPracticeView = ({
                         setPassageIndex(0);
                         router.push(
                           "/listening?selectedPracticeId=" +
-                          allPractices[practiceIndex + 1].id +
-                          taskUrl
+                            allPractices[practiceIndex + 1].id +
+                            taskUrl,
                         );
                       } else {
                         setPage("finish");
@@ -420,13 +418,14 @@ const ListeningPracticeView = ({
                     setTime(
                       task5or6.includes(practice.taskId)
                         ? 240 + (task5or6[1] === practice.taskId ? 30 : 0)
-                        : 30
+                        : 30,
                     );
                   }}
-                  className={`cursor-pointer text-[14px] font-normal  inline-flex items-center justify-center rounded-[24px] ${page !== "answer"
-                    ? "bg-white"
-                    : "bg-green-100 text-gray-900 "
-                    } bg-white w-[96px] h-[40px]`}
+                  className={`cursor-pointer text-[14px] font-normal  inline-flex items-center justify-center rounded-[24px] ${
+                    page !== "answer"
+                      ? "bg-white"
+                      : "bg-green-100 text-gray-900 "
+                  } bg-white w-[96px] h-[40px]`}
                 >
                   {page !== "answer" ? "Next" : "Next"}
                   <ArrowRight size={18} strokeWidth={1.7}></ArrowRight>
@@ -447,14 +446,11 @@ const ListeningPracticeView = ({
                           {instruction}
                         </p>
                       );
-                    }
+                    },
                   )}
                 </div>
                 {practice.isFree ||
-                  (!practice.isFree &&
-                    user &&
-                    user.publicMetadata.plan &&
-                    user.publicMetadata.plan === "premium") ? (
+                hasPaidPracticeAccess(user?.publicMetadata?.plan) ? (
                   <div>
                     {completedPractice.includes(practice.id) ? (
                       <div className="flex flex-col gap-[16px] mt-[23px]">
@@ -537,8 +533,9 @@ const ListeningPracticeView = ({
                     <div className="flex items-center flex-col mt-6 max-w-[450px] mx-auto">
                       <button
                         onClick={() => setIsOpen(!isOpen)}
-                        className={`${isOpen ? "!bg-[#F2F6FF] " : " bg-white "
-                          } w-full border flex justify-center border-[#76808F] items-center rounded-[24px] borderitems-center cursor-pointer max-w-[153px] h-[40px] text-[14px] font-medium text-[#212E42]`}
+                        className={`${
+                          isOpen ? "!bg-[#F2F6FF] " : " bg-white "
+                        } w-full border flex justify-center border-[#76808F] items-center rounded-[24px] borderitems-center cursor-pointer max-w-[153px] h-[40px] text-[14px] font-medium text-[#212E42]`}
                       >
                         {isOpen ? "Hide Transcript" : "Show Transcript"}
                       </button>
@@ -553,10 +550,11 @@ const ListeningPracticeView = ({
                                 return (
                                   <div key={index}>
                                     <span
-                                      className={`${index % 2 == 0
-                                        ? "bg-[#FFEBD6]"
-                                        : "bg-[#D1DEFF]"
-                                        }   inline-block leading-[16px] mr-[8px] p-[8px] rounded-[8px]  text-black h-[32px] text-[14px]  font-normal `}
+                                      className={`${
+                                        index % 2 == 0
+                                          ? "bg-[#FFEBD6]"
+                                          : "bg-[#D1DEFF]"
+                                      }   inline-block leading-[16px] mr-[8px] p-[8px] rounded-[8px]  text-black h-[32px] text-[14px]  font-normal `}
                                     >
                                       {con.name}:
                                     </span>
@@ -579,29 +577,32 @@ const ListeningPracticeView = ({
             {page == "question" && (
               <div className="flex flex-col h-full w-full ">
                 {useDropdownForQuestions ? (
-                  (
-                    practice.passages.reduce(
-                      (acc: any[], p: TPassage) => {
-                        return acc.concat(p.questions ?? []);
-                      },
-                      []
-                    )
-                  ).map((question, index) => (
-                    <ListeningDropDownQuestionList
-                      key={index}
-                      questionIndex={index + 1}
-                      totalQuestions={practice.totalQuestion ?? totalQuestionsCount}
-                      question={question}
-                      onAnswerSelect={handleAnswerSelect}
-                      selectedAnswers={selectedAnswers}
-                    />
-                  ))
+                  practice.passages
+                    .reduce((acc: any[], p: TPassage) => {
+                      return acc.concat(p.questions ?? []);
+                    }, [])
+                    .map((question, index) => (
+                      <ListeningDropDownQuestionList
+                        key={index}
+                        questionIndex={index + 1}
+                        totalQuestions={
+                          practice.totalQuestion ?? totalQuestionsCount
+                        }
+                        question={question}
+                        onAnswerSelect={handleAnswerSelect}
+                        selectedAnswers={selectedAnswers}
+                      />
+                    ))
                 ) : (
                   <ListeningQuestionList
                     questionIndex={questionIndexInPractice}
-                    totalQuestions={practice.totalQuestion ?? totalQuestionsCount}
+                    totalQuestions={
+                      practice.totalQuestion ?? totalQuestionsCount
+                    }
                     question={
-                      (practice.passages[passageIndex].questions ?? [])[questionIndex]
+                      (practice.passages[passageIndex].questions ?? [])[
+                        questionIndex
+                      ]
                     }
                     onAnswerSelect={handleAnswerSelect}
                     selectedAnswers={selectedAnswers}
@@ -617,7 +618,7 @@ const ListeningPracticeView = ({
                     (current: Array<any>, passage: TPassage) => {
                       return current.concat(passage.questions);
                     },
-                    []
+                    [],
                   )}
                   onAnswerSelect={handleAnswerSelect}
                   selectedAnswers={selectedAnswers}
