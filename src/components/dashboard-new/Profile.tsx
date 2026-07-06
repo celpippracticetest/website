@@ -20,25 +20,25 @@ import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 export default function Profile({ prevCheckout, subscriptionData }: any) {
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
   const [planNameDisplay, setPlanNameDisplay] = useState<string>("");
-  const [isLoaded, setIsLoaded] = useState<boolean>(false);
+  const [isPlanLoaded, setIsPlanLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     // Priority: Use subscription data if available, otherwise fallback to checkout data
     if (subscriptionData?.planName) {
       setPlanNameDisplay(subscriptionData.planName);
-      setIsLoaded(true);
+      setIsPlanLoaded(true);
     } else if (
       subscriptionData &&
       subscriptionData.currentPeriodStart &&
       subscriptionData.currentPeriodEnd
     ) {
       setPlanNameDisplay(subscriptionData.planName || "Premium Plan");
-      setIsLoaded(true);
+      setIsPlanLoaded(true);
     } else if (prevCheckout && prevCheckout.createdAt) {
       // Fallback to checkout data for one-time purchases
       const description = prevCheckout.lineItems?.[0]?.description;
       setPlanNameDisplay(description || "Premium Plan");
-      setIsLoaded(true);
+      setIsPlanLoaded(true);
     } else {
       // Fallback based on metadata if no data found but user is marked as premium
       if (user?.publicMetadata?.plan === "plus") {
@@ -48,7 +48,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
       } else if (user?.publicMetadata?.plan === "pro") {
         setPlanNameDisplay("Pro Plan");
       }
-      setIsLoaded(true);
+      setIsPlanLoaded(true);
     }
   }, [prevCheckout, subscriptionData, user]);
 
@@ -440,7 +440,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
                 user?.publicMetadata.plan == "pro" ||
                 subscriptionData) && (
                 <span className="text-[14px] font-semibold text-[#F27059]">
-                  {isLoaded ? planNameDisplay : "Loading..."}
+                  {isPlanLoaded ? planNameDisplay : "Loading..."}
                 </span>
               )}
             </div>
