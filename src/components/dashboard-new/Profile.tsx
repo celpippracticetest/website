@@ -17,8 +17,11 @@ import { useDeleteUserEmail } from "@/hooks/useDeleteUserEmail";
 import SvgCloseCircle from "@/components/icons/CloseCircle";
 import Link from "next/link";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+
 export default function Profile({ prevCheckout, subscriptionData }: any) {
-  const { user, isLoaded, isSignedIn } = useHybridWebUser();
+  const { user, isLoaded, isSignedIn, reloadUser } = useHybridWebUser();
   const [planNameDisplay, setPlanNameDisplay] = useState<string>("");
   const [isPlanLoaded, setIsPlanLoaded] = useState<boolean>(false);
 
@@ -77,9 +80,6 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
 
   const [showEditEmail, setShowEditEmail] = useState(false);
   const [newEmail, setNewEmail] = useState("");
-  const [step, setStep] = useState<"input" | "verify">("input");
-  const [newEmailId, setNewEmailId] = useState<string | null>(null);
-  const [verificationCode, setVerificationCode] = useState("");
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
       router.push("/practice-overview");
@@ -129,13 +129,12 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
   const handleConfirmDeleteEmail = (emailId: string) => {
     if (!user) return;
     handleDeleteUserEmail(emailId, {
-      onSuccess: () => {
-        user.reload().then(() => {
-          setToastType("success");
-          setToastMessage("Email removed successfully");
-          setShowToast(true);
-          setTimeout(() => setShowToast(false), 3000);
-        });
+      onSuccess: async () => {
+        await reloadUser();
+        setToastType("success");
+        setToastMessage("Email removed successfully");
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
       },
       onError: (error: any) => {
         setToastType("error");
@@ -147,109 +146,31 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
     setConfirmEmailId(null);
   };
 
-  const addEmailFetcher = async () => {
-    if (!user) throw new Error("User not found");
-    if (!newEmail) throw new Error("Email not provided");
-    const createdEmail = await user.createEmailAddress({ email: newEmail });
-    await createdEmail.prepareVerification({ strategy: "email_code" });
-    await user.reload();
-    return createdEmail;
-  };
-
-  const addEmailWithReverification = useReverification(addEmailFetcher);
-
-  const updatePrimaryWithReverification = useReverification(async () => {
-    if (!user) throw new Error("User not found");
-    const existingEmail = user.emailAddresses.find(
-      (e) => e.emailAddress === newEmail,
-    );
-    if (!existingEmail) throw new Error("Existing email not found");
-    return await user.update({ primaryEmailAddressId: existingEmail.id });
-  });
-
   const handleAddEmail = async () => {
-    try {
-      const existingEmail = user?.emailAddresses.find(
-        (e) => e.emailAddress === newEmail,
-      );
-      if (existingEmail) {
-        if (existingEmail.verification?.status === "verified") {
-          await updatePrimaryWithReverification();
-          setToastType("success");
-          setToastMessage(
-            "Email already verified; set as primary successfully.",
-          );
-          setShowToast(true);
-          setTimeout(() => setShowToast(false), 3000);
-          return;
-        } else {
-          await existingEmail.prepareVerification({ strategy: "email_code" });
-          setToastType("success");
-          setToastMessage("Verification code resent to existing email");
-          setShowToast(true);
-          setTimeout(() => setShowToast(false), 3000);
-          setNewEmailId(existingEmail.id);
-          setStep("verify");
-          return;
-        }
-      }
-
-      const created = await addEmailWithReverification();
-      setNewEmailId(created.id);
-      setToastType("success");
-      setToastMessage("Verification code sent to new email");
-      setShowToast(true);
-      setStep("verify");
-    } catch (error: any) {
-      console.log(error);
+    const supabase = createBrowserSupabaseClient();
+    if (!supabase || !newEmail.trim()) {
       setToastType("error");
-      setToastMessage("Failed to send verification code");
+      setToastMessage("Enter a valid email address");
       setShowToast(true);
-    } finally {
       setTimeout(() => setShowToast(false), 3000);
+      return;
     }
-  };
 
-  const handleVerifyCode = async () => {
     try {
-      if (!user) return;
+      const { error } = await supabase.auth.updateUser({
+        email: newEmail.trim(),
+      });
+      if (error) throw error;
 
-      const email = user.emailAddresses.find((e) => e.id === newEmailId);
-      if (!email) throw new Error("Email not found");
-
-      await email.attemptVerification({ code: verificationCode });
-      await user.reload();
-      const verified = user.emailAddresses.find((e) => e.id === email.id);
-      if (!verified || verified.verification?.status !== "verified") {
-        throw new Error("Email not verified yet");
-      }
-      await updatePrimaryWithReverification();
       setToastType("success");
-      setToastMessage("Email verified and set as primary");
+      setToastMessage("Check your inbox to confirm the new email address.");
       setShowEditEmail(false);
       setNewEmail("");
-      setVerificationCode("");
-      setStep("input");
+      await reloadUser();
       router.refresh();
-    } catch (error) {
+    } catch (error: any) {
       setToastType("error");
-      console.error(error);
-
-      let errorMessage = "Verification failed";
-
-      const errorData = error as any;
-      if (errorData?.errors?.[0]?.code === "form_code_incorrect") {
-        errorMessage = "The code you entered is incorrect. Please try again.";
-      } else if (errorData?.errors?.[0]?.code === "verification_failed") {
-        errorMessage =
-          "Too many failed attempts. Please re-enter your email to get a new code.";
-        setStep("input");
-      } else if (errorData?.errors?.[0]?.long_message) {
-        errorMessage = errorData.errors[0].long_message;
-      }
-
-      setToastMessage(errorMessage);
-    } finally {
+      setToastMessage(error?.message || "Failed to update email");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     }
@@ -283,15 +204,37 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
       return;
     }
 
-    try {
-      await user?.setProfileImage({ file });
-      await user?.reload();
+    const supabase = createBrowserSupabaseClient();
+    if (!supabase) {
+      setToastType("error");
+      setToastMessage("Sign-in is not configured.");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+      return;
+    }
 
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result ?? ""));
+        reader.onerror = () => reject(new Error("Failed to read image"));
+        reader.readAsDataURL(file);
+      });
+
+      const { error } = await supabase.auth.updateUser({
+        data: { avatar_url: dataUrl, picture: dataUrl },
+      });
+      if (error) throw error;
+
+      await reloadUser();
+      router.refresh();
       setToastType("success");
       setToastMessage("Avatar updated successfully");
     } catch (error) {
       setToastType("error");
-      setToastMessage("Failed to update avatar");
+      setToastMessage(
+        error instanceof Error ? error.message : "Failed to update avatar",
+      );
     } finally {
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
@@ -381,49 +324,30 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
                       className="absolute top-4 right-4 text-gray-500"
                       onClick={() => {
                         setShowEditEmail(false);
-                        setStep("input");
                         setNewEmail("");
-                        setVerificationCode("");
                       }}
                     >
                       ✕
                     </button>
                     <h2 className="text-[#212E42] text-[18px] font-semibold mb-4">
-                      {step === "input" ? "Enter New Email" : "Verify Email"}
+                      Change Email
                     </h2>
-                    {step === "input" ? (
-                      <>
-                        <input
-                          type="email"
-                          placeholder="Enter new email"
-                          value={newEmail}
-                          onChange={(e) => setNewEmail(e.target.value)}
-                          className="border px-3 py-2 w-full rounded text-[14px] mb-4"
-                        />
-                        <button
-                          className="w-full bg-[#4A7DFF] text-white py-2 rounded"
-                          onClick={handleAddEmail}
-                        >
-                          Send Code
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <input
-                          type="text"
-                          placeholder="Enter verification code"
-                          value={verificationCode}
-                          onChange={(e) => setVerificationCode(e.target.value)}
-                          className="border px-3 py-2 w-full rounded text-[14px] mb-4"
-                        />
-                        <button
-                          className="w-full bg-[#4A7DFF] text-white py-2 rounded"
-                          onClick={handleVerifyCode}
-                        >
-                          Verify & Save
-                        </button>
-                      </>
-                    )}
+                    <input
+                      type="email"
+                      placeholder="Enter new email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      className="border px-3 py-2 w-full rounded text-[14px] mb-4"
+                    />
+                    <p className="text-[12px] text-[#76808F] mb-4">
+                      We&apos;ll send a confirmation link to your new address.
+                    </p>
+                    <button
+                      className="w-full bg-[#4A7DFF] text-white py-2 rounded"
+                      onClick={handleAddEmail}
+                    >
+                      Update email
+                    </button>
                   </div>
                 </div>
               )}
@@ -436,8 +360,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
                 Premium Account
               </span>
 
-              {(user?.publicMetadata.plan == "premium" ||
-                user?.publicMetadata.plan == "pro" ||
+              {(hasPaidPracticeAccess(user?.publicMetadata?.plan) ||
                 subscriptionData) && (
                 <span className="text-[14px] font-semibold text-[#F27059]">
                   {isPlanLoaded ? planNameDisplay : "Loading..."}
@@ -445,8 +368,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
               )}
             </div>
             <div>
-              {user?.publicMetadata.plan == "premium" ||
-              user?.publicMetadata.plan == "pro" ||
+              {hasPaidPracticeAccess(user?.publicMetadata?.plan) ||
               subscriptionData ? (
                 <div className="flex gap-[8px] screen744:!gap-[16px] items-center flex-row-reverse justify-start flex-wrap">
                   <button
@@ -687,7 +609,6 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
           confirmPassword={confirmPassword}
           setConfirmPassword={setConfirmPassword}
           passwordCriteria={passwordCriteria}
-          user={user}
           setShowSetPasswordModal={setShowSetPasswordModal}
           setToastType={setToastType}
           setToastMessage={setToastMessage}
@@ -704,7 +625,6 @@ function SetPasswordModal({
   confirmPassword,
   setConfirmPassword,
   passwordCriteria,
-  user,
   setShowSetPasswordModal,
   setToastType,
   setToastMessage,
@@ -720,11 +640,6 @@ function SetPasswordModal({
   const passwordActive = showPassword === "text" || password.length > 0;
   const confirmPasswordActive =
     showConfirmPassword === "text" || confirmPassword.length > 0;
-
-  const updatePasswordWithReverification = useReverification(async () => {
-    if (!user) throw new Error("User not found");
-    await user.updatePassword({ newPassword: password });
-  });
 
   return (
     <div className="fixed inset-0 bg-[#17161680] flex justify-center items-center  z-[9999]">
@@ -864,13 +779,6 @@ function SetPasswordModal({
                 setTimeout(() => setShowToast(false), 3000);
                 return;
               }
-              if (!user?.passwordEnabled) {
-                setToastType("error");
-                setToastMessage("This account type cannot set a password.");
-                setShowToast(true);
-                setTimeout(() => setShowToast(false), 3000);
-                return;
-              }
               if (
                 !passwordCriteria.length ||
                 !passwordCriteria.uppercase ||
@@ -885,13 +793,20 @@ function SetPasswordModal({
                 return;
               }
               try {
-                await updatePasswordWithReverification();
+                const supabase = createBrowserSupabaseClient();
+                if (!supabase) throw new Error("Sign-in is not configured.");
+                const { error } = await supabase.auth.updateUser({ password });
+                if (error) throw error;
                 setToastType("success");
                 setToastMessage("Password updated successfully");
                 setShowSetPasswordModal(false);
               } catch (error) {
                 setToastType("error");
-                setToastMessage("Failed to update password");
+                setToastMessage(
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to update password",
+                );
               } finally {
                 setShowToast(true);
                 setTimeout(() => setShowToast(false), 3000);

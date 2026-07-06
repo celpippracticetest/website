@@ -1,7 +1,7 @@
 "use client";
 
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   readLegacyImportedExternalUserId,
   readPracticePlanFromSupabaseUser,
@@ -75,8 +75,11 @@ function bridgeUserFromSupabase(u: SupabaseAuthUser) {
 
   return {
     id: stableId,
+    primaryEmailAddressId: "primary",
     primaryEmailAddress: email ? { emailAddress: email } : null,
-    emailAddresses: email ? [{ emailAddress: email }] : [],
+    emailAddresses: email
+      ? [{ id: "primary", emailAddress: email, verification: { status: "verified" as const } }]
+      : [],
     firstName,
     lastName,
     imageUrl,
@@ -90,6 +93,7 @@ function bridgeUserFromSupabase(u: SupabaseAuthUser) {
     },
     externalAccounts: [] as { provider: string }[],
     passwordEnabled: true,
+    reload: async () => {},
   };
 }
 
@@ -112,6 +116,16 @@ export function useHybridWebUser() {
   const [supabaseUser, setSupabaseUser] = useState<SupabaseAuthUser | null | undefined>(
     undefined
   );
+
+  const reloadUser = useCallback(async () => {
+    const supabase = createBrowserSupabaseClient();
+    if (!supabase) {
+      setSupabaseUser(null);
+      return;
+    }
+    const fresh = await resolveFreshSupabaseUser(supabase);
+    setSupabaseUser(fresh);
+  }, []);
 
   useEffect(() => {
     const supabase = createBrowserSupabaseClient();
@@ -138,10 +152,13 @@ export function useHybridWebUser() {
     const isLoaded = supaReady;
 
     if (supabaseUser) {
+      const user = bridgeUserFromSupabase(supabaseUser);
+      user.reload = reloadUser;
       return {
         isLoaded,
         isSignedIn: true as const,
-        user: bridgeUserFromSupabase(supabaseUser) as any,
+        user: user as any,
+        reloadUser,
         authSource: "supabase" as const satisfies HybridAuthSource,
       };
     }
@@ -150,7 +167,8 @@ export function useHybridWebUser() {
       isLoaded,
       isSignedIn: false as const,
       user: null,
+      reloadUser,
       authSource: null as HybridAuthSource,
     };
-  }, [supabaseUser]);
+  }, [supabaseUser, reloadUser]);
 }
