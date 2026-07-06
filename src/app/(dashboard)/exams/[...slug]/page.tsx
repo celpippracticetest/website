@@ -14,6 +14,8 @@ import { ObjectId } from "bson";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
+import { currentUser } from "@/lib/auth/web-auth-session";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
 const Exam = async ({ params }: { params: { slug: string[] } }) => {
   const resolvedParams = await params;
@@ -36,7 +38,7 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
   const isAdmin: boolean = Array.isArray(roleValue)
     ? roleValue.includes("admin")
     : roleValue === "admin";
-  if (!user || (plan !== "premium" && !isAdmin)) {
+  if (!user || (!hasPaidPracticeAccess(plan) && !isAdmin)) {
     redirect("/exam-overview", RedirectType.push);
   }
   if (
@@ -55,7 +57,9 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
     const examParts = await examPartsRepo.getAllExamPart({
       examId: new ObjectId(examId),
     });
-    const answersRepo = new ListeningAndReadingAnswerRepository(documentsClient);
+    const answersRepo = new ListeningAndReadingAnswerRepository(
+      documentsClient,
+    );
     const writingRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
 
     const answers = await answersRepo.getAllListeningAndReadingAnswers({
@@ -63,17 +67,25 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
       userId: user.id,
     });
 
-    const writingAnswers = await writingRepo.getAllWritingAnswers({
-      examId: examId,
-      userId: user.id,
-      type: "WRITING",
-    }, 0, 100);
+    const writingAnswers = await writingRepo.getAllWritingAnswers(
+      {
+        examId: examId,
+        userId: user.id,
+        type: "WRITING",
+      },
+      0,
+      100,
+    );
 
-    const speakingAnswers = await writingRepo.getAllWritingAnswers({
-      examId: examId,
-      userId: user.id,
-      type: "SPEAKING",
-    }, 0, 100);
+    const speakingAnswers = await writingRepo.getAllWritingAnswers(
+      {
+        examId: examId,
+        userId: user.id,
+        type: "SPEAKING",
+      },
+      0,
+      100,
+    );
 
     const speakingAndWritingAnswers = [
       ...writingAnswers.items,
@@ -97,12 +109,14 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
   const part: TExamPartSchemaDto | null =
     await examPartsRepo.findExamPartByExamIdAndPartId(
       examId,
-      parseInt(partNumber)
+      parseInt(partNumber),
     );
   if (!part) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
-        <h1 className="text-2xl font-bold text-red-600 mb-4">Exam Part Not Found</h1>
+        <h1 className="text-2xl font-bold text-red-600 mb-4">
+          Exam Part Not Found
+        </h1>
         <p className="text-gray-700 mb-2">Could not find exam part for:</p>
         <ul className="text-sm text-gray-600 list-disc mb-6">
           <li>Exam ID: {examId}</li>

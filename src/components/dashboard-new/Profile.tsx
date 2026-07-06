@@ -18,7 +18,7 @@ import SvgCloseCircle from "@/components/icons/CloseCircle";
 import Link from "next/link";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 export default function Profile({ prevCheckout, subscriptionData }: any) {
-  const { user, isSignedIn } = useHybridWebUser();
+  const { user, isLoaded, isSignedIn } = useHybridWebUser();
   const [planNameDisplay, setPlanNameDisplay] = useState<string>("");
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
@@ -27,7 +27,11 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
     if (subscriptionData?.planName) {
       setPlanNameDisplay(subscriptionData.planName);
       setIsLoaded(true);
-    } else if (subscriptionData && subscriptionData.currentPeriodStart && subscriptionData.currentPeriodEnd) {
+    } else if (
+      subscriptionData &&
+      subscriptionData.currentPeriodStart &&
+      subscriptionData.currentPeriodEnd
+    ) {
       setPlanNameDisplay(subscriptionData.planName || "Premium Plan");
       setIsLoaded(true);
     } else if (prevCheckout && prevCheckout.createdAt) {
@@ -37,9 +41,11 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
       setIsLoaded(true);
     } else {
       // Fallback based on metadata if no data found but user is marked as premium
-      if (user?.publicMetadata?.plan === 'premium') {
+      if (user?.publicMetadata?.plan === "plus") {
+        setPlanNameDisplay("Plus");
+      } else if (user?.publicMetadata?.plan === "premium") {
         setPlanNameDisplay("Premium Plan");
-      } else if (user?.publicMetadata?.plan === 'pro') {
+      } else if (user?.publicMetadata?.plan === "pro") {
         setPlanNameDisplay("Pro Plan");
       }
       setIsLoaded(true);
@@ -68,17 +74,17 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
 
   const router = useRouter();
   const [showToast, setShowToast] = useState(false);
-  
+
   const [showEditEmail, setShowEditEmail] = useState(false);
   const [newEmail, setNewEmail] = useState("");
   const [step, setStep] = useState<"input" | "verify">("input");
   const [newEmailId, setNewEmailId] = useState<string | null>(null);
   const [verificationCode, setVerificationCode] = useState("");
   useEffect(() => {
-    if (user === null) {
+    if (isLoaded && !isSignedIn) {
       router.push("/practice-overview");
     }
-  }, [user]);
+  }, [isLoaded, isSignedIn, router]);
 
   const getSessions = useGetUserSessions();
 
@@ -108,7 +114,11 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
     } catch (error) {
       console.error(error);
       setToastType("error");
-      setToastMessage(error instanceof Error ? error.message : "Failed to load subscription portal");
+      setToastMessage(
+        error instanceof Error
+          ? error.message
+          : "Failed to load subscription portal",
+      );
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } finally {
@@ -151,7 +161,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
   const updatePrimaryWithReverification = useReverification(async () => {
     if (!user) throw new Error("User not found");
     const existingEmail = user.emailAddresses.find(
-      (e) => e.emailAddress === newEmail
+      (e) => e.emailAddress === newEmail,
     );
     if (!existingEmail) throw new Error("Existing email not found");
     return await user.update({ primaryEmailAddressId: existingEmail.id });
@@ -160,14 +170,14 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
   const handleAddEmail = async () => {
     try {
       const existingEmail = user?.emailAddresses.find(
-        (e) => e.emailAddress === newEmail
+        (e) => e.emailAddress === newEmail,
       );
       if (existingEmail) {
         if (existingEmail.verification?.status === "verified") {
           await updatePrimaryWithReverification();
           setToastType("success");
           setToastMessage(
-            "Email already verified; set as primary successfully."
+            "Email already verified; set as primary successfully.",
           );
           setShowToast(true);
           setTimeout(() => setShowToast(false), 3000);
@@ -288,14 +298,21 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
     }
   };
 
+  if (!isLoaded) {
+    return (
+      <div className="text-center py-10 text-gray-500 w-full">Loading...</div>
+    );
+  }
+
   if (!user) return null;
 
   return (
     <>
       {showToast && (
         <div
-          className={`fixed top-4 right-4 z-50 px-4 py-2 rounded shadow-lg transition-opacity duration-300 ${toastType === "success" ? "bg-green-500" : "bg-red-500"
-            } text-white`}
+          className={`fixed top-4 right-4 z-50 px-4 py-2 rounded shadow-lg transition-opacity duration-300 ${
+            toastType === "success" ? "bg-green-500" : "bg-red-500"
+          } text-white`}
         >
           {toastMessage}
         </div>
@@ -419,22 +436,27 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
                 Premium Account
               </span>
 
-              {(user?.publicMetadata.plan == "premium" || user?.publicMetadata.plan == "pro" || subscriptionData) && (
+              {(user?.publicMetadata.plan == "premium" ||
+                user?.publicMetadata.plan == "pro" ||
+                subscriptionData) && (
                 <span className="text-[14px] font-semibold text-[#F27059]">
                   {isLoaded ? planNameDisplay : "Loading..."}
                 </span>
               )}
             </div>
             <div>
-              {(user?.publicMetadata.plan == "premium" || user?.publicMetadata.plan == "pro" || subscriptionData) ? (
+              {user?.publicMetadata.plan == "premium" ||
+              user?.publicMetadata.plan == "pro" ||
+              subscriptionData ? (
                 <div className="flex gap-[8px] screen744:!gap-[16px] items-center flex-row-reverse justify-start flex-wrap">
                   <button
                     onClick={handleManageSubscription}
                     disabled={loadingPortal}
-                    className={` ${user.publicMetadata.planCancelled == true
-                      ? "text-gray"
-                      : "text-[#EE4266]"
-                      } cursor-pointer text-[#EE4266] text-[14px] font-normal w-[150px] text-center disabled:opacity-50`}
+                    className={` ${
+                      user.publicMetadata.planCancelled == true
+                        ? "text-gray"
+                        : "text-[#EE4266]"
+                    } cursor-pointer text-[#EE4266] text-[14px] font-normal w-[150px] text-center disabled:opacity-50`}
                   >
                     {loadingPortal ? "Loading..." : "Manage Subscription"}
                   </button>
@@ -518,15 +540,18 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
                     <SvgDesktop />
                   )}
                   <span>
-                    {`${session.latestActivity.isMobile ? "Phone " : "Desktop "
-                      }${session.latestActivity.deviceType}, ${session.latestActivity.browserName
-                      }, ${session.latestActivity?.city}, ${session.latestActivity?.country
-                      }`}
+                    {`${
+                      session.latestActivity.isMobile ? "Phone " : "Desktop "
+                    }${session.latestActivity.deviceType}, ${
+                      session.latestActivity.browserName
+                    }, ${session.latestActivity?.city}, ${
+                      session.latestActivity?.country
+                    }`}
                   </span>
                 </div>
                 <span>
                   {new Date(
-                    session.latestActivity?.updatedAt || session.updatedAt
+                    session.latestActivity?.updatedAt || session.updatedAt,
                   ).toLocaleString()}
                 </span>
                 <span>IP {session.latestActivity?.ipAddress || "Unknown"}</span>
@@ -564,7 +589,6 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
               <span className="text-[#212E42] text-[16px] font-medium">
                 Delete Account
               </span>
-
             </div>
             <button onClick={() => setShowDeleteConfirm(true)}>
               <span className="flex cursor-pointer items-center justify-center border-[#EE4266] text-[#EE4266] rounded-[24px] border-[1px] font-normal text-[14px] w-[149px] h-[40px]">
@@ -573,7 +597,6 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
             </button>
           </div>
         </div>
-
       </div>
       {confirmEmailId && (
         <div className="fixed inset-0  bg-[#17161680] flex justify-center items-center z-50">
@@ -688,7 +711,7 @@ function SetPasswordModal({
   setShowToast,
 }: any) {
   const [showPassword, setShowPassword] = useState<"password" | "text">(
-    "password"
+    "password",
   );
   const [showConfirmPassword, setShowConfirmPassword] = useState<
     "password" | "text"
@@ -724,10 +747,11 @@ function SetPasswordModal({
           <div className="relative mb-4">
             <label
               className={`absolute left-3 top-[-10px] text-[12px] bg-white px-1 transition-all duration-200
-                ${password.length > 0 ||
+                ${
+                  password.length > 0 ||
                   document.activeElement?.id === "set-password-input"
-                  ? ""
-                  : "opacity-0"
+                    ? ""
+                    : "opacity-0"
                 }
                 text-[#76808F]`}
             >
@@ -747,7 +771,7 @@ function SetPasswordModal({
               tabIndex={0}
               onClick={() =>
                 setShowPassword((prev) =>
-                  prev === "password" ? "text" : "password"
+                  prev === "password" ? "text" : "password",
                 )
               }
             >
@@ -758,10 +782,11 @@ function SetPasswordModal({
           <div className="relative mb-4">
             <label
               className={`absolute left-3 top-[-10px] text-[12px] bg-white px-1 transition-all duration-200
-                ${confirmPassword.length > 0 ||
+                ${
+                  confirmPassword.length > 0 ||
                   document.activeElement?.id === "set-confirm-password-input"
-                  ? ""
-                  : "opacity-0"
+                    ? ""
+                    : "opacity-0"
                 }
                 text-[#76808F]`}
             >
@@ -781,7 +806,7 @@ function SetPasswordModal({
               tabIndex={0}
               onClick={() =>
                 setShowConfirmPassword((prev) =>
-                  prev === "password" ? "text" : "password"
+                  prev === "password" ? "text" : "password",
                 )
               }
             >

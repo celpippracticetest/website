@@ -3,5 +3,11 @@
  * Used to hide pricing / upgrade CTAs for subscribers.
  */
 export function isPaidSubscriptionPlan(plan: unknown): boolean {
-  return String(plan ?? "").toLowerCase() === "plus";
+  const normalized = String(plan ?? "").trim().toLowerCase();
+  return (
+    normalized === "plus" ||
+    normalized === "premium" ||
+    normalized === "pro" ||
+    normalized === "enterprise"
+  );
 }

@@ -9,6 +9,7 @@ import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAnd
 import { PracticeRepository } from "@/repositories/practice.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
 import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { ObjectId } from "bson";
 import { redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
@@ -85,7 +86,13 @@ const ReadingPage = async ({
         taskNumber: taskItem.taskNumber,
       }));
 
-    return <SkillLandingPage content={skillPagesContent.reading} skillType="reading" availableTasks={availableTasks} />;
+    return (
+      <SkillLandingPage
+        content={skillPagesContent.reading}
+        skillType="reading"
+        availableTasks={availableTasks}
+      />
+    );
   }
 
   if (!selectedPracticeId && !taskId) {
@@ -99,7 +106,13 @@ const ReadingPage = async ({
             Reading
           </span>
         </div>
-        <ShowTasks tasks={readingTasks.map(t => ({ ...t, icon: <SvgReadingPart className="text-[#F27059]" />, title: "Reading Practice" }))} />
+        <ShowTasks
+          tasks={readingTasks.map((t) => ({
+            ...t,
+            icon: <SvgReadingPart className="text-[#F27059]" />,
+            title: "Reading Practice",
+          }))}
+        />
       </ShowTaskHeader>
     );
   }
@@ -117,7 +130,7 @@ const ReadingPage = async ({
       taskId: taskId ? (new ObjectId(taskId) as unknown as string) : undefined,
     },
     0,
-    200
+    200,
   );
   let selectedPractice = null;
   if (selectedPracticeId) {
@@ -125,11 +138,9 @@ const ReadingPage = async ({
   }
 
   if (
-    (!user ||
-      !user.publicMetadata.plan ||
-      user.publicMetadata.plan !== "premium") &&
     selectedPractice &&
     !selectedPractice.isFree &&
+    !hasPaidPracticeAccess(user?.publicMetadata?.plan) &&
     selectedPractice.passages[0] &&
     selectedPractice.passages[0].body &&
     selectedPractice.passages[0].body.length > 20
@@ -146,13 +157,13 @@ const ReadingPage = async ({
     if (selectedPracticeId) {
       answers = await listeningAndReadingAnswerRepo.findAnswerByPracticeAndUser(
         selectedPracticeId,
-        user.id
+        user.id,
       );
     }
     completedPractice =
       await listeningAndReadingAnswerRepo.findAllTaskIdsByTaskAndUser(
         task.id,
-        user.id
+        user.id,
       );
   }
 

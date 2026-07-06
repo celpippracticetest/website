@@ -2,6 +2,7 @@ import LayoutClient from "@/components/dashboard-new/LayoutClient";
 import IntercomLoader from "@/components/IntercomLoader";
 import { daysSince } from "@/lib/utils";
 import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
+import { currentUser } from "@/lib/auth/web-auth-session";
 import { Metadata } from "next";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -45,7 +46,8 @@ export default async function RootLayout({
     !showSurvey &&
     publicMetadata.plan === "free" &&
     (onboardingNew.completed === true ||
-      (onboardingNew.askedLaterAt && daysSince(onboardingNew.askedLaterAt) < 7));
+      (onboardingNew.askedLaterAt &&
+        daysSince(onboardingNew.askedLaterAt) < 7));
   return (
     <>
       <IntercomLoader />

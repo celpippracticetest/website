@@ -141,7 +141,7 @@ export function getSubscriptionDisplayName(
 ) {
   const normalizedPlan = normalizePlan(plan);
   const trimmedName = (currentName || "").trim();
-  const paid = normalizedPlan === "plus";
+  const paid = hasPaidPracticeAccess(plan);
 
   if (trimmedName) {
     if (paid) {

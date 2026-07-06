@@ -8,6 +8,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import useStore from "@/store";
 import { useRouter } from "nextjs-toploader/app";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { signOutWebSession } from "@/lib/auth/client-sign-out";
 // import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 
@@ -26,13 +27,12 @@ const MobileHeader = (props: {
   viewMode: "practice" | "exams" | null;
   currentPage: string | null;
 }) => {
-  
   const router = useRouter();
   const isMobile = useIsMobile();
   const [isUserDropDownOpen, setUserDropDownOpen] = useState(false);
   const { user, isSignedIn } = useHybridWebUser();
   const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState
+    (state) => state.setPremiumPlanModalState,
   );
   let headerButton: JSX.Element;
   const dashboard = useStore((state) => state.dashboard);
@@ -133,12 +133,7 @@ const MobileHeader = (props: {
 
           {/* Auth buttons */}
           <div className="flex items-right gap-4 lg:gap-5 md:gap-3 ">
-            {(!user ||
-              (user && !user.publicMetadata.plan) ||
-              (user &&
-                user.publicMetadata.plan &&
-                user?.publicMetadata.plan !== "premium" && 
-                user?.publicMetadata.plan !== "pro")) && (
+            {!hasPaidPracticeAccess(user?.publicMetadata?.plan) && (
               <div
                 onClick={() => {
                   setPremiumPlanModalState();

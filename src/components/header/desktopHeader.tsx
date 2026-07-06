@@ -8,6 +8,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import useStore from "@/store";
 import { useRouter } from "nextjs-toploader/app";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { signOutWebSession } from "@/lib/auth/client-sign-out";
 // import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 
@@ -26,13 +27,12 @@ const DesktopHeader = (props: {
   viewMode: "practice" | "exams" | null;
   currentPage: string | null;
 }) => {
-  
   const router = useRouter();
   const isMobile = useIsMobile();
   const [isUserDropDownOpen, setUserDropDownOpen] = useState(false);
   const { user, isSignedIn } = useHybridWebUser();
   const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState
+    (state) => state.setPremiumPlanModalState,
   );
   let headerButton: JSX.Element;
   // const dashboard = useStore((state) => state.dashboard);
@@ -54,8 +54,9 @@ const DesktopHeader = (props: {
     headerButton = (
       <div className="lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2 lg:top-2">
         <div
-          className={`toggle-container border-2 border-gray-200 p-1 rounded-full shadow-sm ${isMobile ? "scale-[0.85]" : "scale-[0.85]"
-            } origin-center`}
+          className={`toggle-container border-2 border-gray-200 p-1 rounded-full shadow-sm ${
+            isMobile ? "scale-[0.85]" : "scale-[0.85]"
+          } origin-center`}
         >
           <div className="toggle-pulse-border"></div>
           <ToggleGroup
@@ -121,7 +122,7 @@ const DesktopHeader = (props: {
 
           {/* Auth buttons */}
           <div className="flex items-right gap-4 lg:gap-5 md:gap-3 ">
-            {user?.publicMetadata.plan !== "premium" && user?.publicMetadata.plan !== "pro" && (
+            {!hasPaidPracticeAccess(user?.publicMetadata?.plan) && (
               <div
                 onClick={() => {
                   setPremiumPlanModalState();

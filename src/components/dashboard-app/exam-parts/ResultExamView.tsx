@@ -5,17 +5,27 @@ import ReadingResultView from "./ReadingResultView";
 import WritingResultView from "./WritingResultView";
 import SpeakingResultView from "./SpeakingResultView";
 import { TExamPartSchemaDto } from "@/models/examParts.model";
-import { TListeningAndReadingAnswerDto, TWritingAnswerDto } from "@/models/answer";
+import {
+  TListeningAndReadingAnswerDto,
+  TWritingAnswerDto,
+} from "@/models/answer";
 import { TExamSchemaDto } from "@/models/exam.model";
 import { useRouter } from "nextjs-toploader/app";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 import { ActivityLogger } from "@/lib/userActivity";
 import { useEffect, useState, useMemo } from "react";
 import IncompletePartsModal from "@/components/modal/IncompletePartsModal";
 import { useSearchParams } from "next/navigation";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { format } from "date-fns";
 import { TQuestion } from "@/models/question.model";
 
@@ -37,7 +47,10 @@ const ResultExamView = ({
 }) => {
   const route = useRouter();
   const searchParams = useSearchParams();
-  const currentAttemptId = searchParams.get("attemptId") === "null" ? null : searchParams.get("attemptId");
+  const currentAttemptId =
+    searchParams.get("attemptId") === "null"
+      ? null
+      : searchParams.get("attemptId");
 
   const attempts = useMemo(() => {
     const attemptMap = new Map<string, Date>();
@@ -63,12 +76,16 @@ const ResultExamView = ({
 
   const answers = useMemo(() => {
     if (!selectedAttemptId) return allAnswers;
-    return allAnswers.filter((a) => (a.attemptId || "legacy") === selectedAttemptId);
+    return allAnswers.filter(
+      (a) => (a.attemptId || "legacy") === selectedAttemptId,
+    );
   }, [allAnswers, selectedAttemptId]);
 
   const speakingAndWritingAnswers = useMemo(() => {
     if (!selectedAttemptId) return allSpeakingAndWritingAnswers;
-    return allSpeakingAndWritingAnswers.filter((a) => (a.attemptId || "legacy") === selectedAttemptId);
+    return allSpeakingAndWritingAnswers.filter(
+      (a) => (a.attemptId || "legacy") === selectedAttemptId,
+    );
   }, [allSpeakingAndWritingAnswers, selectedAttemptId]);
 
   const { user, isLoaded } = useHybridWebUser();
@@ -86,25 +103,25 @@ const ResultExamView = ({
 
     // Check Listening (parts 1-6) - if NO answer records exist at all
     const hasListening = answers.some(
-      a => a.partId && a.partId >= 1 && a.partId <= 6
+      (a) => a.partId && a.partId >= 1 && a.partId <= 6,
     );
     if (!hasListening) sections.push({ name: "Listening", startPart: 1 });
 
     // Check Reading (parts 7-10) - if NO answer records exist at all
     const hasReading = answers.some(
-      a => a.partId && a.partId >= 7 && a.partId <= 10
+      (a) => a.partId && a.partId >= 7 && a.partId <= 10,
     );
     if (!hasReading) sections.push({ name: "Reading", startPart: 7 });
 
     // Check Writing (parts 11-12) - if NO answer records exist at all
     const hasWriting = speakingAndWritingAnswers.some(
-      (a) => a.partId && a.partId >= 11 && a.partId <= 12
+      (a) => a.partId && a.partId >= 11 && a.partId <= 12,
     );
     if (!hasWriting) sections.push({ name: "Writing", startPart: 11 });
 
     // Check Speaking (parts 13-20) - if NO answer records exist at all
     const hasSpeaking = speakingAndWritingAnswers.some(
-      (a) => a.partId && a.partId >= 13 && a.partId <= 20
+      (a) => a.partId && a.partId >= 13 && a.partId <= 20,
     );
     if (!hasSpeaking) sections.push({ name: "Speaking", startPart: 13 });
 
@@ -112,7 +129,9 @@ const ResultExamView = ({
   };
 
   const incompleteSections = getIncompleteSections();
-  const [showIncompleteModal, setShowIncompleteModal] = useState(incompleteSections.length > 0);
+  const [showIncompleteModal, setShowIncompleteModal] = useState(
+    incompleteSections.length > 0,
+  );
 
   const listeningAverage = (() => {
     const average = Array.from({ length: 6 })
@@ -125,17 +144,15 @@ const ResultExamView = ({
         )
           return 0;
         const examPart = examParts.find((e) => e.partId == index + 1);
-        const allQuestions = examPart?.passages?.reduce(
-          (questions: TQuestion[], passage) => {
+        const allQuestions =
+          examPart?.passages?.reduce((questions: TQuestion[], passage) => {
             return questions.concat(passage.questions || []);
-          },
-          []
-        ) || [];
+          }, []) || [];
         if (allQuestions.length === 0) return 0;
         const numberOfCorrect = allQuestions.filter(
           (q: TQuestion, index: number) =>
             userAnswer?.answers[index] &&
-            q.answer === userAnswer?.answers[index]
+            q.answer === userAnswer?.answers[index],
         ).length;
         const percentage = (numberOfCorrect / allQuestions.length) * 100;
 
@@ -159,17 +176,15 @@ const ResultExamView = ({
         )
           return 0;
         const examPart = examParts.find((e) => e.partId == index + 7);
-        const allQuestions = examPart?.passages?.reduce(
-          (questions: TQuestion[], passage) => {
+        const allQuestions =
+          examPart?.passages?.reduce((questions: TQuestion[], passage) => {
             return questions.concat(passage.questions || []);
-          },
-          []
-        ) || [];
+          }, []) || [];
         if (allQuestions.length === 0) return 0;
         const numberOfCorrect = allQuestions.filter(
           (q: TQuestion, index: number) =>
             userAnswer?.answers[index] &&
-            q.answer === userAnswer?.answers[index]
+            q.answer === userAnswer?.answers[index],
         ).length;
         const percentage = (numberOfCorrect / allQuestions.length) * 100;
         return percentage * [20 / 100, 20 / 100, 30 / 100, 30 / 100][index];
@@ -186,9 +201,7 @@ const ResultExamView = ({
     ];
     const weightedPercent = tasks
       .map(({ partId, weight }) => {
-        const ans = speakingAndWritingAnswers.find(
-          (a) => a.partId === partId
-        );
+        const ans = speakingAndWritingAnswers.find((a) => a.partId === partId);
         return ((ans?.overalScore ?? 0) / 12) * 100 * weight;
       })
       .reduce((sum, p) => sum + p, 0);
@@ -201,9 +214,7 @@ const ResultExamView = ({
     const weightedPercent = Array.from({ length: sectionCount })
       .map((_, i) => {
         const partId = 13 + i;
-        const ans = speakingAndWritingAnswers.find(
-          (a) => a.partId === partId
-        );
+        const ans = speakingAndWritingAnswers.find((a) => a.partId === partId);
 
         return ((ans?.overalScore ?? 0) / 12) * 100 * weight;
       })
@@ -211,7 +222,10 @@ const ResultExamView = ({
     return scaleToBand(weightedPercent);
   })();
 
-  if (isLoaded && (!user || (user && user.publicMetadata.plan !== "premium"))) {
+  if (
+    isLoaded &&
+    (!user || !hasPaidPracticeAccess(user.publicMetadata?.plan))
+  ) {
     route.push("exam-overview");
   }
   return (
@@ -282,12 +296,13 @@ const ResultExamView = ({
                 <div className="flex items-center bg-white">
                   Overal Score:{" "}
                   <span
-                    className={`opacity-80 font-black text-4xl ${listeningAverage < 4
-                      ? "text-red-500"
-                      : listeningAverage > 10
-                        ? "text-green-500"
-                        : "text-[#F59E0B]"
-                      }`}
+                    className={`opacity-80 font-black text-4xl ${
+                      listeningAverage < 4
+                        ? "text-red-500"
+                        : listeningAverage > 10
+                          ? "text-green-500"
+                          : "text-[#F59E0B]"
+                    }`}
                   >
                     {listeningAverage}
                   </span>
@@ -312,12 +327,13 @@ const ResultExamView = ({
                 <div className="flex items-center bg-white">
                   Overal Score:{" "}
                   <span
-                    className={`opacity-80 font-black text-4xl ${readingAverage < 4
-                      ? "text-red-500"
-                      : readingAverage > 10
-                        ? "text-green-500"
-                        : "text-[#F59E0B]"
-                      }`}
+                    className={`opacity-80 font-black text-4xl ${
+                      readingAverage < 4
+                        ? "text-red-500"
+                        : readingAverage > 10
+                          ? "text-green-500"
+                          : "text-[#F59E0B]"
+                    }`}
                   >
                     {readingAverage}
                   </span>
@@ -342,12 +358,13 @@ const ResultExamView = ({
                 <div className="flex items-center bg-white">
                   Overal Score:{" "}
                   <span
-                    className={`opacity-80 font-black text-4xl ${writingAverage < 4
-                      ? "text-red-500"
-                      : writingAverage > 10
-                        ? "text-green-500"
-                        : "text-[#F59E0B]"
-                      }`}
+                    className={`opacity-80 font-black text-4xl ${
+                      writingAverage < 4
+                        ? "text-red-500"
+                        : writingAverage > 10
+                          ? "text-green-500"
+                          : "text-[#F59E0B]"
+                    }`}
                   >
                     {writingAverage}
                   </span>
@@ -372,12 +389,13 @@ const ResultExamView = ({
                 <div className="flex items-center bg-white">
                   Overal Score:{" "}
                   <span
-                    className={`opacity-80 font-black text-4xl ${speakingAverage < 4
-                      ? "text-red-500"
-                      : speakingAverage > 10
-                        ? "text-green-500"
-                        : "text-[#F59E0B]"
-                      }`}
+                    className={`opacity-80 font-black text-4xl ${
+                      speakingAverage < 4
+                        ? "text-red-500"
+                        : speakingAverage > 10
+                          ? "text-green-500"
+                          : "text-[#F59E0B]"
+                    }`}
                   >
                     {speakingAverage}
                   </span>

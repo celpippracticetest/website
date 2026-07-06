@@ -9,6 +9,7 @@ import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAnd
 import { PracticeRepository } from "@/repositories/practice.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
 import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { ObjectId } from "bson";
 import { redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
@@ -91,7 +92,13 @@ const DashboardApp = async ({
         taskNumber: taskItem.taskNumber,
       }));
 
-    return <SkillLandingPage content={skillPagesContent.listening} skillType="listening" availableTasks={availableTasks} />;
+    return (
+      <SkillLandingPage
+        content={skillPagesContent.listening}
+        skillType="listening"
+        availableTasks={availableTasks}
+      />
+    );
   }
 
   if (!selectedPracticeId && !taskId) {
@@ -105,7 +112,13 @@ const DashboardApp = async ({
             Listening
           </span>
         </div>
-        <ShowTasks tasks={listeningTasks.map(t => ({ ...t, icon: <SvgListeningPart className="text-[#316BFF]" />, title: "Listening Practice" }))} />
+        <ShowTasks
+          tasks={listeningTasks.map((t) => ({
+            ...t,
+            icon: <SvgListeningPart className="text-[#316BFF]" />,
+            title: "Listening Practice",
+          }))}
+        />
       </ShowTaskHeader>
     );
   }
@@ -122,7 +135,7 @@ const DashboardApp = async ({
       taskId: taskId ? (new ObjectId(taskId) as unknown as string) : undefined,
     },
     0,
-    200
+    200,
   );
   let selectedPractice = null;
   if (selectedPracticeId) {
@@ -130,11 +143,9 @@ const DashboardApp = async ({
   }
 
   if (
-    (!user ||
-      !user.publicMetadata.plan ||
-      user.publicMetadata.plan !== "premium") &&
     selectedPractice &&
-    !selectedPractice.isFree
+    !selectedPractice.isFree &&
+    !hasPaidPracticeAccess(user?.publicMetadata?.plan)
   ) {
     selectedPractice = {
       ...selectedPractice,
@@ -149,13 +160,13 @@ const DashboardApp = async ({
     if (selectedPracticeId) {
       answers = await listeningAndReadingAnswerRepo.findAnswerByPracticeAndUser(
         selectedPracticeId,
-        user.id
+        user.id,
       );
     }
     completedPractice =
       await listeningAndReadingAnswerRepo.findAllTaskIdsByTaskAndUser(
         task.id,
-        user.id
+        user.id,
       );
   }
 

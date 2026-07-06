@@ -10,6 +10,7 @@ import ReadingQuestionList from "../reading-practice/components/ReadingQuestionL
 import useStore from "@/store";
 import { Popover } from "radix-ui";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import React from "react";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import UpgradeModal from "@/components/modal/UpgradeModal";
@@ -73,7 +74,7 @@ const ReadingExamView = ({
   >({});
   const [time, setTime] = useState(timerTime);
   const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState
+    (state) => state.setPremiumPlanModalState,
   );
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
@@ -98,7 +99,9 @@ const ReadingExamView = ({
   useEffect(() => {
     // Log mock exam started when component mounts
     if (user && practice.taskId) {
-      const loggerAttemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
+      const loggerAttemptId =
+        searchParams.get("attemptId") ||
+        `mock_${practice.taskId}_${Date.now()}`;
       ActivityLogger.mockStarted(loggerAttemptId, practice.taskId.toString());
     }
   }, [user, practice.taskId, searchParams]);
@@ -123,20 +126,22 @@ const ReadingExamView = ({
           if (response.ok) {
             const result = await response.json();
             // Log mock exam part completed
-            const loggerAttemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
+            const loggerAttemptId =
+              searchParams.get("attemptId") ||
+              `mock_${practice.taskId}_${Date.now()}`;
             await ActivityLogger.mockCompleted(
               loggerAttemptId,
               practice.taskId.toString(),
               result.overall,
               result,
-              time
+              time,
             );
 
             // Add league points for mock exam completion
             await addPoints(
               20,
               "mockExams",
-              `${Math.floor(time / 60)} minutes`
+              `${Math.floor(time / 60)} minutes`,
             );
 
             // Check for trophy achievements (only for complete exam mode)
@@ -144,7 +149,7 @@ const ReadingExamView = ({
               await checkTrophyAchievements(
                 20,
                 "mockExams",
-                `${Math.floor(time / 60)}:${time % 60}`
+                `${Math.floor(time / 60)}:${time % 60}`,
               );
             }
           }
@@ -153,18 +158,22 @@ const ReadingExamView = ({
           console.error("Failed to submit answers:", error);
         }
         const attemptId = searchParams.get("attemptId");
-        const query = section ? `?section=${section}&attemptId=${attemptId}` : `?attemptId=${attemptId}`;
+        const query = section
+          ? `?section=${section}&attemptId=${attemptId}`
+          : `?attemptId=${attemptId}`;
         if (section === "reading" && partId >= 10) {
           setShowContinueModal(true);
         } else {
           const attemptId = searchParams.get("attemptId");
-          const query = section ? `?section=${section}&attemptId=${attemptId}` : `?attemptId=${attemptId}`;
+          const query = section
+            ? `?section=${section}&attemptId=${attemptId}`
+            : `?attemptId=${attemptId}`;
           router.push(
             "/exams/exam_" +
-            practice.taskId +
-            "/part" +
-            (partId + 1).toString() +
-            query
+              practice.taskId +
+              "/part" +
+              (partId + 1).toString() +
+              query,
           );
         }
       };
@@ -182,13 +191,12 @@ const ReadingExamView = ({
   };
 
   const shouldShowPractice: boolean =
-    practice.isFree ||
-    !!(!practice.isFree &&
-      user &&
-      user.publicMetadata.plan &&
-      user.publicMetadata.plan === "premium");
+    practice.isFree || hasPaidPracticeAccess(user?.publicMetadata?.plan);
 
-  if (isLoaded && (!user || (user && user.publicMetadata.plan !== "premium"))) {
+  if (
+    isLoaded &&
+    (!user || !hasPaidPracticeAccess(user.publicMetadata?.plan))
+  ) {
     router.push("exam-overview");
   }
 
@@ -270,8 +278,18 @@ const ReadingExamView = ({
         <></>
       )}
       <div className="flex flex-col w-full">
-
-        <ExamHeader examPractice="Reading" ref={ref} setShowModal={setMenuShowModal} menuShowModal={menuShowModal} examId={practice.taskId} partId={partId} examName={practice.name} examNumber={examNumber} practiceSections={practiceSections} getPartsForSection={getPartsForSection} />
+        <ExamHeader
+          examPractice="Reading"
+          ref={ref}
+          setShowModal={setMenuShowModal}
+          menuShowModal={menuShowModal}
+          examId={practice.taskId}
+          partId={partId}
+          examName={practice.name}
+          examNumber={examNumber}
+          practiceSections={practiceSections}
+          getPartsForSection={getPartsForSection}
+        />
 
         <div className="bg-white rounded-xl flex flex-col screen1280:!h-[920px] overflow-scroll border border-[#D5D6D8] w-full">
           <div className="flex justify-between pb-[21px]  lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
@@ -290,8 +308,9 @@ const ReadingExamView = ({
                     <div className="text-base font-semibold gap-2 text-center text-[#EE4266] flex items-center">
                       <p>
                         {time > 0
-                          ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
-                          }`
+                          ? `${Math.floor(time / 60)}:${
+                              time % 60 < 10 ? `0${time % 60}` : time % 60
+                            }`
                           : "Time's Up!"}
                       </p>
                     </div>
@@ -303,15 +322,18 @@ const ReadingExamView = ({
                   onClick={() => {
                     const query = section ? `?section=${section}` : "";
                     if (page == "description" && passageIndex == 0) {
-                      if (partId === 1 || (section === "reading" && partId === 7)) {
+                      if (
+                        partId === 1 ||
+                        (section === "reading" && partId === 7)
+                      ) {
                         router.push("/exam-overview");
                       } else {
                         router.push(
                           "/exams/exam_" +
-                          practice.taskId +
-                          "/part" +
-                          (partId - 1).toString() +
-                          query
+                            practice.taskId +
+                            "/part" +
+                            (partId - 1).toString() +
+                            query,
                         );
                       }
                     } else if (page == "question" && partId === 7) {
@@ -319,10 +341,11 @@ const ReadingExamView = ({
                     } else if (page == "question") {
                       router.push(
                         "/exams/exam_" +
-                        practice.taskId +
-                        "/part" +
-                        (partId - 1).toString() +
-                        (query ? query + "&" : "?") + `attemptId=${searchParams.get("attemptId")}`
+                          practice.taskId +
+                          "/part" +
+                          (partId - 1).toString() +
+                          (query ? query + "&" : "?") +
+                          `attemptId=${searchParams.get("attemptId")}`,
                       );
                     }
                     setTime(timerTime);
@@ -394,8 +417,9 @@ const ReadingExamView = ({
                           <img
                             src={practice.passages[0].pictureUrl}
                             alt={practice.passages[0].title}
-                            className={`w-full h-auto mb-4 rounded-lg shadow-md ${!shouldShowPractice ? "blur-sm" : ""
-                              }`}
+                            className={`w-full h-auto mb-4 rounded-lg shadow-md ${
+                              !shouldShowPractice ? "blur-sm" : ""
+                            }`}
                           />
                         </>
                       )}
@@ -456,7 +480,7 @@ const ReadingExamView = ({
                             question={question}
                             onAnswerSelect={(
                               questionId: number,
-                              answerId: string
+                              answerId: string,
                             ) => {
                               if (shouldShowPractice) {
                                 handleAnswerSelect(questionId, answerId);
@@ -466,7 +490,7 @@ const ReadingExamView = ({
                             }}
                             selectedAnswers={selectedAnswers}
                           />
-                        )
+                        ),
                       )}
                       {practice.passages[1]?.body &&
                         practice.passages[1]?.body?.length > 0 && (
@@ -485,21 +509,25 @@ const ReadingExamView = ({
                                         <Popover.Root>
                                           <Popover.Trigger className="PopoverTrigger bg-[#F7B267] cursor-pointer px-2 rounded font-semibold text-[#212E42] text-[14px] py-1">
                                             {parseInt(
-                                              practice.passages[1]?.questions?.[0]?.id || "0"
+                                              practice.passages[1]
+                                                ?.questions?.[0]?.id || "0",
                                             ) + index}
                                             {selectedAnswers[
-                                              (practice.passages[0]?.questions?.length || 0) + index
+                                              (practice.passages[0]?.questions
+                                                ?.length || 0) + index
                                             ]
                                               ? ". " +
-                                              practice.passages[1]?.questions?.[
-                                                index
-                                              ]?.choices?.find(
-                                                (choice) =>
-                                                  choice.id ===
-                                                  selectedAnswers[
-                                                  (practice.passages[0]?.questions?.length || 0) + index
-                                                  ]
-                                              )?.text
+                                                practice.passages[1]?.questions?.[
+                                                  index
+                                                ]?.choices?.find(
+                                                  (choice) =>
+                                                    choice.id ===
+                                                    selectedAnswers[
+                                                      (practice.passages[0]
+                                                        ?.questions?.length ||
+                                                        0) + index
+                                                    ],
+                                                )?.text
                                               : "..."}
                                           </Popover.Trigger>
                                           <Popover.Portal>
@@ -509,44 +537,49 @@ const ReadingExamView = ({
                                             >
                                               <div className="flex flex-col">
                                                 <p className="text-[14px] font-medium mb-2"></p>
-                                                {(practice.passages[1]?.questions?.[
-                                                  index
-                                                ]?.choices || []).map(
-                                                  (choice, indexChoice) => (
-                                                    <Popover.Close
-                                                      asChild
-                                                      key={indexChoice}
+                                                {(
+                                                  practice.passages[1]
+                                                    ?.questions?.[index]
+                                                    ?.choices || []
+                                                ).map((choice, indexChoice) => (
+                                                  <Popover.Close
+                                                    asChild
+                                                    key={indexChoice}
+                                                  >
+                                                    <div
+                                                      className="flex items-center p-2 rounded-md transition-all cursor-pointer hover:bg-blue-50 "
+                                                      onClick={(e) => {
+                                                        if (
+                                                          shouldShowPractice
+                                                        ) {
+                                                          handleAnswerSelect(
+                                                            (practice
+                                                              .passages[0]
+                                                              ?.questions
+                                                              ?.length || 0) +
+                                                              index,
+                                                            choice.id,
+                                                          );
+                                                        } else {
+                                                          setPremiumPlanModalState();
+                                                        }
+                                                      }}
                                                     >
-                                                      <div
-                                                        className="flex items-center p-2 rounded-md transition-all cursor-pointer hover:bg-blue-50 "
-                                                        onClick={(e) => {
-                                                          if (
-                                                            shouldShowPractice
-                                                          ) {
-                                                            handleAnswerSelect(
-                                                              (practice.passages[0]?.questions?.length || 0) + index,
-                                                              choice.id
-                                                            );
-                                                          } else {
-                                                            setPremiumPlanModalState();
-                                                          }
-                                                        }}
-                                                      >
-                                                        {selectedAnswers[
-                                                          (practice.passages[0]?.questions?.length || 0) +
-                                                          index
-                                                        ] === choice.id ? (
-                                                          <SvgCheckCircle className="shrink-0 mr-2" />
-                                                        ) : (
-                                                          <SvgCircle className="shrink-0 mr-2" />
-                                                        )}
-                                                        <span className="text-[14px] ml-2">
-                                                          {choice.text}
-                                                        </span>
-                                                      </div>
-                                                    </Popover.Close>
-                                                  )
-                                                )}
+                                                      {selectedAnswers[
+                                                        (practice.passages[0]
+                                                          ?.questions?.length ||
+                                                          0) + index
+                                                      ] === choice.id ? (
+                                                        <SvgCheckCircle className="shrink-0 mr-2" />
+                                                      ) : (
+                                                        <SvgCircle className="shrink-0 mr-2" />
+                                                      )}
+                                                      <span className="text-[14px] ml-2">
+                                                        {choice.text}
+                                                      </span>
+                                                    </div>
+                                                  </Popover.Close>
+                                                ))}
                                               </div>
                                               <Popover.Arrow className="PopoverArrow" />
                                             </Popover.Content>
@@ -612,14 +645,16 @@ const ReadingExamView = ({
                               question={question}
                               onAnswerSelect={(
                                 questionId: number,
-                                answerId: string
+                                answerId: string,
                               ) => {
                                 if (shouldShowPractice) {
                                   handleAnswerSelect(
-                                    (practice.passages[0]?.questions?.length || 0) +
-                                    (practice.passages[1]?.questions?.length || 0) +
-                                    index,
-                                    answerId
+                                    (practice.passages[0]?.questions?.length ||
+                                      0) +
+                                      (practice.passages[1]?.questions
+                                        ?.length || 0) +
+                                      index,
+                                    answerId,
                                   );
                                 } else {
                                   setPremiumPlanModalState();
@@ -627,7 +662,7 @@ const ReadingExamView = ({
                               }}
                               selectedAnswers={selectedAnswers}
                             />
-                          )
+                          ),
                         )}
                     </div>
                   </div>
@@ -651,7 +686,7 @@ const ReadingExamView = ({
           onContinue={() => {
             setShowContinueModal(false);
             router.push(
-              `/exams/exam_${practice.taskId}/part11?section=writing&attemptId=${searchParams.get("attemptId")}`
+              `/exams/exam_${practice.taskId}/part11?section=writing&attemptId=${searchParams.get("attemptId")}`,
             );
           }}
           onFinish={() => {

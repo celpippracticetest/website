@@ -13,6 +13,7 @@ import SvgSvgBeforeTypingWord from "@/components/icons/SvgBeforeTypingWord";
 import SvgLearningArrowUp from "@/components/icons/LearningArrowUp";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
 import { ActivityLogger } from "@/lib/userActivity";
@@ -50,7 +51,7 @@ const Page = () => {
 
   // Check if user is free or premium
   const isFreeUser = user?.publicMetadata?.plan === "free";
-  const isPremiumUser = user?.publicMetadata?.plan === "premium";
+  const isPremiumUser = hasPaidPracticeAccess(user?.publicMetadata?.plan);
   const noUser = isLoaded ? !isSignedIn : false;
 
   const skills: Skill[] = [
@@ -218,7 +219,7 @@ const Page = () => {
       if (!popoverRef.current) return;
       const target = e.target as Node;
       const clickedButton = btnRefs.current.some(
-        (b) => b && b.contains(target)
+        (b) => b && b.contains(target),
       );
       if (!clickedButton && !popoverRef.current.contains(target)) {
         setOpenIndex(null);
@@ -361,7 +362,7 @@ const Page = () => {
         undefined,
         data.usage?.prompt_tokens || 0,
         data.usage?.completion_tokens || 0,
-        attemptId
+        attemptId,
       );
 
       // Add league points for AI feedback
@@ -690,8 +691,8 @@ const Page = () => {
                       isChatLocked && (isFreeUser || noUser)
                         ? "Upgrade to Pro to continue chatting..."
                         : isInConversation
-                        ? "Continue the conversation..."
-                        : "Write your answer or ask for help…"
+                          ? "Continue the conversation..."
+                          : "Write your answer or ask for help…"
                     }
                     disabled={isChatLocked && (isFreeUser || noUser)}
                     className={`flex-1 p-[24px] rounded-[16px] min-h-[76px] border pr-[112px] pb-[64px] text-[14px] text-[#111827] outline-none shadow-sm ${

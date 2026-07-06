@@ -11,6 +11,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import ListeningDropDownQuestionList from "../listening-practice/components/ListeningDropDownQuestionList";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import SvgSpeakingPart from "@/components/icons/SpeakingPart";
 import SvgWritingPart from "@/components/icons/WritingPart";
@@ -92,7 +93,9 @@ const ListeningExamView = ({
   useEffect(() => {
     // Log mock exam started when component mounts
     if (user && practice.taskId) {
-      const loggerAttemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
+      const loggerAttemptId =
+        searchParams.get("attemptId") ||
+        `mock_${practice.taskId}_${Date.now()}`;
       ActivityLogger.mockStarted(loggerAttemptId, practice.taskId.toString());
     }
   }, [user, practice.taskId, searchParams]);
@@ -117,20 +120,22 @@ const ListeningExamView = ({
           if (response.ok) {
             const result = await response.json();
             // Log mock exam part completed
-            const loggerAttemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
+            const loggerAttemptId =
+              searchParams.get("attemptId") ||
+              `mock_${practice.taskId}_${Date.now()}`;
             await ActivityLogger.mockCompleted(
               loggerAttemptId,
               practice.taskId.toString(),
               result.overall,
               result,
-              time
+              time,
             );
 
             // Add league points for mock exam completion
             await addPoints(
               20,
               "mockExams",
-              `${Math.floor(time / 60)} minutes`
+              `${Math.floor(time / 60)} minutes`,
             );
 
             // Check for trophy achievements (only for complete exam mode)
@@ -138,7 +143,7 @@ const ListeningExamView = ({
               await checkTrophyAchievements(
                 20,
                 "mockExams",
-                `${Math.floor(time / 60)}:${time % 60}`
+                `${Math.floor(time / 60)}:${time % 60}`,
               );
             }
           }
@@ -147,18 +152,22 @@ const ListeningExamView = ({
           console.error("Failed to submit answers:", error);
         }
         const attemptId = searchParams.get("attemptId");
-        const query = section ? `?section=${section}&attemptId=${attemptId}` : `?attemptId=${attemptId}`;
+        const query = section
+          ? `?section=${section}&attemptId=${attemptId}`
+          : `?attemptId=${attemptId}`;
         if (section === "listening" && partId >= 6) {
           setShowContinueModal(true);
         } else {
           const attemptId = searchParams.get("attemptId");
-          const query = section ? `?section=${section}&attemptId=${attemptId}` : `?attemptId=${attemptId}`;
+          const query = section
+            ? `?section=${section}&attemptId=${attemptId}`
+            : `?attemptId=${attemptId}`;
           router.push(
             "/exams/exam_" +
-            practice.taskId +
-            "/part" +
-            (partId + 1).toString() +
-            query
+              practice.taskId +
+              "/part" +
+              (partId + 1).toString() +
+              query,
           );
         }
       };
@@ -185,7 +194,10 @@ const ListeningExamView = ({
   //   // const { score } = handleSubmit();
   //   // onComplete();
   // };
-  if (isLoaded && (!user || (user && user.publicMetadata.plan !== "premium"))) {
+  if (
+    isLoaded &&
+    (!user || !hasPaidPracticeAccess(user.publicMetadata?.plan))
+  ) {
     router.push("exam-overview");
   }
   //   const practiceIndex = allPractices.findIndex((p) => p.id == selectedPracticeId);
@@ -260,7 +272,18 @@ const ListeningExamView = ({
   };
   return (
     <>
-      <ExamHeader examPractice="Listening" ref={ref} setShowModal={setShowModal} menuShowModal={showModal} examId={practice.taskId} partId={partId} examName={practice.name} examNumber={examNumber} practiceSections={practiceSections} getPartsForSection={getPartsForSection} />
+      <ExamHeader
+        examPractice="Listening"
+        ref={ref}
+        setShowModal={setShowModal}
+        menuShowModal={showModal}
+        examId={practice.taskId}
+        partId={partId}
+        examName={practice.name}
+        examNumber={examNumber}
+        practiceSections={practiceSections}
+        getPartsForSection={getPartsForSection}
+      />
 
       <div className=" mx-auto w-full  h-auto transition-all duration-300 flex gap-5">
         <Card className="bg-white/90 flex-col  border border-[#D5D6D8] h-full w-full">
@@ -280,8 +303,9 @@ const ListeningExamView = ({
                   <div className="text-[14px] font-semibold gap-2 text-center text-[#EE4266] flex items-center">
                     <p>
                       {time > 0
-                        ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
-                        }`
+                        ? `${Math.floor(time / 60)}:${
+                            time % 60 < 10 ? `0${time % 60}` : time % 60
+                          }`
                         : "Time's Up!"}
                     </p>
                   </div>
@@ -297,10 +321,11 @@ const ListeningExamView = ({
                     } else {
                       router.push(
                         "/exams/exam_" +
-                        practice.taskId +
-                        "/part" +
-                        (partId - 1).toString() +
-                        (query ? query + "&" : "?") + `attemptId=${searchParams.get("attemptId")}`
+                          practice.taskId +
+                          "/part" +
+                          (partId - 1).toString() +
+                          (query ? query + "&" : "?") +
+                          `attemptId=${searchParams.get("attemptId")}`,
                       );
                     }
                   } else if (page == "instructions" && passageIndex == 0) {
@@ -311,7 +336,8 @@ const ListeningExamView = ({
                     setPage("question");
                     setPassageIndex(passageIndex - 1);
                     setQuestionIndex(
-                      (practice.passages[passageIndex - 1]?.questions?.length || 1) - 1
+                      (practice.passages[passageIndex - 1]?.questions?.length ||
+                        1) - 1,
                     );
                     // setQuestionIndexInPractice(questionIndexInPractice - 1);
                   } else if (page == "question" && questionIndex > 0) {
@@ -325,7 +351,7 @@ const ListeningExamView = ({
                   setTime(
                     task5or6.includes(partId)
                       ? task5or6Time[task5or6.indexOf(partId)]
-                      : 30
+                      : 30,
                   );
                 }}
                 className="cursor-pointer inline-flex items-center justify-center border-[1px] border-[#37465C] rounded-[100%]  w-[40px] h-[40px]"
@@ -347,7 +373,9 @@ const ListeningExamView = ({
                   } else if (
                     page == "question" &&
                     questionIndex <
-                    (practice.passages[passageIndex]?.questions?.length || 0) - 1 &&
+                      (practice.passages[passageIndex]?.questions?.length ||
+                        0) -
+                        1 &&
                     !task5or6.includes(partId)
                   ) {
                     setQuestionIndex(questionIndex + 1);
@@ -367,7 +395,7 @@ const ListeningExamView = ({
                   setTime(
                     task5or6.includes(partId)
                       ? task5or6Time[task5or6.indexOf(partId)]
-                      : 30
+                      : 30,
                   );
                 }}
                 className={
@@ -422,7 +450,7 @@ const ListeningExamView = ({
                           {instruction}
                         </p>
                       );
-                    }
+                    },
                   )}
                 </div>
               </div>
@@ -441,8 +469,9 @@ const ListeningExamView = ({
                     <div className="flex items-center flex-col mt-6 max-w-[450px] mx-auto">
                       <button
                         onClick={() => setIsOpen(!isOpen)}
-                        className={`${isOpen ? "!bg-[#F2F6FF] " : " bg-white "
-                          } w-full border flex justify-center border-[#76808F] items-center rounded-[24px] borderitems-center cursor-pointer max-w-[153px] h-[40px] text-[14px] font-medium text-[#212E42]`}
+                        className={`${
+                          isOpen ? "!bg-[#F2F6FF] " : " bg-white "
+                        } w-full border flex justify-center border-[#76808F] items-center rounded-[24px] borderitems-center cursor-pointer max-w-[153px] h-[40px] text-[14px] font-medium text-[#212E42]`}
                       >
                         {isOpen ? "Hide Transcript" : "Show Transcript"}
                       </button>
@@ -457,10 +486,11 @@ const ListeningExamView = ({
                                 return (
                                   <div key={index}>
                                     <span
-                                      className={`${index % 2 == 0
-                                        ? "bg-[#FFEBD6]"
-                                        : "bg-[#D1DEFF]"
-                                        }   inline-block leading-[16px] mr-[8px] p-[8px] rounded-[8px]  text-black h-[32px] text-[14px]  font-normal `}
+                                      className={`${
+                                        index % 2 == 0
+                                          ? "bg-[#FFEBD6]"
+                                          : "bg-[#D1DEFF]"
+                                      }   inline-block leading-[16px] mr-[8px] p-[8px] rounded-[8px]  text-black h-[32px] text-[14px]  font-normal `}
                                     >
                                       {con.name}:
                                     </span>
@@ -490,19 +520,23 @@ const ListeningExamView = ({
                         questionIndex={index + 1}
                         totalQuestions={practice.totalQuestion || 0}
                         question={
-                          practice.passages[passageIndex]?.questions?.[index] as any
+                          practice.passages[passageIndex]?.questions?.[
+                            index
+                          ] as any
                         }
                         onAnswerSelect={handleAnswerSelect}
                         selectedAnswers={selectedAnswers}
                       />
-                    )
+                    ),
                   )
                 ) : (
                   <ListeningQuestionList
                     questionIndex={questionIndexInPractice}
                     totalQuestions={practice.totalQuestion || 0}
                     question={
-                      practice.passages[passageIndex]?.questions?.[questionIndex] as any
+                      practice.passages[passageIndex]?.questions?.[
+                        questionIndex
+                      ] as any
                     }
                     onAnswerSelect={handleAnswerSelect}
                     selectedAnswers={selectedAnswers}
@@ -527,7 +561,7 @@ const ListeningExamView = ({
           onContinue={() => {
             setShowContinueModal(false);
             router.push(
-              `/exams/exam_${practice.taskId}/part7?section=reading&attemptId=${searchParams.get("attemptId")}`
+              `/exams/exam_${practice.taskId}/part7?section=reading&attemptId=${searchParams.get("attemptId")}`,
             );
           }}
           onFinish={() => {

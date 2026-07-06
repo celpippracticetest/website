@@ -9,6 +9,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import useStore from "@/store";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
@@ -72,7 +73,7 @@ const WritingExamView = ({
   const [showContinueModal, setShowContinueModal] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState
+    (state) => state.setPremiumPlanModalState,
   );
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
@@ -97,7 +98,9 @@ const WritingExamView = ({
   useEffect(() => {
     // Log mock exam started when component mounts
     if (user && practice.taskId) {
-      const attemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
+      const attemptId =
+        searchParams.get("attemptId") ||
+        `mock_${practice.taskId}_${Date.now()}`;
       ActivityLogger.mockStarted(attemptId, practice.taskId.toString());
     }
   }, [user, practice.taskId]);
@@ -138,13 +141,15 @@ const WritingExamView = ({
       const result = await response.json();
 
       // Log mock exam part completed
-      const attemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
+      const attemptId =
+        searchParams.get("attemptId") ||
+        `mock_${practice.taskId}_${Date.now()}`;
       await ActivityLogger.mockCompleted(
         attemptId,
         practice.taskId.toString(),
         result.overall,
         result,
-        time
+        time,
       );
 
       // Add league points for mock exam completion
@@ -155,7 +160,7 @@ const WritingExamView = ({
         await checkTrophyAchievements(
           20,
           "mockExams",
-          `${Math.floor(time / 60)}:${time % 60}`
+          `${Math.floor(time / 60)}:${time % 60}`,
         );
       }
 
@@ -166,7 +171,7 @@ const WritingExamView = ({
           "Writing",
           result.usage.prompt_tokens || 0,
           result.usage.completion_tokens || 0,
-          attemptId
+          attemptId,
         );
 
         // Add league points for AI feedback
@@ -181,11 +186,7 @@ const WritingExamView = ({
   };
 
   const shouldShowPractice: boolean =
-    practice.isFree ||
-    !!(!practice.isFree &&
-      user &&
-      user.publicMetadata.plan &&
-      user.publicMetadata.plan === "premium");
+    practice.isFree || hasPaidPracticeAccess(user?.publicMetadata?.plan);
 
   const [menuShowModal, setMenuShowModal] = useState(false);
   interface PracticeSection {
@@ -264,7 +265,18 @@ const WritingExamView = ({
         <></>
       )}
       <div className="flex flex-col w-full">
-        <ExamHeader examPractice="Writing" ref={ref} setShowModal={setMenuShowModal} menuShowModal={menuShowModal} examId={practice.taskId} partId={partId} examName={practice.name} examNumber={examNumber} practiceSections={practiceSections} getPartsForSection={getPartsForSection} />
+        <ExamHeader
+          examPractice="Writing"
+          ref={ref}
+          setShowModal={setMenuShowModal}
+          menuShowModal={menuShowModal}
+          examId={practice.taskId}
+          partId={partId}
+          examName={practice.name}
+          examNumber={examNumber}
+          practiceSections={practiceSections}
+          getPartsForSection={getPartsForSection}
+        />
 
         <div className="bg-white rounded-xl flex flex-col screen1280:!h-[920px] overflow-scroll border border-[#D5D6D8] w-full">
           <div className="flex justify-between pb-[21px]  lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
@@ -283,8 +295,9 @@ const WritingExamView = ({
                     <div className="text-[14px] font-semibold gap-2 text-center text-[#EE4266] flex items-center">
                       <p>
                         {time > 0
-                          ? `${Math.floor(time / 60)}:${time % 60 < 10 ? `0${time % 60}` : time % 60
-                          }`
+                          ? `${Math.floor(time / 60)}:${
+                              time % 60 < 10 ? `0${time % 60}` : time % 60
+                            }`
                           : "Time's Up!"}
                       </p>
                     </div>
@@ -295,21 +308,30 @@ const WritingExamView = ({
                   onClick={() => {
                     const query = section ? `?section=${section}` : "";
                     const attemptId = searchParams.get("attemptId");
-                    const attemptQuery = attemptId ? `attemptId=${attemptId}` : "";
+                    const attemptQuery = attemptId
+                      ? `attemptId=${attemptId}`
+                      : "";
                     const finalQuery = query
-                      ? (attemptQuery ? `?${attemptQuery}&${query.replace("?", "")}` : query)
-                      : (attemptQuery ? `?${attemptQuery}` : "");
+                      ? attemptQuery
+                        ? `?${attemptQuery}&${query.replace("?", "")}`
+                        : query
+                      : attemptQuery
+                        ? `?${attemptQuery}`
+                        : "";
 
                     if (page == "description" && passageIndex == 0) {
-                      if (partId === 1 || (section === "writing" && partId === 11)) {
+                      if (
+                        partId === 1 ||
+                        (section === "writing" && partId === 11)
+                      ) {
                         router.push("/exam-overview");
                       } else {
                         router.push(
                           "/exams/exam_" +
-                          practice.taskId +
-                          "/part" +
-                          (partId - 1).toString() +
-                          finalQuery
+                            practice.taskId +
+                            "/part" +
+                            (partId - 1).toString() +
+                            finalQuery,
                         );
                       }
                     } else if (page == "question" && partId === 11) {
@@ -317,10 +339,10 @@ const WritingExamView = ({
                     } else if (page == "question") {
                       router.push(
                         "/exams/exam_" +
-                        practice.taskId +
-                        "/part" +
-                        (partId - 1).toString() +
-                        finalQuery
+                          practice.taskId +
+                          "/part" +
+                          (partId - 1).toString() +
+                          finalQuery,
                       );
                     }
                     setTime(1620);
@@ -333,23 +355,31 @@ const WritingExamView = ({
                   onClick={() => {
                     const query = section ? `?section=${section}` : "";
                     const attemptId = searchParams.get("attemptId");
-                    const attemptQuery = attemptId ? `attemptId=${attemptId}` : "";
+                    const attemptQuery = attemptId
+                      ? `attemptId=${attemptId}`
+                      : "";
                     const finalQuery = query
-                      ? (attemptQuery ? `?${attemptQuery}&${query.replace("?", "")}` : query)
-                      : (attemptQuery ? `?${attemptQuery}` : "");
+                      ? attemptQuery
+                        ? `?${attemptQuery}&${query.replace("?", "")}`
+                        : query
+                      : attemptQuery
+                        ? `?${attemptQuery}`
+                        : "";
 
                     if (page == "description") {
                       setPage("question");
                     } else if (page == "question") {
                       if (section === "writing" && partId >= 12) {
-                        router.push(`/exams/exam_${practice.taskId}/results${finalQuery}`);
+                        router.push(
+                          `/exams/exam_${practice.taskId}/results${finalQuery}`,
+                        );
                       } else {
                         router.push(
                           "/exams/exam_" +
-                          practice.taskId +
-                          "/part" +
-                          (partId + 1).toString() +
-                          finalQuery
+                            practice.taskId +
+                            "/part" +
+                            (partId + 1).toString() +
+                            finalQuery,
                         );
                       }
                     }
@@ -359,7 +389,9 @@ const WritingExamView = ({
                     "cursor-pointer flex items-center gap-[8px] justify-center h-[40px] font-normal text-[#212E42] text-[14px] w-[96px] bg-white rounded-[24px]"
                   }
                 >
-                  {section === "writing" && partId >= 12 ? "Finish Exam" : "Next"}
+                  {section === "writing" && partId >= 12
+                    ? "Finish Exam"
+                    : "Next"}
                   <SvgArrowRight />
                 </button>
               </div>
@@ -429,7 +461,7 @@ const WritingExamView = ({
 
                   <div className="p-4  overflow-y-auto [&::-webkit-scrollbar]:w-2  [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full  [&::-webkit-scrollbar-track]:bg-slate-100">
                     {(!tryToSubmit && !isSubmit) ||
-                      (wordCount < 20 && tryToSubmit) ? (
+                    (wordCount < 20 && tryToSubmit) ? (
                       <div className="w-full">
                         <div className="flex items-center justify-between mb-2">
                           <h3 className="text-[14px] text-[#212E42] font-semibold mb-2">
@@ -506,22 +538,30 @@ const WritingExamView = ({
                           <Button
                             className="mt-4 bg-[#4A7DFF] text-white rounded-full px-6 py-2"
                             onClick={() => {
-                              const query = section ? `?section=${section}` : "";
+                              const query = section
+                                ? `?section=${section}`
+                                : "";
                               const attemptId = searchParams.get("attemptId");
-                              const attemptQuery = attemptId ? `attemptId=${attemptId}` : "";
+                              const attemptQuery = attemptId
+                                ? `attemptId=${attemptId}`
+                                : "";
                               const finalQuery = query
-                                ? (attemptQuery ? `?${attemptQuery}&${query.replace("?", "")}` : query)
-                                : (attemptQuery ? `?${attemptQuery}` : "");
+                                ? attemptQuery
+                                  ? `?${attemptQuery}&${query.replace("?", "")}`
+                                  : query
+                                : attemptQuery
+                                  ? `?${attemptQuery}`
+                                  : "";
 
                               if (section === "writing" && partId >= 12) {
                                 setShowContinueModal(true);
                               } else {
                                 router.push(
                                   "/exams/exam_" +
-                                  practice.taskId +
-                                  "/part" +
-                                  (partId + 1).toString() +
-                                  finalQuery
+                                    practice.taskId +
+                                    "/part" +
+                                    (partId + 1).toString() +
+                                    finalQuery,
                                 );
                               }
                             }}
@@ -561,25 +601,23 @@ const WritingExamView = ({
         userPoints={userPoints}
         timeSpent={timeSpent}
       />
-      {
-        showContinueModal && (
-          <ContinueExamModal
-            onContinue={() => {
-              setShowContinueModal(false);
-              const attemptId = searchParams.get("attemptId");
-              const attemptQuery = attemptId ? `&attemptId=${attemptId}` : "";
-              router.push(
-                `/exams/exam_${practice.taskId}/part13?section=speaking${attemptQuery}`
-              );
-            }}
-            onFinish={() => {
-              setShowContinueModal(false);
-              router.push(`/exam-overview`);
-            }}
-            nextSectionName="Speaking"
-          />
-        )
-      }
+      {showContinueModal && (
+        <ContinueExamModal
+          onContinue={() => {
+            setShowContinueModal(false);
+            const attemptId = searchParams.get("attemptId");
+            const attemptQuery = attemptId ? `&attemptId=${attemptId}` : "";
+            router.push(
+              `/exams/exam_${practice.taskId}/part13?section=speaking${attemptQuery}`,
+            );
+          }}
+          onFinish={() => {
+            setShowContinueModal(false);
+            router.push(`/exam-overview`);
+          }}
+          nextSectionName="Speaking"
+        />
+      )}
     </div>
   );
 };

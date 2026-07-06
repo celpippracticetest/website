@@ -8,6 +8,7 @@ import { PracticeRepository } from "@/repositories/practice.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { ObjectId } from "bson";
 import { redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
@@ -87,7 +88,13 @@ const WritingPage = async ({
         taskNumber: taskItem.taskNumber,
       }));
 
-    return <SkillLandingPage content={skillPagesContent.writing} skillType="writing" availableTasks={availableTasks} />;
+    return (
+      <SkillLandingPage
+        content={skillPagesContent.writing}
+        skillType="writing"
+        availableTasks={availableTasks}
+      />
+    );
   }
 
   if (!selectedPracticeId && !taskId) {
@@ -101,7 +108,13 @@ const WritingPage = async ({
             Writing
           </span>
         </div>
-        <ShowTasks tasks={writingTasks.map(t => ({ ...t, icon: <SvgWritingPart className="text-[#0DAA94]" />, title: "Writing Practice" }))} />
+        <ShowTasks
+          tasks={writingTasks.map((t) => ({
+            ...t,
+            icon: <SvgWritingPart className="text-[#0DAA94]" />,
+            title: "Writing Practice",
+          }))}
+        />
       </ShowTaskHeader>
     );
   }
@@ -118,7 +131,7 @@ const WritingPage = async ({
       taskId: taskId ? (new ObjectId(taskId) as unknown as string) : undefined,
     },
     0,
-    200
+    200,
   );
   let selectedPractice = null;
   let completedPracticeId: string[] = [];
@@ -127,11 +140,9 @@ const WritingPage = async ({
     selectedPractice = await practiceRepo.findPractice(selectedPracticeId);
 
     if (
-      (!user ||
-        !user.publicMetadata.plan ||
-        user.publicMetadata.plan !== "premium") &&
       selectedPractice &&
-      !selectedPractice.isFree
+      !selectedPractice.isFree &&
+      !hasPaidPracticeAccess(user?.publicMetadata?.plan)
     ) {
       selectedPractice.passages[0].body =
         selectedPractice.passages[0].body?.slice(0, 150) +
@@ -145,11 +156,13 @@ const WritingPage = async ({
     }
   }
   if (user) {
-    const writingAnswerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
+    const writingAnswerRepo = new WritingAndSpeakingAnswerRepository(
+      documentsClient,
+    );
     completedPracticeId =
       await writingAnswerRepo.findAnswersByPracticeIdsAndUser(
         practices.items.map((p) => p.id),
-        user.id
+        user.id,
       );
   }
 

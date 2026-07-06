@@ -8,6 +8,7 @@ import { PracticeRepository } from "@/repositories/practice.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { ObjectId } from "bson";
 import { redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
@@ -82,7 +83,13 @@ const SpeakingPage = async ({
         taskNumber: taskItem.taskNumber,
       }));
 
-    return <SkillLandingPage content={skillPagesContent.speaking} skillType="speaking" availableTasks={availableTasks} />;
+    return (
+      <SkillLandingPage
+        content={skillPagesContent.speaking}
+        skillType="speaking"
+        availableTasks={availableTasks}
+      />
+    );
   }
 
   if (!selectedPracticeId && !taskId) {
@@ -119,7 +126,7 @@ const SpeakingPage = async ({
       taskId: taskId ? (new ObjectId(taskId) as unknown as string) : undefined,
     },
     0,
-    200
+    200,
   );
   let selectedPractice = null;
   let completedPracticeId: string[] = [];
@@ -128,11 +135,9 @@ const SpeakingPage = async ({
     selectedPractice = await practiceRepo.findPractice(selectedPracticeId);
 
     if (
-      (!user ||
-        !user.publicMetadata.plan ||
-        user.publicMetadata.plan !== "premium") &&
       selectedPractice &&
-      !selectedPractice.isFree
+      !selectedPractice.isFree &&
+      !hasPaidPracticeAccess(user?.publicMetadata?.plan)
     ) {
       selectedPractice.passages[0].body =
         selectedPractice.passages[0].body?.slice(0, 150) +
@@ -146,11 +151,13 @@ const SpeakingPage = async ({
     }
   }
   if (user) {
-    const writingAnswerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
+    const writingAnswerRepo = new WritingAndSpeakingAnswerRepository(
+      documentsClient,
+    );
     completedPracticeId =
       await writingAnswerRepo.findAnswersByPracticeIdsAndUser(
         practices.items.map((p) => p.id),
-        user.id
+        user.id,
       );
   }
 

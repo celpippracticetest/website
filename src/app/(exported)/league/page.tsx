@@ -14,6 +14,7 @@ import SvgSvgBeforeTypingWord from "@/components/icons/SvgBeforeTypingWord";
 import SvgLearningArrowUp from "@/components/icons/LearningArrowUp";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
 import { ActivityLogger } from "@/lib/userActivity";
@@ -105,12 +106,16 @@ const Page = () => {
   const [userGroup, setUserGroup] = useState<any>(null);
   const [currentLeague, setCurrentLeague] = useState<any>(null);
   const [allLeagues, setAllLeagues] = useState<any[]>([]);
-  const [sampleGroupsByType, setSampleGroupsByType] = useState<Record<string, any>>({});
-  const [selectedLeague, setSelectedLeague] = useState<"bronze" | "silver" | "gold">("bronze");
+  const [sampleGroupsByType, setSampleGroupsByType] = useState<
+    Record<string, any>
+  >({});
+  const [selectedLeague, setSelectedLeague] = useState<
+    "bronze" | "silver" | "gold"
+  >("bronze");
 
   // Check if user is free or premium
   const isFreeUser = user?.publicMetadata?.plan === "free";
-  const isPremiumUser = user?.publicMetadata?.plan === "premium";
+  const isPremiumUser = hasPaidPracticeAccess(user?.publicMetadata?.plan);
   const noUser = isLoaded ? !isSignedIn : false;
 
   const isFetchingRef = useRef(false);
@@ -121,7 +126,10 @@ const Page = () => {
     const currentUserId = user?.id;
 
     // Prevent concurrent fetch for same user
-    if (isFetchingRef.current && lastFetchedUserIdRef.current === currentUserId) {
+    if (
+      isFetchingRef.current &&
+      lastFetchedUserIdRef.current === currentUserId
+    ) {
       console.log("Preventing duplicate league fetch for user:", currentUserId);
       return;
     }
@@ -140,16 +148,25 @@ const Page = () => {
       console.log("Debug info:", data.debug);
 
       if (response.ok) {
-        setCurrentLeague(data.currentLeague || (data.sampleLeagueType ? { type: data.sampleLeagueType } : null));
+        setCurrentLeague(
+          data.currentLeague ||
+            (data.sampleLeagueType ? { type: data.sampleLeagueType } : null),
+        );
         setUserGroup(data.userGroup || null);
         setAllLeagues(data.leagues || []);
         setSampleGroupsByType(data.sampleGroupsByType || {});
 
         // Default selected league: user's current league if present else bronze
-        const defaultSelected = (data.currentLeague?.type || data.sampleLeagueType || "bronze") as any;
+        const defaultSelected = (data.currentLeague?.type ||
+          data.sampleLeagueType ||
+          "bronze") as any;
         setSelectedLeague(defaultSelected);
 
-        const baseGroup = data.userGroup || data.sampleGroup || data.sampleGroupsByType?.[selectedLeague] || null;
+        const baseGroup =
+          data.userGroup ||
+          data.sampleGroup ||
+          data.sampleGroupsByType?.[selectedLeague] ||
+          null;
         if (baseGroup) {
           // User is in a league group
           const users = baseGroup.users.map((u: any) => {
@@ -157,10 +174,11 @@ const Page = () => {
             const emailLocal = (u.email || "").split("@")[0] || "";
             const emailShort = emailLocal ? emailLocal.slice(0, 3) : "";
             const apiName = (u.name || "").trim();
-            const myFullName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
+            const myFullName =
+              `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
             const displayName = isMe
-              ? (myFullName || emailShort || "User")
-              : (apiName || emailShort || "User");
+              ? myFullName || emailShort || "User"
+              : apiName || emailShort || "User";
 
             return {
               id: u.userId,
@@ -168,7 +186,10 @@ const Page = () => {
               email: u.email,
               avatar: u.avatar || (isMe ? (user as any)?.imageUrl : undefined),
               points: u.points,
-              league: (data.currentLeague?.type || data.sampleLeagueType || selectedLeague || "bronze") as any,
+              league: (data.currentLeague?.type ||
+                data.sampleLeagueType ||
+                selectedLeague ||
+                "bronze") as any,
               position: u.position,
               tasksCompleted: data.userPoints?.tasksCompleted || [],
               isCurrentUser: isMe,
@@ -178,7 +199,18 @@ const Page = () => {
           // Do not append current user to sample groups; preview should not modify membership
 
           const tasks =
-            (data.currentLeague?.requirements?.tasks || (data.leagues?.find((l: any) => l.type === (data.currentLeague?.type || data.sampleLeagueType || selectedLeague || "bronze"))?.requirements?.tasks) || []).map((task: any) => ({
+            (
+              data.currentLeague?.requirements?.tasks ||
+              data.leagues?.find(
+                (l: any) =>
+                  l.type ===
+                  (data.currentLeague?.type ||
+                    data.sampleLeagueType ||
+                    selectedLeague ||
+                    "bronze"),
+              )?.requirements?.tasks ||
+              []
+            ).map((task: any) => ({
               id: task.id,
               title: task.title,
               points: task.points,
@@ -190,7 +222,10 @@ const Page = () => {
           setLeagueData({
             users,
             tasks,
-            currentLeague: (data.currentLeague?.type || data.sampleLeagueType || selectedLeague || "bronze") as any,
+            currentLeague: (data.currentLeague?.type ||
+              data.sampleLeagueType ||
+              selectedLeague ||
+              "bronze") as any,
             seasonEndDate: new Date(data.currentSeason?.endDate),
             userPoints: data.userPoints?.totalPoints || 0,
             pointsBreakdown: data.pointsBreakdown || {},
@@ -239,57 +274,62 @@ const Page = () => {
     // Use user's group only if it matches the selectedLeague; otherwise use sample
     const selectedType = selectedLeague;
     // Always prefer the most-populated sample group for browsing; fall back to user's group only if no sample
-    const baseGroup = sampleGroupsByType?.[selectedType] || (currentLeague?.type === selectedType ? userGroup : null);
+    const baseGroup =
+      sampleGroupsByType?.[selectedType] ||
+      (currentLeague?.type === selectedType ? userGroup : null);
 
     if (!baseGroup && !leagueData) return; // nothing to show yet
 
     const mappedUsers = baseGroup
       ? baseGroup.users.map((u: any) => {
-        const isMe = u.userId === user?.id;
-        const emailLocal = (u.email || "").split("@")[0] || "";
-        const emailShort = emailLocal ? `${emailLocal.slice(0, 3)}***` : "User";
+          const isMe = u.userId === user?.id;
+          const emailLocal = (u.email || "").split("@")[0] || "";
+          const emailShort = emailLocal
+            ? `${emailLocal.slice(0, 3)}***`
+            : "User";
 
-        // Privacy-preserving name logic
-        let displayName = "User";
-        if (isMe) {
-          displayName = user?.username || user?.firstName || emailShort;
-        } else {
-          // For others, prefer username, then first name, then masked email
-          // The API now returns 'name' as username/firstname or "User"
-          // If u.name looks like an email, mask it
-          if (u.name && u.name.includes("@")) {
-            const parts = u.name.split("@");
-            displayName = `${parts[0].slice(0, 3)}***`;
+          // Privacy-preserving name logic
+          let displayName = "User";
+          if (isMe) {
+            displayName = user?.username || user?.firstName || emailShort;
           } else {
-            displayName = u.name || emailShort;
+            // For others, prefer username, then first name, then masked email
+            // The API now returns 'name' as username/firstname or "User"
+            // If u.name looks like an email, mask it
+            if (u.name && u.name.includes("@")) {
+              const parts = u.name.split("@");
+              displayName = `${parts[0].slice(0, 3)}***`;
+            } else {
+              displayName = u.name || emailShort;
+            }
           }
-        }
 
-        return {
-          id: u.userId,
-          name: displayName,
-          email: null, // Don't expose email in state
-          avatar: u.avatar || (isMe ? (user as any)?.imageUrl : undefined),
-          points: u.points,
-          league: selectedType as any,
-          position: u.position,
-          tasksCompleted: leagueData?.tasksCompleted || [],
-          isCurrentUser: isMe,
-        };
-      })
+          return {
+            id: u.userId,
+            name: displayName,
+            email: null, // Don't expose email in state
+            avatar: u.avatar || (isMe ? (user as any)?.imageUrl : undefined),
+            points: u.points,
+            league: selectedType as any,
+            position: u.position,
+            tasksCompleted: leagueData?.tasksCompleted || [],
+            isCurrentUser: isMe,
+          };
+        })
       : [];
 
     // Do not append current user when previewing other leagues
 
-    const tasks = (allLeagues.find((l: any) => l.type === selectedType)?.requirements?.tasks || []).map(
-      (task: any) => ({
-        id: task.id,
-        title: task.title,
-        points: task.points,
-        completed: (leagueData?.tasksCompleted || []).includes(task.id) || false,
-        description: task.description,
-      })
-    );
+    const tasks = (
+      allLeagues.find((l: any) => l.type === selectedType)?.requirements
+        ?.tasks || []
+    ).map((task: any) => ({
+      id: task.id,
+      title: task.title,
+      points: task.points,
+      completed: (leagueData?.tasksCompleted || []).includes(task.id) || false,
+      description: task.description,
+    }));
 
     setLeagueData((prev) => ({
       users: mappedUsers,
@@ -301,13 +341,20 @@ const Page = () => {
       tasksCompleted: prev?.tasksCompleted || [],
       skillsTried: prev?.skillsTried || [],
     }));
-  }, [selectedLeague, userGroup, currentLeague, sampleGroupsByType, allLeagues, user?.id]);
+  }, [
+    selectedLeague,
+    userGroup,
+    currentLeague,
+    sampleGroupsByType,
+    allLeagues,
+    user?.id,
+  ]);
 
   // Handle points earned
   const handlePointsEarned = async (
     points: number,
     timeSpent: string,
-    pointsType: string = "practiceSessions"
+    pointsType: string = "practiceSessions",
   ) => {
     try {
       const response = await fetch("/api/league", {
@@ -371,7 +418,6 @@ const Page = () => {
     }
   };
 
-
   // Handle task completion
   const handleTaskCompletion = async (taskId: string) => {
     if (!leagueData || !currentLeague) return;
@@ -432,9 +478,10 @@ const Page = () => {
         id: task.id,
         title: task.title,
         points: task.points,
-        completed: leagueData?.userPoints && leagueData.userPoints > 0
-          ? isTaskCompleted(task.title, leagueType)
-          : false,
+        completed:
+          leagueData?.userPoints && leagueData.userPoints > 0
+            ? isTaskCompleted(task.title, leagueType)
+            : false,
         description: task.description,
       })) || []
     );
@@ -447,7 +494,12 @@ const Page = () => {
     // If user has no points at all, no tasks should be completed
     if (leagueData.userPoints === 0) return false;
 
-    console.log("Checking task completion:", { taskTitle, leagueType, userPoints: leagueData.userPoints, skillsTried: leagueData.skillsTried });
+    console.log("Checking task completion:", {
+      taskTitle,
+      leagueType,
+      userPoints: leagueData.userPoints,
+      skillsTried: leagueData.skillsTried,
+    });
 
     // Get user's points breakdown from leagueData
     const pointsBreakdown = leagueData.pointsBreakdown || {};
@@ -463,37 +515,62 @@ const Page = () => {
     }
 
     // Skills tried check - check if user has tried all 4 skills
-    if (taskTitle.includes("Skills Tried") && taskTitle.includes("(L, R, W, S)")) {
+    if (
+      taskTitle.includes("Skills Tried") &&
+      taskTitle.includes("(L, R, W, S)")
+    ) {
       // Check if user has completed practice sessions in all 4 skills
       const skillsTried = leagueData.skillsTried || [];
       const requiredSkills = ["Listening", "Reading", "Writing", "Speaking"];
-      const completedSkills = requiredSkills.filter(skill => skillsTried.includes(skill));
-      console.log("Skills Tried check:", { skillsTried, requiredSkills, completedSkills, completed: completedSkills.length >= 4 });
+      const completedSkills = requiredSkills.filter((skill) =>
+        skillsTried.includes(skill),
+      );
+      console.log("Skills Tried check:", {
+        skillsTried,
+        requiredSkills,
+        completedSkills,
+        completed: completedSkills.length >= 4,
+      });
       return completedSkills.length >= 4;
     }
 
     // Individual skill checks - only for specific skill tasks, not the general "Skills Tried" task
-    if (taskTitle.includes("Listening") && !taskTitle.includes("Skills Tried")) {
+    if (
+      taskTitle.includes("Listening") &&
+      !taskTitle.includes("Skills Tried")
+    ) {
       const skillsTried = leagueData.skillsTried || [];
-      console.log("Listening skill check:", { skillsTried, hasListening: skillsTried.includes("Listening") });
+      console.log("Listening skill check:", {
+        skillsTried,
+        hasListening: skillsTried.includes("Listening"),
+      });
       return skillsTried.includes("Listening");
     }
 
     if (taskTitle.includes("Reading") && !taskTitle.includes("Skills Tried")) {
       const skillsTried = leagueData.skillsTried || [];
-      console.log("Reading skill check:", { skillsTried, hasReading: skillsTried.includes("Reading") });
+      console.log("Reading skill check:", {
+        skillsTried,
+        hasReading: skillsTried.includes("Reading"),
+      });
       return skillsTried.includes("Reading");
     }
 
     if (taskTitle.includes("Writing") && !taskTitle.includes("Skills Tried")) {
       const skillsTried = leagueData.skillsTried || [];
-      console.log("Writing skill check:", { skillsTried, hasWriting: skillsTried.includes("Writing") });
+      console.log("Writing skill check:", {
+        skillsTried,
+        hasWriting: skillsTried.includes("Writing"),
+      });
       return skillsTried.includes("Writing");
     }
 
     if (taskTitle.includes("Speaking") && !taskTitle.includes("Skills Tried")) {
       const skillsTried = leagueData.skillsTried || [];
-      console.log("Speaking skill check:", { skillsTried, hasSpeaking: skillsTried.includes("Speaking") });
+      console.log("Speaking skill check:", {
+        skillsTried,
+        hasSpeaking: skillsTried.includes("Speaking"),
+      });
       return skillsTried.includes("Speaking");
     }
 
@@ -539,17 +616,19 @@ const Page = () => {
   const renderSkillsTriedTask = (task: string) => {
     if (!task.includes("Skills Tried") || !task.includes("(L, R, W, S)")) {
       // Regular task
-      const completed = leagueData?.userPoints && leagueData.userPoints > 0
-        ? isTaskCompleted(task, currentLeague?.type || "bronze")
-        : false;
+      const completed =
+        leagueData?.userPoints && leagueData.userPoints > 0
+          ? isTaskCompleted(task, currentLeague?.type || "bronze")
+          : false;
       return (
         <div className="flex gap-[8px]">
           <div className={completed ? "text-[#10B981]" : "text-[#979EA8]"}>
             <CircleCheck />
           </div>
           <span
-            className={`text-[14px] ${completed ? "text-[#10B981]" : "text-[#37465C]"
-              }`}
+            className={`text-[14px] ${
+              completed ? "text-[#10B981]" : "text-[#37465C]"
+            }`}
           >
             {task}
           </span>
@@ -560,7 +639,9 @@ const Page = () => {
     // Skills Tried task with progressive completion
     const skillsTried = leagueData?.skillsTried || [];
     const requiredSkills = ["Listening", "Reading", "Writing", "Speaking"];
-    const completedSkills = requiredSkills.filter(skill => skillsTried.includes(skill));
+    const completedSkills = requiredSkills.filter((skill) =>
+      skillsTried.includes(skill),
+    );
     const allCompleted = completedSkills.length >= 4;
 
     console.log("Skills Tried task rendering:", {
@@ -568,7 +649,7 @@ const Page = () => {
       requiredSkills,
       completedSkills,
       allCompleted,
-      leagueData: leagueData?.skillsTried
+      leagueData: leagueData?.skillsTried,
     });
 
     // Create progressive text
@@ -576,12 +657,22 @@ const Page = () => {
     const skillLetters = ["L", "R", "W", "S"];
     const skillNames = ["Listening", "Reading", "Writing", "Speaking"];
 
-    const progressiveText = baseText + skillLetters.map((letter, index) => {
-      const skillName = skillNames[index];
-      const isCompleted = skillsTried.includes(skillName);
-      console.log(`Skill ${skillName} (${letter}):`, { isCompleted, skillsTried });
-      return isCompleted ? `<span class="text-[#10B981]">${letter}</span>` : letter;
-    }).join(", ") + ")";
+    const progressiveText =
+      baseText +
+      skillLetters
+        .map((letter, index) => {
+          const skillName = skillNames[index];
+          const isCompleted = skillsTried.includes(skillName);
+          console.log(`Skill ${skillName} (${letter}):`, {
+            isCompleted,
+            skillsTried,
+          });
+          return isCompleted
+            ? `<span class="text-[#10B981]">${letter}</span>`
+            : letter;
+        })
+        .join(", ") +
+      ")";
 
     return (
       <div className="flex gap-[8px]">
@@ -589,8 +680,9 @@ const Page = () => {
           <CircleCheck />
         </div>
         <span
-          className={`text-[14px] ${allCompleted ? "text-[#10B981]" : "text-[#37465C]"
-            }`}
+          className={`text-[14px] ${
+            allCompleted ? "text-[#10B981]" : "text-[#37465C]"
+          }`}
           dangerouslySetInnerHTML={{ __html: progressiveText }}
         />
       </div>
@@ -602,16 +694,14 @@ const Page = () => {
     // Always show static tasks with completion status for now
     // TODO: Implement dynamic tasks from API later
     return staticTasks.map((task, index) => (
-      <div key={index}>
-        {renderSkillsTriedTask(task)}
-      </div>
+      <div key={index}>{renderSkillsTriedTask(task)}</div>
     ));
   };
 
   // League progression logic
   const calculateLeagueProgression = (
     users: LeagueUser[],
-    currentLeague: LeagueType
+    currentLeague: LeagueType,
   ) => {
     const sortedUsers = [...users].sort((a, b) => b.points - a.points);
     const totalUsers = sortedUsers.length;
@@ -682,7 +772,7 @@ const Page = () => {
       // Season ended, process league changes
       const updatedUsers = calculateLeagueProgression(
         leagueData.users,
-        leagueData.currentLeague
+        leagueData.currentLeague,
       );
 
       // Create new season
@@ -777,7 +867,7 @@ const Page = () => {
     const timeLeft = leagueData.seasonEndDate.getTime() - now.getTime();
     const daysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
     const hoursLeft = Math.ceil(
-      (timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+      (timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
     );
 
     return (
@@ -797,7 +887,9 @@ const Page = () => {
             <div className="text-[20px] md:text-[24px] font-bold text-[#4A7DFF]">
               {leagueData.userPoints}
             </div>
-            <div className="text-[10px] md:text-[12px] text-[#64748B]">Your Points</div>
+            <div className="text-[10px] md:text-[12px] text-[#64748B]">
+              Your Points
+            </div>
           </div>
         </div>
       </div>
@@ -807,11 +899,14 @@ const Page = () => {
   // League Table Component
   const LeagueTableComponent = () => {
     if (isLoadingLeague) return <SkeletonLoadingComponent />;
-    if (!leagueData) return noUser ? <SkeletonLoadingComponent /> : <EmptyStateComponent />;
+    if (!leagueData)
+      return noUser ? <SkeletonLoadingComponent /> : <EmptyStateComponent />;
 
     // If user has points and is in a league, show league table
     if (currentLeague && userGroup && leagueData.users.length > 0) {
-      const sortedUsers = [...leagueData.users].sort((a, b) => b.points - a.points);
+      const sortedUsers = [...leagueData.users].sort(
+        (a, b) => b.points - a.points,
+      );
       const totalUsers = sortedUsers.length;
 
       // Calculate zones based on current league
@@ -855,7 +950,10 @@ const Page = () => {
                 // Promotion zone - Green
                 zoneClass = "bg-green-50 border-l-4 border-green-500";
                 zoneIndicator = "bg-green-500";
-              } else if (index >= totalUsers - demotionZone && currentLeague.type !== "bronze") {
+              } else if (
+                index >= totalUsers - demotionZone &&
+                currentLeague.type !== "bronze"
+              ) {
                 // Demotion zone - Red
                 zoneClass = "bg-red-50 border-l-4 border-red-500";
                 zoneIndicator = "bg-red-500";
@@ -867,13 +965,16 @@ const Page = () => {
 
               return (
                 <div
-                  key={`user-${groupUser.id || 'unknown'}-${index}-${groupUser.points || 0}`}
-                  className={`flex items-center gap-[12px] md:gap-[16px] py-[8px] ${zoneClass} ${groupUser.isCurrentUser
-                    ? "bg-[#FED7AA] rounded-[8px] p-[8px] md:p-[12px]"
-                    : "rounded-[8px] p-[8px] md:p-[12px]"
-                    }`}
+                  key={`user-${groupUser.id || "unknown"}-${index}-${groupUser.points || 0}`}
+                  className={`flex items-center gap-[12px] md:gap-[16px] py-[8px] ${zoneClass} ${
+                    groupUser.isCurrentUser
+                      ? "bg-[#FED7AA] rounded-[8px] p-[8px] md:p-[12px]"
+                      : "rounded-[8px] p-[8px] md:p-[12px]"
+                  }`}
                 >
-                  <div className={`w-[8px] h-[8px] ${zoneIndicator} rounded-full`}></div>
+                  <div
+                    className={`w-[8px] h-[8px] ${zoneIndicator} rounded-full`}
+                  ></div>
                   <div className="w-[40px] h-[40px] bg-[#E5E7EB] rounded-full flex items-center justify-center">
                     {groupUser.avatar ? (
                       <img
@@ -881,7 +982,8 @@ const Page = () => {
                         alt={groupUser.name}
                         className="w-[32px] h-[32px] rounded-full object-cover"
                         onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).style.display = 'none';
+                          (e.currentTarget as HTMLImageElement).style.display =
+                            "none";
                         }}
                       />
                     ) : null}
@@ -890,7 +992,12 @@ const Page = () => {
                     )}
                   </div>
                   <div className=" min-w-0">
-                    {groupUser.name || (((groupUser as any).email?.split("@")[0] || "").slice(0, 3)) || "User"}
+                    {groupUser.name ||
+                      ((groupUser as any).email?.split("@")[0] || "").slice(
+                        0,
+                        3,
+                      ) ||
+                      "User"}
                   </div>
                   <div className="flex-1 text-[#374151] text-right font-medium text-[14px] md:text-[16px] whitespace-nowrap">
                     {groupUser.points} XP
@@ -905,10 +1012,14 @@ const Page = () => {
 
     // If there are users from sample group, render them as table even if current user has 0 points
     if (leagueData.users && leagueData.users.length > 0) {
-      const sortedUsers = [...leagueData.users].sort((a, b) => b.points - a.points);
+      const sortedUsers = [...leagueData.users].sort(
+        (a, b) => b.points - a.points,
+      );
       const totalUsers = sortedUsers.length;
 
-      const leagueType = (currentLeague?.type || leagueData.currentLeague || "bronze") as any;
+      const leagueType = (currentLeague?.type ||
+        leagueData.currentLeague ||
+        "bronze") as any;
 
       let promotionZone = 0;
       let demotionZone = 0;
@@ -937,7 +1048,10 @@ const Page = () => {
               if (index < promotionZone && leagueType !== "gold") {
                 zoneClass = "bg-green-50 border-l-4 border-green-500";
                 zoneIndicator = "bg-green-500";
-              } else if (index >= totalUsers - demotionZone && leagueType !== "bronze") {
+              } else if (
+                index >= totalUsers - demotionZone &&
+                leagueType !== "bronze"
+              ) {
                 zoneClass = "bg-red-50 border-l-4 border-red-500";
                 zoneIndicator = "bg-red-500";
               } else {
@@ -947,13 +1061,16 @@ const Page = () => {
 
               return (
                 <div
-                  key={`user-${groupUser.id || 'unknown'}-${index}-${groupUser.points || 0}`}
-                  className={`flex items-center gap-[12px] md:gap-[16px] py-[8px] ${zoneClass} ${groupUser.isCurrentUser
-                    ? "bg-[#FED7AA] rounded-[8px] p-[8px] md:p-[12px]"
-                    : "rounded-[8px] p-[8px] md:p-[12px]"
-                    }`}
+                  key={`user-${groupUser.id || "unknown"}-${index}-${groupUser.points || 0}`}
+                  className={`flex items-center gap-[12px] md:gap-[16px] py-[8px] ${zoneClass} ${
+                    groupUser.isCurrentUser
+                      ? "bg-[#FED7AA] rounded-[8px] p-[8px] md:p-[12px]"
+                      : "rounded-[8px] p-[8px] md:p-[12px]"
+                  }`}
                 >
-                  <div className={`w-[8px] h-[8px] ${zoneIndicator} rounded-full`}></div>
+                  <div
+                    className={`w-[8px] h-[8px] ${zoneIndicator} rounded-full`}
+                  ></div>
                   <div className="w-[40px] h-[40px] bg-[#E5E7EB] rounded-full flex items-center justify-center">
                     {groupUser.avatar ? (
                       <img
@@ -961,7 +1078,8 @@ const Page = () => {
                         alt={groupUser.name}
                         className="w-[32px] h-[32px] rounded-full object-cover"
                         onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).style.display = 'none';
+                          (e.currentTarget as HTMLImageElement).style.display =
+                            "none";
                         }}
                       />
                     ) : null}
@@ -971,7 +1089,12 @@ const Page = () => {
                   </div>
                   <div className=" min-w-0">
                     <div className="text-[#374151] font-medium text-[14px] md:text-[16px] truncate">
-                      {groupUser.name || (((groupUser as any).email?.split("@")[0] || "").slice(0, 3)) || "User"}
+                      {groupUser.name ||
+                        ((groupUser as any).email?.split("@")[0] || "").slice(
+                          0,
+                          3,
+                        ) ||
+                        "User"}
                     </div>
                   </div>
                   <div className="flex-1 text-[#374151] text-right font-medium text-[14px] md:text-[16px] whitespace-nowrap">
@@ -994,23 +1117,35 @@ const Page = () => {
     if (!showMedalModal || !medalData) return null;
 
     // Determine if we're on a practice page or exam page
-    const isPracticePage = pathname.includes('/practice') || pathname.includes('/listening') || pathname.includes('/reading') || pathname.includes('/writing') || pathname.includes('/speaking');
-    const isExamPage = pathname.includes('/exam') || pathname.includes('/mock');
+    const isPracticePage =
+      pathname.includes("/practice") ||
+      pathname.includes("/listening") ||
+      pathname.includes("/reading") ||
+      pathname.includes("/writing") ||
+      pathname.includes("/speaking");
+    const isExamPage = pathname.includes("/exam") || pathname.includes("/mock");
 
-    const buttonText = isExamPage ? 'Back to Exam' : 'Back to Practice';
+    const buttonText = isExamPage ? "Back to Exam" : "Back to Practice";
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-[16px] p-[32px] max-w-[400px] w-full mx-4 text-center">
           <div className="mb-[24px]">
-            <div className={`w-[80px] h-[80px] rounded-full flex items-center justify-center mx-auto mb-[16px] ${medalData.type === "promotion" ? "bg-[#10B981]" :
-              medalData.type === "demotion" ? "bg-[#EF4444]" :
-                "bg-[#FED7AA]"
-              }`}>
+            <div
+              className={`w-[80px] h-[80px] rounded-full flex items-center justify-center mx-auto mb-[16px] ${
+                medalData.type === "promotion"
+                  ? "bg-[#10B981]"
+                  : medalData.type === "demotion"
+                    ? "bg-[#EF4444]"
+                    : "bg-[#FED7AA]"
+              }`}
+            >
               <span className="text-[32px]">
-                {medalData.type === "promotion" ? "🎉" :
-                  medalData.type === "demotion" ? "📉" :
-                    "🏆"}
+                {medalData.type === "promotion"
+                  ? "🎉"
+                  : medalData.type === "demotion"
+                    ? "📉"
+                    : "🏆"}
               </span>
             </div>
             <h3 className="text-[24px] font-bold text-[#212E42] mb-[8px]">
@@ -1097,7 +1232,7 @@ const Page = () => {
       ),
       description: [
         "How do I get better at managing time in Speaking tasks?",
-        "Can you give me a sample answer for \"Describe a place you visited\"?",
+        'Can you give me a sample answer for "Describe a place you visited"?',
         "How can I improve my fluency and avoid pauses?",
         "Based on my last Speaking test, what is my weakest area?",
       ],
@@ -1120,7 +1255,7 @@ const Page = () => {
         <LearningReading className="text-[#EE4266] group-hover:!text-white" />
       ),
       description: [
-        "\tWhat strategies help answer \"fill in the blank\" questions faster?",
+        '\tWhat strategies help answer "fill in the blank" questions faster?',
         "How can I improve my reading speed for CELPIP passages?",
         "Which type of questions are hardest in Reading, and how do I tackle them?",
         "Based on my Reading results, what should I practice more?",
@@ -1253,7 +1388,7 @@ const Page = () => {
       if (!popoverRef.current) return;
       const target = e.target as Node;
       const clickedButton = btnRefs.current.some(
-        (b) => b && b.contains(target)
+        (b) => b && b.contains(target),
       );
       if (!clickedButton && !popoverRef.current.contains(target)) {
         setOpenIndex(null);
@@ -1338,21 +1473,27 @@ const Page = () => {
           context: {
             targetCLB: userContext.targetCLB || "Not specified",
             currentScores: userContext.mockScores
-              ? `L:${userContext.mockScores.listening || "N/A"} R:${userContext.mockScores.reading || "N/A"
-              } W:${userContext.mockScores.writing || "N/A"} S:${userContext.mockScores.speaking || "N/A"
-              }`
+              ? `L:${userContext.mockScores.listening || "N/A"} R:${
+                  userContext.mockScores.reading || "N/A"
+                } W:${userContext.mockScores.writing || "N/A"} S:${
+                  userContext.mockScores.speaking || "N/A"
+                }`
               : "Not available",
             scoreSource: userContext.scoreSource || "Not available",
             answerCounts: userContext.answerCounts
-              ? `Writing: ${userContext.answerCounts.writing || 0}, Speaking: ${userContext.answerCounts.speaking || 0
-              }, Listening: ${userContext.answerCounts.listening || 0
-              }, Reading: ${userContext.answerCounts.reading || 0}`
+              ? `Writing: ${userContext.answerCounts.writing || 0}, Speaking: ${
+                  userContext.answerCounts.speaking || 0
+                }, Listening: ${
+                  userContext.answerCounts.listening || 0
+                }, Reading: ${userContext.answerCounts.reading || 0}`
               : "No answers available",
             weakAreas: userContext.weakAreas?.join(", ") || "Not identified",
             practiceHistory: userContext.practiceHistory
-              ? `${userContext.practiceHistory.totalPractices
-              } practices, avg: ${userContext.practiceHistory.averageScore || "N/A"
-              }`
+              ? `${
+                  userContext.practiceHistory.totalPractices
+                } practices, avg: ${
+                  userContext.practiceHistory.averageScore || "N/A"
+                }`
               : "Not available",
           },
           conversationHistory: messages, // Send all previous messages for context
@@ -1390,7 +1531,7 @@ const Page = () => {
         undefined,
         data.usage?.prompt_tokens || 0,
         data.usage?.completion_tokens || 0,
-        attemptId
+        attemptId,
       );
 
       // Lock chat for free users/guests after first response and refresh server count
@@ -1425,7 +1566,9 @@ const Page = () => {
     return (
       <section className="relative w-full transition-all duration-300 overflow-hidden">
         {/* Modals */}
-        {showUpgradeModal && <UpgradeModal setShowModal={setShowUpgradeModal} />}
+        {showUpgradeModal && (
+          <UpgradeModal setShowModal={setShowUpgradeModal} />
+        )}
         {showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />}
         <MedalModal />
         <TaskCompletionModal />
@@ -1459,18 +1602,20 @@ const Page = () => {
 
                   <div className="mt-[24px] flex justify-center lg:justify-start">
                     <span className="text-[16px] md:text-[18px] text-[#212E42] font-semibold leading-[24px] md:leading-[28px]">
-                      {currentLeague?.type === "gold" ? "Gold League" :
-                        currentLeague?.type === "silver" ? "Silver League" :
-                          "Bronze League"}
+                      {currentLeague?.type === "gold"
+                        ? "Gold League"
+                        : currentLeague?.type === "silver"
+                          ? "Silver League"
+                          : "Bronze League"}
                     </span>
                   </div>
                   <div className="flex mt-[12px] justify-center lg:justify-start">
                     <span className="text-[12px] md:text-[14px] text-[#37465C] font-semibold text-center lg:text-left">
-                      {currentLeague?.type === "gold" ?
-                        "Elite league with gift card rewards! Compete with the best players and stay on top!" :
-                        currentLeague?.type === "silver" ?
-                          "Intermediate league for experienced players. Work hard to reach the Gold League!" :
-                          "Unlock this league by completing the tasks and earning trophies along the way!"}
+                      {currentLeague?.type === "gold"
+                        ? "Elite league with gift card rewards! Compete with the best players and stay on top!"
+                        : currentLeague?.type === "silver"
+                          ? "Intermediate league for experienced players. Work hard to reach the Gold League!"
+                          : "Unlock this league by completing the tasks and earning trophies along the way!"}
                     </span>
                   </div>
 
@@ -1566,7 +1711,11 @@ const Page = () => {
                       <span
                         className="cursor-pointer text-[64px] md:text-[80px]"
                         onClick={() => {
-                          if (!currentLeague || currentLeague.type === "bronze" || noUser) {
+                          if (
+                            !currentLeague ||
+                            currentLeague.type === "bronze" ||
+                            noUser
+                          ) {
                             setSelectedLeague("bronze");
                           }
                         }}
@@ -1575,35 +1724,72 @@ const Page = () => {
                       </span>
                       <span
                         className="cursor-pointer text-[64px] md:text-[80px]"
-                        onClick={() => { setSelectedLeague("silver"); }}
+                        onClick={() => {
+                          setSelectedLeague("silver");
+                        }}
                       >
                         🥈
                       </span>
-                      <span className="cursor-pointer text-[80px] md:text-[96px]" onClick={() => { setSelectedLeague("gold"); }}>
+                      <span
+                        className="cursor-pointer text-[80px] md:text-[96px]"
+                        onClick={() => {
+                          setSelectedLeague("gold");
+                        }}
+                      >
                         🥇
                       </span>
                     </div>
                   ) : selectedLeague === "silver" ? (
                     <div className="flex items-center gap-[16px] md:gap-[24px]">
-                      <span className="cursor-pointer text-[64px] md:text-[80px]" onClick={() => { setSelectedLeague("bronze"); }}>
+                      <span
+                        className="cursor-pointer text-[64px] md:text-[80px]"
+                        onClick={() => {
+                          setSelectedLeague("bronze");
+                        }}
+                      >
                         🥉
                       </span>
-                      <span className="cursor-pointer text-[80px] md:text-[96px]" onClick={() => { setSelectedLeague("silver"); }}>
+                      <span
+                        className="cursor-pointer text-[80px] md:text-[96px]"
+                        onClick={() => {
+                          setSelectedLeague("silver");
+                        }}
+                      >
                         🥈
                       </span>
-                      <span className="cursor-pointer text-[64px] md:text-[80px]" onClick={() => { setSelectedLeague("gold"); }}>
+                      <span
+                        className="cursor-pointer text-[64px] md:text-[80px]"
+                        onClick={() => {
+                          setSelectedLeague("gold");
+                        }}
+                      >
                         🥇
                       </span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-[16px] md:gap-[24px]">
-                      <span className="cursor-pointer text-[80px] md:text-[96px]" onClick={() => { setSelectedLeague("bronze"); }}>
+                      <span
+                        className="cursor-pointer text-[80px] md:text-[96px]"
+                        onClick={() => {
+                          setSelectedLeague("bronze");
+                        }}
+                      >
                         🥉
                       </span>
-                      <span className="cursor-pointer text-[64px] md:text-[80px]" onClick={() => { setSelectedLeague("silver"); }}>
+                      <span
+                        className="cursor-pointer text-[64px] md:text-[80px]"
+                        onClick={() => {
+                          setSelectedLeague("silver");
+                        }}
+                      >
                         🥈
                       </span>
-                      <span className="cursor-pointer text-[64px] md:text-[80px]" onClick={() => { setSelectedLeague("gold"); }}>
+                      <span
+                        className="cursor-pointer text-[64px] md:text-[80px]"
+                        onClick={() => {
+                          setSelectedLeague("gold");
+                        }}
+                      >
                         🥇
                       </span>
                     </div>
@@ -1620,22 +1806,27 @@ const Page = () => {
                       for (let i = 1; i <= order.length; i++) {
                         const next = order[(currentIdx + i) % order.length];
                         // Allow preview of silver and gold as long as sample exists
-                        if (sampleGroupsByType?.[next]) { setSelectedLeague(next as any); break; }
+                        if (sampleGroupsByType?.[next]) {
+                          setSelectedLeague(next as any);
+                          break;
+                        }
                       }
                     }}
                   >
-                    {selectedLeague === "gold" ? "Gold League" :
-                      selectedLeague === "silver" ? "Silver League" :
-                        "Bronze League"}
+                    {selectedLeague === "gold"
+                      ? "Gold League"
+                      : selectedLeague === "silver"
+                        ? "Silver League"
+                        : "Bronze League"}
                   </span>
                 </div>
                 <div className="flex mt-[12px] justify-center lg:justify-start">
                   <span className="text-[12px] md:text-[14px] text-[#37465C] font-semibold text-center lg:text-left">
-                    {selectedLeague === "gold" ?
-                      "Elite league with gift card rewards! Compete with the best players and stay on top!" :
-                      selectedLeague === "silver" ?
-                        "Intermediate league for experienced players. Work hard to reach the Gold League!" :
-                        "Unlock this league by completing the tasks and earning trophies along the way!"}
+                    {selectedLeague === "gold"
+                      ? "Elite league with gift card rewards! Compete with the best players and stay on top!"
+                      : selectedLeague === "silver"
+                        ? "Intermediate league for experienced players. Work hard to reach the Gold League!"
+                        : "Unlock this league by completing the tasks and earning trophies along the way!"}
                   </span>
                 </div>
 
@@ -1656,11 +1847,11 @@ const Page = () => {
                 {!currentLeague && (leagueData?.userPoints || 0) === 0 && (
                   <div className="mt-[12px] p-[16px] bg-[#FEF3C7] border border-[#F59E0B] rounded-[8px]">
                     <p className="text-[14px] text-[#92400E] text-center">
-                      You need to earn points by practicing to join a league. Complete some tasks to get started!
+                      You need to earn points by practicing to join a league.
+                      Complete some tasks to get started!
                     </p>
                   </div>
                 )}
-
 
                 {/* League Table */}
                 <div className="mt-[24px]">
@@ -1681,7 +1872,10 @@ const Page = () => {
 
                 {/* Right panel: guests see all leagues; signed-in users see only their current league */}
                 {(noUser || currentLeague?.type === "bronze") && (
-                  <div className="min-h-[232px] rounded-[12px] p-[12px] md:p-[16px] bg-white mt-[24px] cursor-pointer" onClick={() => setSelectedLeague("bronze")}>
+                  <div
+                    className="min-h-[232px] rounded-[12px] p-[12px] md:p-[16px] bg-white mt-[24px] cursor-pointer"
+                    onClick={() => setSelectedLeague("bronze")}
+                  >
                     <div className="flex flex-col sm:flex-row justify-between gap-[8px] sm:gap-0">
                       <div className="flex gap-[6px] items-center">
                         <span className="text-[24px]">🥉</span>
@@ -1714,14 +1908,16 @@ const Page = () => {
                           style={{
                             width: `${Math.min(
                               100,
-                              ((leagueData?.userPoints || 0) / 50) * 50
+                              ((leagueData?.userPoints || 0) / 50) * 50,
                             )}%`,
                           }}
                         ></div>
                       </div>
                       <div className="flex gap-[4px] items-center shrink-0">
                         <span className="text-[20px]">🥈</span>
-                        <span className="text-[12px] md:text-[14px]">Silver League</span>
+                        <span className="text-[12px] md:text-[14px]">
+                          Silver League
+                        </span>
                       </div>
                     </div>
                     <div className="mt-[24px] flex flex-col gap-[8px]">
@@ -1735,7 +1931,10 @@ const Page = () => {
                 )}
 
                 {(noUser || currentLeague?.type === "silver") && (
-                  <div className="min-h-[232px] rounded-[12px] mt-[24px] p-[16px] bg-white cursor-pointer" onClick={() => setSelectedLeague("silver")}>
+                  <div
+                    className="min-h-[232px] rounded-[12px] mt-[24px] p-[16px] bg-white cursor-pointer"
+                    onClick={() => setSelectedLeague("silver")}
+                  >
                     <div className="flex justify-between">
                       <div className="flex gap-[6px] items-center">
                         <span className="text-[24px]">🥈</span>
@@ -1745,9 +1944,7 @@ const Page = () => {
                       </div>
                       <div className="flex items-center gap-[12px]">
                         <div className="text-[14px]">
-                          <span className="text-[#76808F]">
-                            Requirement: {" "}
-                          </span>
+                          <span className="text-[#76808F]">Requirement: </span>
                           <span
                             className={
                               checkLeagueRequirements("silver")
@@ -1772,8 +1969,8 @@ const Page = () => {
                               100,
                               Math.max(
                                 0,
-                                ((leagueData?.userPoints || 0) - 50) / 50
-                              ) * 50
+                                ((leagueData?.userPoints || 0) - 50) / 50,
+                              ) * 50,
                             )}%`,
                           }}
                         ></div>
@@ -1795,7 +1992,10 @@ const Page = () => {
                 )}
 
                 {(noUser || currentLeague?.type === "gold") && (
-                  <div className="min-h-[232px] rounded-[12px] mt-[24px] p-[16px] bg-white cursor-pointer" onClick={() => setSelectedLeague("gold")}>
+                  <div
+                    className="min-h-[232px] rounded-[12px] mt-[24px] p-[16px] bg-white cursor-pointer"
+                    onClick={() => setSelectedLeague("gold")}
+                  >
                     <div className="flex justify-between">
                       <div className="flex gap-[6px] items-center">
                         <span className="text-[24px]">🥇</span>
@@ -1805,9 +2005,7 @@ const Page = () => {
                       </div>
                       <div className="flex items-center gap-[12px]">
                         <div className="text-[14px]">
-                          <span className="text-[#76808F]">
-                            Requirement: {" "}
-                          </span>
+                          <span className="text-[#76808F]">Requirement: </span>
                           <span
                             className={
                               checkLeagueRequirements("gold")
@@ -1832,8 +2030,8 @@ const Page = () => {
                               100,
                               Math.max(
                                 0,
-                                ((leagueData?.userPoints || 0) - 100) / 50
-                              ) * 50
+                                ((leagueData?.userPoints || 0) - 100) / 50,
+                              ) * 50,
                             )}%`,
                           }}
                         ></div>
@@ -1857,7 +2055,7 @@ const Page = () => {
                         <div className="flex gap-[8px]">
                           <CircleCheck />
                           <span className="text-[#F27059] text-[14px]">
-                            CELPIP Champion: {" "}
+                            CELPIP Champion:{" "}
                           </span>
                         </div>
 
@@ -1866,15 +2064,15 @@ const Page = () => {
                             <SvgCheck className="text-[#979EA8]" /> 10 mocks
                           </div>
                           <div className="flex gap-[8px]">
-                            <SvgCheck className="text-[#979EA8]" /> +2 CLB in
-                            1 skill
+                            <SvgCheck className="text-[#979EA8]" /> +2 CLB in 1
+                            skill
                           </div>
                           <div className="flex gap-[8px]">
                             <SvgCheck className="text-[#979EA8]" /> 5 Writing
                           </div>
                           <div className="flex gap-[8px]">
-                            <SvgCheck className="text-[#979EA8]" /> + 5
-                            Speaking improved
+                            <SvgCheck className="text-[#979EA8]" /> + 5 Speaking
+                            improved
                           </div>
                           <div className="flex gap-[8px]">
                             <SvgCheck className="text-[#979EA8]" />

@@ -8,6 +8,7 @@ import useStore from "@/store";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 
 import UpgradeModal from "@/components/modal/UpgradeModal";
@@ -46,7 +47,7 @@ const SpeakingExamView = ({
 
   const [time, setTime] = useState(partId == 17 || partId == 18 ? 60 : 30);
   const [recordingTime, setRecordingTime] = useState(
-    partId == 18 || partId == 19 ? 90 : 60
+    partId == 18 || partId == 19 ? 90 : 60,
   );
 
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -83,19 +84,18 @@ const SpeakingExamView = ({
   const hasStartedRecordingRef = useRef(false);
   const audioChunks = useRef<Blob[]>([]);
   const shouldShowPractice =
-    practice.isFree ||
-    (!practice.isFree &&
-      user &&
-      user.publicMetadata.plan &&
-      user.publicMetadata.plan === "premium");
+    practice.isFree || hasPaidPracticeAccess(user?.publicMetadata?.plan);
 
   const [errorAccessingMicrophone, setErrorAccessingMicrophone] =
     useState(false);
   const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState
+    (state) => state.setPremiumPlanModalState,
   );
 
-  if (isLoaded && (!user || (user && user.publicMetadata.plan !== "premium"))) {
+  if (
+    isLoaded &&
+    (!user || !hasPaidPracticeAccess(user.publicMetadata?.plan))
+  ) {
     router.push("/exam-overview");
   }
   const startRecording = async () => {
@@ -177,20 +177,22 @@ const SpeakingExamView = ({
 
       await response.json();
       // Log mock exam part completed
-      const loggerAttemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
+      const loggerAttemptId =
+        searchParams.get("attemptId") ||
+        `mock_${practice.taskId}_${Date.now()}`;
       await ActivityLogger.mockCompleted(
         loggerAttemptId,
         practice.taskId.toString(),
         undefined, // Score will be available later
         undefined, // Breakdown will be available later
-        recordingTime
+        recordingTime,
       );
 
       // Add league points for mock exam completion
       await addPoints(
         20,
         "mockExams",
-        `${Math.floor(recordingTime / 60)} minutes`
+        `${Math.floor(recordingTime / 60)} minutes`,
       );
 
       // Check for trophy achievements (only for complete exam mode)
@@ -198,7 +200,7 @@ const SpeakingExamView = ({
         await checkTrophyAchievements(
           20,
           "mockExams",
-          `${Math.floor(recordingTime / 60)}:${recordingTime % 60}`
+          `${Math.floor(recordingTime / 60)}:${recordingTime % 60}`,
         );
       }
 
@@ -251,7 +253,7 @@ const SpeakingExamView = ({
     if (isRecording && recordingTime > 0) {
       const recTimer = setInterval(
         () => setRecordingTime((prev) => prev - 1),
-        1000
+        1000,
       );
       return () => clearInterval(recTimer);
     }
@@ -277,7 +279,9 @@ const SpeakingExamView = ({
 
     // Log mock exam started when component mounts
     if (user && practice.taskId) {
-      const loggerAttemptId = searchParams.get("attemptId") || `mock_${practice.taskId}_${Date.now()}`;
+      const loggerAttemptId =
+        searchParams.get("attemptId") ||
+        `mock_${practice.taskId}_${Date.now()}`;
       ActivityLogger.mockStarted(loggerAttemptId, practice.taskId.toString());
     }
   }, [practice.taskId, partId, user]);
@@ -361,8 +365,18 @@ const SpeakingExamView = ({
       )}
 
       <div className="flex flex-col w-full">
-        <ExamHeader examPractice="Speaking" ref={ref} setShowModal={setMenuShowModal} menuShowModal={menuShowModal} examId={practice.taskId} partId={partId} examName={practice.name} examNumber={examNumber} practiceSections={practiceSections} getPartsForSection={getPartsForSection} />
-
+        <ExamHeader
+          examPractice="Speaking"
+          ref={ref}
+          setShowModal={setMenuShowModal}
+          menuShowModal={menuShowModal}
+          examId={practice.taskId}
+          partId={partId}
+          examName={practice.name}
+          examNumber={examNumber}
+          practiceSections={practiceSections}
+          getPartsForSection={getPartsForSection}
+        />
 
         <div className="bg-white rounded-xl flex flex-col screen1280:!h-[920px] overflow-scroll border border-[#D5D6D8] w-full">
           <div className="flex justify-between pb-[21px]  lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row flex-col w-full  h-auto bg-[#FFEBD6]">
@@ -381,18 +395,30 @@ const SpeakingExamView = ({
                     const query = section ? `?section=${section}` : "";
                     if (isRecording) cancelRecording();
                     if (page == "description" && passageIndex == 0) {
-                      if (partId === 1 || (section === "speaking" && partId === 13)) {
+                      if (
+                        partId === 1 ||
+                        (section === "speaking" && partId === 13)
+                      ) {
                         router.push("/exam-overview");
                       } else {
                         const attemptId = searchParams.get("attemptId");
-                        const attemptQuery = attemptId ? `attemptId=${attemptId}` : "";
+                        const attemptQuery = attemptId
+                          ? `attemptId=${attemptId}`
+                          : "";
                         const finalQuery = query
-                          ? (attemptQuery ? `?${attemptQuery}&${query.replace("?", "")}` : query)
-                          : (attemptQuery ? `?${attemptQuery}` : "");
+                          ? attemptQuery
+                            ? `?${attemptQuery}&${query.replace("?", "")}`
+                            : query
+                          : attemptQuery
+                            ? `?${attemptQuery}`
+                            : "";
 
                         const prevPartId = partId - 1;
                         const prevUrl = pathname.includes(`/part${partId}`)
-                          ? pathname.replace(`/part${partId}`, `/part${prevPartId}`) + finalQuery
+                          ? pathname.replace(
+                              `/part${partId}`,
+                              `/part${prevPartId}`,
+                            ) + finalQuery
                           : `/exams/exam_${practice.taskId}/part${prevPartId}${finalQuery}`;
                         router.push(prevUrl);
                       }
@@ -400,14 +426,23 @@ const SpeakingExamView = ({
                       setPage("description");
                     } else if (page == "question") {
                       const attemptId = searchParams.get("attemptId");
-                      const attemptQuery = attemptId ? `attemptId=${attemptId}` : "";
+                      const attemptQuery = attemptId
+                        ? `attemptId=${attemptId}`
+                        : "";
                       const finalQuery = query
-                        ? (attemptQuery ? `?${attemptQuery}&${query.replace("?", "")}` : query)
-                        : (attemptQuery ? `?${attemptQuery}` : "");
+                        ? attemptQuery
+                          ? `?${attemptQuery}&${query.replace("?", "")}`
+                          : query
+                        : attemptQuery
+                          ? `?${attemptQuery}`
+                          : "";
 
                       const prevPartId = partId - 1;
                       const prevUrl = pathname.includes(`/part${partId}`)
-                        ? pathname.replace(`/part${partId}`, `/part${prevPartId}`) + finalQuery
+                        ? pathname.replace(
+                            `/part${partId}`,
+                            `/part${prevPartId}`,
+                          ) + finalQuery
                         : `/exams/exam_${practice.taskId}/part${prevPartId}${finalQuery}`;
                       router.push(prevUrl);
                     } else if (page == "evaluateResult") {
@@ -432,21 +467,30 @@ const SpeakingExamView = ({
                         setTime(10);
                       } else {
                         const attemptId = searchParams.get("attemptId");
-                        const attemptQuery = attemptId ? `attemptId=${attemptId}` : "";
+                        const attemptQuery = attemptId
+                          ? `attemptId=${attemptId}`
+                          : "";
                         const finalQuery = query
-                          ? (attemptQuery ? `?${attemptQuery}&${query.replace("?", "")}` : query)
-                          : (attemptQuery ? `?${attemptQuery}` : "");
+                          ? attemptQuery
+                            ? `?${attemptQuery}&${query.replace("?", "")}`
+                            : query
+                          : attemptQuery
+                            ? `?${attemptQuery}`
+                            : "";
 
                         const nextPartId = partId + 1;
                         const nextUrl = pathname.includes(`/part${partId}`)
-                          ? pathname.replace(`/part${partId}`, `/part${nextPartId}`) + finalQuery
+                          ? pathname.replace(
+                              `/part${partId}`,
+                              `/part${nextPartId}`,
+                            ) + finalQuery
                           : `/exams/exam_${practice.taskId}/part${nextPartId}${finalQuery}`;
                         router.push(nextUrl);
                         setTime(partId == 17 || partId == 18 ? 60 : 30);
                       }
                     } else if (page == "evaluateResult") {
                       router.push(
-                        `/exams/exam_${practice.taskId}/results?attemptId=${searchParams.get("attemptId")}`
+                        `/exams/exam_${practice.taskId}/results?attemptId=${searchParams.get("attemptId")}`,
                       );
                       setTime(partId == 17 || partId == 18 ? 60 : 30);
                     }
@@ -455,7 +499,9 @@ const SpeakingExamView = ({
                     "cursor-pointer flex items-center gap-[8px] justify-center h-[40px] font-normal text-[#212E42] text-[14px] w-[96px] bg-white rounded-[24px]"
                   }
                 >
-                  {section === "speaking" && partId >= 20 ? "Finish Exam" : "Next"}
+                  {section === "speaking" && partId >= 20
+                    ? "Finish Exam"
+                    : "Next"}
                   <SvgArrowRight />
                 </button>
               </div>
@@ -467,7 +513,9 @@ const SpeakingExamView = ({
                 <p className="text-[16px] font-bold text-[#212E42] mb-4">
                   Evaluation Complete!
                 </p>
-                <a href={`/exams/exam_${practice.taskId}/results?attemptId=${searchParams.get("attemptId")}`}>
+                <a
+                  href={`/exams/exam_${practice.taskId}/results?attemptId=${searchParams.get("attemptId")}`}
+                >
                   <button className="bg-[#4A7DFF] text-white flex items-center rounded-[24px] px-[24px] h-[40px] cursor-pointer ">
                     View Results
                   </button>
@@ -507,7 +555,7 @@ const SpeakingExamView = ({
                   <div className="p-4 overflow-y-auto lg:border-r border-r-0 border-b lg:border-b-0 border-slate-300 [&::-webkit-scrollbar]:w-2  [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full  [&::-webkit-scrollbar-track]:bg-slate-100">
                     <div className="relative">
                       {practice.passages[0].body &&
-                        practice.passages[0].body?.length > 30 ? (
+                      practice.passages[0].body?.length > 30 ? (
                         <>
                           {!practice.passages[0].pictureUrl && (
                             <p className="text-[14px] text-gray-400 mb-2">
@@ -539,8 +587,9 @@ const SpeakingExamView = ({
                           <img
                             src={practice.passages[0].pictureUrl}
                             alt={practice.passages[0].title}
-                            className={`w-full h-auto mb-4 rounded-lg shadow-md ${!shouldShowPractice ? "blur-sm" : ""
-                              }`}
+                            className={`w-full h-auto mb-4 rounded-lg shadow-md ${
+                              !shouldShowPractice ? "blur-sm" : ""
+                            }`}
                           />
                         </>
                       )}
@@ -553,10 +602,7 @@ const SpeakingExamView = ({
                       <p className="text-[14px] mt-[8px] text-slate-500">
                         Recording time:{" "}
                         <b className="text-[#F27059] text-[16px]">
-                          {partId == 18 || partId == 19
-                            ? 90
-                            : 60}
-                          s
+                          {partId == 18 || partId == 19 ? 90 : 60}s
                         </b>
                       </p>
 
@@ -604,7 +650,8 @@ const SpeakingExamView = ({
                                 </h5>
                               </div>
                               <div className="text-[14px] p-[16px] text-[#212E42]  font-semibold">
-                                We don&apos;t have permission to use your microphone.
+                                We don&apos;t have permission to use your
+                                microphone.
                                 <ol className="mt-[16px] font-normal">
                                   <li>
                                     Click &apos;Settings&apos; icon near the
