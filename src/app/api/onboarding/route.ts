@@ -37,6 +37,8 @@ export async function POST(req: Request) {
     const askedLaterAt = new Date().toISOString();
     if (isNewOnboardingPayload) {
       onboardingNewMeta.askedLaterAt = askedLaterAt;
+      onboardingNewMeta.completed = true;
+      onboardingNewMeta.skippedAt = askedLaterAt;
     } else {
       onboardingMeta.askedLaterAt = askedLaterAt;
     }

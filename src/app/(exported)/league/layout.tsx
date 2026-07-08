@@ -1,7 +1,7 @@
 import LayoutLeagueClient from "@/components/dashboard-new/LayoutLeagueClient";
 import IntercomLoader from "@/components/IntercomLoader";
-import { daysSince } from "@/lib/utils";
-import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
+import { currentUser } from "@/lib/auth/web-auth-session";
+import { shouldShowOnboardingSurvey } from "@/lib/onboardingSurveyVisibility";
 import { Metadata } from "next";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -15,10 +15,6 @@ export async function generateMetadata(): Promise<Metadata> {
     },
   };
 }
-type OnboardingMetadata = {
-  completed?: boolean;
-  askedLaterAt?: string;
-};
 
 export default async function RootLayout({
   children,
@@ -30,30 +26,12 @@ export default async function RootLayout({
     user = await currentUser();
   } catch (error) {}
 
-  const publicMetadata = user?.publicMetadata || {};
-  const privateMetadata = user?.privateMetadata || {};
+  const showSurvey = shouldShowOnboardingSurvey(user);
 
-  const onboarding: OnboardingMetadata = privateMetadata.onboarding || {};
-  const onboardingNew: any = privateMetadata.onboardingNew || {};
-
-  const showSurvey =
-    publicMetadata.plan === "free" &&
-    onboardingNew.completed !== true &&
-    (!onboardingNew.askedLaterAt || daysSince(onboardingNew.askedLaterAt) >= 7);
-
-  const showCompletedModal =
-    !showSurvey &&
-    publicMetadata.plan === "free" &&
-    (onboardingNew.completed === true ||
-      (onboardingNew.askedLaterAt && daysSince(onboardingNew.askedLaterAt) < 7));
   return (
     <>
       <IntercomLoader />
-      <LayoutLeagueClient
-        showSurvey={showSurvey}
-        showCompletedModal={showCompletedModal}
-        children={children}
-      />
+      <LayoutLeagueClient showSurvey={showSurvey} children={children} />
     </>
   );
 }

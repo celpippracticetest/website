@@ -1,12 +1,15 @@
 import type { MobileUserBridge } from "@/lib/auth/supabase-mobile-user-bridge";
 
-/** True until `onboardingNew.completed` (survey submitted or skipped). Used only by `/onboarding-survey`. */
+/** True until onboarding survey is submitted or skipped. */
 export function userNeedsOnboardingSurvey(
   user: MobileUserBridge | null | undefined,
 ): boolean {
   if (!user) return false;
-  const completed = (
-    user.publicMetadata as { onboardingNew?: { completed?: boolean } } | undefined
-  )?.onboardingNew?.completed;
-  return completed !== true;
+  const onboardingNew = user.privateMetadata?.onboardingNew as
+    | { completed?: boolean; askedLaterAt?: string; skippedAt?: string }
+    | undefined;
+  if (!onboardingNew) return true;
+  if (onboardingNew.completed === true) return false;
+  if (onboardingNew.askedLaterAt || onboardingNew.skippedAt) return false;
+  return true;
 }

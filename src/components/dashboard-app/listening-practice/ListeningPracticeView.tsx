@@ -27,6 +27,13 @@ import StatBadge from "@/components/shared/StatBadge";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import Link from "next/link";
+import ObjectivePracticeSubmitButtons from "../practice/ObjectivePracticeSubmitButtons";
+import TaskRetakeBanner from "../practice/TaskRetakeBanner";
+import {
+  buildPracticeUrl,
+  retakeTask,
+  submitObjectivePracticeAnswers,
+} from "@/lib/objectivePracticeSubmit";
 
 interface ListeningPracticeViewProps {
   practice: TPracticeDto;
@@ -241,6 +248,55 @@ const ListeningPracticeView = ({
   const practiceIndex = allPractices.findIndex(
     (p) => p.id == selectedPracticeId,
   );
+  const isLastPractice = practiceIndex >= allPractices.length - 1;
+
+  const isAtEndOfPracticeQuestions =
+    page === "question" &&
+    (useDropdownForQuestions ||
+      (passageIndex >= practice.passages.length - 1 &&
+        questionIndex >=
+          (practice.passages[passageIndex].questions?.length ?? 1) - 1));
+
+  const handleSubmitAndSeeResult = () => {
+    setIsFromFirstPage(false);
+    setPage("answer");
+  };
+
+  const handleSubmitAndNext = async () => {
+    await submitObjectivePracticeAnswers({
+      practiceId: practice.id,
+      answers: selectedAnswers,
+      skill: "Listening",
+      timeRemaining: time,
+      pointsAwarded,
+      setPointsAwarded,
+      addPoints,
+      checkTrophyAchievements,
+    });
+
+    if (practiceIndex < allPractices.length - 1) {
+      setPage("instructions");
+      setQuestionIndex(0);
+      setPassageIndex(0);
+      router.push(
+        buildPracticeUrl(
+          "listening",
+          allPractices[practiceIndex + 1].id,
+          selectedTaskId,
+        ),
+      );
+    }
+  };
+
+  const handleRetakeTask = () => {
+    if (allPractices.length === 0) return;
+    setSelectedAnswers({});
+    setIsFromFirstPage(false);
+    setPage("instructions");
+    setQuestionIndex(0);
+    setPassageIndex(0);
+    retakeTask("listening", allPractices[0].id, selectedTaskId, router);
+  };
 
   if (!isLoaded || (user && user.publicMetadata?.plan === undefined)) {
     return (
@@ -306,9 +362,18 @@ const ListeningPracticeView = ({
               <StatBadge count={practiceCount} label="answered today" />
             </div>
 
-            {page !== "instructions" &&
-            !(page == "answer" && practiceIndex >= allPractices.length - 1) ? (
-              <div className="flex items-center gap-2 justify-end pb-[10px] ">
+            {page !== "instructions" && page !== "finish" ? (
+              <div className="flex flex-wrap items-center gap-2 justify-end pb-[10px] ">
+                {isAtEndOfPracticeQuestions && (
+                  <ObjectivePracticeSubmitButtons
+                    onSubmitAndNext={handleSubmitAndNext}
+                    onSubmitAndSeeResult={handleSubmitAndSeeResult}
+                    showSubmitAndNext={!isLastPractice}
+                    disabled={
+                      !user || Object.keys(selectedAnswers).length === 0
+                    }
+                  />
+                )}
                 {page === "question" && (
                   <div className="flex justify-center items-center lg:flex-row flex-col">
                     <div className="text-[14px] font-semibold gap-2 text-center text-[#EE4266] flex items-center">
@@ -336,7 +401,6 @@ const ListeningPracticeView = ({
                             ?.length ?? 1) - 1,
                         ),
                       );
-                      // setQuestionIndexInPractice(questionIndexInPractice - 1);
                     } else if (page == "question" && questionIndex > 0) {
                       setQuestionIndex(questionIndex - 1);
                       setQuestionIndexInPractice(questionIndexInPractice - 1);
@@ -365,71 +429,60 @@ const ListeningPracticeView = ({
                 >
                   <ArrowLeft size={18} strokeWidth={1.7}></ArrowLeft>
                 </button>
-                <button
-                  onClick={() => {
-                    if (page == "instructions" && passageIndex == 0) {
-                      setPage("problem");
-                      setQuestionIndex(0);
-                    } else if (page == "problem") {
-                      setPage("question");
-                      setQuestionIndexInPractice(questionIndexInPractice + 1);
-                    } else if (page == "question" && useDropdownForQuestions) {
-                      setPage("answer");
-                    } else if (
-                      page == "question" &&
-                      questionIndex <
-                        (practice.passages[passageIndex].questions?.length ??
-                          0) -
-                          1 &&
-                      !useDropdownForQuestions
-                    ) {
-                      setQuestionIndex(questionIndex + 1);
-                      setQuestionIndexInPractice(questionIndexInPractice + 1);
-                    } else if (
-                      page == "question" &&
-                      passageIndex < practice.passages.length - 1
-                    ) {
-                      setPage("problem");
-                      setPassageIndex(passageIndex + 1);
-
-                      setQuestionIndex(0);
-                    } else if (page == "question") {
-                      setPage("answer");
-                    } else if (page === "answer") {
-                      const practiceIndex = allPractices.findIndex(
-                        (p) => p.id == selectedPracticeId,
-                      );
-                      if (practiceIndex < allPractices.length - 1) {
-                        const taskUrl = selectedTaskId
-                          ? "&taskId=" + selectedTaskId
-                          : "";
-                        setPage("instructions");
+                {!isAtEndOfPracticeQuestions && (
+                  <button
+                    onClick={() => {
+                      if (page == "instructions" && passageIndex == 0) {
+                        setPage("problem");
                         setQuestionIndex(0);
-                        setPassageIndex(0);
-                        router.push(
-                          "/listening?selectedPracticeId=" +
-                            allPractices[practiceIndex + 1].id +
-                            taskUrl,
-                        );
-                      } else {
-                        setPage("finish");
+                      } else if (page == "problem") {
+                        setPage("question");
+                        setQuestionIndexInPractice(questionIndexInPractice + 1);
+                      } else if (
+                        page == "question" &&
+                        questionIndex <
+                          (practice.passages[passageIndex].questions?.length ??
+                            0) -
+                            1 &&
+                        !useDropdownForQuestions
+                      ) {
+                        setQuestionIndex(questionIndex + 1);
+                        setQuestionIndexInPractice(questionIndexInPractice + 1);
+                      } else if (
+                        page == "question" &&
+                        passageIndex < practice.passages.length - 1
+                      ) {
+                        setPage("problem");
+                        setPassageIndex(passageIndex + 1);
+                        setQuestionIndex(0);
+                      } else if (page === "answer") {
+                        if (practiceIndex < allPractices.length - 1) {
+                          setPage("instructions");
+                          setQuestionIndex(0);
+                          setPassageIndex(0);
+                          router.push(
+                            buildPracticeUrl(
+                              "listening",
+                              allPractices[practiceIndex + 1].id,
+                              selectedTaskId,
+                            ),
+                          );
+                        } else {
+                          setPage("finish");
+                        }
                       }
-                    }
-                    setTime(
-                      task5or6.includes(practice.taskId)
-                        ? 240 + (task5or6[1] === practice.taskId ? 30 : 0)
-                        : 30,
-                    );
-                  }}
-                  className={`cursor-pointer text-[14px] font-normal  inline-flex items-center justify-center rounded-[24px] ${
-                    page !== "answer"
-                      ? "bg-white"
-                      : "bg-green-100 text-gray-900 "
-                  } bg-white w-[96px] h-[40px]`}
-                >
-                  {page !== "answer" ? "Next" : "Next"}
-                  <ArrowRight size={18} strokeWidth={1.7}></ArrowRight>
-                </button>
+                      setTime(
+                        task5or6.includes(practice.taskId)
+                          ? 240 + (task5or6[1] === practice.taskId ? 30 : 0)
+                          : 30,
+                      );
+                    }}
+                    className="cursor-pointer text-[14px] font-normal inline-flex items-center justify-center rounded-[24px] bg-white w-[96px] h-[40px]"
+                  >
+                    Next
+                    <ArrowRight size={18} strokeWidth={1.7}></ArrowRight>
+                  </button>
+                )}
               </div>
             ) : (
               <></>
@@ -623,6 +676,38 @@ const ListeningPracticeView = ({
                   onAnswerSelect={handleAnswerSelect}
                   selectedAnswers={selectedAnswers}
                 />
+              </div>
+            )}
+            {page === "answer" && isLastPractice && (
+              <TaskRetakeBanner onRetake={handleRetakeTask} />
+            )}
+            {page === "finish" && (
+              <div className="flex flex-col gap-4 px-6 py-8">
+                <span className="text-[16px] font-medium text-[#212E42]">
+                  Task complete! Review your last result or retake the full
+                  task.
+                </span>
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      setIsFromFirstPage(true);
+                      setPage("answer");
+                    }}
+                    variant="outline"
+                    className="cursor-pointer rounded-[24px] text-[14px] items-center justify-center font-normal h-[40px]"
+                  >
+                    See result
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleRetakeTask}
+                    variant="outline"
+                    className="cursor-pointer rounded-[24px] text-[14px] bg-[#4A7DFF] items-center justify-center font-normal text-white h-[40px]"
+                  >
+                    Retake task
+                  </Button>
+                </div>
               </div>
             )}
           </div>

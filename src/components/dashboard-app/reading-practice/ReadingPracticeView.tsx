@@ -33,6 +33,13 @@ import StatBadge from "@/components/shared/StatBadge";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import Link from "next/link";
+import ObjectivePracticeSubmitButtons from "../practice/ObjectivePracticeSubmitButtons";
+import TaskRetakeBanner from "../practice/TaskRetakeBanner";
+import {
+  buildPracticeUrl,
+  retakeTask,
+  submitObjectivePracticeAnswers,
+} from "@/lib/objectivePracticeSubmit";
 
 interface ReadingPracticeViewProps {
   practice: TPracticeDto;
@@ -211,6 +218,51 @@ const ReadingPracticeView = ({
 
   const shouldShowPractice: any =
     practice.isFree || hasPaidPracticeAccess(user?.publicMetadata?.plan);
+
+  const practiceIndex = allPractices.findIndex(
+    (p) => p.id == selectedPracticeId,
+  );
+  const isLastPractice = practiceIndex >= allPractices.length - 1;
+
+  const handleSubmitAndSeeResult = async () => {
+    if (!user) return;
+    setPage("answer");
+  };
+
+  const handleSubmitAndNext = async () => {
+    if (!user) return;
+    await submitObjectivePracticeAnswers({
+      practiceId: practice.id,
+      answers: selectedAnswers,
+      skill: "Reading",
+      timeRemaining: time,
+      pointsAwarded,
+      setPointsAwarded,
+      addPoints,
+      checkTrophyAchievements,
+    });
+
+    if (practiceIndex < allPractices.length - 1) {
+      setPage("question");
+      router.push(
+        buildPracticeUrl(
+          "reading",
+          allPractices[practiceIndex + 1].id,
+          selectedTaskId,
+        ),
+      );
+      setTime(timerTime);
+    }
+  };
+
+  const handleRetakeTask = () => {
+    if (allPractices.length === 0) return;
+    setSelectedAnswers({});
+    setPage("question");
+    setTime(timerTime);
+    retakeTask("reading", allPractices[0].id, selectedTaskId, router);
+  };
+
   return (
     <>
       <div className="w-full transition-all duration-300 flex gap-5 items-center ">
@@ -245,87 +297,12 @@ const ReadingPracticeView = ({
             </div>
             {page !== "answer" && shouldShowPractice && (
               <div className="flex justify-between">
-                {page !== "answer" && shouldShowPractice && (
-                  <>
-                    <button
-                      onClick={async () => {
-                        if (page == "question" && shouldShowPractice) {
-                          setTime(30);
-                          let answersData = null;
-                          try {
-                            const getRes = await fetch(
-                              `/api/answers?practiceId=${practice.id}&userId=${user?.id}&type=${practice.type}`,
-                            );
-                            if (getRes.ok) {
-                              const json = await getRes.json();
-                              answersData = json.answers;
-                            } else if (getRes.status === 404) {
-                            }
-                          } catch (err) {
-                            console.error(
-                              "Error checking existing answers:",
-                              err,
-                            );
-                          }
-                          if (!answersData) {
-                            try {
-                              const postRes = await fetch("/api/answers", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({
-                                  practiceId: practice.id,
-                                  answers: selectedAnswers,
-                                }),
-                              });
-                              const postJson = await postRes.json();
-                              answersData =
-                                postJson.result?.answers || selectedAnswers;
-                            } catch (err) {
-                              console.error("Failed to save answers:", err);
-                            }
-                          }
-                          if (answersData) {
-                            setSelectedAnswers(answersData);
-                          }
-                          setPage("answer");
-                        } else if (
-                          page === "answer" ||
-                          (page == "question" && !shouldShowPractice)
-                        ) {
-                          const practiceIndex = allPractices.findIndex(
-                            (p) => p.id == selectedPracticeId,
-                          );
-                          if (practiceIndex < allPractices.length - 1) {
-                            const taskUrl = selectedTaskId
-                              ? "&taskId=" + selectedTaskId
-                              : "";
-                            setPage("question");
-                            router.push(
-                              "/reading?selectedPracticeId=" +
-                                allPractices[practiceIndex + 1].id +
-                                taskUrl,
-                            );
-                          } else {
-                          }
-                          setTime(30);
-                        }
-                      }}
-                      className={`cursor-pointer shrink-0 border border-[#76808F] px-[24px] text-[14px] font-normal h-[40px] rounded-[24px] ${
-                        page !== "answer" && shouldShowPractice
-                          ? "bg-white"
-                          : "bg-white"
-                      }`}
-                    >
-                      <span className="hidden screen1280:!flex">
-                        View Answers &amp; Score
-                      </span>
-                      <span className="flex screen1280:!hidden">
-                        {" "}
-                        Score
-                      </span>{" "}
-                    </button>
-                  </>
-                )}
+                <ObjectivePracticeSubmitButtons
+                  onSubmitAndNext={handleSubmitAndNext}
+                  onSubmitAndSeeResult={handleSubmitAndSeeResult}
+                  showSubmitAndNext={!isLastPractice}
+                  disabled={!user || Object.keys(selectedAnswers).length === 0}
+                />
                 <div className="flex items-center gap-2 justify-end ml-[5px] pl-[32px] pb-[10px] screen1280:!pb-[0]">
                   {shouldShowPractice && page === "question" && (
                     <div className="flex shrink-0 justify-center items-center screen1280:!flex-row flex-col">
@@ -343,112 +320,21 @@ const ReadingPracticeView = ({
 
                   <button
                     onClick={() => {
-                      const practiceIndex = allPractices.findIndex(
-                        (p) => p.id == selectedPracticeId,
-                      );
                       if (practiceIndex > 0) {
-                        const taskUrl = selectedTaskId
-                          ? "&taskId=" + selectedTaskId
-                          : "";
                         setPage("question");
                         router.push(
-                          "/reading?selectedPracticeId=" +
-                            allPractices[practiceIndex - 1].id +
-                            taskUrl,
+                          buildPracticeUrl(
+                            "reading",
+                            allPractices[practiceIndex - 1].id,
+                            selectedTaskId,
+                          ),
                         );
-                      } else {
-                        // Optionally handle the case where there is no previous practice
                       }
                       setTime(timerTime);
                     }}
                     className="cursor-pointer inline-flex border border-[#37465C] shrink-0 items-center h-[40px] w-[40px] rounded-[100%] justify-center min-h-[40px]"
                   >
                     <ArrowLeft size={18} strokeWidth={1.7}></ArrowLeft>
-                  </button>
-                  <button
-                    onClick={async () => {
-                      setTime(30);
-                      if (Object.keys(selectedAnswers).length > 0 && user) {
-                        try {
-                          await fetch("/api/answers", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              practiceId: practice.id,
-                              answers: selectedAnswers,
-                            }),
-                          });
-
-                          // Add league points when practice is completed
-                          if (!pointsAwarded) {
-                            console.log(
-                              "Reading practice: Adding league points on Next click...",
-                            );
-
-                            // Log practice completed
-                            const attemptId = `practice_${practice.id}_${Date.now()}`;
-                            await ActivityLogger.practiceCompleted(
-                              attemptId,
-                              practice.id,
-                              "Reading",
-                              100, // Assuming 100% score for now
-                              { overall: 100 },
-                              time,
-                            );
-
-                            const pointsResult = await addPoints(
-                              10,
-                              "practiceSessions",
-                              `${Math.floor(time / 60)} minutes`,
-                            );
-                            console.log(
-                              "Reading practice: Points result:",
-                              pointsResult,
-                            );
-                            setPointsAwarded(true);
-
-                            // Check for trophy achievements
-                            await checkTrophyAchievements(
-                              10,
-                              "practiceSessions",
-                              `${Math.floor(time / 60)}:${time % 60}`,
-                            );
-                          }
-                        } catch (err) {
-                          console.error(
-                            "Failed to save answers before navigating:",
-                            err,
-                          );
-                        }
-                      }
-                      if (
-                        page === "answer" ||
-                        (page === "question" && !shouldShowPractice) ||
-                        (page === "question" && shouldShowPractice)
-                      ) {
-                        const practiceIndex = allPractices.findIndex(
-                          (p) => p.id == selectedPracticeId,
-                        );
-                        if (practiceIndex < allPractices.length - 1) {
-                          const taskUrl = selectedTaskId
-                            ? "&taskId=" + selectedTaskId
-                            : "";
-                          setPage("question");
-                          router.push(
-                            "/reading?selectedPracticeId=" +
-                              allPractices[practiceIndex + 1].id +
-                              taskUrl,
-                          );
-                        }
-                      }
-                    }}
-                    className={`cursor-pointer shrink-0 border border-[#76808F] px-[24px] text-[14px] font-normal h-[40px] rounded-[24px] ${
-                      page !== "answer" && shouldShowPractice
-                        ? "bg-white"
-                        : "bg-white"
-                    }`}
-                  >
-                    Next
                   </button>
                 </div>
               </div>
@@ -792,6 +678,9 @@ const ReadingPracticeView = ({
                   selectedAnswers={selectedAnswers}
                 />
               </div>
+            )}
+            {page === "answer" && isLastPractice && (
+              <TaskRetakeBanner onRetake={handleRetakeTask} />
             )}
           </div>
         </div>

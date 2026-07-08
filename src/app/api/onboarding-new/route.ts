@@ -15,6 +15,11 @@ export async function POST(req: Request) {
   const meta: Record<string, unknown> = { ...existing };
   if (data.action === "askLater") {
     meta.askedLaterAt = new Date().toISOString();
+    meta.completed = true;
+    meta.skippedAt = new Date().toISOString();
+  } else if (data.action === "skip") {
+    meta.completed = true;
+    meta.skippedAt = new Date().toISOString();
   } else if (data.action === "submit") {
     meta.completed = true;
     meta.answers = { ...data.answers, answeredAt: new Date().toISOString() };

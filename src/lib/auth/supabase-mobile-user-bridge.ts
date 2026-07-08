@@ -6,6 +6,8 @@ import { readLegacyImportedExternalUserId } from "@/lib/auth/supabase-user-plan"
 /**
  * Minimal bridge user shape for mobile API routes (legacy field compatibility).
  */
+type OnboardingMeta = Record<string, unknown>;
+
 export type MobileUserBridge = {
   /**
    * Stable id for user documents and legacy rows: imported external id when present in
@@ -20,8 +22,22 @@ export type MobileUserBridge = {
   primaryEmailAddress: { emailAddress: string } | null;
   emailAddresses: { emailAddress: string }[];
   publicMetadata: Record<string, unknown>;
-  privateMetadata: { stripeCustomerId?: string | null };
+  privateMetadata: {
+    stripeCustomerId?: string | null;
+    onboarding?: OnboardingMeta;
+    onboardingNew?: OnboardingMeta;
+  };
 };
+
+/** Legacy Supabase `user_metadata` key used when importing accounts from the previous auth provider. */
+const LEGACY_IMPORTED_PRIVATE_META_KEY = "clerk_private_metadata";
+
+function readObject(meta: Record<string, unknown>, key: string): Record<string, unknown> {
+  const v = meta[key];
+  return typeof v === "object" && v !== null && !Array.isArray(v)
+    ? (v as Record<string, unknown>)
+    : {};
+}
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -94,6 +110,14 @@ export function mobileUserBridgeFromSupabaseUser(
     publicMetadata.roles = roleList;
   }
 
+  const legacyPrivate = readObject(meta, LEGACY_IMPORTED_PRIVATE_META_KEY);
+  const onboarding =
+    (meta.onboarding as OnboardingMeta | undefined) ??
+    (legacyPrivate.onboarding as OnboardingMeta | undefined);
+  const onboardingNew =
+    (meta.onboardingNew as OnboardingMeta | undefined) ??
+    (legacyPrivate.onboardingNew as OnboardingMeta | undefined);
+
   return {
     id: stableId,
     supabaseAuthUserId: user.id,
@@ -104,9 +128,13 @@ export function mobileUserBridgeFromSupabaseUser(
     emailAddresses: email ? [{ emailAddress: email }] : [],
     publicMetadata,
     privateMetadata: {
+      ...legacyPrivate,
+      ...(onboarding ? { onboarding } : {}),
+      ...(onboardingNew ? { onboardingNew } : {}),
       stripeCustomerId:
         (app.stripeCustomerId as string | undefined) ??
         (meta.stripeCustomerId as string | undefined) ??
+        (legacyPrivate.stripeCustomerId as string | undefined) ??
         null,
     },
   };

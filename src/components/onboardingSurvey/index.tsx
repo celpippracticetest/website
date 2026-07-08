@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 
 const TEST_DATE_OPTIONS = [
@@ -42,11 +43,27 @@ export default function OnboardingSurvey({
     speaking: 7,
   });
   const { user } = useHybridWebUser();
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const dismissSurvey = async (action: "skip" | "submit", answers?: object) => {
+    await fetch("/api/onboarding-new", {
+      method: "POST",
+      body: JSON.stringify(
+        action === "skip" ? { action: "skip" } : { action: "submit", answers },
+      ),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    await user?.reload();
+    router.refresh();
+    onComplete();
+  };
 
   const handleScoreChange = (skill: string, value: number) => {
     const newValue = Math.max(5, Math.min(12, value));
-    setTargetScores(prev => ({
+    setTargetScores((prev) => ({
       ...prev,
       [skill]: newValue,
     }));
@@ -108,19 +125,19 @@ export default function OnboardingSurvey({
           <div
             className={cn(
               "rounded-[10px] w-full transition-colors duration-500",
-              step >= 1 ? "bg-[#F27059]" : "bg-[#E6E6E6]"
+              step >= 1 ? "bg-[#F27059]" : "bg-[#E6E6E6]",
             )}
           ></div>
           <div
             className={cn(
               "rounded-[10px] w-full transition-colors duration-500",
-              step >= 2 ? "bg-[#F27059]" : "bg-[#E6E6E6]"
+              step >= 2 ? "bg-[#F27059]" : "bg-[#E6E6E6]",
             )}
           ></div>
           <div
             className={cn(
               "rounded-[10px] w-full transition-colors duration-500",
-              step >= 3 ? "bg-[#F27059]" : "bg-[#E6E6E6]"
+              step >= 3 ? "bg-[#F27059]" : "bg-[#E6E6E6]",
             )}
           ></div>
         </div>
@@ -129,7 +146,11 @@ export default function OnboardingSurvey({
           Help us improve your experience.
         </p>
         <p className="text-[16px] font-normal text-[#316BFF] mb-[24px] screen744:!mb-[32px]">
-          {step === 1 ? "Question 1 of 3" : step === 2 ? "Question 2 of 3" : "Question 3 of 3"}
+          {step === 1
+            ? "Question 1 of 3"
+            : step === 2
+              ? "Question 2 of 3"
+              : "Question 3 of 3"}
         </p>
 
         {step === 1 && (
@@ -146,27 +167,27 @@ export default function OnboardingSurvey({
 
             <div className="flex flex-col mb-[24px] screen744:!mb-[32px] gap-[16px] data-[state=checked]:!bg-[#F27059]">
               {TEST_DATE_OPTIONS.map((option) => (
-                  <label
+                <label
                   key={option}
-                    className={cn(
-                      "flex items-center h-[48px] screen744:!h-[52px] px-[16px] screen744:!px-[32px] rounded-[40px] transition-all cursor-pointer text-[12px] screen744:!text-[16px] font-normal w-fit",
+                  className={cn(
+                    "flex items-center h-[48px] screen744:!h-[52px] px-[16px] screen744:!px-[32px] rounded-[40px] transition-all cursor-pointer text-[12px] screen744:!text-[16px] font-normal w-fit",
                     testDate === option
-                        ? " bg-[#F27059] text-white "
-                        : "bg-white text-[#212E42]"
-                    )}
-                  >
-                    <Checkbox
+                      ? " bg-[#F27059] text-white "
+                      : "bg-white text-[#212E42]",
+                  )}
+                >
+                  <Checkbox
                     checked={testDate === option}
                     onCheckedChange={() => setTestDate(option)}
-                      className={cn(
-                        "mr-3  w-[24px] h-[24px] border-2 rounded-[6px] flex items-center justify-center transition-all",
+                    className={cn(
+                      "mr-3  w-[24px] h-[24px] border-2 rounded-[6px] flex items-center justify-center transition-all",
                       testDate === option
-                          ? "border-[#F27059] bg-white data-[state=checked]:!bg-white  data-[state=checked]:!text-[#F27059]"
-                          : "border-gray-300"
-                      )}
-                    />
+                        ? "border-[#F27059] bg-white data-[state=checked]:!bg-white  data-[state=checked]:!text-[#F27059]"
+                        : "border-gray-300",
+                    )}
+                  />
                   {option}
-                        </label>
+                </label>
               ))}
             </div>
 
@@ -175,24 +196,9 @@ export default function OnboardingSurvey({
               <div className="flex gap-[24px]">
                 <button
                   className="cursor-pointer text-[14px] text-[#212E42] font-normal"
-                  onClick={async () => {
-                    await fetch("/api/onboarding-new", {
-                      method: "POST",
-                      body: JSON.stringify({
-                        action: "askLater",
-                      }),
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                    });
-
-                    user?.reload();
-                    setTimeout(() => {
-                      onComplete();
-                    }, 1000);
-                  }}
+                  onClick={() => dismissSurvey("skip")}
                 >
-                  Ask later
+                  Skip
                 </button>
                 <Button
                   disabled={!testDate}
@@ -200,7 +206,7 @@ export default function OnboardingSurvey({
                     "rounded-[24px] font-normal h-[40px] text-[14px]",
                     !testDate
                       ? "bg-gray-300 text-white cursor-not-allowed"
-                      : "cursor-pointer"
+                      : "cursor-pointer",
                   )}
                   onClick={handleNext}
                 >
@@ -238,7 +244,7 @@ export default function OnboardingSurvey({
                       "flex items-center h-[48px] screen744:!h-[52px] px-[16px] screen744:!px-[32px] rounded-[40px] transition-all cursor-pointer text-[12px] screen744:!text-[16px] font-normal w-fit",
                       focusSkill === option
                         ? " bg-[#F27059] text-white "
-                        : "bg-white text-[#212E42]"
+                        : "bg-white text-[#212E42]",
                     )}
                   >
                     <Checkbox
@@ -248,7 +254,7 @@ export default function OnboardingSurvey({
                         "mr-3  w-[24px] h-[24px] border-2 rounded-[6px] flex items-center justify-center transition-all",
                         focusSkill === option
                           ? "border-[#F27059] bg-white data-[state=checked]:!bg-white  data-[state=checked]:!text-[#F27059]"
-                          : "border-gray-300"
+                          : "border-gray-300",
                       )}
                     />
                     {option}
@@ -270,7 +276,7 @@ export default function OnboardingSurvey({
                             "absolute left-2 text-xs bg-[#F4F7FF] px-1 text-gray-500 transition-all",
                             !customFocusSkill
                               ? "peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400"
-                              : "-top-2 text-xs text-blue-500"
+                              : "-top-2 text-xs text-blue-500",
                           )}
                         >
                           Write your answer
@@ -292,39 +298,30 @@ export default function OnboardingSurvey({
               <div className="flex gap-[24px]">
                 <button
                   className="cursor-pointer text-[14px] text-[#212E42] font-normal"
-                  onClick={async () => {
-                    await fetch("/api/onboarding-new", {
-                      method: "POST",
-                      body: JSON.stringify({
-                        action: "askLater",
-                      }),
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                    });
-
-                    user?.reload();
-                    setTimeout(() => {
-                      onComplete();
-                    }, 1000);
-                  }}
+                  onClick={() => dismissSurvey("skip")}
                 >
-                  Ask later
+                  Skip
                 </button>
                 <Button
-                  disabled={!focusSkill || (focusSkill === "Other (please specify)" && !customFocusSkill.trim())}
-                          className={cn(
+                  disabled={
+                    !focusSkill ||
+                    (focusSkill === "Other (please specify)" &&
+                      !customFocusSkill.trim())
+                  }
+                  className={cn(
                     "rounded-[24px] font-normal h-[40px] text-[14px]",
-                    !focusSkill || (focusSkill === "Other (please specify)" && !customFocusSkill.trim())
+                    !focusSkill ||
+                      (focusSkill === "Other (please specify)" &&
+                        !customFocusSkill.trim())
                       ? "bg-gray-300 text-white cursor-not-allowed"
-                      : "cursor-pointer"
+                      : "cursor-pointer",
                   )}
                   onClick={handleNext}
                 >
                   Next Question
                 </Button>
               </div>
-                      </div>
+            </div>
           </motion.div>
         )}
 
@@ -342,7 +339,10 @@ export default function OnboardingSurvey({
 
             <div className="grid  gap-6 mb-[32px]">
               {Object.entries(targetScores).map(([skill, score]) => (
-                <div key={skill} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-white">
+                <div
+                  key={skill}
+                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-white"
+                >
                   <span className="font-medium capitalize text-gray-700">
                     {skill}:
                   </span>
@@ -382,55 +382,33 @@ export default function OnboardingSurvey({
               <div className="flex gap-[24px]">
                 <button
                   className="cursor-pointer text-[14px] text-[#212E42] font-normal"
-                  onClick={async () => {
-                    await fetch("/api/onboarding-new", {
-                      method: "POST",
-                      body: JSON.stringify({
-                        action: "askLater",
-                      }),
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                    });
-
-                    user?.reload();
-                    setTimeout(() => {
-                      onComplete();
-                    }, 1000);
-                  }}
+                  onClick={() => dismissSurvey("skip")}
                 >
-                  Ask later
+                  Skip
                 </button>
                 <Button
                   disabled={isSubmitting}
                   className={cn(
                     "rounded-[24px] font-normal h-[40px] text-[14px]",
-                      isSubmitting
+                    isSubmitting
                       ? "bg-gray-300 text-white cursor-not-allowed"
-                      : "cursor-pointer"
+                      : "cursor-pointer",
                   )}
                   onClick={async () => {
                     setIsSubmitting(true);
-                    await fetch("/api/onboarding-new", {
-                      method: "POST",
-                      body: JSON.stringify({
-                        action: "submit",
-                        answers: {
-                          testDate,
-                          focusSkill,
-                          customFocusSkill: focusSkill === "Other (please specify)" ? customFocusSkill : "",
-                          targetScores,
-                        },
-                      }),
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                    });
-                    user?.reload();
-                    setTimeout(() => {
+                    try {
+                      await dismissSurvey("submit", {
+                        testDate,
+                        focusSkill,
+                        customFocusSkill:
+                          focusSkill === "Other (please specify)"
+                            ? customFocusSkill
+                            : "",
+                        targetScores,
+                      });
+                    } finally {
                       setIsSubmitting(false);
-                      onComplete();
-                    }, 1000);
+                    }
                   }}
                 >
                   {isSubmitting ? "Submitting..." : "Submit"}

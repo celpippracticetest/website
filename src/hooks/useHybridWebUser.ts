@@ -49,6 +49,7 @@ function bridgeUserFromSupabase(u: SupabaseAuthUser) {
   const stableId = legacyImportedId ?? u.id;
 
   const legacyPublicMeta = (meta.clerk_public_metadata ?? {}) as Record<string, unknown>;
+  const legacyPrivateMeta = (meta.clerk_private_metadata ?? {}) as Record<string, unknown>;
   const purchasedMockExamIds =
     app.purchasedMockExamIds ?? legacyPublicMeta.purchasedMockExamIds ?? meta.purchasedMockExamIds;
 
@@ -86,6 +87,13 @@ function bridgeUserFromSupabase(u: SupabaseAuthUser) {
     createdAt: new Date(u.created_at),
     publicMetadata,
     privateMetadata: {
+      ...legacyPrivateMeta,
+      ...(legacyPrivateMeta.onboarding ? { onboarding: legacyPrivateMeta.onboarding } : {}),
+      ...(legacyPrivateMeta.onboardingNew
+        ? { onboardingNew: legacyPrivateMeta.onboardingNew }
+        : meta.onboardingNew
+          ? { onboardingNew: meta.onboardingNew }
+          : {}),
       stripeCustomerId:
         (app.stripeCustomerId as string | undefined) ??
         (meta.stripeCustomerId as string | undefined) ??

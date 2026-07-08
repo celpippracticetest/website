@@ -96,12 +96,13 @@ const NavItem = ({
 
   return (
     <div
-      className={`flex flex-col cursor-pointer w-full ${primary === "practice" ? "mt-[24px]" : "mt-[16px]"
-        } `}
+      className={`flex flex-col cursor-pointer w-full ${
+        primary === "practice" ? "mt-[24px]" : "mt-[16px]"
+      } `}
     >
       <div
         className={clsx(
-          "flex gap-[8px] h-[36px] items-center text-[#37465C] w-full"
+          "flex gap-[8px] h-[36px] items-center text-[#37465C] w-full",
         )}
         onClick={handleClick}
       >
@@ -113,7 +114,7 @@ const NavItem = ({
                 isActive && !isPractice && "text-[#316BFF]",
                 isActive && isPractice && open && "text-[#316BFF]",
                 (!isActive || (isActive && isPractice && !open)) &&
-                "text-[#37465C]"
+                  "text-[#37465C]",
               )}
             >
               <span>{icon}</span>
@@ -122,7 +123,7 @@ const NavItem = ({
                   "truncate transition-opacity duration-500 ",
                   collapsed
                     ? "opacity-0 delay-0  w-0  "
-                    : "opacity-100 delay-500 "
+                    : "opacity-100 delay-500 ",
                 )}
               >
                 {label}
@@ -132,8 +133,9 @@ const NavItem = ({
         ) : (
           <Link
             href={link}
-            className={`${collapsed ? "justify-center" : "justify-start"
-              } text-[14px]  flex items-center w-full font-normal text-[#37465C] h-[36px]`}
+            className={`${
+              collapsed ? "justify-center" : "justify-start"
+            } text-[14px]  flex items-center w-full font-normal text-[#37465C] h-[36px]`}
             onClick={() => {
               setTimeout(() => {
                 setIsMenuOpen(false);
@@ -146,7 +148,7 @@ const NavItem = ({
                 isActive && !isPractice && "text-[#316BFF]",
                 isActive && isPractice && open && "text-[#316BFF]",
                 (!isActive || (isActive && isPractice && !open)) &&
-                "text-[#37465C]"
+                  "text-[#37465C]",
               )}
             >
               {icon}
@@ -155,7 +157,7 @@ const NavItem = ({
                   "truncate transition-opacity duration-500 ",
                   collapsed
                     ? "opacity-0 delay-0  w-0  "
-                    : "opacity-100 delay-500 "
+                    : "opacity-100 delay-500 ",
                 )}
               >
                 {label}
@@ -168,8 +170,9 @@ const NavItem = ({
           <span
             className="opacity-0 inline-flex"
             style={{
-              animation: `fadeIn 0.3s ease-in-out ${open ? "500ms" : "0ms"
-                } forwards`,
+              animation: `fadeIn 0.3s ease-in-out ${
+                open ? "500ms" : "0ms"
+              } forwards`,
             }}
           >
             {open ? (
@@ -200,16 +203,16 @@ const LayoutClient = ({ children, showSurvey }: any) => {
   const router = useRouter();
 
   const setShowExtraDiscount = useExtraDiscountStore(
-    (state) => state.setShowExtraDiscount
+    (state) => state.setShowExtraDiscount,
   );
   const showExtraDiscount = useExtraDiscountStore(
-    (state) => state.showExtraDiscount
+    (state) => state.showExtraDiscount,
   );
   const visibleHorizontalCoupon = useExtraDiscountStore(
-    (state) => state.visibleHorizontalCoupon
+    (state) => state.visibleHorizontalCoupon,
   );
   const setVisibleHorizontalCoupon = useExtraDiscountStore(
-    (state) => state.setVisibleHorizontalCoupon
+    (state) => state.setVisibleHorizontalCoupon,
   );
 
   const noUser = isLoaded ? !isSignedIn : false;
@@ -230,12 +233,16 @@ const LayoutClient = ({ children, showSurvey }: any) => {
   const isNewUser =
     user?.createdAt &&
     new Date().getTime() - new Date(user.createdAt).getTime() <
-    24 * 60 * 60 * 1000;
+      24 * 60 * 60 * 1000;
   const freeUser = user?.publicMetadata.plan == "free";
   const proUser = user?.publicMetadata.plan == "premium";
 
   const { selectedTask, setSelectedTask } = useSelectedTask();
   const { selectedExam, setSelectedExam } = useSelectedExam();
+
+  useEffect(() => {
+    setSurveyVisible(showSurvey);
+  }, [showSurvey]);
 
   useEffect(() => {
     const handleSize = () => {
@@ -338,7 +345,6 @@ const LayoutClient = ({ children, showSurvey }: any) => {
   }, [freeUser, noUser, isUserDropDownOpen]);
 
   // Inline UpgradeModal removed in favor of shared component
-
 
   const LoginModal = () => {
     return (
@@ -501,7 +507,6 @@ const LayoutClient = ({ children, showSurvey }: any) => {
     }
   }, [isLoaded, isSignedIn, isNewUser, user, setShowExtraDiscount]);
 
-  
   const [practice, setPractice] = useState(false);
   const [mockTest, setMockTest] = useState(false);
   const [learning, setLearning] = useState(false);
@@ -647,7 +652,9 @@ const LayoutClient = ({ children, showSurvey }: any) => {
     <>
       {freeUser ? (
         <>
-          {showUpgradeModal && <UpgradeModal setShowModal={setShowUpgradeModal} />}
+          {showUpgradeModal && (
+            <UpgradeModal setShowModal={setShowUpgradeModal} />
+          )}
           {!surveyVisible && showExtraDiscount && <ExtraDiscountModal />}
         </>
       ) : noUser ? (
@@ -672,13 +679,13 @@ const LayoutClient = ({ children, showSurvey }: any) => {
             collapsed
               ? "max-w-[150px] "
               : " screen744:!flex screen744:!max-w-[180px] screen1280:!max-w-[250px] px-[24px]",
-            "h-[100%] screen1280:!h-fit   screen744:!absolute  screen1280:!static  z-[9] transition-all duration-1000 ease-in-out flex flex-col pt-[20px] bg-white w-full border-r-[1px] border-[#D5D6D8]"
+            "h-[100%] screen1280:!h-fit   screen744:!absolute  screen1280:!static  z-[9] transition-all duration-1000 ease-in-out flex flex-col pt-[20px] bg-white w-full border-r-[1px] border-[#D5D6D8]",
           )}
         >
           <div
             className={clsx(
               "flex w-full items-center ",
-              collapsed ? "justify-end ml-1.5" : "justify-between"
+              collapsed ? "justify-end ml-1.5" : "justify-between",
             )}
           >
             <div
@@ -775,7 +782,7 @@ const LayoutClient = ({ children, showSurvey }: any) => {
             className={clsx(
               collapsed
                 ? "opacity-0"
-                : "opacity-100 transition-opacity duration-700 delay-700 pb-[100px]"
+                : "opacity-100 transition-opacity duration-700 delay-700 pb-[100px]",
             )}
           >
             {showPlansForUsers()}
@@ -826,8 +833,9 @@ const LayoutClient = ({ children, showSurvey }: any) => {
       <div className="relative flex w-full  mb-[88px] justify-center mx-auto z-[9] overflow-x-clip">
         <div
           aria-hidden
-          className={`pointer-events-none absolute left-1/2 -translate-x-1/2 ${hasClosedModal ? "top-[170px]" : "-top-[220px]"
-            } w-[1065px] h-auto min-h-[300px] screen:744:!h-[629px] rounded-[9999px]`}
+          className={`pointer-events-none absolute left-1/2 -translate-x-1/2 ${
+            hasClosedModal ? "top-[170px]" : "-top-[220px]"
+          } w-[1065px] h-auto min-h-[300px] screen:744:!h-[629px] rounded-[9999px]`}
           style={{ background: "#DAFFFA", filter: "blur(120px)", opacity: 0.8 }}
         />
         <div
@@ -858,7 +866,7 @@ const LayoutClient = ({ children, showSurvey }: any) => {
               className={clsx(
                 "transition-all flex justify-between w-full px-[16px] duration-1000 ease-in-out mt-[24px] rounded-[32px] ",
                 "screen1280:!w-full mx-auto  flex h-[80px] max-w-[1280px] items-center justify-center pl-[24px] relative w-full border border-[#D1DEFF] bg-[linear-gradient(90deg,_rgba(255,_255,_255,_0.65)_0%,_rgba(255,_255,_255,_0.2)_100%)] ",
-                "flex-row items-center"
+                "flex-row items-center",
               )}
             >
               <div className="flex gap-[64px] w-full">
@@ -868,7 +876,7 @@ const LayoutClient = ({ children, showSurvey }: any) => {
                   width={133}
                   height={40}
                   className={clsx(
-                    "opacity-100 delay-300 hover:!cursor-pointer"
+                    "opacity-100 delay-300 hover:!cursor-pointer",
                   )}
                   src="/images/logo.png"
                 />
