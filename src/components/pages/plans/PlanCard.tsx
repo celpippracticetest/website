@@ -1,6 +1,11 @@
 "use client";
 import React from "react";
 import SvgCheck from "../../icons/Check";
+import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import {
+  buildCheckoutSessionAction,
+  submitPlanCheckout,
+} from "@/lib/planCheckout";
 
 interface IPlanCard {
   title: string;
@@ -15,6 +20,8 @@ interface IPlanCard {
   id: number;
   currentPlanTitle: string;
   planTitle: string;
+  stripePriceId?: string;
+  stripeProductId?: string;
 }
 const PlanCard = ({
   title,
@@ -29,27 +36,30 @@ const PlanCard = ({
   id,
   currentPlanTitle,
   planTitle,
+  stripePriceId,
+  stripeProductId,
 }: IPlanCard) => {
+  const { isLoaded, isSignedIn } = useHybridWebUser();
+  const checkoutAction = buildCheckoutSessionAction({
+    stripePriceId,
+    stripeProductId,
+    legacyType: type,
+  });
+
+  const handleSubscribe = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!checkoutAction) return;
+    submitPlanCheckout({
+      stripePriceId,
+      stripeProductId,
+      legacyType: type,
+      isLoaded,
+      isSignedIn,
+    });
+  };
+
   return (
-    <form
-      className="relative w-full screen1280:!max-w-[420px]"
-      action={
-        type == "Easy Start"
-          ? "/api/checkout_session?product=" +
-            process.env.NEXT_PUBLIC_MONTHLY_ACCESS_PRODUCT
-          : type == "Weekly"
-          ? "/api/checkout_session?product=" +
-            process.env.NEXT_PUBLIC_WEEKLY_ACCESS_PRODUCT
-          : type == "Best Seller"
-          ? "/api/checkout_session?product=" +
-            process.env.NEXT_PUBLIC_QUARTER_ACCESS_PRODUCT
-          : type == "Best Value"
-          ? "/api/checkout_session?product=" +
-            process.env.NEXT_PUBLIC_YEARLY_ACCESS_PRODUCT
-          : ""
-      }
-      method="POST"
-    >
+    <div className="relative w-full screen1280:!max-w-[420px]">
       <article
         aria-label={`Plan card for ${title} plan`}
         className="relative  z-[1]  before:absolute before:rounded-[24px] hover:before:shadow-[6px_4px_16px_0px_#FC7A5066,_-6px_-4px_16px_0px_#4A7DFF66] before:transition-shadow before:duration-300 before:ease before:content-[''] before:inset-0 before:transform before:translate-z-[-1px] hover:cursor-pointer  h-[418px] top-[20px]  rounded-[24px] p-[8px] screen1280:!p-[16px] bg-white"
@@ -127,9 +137,11 @@ const PlanCard = ({
         </div>
 
         <button
-          type="submit"
+          type="button"
           aria-label={`Select ${title} plan`}
-          className="relative z-[2] mt-[24px] hover:cursor-pointer hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]  shadow-startButton  flex gap-[8px] px-[24px] w-full bg-primary2 mw-full h-[40px] rounded-[24px] items-center justify-center"
+          disabled={!checkoutAction}
+          onClick={handleSubscribe}
+          className="relative z-[2] mt-[24px] hover:cursor-pointer hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)]  shadow-startButton  flex gap-[8px] px-[24px] w-full bg-primary2 mw-full h-[40px] rounded-[24px] items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span className="text-white text-[14px] font-normal leading-[16px] flex items-center justify-center">
             {buttonTitle}
@@ -138,7 +150,7 @@ const PlanCard = ({
         <ul className="flex flex-col gap-[6px] mt-[16px] screen1280:mt-[24px]">
           {features.map((item, index) => (
             <li className="flex gap-[8px] items-center" key={index}>
-              <SvgCheck className="text-[0DAA94]"/>
+              <SvgCheck className="text-[0DAA94]" />
               <span className="text-text2 font-normal text-[14px] screen1280:!text-[16px] leading-[16px]">
                 {item}
               </span>
@@ -146,7 +158,7 @@ const PlanCard = ({
           ))}
         </ul>
       </article>
-    </form>
+    </div>
   );
 };
 

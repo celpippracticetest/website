@@ -62,6 +62,8 @@ const UpgradeModal = (params: any) => {
               buttonTitle={item.buttonTitle}
               icon={item.icon}
               iconWrapperColor={item.iconWrapperColor}
+              stripePriceId={item.stripePriceId}
+              stripeProductId={item.stripeProductId}
             />
           ))}
         </div>

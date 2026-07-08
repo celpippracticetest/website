@@ -16,6 +16,7 @@ function serializePlan(plan: {
   features: string[];
   billingInterval?: "day" | "week" | "month" | "year";
   billingIntervalCount?: number;
+  stripeProductId?: string;
   stripePriceId?: string;
   iconType?: string;
   iconWrapperColor?: string;
@@ -36,6 +37,7 @@ function serializePlan(plan: {
     features: Array.isArray(plan.features) ? plan.features : [],
     billingInterval: plan.billingInterval,
     billingIntervalCount: plan.billingIntervalCount,
+    stripeProductId: plan.stripeProductId,
     stripePriceId: plan.stripePriceId,
     iconType: plan.iconType as SerializedPlan["iconType"],
     iconWrapperColor: plan.iconWrapperColor,

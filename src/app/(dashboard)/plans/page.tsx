@@ -62,6 +62,8 @@ const Plans = async () => {
               iconWrapperColor={item.iconWrapperColor || "bg-purple5"}
               currentPlanTitle={currentPlanTitle}
               planTitle={item.planTitle}
+              stripePriceId={item.stripePriceId}
+              stripeProductId={item.stripeProductId}
             />
           ))}
         </div>
