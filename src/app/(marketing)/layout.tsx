@@ -1,9 +1,6 @@
 import React from "react";
 import MarketingLayoutBody from "./MarketingLayoutBody";
-import PublicPageFooter from "@/components/pages/landing/PublicPageFooter";
-import {
-  PUBLIC_PAGE_CACHE_HEADERS,
-} from "@/lib/publicPageCache";
+import { PUBLIC_PAGE_CACHE_HEADERS } from "@/lib/publicPageCache";
 
 /** Keep in sync with `PUBLIC_PAGE_REVALIDATE_SECONDS` in `@/lib/publicPageCache`. */
 export const revalidate = 3600;
@@ -17,9 +14,5 @@ export default function MarketingLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <MarketingLayoutBody footer={<PublicPageFooter />}>
-      {children}
-    </MarketingLayoutBody>
-  );
+  return <MarketingLayoutBody>{children}</MarketingLayoutBody>;
 }

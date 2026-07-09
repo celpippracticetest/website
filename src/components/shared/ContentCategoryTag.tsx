@@ -1,13 +1,12 @@
-import { BrandNavIcon, type BrandNavIconName } from "@/components/brand/BrandNavIcon";
 import { cn } from "@/lib/utils";
 
 type SkillKey = "listening" | "reading" | "writing" | "speaking";
 
-const SKILL_ICON_COLOR: Record<SkillKey, string> = {
-  listening: "text-brand-blue",
-  reading: "text-brand-blue",
-  writing: "text-brand-red",
-  speaking: "text-brand-red",
+const SKILL_DOT_COLOR: Record<SkillKey, string> = {
+  listening: "bg-brand-blue",
+  reading: "bg-brand-blue",
+  writing: "bg-brand-red",
+  speaking: "bg-brand-red",
 };
 
 function skillFromCategory(category: string): SkillKey | null {
@@ -44,17 +43,13 @@ export function ContentCategoryTag({
         className,
       )}
     >
-      {skill ? (
-        <BrandNavIcon
-          name={skill}
-          className={cn("h-3 w-3 shrink-0", SKILL_ICON_COLOR[skill])}
-        />
-      ) : (
-        <span
-          className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-brand-muted"
-          aria-hidden
-        />
-      )}
+      <span
+        className={cn(
+          "inline-block h-1.5 w-1.5 shrink-0 rounded-full",
+          skill ? SKILL_DOT_COLOR[skill] : "bg-brand-muted",
+        )}
+        aria-hidden
+      />
       {category}
     </span>
   );
