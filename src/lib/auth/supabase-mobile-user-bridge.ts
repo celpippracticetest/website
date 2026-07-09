@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
-import { readLegacyImportedExternalUserId } from "@/lib/auth/supabase-user-plan";
+import { readLegacyImportedExternalUserId, normalizePracticePlan } from "@/lib/auth/supabase-user-plan";
 
 /**
  * Minimal bridge user shape for mobile API routes (legacy field compatibility).
@@ -97,7 +97,7 @@ export function mobileUserBridgeFromSupabaseUser(
 
   const publicMetadata: Record<string, unknown> = {
     ...meta,
-    plan: app.plan ?? meta.plan ?? "free",
+    plan: normalizePracticePlan(app.plan ?? meta.plan ?? "free"),
     planType: app.planType ?? meta.planType,
     planCancelled: app.planCancelled ?? meta.planCancelled,
     planRenewsAt: app.planRenewsAt ?? meta.planRenewsAt,

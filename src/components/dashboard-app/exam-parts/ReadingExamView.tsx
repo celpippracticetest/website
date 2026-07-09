@@ -193,12 +193,14 @@ const ReadingExamView = ({
   const shouldShowPractice: boolean =
     practice.isFree || hasPaidPracticeAccess(user?.publicMetadata?.plan);
 
-  if (
-    isLoaded &&
-    (!user || !hasPaidPracticeAccess(user.publicMetadata?.plan))
-  ) {
-    router.push("exam-overview");
-  }
+  useEffect(() => {
+    if (
+      isLoaded &&
+      (!user || !hasPaidPracticeAccess(user.publicMetadata?.plan as string))
+    ) {
+      router.push("/exam-overview");
+    }
+  }, [isLoaded, user, router]);
 
   const [menuShowModal, setMenuShowModal] = useState(false);
   const ref = useRef<HTMLDivElement>(null);

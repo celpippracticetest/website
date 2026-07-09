@@ -34,8 +34,12 @@ const PracticeOverview = ({
   const [selectedTask, setSelectedTask] = useState<TTaskSchemaDto | null>(null);
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
   const setTaskInStore = useStore((state) => state.setTasks);
-  setTaskInStore(tasks);
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    setTaskInStore(tasks);
+  }, [tasks, setTaskInStore]);
+
   useEffect(() => {
     if (!selectedTask) {
       return;
@@ -58,7 +62,7 @@ const PracticeOverview = ({
       }
 
       const response = await fetch(
-        `/api/practices?type=${task.category}&page=0&limit=1&taskId=${task.id}`
+        `/api/practices?type=${task.category}&page=0&limit=1&taskId=${task.id}`,
       ); // Replace with your API endpoint
       if (!response.ok) {
         throw new Error("Network response was not ok.");
@@ -70,15 +74,17 @@ const PracticeOverview = ({
 
       setRedirectUrl(
         task.category +
-        "?selectedPracticeId=" +
-        data.items[0].id +
-        "&taskId=" +
-        task.id
+          "?selectedPracticeId=" +
+          data.items[0].id +
+          "&taskId=" +
+          task.id,
       );
-    } catch (error) { }
+    } catch (error) {}
   };
 
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    new Set(),
+  );
 
   const toggleSection = (title: string) => {
     const newExpanded = new Set(expandedSections);
@@ -165,7 +171,9 @@ const PracticeOverview = ({
           <div key={section.title} className="flex flex-col gap-8">
             {/* Desktop Header */}
             <div className="flex flex-col items-center gap-2">
-              <div className={`flex items-center justify-center w-[72px] h-[72px] rounded-full ${section.bgColor} ${section.color}`}>
+              <div
+                className={`flex items-center justify-center w-[72px] h-[72px] rounded-full ${section.bgColor} ${section.color}`}
+              >
                 <div className="scale-150">{section.icon}</div>
               </div>
               <h2 className={`text-[20px] font-bold ${section.color}`}>
@@ -211,14 +219,19 @@ const PracticeOverview = ({
         {practiceSections.map((section) => {
           const isExpanded = expandedSections.has(section.title);
           return (
-            <div key={section.title} className="flex flex-col w-full bg-white rounded-[16px] border border-[#E5E7EB] shadow-sm overflow-hidden">
+            <div
+              key={section.title}
+              className="flex flex-col w-full bg-white rounded-[16px] border border-[#E5E7EB] shadow-sm overflow-hidden"
+            >
               {/* Accordion Header */}
               <div
                 onClick={() => toggleSection(section.title)}
                 className="flex items-center justify-between p-4 screen1280:p-6 cursor-pointer hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-center gap-4">
-                  <div className={`flex items-center justify-center w-10 h-10 screen1280:w-12 screen1280:h-12 rounded-full ${section.bgColor} ${section.color}`}>
+                  <div
+                    className={`flex items-center justify-center w-10 h-10 screen1280:w-12 screen1280:h-12 rounded-full ${section.bgColor} ${section.color}`}
+                  >
                     {section.icon}
                   </div>
                   <h2 className="text-[18px] screen1280:!text-[22px] text-[#212E42] font-semibold">
@@ -227,15 +240,39 @@ const PracticeOverview = ({
                 </div>
                 <div className="text-[#37465C]">
                   {isExpanded ? (
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6" /></svg>
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="m18 15-6-6-6 6" />
+                    </svg>
                   ) : (
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
                   )}
                 </div>
               </div>
 
               {/* Accordion Content */}
-              <div className={`grid transition-all duration-300 ease-in-out ${isExpanded ? "grid-rows-[1fr] opacity-100 border-t border-[#E5E7EB]" : "grid-rows-[0fr] opacity-0"}`}>
+              <div
+                className={`grid transition-all duration-300 ease-in-out ${isExpanded ? "grid-rows-[1fr] opacity-100 border-t border-[#E5E7EB]" : "grid-rows-[0fr] opacity-0"}`}
+              >
                 <div className="overflow-hidden">
                   <div className={`${section.bgColor} p-4 screen1280:p-6`}>
                     <div className="grid grid-cols-1 screen744:grid-cols-2 screen1024:grid-cols-2 screen1440:grid-cols-2 gap-4 screen744:gap-6">
@@ -269,7 +306,15 @@ const PracticeOverview = ({
                           {/* Action Link */}
                           <div className="mt-auto flex items-center gap-2 text-[#316BFF] font-semibold text-[14px] screen1280:text-[16px]">
                             <span>Select</span>
-                            <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <svg
+                              className="w-4 h-4 transition-transform group-hover:translate-x-1"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
                               <line x1="5" y1="12" x2="19" y2="12"></line>
                               <polyline points="12 5 19 12 12 19"></polyline>
                             </svg>

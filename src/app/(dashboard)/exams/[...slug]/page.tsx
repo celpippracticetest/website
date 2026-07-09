@@ -13,9 +13,9 @@ import ResultExamView from "@/components/dashboard-app/exam-parts/ResultExamView
 import { ObjectId } from "bson";
 import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAndReadingAnswers.repo";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
-import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import { currentUser } from "@/lib/auth/web-auth-session";
-import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import { hasMockExamAccess } from "@/lib/subscriptionAccess";
+import { getFirstReadyMockExamId } from "@/lib/getFirstReadyMockExam";
 
 const Exam = async ({ params }: { params: { slug: string[] } }) => {
   const resolvedParams = await params;
@@ -34,17 +34,30 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
   const plan: string | undefined = user?.publicMetadata?.plan as
     | string
     | undefined;
+  const purchaseDate = user?.publicMetadata?.purchaseDate;
+  const purchasedMockExamIds = user?.publicMetadata?.purchasedMockExamIds;
   const roleValue = user?.publicMetadata?.role as unknown;
   const isAdmin: boolean = Array.isArray(roleValue)
     ? roleValue.includes("admin")
     : roleValue === "admin";
-  if (!user || (!hasPaidPracticeAccess(plan) && !isAdmin)) {
-    redirect("/exam-overview", RedirectType.push);
-  }
+  const firstReadyExamId = await getFirstReadyMockExamId();
+  const hasExamAccess =
+    !!user &&
+    (isAdmin ||
+      hasMockExamAccess(
+        plan,
+        purchaseDate,
+        examId ?? null,
+        firstReadyExamId,
+        purchasedMockExamIds,
+      ));
   if (
     !examId ||
     ((!partNumber || Number.isNaN(parseInt(partNumber))) && !isResultPage)
   ) {
+    redirect("/exam-overview", RedirectType.push);
+  }
+  if (!hasExamAccess) {
     redirect("/exam-overview", RedirectType.push);
   }
   const examRepo = new ExamRepository(documentsClient);

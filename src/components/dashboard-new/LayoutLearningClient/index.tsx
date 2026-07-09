@@ -734,7 +734,7 @@ const LayoutClient = ({ children, showSurvey }: any) => {
             primary={"mock"}
             icon={<SvgMockTest />}
             label="Mock Test"
-            link="exam-overview"
+            link="/exam-overview"
             active={active}
             collapsed={collapsed}
             open={open}

@@ -222,12 +222,14 @@ const ResultExamView = ({
     return scaleToBand(weightedPercent);
   })();
 
-  if (
-    isLoaded &&
-    (!user || !hasPaidPracticeAccess(user.publicMetadata?.plan))
-  ) {
-    route.push("exam-overview");
-  }
+  useEffect(() => {
+    if (
+      isLoaded &&
+      (!user || !hasPaidPracticeAccess(user.publicMetadata?.plan as string))
+    ) {
+      route.push("/exam-overview");
+    }
+  }, [isLoaded, user, route]);
   return (
     <div className=" mx-auto w-full flex flex-col bg-white  rounded-[8px]">
       <div className=" gap-[10px] text-[#212E42] px-[24px] flex items-center bg-[#FFEBD6] h-auto min-h-[56px] py-2 rounded-tl-[8px] rounded-tr-[8px] text-[18px] font-bold justify-between">

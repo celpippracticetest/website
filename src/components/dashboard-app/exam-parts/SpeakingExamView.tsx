@@ -92,12 +92,14 @@ const SpeakingExamView = ({
     (state) => state.setPremiumPlanModalState,
   );
 
-  if (
-    isLoaded &&
-    (!user || !hasPaidPracticeAccess(user.publicMetadata?.plan))
-  ) {
-    router.push("/exam-overview");
-  }
+  useEffect(() => {
+    if (
+      isLoaded &&
+      (!user || !hasPaidPracticeAccess(user.publicMetadata?.plan as string))
+    ) {
+      router.push("/exam-overview");
+    }
+  }, [isLoaded, user, router]);
   const startRecording = async () => {
     try {
       if (!user) {

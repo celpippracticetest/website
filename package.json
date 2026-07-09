@@ -18,6 +18,7 @@
     "ads:spend-to-bq": "node ./tooling/google-ads-spend-to-bq.js",
     "ads:meta-to-bq": "node ./tooling/meta-ads-spend-to-bq.js",
     "ads:csv-to-bq": "node ./tooling/ad-spend-csv-to-bq.js",
+    "stripe:export-transactions": "node ./tooling/export-stripe-transactions.mjs",
     "postbuild": "node ./scripts/postbuild-cleanup.js",
     "svgr": "npx @svgr/cli --typescript --out-dir  src/components/icons/ -- icons/svg",
     "test:e2e": "npx playwright test",
@@ -27,7 +28,10 @@
     "migrate:exams:mongo-to-pg": "npx --yes tsx ./tooling/migrate-exams-mongo-to-pg.ts",
     "migrate:mongo:app-documents": "npx --yes tsx ./tooling/migrate-mongo-collections-to-pg.ts",
     "migrate:mongo:wiki": "npx --yes tsx ./tooling/migrate-mongo-wiki-to-pg.ts",
-    "migrate:mongo:blogs": "npx --yes tsx ./tooling/migrate-mongo-blogs-to-pg.ts"
+    "migrate:mongo:blogs": "npx --yes tsx ./tooling/migrate-mongo-blogs-to-pg.ts",
+    "seed:blogs": "npx --yes tsx ./tooling/seed-blog-posts.ts",
+    "db:migrate:blogs": "npx --yes tsx ./tooling/apply-blogs-migration.ts",
+    "db:migrate:blog-cms-posts": "npx --yes tsx ./tooling/apply-blog-cms-posts-migration.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",

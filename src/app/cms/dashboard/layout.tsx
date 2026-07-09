@@ -38,7 +38,8 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
     if (key === "overview") return "/cms/dashboard";
     if (key === "onboarding") return "/cms/dashboard?tab=onboarding";
     if (key === "onboarding-new") return "/cms/dashboard?tab=onboarding-new";
-    if (key === "withdrawal-requests") return "/cms/dashboard/withdrawal-requests";
+    if (key === "withdrawal-requests")
+      return "/cms/dashboard/withdrawal-requests";
     if (key === "plans") return "/cms/dashboard/plans";
     return `/cms/${key}`;
   };
@@ -75,9 +76,11 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
       </div>
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 transform ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-          } transition-transform duration-200 ease-in-out z-50 w-64 md:sticky md:top-0 md:z-30 md:translate-x-0 md:w-auto h-[100dvh] shrink-0 border-b md:border-b-0 md:border-r bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50 ${collapsed ? "md:w-16" : "md:w-64"
-          }`}
+        className={`fixed inset-y-0 left-0 transform ${
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        } transition-transform duration-200 ease-in-out z-50 w-64 md:sticky md:top-0 md:z-30 md:translate-x-0 md:w-auto h-[100dvh] shrink-0 border-b md:border-b-0 md:border-r bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50 ${
+          collapsed ? "md:w-16" : "md:w-64"
+        }`}
       >
         <div className="px-3 py-3 md:py-6">
           <div className="mb-3 flex items-center justify-end md:justify-between">
@@ -98,24 +101,28 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
           <nav
-            className={`flex md:block overflow-x-auto md:overflow-visible [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${collapsed ? "md:text-center" : ""
-              }`}
+            className={`flex md:block overflow-x-auto md:overflow-visible [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+              collapsed ? "md:text-center" : ""
+            }`}
           >
             {/* Top-level items */}
             <ul
-              className={`flex md:block gap-2 md:gap-1 ${collapsed ? "md:space-y-1" : ""
-                }`}
+              className={`flex md:block gap-2 md:gap-1 ${
+                collapsed ? "md:space-y-1" : ""
+              }`}
             >
               {/* Overview */}
               <li>
                 <Link
                   href={hrefFor("overview")}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center ${collapsed ? "justify-center" : "justify-start"
-                    } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive("overview")
+                  className={`flex items-center ${
+                    collapsed ? "justify-center" : "justify-start"
+                  } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive("overview")
                       ? "bg-gray-100 text-gray-900"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }`}
+                  }`}
                   aria-current={isActive("overview") ? "page" : undefined}
                   title="Overview"
                 >
@@ -128,11 +135,13 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                 <Link
                   href={hrefFor("onboarding")}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center ${collapsed ? "justify-center" : "justify-start"
-                    } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive("onboarding")
+                  className={`flex items-center ${
+                    collapsed ? "justify-center" : "justify-start"
+                  } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive("onboarding")
                       ? "bg-gray-100 text-gray-900"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }`}
+                  }`}
                   aria-current={isActive("onboarding") ? "page" : undefined}
                   title="Onboarding"
                 >
@@ -145,11 +154,13 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                 <Link
                   href={hrefFor("onboarding-new")}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center ${collapsed ? "justify-center" : "justify-start"
-                    } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive("onboarding-new")
+                  className={`flex items-center ${
+                    collapsed ? "justify-center" : "justify-start"
+                  } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive("onboarding-new")
                       ? "bg-gray-100 text-gray-900"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }`}
+                  }`}
                   aria-current={isActive("onboarding-new") ? "page" : undefined}
                   title="Onboarding New"
                 >
@@ -161,11 +172,13 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                 <Link
                   href={hrefFor("plans")}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center ${collapsed ? "justify-center" : "justify-start"
-                    } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive("plans")
+                  className={`flex items-center ${
+                    collapsed ? "justify-center" : "justify-start"
+                  } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive("plans")
                       ? "bg-gray-100 text-gray-900"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }`}
+                  }`}
                   aria-current={isActive("plans") ? "page" : undefined}
                   title="Plans"
                 >
@@ -177,11 +190,13 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                 <Link
                   href={hrefFor("withdrawal-requests")}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center ${collapsed ? "justify-center" : "justify-start"
-                    } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive("withdrawal-requests")
+                  className={`flex items-center ${
+                    collapsed ? "justify-center" : "justify-start"
+                  } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive("withdrawal-requests")
                       ? "bg-gray-100 text-gray-900"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }`}
+                  }`}
                   aria-current={
                     isActive("withdrawal-requests") ? "page" : undefined
                   }
@@ -197,11 +212,13 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                 <Link
                   href="/cms/dashboard/users"
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center ${collapsed ? "justify-center" : "justify-start"
-                    } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${pathname.startsWith("/cms/dashboard/users")
+                  className={`flex items-center ${
+                    collapsed ? "justify-center" : "justify-start"
+                  } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    pathname.startsWith("/cms/dashboard/users")
                       ? "bg-gray-100 text-gray-900"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }`}
+                  }`}
                   aria-current={
                     pathname.startsWith("/cms/dashboard/users")
                       ? "page"
@@ -219,11 +236,13 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                 <Link
                   href="/cms/dashboard/league"
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center ${collapsed ? "justify-center" : "justify-start"
-                    } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${pathname.startsWith("/cms/dashboard/league")
+                  className={`flex items-center ${
+                    collapsed ? "justify-center" : "justify-start"
+                  } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    pathname.startsWith("/cms/dashboard/league")
                       ? "bg-gray-100 text-gray-900"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }`}
+                  }`}
                   aria-current={
                     pathname.startsWith("/cms/dashboard/league")
                       ? "page"
@@ -251,11 +270,13 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                         <Link
                           href={item.href}
                           onClick={() => setMobileMenuOpen(false)}
-                          className={`flex items-center ${collapsed ? "justify-center" : "justify-start"
-                            } gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${active
+                          className={`flex items-center ${
+                            collapsed ? "justify-center" : "justify-start"
+                          } gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
+                            active
                               ? "bg-gray-100 text-gray-900"
                               : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                            }`}
+                          }`}
                           aria-current={active ? "page" : undefined}
                           title={item.label}
                         >
@@ -281,11 +302,13 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                         <Link
                           href={item.href}
                           onClick={() => setMobileMenuOpen(false)}
-                          className={`flex items-center ${collapsed ? "justify-center" : "justify-start"
-                            } gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${active
+                          className={`flex items-center ${
+                            collapsed ? "justify-center" : "justify-start"
+                          } gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
+                            active
                               ? "bg-gray-100 text-gray-900"
                               : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                            }`}
+                          }`}
                           aria-current={active ? "page" : undefined}
                           title={item.label}
                         >
@@ -301,7 +324,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
               <li className="mt-1 md:mt-3">
                 {!collapsed && (
                   <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Tasks
+                    Content
                   </div>
                 )}
                 <ul className={`${collapsed ? "ml-0" : "ml-2"} space-y-1`}>
@@ -309,16 +332,68 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                     <Link
                       href="/cms/dashboard/tasks"
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center ${collapsed ? "justify-center" : "justify-start"
-                        } gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${pathname.startsWith("/cms/dashboard/tasks")
+                      className={`flex items-center ${
+                        collapsed ? "justify-center" : "justify-start"
+                      } gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
+                        pathname.startsWith("/cms/dashboard/tasks")
                           ? "bg-gray-100 text-gray-900"
                           : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                        }`}
-                      aria-current={pathname.startsWith("/cms/dashboard/tasks") ? "page" : undefined}
+                      }`}
+                      aria-current={
+                        pathname.startsWith("/cms/dashboard/tasks")
+                          ? "page"
+                          : undefined
+                      }
                       title="Tasks"
                     >
                       <span aria-hidden>✅</span>
                       {!collapsed && <span>Tasks</span>}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/cms/dashboard/blog"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center ${
+                        collapsed ? "justify-center" : "justify-start"
+                      } gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
+                        pathname.startsWith("/cms/dashboard/blog") &&
+                        !pathname.startsWith("/cms/dashboard/blog/keywords")
+                          ? "bg-gray-100 text-gray-900"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      }`}
+                      aria-current={
+                        pathname.startsWith("/cms/dashboard/blog") &&
+                        !pathname.startsWith("/cms/dashboard/blog/keywords")
+                          ? "page"
+                          : undefined
+                      }
+                      title="Blog"
+                    >
+                      <span aria-hidden>📝</span>
+                      {!collapsed && <span>Blog</span>}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/cms/dashboard/blog/keywords"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center ${
+                        collapsed ? "justify-center" : "justify-start"
+                      } gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
+                        pathname.startsWith("/cms/dashboard/blog/keywords")
+                          ? "bg-gray-100 text-gray-900"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      }`}
+                      aria-current={
+                        pathname.startsWith("/cms/dashboard/blog/keywords")
+                          ? "page"
+                          : undefined
+                      }
+                      title="Blog keywords"
+                    >
+                      <span aria-hidden>🏷️</span>
+                      {!collapsed && <span>Blog keywords</span>}
                     </Link>
                   </li>
                 </ul>
@@ -329,11 +404,13 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                 <Link
                   href={hrefFor("settings")}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center ${collapsed ? "justify-center" : "justify-start"
-                    } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive("settings")
+                  className={`flex items-center ${
+                    collapsed ? "justify-center" : "justify-start"
+                  } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive("settings")
                       ? "bg-gray-100 text-gray-900"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }`}
+                  }`}
                   aria-current={isActive("settings") ? "page" : undefined}
                   title="Settings"
                 >

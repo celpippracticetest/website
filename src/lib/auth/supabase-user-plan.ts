@@ -19,6 +19,12 @@ export function readLegacyImportedExternalUserId(
   );
 }
 
+export function normalizePracticePlan(raw: unknown): string {
+  if (typeof raw !== "string") return "free";
+  const trimmed = raw.trim();
+  return trimmed.length > 0 ? trimmed : "free";
+}
+
 /** Middleware-safe plan hints (mirrors `mobileUserBridgeFromSupabaseUser` publicMetadata). */
 export function readPracticePlanFromSupabaseUser(user: SupabaseAuthUser): {
   plan?: string;
@@ -26,7 +32,7 @@ export function readPracticePlanFromSupabaseUser(user: SupabaseAuthUser): {
 } {
   const app = (user.app_metadata ?? {}) as Record<string, unknown>;
   const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
-  const plan = (app.plan ?? meta.plan ?? "free") as string | undefined;
+  const plan = normalizePracticePlan(app.plan ?? meta.plan ?? "free");
   const purchaseDate = (app.purchaseDate ?? meta.purchaseDate) as string | undefined;
   return { plan, purchaseDate };
 }

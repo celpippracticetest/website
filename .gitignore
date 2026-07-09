@@ -30,6 +30,7 @@
 # misc
 .DS_Store
 *.pem
+/exports/stripe/
 
 # debug
 npm-debug.log*

@@ -7,6 +7,7 @@ import { useRouter } from "nextjs-toploader/app";
 import { useEffect, useRef, useState } from "react";
 import LoginModal from "../modal/LoginModal";
 import UpgradeModal from "../modal/UpgradeModal";
+import { hasMockExamAccess } from "@/lib/subscriptionAccess";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,8 +20,17 @@ import Link from "next/link";
 const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
   const router = useRouter();
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
-  const freeUser = user?.publicMetadata.plan == "free";
+  const plan = user?.publicMetadata?.plan as string | undefined;
   const noUser = isLoaded ? !isSignedIn : false;
+
+  const canAccessExam = (examId: string) =>
+    hasMockExamAccess(
+      plan,
+      user?.publicMetadata?.purchaseDate,
+      examId,
+      null,
+      user?.publicMetadata?.purchasedMockExamIds,
+    );
   const [showLoginModal, setShowLoginModal] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -38,23 +48,29 @@ const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [freeUser, noUser]);
+  }, [noUser]);
 
   const handleStart = (
     exam: TExamSchemaDto,
     partId: number = 1,
-    section?: string
+    section?: string,
   ) => {
-    if (freeUser) {
-      setShowUpgradeModal(true);
+    if (!isLoaded) {
       return;
-    } else if (noUser) {
+    }
+    if (noUser) {
       setShowLoginModal(true);
+      return;
+    }
+    if (!canAccessExam(exam.id)) {
+      setShowUpgradeModal(true);
       return;
     }
     setSelectedExam(exam.name);
     const attemptId = `att_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    const query = section ? `?section=${section}&attemptId=${attemptId}` : `?attemptId=${attemptId}`;
+    const query = section
+      ? `?section=${section}&attemptId=${attemptId}`
+      : `?attemptId=${attemptId}`;
     router.push(`/exams/exam_${exam.id}/part${partId}${query}`);
   };
 
@@ -62,8 +78,8 @@ const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
     <main
       className={`w-full pt-[24px] mx-auto max-w-[1280px] px-[16px] screen744:!px-0`}
     >
-      {freeUser ? (
-        showUpgradeModal && <UpgradeModal setShowModal={setShowUpgradeModal} />
+      {showUpgradeModal ? (
+        <UpgradeModal setShowModal={setShowUpgradeModal} />
       ) : noUser ? (
         showLoginModal && <LoginModal setShowLoginModal={setShowLoginModal} />
       ) : (
@@ -88,7 +104,10 @@ const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
                           Start <ChevronDown className="h-4 w-4 ml-1" />
                         </div>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="center" className="w-48 bg-white">
+                      <DropdownMenuContent
+                        align="center"
+                        className="w-48 bg-white"
+                      >
                         <DropdownMenuItem
                           onClick={() => handleStart(exam, 1)}
                           className="cursor-pointer"
