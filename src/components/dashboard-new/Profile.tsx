@@ -168,23 +168,45 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
       subscriptionData.status === "incomplete_expired");
 
   /** Cancel-at-period-end or ended in Stripe (plan name and dates from subscriptionData). */
-  const stripeCancellationOrEnded =
+  const metadataPlanCancelled = Boolean(user?.publicMetadata?.planCancelled);
+
+  const isGooglePlaySubscriber = (() => {
+    const source = String(user?.publicMetadata?.planSource ?? "")
+      .trim()
+      .toLowerCase();
+    return source === "google_play" || source === "google_play_rtdn";
+  })();
+
+  const isBillableStripeSubscription =
     Boolean(subscriptionData) &&
     !subscriptionData?.isOneTimePayment &&
-    (Boolean(subscriptionData?.cancelAtPeriodEnd) ||
-      Boolean(stripeSubscriptionTerminated));
+    ["active", "trialing", "past_due", "unpaid"].includes(
+      subscriptionData?.status ?? "",
+    );
 
-  /** Resubscribe + end date: Stripe cancellation state, or Clerk when Stripe payload is missing. */
-  const showCancellationActions =
-    Boolean(user?.publicMetadata?.planCancelled) || stripeCancellationOrEnded;
+  /** Undo cancel-at-period-end via Stripe API (active sub still on file). */
+  const canResubscribeViaApi =
+    isBillableStripeSubscription &&
+    !isGooglePlaySubscriber &&
+    (Boolean(subscriptionData?.cancelAtPeriodEnd) || metadataPlanCancelled);
+
+  /** Ended in Stripe — user needs a new checkout, not API reactivation. */
+  const needsNewSubscription =
+    Boolean(stripeSubscriptionTerminated) ||
+    (metadataPlanCancelled &&
+      !isBillableStripeSubscription &&
+      !isGooglePlaySubscriber);
 
   const endDateLabel =
     stripeSubscriptionTerminated && subscriptionData?.currentPeriodEnd
       ? "Ended on"
       : "Ends on";
-  const metadataPlanCancelled = Boolean(user?.publicMetadata?.planCancelled);
-  const metadataPlanRenewsAtMs = parseDateLikeToMs(user?.publicMetadata?.planRenewsAt);
-  const metadataPlanExpiresAtMs = parseDateLikeToMs(user?.publicMetadata?.planExpiresAt);
+  const metadataPlanRenewsAtMs = parseDateLikeToMs(
+    user?.publicMetadata?.planRenewsAt,
+  );
+  const metadataPlanExpiresAtMs = parseDateLikeToMs(
+    user?.publicMetadata?.planExpiresAt,
+  );
   const stripeCurrentPeriodEndMs = subscriptionData?.currentPeriodEnd
     ? subscriptionData.currentPeriodEnd * 1000
     : null;
@@ -926,7 +948,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
             <div>
               {(hasPaidPracticeAccess(userPlan, userPurchaseDate) || subscriptionData) ? (
                 <div className="flex gap-[8px] screen744:!gap-[16px] items-center flex-row-reverse justify-start flex-wrap">
-                  {showCancellationActions ? (
+                  {canResubscribeViaApi ? (
                     <div className="flex flex-col items-end gap-1">
                       <button
                         onClick={handleResubscribe}
@@ -942,6 +964,17 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
                         </span>
                       )}
                     </div>
+                  ) : needsNewSubscription ? (
+                    <Link
+                      href="/pricing"
+                      className="flex items-center justify-center bg-[#4A7DFF] text-white rounded-[24px] font-normal text-[14px] min-w-[140px] px-4 h-[40px] cursor-pointer hover:bg-[#3d6fe6] transition-colors"
+                    >
+                      Resubscribe
+                    </Link>
+                  ) : metadataPlanCancelled && isGooglePlaySubscriber ? (
+                    <span className="text-[12px] text-[#76808F] text-right max-w-[200px]">
+                      Resubscribe from Google Play subscription settings.
+                    </span>
                   ) : (
                     <button
                       onClick={handleManageSubscription}

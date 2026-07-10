@@ -1,16 +1,65 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, appUserAdmin } from "@/lib/auth/server-auth";
+import type Stripe from "stripe";
+import { appUserAdmin } from "@/lib/auth/server-auth";
+import { requireAuthenticatedRequest } from "@/lib/auth/request-auth";
 import {
   emailsFromAuthUser,
   resolveStripeCustomerId,
 } from "@/lib/resolveStripeCustomerId";
 import { stripe } from "@/lib/stripe";
 
-export async function POST(req: NextRequest) {
-  const { userId } = await auth();
+const BILLABLE_STATUSES = [
+  "active",
+  "trialing",
+  "past_due",
+  "unpaid",
+] as const;
 
-  if (!userId) {
+function isGooglePlaySubscriber(publicMetadata: Record<string, unknown>): boolean {
+  const source = String(publicMetadata.planSource ?? "").trim().toLowerCase();
+  return source === "google_play" || source === "google_play_rtdn";
+}
+
+function subscriptionCurrentPeriodEndUnix(sub: Stripe.Subscription): number | null {
+  const end = sub.items?.data?.[0]?.current_period_end;
+  return end != null ? end : null;
+}
+
+async function findBillableSubscription(
+  customerId: string
+): Promise<Stripe.Subscription | null> {
+  for (const status of BILLABLE_STATUSES) {
+    const { data } = await stripe.subscriptions.list({
+      customer: customerId,
+      status,
+      limit: 1,
+    });
+    if (data[0]) {
+      return data[0];
+    }
+  }
+  return null;
+}
+
+export async function POST(req: NextRequest) {
+  let ctx;
+  try {
+    ctx = await requireAuthenticatedRequest(req);
+  } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { userId } = ctx;
+  const publicMetadata = ctx.user.publicMetadata ?? {};
+
+  if (isGooglePlaySubscriber(publicMetadata)) {
+    return NextResponse.json(
+      {
+        error:
+          "This subscription is managed through Google Play. Resubscribe from your Google Play subscription settings.",
+      },
+      { status: 422 }
+    );
   }
 
   try {
@@ -31,49 +80,51 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get active subscriptions that might be set to cancel
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "active",
-      limit: 1,
-    });
+    const subscription = await findBillableSubscription(customerId);
 
-    if (subscriptions.data.length === 0) {
-      // 422: business rule (avoid 404 so DevTools does not look like a missing route)
+    if (!subscription) {
       return NextResponse.json(
-        { error: "No active subscriptions found" },
+        {
+          error:
+            "No active subscription found to reactivate. Choose a plan to start a new subscription.",
+        },
         { status: 422 }
       );
     }
 
-    const subscription = subscriptions.data[0];
+    const updateParams: Stripe.SubscriptionUpdateParams = {
+      cancel_at_period_end: false,
+    };
+    if (subscription.pause_collection) {
+      updateParams.pause_collection = "";
+    }
 
-    // Update subscription to NOT cancel at period end and clear any pause collection
     const updatedSubscription = await stripe.subscriptions.update(
       subscription.id,
-      {
-        cancel_at_period_end: false,
-        pause_collection: "", // Passing empty string to unset/clear the pause_collection
-      }
+      updateParams
     );
 
-    // Update auth directory metadata
+    const periodEnd = subscriptionCurrentPeriodEndUnix(updatedSubscription);
+
     await authAdmin.users.updateUserMetadata(userId, {
       publicMetadata: {
         planCancelled: false,
+        planExpiresAt: null,
+        planRenewsAt: periodEnd
+          ? new Date(periodEnd * 1000).toISOString()
+          : null,
+        subscriptionCancelledAt: null,
       },
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      subscription: updatedSubscription 
+    return NextResponse.json({
+      success: true,
+      subscription: updatedSubscription,
     });
-    
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error reactivating subscription:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to reactivate subscription" },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to reactivate subscription";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
