@@ -358,6 +358,9 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
       text: answerBody.text,
       userId: user?.id,
       practiceId: answerBody.practiceId,
+      attemptId:
+        answerBody.attemptId ??
+        `practice_${answerBody.practiceId}_${Date.now()}`,
       overalScore:
         msg &&
         msg.content.length > 1 &&

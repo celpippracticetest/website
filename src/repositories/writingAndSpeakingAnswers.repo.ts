@@ -10,6 +10,7 @@ import { shouldPersistAnswersInSupabase } from "@/lib/auth/should-use-supabase-p
 import {
   normalizeExamIdForStorage,
   supabaseCreateOrUpdateWritingAnswer,
+  supabaseInsertWritingAnswer,
   supabaseDeleteWritingAnswer,
   supabaseFindPracticeIdsWithWritingAnswers,
   supabaseFindWritingAnswerById,
@@ -39,6 +40,22 @@ function mergeWritingPreferSupabase(
   const m = new Map<string, TWritingAnswerDto>();
   for (const x of legacy) m.set(writingDedupeKey(x), x);
   for (const x of fromSb) m.set(writingDedupeKey(x), x);
+  return [...m.values()].sort((a, b) => writingDtoTimeMs(b) - writingDtoTimeMs(a));
+}
+
+/** Keeps every submission row when listing practice attempt history. */
+function mergeWritingAnswersById(
+  legacy: TWritingAnswerDto[],
+  fromSb: TWritingAnswerDto[]
+): TWritingAnswerDto[] {
+  const m = new Map<string, TWritingAnswerDto>();
+  for (const x of legacy) m.set(x.id, x);
+  for (const x of fromSb) {
+    const existing = m.get(x.id);
+    if (!existing || writingDtoTimeMs(x) >= writingDtoTimeMs(existing)) {
+      m.set(x.id, x);
+    }
+  }
   return [...m.values()].sort((a, b) => writingDtoTimeMs(b) - writingDtoTimeMs(a));
 }
 function examIdAsObjectId(raw: unknown): ObjectId | null {
@@ -109,7 +126,7 @@ export class WritingAndSpeakingAnswerRepository {
   }
   async createAnswer(dto: Omit<TWritingAnswerDto, "id">): Promise<TWritingAnswerDto> {
     if (shouldPersistAnswersInSupabase()) {
-      return supabaseCreateOrUpdateWritingAnswer(dto);
+      return supabaseInsertWritingAnswer(dto);
     }
     const answer = WritingAnswerSchema.parse({
       ...dto,
@@ -200,8 +217,8 @@ export class WritingAndSpeakingAnswerRepository {
           page,
           limit
         );
-        const merged = mergeWritingPreferSupabase(legacyItems, sb.items);
-        const totalMerged = merged.length;
+        const merged = mergeWritingAnswersById(legacyItems, sb.items);
+        const totalMerged = Math.max(totalItems, sb.totalItems, merged.length);
         const slice = merged.slice(skip, skip + limit);
         const totalPages = limit > 0 ? Math.ceil(totalMerged / limit) : 0;
         return {

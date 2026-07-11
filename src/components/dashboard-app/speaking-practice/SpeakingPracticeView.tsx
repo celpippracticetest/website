@@ -26,6 +26,19 @@ import StatBadge from "@/components/shared/StatBadge";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import Link from "next/link";
+import { formatSubmissionRelativeTime } from "@/lib/formatSubmissionRelativeTime";
+
+function upsertPracticeAnswer(
+  items: TWritingAnswerDto[],
+  fresh: TWritingAnswerDto,
+) {
+  const without = items.filter((item) => item.id !== fresh.id);
+  return [fresh, ...without].sort(
+    (a, b) =>
+      new Date(b.updatedAt ?? b.createdAt ?? 0).getTime() -
+      new Date(a.updatedAt ?? a.createdAt ?? 0).getTime(),
+  );
+}
 
 interface SpeakingPracticeViewProps {
   practice: TPracticeDto;
@@ -340,6 +353,8 @@ const SpeakingPracticeView = ({
               `${Math.floor(recordingTime / 60)}:${recordingTime % 60}`,
             );
 
+            setAnswers((prev) => upsertPracticeAnswer(prev, data));
+            await fetchUsersAnswer();
             setIsSubmit(false);
             onAnswerButtonClick(practice, data);
           })
@@ -830,7 +845,7 @@ const SpeakingPracticeView = ({
                         </h3>
                         {answers.map((answer: TWritingAnswerDto, index) => (
                           <div
-                            key={index}
+                            key={answer.id ?? index}
                             className="flex px-3 py-1 justify-between border flex-shrink-0 flex-grow-0 bg-white shadow-sm cursor-pointer items-center transition-all hover:shadow-md rounded-xl h-14"
                             onClick={() => {
                               onAnswerButtonClick(practice, answer);
@@ -838,37 +853,7 @@ const SpeakingPracticeView = ({
                           >
                             <p className="text-xs text-slate-800 font-medium text-center">
                               {index + 1}.{" "}
-                              {(() => {
-                                const now = new Date();
-                                const createdAt = new Date(answer.createdAt);
-                                const diffInMs =
-                                  now.getTime() - createdAt.getTime();
-                                const diffInMinutes = Math.floor(
-                                  diffInMs / (1000 * 60),
-                                );
-                                const diffInHours = Math.floor(
-                                  diffInMs / (1000 * 60 * 60),
-                                );
-                                const diffInDays = Math.floor(
-                                  diffInMs / (1000 * 60 * 60 * 24),
-                                );
-
-                                if (diffInMinutes < 60) {
-                                  return `${diffInMinutes} minutes ago`;
-                                } else if (diffInHours < 24) {
-                                  return `${diffInHours} hours ago`;
-                                } else if (diffInDays < 365) {
-                                  return createdAt.toLocaleDateString("en-US", {
-                                    month: "short",
-                                    day: "2-digit",
-                                  });
-                                } else {
-                                  return createdAt.toLocaleDateString("en-US", {
-                                    year: "2-digit",
-                                    month: "short",
-                                  });
-                                }
-                              })()}
+                              {formatSubmissionRelativeTime(answer)}
                             </p>
                             <div
                               className="relative"

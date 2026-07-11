@@ -19,6 +19,7 @@ import LoginModal from "@/components/modal/LoginModal";
 import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import Link from "next/link";
+import ChatbotMessageContent from "@/components/chatbot/ChatbotMessageContent";
 
 type Skill = {
   label: string;
@@ -526,9 +527,10 @@ const Page = () => {
                               : "bg-gray-100 text-gray-900"
                           }`}
                         >
-                          <p className="text-sm whitespace-pre-wrap">
-                            {message.content}
-                          </p>
+                          <ChatbotMessageContent
+                            content={message.content}
+                            variant={message.type}
+                          />
                           <p className="text-xs opacity-70 mt-1">
                             {message.timestamp.toLocaleTimeString([], {
                               hour: "2-digit",

@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { SvgMic } from "@/components/icons";
 import SvgLearningArrowUp from "../icons/LearningArrowUp";
 import SvgSvgBeforeTypingWord from "../icons/SvgBeforeTypingWord";
+import ChatbotMessageContent from "./ChatbotMessageContent";
 
 interface Message {
   id: string;
@@ -201,7 +202,10 @@ const ChatbotInterface: React.FC<ChatbotInterfaceProps> = ({
                   : "bg-gray-100 text-gray-900"
               }`}
             >
-              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+              <ChatbotMessageContent
+                content={message.content}
+                variant={message.type}
+              />
               <p className="text-xs opacity-70 mt-1">
                 {message.timestamp.toLocaleTimeString([], {
                   hour: "2-digit",

@@ -519,10 +519,11 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
       console.log("Successfully extracted complete data from content");
       
       const answerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
-      const answer = await answerRepo.createOrUpdateAnswer({
+      const answer = await answerRepo.createAnswer({
         audioUrl: location,
         userId: user.id,
         practiceId,
+        attemptId: `practice_${practiceId}_${Date.now()}`,
         overalScore: parsedResult.overall,
         type: "SPEAKING",
         result: parsedResult,
@@ -576,10 +577,11 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
     const stored = toStoredEvaluation(evaluation);
 
     const answerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
-    const answer = await answerRepo.createOrUpdateAnswer({
+    const answer = await answerRepo.createAnswer({
       audioUrl: location,
       userId: user.id,
       practiceId,
+      attemptId: `practice_${practiceId}_${Date.now()}`,
       overalScore: stored.overall,
       type: "SPEAKING",
       result: stored,

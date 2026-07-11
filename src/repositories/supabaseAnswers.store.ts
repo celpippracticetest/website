@@ -593,6 +593,45 @@ export async function supabaseFindWritingAnswerById(id: string): Promise<TWritin
   }
 }
 
+/** Always inserts a new row (used for practice submission history). */
+export async function supabaseInsertWritingAnswer(
+  dto: Omit<TWritingAnswerDto, "id">
+): Promise<TWritingAnswerDto> {
+  const admin = getSupabaseAdmin();
+  if (!admin) throw new Error("Supabase admin client is not configured.");
+
+  const examId = normalizeExamIdForStorage(dto.examId);
+  const attemptKey = attemptKeyFromDto(dto.attemptId);
+  const typeUpper = String(dto.type ?? "WRITING").toUpperCase();
+  const now = new Date().toISOString();
+
+  const { data, error } = await admin
+    .from("answers")
+    .insert({
+      user_id: dto.userId,
+      practice_id: dto.practiceId ?? null,
+      exam_id: examId ?? null,
+      part_id: dto.partId ?? null,
+      attempt_id: dto.attemptId ?? null,
+      attempt_key: attemptKey,
+      type: typeUpper === "SPEAKING" ? "SPEAKING" : "WRITING",
+      answers: {} as Record<string, string>,
+      text: dto.text ?? null,
+      audio_url: dto.audioUrl ?? null,
+      overall_score: dto.overalScore ?? null,
+      result: dto.result ?? null,
+      created_at: (dto.createdAt ?? new Date()).toISOString(),
+      updated_at: now,
+    })
+    .select("*")
+    .single();
+
+  if (error || !data) {
+    throw new Error(error?.message ?? "Failed to insert writing answers row.");
+  }
+  return writingDtoFromAnswerRow(data as AnswerRow);
+}
+
 export async function supabaseCreateOrUpdateWritingAnswer(
   dto: Omit<TWritingAnswerDto, "id">
 ): Promise<TWritingAnswerDto> {
