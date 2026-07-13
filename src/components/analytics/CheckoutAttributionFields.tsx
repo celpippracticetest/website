@@ -8,8 +8,9 @@ import {
   persistPendingGa4Ids,
   resolveGa4BrowserIds,
 } from "@/lib/ga4BrowserIds";
+import { GA4_MEASUREMENT_ID } from "@/lib/ga4-constants";
 
-const MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
+const MEASUREMENT_ID = GA4_MEASUREMENT_ID;
 
 const STORAGE_KEY_BY_FIELD = {
   gclid: "pending_gclid",

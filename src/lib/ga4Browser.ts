@@ -1,4 +1,6 @@
 /** Send GA4 events directly via gtag (no GTM). */
+import { GA4_MEASUREMENT_ID } from "@/lib/ga4-constants";
+
 const DEBUG = process.env.NODE_ENV === "development";
 
 const GA4_EVENTS_BLOCKED = new Set(["consent_update", "default_consent"]);
@@ -18,7 +20,7 @@ type Ga4ItemParam = Record<string, Ga4Primitive>;
 type Ga4ParamValue = Ga4Primitive | Ga4ItemParam[];
 
 function getMeasurementId(): string | null {
-  return process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() || null;
+  return GA4_MEASUREMENT_ID;
 }
 
 function getGtag(): ((...args: unknown[]) => void) | null {

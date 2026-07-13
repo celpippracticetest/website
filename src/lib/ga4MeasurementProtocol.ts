@@ -1,3 +1,5 @@
+import { GA4_MEASUREMENT_ID } from "@/lib/ga4-constants";
+
 type Ga4Primitive = string | number | boolean;
 
 /** GA4 ecommerce line item (Measurement Protocol). */
@@ -17,8 +19,9 @@ type SendGa4EventsInput = {
 };
 
 function getGa4Config(): { measurementId: string; apiSecret: string } | null {
-  // Canonical server-side GA4 configuration.
-  const measurementId = process.env.GA_MEASUREMENT_ID?.trim();
+  // Canonical server-side GA4 configuration. Measurement ID is hardcoded (public);
+  // the API secret must stay in env since it is a credential.
+  const measurementId = GA4_MEASUREMENT_ID;
   const apiSecret = process.env.GA_API_SECRET?.trim();
   if (!measurementId || !apiSecret) return null;
   return { measurementId, apiSecret };

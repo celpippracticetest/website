@@ -285,11 +285,9 @@ export default async function middleware(req: NextRequest) {
 
   if (webStableId && !sessionClaims?.metadata.roles) {
     const client = await appUserAdmin();
-    const existingPlan = (sessionClaims?.metadata as any)?.plan;
     await client.users.updateUserMetadata(webStableId, {
       publicMetadata: {
         roles: ["user"],
-        plan: existingPlan || "free",
       },
     });
   }

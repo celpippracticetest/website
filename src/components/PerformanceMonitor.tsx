@@ -8,14 +8,13 @@ export default function PerformanceMonitor() {
 
     (async () => {
       try {
-        const { getCLS, getFID, getFCP, getLCP, getTTFB } = await import(
-          "web-vitals"
-        );
-        getCLS(console.log);
-        getFID(console.log);
-        getFCP(console.log);
-        getLCP(console.log);
-        getTTFB(console.log);
+        const { onCLS, onINP, onFCP, onLCP, onTTFB } =
+          await import("web-vitals");
+        onCLS(console.log);
+        onINP(console.log);
+        onFCP(console.log);
+        onLCP(console.log);
+        onTTFB(console.log);
       } catch (e) {
         console.error("web-vitals load failed:", e);
       }
@@ -33,7 +32,7 @@ export default function PerformanceMonitor() {
             const duration = entry.duration;
             if (duration > 100) {
               console.warn(
-                `Slow JS execution: ${entry.name} took ${duration.toFixed(1)}ms`
+                `Slow JS execution: ${entry.name} took ${duration.toFixed(1)}ms`,
               );
             }
           }

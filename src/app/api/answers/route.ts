@@ -114,7 +114,7 @@ export async function GET(req: NextRequest) {
     );
 
     if (!answer) {
-      return NextResponse.json({ message: "Answer not found" }, { status: 404 });
+      return NextResponse.json({ answers: null });
     }
 
     return NextResponse.json({ answers: answer.answers });
