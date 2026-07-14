@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   LearningGuide,
   LearningListening,
@@ -199,22 +205,56 @@ const Page = () => {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const openPopover = (index: number) => {
+  const popoverRef = useRef<HTMLDivElement | null>(null);
+  const BOTTOM_SAFE = 96; // bottom nav clearance
+  const VIEWPORT_PAD = 8;
+
+  const placePopover = useCallback((index: number, measuredHeight?: number) => {
     const btn = btnRefs.current[index];
     if (!btn) return;
     const rect = btn.getBoundingClientRect();
     const GAP = 8;
-    const PANEL_W = 320;
+    const PANEL_W = window.innerWidth >= 744 ? 412 : 328;
+    const panelH = measuredHeight ?? 320;
     const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const maxBottom = vh - BOTTOM_SAFE;
 
-    const left = Math.max(8, Math.min(rect.left, vw - PANEL_W - 8));
-    const top = rect.bottom + GAP;
+    const left = Math.max(
+      VIEWPORT_PAD,
+      Math.min(rect.left, vw - PANEL_W - VIEWPORT_PAD),
+    );
+
+    const belowTop = rect.bottom + GAP;
+    const aboveTop = rect.top - GAP - panelH;
+    const fitsBelow = belowTop + panelH <= maxBottom;
+    const fitsAbove = aboveTop >= VIEWPORT_PAD;
+
+    let top: number;
+    if (fitsBelow) {
+      top = belowTop;
+    } else if (fitsAbove) {
+      top = aboveTop;
+    } else if (rect.top > vh - rect.bottom) {
+      // Prefer above when more room there; clamp into viewport
+      top = Math.max(VIEWPORT_PAD, maxBottom - panelH);
+    } else {
+      top = Math.min(belowTop, Math.max(VIEWPORT_PAD, maxBottom - panelH));
+    }
 
     setPos({ top, left });
+  }, []);
+
+  const openPopover = (index: number) => {
+    placePopover(index);
     setOpenIndex(index);
   };
 
-  const popoverRef = useRef<HTMLDivElement | null>(null);
+  useLayoutEffect(() => {
+    if (openIndex === null || !popoverRef.current) return;
+    placePopover(openIndex, popoverRef.current.offsetHeight);
+  }, [openIndex, placePopover]);
+
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
       if (!popoverRef.current) return;
@@ -782,24 +822,24 @@ const Page = () => {
           <div
             ref={popoverRef}
             style={{ top: pos.top, left: pos.left, position: "fixed" as const }}
-            className="z-[1000] h-[268px] max-w-[328px] screen744:!max-w-[412px]"
+            className="z-[1000] max-h-[min(360px,calc(100vh-112px))] max-w-[328px] overflow-y-auto screen744:!max-w-[412px]"
             role="dialog"
             aria-label={`${skills[openIndex].label} options`}
           >
-            <div className="bg-white rounded-[16px] p-4">
+            <div className="bg-white rounded-[16px] p-4 shadow-[0px_8px_24px_rgba(55,70,92,0.12)]">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-[12px] font-medium text-[#111827]">
                   {skills[openIndex].popoverLabel}
                 </h3>
               </div>
 
-              <div className="mt-[20px]">
+              <div className="mt-[20px] flex flex-col gap-[12px]">
                 {skills[openIndex]?.description?.map((d, i) => (
                   <button
                     key={i}
                     type="button"
                     onClick={() => handleDescriptionClick(d)}
-                    className="mb-[12px] cursor-pointer font-medium text-left text-[12px] screen744:!text-[14px] text-[#316BFF] bg-[#F2F6FF] rounded-[24px] p-[10px] transition-colors"
+                    className="cursor-pointer font-medium text-left text-[12px] screen744:!text-[14px] text-[#316BFF] bg-[#F2F6FF] rounded-[24px] p-[10px] transition-colors"
                   >
                     {d}
                   </button>
