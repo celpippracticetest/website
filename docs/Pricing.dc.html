@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+body { margin:0; background:#eef2f8; font-family:'Plus Jakarta Sans',sans-serif; -webkit-font-smoothing:antialiased; }
+a { color:#4d7ef7; text-decoration:none; } a:hover { color:#3563d9; }
+</style>
+</helmet>
+<div style="min-height:100vh; padding:56px 24px 72px; display:flex; flex-direction:column; align-items:center; box-sizing:border-box;">
+  <div style="max-width:1060px; width:100%; display:flex; flex-direction:column; align-items:center;">
+    <h1 style="margin:0; font-size:34px; font-weight:700; color:#1a2233; letter-spacing:-0.02em; display:flex; align-items:center; gap:12px;"><span style="font-size:24px; color:#4d7ef7;">➤</span>Pick the Plan That Fits You</h1>
+    <div style="display:flex; align-items:center; gap:10px; margin-top:14px;">
+      <div style="display:flex;">
+        <div style="width:26px; height:26px; border-radius:50%; background:#c9b8a8; border:2px solid #eef2f8;"></div>
+        <div style="width:26px; height:26px; border-radius:50%; background:#8fa3b8; border:2px solid #eef2f8; margin-left:-8px;"></div>
+        <div style="width:26px; height:26px; border-radius:50%; background:#b89a8f; border:2px solid #eef2f8; margin-left:-8px;"></div>
+      </div>
+      <span style="font-size:13px; color:#5b6575; font-weight:500;">Trusted by <strong style="color:#1a2233;">70k+</strong> test-takers</span>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:26px;">
+      <div style="display:flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #e4e9f2; border-radius:999px; padding:8px 16px; font-size:13px; font-weight:600; color:#3a4356;"><span style="color:#f07b4d;">▤</span>60 mock exams</div>
+      <div style="display:flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #e4e9f2; border-radius:999px; padding:8px 16px; font-size:13px; font-weight:600; color:#3a4356;"><span style="color:#f07b4d;">❋</span>Guide &amp; Tips</div>
+      <div style="display:flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #e4e9f2; border-radius:999px; padding:8px 16px; font-size:13px; font-weight:600; color:#3a4356;"><span style="color:#f07b4d;">≣</span>3,000+ sample tests</div>
+      <div style="display:flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #e4e9f2; border-radius:999px; padding:8px 16px; font-size:13px; font-weight:600; color:#3a4356;"><span style="color:#f07b4d;">✦</span>Instant AI Feedback</div>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; justify-content:center; align-items:stretch; gap:20px; margin-top:40px; width:100%;">
+      <sc-for list="{{ plans }}" as="plan" hint-placeholder-count="3">
+        <div style="flex:1; min-width:230px; max-width:340px; background:#ffffff; border-radius:20px; padding:26px; box-sizing:border-box; display:flex; flex-direction:column; position:relative; border:{{ plan.borderCss }}; box-shadow:{{ plan.shadow }};">
+          <sc-if value="{{ plan.featured }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute; top:-13px; left:50%; transform:translateX(-50%); background:#4d7ef7; color:#ffffff; font-size:12px; font-weight:700; letter-spacing:0.04em; padding:5px 16px; border-radius:999px; white-space:nowrap;">{{ plan.badge }}</div>
+          </sc-if>
+          <div style="margin:-26px -26px 0; padding:16px 26px; border-radius:18px 18px 0 0; background:{{ plan.tint }}; display:flex; align-items:center; gap:8px;">
+            <span style="font-size:17px; font-weight:700; color:{{ plan.tintText }};">{{ plan.name }}</span>
+            <sc-if value="{{ plan.save }}" hint-placeholder-val="{{ false }}">
+              <span style="background:#e9f9ef; color:#2e9e5b; font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px;">{{ plan.save }}</span>
+            </sc-if>
+          </div>
+          <div style="margin-top:20px; display:flex; align-items:baseline; gap:6px;">
+            <span style="font-size:34px; font-weight:800; color:#111827; letter-spacing:-0.02em;">{{ plan.price }}</span>
+            <span style="font-size:14px; font-weight:500; color:#98a2b3;">{{ plan.period }}</span>
+          </div>
+          <div style="margin-top:2px; font-size:12px; color:#98a2b3; min-height:16px;">{{ plan.equiv }}</div>
+          <button onClick="{{ plan.onSelect }}" style="margin-top:18px; width:100%; border:none; cursor:pointer; border-radius:999px; padding:13px 0; font-family:'Plus Jakarta Sans',sans-serif; font-size:14px; font-weight:600; color:#ffffff; background:{{ plan.btnBg }}; box-shadow:0 6px 14px rgba(77,126,247,0.28); transition:transform 0.15s ease;" style-hover="transform:translateY(-1px); background:#3d6fe8;">Get Premium</button>
+          <div style="margin-top:22px; display:flex; flex-direction:column; gap:12px;">
+            <sc-for list="{{ plan.features }}" as="f" hint-placeholder-count="4">
+              <div style="display:flex; align-items:flex-start; gap:10px; font-size:13px; color:#3a4356; line-height:1.4;"><span style="color:#2e9e5b; font-weight:700; font-size:12px; margin-top:1px;">✓</span>{{ f }}</div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="margin-top:28px; font-size:13px; color:#5b6575; display:flex; align-items:center; gap:8px;"><span style="color:#2e9e5b; font-weight:700;">✓</span>48-hour money-back guarantee · Cancel anytime</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;featuredPlan&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;Monthly&quot;,&quot;options&quot;:[&quot;Weekly&quot;,&quot;Monthly&quot;,&quot;Quarterly&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Plans&quot;},&quot;showPerWeek&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Plans&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const featuredName = this.props.featuredPlan ?? '3 Months';
+    const showEquiv = this.props.showPerWeek ?? true;
+    const base = [
+      { name: 'Weekly', price: '$19.99', period: '/ week', save: null, equiv: '' },
+      { name: 'Monthly', price: '$49.99', period: '/ month', save: 'SAVE 37%', equiv: showEquiv ? '≈ $12.50 per week' : '' },
+      { name: 'Quarterly', price: '$95.99', period: '/ 3 months', save: 'SAVE 60%', equiv: showEquiv ? '≈ $8.00 per week' : '' },
+    ];
+    const features = ['Unlimited access to 3,000+ practices', '60 full mock exams', 'Instant AI feedback for all skills', 'Progress tracking and insights'];
+    const tints = {
+      Weekly: { tint: '#fdf3e4', tintText: '#d97a2e' },
+      Monthly: { tint: '#eaf1fe', tintText: '#3d6fe8' },
+      Quarterly: { tint: '#f7e6fb', tintText: '#b23fe0' },
+    };
+    const plans = base.map(p => {
+      const featured = p.name === featuredName;
+      return {
+        ...p,
+        badge: p.name === 'Quarterly' ? 'BEST VALUE' : 'MOST POPULAR',
+        tint: tints[p.name].tint,
+        tintText: tints[p.name].tintText,
+        features,
+        featured,
+        borderCss: featured ? '2px solid #4d7ef7' : '1px solid #eceff5',
+        shadow: featured ? '0 18px 40px rgba(77,126,247,0.18)' : '0 8px 24px rgba(26,34,51,0.06)',
+        btnBg: featured ? 'linear-gradient(180deg,#5b8df7,#4d7ef7)' : '#5b8df7',
+        onSelect: () => {},
+      };
+    });
+    return { plans };
+  }
+}
+</script>
+</body>
+</html>

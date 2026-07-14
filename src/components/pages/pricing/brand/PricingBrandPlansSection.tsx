@@ -1,31 +1,33 @@
 "use client";
 
 import { useMemo } from "react";
+import {
+  getFeaturedBadge,
+  getPlanPriceDisplay,
+  type FeaturedPlanName,
+} from "@/lib/brandPlanPricing";
 import { groupPlansByDuration } from "@/lib/pricingPlanSections";
-import { getPlanPriceDisplay } from "@/lib/brandPlanPricing";
 import type { DurationGroupKey, SerializedPlan } from "@/types/pricing";
 import { PricingBrandPlanCard } from "./PricingBrandPlanCard";
 
-const FREE_FEATURES = [
-  "Full diagnostic across all 4 skills",
-  "2 sample mock exams",
-  "1 AI feedback sample (Writing)",
-] as const;
-
 const PAID_FEATURES = [
-  "All 100+ full mock exams",
-  "All 5,000+ practice questions",
-  "Unlimited AI Writing & Speaking feedback",
+  "Unlimited access to 3,000+ practices",
+  "60 full mock exams",
+  "Instant AI feedback for all skills",
+  "Progress tracking and insights",
 ] as const;
 
-const QUARTERLY_FEATURES = [
-  ...PAID_FEATURES,
-  "AI teacher study plan & analytics",
-] as const;
+const PLAN_TINTS = {
+  Weekly: { tint: "#fdf3e4", tintText: "#d97a2e" },
+  Monthly: { tint: "#eaf1fe", tintText: "#3d6fe8" },
+  Quarterly: { tint: "#f7e6fb", tintText: "#b23fe0" },
+} as const;
 
 type PricingBrandPlansSectionProps = {
   plans: SerializedPlan[];
   pricingCheckoutFields?: Record<string, string>;
+  featuredPlan?: FeaturedPlanName;
+  showPerWeek?: boolean;
 };
 
 function findSectionPlan(
@@ -38,6 +40,8 @@ function findSectionPlan(
 export function PricingBrandPlansSection({
   plans,
   pricingCheckoutFields,
+  featuredPlan = "Monthly",
+  showPerWeek = true,
 }: PricingBrandPlansSectionProps) {
   const grouped = useMemo(() => groupPlansByDuration(plans), [plans]);
 
@@ -45,61 +49,65 @@ export function PricingBrandPlansSection({
   const monthlyPlan = findSectionPlan(grouped, "monthly");
   const quarterlyPlan = findSectionPlan(grouped, "threeMonth");
 
-  const weeklyDisplay = getPlanPriceDisplay(weeklyPlan, "weekly");
-  const monthlyDisplay = getPlanPriceDisplay(monthlyPlan, "monthly");
-  const quarterlyDisplay = getPlanPriceDisplay(quarterlyPlan, "quarterly");
+  const weeklyDisplay = getPlanPriceDisplay(weeklyPlan, "weekly", {
+    showPerWeek,
+  });
+  const monthlyDisplay = getPlanPriceDisplay(monthlyPlan, "monthly", {
+    weeklyPlan,
+    showPerWeek,
+  });
+  const quarterlyDisplay = getPlanPriceDisplay(quarterlyPlan, "quarterly", {
+    weeklyPlan,
+    showPerWeek,
+  });
+
+  const cards = [
+    {
+      name: "Weekly" as const,
+      plan: weeklyPlan,
+      display: weeklyDisplay,
+    },
+    {
+      name: "Monthly" as const,
+      plan: monthlyPlan,
+      display: monthlyDisplay,
+    },
+    {
+      name: "Quarterly" as const,
+      plan: quarterlyPlan,
+      display: quarterlyDisplay,
+    },
+  ];
 
   return (
-    <section className="px-4 pb-14 pt-8 screen744:px-11 screen744:pb-[70px] screen744:pt-10">
-      <div className="mx-auto grid max-w-[1280px] grid-cols-1 items-stretch gap-5 screen744:grid-cols-2 screen1280:grid-cols-4 screen744:gap-[22px]">
-        <PricingBrandPlanCard
-          name="Free trial"
-          description="Take your diagnostic and explore the platform."
-          price="0"
-          priceSuffix=""
-          billingNote="for 3 days · no card"
-          ctaLabel="Start free"
-          ctaHref="/sign-up"
-          features={FREE_FEATURES}
-        />
+    <section className="mt-10 flex w-full flex-col items-center">
+      <div className="flex w-full flex-wrap items-stretch justify-center gap-5 pt-3">
+        {cards.map(({ name, plan, display }) => {
+          const featured = name === featuredPlan;
+          return (
+            <PricingBrandPlanCard
+              key={name}
+              name={name}
+              price={display.price}
+              priceSuffix={display.priceSuffix}
+              perWeekEquivalent={display.perWeekEquivalent}
+              saveLabel={display.saveLabel}
+              plan={plan}
+              pricingCheckoutFields={pricingCheckoutFields}
+              features={PAID_FEATURES}
+              highlighted={featured}
+              badge={featured ? getFeaturedBadge(name) : undefined}
+              tint={PLAN_TINTS[name]}
+            />
+          );
+        })}
+      </div>
 
-        <PricingBrandPlanCard
-          name="Weekly"
-          description="Short sprint before test day."
-          price={weeklyDisplay.price}
-          priceSuffix={weeklyDisplay.priceSuffix}
-          billingNote={weeklyDisplay.billingNote}
-          ctaLabel="Start free, then subscribe"
-          plan={weeklyPlan}
-          pricingCheckoutFields={pricingCheckoutFields}
-          features={PAID_FEATURES}
-        />
-
-        <PricingBrandPlanCard
-          name="Monthly"
-          description="Everything you need to hit your target band."
-          price={monthlyDisplay.price}
-          priceSuffix={monthlyDisplay.priceSuffix}
-          billingNote={monthlyDisplay.billingNote}
-          ctaLabel="Start free, then subscribe"
-          plan={monthlyPlan}
-          pricingCheckoutFields={pricingCheckoutFields}
-          features={PAID_FEATURES}
-          highlighted
-          badge="MOST POPULAR"
-        />
-
-        <PricingBrandPlanCard
-          name="Quarterly"
-          description="Premium with a longer runway before test day."
-          price={quarterlyDisplay.price}
-          priceSuffix={quarterlyDisplay.priceSuffix}
-          billingNote={quarterlyDisplay.billingNote}
-          ctaLabel="Start free, then subscribe"
-          plan={quarterlyPlan}
-          pricingCheckoutFields={pricingCheckoutFields}
-          features={QUARTERLY_FEATURES}
-        />
+      <div className="mt-7 flex items-center gap-2 text-[13px] text-[#5b6575]">
+        <span className="font-bold text-[#2e9e5b]" aria-hidden>
+          ✓
+        </span>
+        48-hour money-back guarantee · Cancel anytime
       </div>
     </section>
   );

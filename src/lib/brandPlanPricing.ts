@@ -1,48 +1,67 @@
-import { formatPlanCadPrice, parsePrice } from "@/lib/pricing";
 import type { SerializedPlan } from "@/types/pricing";
 
 export type PlanPeriodLabel = "weekly" | "monthly" | "quarterly";
 
+export type FeaturedPlanName = "Weekly" | "Monthly" | "Quarterly";
+
 export type PlanPriceDisplay = {
   price: string;
   priceSuffix: string;
-  billingNote: string;
+  /** e.g. "≈ $12.50 per week" */
+  perWeekEquivalent: string;
+  /** e.g. "SAVE 37%" */
+  saveLabel: string | null;
+};
+
+/** Marketing display values — matches Pricing.dc.html / design handoff. */
+const CATALOG_DISPLAY: Record<
+  PlanPeriodLabel,
+  {
+    price: string;
+    priceSuffix: string;
+    perWeekEquivalent: string;
+    saveLabel: string | null;
+  }
+> = {
+  weekly: {
+    price: "$19.99",
+    priceSuffix: "/ week",
+    perWeekEquivalent: "",
+    saveLabel: null,
+  },
+  monthly: {
+    price: "$49.99",
+    priceSuffix: "/ month",
+    perWeekEquivalent: "≈ $12.50 per week",
+    saveLabel: "SAVE 37%",
+  },
+  quarterly: {
+    price: "$95.99",
+    priceSuffix: "/ 3 months",
+    perWeekEquivalent: "≈ $8.00 per week",
+    saveLabel: "SAVE 60%",
+  },
 };
 
 export function getPlanPriceDisplay(
-  plan: SerializedPlan | null | undefined,
+  _plan: SerializedPlan | null | undefined,
   period: PlanPeriodLabel,
+  options?: {
+    weeklyPlan?: SerializedPlan | null;
+    showPerWeek?: boolean;
+  },
 ): PlanPriceDisplay {
-  if (!plan || parsePrice(plan.price) <= 0) {
-    return { price: "—", priceSuffix: "", billingNote: "" };
-  }
-
-  const intro = formatPlanCadPrice(plan.price);
-  const renewal = plan.oldPrice && parsePrice(plan.oldPrice) > 0
-    ? formatPlanCadPrice(plan.oldPrice)
-    : null;
-
-  if (period === "weekly") {
-    return {
-      price: intro,
-      priceSuffix: "/wk",
-      billingNote: renewal ? `first week, then $${renewal}/wk` : "billed weekly, cancel anytime",
-    };
-  }
-
-  if (period === "monthly") {
-    return {
-      price: intro,
-      priceSuffix: "/mo",
-      billingNote: renewal ? `first month, then $${renewal}/mo` : "billed monthly, cancel anytime",
-    };
-  }
+  const showPerWeek = options?.showPerWeek ?? true;
+  const catalog = CATALOG_DISPLAY[period];
 
   return {
-    price: intro,
-    priceSuffix: "",
-    billingNote: renewal
-      ? `first quarter, then $${renewal} every 3 months`
-      : "billed every 3 months, cancel anytime",
+    price: catalog.price,
+    priceSuffix: catalog.priceSuffix,
+    perWeekEquivalent: showPerWeek ? catalog.perWeekEquivalent : "",
+    saveLabel: catalog.saveLabel,
   };
+}
+
+export function getFeaturedBadge(planName: FeaturedPlanName): string {
+  return planName === "Quarterly" ? "BEST VALUE" : "MOST POPULAR";
 }

@@ -88,24 +88,24 @@ export const pricingTestimonials: PricingTestimonial[] = [
 
 export const pricingBrandFaqs: PricingFaq[] = [
   {
-    question: "Do I need a credit card to start?",
+    question: "What's included in every Premium plan?",
     answer:
-      "No. The 3-day free trial includes your full diagnostic and sample content with no card required.",
+      "All plans include unlimited access to 3,000+ practices, 60 full mock exams, instant AI feedback for all skills, and progress tracking and insights.",
   },
   {
     question: "Can I cancel anytime?",
     answer:
-      "Yes — cancel in one click from your account. You keep access until the end of your billing period.",
+      "Yes — cancel anytime. You also get a 48-hour money-back guarantee if the platform isn’t the right fit.",
   },
   {
     question: "What's the difference between Weekly, Monthly, and Quarterly?",
     answer:
-      "All paid plans include full mock exams, practice questions, and unlimited AI Writing & Speaking feedback. Weekly is best for a short sprint; Monthly is our most popular choice; Quarterly adds the AI teacher study plan & analytics.",
+      "Same Premium features on every plan. Weekly is billed each week; Monthly saves versus weekly; Quarterly is the best value per week.",
   },
   {
     question: "Which plan should I choose if my exam is soon?",
     answer:
-      "If your exam is within a few weeks, Weekly or Monthly works well. For a longer runway, Quarterly offers the best value and includes the AI teacher study plan.",
+      "If your exam is within a few weeks, Weekly or Monthly works well. For a longer runway before test day, Quarterly usually offers the best value.",
   },
 ];
 

@@ -2,42 +2,43 @@
 
 import { useCallback } from "react";
 import { useCheckoutAttributionPayload } from "@/components/analytics/CheckoutAttributionFields";
-import { Button } from "@/components/v2/Button";
-import { formatPlanCadPrice, parsePrice } from "@/lib/pricing";
 import { submitPlanCheckout } from "@/lib/planCheckout";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import type { SerializedPlan } from "@/types/pricing";
 import { cn } from "@/lib/utils";
 import { PricingBrandFeatureList } from "./PricingBrandFeatureList";
 
+type PlanTint = {
+  tint: string;
+  tintText: string;
+};
+
 type PricingBrandPlanCardProps = {
   name: string;
-  description: string;
   price: string;
-  priceSuffix?: string;
-  billingNote?: string;
-  ctaLabel: string;
-  ctaHref?: string;
+  priceSuffix: string;
+  perWeekEquivalent?: string;
+  saveLabel?: string | null;
   plan?: SerializedPlan | null;
   pricingCheckoutFields?: Record<string, string>;
   features: readonly string[];
   highlighted?: boolean;
   badge?: string;
+  tint: PlanTint;
 };
 
 export function PricingBrandPlanCard({
   name,
-  description,
   price,
-  priceSuffix = "/mo",
-  billingNote,
-  ctaLabel,
-  ctaHref,
+  priceSuffix,
+  perWeekEquivalent = "",
+  saveLabel,
   plan,
   pricingCheckoutFields,
   features,
   highlighted = false,
   badge,
+  tint,
 }: PricingBrandPlanCardProps) {
   const { isSignedIn, isLoaded } = useHybridWebUser();
   const attribution = useCheckoutAttributionPayload();
@@ -61,113 +62,66 @@ export function PricingBrandPlanCard({
     });
   }, [attribution, isLoaded, isSignedIn, plan, pricingCheckoutFields]);
 
-  const displayAmount =
-    price === "—"
-      ? "—"
-      : price.startsWith("$")
-        ? price.slice(1)
-        : formatPlanCadPrice(price);
-
   return (
     <article
       className={cn(
-        "relative flex flex-col rounded-[18px] p-7 screen744:px-7 screen744:py-8",
+        "relative flex w-full max-w-[340px] min-w-[230px] flex-1 flex-col rounded-[20px] bg-white p-[26px]",
         highlighted
-          ? "z-[1] bg-[#0E2C4F] shadow-[0_20px_48px_rgba(14,44,79,0.26)] screen744:-translate-y-2"
-          : "border border-[#e3e9ef] bg-white",
+          ? "border-2 border-[#4d7ef7] shadow-[0_18px_40px_rgba(77,126,247,0.18)]"
+          : "border border-[#eceff5] shadow-[0_8px_24px_rgba(26,34,51,0.06)]",
       )}
     >
-      {badge ? (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#EE4266] px-4 py-1.5 text-[12.5px] font-bold text-white">
+      {highlighted && badge ? (
+        <span className="absolute -top-[13px] left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#4d7ef7] px-4 py-[5px] text-[12px] font-bold tracking-[0.04em] text-white">
           {badge}
         </span>
       ) : null}
 
-      <h2
-        className={cn(
-          "text-[19px] font-bold",
-          highlighted ? "text-white" : "text-[#0E2C4F]",
-        )}
+      <div
+        className="-mx-[26px] -mt-[26px] mb-0 flex items-center gap-2 rounded-t-[18px] px-[26px] py-4"
+        style={{ background: tint.tint }}
       >
-        {name}
-      </h2>
-      <p
-        className={cn(
-          "mt-1.5 text-[15px] leading-snug",
-          highlighted ? "text-[#aebfd2]" : "text-[#5a6874]",
-        )}
-      >
-        {description}
-      </p>
-
-      <div className="mt-6 flex items-baseline gap-1">
         <span
-          className={cn(
-            "text-[2.875rem] font-extrabold leading-none",
-            highlighted ? "text-white" : "text-[#0E2C4F]",
-          )}
+          className="text-[17px] font-bold"
+          style={{ color: tint.tintText }}
         >
-          ${displayAmount}
+          {name}
         </span>
-        {priceSuffix ? (
-          <span
-            className={cn(
-              "text-base font-semibold",
-              highlighted ? "text-[#aebfd2]" : "text-text3",
-            )}
-          >
-            {priceSuffix}
+        {saveLabel ? (
+          <span className="rounded-full bg-[#e9f9ef] px-[9px] py-[3px] text-[11px] font-bold text-[#2e9e5b]">
+            {saveLabel}
           </span>
         ) : null}
       </div>
 
-      {billingNote ? (
-        <p
-          className={cn(
-            "mt-0.5 text-sm",
-            highlighted ? "text-[#8fa6c2]" : "text-text3",
-          )}
-        >
-          {billingNote}
-        </p>
-      ) : (
-        <div className="mt-0.5 h-5" aria-hidden />
-      )}
+      <div className="mt-5 flex items-baseline gap-1.5">
+        <span className="text-[34px] font-extrabold tracking-[-0.02em] text-[#111827]">
+          {price}
+        </span>
+        <span className="text-sm font-medium text-[#98a2b3]">
+          {priceSuffix}
+        </span>
+      </div>
 
-      <div className="mt-6">
-        {canCheckout ? (
-          <Button
-            type="button"
-            variant={highlighted ? "primary" : "secondary"}
-            size="md"
-            className="w-full"
-            disabled={!isLoaded}
-            onClick={onCheckout}
-          >
-            {ctaLabel}
-          </Button>
-        ) : ctaHref ? (
-          <Button
-            variant={highlighted ? "primary" : "secondary"}
-            size="md"
-            href={ctaHref}
-            className="w-full"
-          >
-            {ctaLabel}
-          </Button>
-        ) : (
-          <Button variant="secondary" size="md" className="w-full" disabled>
-            Unavailable
-          </Button>
+      <div className="mt-0.5 min-h-4 text-xs text-[#98a2b3]">
+        {perWeekEquivalent}
+      </div>
+
+      <button
+        type="button"
+        disabled={!canCheckout || !isLoaded}
+        onClick={onCheckout}
+        className={cn(
+          "mt-[18px] w-full cursor-pointer rounded-full border-0 px-0 py-[13px] text-sm font-semibold text-white shadow-[0_6px_14px_rgba(77,126,247,0.28)] transition-[transform,background] duration-150 ease-out enabled:hover:-translate-y-px enabled:hover:bg-[#3d6fe8] disabled:cursor-not-allowed disabled:opacity-60",
+          highlighted
+            ? "bg-[linear-gradient(180deg,#5b8df7,#4d7ef7)]"
+            : "bg-[#5b8df7]",
         )}
-      </div>
+      >
+        Get Premium
+      </button>
 
-      <div className="mt-6">
-        <PricingBrandFeatureList
-          items={features}
-          variant={highlighted ? "dark" : "light"}
-        />
-      </div>
+      <PricingBrandFeatureList items={features} />
     </article>
   );
 }

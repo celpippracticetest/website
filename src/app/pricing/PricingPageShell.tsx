@@ -16,8 +16,8 @@ export default function PricingPageShell({
   pricingAbParticipatesInExperiment: boolean;
 }) {
   return (
-    <div className="min-h-screen bg-white">
-      <header className="border-b border-[#E6E6E6] bg-[#F4F7FF]">
+    <div className="min-h-screen bg-[#eef2f8]">
+      <header className="border-b border-[#e4e9f2] bg-white/80 backdrop-blur-sm">
         <div className="mx-auto flex h-[64px] max-w-[1280px] items-center justify-between px-4 screen744:px-8">
           <Link href="/" className="flex items-center gap-2">
             <Image

@@ -1,38 +1,82 @@
 "use client";
 
+import Image from "next/image";
+
+const AVATARS = [
+  { src: "/images/Carlos.png", alt: "Carlos" },
+  { src: "/images/Li.png", alt: "Li" },
+  { src: "/images/Tatiana.png", alt: "Tatiana" },
+] as const;
+
+const CHIPS: { label: string; glyph: string }[] = [
+  { label: "60 mock exams", glyph: "▤" },
+  { label: "Guide & Tips", glyph: "❋" },
+  { label: "3,000+ sample tests", glyph: "≣" },
+  { label: "Instant AI Feedback", glyph: "✦" },
+];
+
 type PricingBrandHeaderProps = {
   titleTag?: "h1" | "h2";
   headingId?: string;
 };
 
-export function PricingBrandHeader({ titleTag = "h1", headingId }: PricingBrandHeaderProps = {}) {
+export function PricingBrandHeader({
+  titleTag = "h1",
+  headingId,
+}: PricingBrandHeaderProps = {}) {
   const TitleTag = titleTag;
 
   return (
-    <section className="bg-[linear-gradient(180deg,#f7f9fb_0%,#ffffff_100%)] px-4 pb-2 pt-12 text-center screen744:px-11 screen744:pb-0 screen744:pt-[66px]">
-      <div className="mx-auto max-w-[1280px]">
-        <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-brand-blue-tint px-3.5 py-1.5 text-[13px] font-bold text-brand-blue-dark">
-          <span className="inline-block h-[7px] w-[7px] rounded-full bg-brand-blue" aria-hidden />
-          Free to start · no credit card required
+    <section className="flex w-full flex-col items-center pt-0">
+      <TitleTag
+        id={headingId}
+        className="m-0 flex flex-wrap items-center justify-center gap-3 text-center text-[28px] font-bold tracking-[-0.02em] text-[#1a2233] screen744:text-[34px]"
+      >
+        <span className="text-2xl leading-none text-[#4d7ef7]" aria-hidden>
+          ➤
+        </span>
+        Pick the Plan That Fits You
+      </TitleTag>
+
+      <div className="mt-3.5 flex items-center gap-2.5">
+        <div className="flex">
+          {AVATARS.map((avatar, index) => (
+            <div
+              key={avatar.src}
+              className="relative h-[26px] w-[26px] overflow-hidden rounded-full border-2 border-[#eef2f8]"
+              style={{
+                marginLeft: index === 0 ? 0 : -8,
+                zIndex: 3 - index,
+              }}
+            >
+              <Image
+                src={avatar.src}
+                alt={avatar.alt}
+                fill
+                className="object-cover"
+                sizes="26px"
+              />
+            </div>
+          ))}
         </div>
+        <span className="text-[13px] font-medium text-[#5b6575]">
+          Trusted by <strong className="font-bold text-[#1a2233]">70k+</strong>{" "}
+          test-takers
+        </span>
+      </div>
 
-        <TitleTag
-          id={headingId}
-          className="font-display text-balance text-[2rem] font-extrabold leading-[1.08] tracking-[-0.02em] text-brand-navy screen744:mx-auto screen744:max-w-[720px] screen744:text-[2.875rem]"
-        >
-          Simple, transparent pricing
-        </TitleTag>
-
-        <p className="mx-auto mt-4 max-w-[600px] text-[17px] leading-[1.55] text-text2 screen744:mt-4 screen744:text-[19px]">
-          Try everything free for 3 days, then pick the plan that gets you to your target CLB.
-          Cancel anytime.
-        </p>
-
-        <div className="mt-8 screen744:mt-[34px]">
-          <span className="inline-flex items-center rounded-full bg-[#eaf3ee] px-3 py-1.5 text-[13px] font-bold text-[#1f8a5f]">
-            Intro pricing on your first billing period
-          </span>
-        </div>
+      <div className="mt-[26px] flex flex-wrap justify-center gap-2.5">
+        {CHIPS.map(({ label, glyph }) => (
+          <div
+            key={label}
+            className="flex items-center gap-2 rounded-full border border-[#e4e9f2] bg-white px-4 py-2 text-[13px] font-semibold text-[#3a4356]"
+          >
+            <span className="text-[#f07b4d]" aria-hidden>
+              {glyph}
+            </span>
+            {label}
+          </div>
+        ))}
       </div>
     </section>
   );

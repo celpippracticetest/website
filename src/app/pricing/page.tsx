@@ -13,7 +13,7 @@ import { getActivePlansCatalog } from "@/lib/plansCatalog";
 export const metadata: Metadata = {
   title: "CELPIP Practice Test Pricing Plans | Choose Your Plan",
   description:
-    "CELPIP Plus plans: weekly, monthly, and 3-month billing with 60+ mock exams, AI feedback, and 3,000+ sample questions.",
+    "Pick the CELPIP Premium plan that fits you — weekly, monthly, or quarterly. 60 mock exams, 3,000+ practices, instant AI feedback. Cancel anytime.",
   alternates: {
     canonical: "https://celpipguide.ca/pricing",
   },
