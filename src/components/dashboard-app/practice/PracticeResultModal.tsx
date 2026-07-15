@@ -54,10 +54,22 @@ const PracticeResultModal = ({
     };
 
     const maxScore = 12;
-    const overallScore = Math.round(
-        Object.values(skillScores).reduce((sum: number, score: any) => sum + (typeof score === 'number' ? score : 0), 0) /
-        Object.keys(skillScores).length
+    // Prefer the stored overall so the modal matches the submission list
+    // (re-averaging skill scores caused a flash like 11 → 3).
+    const storedOverall =
+        typeof data?.overalScore === "number"
+            ? data.overalScore
+            : typeof data?.result?.overall === "number"
+              ? data.result.overall
+              : null;
+    const averagedSkills = Math.round(
+        Object.values(skillScores).reduce(
+            (sum: number, score: unknown) =>
+                sum + (typeof score === "number" ? score : 0),
+            0,
+        ) / Object.keys(skillScores).length,
     );
+    const overallScore = storedOverall ?? averagedSkills;
 
     const getScoreDescription = (score: number) => {
         if (score >= 8)

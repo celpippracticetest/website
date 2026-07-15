@@ -106,18 +106,43 @@ interface StoredEvaluation {
   grammarMistakes: { original: string; improvement: string | null }[];
   betterVersion: string;
 }
+function overallFromSkills(e: EvaluationInput): number {
+  const skills = [
+    e.contentAndCoherence,
+    e.vocabulary,
+    e.readabilityAndGrammar,
+    e.taskFulfillment,
+  ].filter((n): n is number => typeof n === "number" && Number.isFinite(n));
+  if (skills.length === 0) return typeof e.overall === "number" ? e.overall : 0;
+  return Math.round(skills.reduce((a, b) => a + b, 0) / skills.length);
+}
+
 function toStoredEvaluation(e: EvaluationInput | null): StoredEvaluation {
+  if (!e) {
+    return {
+      overall: 0,
+      contentAndCoherence: 0,
+      vocabulary: 0,
+      readabilityAndGrammar: 0,
+      taskFulfillment: 0,
+      feedback: "",
+      betterVersion: "",
+      grammarMistakes: [],
+    };
+  }
+  // Keep overall in sync with skill scores so list chips and modal never disagree.
+  const overall = overallFromSkills(e);
   return {
-    overall: e?.overall ?? 0,
-    contentAndCoherence: e?.contentAndCoherence ?? 0,
-    vocabulary: e?.vocabulary ?? 0,
-    readabilityAndGrammar: e?.readabilityAndGrammar ?? 0,
-    taskFulfillment: e?.taskFulfillment ?? 0,
-    feedback: e?.feedback ?? "",
-    betterVersion: e?.betterVersion ?? "",
-    grammarMistakes: Array.isArray(e?.grammarMistakes)
+    overall,
+    contentAndCoherence: e.contentAndCoherence ?? 0,
+    vocabulary: e.vocabulary ?? 0,
+    readabilityAndGrammar: e.readabilityAndGrammar ?? 0,
+    taskFulfillment: e.taskFulfillment ?? 0,
+    feedback: e.feedback ?? "",
+    betterVersion: e.betterVersion ?? "",
+    grammarMistakes: Array.isArray(e.grammarMistakes)
       ? (
-          e!.grammarMistakes as {
+          e.grammarMistakes as {
             original?: string;
             improvement?: string | null;
           }[]
@@ -283,12 +308,16 @@ export const POST = async function (req: Request) {
       command = command.replaceAll("{{SPEAKING_DURATION}}", durationStr);
     }
 
-    // ===== Off-topic from ALL passages[].description =====
+    // Prefer the speaking prompt + short passage descriptions only.
+    // Using full passage HTML bodies as "topics" often mis-flags on-topic
+    // answers (including reading a sample response) as off-topic → ~3/12.
     const topics = uniqLower(
-      (practice.passages ?? [])
-        .map((p: any) => stripHtml((p?.description ?? p?.body).toString()))
-
-        .filter(Boolean)
+      [
+        stripHtml(speakingPrompt),
+        ...(practice.passages ?? []).map((p: any) =>
+          stripHtml((p?.description ?? "").toString()),
+        ),
+      ].filter(Boolean),
     );
 
     // Build/augment final system prompt
@@ -518,15 +547,16 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
       
       console.log("Successfully extracted complete data from content");
       
+      const storedFallback = toStoredEvaluation(parsedResult as EvaluationInput);
       const answerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
       const answer = await answerRepo.createAnswer({
         audioUrl: location,
         userId: user.id,
         practiceId,
         attemptId: `practice_${practiceId}_${Date.now()}`,
-        overalScore: parsedResult.overall,
+        overalScore: storedFallback.overall,
         type: "SPEAKING",
-        result: parsedResult,
+        result: storedFallback,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
