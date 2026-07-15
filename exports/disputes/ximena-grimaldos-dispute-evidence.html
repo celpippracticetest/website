@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Stripe Dispute Evidence — du_1TsWl7HBKaYwAPUKTKF5zXId</title>
+  <style>
+    @page { margin: 18mm 16mm; }
+    body {
+      font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+      color: #111;
+      font-size: 11pt;
+      line-height: 1.45;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 18pt; margin: 0 0 6px; }
+    h2 { font-size: 13pt; margin: 22px 0 8px; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
+    h3 { font-size: 11.5pt; margin: 14px 0 6px; }
+    p, li { margin: 0 0 8px; }
+    .meta { color: #333; margin-bottom: 18px; }
+    .meta div { margin-bottom: 2px; }
+    table { width: 100%; border-collapse: collapse; margin: 8px 0 14px; font-size: 10.5pt; }
+    th, td { border: 1px solid #bbb; padding: 6px 8px; text-align: left; vertical-align: top; }
+    th { background: #f3f3f3; }
+    .note { background: #f7f7f7; border: 1px solid #ddd; padding: 10px 12px; margin: 10px 0 14px; }
+    .footer { margin-top: 28px; font-size: 9.5pt; color: #555; }
+    ul { margin: 0 0 10px; padding-left: 18px; }
+  </style>
+</head>
+<body>
+  <h1>Stripe Dispute Evidence Package</h1>
+  <div class="meta">
+    <div><strong>Merchant:</strong> CELPIP Guide / celpippracticetest.com</div>
+    <div><strong>Dispute ID:</strong> du_1TsWl7HBKaYwAPUKTKF5zXId</div>
+    <div><strong>Charge ID:</strong> ch_3TS4oWHBKaYwAPUK0GypaviT</div>
+    <div><strong>Invoice:</strong> FI2JKGMH-0004</div>
+    <div><strong>Amount:</strong> CA$179.98</div>
+    <div><strong>Dispute reason (issuer):</strong> subscription_canceled</div>
+    <div><strong>Merchant win reason:</strong> The cardholder received the product or service</div>
+    <div><strong>Evidence due:</strong> 2026-07-28</div>
+    <div><strong>Prepared:</strong> 2026-07-15</div>
+  </div>
+
+  <h2>1. Summary</h2>
+  <p>
+    The cardholder disputes a valid subscription renewal for digital CELPIP exam practice access.
+    Stripe records show the subscription was <strong>not canceled</strong>. After the disputed charge on
+    <strong>2026-05-01</strong>, the cardholder continued to access and use the product
+    (<strong>431 activity events on 2026-05-08 and 2026-05-10</strong>), including from the same IP
+    used at purchase.
+  </p>
+  <p>
+    We request this dispute be decided in the merchant’s favor because the cardholder received and used
+    the digital product/service covered by the charge.
+  </p>
+
+  <h2>2. Customer and subscription identifiers</h2>
+  <table>
+    <tr><th>Field</th><th>Value</th></tr>
+    <tr><td>Customer name</td><td>A Grimaldos Chinome</td></tr>
+    <tr><td>Email</td><td>ximena.grimaldosc@hotmail.com</td></tr>
+    <tr><td>Stripe customer</td><td>cus_TKkcgDRDSDWjIG</td></tr>
+    <tr><td>Subscription</td><td>sub_1SO57cHBKaYwAPUK8jRBx8CI</td></tr>
+    <tr><td>Internal user ID</td><td>user_34M6UJNeAkvdX4eHlik4gYVt1tL</td></tr>
+    <tr><td>Purchase IP</td><td>99.243.180.110</td></tr>
+    <tr><td>Card</td><td>Visa •••• 5010 (CA)</td></tr>
+    <tr><td>Product</td><td>“3 Months” digital subscription (every 3 months), quantity 2 (primary + 1 device seat)</td></tr>
+  </table>
+
+  <h2>3. Billing history</h2>
+  <table>
+    <tr>
+      <th>Invoice</th>
+      <th>Date</th>
+      <th>Reason</th>
+      <th>Amount</th>
+      <th>Status</th>
+    </tr>
+    <tr>
+      <td>FI2JKGMH-0001</td>
+      <td>2025-10-30</td>
+      <td>subscription_create</td>
+      <td>CA$80.99</td>
+      <td>Paid</td>
+    </tr>
+    <tr>
+      <td>FI2JKGMH-0002</td>
+      <td>2026-01-30 / paid 2026-01-31</td>
+      <td>subscription_cycle</td>
+      <td>CA$89.99</td>
+      <td>Paid</td>
+    </tr>
+    <tr>
+      <td>FI2JKGMH-0003</td>
+      <td>2026-04-16</td>
+      <td>subscription_update (device seat)</td>
+      <td>CA$14.13</td>
+      <td>Paid</td>
+    </tr>
+    <tr>
+      <td><strong>FI2JKGMH-0004</strong></td>
+      <td><strong>2026-04-30 / charged 2026-05-01</strong></td>
+      <td><strong>subscription_cycle (DISPUTED)</strong></td>
+      <td><strong>CA$179.98</strong></td>
+      <td><strong>Paid / Disputed</strong></td>
+    </tr>
+  </table>
+  <p>
+    Disputed invoice line item: <em>2 × 3 Months (at $89.99 / every 3 months)</em>,
+    covering service period <strong>2026-04-30 → 2026-07-30</strong>.
+  </p>
+
+  <h2>4. Cancellation status (rebuttal to “subscription_canceled”)</h2>
+  <div class="note">
+    <p><strong>Stripe subscription state at review:</strong></p>
+    <ul>
+      <li>Status: <strong>active</strong></li>
+      <li>cancel_at_period_end: <strong>false</strong></li>
+      <li>canceled_at: <strong>null</strong></li>
+    </ul>
+    <p>
+      There is no Stripe cancellation of this subscription before or after the disputed charge.
+      The issuer reason “subscription_canceled” is inconsistent with Stripe billing records.
+    </p>
+  </div>
+  <p>
+    Our published Refund Policy (Last Updated: Apr 15, 2026;
+    <strong>https://celpippracticetest.com/refund-policy</strong>) states that subscriptions and
+    services are digital and delivered immediately upon payment; refunds are not available for
+    subscription renewals or for requests based solely on forgetting to cancel; and chargebacks do
+    not override the policy.
+  </p>
+  <p>
+    Sole accepted refund channel:
+    <strong>https://celpippracticetest.com/refund-request</strong>.
+    This disputed charge is a renewal (4th invoice), which is non-refundable under that policy.
+    The bank dispute was opened <strong>2026-07-12</strong>, far outside the policy’s
+    <strong>48-hour</strong> first-purchase submission window after the <strong>2026-05-01</strong> charge.
+  </p>
+
+  <h2>5. Product delivery and usage after the charge</h2>
+  <p>
+    Digital access was delivered immediately upon successful payment. After the disputed charge, account
+    activity logs show continued authorized use of the service:
+  </p>
+  <table>
+    <tr><th>Metric</th><th>Value</th></tr>
+    <tr><td>Activity window after charge</td><td>2026-05-08 to 2026-05-10</td></tr>
+    <tr><td>Total logged events</td><td>431</td></tr>
+    <tr><td>practice_attempt_started</td><td>274</td></tr>
+    <tr><td>practice_attempt_completed</td><td>108</td></tr>
+    <tr><td>mock_attempt_started</td><td>43</td></tr>
+    <tr><td>ai_feedback_generated</td><td>6</td></tr>
+    <tr><td>Skills used</td><td>Listening, Reading, Writing, Speaking</td></tr>
+    <tr><td>Purchase IP also seen in post-payment practice</td><td>99.243.180.110 (2026-05-10)</td></tr>
+  </table>
+
+  <h3>Sample post-charge activity (representative)</h3>
+  <table>
+    <tr><th>Timestamp (UTC)</th><th>Event</th><th>Context / skill</th><th>IP</th></tr>
+    <tr><td>2026-05-08 01:04:34</td><td>practice_attempt_started</td><td>practice / Listening</td><td>CDN/proxy</td></tr>
+    <tr><td>2026-05-08 18:13:15</td><td>practice_attempt_started</td><td>practice / Listening</td><td>CDN/proxy</td></tr>
+    <tr><td>2026-05-10 03:02:23</td><td>practice_attempt_started</td><td>practice / Reading</td><td>99.243.180.110</td></tr>
+    <tr><td>2026-05-10 03:22:00</td><td>practice_attempt_started</td><td>practice / Reading</td><td>99.243.180.110</td></tr>
+    <tr><td>2026-05-10 07:48 – 09:12</td><td>mock_attempt_started (multiple)</td><td>mock</td><td>session IP</td></tr>
+    <tr><td>2026-05-10 08:29 – 09:12</td><td>ai_feedback_generated</td><td>AI feedback</td><td>session IP</td></tr>
+    <tr><td>2026-05-10 09:16 – 09:18</td><td>practice started/completed</td><td>Listening</td><td>session IP</td></tr>
+  </table>
+
+  <h3>Prior recognized usage (before disputed period)</h3>
+  <ul>
+    <li>Engagement snapshot: <strong>94 practice tests completed</strong></li>
+    <li>Last practice before renewal: <strong>2026-04-29</strong></li>
+    <li>Desktop session usage count recorded: <strong>369</strong></li>
+    <li>Customer since <strong>2025-10-30</strong> with multiple prior successful payments</li>
+  </ul>
+
+  <h2>6. Why the merchant should win</h2>
+  <ol>
+    <li><strong>Product/service was received and used</strong> after the disputed payment.</li>
+    <li><strong>Subscription was not canceled in Stripe</strong> (still active; cancel_at_period_end false).</li>
+    <li>Charge is a <strong>renewal</strong>, which is non-refundable under the published Refund Policy.</li>
+    <li>Dispute was filed far outside the 48-hour first-purchase refund window and without a valid request via https://celpippracticetest.com/refund-request for this invoice.</li>
+  </ol>
+
+  <h2>7. Policy references (as published)</h2>
+  <ul>
+    <li>Refund Policy: https://celpippracticetest.com/refund-policy (Last Updated: Apr 15, 2026)</li>
+    <li>Refund request page (sole accepted channel): https://celpippracticetest.com/refund-request</li>
+    <li>Key published points: digital services delivered immediately; renewals non-refundable; forgetting to cancel is not refundable; chargebacks do not override policy.</li>
+  </ul>
+
+  <div class="footer">
+    This document was prepared from live Stripe billing records, application activity logs, and the
+    currently published Refund Policy page for dispute du_1TsWl7HBKaYwAPUKTKF5zXId.
+  </div>
+</body>
+</html>

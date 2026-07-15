@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PricingBrandHeader } from "@/components/pages/pricing/brand/PricingBrandHeader";
 import { PricingBrandPlansSection } from "@/components/pages/pricing/brand/PricingBrandPlansSection";
 import { PricingBrandPartnersSection } from "@/components/pages/pricing/brand/PricingBrandPartnersSection";
+import { PricingBrandReviewsSection } from "@/components/pages/pricing/brand/PricingBrandReviewsSection";
 import { PricingBrandFaqSection } from "@/components/pages/pricing/brand/PricingBrandFaqSection";
 import type { SerializedPlan } from "@/types/pricing";
 
@@ -109,6 +110,8 @@ const PremiumPlanModal = () => {
                 )}
 
                 <PricingBrandPartnersSection />
+
+                <PricingBrandReviewsSection />
 
                 <div className="mt-14 w-full">
                   <PricingBrandFaqSection />
