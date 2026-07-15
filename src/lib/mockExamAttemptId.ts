@@ -7,8 +7,58 @@ export function sanitizeMockExamAttemptIdParam(
 ): string | undefined {
   if (raw == null) return undefined;
   const t = raw.trim();
-  if (t === "" || t === "null" || t === "undefined") return undefined;
+  if (t === "" || t === "null" || t === "undefined" || t === "legacy") {
+    return undefined;
+  }
   return t;
+}
+
+const attemptStorageKey = (examId: string) => `mockExamAttempt:${examId}`;
+
+/** Keep the active attempt when users leave results / switch parts without query params. */
+export function rememberMockExamAttemptId(
+  examId: string,
+  attemptRaw: string | null | undefined
+): void {
+  const aid = sanitizeMockExamAttemptIdParam(attemptRaw);
+  if (!aid || typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(attemptStorageKey(examId), aid);
+  } catch {
+    /* private mode / quota */
+  }
+}
+
+export function readRememberedMockExamAttemptId(
+  examId: string
+): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    return sanitizeMockExamAttemptIdParam(
+      sessionStorage.getItem(attemptStorageKey(examId))
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+export function createMockExamAttemptId(): string {
+  return `att_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+}
+
+export function mockExamPartHref(
+  examTaskId: string,
+  partId: number,
+  attemptRaw?: string | null | undefined,
+  extras?: { section?: string | null }
+): string {
+  const params = new URLSearchParams();
+  const aid = sanitizeMockExamAttemptIdParam(attemptRaw);
+  if (aid) params.set("attemptId", aid);
+  const section = extras?.section?.trim();
+  if (section) params.set("section", section);
+  const q = params.toString();
+  return `/exams/exam_${examTaskId}/part${partId}${q ? `?${q}` : ""}`;
 }
 
 /** Bucket for results / history: bogus or missing attempt → same group as legacy rows. */

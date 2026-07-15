@@ -26,6 +26,8 @@ import TrophyModal from "@/components/modal/TrophyModal";
 import { PRACTICE_PARTS } from "@/constants";
 import ExamHeader from "./components/ExamHeader";
 import Link from "next/link";
+import { useEnsureMockExamAttemptId } from "@/hooks/useEnsureMockExamAttemptId";
+import { mockExamPartHref, mockExamResultsHref } from "@/lib/mockExamAttemptId";
 
 interface SpeakingExamViewProps {
   practice: TPracticeDto;
@@ -42,6 +44,7 @@ const SpeakingExamView = ({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const section = searchParams.get("section");
+  const attemptId = useEnsureMockExamAttemptId(practice.taskId);
   const [sendingResult] = useState(false);
   const [passageIndex, setPassageIndex] = useState(0);
 
@@ -157,7 +160,7 @@ const SpeakingExamView = ({
     formData.append("audio", blob, "recording.m4a");
     formData.append("examId", practice.taskId);
     formData.append("partId", partId.toString());
-    formData.append("attemptId", searchParams.get("attemptId") || "");
+    formData.append("attemptId", attemptId || "");
 
     const progressInterval = setInterval(() => {
       setProgressBar((prev) => (prev < 100 ? prev + 1 : prev));
@@ -492,7 +495,7 @@ const SpeakingExamView = ({
                       }
                     } else if (page == "evaluateResult") {
                       router.push(
-                        `/exams/exam_${practice.taskId}/results?attemptId=${searchParams.get("attemptId")}`,
+                        mockExamResultsHref(practice.taskId, attemptId),
                       );
                       setTime(partId == 17 || partId == 18 ? 60 : 30);
                     }
@@ -515,9 +518,7 @@ const SpeakingExamView = ({
                 <p className="text-[16px] font-bold text-[#212E42] mb-4">
                   Evaluation Complete!
                 </p>
-                <a
-                  href={`/exams/exam_${practice.taskId}/results?attemptId=${searchParams.get("attemptId")}`}
-                >
+                <a href={mockExamResultsHref(practice.taskId, attemptId)}>
                   <button className="bg-[#4A7DFF] text-white flex items-center rounded-[24px] px-[24px] h-[40px] cursor-pointer ">
                     View Results
                   </button>

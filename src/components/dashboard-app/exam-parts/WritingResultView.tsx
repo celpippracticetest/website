@@ -9,6 +9,7 @@ import { Accordion } from "radix-ui";
 import * as React from "react";
 import AudioPlayer from "../listening-practice/components/AudioPlayer";
 import { PRACTICE_PARTS } from "@/constants";
+import { mockExamPartHref } from "@/lib/mockExamAttemptId";
 
 const WritingResultView = ({
   examPart,
@@ -43,11 +44,20 @@ const WritingResultView = ({
       const data = await response.json();
       if (data.items.length > 0) {
         setAnswer(data.items[0]);
+      } else {
+        setAnswer(null);
       }
     } catch (error) {
       console.error("Error fetching answer:", error);
+      setAnswer(null);
     }
   };
+
+  const partHref = mockExamPartHref(
+    examPart?.examId?.toString() ?? "",
+    examPart?.partId ?? 0,
+    attemptId,
+  );
   React.useEffect(() => {
     fetchUsersAnswer();
   }, [examPart?.examId, examPart?.partId, attemptId]);
@@ -65,7 +75,7 @@ const WritingResultView = ({
   const maxScore = 12;
   const overallScore = Math.round(
     Object.values(skillScores).reduce((sum, score) => sum + score, 0) /
-    Object.keys(skillScores).length
+      Object.keys(skillScores).length,
   );
 
   // Determine the description based on overall score
@@ -115,9 +125,7 @@ const WritingResultView = ({
               </span>
               <a
                 className="flex group-data-[state=closed]:hidden text-[#F27059] border border-[#F27059] bg-white px-[16px]  gap-[8px] h-[40px] rounded-[24px] text-[14px] justify-center items-center screen744:!hidden"
-                href={
-                  "/exams/exam_" + examPart?.examId + "/part" + examPart?.partId
-                }
+                href={partHref}
               >
                 Go to this part
                 <SvgArrowRight />
@@ -128,12 +136,7 @@ const WritingResultView = ({
               <div className="hidden group-data-[state=open]:flex">
                 <a
                   className="hidden text-[#F27059] border border-[#F27059] bg-white px-[16px] ml-[8px] gap-[8px] h-[40px] rounded-[24px] text-[14px] justify-center items-center screen744:!flex"
-                  href={
-                    "/exams/exam_" +
-                    examPart?.examId +
-                    "/part" +
-                    examPart?.partId
-                  }
+                  href={partHref}
                 >
                   Go to this part
                   <SvgArrowRight />
@@ -257,7 +260,7 @@ const WritingResultView = ({
                                     </span>
                                   </React.Fragment>
                                 );
-                              }
+                              },
                             )}
                           </span>
                         </div>
@@ -280,7 +283,7 @@ const WritingResultView = ({
                                   .replace(/\n/g, "<br />")
                                   .replace(
                                     /\*\*(.*?)\*\*/g,
-                                    "<strong>$1</strong>"
+                                    "<strong>$1</strong>",
                                   ),
                               }}
                             ></div>
@@ -305,7 +308,7 @@ const WritingResultView = ({
                                 .replace(/\n/g, "<br />")
                                 .replace(
                                   /\*\*(.*?)\*\*/g,
-                                  "<strong>$1</strong>"
+                                  "<strong>$1</strong>",
                                 ),
                             }}
                           ></div>

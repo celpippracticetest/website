@@ -26,6 +26,8 @@ import { PRACTICE_PARTS } from "@/constants";
 import ContinueExamModal from "@/components/modal/ContinueExamModal";
 import ExamHeader from "./components/ExamHeader";
 import Link from "next/link";
+import { useEnsureMockExamAttemptId } from "@/hooks/useEnsureMockExamAttemptId";
+import { mockExamPartHref, mockExamResultsHref } from "@/lib/mockExamAttemptId";
 
 interface WritingExamViewProps {
   practice: TPracticeDto;
@@ -47,6 +49,7 @@ const WritingExamView = ({
   const router = useRouter();
   const searchParams = useSearchParams();
   const section = searchParams.get("section");
+  const attemptId = useEnsureMockExamAttemptId(practice.taskId);
   const [page, setPage] = useState(partId == 11 ? "description" : "question");
   const [passageIndex] = useState(0);
   const [time, setTime] = useState(1620);
@@ -97,13 +100,10 @@ const WritingExamView = ({
   }, [page, time]);
   useEffect(() => {
     // Log mock exam started when component mounts
-    if (user && practice.taskId) {
-      const attemptId =
-        searchParams.get("attemptId") ||
-        `mock_${practice.taskId}_${Date.now()}`;
+    if (user && practice.taskId && attemptId) {
       ActivityLogger.mockStarted(attemptId, practice.taskId.toString());
     }
-  }, [user, practice.taskId]);
+  }, [user, practice.taskId, attemptId]);
 
   useEffect(() => {
     if (isSubmit) {
@@ -119,7 +119,7 @@ const WritingExamView = ({
         examId: practice.taskId,
         partId,
         text,
-        attemptId: searchParams.get("attemptId") || undefined,
+        attemptId,
       };
 
       // Simulate progress bar increment
@@ -141,11 +141,10 @@ const WritingExamView = ({
       const result = await response.json();
 
       // Log mock exam part completed
-      const attemptId =
-        searchParams.get("attemptId") ||
-        `mock_${practice.taskId}_${Date.now()}`;
+      const loggerAttemptId =
+        attemptId || `mock_${practice.taskId}_${Date.now()}`;
       await ActivityLogger.mockCompleted(
-        attemptId,
+        loggerAttemptId,
         practice.taskId.toString(),
         result.overall,
         result,
@@ -306,19 +305,6 @@ const WritingExamView = ({
 
                 <button
                   onClick={() => {
-                    const query = section ? `?section=${section}` : "";
-                    const attemptId = searchParams.get("attemptId");
-                    const attemptQuery = attemptId
-                      ? `attemptId=${attemptId}`
-                      : "";
-                    const finalQuery = query
-                      ? attemptQuery
-                        ? `?${attemptQuery}&${query.replace("?", "")}`
-                        : query
-                      : attemptQuery
-                        ? `?${attemptQuery}`
-                        : "";
-
                     if (page == "description" && passageIndex == 0) {
                       if (
                         partId === 1 ||
@@ -327,22 +313,24 @@ const WritingExamView = ({
                         router.push("/exam-overview");
                       } else {
                         router.push(
-                          "/exams/exam_" +
-                            practice.taskId +
-                            "/part" +
-                            (partId - 1).toString() +
-                            finalQuery,
+                          mockExamPartHref(
+                            practice.taskId,
+                            partId - 1,
+                            attemptId,
+                            { section },
+                          ),
                         );
                       }
                     } else if (page == "question" && partId === 11) {
                       setPage("description");
                     } else if (page == "question") {
                       router.push(
-                        "/exams/exam_" +
-                          practice.taskId +
-                          "/part" +
-                          (partId - 1).toString() +
-                          finalQuery,
+                        mockExamPartHref(
+                          practice.taskId,
+                          partId - 1,
+                          attemptId,
+                          { section },
+                        ),
                       );
                     }
                     setTime(1620);
@@ -353,33 +341,21 @@ const WritingExamView = ({
                 </button>
                 <button
                   onClick={() => {
-                    const query = section ? `?section=${section}` : "";
-                    const attemptId = searchParams.get("attemptId");
-                    const attemptQuery = attemptId
-                      ? `attemptId=${attemptId}`
-                      : "";
-                    const finalQuery = query
-                      ? attemptQuery
-                        ? `?${attemptQuery}&${query.replace("?", "")}`
-                        : query
-                      : attemptQuery
-                        ? `?${attemptQuery}`
-                        : "";
-
                     if (page == "description") {
                       setPage("question");
                     } else if (page == "question") {
                       if (section === "writing" && partId >= 12) {
                         router.push(
-                          `/exams/exam_${practice.taskId}/results${finalQuery}`,
+                          mockExamResultsHref(practice.taskId, attemptId),
                         );
                       } else {
                         router.push(
-                          "/exams/exam_" +
-                            practice.taskId +
-                            "/part" +
-                            (partId + 1).toString() +
-                            finalQuery,
+                          mockExamPartHref(
+                            practice.taskId,
+                            partId + 1,
+                            attemptId,
+                            { section },
+                          ),
                         );
                       }
                     }
@@ -538,30 +514,16 @@ const WritingExamView = ({
                           <Button
                             className="mt-4 bg-[#4A7DFF] text-white rounded-full px-6 py-2"
                             onClick={() => {
-                              const query = section
-                                ? `?section=${section}`
-                                : "";
-                              const attemptId = searchParams.get("attemptId");
-                              const attemptQuery = attemptId
-                                ? `attemptId=${attemptId}`
-                                : "";
-                              const finalQuery = query
-                                ? attemptQuery
-                                  ? `?${attemptQuery}&${query.replace("?", "")}`
-                                  : query
-                                : attemptQuery
-                                  ? `?${attemptQuery}`
-                                  : "";
-
                               if (section === "writing" && partId >= 12) {
                                 setShowContinueModal(true);
                               } else {
                                 router.push(
-                                  "/exams/exam_" +
-                                    practice.taskId +
-                                    "/part" +
-                                    (partId + 1).toString() +
-                                    finalQuery,
+                                  mockExamPartHref(
+                                    practice.taskId,
+                                    partId + 1,
+                                    attemptId,
+                                    { section },
+                                  ),
                                 );
                               }
                             }}
@@ -605,10 +567,10 @@ const WritingExamView = ({
         <ContinueExamModal
           onContinue={() => {
             setShowContinueModal(false);
-            const attemptId = searchParams.get("attemptId");
-            const attemptQuery = attemptId ? `&attemptId=${attemptId}` : "";
             router.push(
-              `/exams/exam_${practice.taskId}/part13?section=speaking${attemptQuery}`,
+              mockExamPartHref(practice.taskId, 13, attemptId, {
+                section: "speaking",
+              }),
             );
           }}
           onFinish={() => {

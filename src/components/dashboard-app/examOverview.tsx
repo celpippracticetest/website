@@ -16,6 +16,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
+import {
+  createMockExamAttemptId,
+  rememberMockExamAttemptId,
+} from "@/lib/mockExamAttemptId";
 
 const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
   const router = useRouter();
@@ -67,7 +71,8 @@ const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
       return;
     }
     setSelectedExam(exam.name);
-    const attemptId = `att_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const attemptId = createMockExamAttemptId();
+    rememberMockExamAttemptId(exam.id, attemptId);
     const query = section
       ? `?section=${section}&attemptId=${attemptId}`
       : `?attemptId=${attemptId}`;

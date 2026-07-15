@@ -295,7 +295,7 @@ const WritingPracticeView = ({
     fetchUsersAnswer();
 
     // Log practice started
-    if (user && selectedPracticeId) {
+    if (user?.id && selectedPracticeId) {
       const practiceAttemptId = `practice_${selectedPracticeId}_${Date.now()}`;
       ActivityLogger.practiceStarted(
         practiceAttemptId,
@@ -305,7 +305,9 @@ const WritingPracticeView = ({
         console.error("Error logging practice started:", error);
       });
     }
-  }, [selectedPracticeId, user]);
+    // Depend on user.id only — auth token refresh recreates the user object and
+    // would otherwise clear in-progress answers/text.
+  }, [selectedPracticeId, user?.id]);
   // const {
   //   selectedAnswers,
   //   showResults,

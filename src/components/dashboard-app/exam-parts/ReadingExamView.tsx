@@ -29,6 +29,8 @@ import { PRACTICE_PARTS } from "@/constants";
 import ContinueExamModal from "@/components/modal/ContinueExamModal";
 import ExamHeader from "./components/ExamHeader";
 import Link from "next/link";
+import { useEnsureMockExamAttemptId } from "@/hooks/useEnsureMockExamAttemptId";
+import { mockExamPartHref } from "@/lib/mockExamAttemptId";
 
 interface ReadingExamViewProps {
   practice: TPracticeDto;
@@ -51,6 +53,7 @@ const ReadingExamView = ({
   const router = useRouter();
   const searchParams = useSearchParams();
   const section = searchParams.get("section");
+  const attemptId = useEnsureMockExamAttemptId(practice.taskId);
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
@@ -98,13 +101,10 @@ const ReadingExamView = ({
   }, [page, time]);
   useEffect(() => {
     // Log mock exam started when component mounts
-    if (user && practice.taskId) {
-      const loggerAttemptId =
-        searchParams.get("attemptId") ||
-        `mock_${practice.taskId}_${Date.now()}`;
-      ActivityLogger.mockStarted(loggerAttemptId, practice.taskId.toString());
+    if (user && practice.taskId && attemptId) {
+      ActivityLogger.mockStarted(attemptId, practice.taskId.toString());
     }
-  }, [user, practice.taskId, searchParams]);
+  }, [user, practice.taskId, attemptId]);
 
   useEffect(() => {
     if (page === "answer" && user) {
@@ -119,7 +119,7 @@ const ReadingExamView = ({
               examId: practice.taskId,
               partId: partId,
               answers: selectedAnswers,
-              attemptId: searchParams.get("attemptId"),
+              attemptId,
             }),
           });
 
@@ -127,8 +127,7 @@ const ReadingExamView = ({
             const result = await response.json();
             // Log mock exam part completed
             const loggerAttemptId =
-              searchParams.get("attemptId") ||
-              `mock_${practice.taskId}_${Date.now()}`;
+              attemptId || `mock_${practice.taskId}_${Date.now()}`;
             await ActivityLogger.mockCompleted(
               loggerAttemptId,
               practice.taskId.toString(),
@@ -157,23 +156,13 @@ const ReadingExamView = ({
           // Optionally handle error
           console.error("Failed to submit answers:", error);
         }
-        const attemptId = searchParams.get("attemptId");
-        const query = section
-          ? `?section=${section}&attemptId=${attemptId}`
-          : `?attemptId=${attemptId}`;
         if (section === "reading" && partId >= 10) {
           setShowContinueModal(true);
         } else {
-          const attemptId = searchParams.get("attemptId");
-          const query = section
-            ? `?section=${section}&attemptId=${attemptId}`
-            : `?attemptId=${attemptId}`;
           router.push(
-            "/exams/exam_" +
-              practice.taskId +
-              "/part" +
-              (partId + 1).toString() +
-              query,
+            mockExamPartHref(practice.taskId, partId + 1, attemptId, {
+              section,
+            }),
           );
         }
       };
@@ -181,7 +170,7 @@ const ReadingExamView = ({
       submitAnswers();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, user]);
+  }, [page, user?.id]);
 
   const handleAnswerSelect = (questionId: number, answerId: string) => {
     setSelectedAnswers((prev) => ({
@@ -688,7 +677,9 @@ const ReadingExamView = ({
           onContinue={() => {
             setShowContinueModal(false);
             router.push(
-              `/exams/exam_${practice.taskId}/part11?section=writing&attemptId=${searchParams.get("attemptId")}`,
+              mockExamPartHref(practice.taskId, 11, attemptId, {
+                section: "writing",
+              }),
             );
           }}
           onFinish={() => {

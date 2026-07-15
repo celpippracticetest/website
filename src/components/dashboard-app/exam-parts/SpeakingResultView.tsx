@@ -8,6 +8,7 @@ import { Accordion } from "radix-ui";
 import * as React from "react";
 import AudioPlayer from "../listening-practice/components/AudioPlayer";
 import { PRACTICE_PARTS } from "@/constants";
+import { mockExamPartHref } from "@/lib/mockExamAttemptId";
 
 const SpeakingResultView = ({
   examPart,
@@ -25,7 +26,7 @@ const SpeakingResultView = ({
     try {
       const url = new URL(
         "/api/exams/answers/speaking",
-        window.location.origin
+        window.location.origin,
       );
       url.searchParams.append("examId", examPart?.examId.toString() ?? "");
       url.searchParams.append("partId", examPart?.partId.toString() ?? "");
@@ -45,14 +46,24 @@ const SpeakingResultView = ({
       const data = await response.json();
       if (data.items.length > 0) {
         setAnswer(data.items[0]);
+      } else {
+        setAnswer(null);
       }
     } catch (error) {
       console.error("Error fetching answer:", error);
+      setAnswer(null);
     }
   };
   React.useEffect(() => {
     fetchUsersAnswer();
   }, [examPart?.examId, examPart?.partId, attemptId]);
+
+  const partHref = mockExamPartHref(
+    examPart?.examId?.toString() ?? "",
+    examPart?.partId ?? 0,
+    attemptId,
+  );
+
   if (!examPart) {
     return <div></div>;
   }
@@ -67,7 +78,7 @@ const SpeakingResultView = ({
   const maxScore = 12;
   const overallScore = Math.round(
     Object.values(skillScores).reduce((sum, score) => sum + score, 0) /
-    Object.keys(skillScores).length
+      Object.keys(skillScores).length,
   );
 
   // Determine the description based on overall score
@@ -117,9 +128,7 @@ const SpeakingResultView = ({
               </span>
               <a
                 className="flex group-data-[state=closed]:hidden text-[#F27059] border border-[#F27059] bg-white px-[16px]  gap-[8px] h-[40px] rounded-[24px] text-[14px] justify-center items-center screen744:!hidden"
-                href={
-                  "/exams/exam_" + examPart?.examId + "/part" + examPart?.partId
-                }
+                href={partHref}
               >
                 Go to this part
                 <SvgArrowRight />
@@ -130,12 +139,7 @@ const SpeakingResultView = ({
               <div className="hidden group-data-[state=open]:flex">
                 <a
                   className="hidden text-[#F27059] border border-[#F27059] bg-white px-[16px] ml-[8px] gap-[8px] h-[40px] rounded-[24px] text-[14px] justify-center items-center screen744:!flex"
-                  href={
-                    "/exams/exam_" +
-                    examPart?.examId +
-                    "/part" +
-                    examPart?.partId
-                  }
+                  href={partHref}
                 >
                   Go to this part
                   <SvgArrowRight />
@@ -259,7 +263,7 @@ const SpeakingResultView = ({
                                     </span>
                                   </React.Fragment>
                                 );
-                              }
+                              },
                             )}
                           </span>
                         </div>
@@ -282,7 +286,7 @@ const SpeakingResultView = ({
                                   .replace(/\n/g, "<br />")
                                   .replace(
                                     /\*\*(.*?)\*\*/g,
-                                    "<strong>$1</strong>"
+                                    "<strong>$1</strong>",
                                   ),
                               }}
                             ></div>
@@ -307,7 +311,7 @@ const SpeakingResultView = ({
                                 .replace(/\n/g, "<br />")
                                 .replace(
                                   /\*\*(.*?)\*\*/g,
-                                  "<strong>$1</strong>"
+                                  "<strong>$1</strong>",
                                 ),
                             }}
                           ></div>

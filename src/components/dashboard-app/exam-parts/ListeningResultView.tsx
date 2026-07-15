@@ -6,24 +6,30 @@ import { TQuestion } from "@/models/question.model";
 import { Accordion } from "radix-ui";
 import * as React from "react";
 import { PRACTICE_PARTS } from "@/constants";
+import { mockExamPartHref } from "@/lib/mockExamAttemptId";
 
 const ListeningResultView = ({
   examPart,
   answer: userAnswer,
+  attemptId,
 }: {
   examPart: TExamPartSchemaDto | undefined;
   answer: TListeningAndReadingAnswerDto | undefined;
+  attemptId?: string | null;
 }) => {
-  const allQuestions: any = examPart?.passages?.reduce(
-    (questions, passage: any) => {
+  const partHref = mockExamPartHref(
+    examPart?.examId?.toString() ?? "",
+    examPart?.partId ?? 0,
+    attemptId,
+  );
+  const allQuestions: any =
+    examPart?.passages?.reduce((questions, passage: any) => {
       return questions.concat(passage.questions || []);
-    },
-    []
-  ) || [];
+    }, []) || [];
 
   const numberOfCorrect = allQuestions.filter(
     (q: any, index: number) =>
-      userAnswer?.answers[index] && q.answer === userAnswer?.answers[index]
+      userAnswer?.answers[index] && q.answer === userAnswer?.answers[index],
   ).length;
 
   return (
@@ -45,9 +51,7 @@ const ListeningResultView = ({
               </span>
               <a
                 className="flex group-data-[state=closed]:hidden text-[#F27059] border border-[#F27059] bg-white px-[16px]  gap-[8px] h-[40px] rounded-[24px] text-[14px] justify-center items-center screen744:!hidden"
-                href={
-                  "/exams/exam_" + examPart?.examId + "/part" + examPart?.partId
-                }
+                href={partHref}
               >
                 Go to this part
                 <SvgArrowRight />
@@ -58,12 +62,7 @@ const ListeningResultView = ({
               <div className="hidden group-data-[state=open]:flex">
                 <a
                   className="hidden text-[#F27059] border border-[#F27059] bg-white px-[16px] ml-[8px] gap-[8px] h-[40px] rounded-[24px] text-[14px] justify-center items-center screen744:!flex"
-                  href={
-                    "/exams/exam_" +
-                    examPart?.examId +
-                    "/part" +
-                    examPart?.partId
-                  }
+                  href={partHref}
                 >
                   Go to this part
                   <SvgArrowRight />
@@ -85,12 +84,13 @@ const ListeningResultView = ({
                           Question{index + 1}: {question.question}
                         </span>
                         <span
-                          className={`ml-2 flex shrink-0 items-center rounded-[24px] font-semibold h-[24px] text-[11px] ${!userAnswer?.answers[index]
+                          className={`ml-2 flex shrink-0 items-center rounded-[24px] font-semibold h-[24px] text-[11px] ${
+                            !userAnswer?.answers[index]
                               ? "text-[#212E42] bg-[#E6E6E6] px-[12px]"
                               : userAnswer.answers[index] === question.answer
                                 ? "text-[#0DAA94] bg-[#F0FFFD] px-[12px]"
                                 : "text-[#EE4266] bg-[#FFE2E8] px-[12px]"
-                            }`}
+                          }`}
                         >
                           {!userAnswer?.answers[index]
                             ? "Not Answered"
@@ -106,7 +106,7 @@ const ListeningResultView = ({
                         {(() => {
                           const found = question.choices.find(
                             (answer) =>
-                              answer.id && answer.id === question.answer
+                              answer.id && answer.id === question.answer,
                           );
                           return found ? found.text : "";
                         })()}
@@ -129,7 +129,7 @@ const ListeningResultView = ({
                             const found = question.choices.find(
                               (answer) =>
                                 answer.id &&
-                                answer.id === userAnswer?.answers[index]
+                                answer.id === userAnswer?.answers[index],
                             );
                             return found ? found.text : "";
                           })()}

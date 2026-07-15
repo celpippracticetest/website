@@ -28,6 +28,11 @@ import {
 } from "@/components/ui/select";
 import { format } from "date-fns";
 import { TQuestion } from "@/models/question.model";
+import {
+  mockExamAttemptGroupKey,
+  rememberMockExamAttemptId,
+  sanitizeMockExamAttemptIdParam,
+} from "@/lib/mockExamAttemptId";
 
 function scaleToBand(weightedPercent: number): number {
   if (isNaN(weightedPercent)) return 0;
@@ -47,15 +52,17 @@ const ResultExamView = ({
 }) => {
   const route = useRouter();
   const searchParams = useSearchParams();
-  const currentAttemptId =
-    searchParams.get("attemptId") === "null"
-      ? null
-      : searchParams.get("attemptId");
+  const attemptParam = searchParams.get("attemptId");
+  const currentAttemptId = sanitizeMockExamAttemptIdParam(attemptParam);
+  const wantsLegacyAttempt =
+    attemptParam === "legacy" ||
+    attemptParam === "null" ||
+    attemptParam === "undefined";
 
   const attempts = useMemo(() => {
     const attemptMap = new Map<string, Date>();
     [...allAnswers, ...allSpeakingAndWritingAnswers].forEach((a) => {
-      const id = a.attemptId || "legacy";
+      const id = mockExamAttemptGroupKey(a.attemptId);
       const date = a.createdAt ? new Date(a.createdAt) : new Date(0);
       if (!attemptMap.has(id) || date > attemptMap.get(id)!) {
         attemptMap.set(id, date);
@@ -68,27 +75,37 @@ const ResultExamView = ({
   }, [allAnswers, allSpeakingAndWritingAnswers]);
 
   const selectedAttemptId = useMemo(() => {
+    if (wantsLegacyAttempt && attempts.some((a) => a.id === "legacy")) {
+      return "legacy";
+    }
     if (currentAttemptId && attempts.some((a) => a.id === currentAttemptId)) {
       return currentAttemptId;
     }
     return attempts[0]?.id;
-  }, [currentAttemptId, attempts]);
+  }, [currentAttemptId, wantsLegacyAttempt, attempts]);
 
   const answers = useMemo(() => {
     if (!selectedAttemptId) return allAnswers;
     return allAnswers.filter(
-      (a) => (a.attemptId || "legacy") === selectedAttemptId,
+      (a) => mockExamAttemptGroupKey(a.attemptId) === selectedAttemptId,
     );
   }, [allAnswers, selectedAttemptId]);
 
   const speakingAndWritingAnswers = useMemo(() => {
     if (!selectedAttemptId) return allSpeakingAndWritingAnswers;
     return allSpeakingAndWritingAnswers.filter(
-      (a) => (a.attemptId || "legacy") === selectedAttemptId,
+      (a) => mockExamAttemptGroupKey(a.attemptId) === selectedAttemptId,
     );
   }, [allSpeakingAndWritingAnswers, selectedAttemptId]);
 
   const { user, isLoaded } = useHybridWebUser();
+
+  // Keep the selected attempt sticky when navigating back into exam parts
+  useEffect(() => {
+    if (exams?.id && selectedAttemptId && selectedAttemptId !== "legacy") {
+      rememberMockExamAttemptId(exams.id, selectedAttemptId);
+    }
+  }, [exams?.id, selectedAttemptId]);
 
   // Log score report viewed
   useEffect(() => {
@@ -317,6 +334,7 @@ const ResultExamView = ({
                     key={index}
                     examPart={examParts.find((e) => e.partId == index + 1)}
                     answer={answers.find((a) => a.partId == index + 1)}
+                    attemptId={selectedAttemptId}
                   />
                 ))}
               </div>
@@ -348,6 +366,7 @@ const ResultExamView = ({
                     key={7 + index}
                     examPart={examParts.find((e) => e.partId == index + 7)}
                     answer={answers.find((a) => a.partId == index + 7)}
+                    attemptId={selectedAttemptId}
                   />
                 ))}
               </div>
@@ -424,6 +443,7 @@ const ResultExamView = ({
         onClose={() => setShowIncompleteModal(false)}
         incompleteParts={incompleteSections}
         examId={exams.id}
+        attemptId={selectedAttemptId}
       />
     </div>
   );

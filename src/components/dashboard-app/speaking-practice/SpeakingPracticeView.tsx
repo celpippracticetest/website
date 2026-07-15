@@ -213,11 +213,13 @@ const SpeakingPracticeView = ({
     fetchUsersAnswer();
 
     // Log practice started
-    if (user && selectedPracticeId) {
+    if (user?.id && selectedPracticeId) {
       const attemptId = `practice_${selectedPracticeId}_${Date.now()}`;
       ActivityLogger.practiceStarted(attemptId, selectedPracticeId, "Speaking");
     }
-  }, [selectedPracticeId, user]);
+    // Depend on user.id only — auth token refresh recreates the user object and
+    // would otherwise reset timers and clear in-progress state.
+  }, [selectedPracticeId, user?.id]);
   useEffect(() => {
     fetchUsersAnswer();
   }, [isSubmit]);

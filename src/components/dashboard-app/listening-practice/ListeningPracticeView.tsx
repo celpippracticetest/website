@@ -162,7 +162,7 @@ const ListeningPracticeView = ({
     fetchPreviousAnswers();
 
     // Log practice started
-    if (user && selectedPracticeId) {
+    if (user?.id && selectedPracticeId) {
       const attemptId = `practice_${selectedPracticeId}_${Date.now()}`;
       ActivityLogger.practiceStarted(
         attemptId,
@@ -170,7 +170,9 @@ const ListeningPracticeView = ({
         "Listening",
       );
     }
-  }, [selectedPracticeId, user, previousAnswer]);
+    // Depend on user.id only — auth token refresh recreates the user object and
+    // would otherwise reset in-progress selections.
+  }, [selectedPracticeId, user?.id, previousAnswer]);
 
   useEffect(() => {
     if (page === "answer" && user && !isFromFirstPage) {
@@ -236,7 +238,7 @@ const ListeningPracticeView = ({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, user, isFromFirstPage]);
+  }, [page, user?.id, isFromFirstPage]);
 
   const handleAnswerSelect = (questionId: number, answerId: string) => {
     setSelectedAnswers((prev) => ({

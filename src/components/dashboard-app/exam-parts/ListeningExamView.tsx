@@ -24,6 +24,8 @@ import TrophyModal from "@/components/modal/TrophyModal";
 import { PRACTICE_PARTS } from "@/constants";
 import ContinueExamModal from "@/components/modal/ContinueExamModal";
 import ExamHeader from "./components/ExamHeader";
+import { useEnsureMockExamAttemptId } from "@/hooks/useEnsureMockExamAttemptId";
+import { mockExamPartHref } from "@/lib/mockExamAttemptId";
 
 interface ListeningExamViewProps {
   practice: TPracticeDto;
@@ -49,6 +51,7 @@ const ListeningExamView = ({
   const { user, isLoaded } = useHybridWebUser();
   const searchParams = useSearchParams();
   const section = searchParams.get("section");
+  const attemptId = useEnsureMockExamAttemptId(practice.taskId);
   const { addPoints } = useLeaguePoints();
   const {
     isModalOpen,
@@ -92,13 +95,10 @@ const ListeningExamView = ({
   }, [page, time]);
   useEffect(() => {
     // Log mock exam started when component mounts
-    if (user && practice.taskId) {
-      const loggerAttemptId =
-        searchParams.get("attemptId") ||
-        `mock_${practice.taskId}_${Date.now()}`;
-      ActivityLogger.mockStarted(loggerAttemptId, practice.taskId.toString());
+    if (user && practice.taskId && attemptId) {
+      ActivityLogger.mockStarted(attemptId, practice.taskId.toString());
     }
-  }, [user, practice.taskId, searchParams]);
+  }, [user, practice.taskId, attemptId]);
 
   useEffect(() => {
     if (page === "answer" && user) {
@@ -113,7 +113,7 @@ const ListeningExamView = ({
               examId: practice.taskId,
               partId: partId,
               answers: selectedAnswers,
-              attemptId: searchParams.get("attemptId"),
+              attemptId,
             }),
           });
 
@@ -121,8 +121,7 @@ const ListeningExamView = ({
             const result = await response.json();
             // Log mock exam part completed
             const loggerAttemptId =
-              searchParams.get("attemptId") ||
-              `mock_${practice.taskId}_${Date.now()}`;
+              attemptId || `mock_${practice.taskId}_${Date.now()}`;
             await ActivityLogger.mockCompleted(
               loggerAttemptId,
               practice.taskId.toString(),
@@ -151,23 +150,13 @@ const ListeningExamView = ({
           // Optionally handle error
           console.error("Failed to submit answers:", error);
         }
-        const attemptId = searchParams.get("attemptId");
-        const query = section
-          ? `?section=${section}&attemptId=${attemptId}`
-          : `?attemptId=${attemptId}`;
         if (section === "listening" && partId >= 6) {
           setShowContinueModal(true);
         } else {
-          const attemptId = searchParams.get("attemptId");
-          const query = section
-            ? `?section=${section}&attemptId=${attemptId}`
-            : `?attemptId=${attemptId}`;
           router.push(
-            "/exams/exam_" +
-              practice.taskId +
-              "/part" +
-              (partId + 1).toString() +
-              query,
+            mockExamPartHref(practice.taskId, partId + 1, attemptId, {
+              section,
+            }),
           );
         }
       };
@@ -175,7 +164,7 @@ const ListeningExamView = ({
       submitAnswers();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, user]);
+  }, [page, user?.id]);
   //   useEffect(() => {
   //     setQuestionIndexInPractice(0);
   //     setPassageIndex(0);
@@ -563,7 +552,9 @@ const ListeningExamView = ({
           onContinue={() => {
             setShowContinueModal(false);
             router.push(
-              `/exams/exam_${practice.taskId}/part7?section=reading&attemptId=${searchParams.get("attemptId")}`,
+              mockExamPartHref(practice.taskId, 7, attemptId, {
+                section: "reading",
+              }),
             );
           }}
           onFinish={() => {
