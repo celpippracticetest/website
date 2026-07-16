@@ -21,8 +21,11 @@ import { Badge } from "@/components/ui/badge";
 import { Practice } from "./types/practiceTypes";
 import { redirect, RedirectType } from "next/navigation";
 
+type TaskLabel = { taskNumber: string; name: string };
+
 interface CmsPracticesTableProps {
   practices: Practice[];
+  taskLabels?: Record<string, TaskLabel>;
   isLoading: boolean;
   isError: boolean;
   page: number;
@@ -35,6 +38,7 @@ interface CmsPracticesTableProps {
 
 const CmsPracticesTable = ({
   practices,
+  taskLabels = {},
   isLoading,
   isError,
   page,
@@ -45,6 +49,11 @@ const CmsPracticesTable = ({
   onDelete,
 }: CmsPracticesTableProps) => {
   const totalPages = Math.ceil(totalItems / pageSize);
+
+  const getTaskLabel = (taskId?: string) => {
+    if (!taskId) return null;
+    return taskLabels[taskId.toLowerCase()] ?? null;
+  };
 
   if (isLoading) {
     return <div className="flex justify-center p-8">Loading practices...</div>;
@@ -91,7 +100,7 @@ const CmsPracticesTable = ({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>ID</TableHead>
+            <TableHead>Task #</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Task</TableHead>
             <TableHead>Difficulty</TableHead>
@@ -103,13 +112,17 @@ const CmsPracticesTable = ({
         <TableBody>
           {practices.map((practice) => (
             <TableRow key={practice.id}>
-              <TableCell className="font-mono text-[14px]">
-                {practice.id.substring(0, 8)}...
+              <TableCell className="text-[14px] font-medium text-gray-700">
+                {getTaskLabel(practice.taskId)?.taskNumber || "N/A"}
               </TableCell>
               <TableCell>
                 {practice.name || practice.title || "Untitled"}
               </TableCell>
-              <TableCell>{practice.taskId || "N/A"}</TableCell>
+              <TableCell>
+                {getTaskLabel(practice.taskId)?.name ||
+                  practice.taskId ||
+                  "N/A"}
+              </TableCell>
               <TableCell>
                 <Badge
                   variant="outline"
@@ -137,7 +150,7 @@ const CmsPracticesTable = ({
                       `/${practice.type.toLowerCase()}?selectedPracticeId=${
                         practice.id
                       }`,
-                      RedirectType.push
+                      RedirectType.push,
                     );
                     // onEdit(practice.id, practice.type)
                   }}
@@ -159,7 +172,7 @@ const CmsPracticesTable = ({
                   onClick={() => {
                     if (
                       window.confirm(
-                        "Are you sure you want to delete this practice?"
+                        "Are you sure you want to delete this practice?",
                       )
                     ) {
                       onDelete(practice.id, practice.type);

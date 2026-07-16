@@ -31,6 +31,7 @@ import ExamHeader from "./components/ExamHeader";
 import Link from "next/link";
 import { useEnsureMockExamAttemptId } from "@/hooks/useEnsureMockExamAttemptId";
 import { mockExamPartHref } from "@/lib/mockExamAttemptId";
+import { formatPracticeHtml } from "@/lib/formatPracticeHtml";
 
 interface ReadingExamViewProps {
   practice: TPracticeDto;
@@ -422,20 +423,16 @@ const ReadingExamView = ({
                                 Read the following Message
                               </p>
                             )}
-                            <p className="whitespace-pre-line font-normal leading-6 mb-4">
-                              {!shouldShowPractice ? (
-                                <>
-                                  <span>
-                                    {practice.passages[0].body?.slice(0, 150)}
-                                  </span>
-                                  <span className="text-slate-500 blur-sm">
-                                    {practice.passages[0].body?.slice(100)}
-                                  </span>
-                                </>
-                              ) : (
-                                <span>{practice.passages[0].body}</span>
-                              )}
-                            </p>
+                            <div
+                              className={`whitespace-pre-line font-normal leading-6 mb-4 prose max-w-none prose-p:my-2 prose-headings:my-2 ${
+                                !shouldShowPractice ? "blur-sm select-none" : ""
+                              }`}
+                              dangerouslySetInnerHTML={{
+                                __html: formatPracticeHtml(
+                                  practice.passages[0].body ?? "",
+                                ),
+                              }}
+                            />
                           </>
                         )}
 
@@ -489,13 +486,17 @@ const ReadingExamView = ({
                             <p className="font-semibold text-slate-900 mt-4">
                               {practice.passages[1]?.title}
                             </p>
-                            <p className="text-[#212E42] mb-6 p-4  text-[14px] leading-7  font-medium  whitespace-pre-line">
+                            <div className="text-[#212E42] mb-6 p-4 text-[14px] leading-7 font-medium whitespace-pre-line prose max-w-none prose-p:my-2 prose-headings:my-2">
                               {practice.passages[1]?.body &&
                                 practice.passages[1]?.body
                                   ?.split("${Q}")
                                   .map((p, index, arr) => (
                                     <React.Fragment key={index}>
-                                      {p}
+                                      <span
+                                        dangerouslySetInnerHTML={{
+                                          __html: formatPracticeHtml(p),
+                                        }}
+                                      />
                                       {index !== arr.length - 1 && (
                                         <Popover.Root>
                                           <Popover.Trigger className="PopoverTrigger bg-[#F7B267] cursor-pointer px-2 rounded font-semibold text-[#212E42] text-[14px] py-1">
@@ -610,7 +611,7 @@ const ReadingExamView = ({
                                 )} */}
                                     </React.Fragment>
                                   ))}
-                            </p>
+                            </div>
                           </>
                         )}
                       {practice.passages[2] &&

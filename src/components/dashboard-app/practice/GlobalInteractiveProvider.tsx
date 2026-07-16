@@ -27,6 +27,38 @@ export const GlobalInteractiveProvider: React.FC = () => {
     );
   };
 
+  /** Safe corridor between the active word and the open popup (covers top or bottom placement). */
+  const isInHoverBridge = (x: number, y: number): boolean => {
+    if (!activeRect) return false;
+
+    const content =
+      document.querySelector<HTMLElement>(
+        '[data-word-menu="true"][data-state="open"]',
+      ) ??
+      document.querySelector<HTMLElement>(
+        "[data-radix-popper-content-wrapper]",
+      );
+
+    const pad = 12;
+    if (!content) {
+      // Popup may not be measured yet — allow travel above and below the word
+      return (
+        x >= activeRect.left - 40 &&
+        x <= activeRect.right + 40 &&
+        y >= activeRect.top - 120 &&
+        y <= activeRect.bottom + 120
+      );
+    }
+
+    const menuRect = content.getBoundingClientRect();
+    const left = Math.min(activeRect.left, menuRect.left) - pad;
+    const right = Math.max(activeRect.right, menuRect.right) + pad;
+    const top = Math.min(activeRect.top, menuRect.top) - pad;
+    const bottom = Math.max(activeRect.bottom, menuRect.bottom) + pad;
+
+    return x >= left && x <= right && y >= top && y <= bottom;
+  };
+
   // Helper to check if an element should be ignored (interactive elements)
   const isIgnoredElement = (el: HTMLElement | null): boolean => {
     if (!el) return false;
@@ -144,13 +176,33 @@ export const GlobalInteractiveProvider: React.FC = () => {
     (e: MouseEvent) => {
       mousePos.current = { x: e.clientX, y: e.clientY };
 
-      // Keep the wording popup open while the pointer is over it
-      if (isOpen && isOverWordMenu(e.target as Element | null)) {
-        clearCloseTimeout();
-        if (hoverTimeoutRef.current) {
-          clearTimeout(hoverTimeoutRef.current);
-          hoverTimeoutRef.current = null;
+      if (hoverTimeoutRef.current && isOpen) {
+        clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = null;
+      }
+
+      // While open: keep alive over menu, active word, or the bridge between them.
+      // Do not switch to other words on the way (common when the popup flips above).
+      if (isOpen) {
+        if (isOverWordMenu(e.target as Element | null)) {
+          clearCloseTimeout();
+          return;
         }
+
+        const result = getWordAtPoint(e.clientX, e.clientY);
+        if (result && result.word === activeWord) {
+          clearCloseTimeout();
+          setHoveredWord(result.word);
+          setVirtualRect(result.rect);
+          return;
+        }
+
+        if (isInHoverBridge(e.clientX, e.clientY)) {
+          clearCloseTimeout();
+          return;
+        }
+
+        scheduleClose();
         return;
       }
 
@@ -159,20 +211,8 @@ export const GlobalInteractiveProvider: React.FC = () => {
       if (result) {
         clearCloseTimeout();
 
-        // Stay on the currently open word without restarting open logic
-        if (isOpen && result.word === activeWord) {
-          setHoveredWord(result.word);
-          setVirtualRect(result.rect);
-          return;
-        }
-
         // If the word changed, update the ghost trigger instantly
         if (result.word !== hoveredWord || !virtualRect) {
-          // If moving to a DIFFERENT word, close the current menu
-          if (isOpen && result.word !== activeWord) {
-            setIsOpen(false);
-          }
-
           setHoveredWord(result.word);
           setVirtualRect(result.rect);
 
@@ -189,14 +229,8 @@ export const GlobalInteractiveProvider: React.FC = () => {
           }, 300); // 300ms hover delay
         }
       } else {
-        // If we moved away from a word
-        if (!isOpen) {
-          setHoveredWord(null);
-          setVirtualRect(null);
-        } else {
-          // Allow time to move from the word into the popup
-          scheduleClose();
-        }
+        setHoveredWord(null);
+        setVirtualRect(null);
 
         if (hoverTimeoutRef.current) {
           clearTimeout(hoverTimeoutRef.current);
@@ -204,7 +238,7 @@ export const GlobalInteractiveProvider: React.FC = () => {
         }
       }
     },
-    [isOpen, hoveredWord, virtualRect, activeWord],
+    [isOpen, hoveredWord, virtualRect, activeWord, activeRect],
   );
 
   const handleClick = useCallback((e: MouseEvent) => {

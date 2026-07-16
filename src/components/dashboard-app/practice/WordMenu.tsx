@@ -170,8 +170,9 @@ export const WordMenu: React.FC<WordMenuProps> = ({
                     data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 
                     data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2"
           sideOffset={5}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
+          // Virtual/global hover mode owns open/close; local leave would race the bridge
+          onMouseEnter={virtualRect ? undefined : handleMouseEnter}
+          onMouseLeave={virtualRect ? undefined : handleMouseLeave}
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <div className="flex flex-col">

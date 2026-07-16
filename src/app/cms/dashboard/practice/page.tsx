@@ -9,6 +9,7 @@ import {
 } from "../../../../components/dashboard-app/cms/types/practiceTypes";
 import { PracticeTypeFilter } from "@/components/dashboard-app/cms/PracticeTypeFilter";
 import { useRouter } from "nextjs-toploader/app";
+import { TTaskSchemaDto } from "@/models/tasks.model";
 
 const CmsPractices = () => {
   const [page, setPage] = useState(1);
@@ -22,12 +23,37 @@ const CmsPractices = () => {
     total: number;
     totalPages: number;
   } | null>(null);
+  const [taskLabels, setTaskLabels] = useState<
+    Record<string, { taskNumber: string; name: string }>
+  >({});
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
 
   useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  useEffect(() => {
     fetchPractices();
   }, [page, pageSize, practiceType]);
+
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch("/api/tasks?page=0&limit=200");
+      if (!response.ok) return;
+      const result = await response.json();
+      const labels: Record<string, { taskNumber: string; name: string }> = {};
+      for (const task of (result.items || []) as TTaskSchemaDto[]) {
+        labels[task.id.toLowerCase()] = {
+          taskNumber: task.taskNumber,
+          name: task.name,
+        };
+      }
+      setTaskLabels(labels);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+    }
+  };
 
   const fetchPractices = async () => {
     // Convert to zero-based page index for the API
@@ -135,6 +161,7 @@ const CmsPractices = () => {
         </div>
         <CmsPracticesTable
           practices={data?.practices || []}
+          taskLabels={taskLabels}
           isLoading={isLoading}
           isError={isError}
           page={page}
