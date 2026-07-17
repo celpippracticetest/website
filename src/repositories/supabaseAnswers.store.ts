@@ -37,6 +37,13 @@ function attemptKeyFromDto(attemptId: string | null | undefined): string {
   return attemptId;
 }
 
+function normalizePracticeIdForStorage(
+  practiceId: string | null | undefined
+): string | null {
+  if (practiceId == null || practiceId === "") return null;
+  return practiceId.toLowerCase();
+}
+
 export function normalizeExamIdForStorage(examId: string | undefined): string | undefined {
   if (examId == null || examId === "") return undefined;
   const t = examId.trim();
@@ -115,11 +122,15 @@ export async function supabaseFindAnswerByPracticeAndUser(
   const admin = getSupabaseAdmin();
   if (!admin) return null;
 
+  const normalizedPracticeId = normalizePracticeIdForStorage(practiceId);
+  if (!normalizedPracticeId) return null;
+
   const { data, error } = await admin
     .from("answers")
     .select("*")
     .eq("user_id", userId)
-    .eq("practice_id", practiceId)
+    .eq("practice_id", normalizedPracticeId)
+    .eq("attempt_key", "")
     .maybeSingle();
 
   if (error || !data) return null;
@@ -151,11 +162,13 @@ export async function supabaseCreateOrUpdateAnswer(
       .maybeSingle();
     existing = (data as AnswerRow | null) ?? null;
   } else if (dto.practiceId) {
+    const practiceId = normalizePracticeIdForStorage(dto.practiceId);
     const { data } = await admin
       .from("answers")
       .select("*")
       .eq("user_id", dto.userId)
-      .eq("practice_id", dto.practiceId)
+      .eq("practice_id", practiceId)
+      .eq("attempt_key", attemptKey)
       .maybeSingle();
     existing = (data as AnswerRow | null) ?? null;
   } else if (examId != null && dto.partId != null) {
@@ -171,9 +184,10 @@ export async function supabaseCreateOrUpdateAnswer(
     existing = (data as AnswerRow | null) ?? null;
   }
 
+  const practiceId = normalizePracticeIdForStorage(dto.practiceId);
   const basePayload = {
     user_id: dto.userId,
-    practice_id: dto.practiceId ?? null,
+    practice_id: practiceId,
     task_id: dto.taskId ?? null,
     type: String(dto.type ?? "LISTENING").toUpperCase(),
     answers: dto.answers ?? {},
@@ -604,12 +618,19 @@ export async function supabaseInsertWritingAnswer(
   const attemptKey = attemptKeyFromDto(dto.attemptId);
   const typeUpper = String(dto.type ?? "WRITING").toUpperCase();
   const now = new Date().toISOString();
+  const practiceId = normalizePracticeIdForStorage(dto.practiceId);
+
+  if (practiceId && !attemptKey) {
+    throw new Error(
+      "Practice writing/speaking answers require attemptId to keep submission history."
+    );
+  }
 
   const { data, error } = await admin
     .from("answers")
     .insert({
       user_id: dto.userId,
-      practice_id: dto.practiceId ?? null,
+      practice_id: practiceId,
       exam_id: examId ?? null,
       part_id: dto.partId ?? null,
       attempt_id: dto.attemptId ?? null,
@@ -655,11 +676,13 @@ export async function supabaseCreateOrUpdateWritingAnswer(
       .maybeSingle();
     existing = (data as AnswerRow | null) ?? null;
   } else if (dto.practiceId) {
+    const practiceId = normalizePracticeIdForStorage(dto.practiceId);
     const { data } = await admin
       .from("answers")
       .select("*")
       .eq("user_id", dto.userId)
-      .eq("practice_id", dto.practiceId)
+      .eq("practice_id", practiceId)
+      .eq("attempt_key", attemptKey)
       .maybeSingle();
     existing = (data as AnswerRow | null) ?? null;
   } else if (examId != null && dto.partId != null) {
@@ -676,9 +699,10 @@ export async function supabaseCreateOrUpdateWritingAnswer(
   }
 
   const typeUpper = String(dto.type ?? "WRITING").toUpperCase();
+  const practiceId = normalizePracticeIdForStorage(dto.practiceId);
   const basePayload = {
     user_id: dto.userId,
-    practice_id: dto.practiceId ?? null,
+    practice_id: practiceId,
     exam_id: examId ?? null,
     part_id: dto.partId ?? null,
     attempt_id: dto.attemptId ?? null,
@@ -745,7 +769,7 @@ export async function supabaseGetAllWritingAnswers(
   const partIdVal = typeof filter.partId === "number" ? filter.partId : null;
   const practiceIdVal =
     typeof filter.practiceId === "string" && filter.practiceId.length > 0
-      ? filter.practiceId
+      ? filter.practiceId.toLowerCase()
       : null;
 
   let q = admin

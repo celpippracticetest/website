@@ -71,6 +71,8 @@ export const POST = async function (req: NextRequest) {
       return NextResponse.json({ message: "Task not found" }, { status: 404 });
     }
 
+    const attemptId = `practice_${answerBody.practiceId}_${Date.now()}`;
+
     const commandTemplate = task.antropicCommand?.userPrompt ?? "";
 
     let command = commandTemplate;
@@ -312,6 +314,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
         text: answerBody.text,
         userId: user?.id,
         practiceId: answerBody.practiceId,
+        attemptId,
         overalScore: parsedResult.overall,
         type: "WRITING",
         result: parsedResult,
@@ -358,9 +361,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
       text: answerBody.text,
       userId: user?.id,
       practiceId: answerBody.practiceId,
-      attemptId:
-        answerBody.attemptId ??
-        `practice_${answerBody.practiceId}_${Date.now()}`,
+      attemptId,
       overalScore:
         msg &&
         msg.content.length > 1 &&
