@@ -10,7 +10,6 @@ import { shouldPersistAnswersInSupabase } from "@/lib/auth/should-use-supabase-p
 import {
   normalizeExamIdForStorage,
   supabaseCreateOrUpdateWritingAnswer,
-  supabaseInsertWritingAnswer,
   supabaseDeleteWritingAnswer,
   supabaseFindPracticeIdsWithWritingAnswers,
   supabaseFindWritingAnswerById,
@@ -126,7 +125,7 @@ export class WritingAndSpeakingAnswerRepository {
   }
   async createAnswer(dto: Omit<TWritingAnswerDto, "id">): Promise<TWritingAnswerDto> {
     if (shouldPersistAnswersInSupabase()) {
-      return supabaseInsertWritingAnswer(dto);
+      return supabaseCreateOrUpdateWritingAnswer(dto);
     }
     const answer = WritingAnswerSchema.parse({
       ...dto,
