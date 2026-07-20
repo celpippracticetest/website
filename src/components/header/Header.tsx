@@ -26,17 +26,6 @@ const Header = ({
   const setCurrentPage = useStore((state) => state.dashboard.setCurrentPage);
   const navLinks = [
     {
-      name: "Mock Exams",
-      mobileName: "Exams",
-      path: "/exams",
-      icon: <BookOpenCheck className="w-5 h-5 text-orange-500" />,
-      onClick: () => {
-        setViewMode("exams");
-        setCurrentPage("exams");
-        router.push("/exam-overview");
-      },
-    },
-    {
       name: "Practice",
       mobileName: "Practice",
       path: "/practice-overview",
@@ -45,6 +34,17 @@ const Header = ({
         setViewMode("practice");
         setCurrentPage("practice-overview");
         router.push("/practice-overview");
+      },
+    },
+    {
+      name: "Mock Exams",
+      mobileName: "Exams",
+      path: "/exams",
+      icon: <BookOpenCheck className="w-5 h-5 text-orange-500" />,
+      onClick: () => {
+        setViewMode("exams");
+        setCurrentPage("exams");
+        router.push("/exam-overview");
       },
     },
     {

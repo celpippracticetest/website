@@ -23,8 +23,8 @@ const SvgHamburger = dynamic(() => import("../../icons/Hamburger"), {
 const TopHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const hrefs = [
-    "/exam-overview",
     "/practice-overview",
+    "/exam-overview",
     "/learning",
     "/words",
     "/earn100",
@@ -68,17 +68,6 @@ const TopHeader = () => {
 
   const icons = [
     <div
-      key="mock-exam-icon"
-      className="relative  flex items-center justify-center"
-    >
-      <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
-        <SvgMockTest className="  text-[#76808F]  duration-200 " />
-      </div>
-      <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
-        <SvgMockTestTopNavigationHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
-      </div>
-    </div>,
-    <div
       key="practice-icon"
       className="relative w-[24px] h-[24px] flex items-center justify-center"
     >
@@ -91,6 +80,17 @@ const TopHeader = () => {
       </div>
       <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
         <SvgPracticeBlueHover className="text-[#316BFF]   duration-200 group-hover:opacity-100" />
+      </div>
+    </div>,
+    <div
+      key="mock-exam-icon"
+      className="relative  flex items-center justify-center"
+    >
+      <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
+        <SvgMockTest className="  text-[#76808F]  duration-200 " />
+      </div>
+      <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
+        <SvgMockTestTopNavigationHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
       </div>
     </div>,
     <div
@@ -110,14 +110,14 @@ const TopHeader = () => {
       </div>
     </div>,
     <div
-      key="mock-exam-icon"
+      key="words-icon"
       className="relative  flex items-center justify-center"
     >
       <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
-        <SvgMockTest className="  text-[#76808F]  duration-200 " />
+        <SvgWord stroke="#76808F" fill="#76808F" className="text-[#76808F]" />
       </div>
       <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
-        <SvgMockTestTopNavigationHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
+        <SvgWord stroke="#316BFF" fill="#316BFF" className="text-[#316BFF]" />
       </div>
     </div>,
     <div key="earn-icon" className="relative  flex items-center justify-center">
@@ -175,7 +175,7 @@ const TopHeader = () => {
           </Link>
         </div>
         <nav className="gap-[24px] hidden screen1280:!flex">
-          {["Mock Exams", "Practice", "Learning", "Words"].map(
+          {["Practice", "Mock Exams", "Learning", "Words"].map(
             (label, index) => (
               <React.Fragment key={label}>
                 <Link
@@ -225,7 +225,7 @@ const TopHeader = () => {
           </span>
         </div>
         <div className=" mt-[32px] gap-[16px]">
-          {["Mock Exams", "Practice", "Learning", "Words"].map(
+          {["Practice", "Mock Exams", "Learning", "Words"].map(
             (label, index) => (
               <React.Fragment key={label}>
                 <Link
