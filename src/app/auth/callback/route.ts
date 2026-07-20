@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
+import { resolvePostAuthRedirect } from "@/lib/auth/post-auth-redirect";
 
 /** Handles Supabase Auth callbacks: Google OAuth (PKCE), magic links, and password recovery links. */
 export async function GET(request: NextRequest) {
@@ -10,8 +11,7 @@ export async function GET(request: NextRequest) {
   const errorDescription = searchParams.get("error_description");
 
   /** Where to send the user after a successful auth exchange. Must be same-origin. */
-  const rawNext = searchParams.get("next") ?? "/practice-overview";
-  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/practice-overview";
+  const next = resolvePostAuthRedirect(searchParams.get("next"));
 
   if (errorParam) {
     const msg = encodeURIComponent(errorDescription ?? errorParam);

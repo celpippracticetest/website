@@ -6,12 +6,13 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DEFAULT_POST_AUTH_PATH } from "@/lib/auth/post-auth-redirect";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 
 type Gate = "checking" | "ready" | "error";
 
 async function consumeRecoveryHashIfPresent(
-  supabase: NonNullable<ReturnType<typeof createBrowserSupabaseClient>>
+  supabase: NonNullable<ReturnType<typeof createBrowserSupabaseClient>>,
 ): Promise<void> {
   if (typeof window === "undefined") return;
   const raw = window.location.hash?.replace(/^#/, "") ?? "";
@@ -21,12 +22,15 @@ async function consumeRecoveryHashIfPresent(
   const access_token = p.get("access_token")?.trim();
   const refresh_token = p.get("refresh_token")?.trim();
   if (!access_token || !refresh_token) return;
-  const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+  const { error } = await supabase.auth.setSession({
+    access_token,
+    refresh_token,
+  });
   if (!error) {
     window.history.replaceState(
       null,
       "",
-      `${window.location.pathname}${window.location.search}`
+      `${window.location.pathname}${window.location.search}`,
     );
   }
 }
@@ -60,7 +64,8 @@ export default function UpdatePasswordClient() {
       await consumeRecoveryHashIfPresent(supabase);
 
       if (oauthCode) {
-        const { error: exErr } = await supabase.auth.exchangeCodeForSession(oauthCode);
+        const { error: exErr } =
+          await supabase.auth.exchangeCodeForSession(oauthCode);
         if (cancelled) return;
         if (exErr) {
           setGate("error");
@@ -113,13 +118,13 @@ export default function UpdatePasswordClient() {
           setError(upErr.message || "Could not update password.");
           return;
         }
-        router.replace("/practice-overview");
+        router.replace(DEFAULT_POST_AUTH_PATH);
         router.refresh();
       } finally {
         setSubmitting(false);
       }
     },
-    [confirm, password, router]
+    [confirm, password, router],
   );
 
   if (gate === "checking") {
@@ -133,20 +138,31 @@ export default function UpdatePasswordClient() {
   if (gate === "error") {
     return (
       <main className="mx-auto flex min-h-[50vh] max-w-md flex-col justify-center gap-4 px-6 py-16 text-center">
-        <h1 className="text-xl font-semibold text-slate-900">Link invalid or expired</h1>
+        <h1 className="text-xl font-semibold text-slate-900">
+          Link invalid or expired
+        </h1>
         <p className="text-sm text-slate-600">
           Request a new reset link from{" "}
-          <Link href="/sign-in/forgot-supabase" className="font-medium text-blue-600 hover:underline">
+          <Link
+            href="/sign-in/forgot-supabase"
+            className="font-medium text-blue-600 hover:underline"
+          >
             forgot password
           </Link>{" "}
           or sign in with{" "}
-          <Link href="/sign-in?legacy=1" className="font-medium text-blue-600 hover:underline">
+          <Link
+            href="/sign-in?legacy=1"
+            className="font-medium text-blue-600 hover:underline"
+          >
             sign-in help
           </Link>
           .
         </p>
         <p>
-          <Link href="/sign-in" className="text-sm font-medium text-blue-600 hover:underline">
+          <Link
+            href="/sign-in"
+            className="text-sm font-medium text-blue-600 hover:underline"
+          >
             Back to sign in
           </Link>
         </p>
@@ -157,7 +173,9 @@ export default function UpdatePasswordClient() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="text-center text-xl font-semibold text-slate-900">Choose a new password</h1>
+        <h1 className="text-center text-xl font-semibold text-slate-900">
+          Choose a new password
+        </h1>
         <p className="mt-2 text-center text-sm text-slate-600">
           Enter a new password for your email account.
         </p>

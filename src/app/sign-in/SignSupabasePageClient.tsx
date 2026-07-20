@@ -5,31 +5,28 @@ import {
   AuthMarketingShell,
 } from "@/components/auth/AuthPageChrome";
 import { SupabaseAuthForm } from "@/components/auth/SupabaseAuthForm";
+import {
+  DEFAULT_POST_AUTH_PATH,
+  resolvePostAuthRedirect,
+} from "@/lib/auth/post-auth-redirect";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-
-/** Same-origin path only (query allowed); blocks open redirects. */
-function safeInternalRedirectPath(raw: string | null): string | undefined {
-  if (raw == null) return undefined;
-  const t = raw.trim();
-  if (!t.startsWith("/") || t.startsWith("//")) return undefined;
-  if (t.includes("://") || t.includes("\\")) return undefined;
-  return t;
-}
 
 export default function SignSupabasePageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [ready, setReady] = useState(false);
 
-  const redirectAfterAuth = useMemo(
-    () => safeInternalRedirectPath(searchParams.get("redirect_url")),
-    [searchParams]
-  );
+  const redirectAfterAuth = useMemo(() => {
+    const raw = searchParams.get("redirect_url");
+    if (raw == null || !raw.trim()) return undefined;
+    return resolvePostAuthRedirect(raw);
+  }, [searchParams]);
 
   const showLegacyAuthHint = searchParams.get("legacy") === "1";
-  const initialMode = searchParams.get("mode") === "sign-up" ? "sign-up" : "sign-in";
+  const initialMode =
+    searchParams.get("mode") === "sign-up" ? "sign-up" : "sign-in";
 
   const forceShowForm = useMemo(() => {
     const f = searchParams.get("force");
@@ -114,7 +111,7 @@ export default function SignSupabasePageClient() {
         if (cancelled) return;
         if (data.session?.user) {
           void saveAttribution();
-          const dest = redirectAfterAuth ?? "/practice-overview";
+          const dest = redirectAfterAuth ?? DEFAULT_POST_AUTH_PATH;
           if (dest.startsWith("/api/")) window.location.assign(dest);
           else router.replace(dest);
         }

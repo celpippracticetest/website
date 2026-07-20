@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { resolvePostAuthRedirect } from "@/lib/auth/post-auth-redirect";
 import { hasSupabaseWebSession } from "@/lib/auth/web-session-server";
 
 /**
@@ -13,16 +14,29 @@ export default async function SignUpPage({
   const sp = await searchParams;
 
   const force = sp.force;
-  const forceScreen = force === "1" || (typeof force === "string" && force.toLowerCase() === "true");
+  const forceScreen =
+    force === "1" ||
+    (typeof force === "string" && force.toLowerCase() === "true");
 
   if (!forceScreen && (await hasSupabaseWebSession())) {
-    redirect("/practice-overview");
+    redirect(resolvePostAuthRedirect(sp.redirect_url));
   }
 
   const qs = new URLSearchParams();
   qs.set("mode", "sign-up");
 
-  const passthrough = ["legacy", "ref", "inviter", "gclid", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "redirect_url"] as const;
+  const passthrough = [
+    "legacy",
+    "ref",
+    "inviter",
+    "gclid",
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_content",
+    "utm_term",
+    "redirect_url",
+  ] as const;
   for (const key of passthrough) {
     const v = sp[key];
     if (typeof v === "string" && v.trim()) qs.set(key, v.trim());

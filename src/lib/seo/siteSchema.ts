@@ -1,4 +1,5 @@
 import type { SkillPageContent } from "@/data/skill-pages-content";
+import { HOMEPAGE_TESTIMONIALS } from "@/data/homepage-testimonials";
 import type { TExamSchemaDto } from "@/models/exam.model";
 import { FAQ_DATA } from "@/components/dashboard-app/ExamFAQ";
 
@@ -83,22 +84,41 @@ export function buildRootLayoutJsonLd(baseUrlRaw?: string) {
 export function buildHomepageProductJsonLd(baseUrlRaw?: string) {
   const baseUrl = normalizeBaseUrl(baseUrlRaw);
 
+  // 5-star individual reviews only — no AggregateRating/reviewCount so SERP
+  // can show stars without a review-count number.
   return {
     "@context": "https://schema.org",
-    "@type": "Service",
-    "@id": `${baseUrl}/#celpip-practice-service`,
+    "@type": "SoftwareApplication",
+    "@id": `${baseUrl}/#celpip-practice-app`,
     name: "CELPIP Practice Test Platform",
     url: baseUrl,
+    applicationCategory: "EducationalApplication",
+    operatingSystem: "Web",
     description:
       "CELPIP practice tests with AI scoring for Listening, Reading, Writing, and Speaking.",
     provider: {
       "@id": `${baseUrl}/#organization`,
     },
-    serviceType: "Online CELPIP exam preparation",
-    areaServed: {
-      "@type": "Country",
-      name: "Canada",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "CAD",
+      availability: "https://schema.org/InStock",
     },
+    review: HOMEPAGE_TESTIMONIALS.map((testimonial) => ({
+      "@type": "Review",
+      author: {
+        "@type": "Person",
+        name: testimonial.name,
+      },
+      reviewBody: testimonial.comment,
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: "5",
+        bestRating: "5",
+        worstRating: "1",
+      },
+    })),
   };
 }
 

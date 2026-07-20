@@ -10,6 +10,7 @@ import { AuthLiveJoinedBanner } from "@/components/auth/AuthPageChrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DEFAULT_POST_AUTH_PATH } from "@/lib/auth/post-auth-redirect";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { cn } from "@/lib/utils";
 
@@ -23,9 +24,11 @@ function formatSupabaseAuthError(message: string | undefined): string {
 
 export function CustomSupabaseSignUpForm({
   className,
+  redirectAfterAuth,
   showLegacyAuthSignupHint = false,
 }: {
   className?: string;
+  redirectAfterAuth?: string;
   /** From `/sign-up?legacy=1` (old Clerk sign-up URL). */
   showLegacyAuthSignupHint?: boolean;
 }) {
@@ -36,6 +39,8 @@ export function CustomSupabaseSignUpForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  const dest = redirectAfterAuth ?? DEFAULT_POST_AUTH_PATH;
 
   const onSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -60,31 +65,37 @@ export function CustomSupabaseSignUpForm({
         const { data, error: signErr } = await supabase.auth.signUp({
           email: email.trim(),
           password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(dest)}`,
+          },
         });
         if (signErr) {
           setError(formatSupabaseAuthError(signErr.message));
           return;
         }
         if (data.session) {
-          router.push("/practice-overview");
-          router.refresh();
+          if (dest.startsWith("/api/")) window.location.assign(dest);
+          else {
+            router.push(dest);
+            router.refresh();
+          }
           return;
         }
         setNotice(
-          "Check your email to confirm your address, then sign in here."
+          "Check your email to confirm your address, then sign in here.",
         );
       } finally {
         setSubmitting(false);
       }
     },
-    [confirm, email, password, router]
+    [confirm, dest, email, password, router],
   );
 
   return (
     <div
       className={cn(
         "overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-lg",
-        className
+        className,
       )}
     >
       <div className="border-b border-slate-100 px-6 pb-5 pt-6 text-center sm:px-8">
@@ -119,9 +130,12 @@ export function CustomSupabaseSignUpForm({
           <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-left text-sm text-amber-950">
             <p className="font-medium">New accounts use this page</p>
             <p className="mt-1 text-amber-900/90">
-              The old sign-up link now points here. Create your account with email and password, or if
-              you already had an account, go to{" "}
-              <Link href="/sign-in?legacy=1" className="font-medium text-blue-700 underline">
+              The old sign-up link now points here. Create your account with
+              email and password, or if you already had an account, go to{" "}
+              <Link
+                href="/sign-in?legacy=1"
+                className="font-medium text-blue-700 underline"
+              >
                 sign in
               </Link>{" "}
               and use forgot password if needed.
@@ -130,7 +144,10 @@ export function CustomSupabaseSignUpForm({
         ) : (
           <p className="mt-2 text-sm text-slate-500">
             Create your account with email and password. Already registered?{" "}
-            <Link href="/sign-in" className="font-medium text-blue-600 hover:underline">
+            <Link
+              href="/sign-in"
+              className="font-medium text-blue-600 hover:underline"
+            >
               Sign in
             </Link>
             .
@@ -138,7 +155,10 @@ export function CustomSupabaseSignUpForm({
         )}
       </div>
 
-      <form className="space-y-4 px-6 pb-6 pt-6 sm:px-8 sm:pb-8" onSubmit={onSubmit}>
+      <form
+        className="space-y-4 px-6 pb-6 pt-6 sm:px-8 sm:pb-8"
+        onSubmit={onSubmit}
+      >
         {error ? (
           <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
             {error}
@@ -185,11 +205,7 @@ export function CustomSupabaseSignUpForm({
             className="border-slate-200"
           />
         </div>
-        <Button
-          type="submit"
-          disabled={submitting}
-          className={primaryCtaClass}
-        >
+        <Button type="submit" disabled={submitting} className={primaryCtaClass}>
           {submitting ? "Please wait…" : "Create account"}
         </Button>
       </form>

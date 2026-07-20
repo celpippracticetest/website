@@ -5,6 +5,10 @@ import {
   AuthMarketingShell,
 } from "@/components/auth/AuthPageChrome";
 import { CustomSupabaseSignUpForm } from "@/components/auth/CustomSupabaseSignUpForm";
+import {
+  DEFAULT_POST_AUTH_PATH,
+  resolvePostAuthRedirect,
+} from "@/lib/auth/post-auth-redirect";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -13,6 +17,11 @@ export default function SignSupabaseSignUpPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const showLegacyAuthSignupHint = searchParams.get("legacy") === "1";
+  const redirectAfterAuth = useMemo(() => {
+    const raw = searchParams.get("redirect_url");
+    if (raw == null || !raw.trim()) return undefined;
+    return resolvePostAuthRedirect(raw);
+  }, [searchParams]);
   const forceShowForm = useMemo(() => {
     const f = searchParams.get("force");
     return f === "1" || f?.toLowerCase() === "true";
@@ -43,7 +52,9 @@ export default function SignSupabaseSignUpPageClient() {
         window.clearTimeout(timeoutId);
         if (cancelled) return;
         if (data.session?.user) {
-          router.replace("/practice-overview");
+          const dest = redirectAfterAuth ?? DEFAULT_POST_AUTH_PATH;
+          if (dest.startsWith("/api/")) window.location.assign(dest);
+          else router.replace(dest);
         }
         setReady(true);
       })
@@ -56,7 +67,7 @@ export default function SignSupabaseSignUpPageClient() {
       cancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [forceShowForm, router]);
+  }, [forceShowForm, redirectAfterAuth, router]);
 
   if (!ready) {
     return <AuthLoadingCard />;
@@ -65,7 +76,10 @@ export default function SignSupabaseSignUpPageClient() {
   return (
     <AuthMarketingShell>
       <h1 className="sr-only">Sign Up</h1>
-      <CustomSupabaseSignUpForm showLegacyAuthSignupHint={showLegacyAuthSignupHint} />
+      <CustomSupabaseSignUpForm
+        redirectAfterAuth={redirectAfterAuth}
+        showLegacyAuthSignupHint={showLegacyAuthSignupHint}
+      />
     </AuthMarketingShell>
   );
 }

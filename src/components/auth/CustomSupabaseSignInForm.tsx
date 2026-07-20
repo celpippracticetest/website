@@ -6,6 +6,7 @@ import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DEFAULT_POST_AUTH_PATH } from "@/lib/auth/post-auth-redirect";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { cn } from "@/lib/utils";
 
@@ -49,7 +50,7 @@ export function CustomSupabaseSignInForm({
           setError(formatSupabaseAuthError(signErr.message));
           return;
         }
-        const dest = redirectAfterAuth ?? "/practice-overview";
+        const dest = redirectAfterAuth ?? DEFAULT_POST_AUTH_PATH;
         if (dest.startsWith("/api/")) window.location.assign(dest);
         else router.push(dest);
         router.refresh();
@@ -57,14 +58,14 @@ export function CustomSupabaseSignInForm({
         setSubmitting(false);
       }
     },
-    [email, password, redirectAfterAuth, router]
+    [email, password, redirectAfterAuth, router],
   );
 
   return (
     <div
       className={cn(
         "rounded-2xl border border-slate-200 bg-white p-8 shadow-sm",
-        className
+        className,
       )}
     >
       <h2 className="text-center text-xl font-semibold text-slate-900">
@@ -74,8 +75,12 @@ export function CustomSupabaseSignInForm({
         <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
           <p className="font-medium">Welcome back — same email, new login</p>
           <p className="mt-1 text-amber-900/90">
-            Your account was moved to this sign-in page. Use your usual email, then{" "}
-            <Link href="/sign-in/forgot-supabase" className="font-medium text-blue-700 underline">
+            Your account was moved to this sign-in page. Use your usual email,
+            then{" "}
+            <Link
+              href="/sign-in/forgot-supabase"
+              className="font-medium text-blue-700 underline"
+            >
               set a new password here
             </Link>{" "}
             once if you have not already.
@@ -83,9 +88,13 @@ export function CustomSupabaseSignInForm({
         </div>
       ) : (
         <p className="mt-2 text-center text-sm text-slate-600">
-          Sign in with the email and password for this site. If you still use the old Clerk-only
-          link from your bookmarks, it will bring you here — use{" "}
-          <Link href="/sign-in/forgot-supabase" className="font-medium text-blue-600 hover:underline">
+          Sign in with the email and password for this site. If you still use
+          the old Clerk-only link from your bookmarks, it will bring you here —
+          use{" "}
+          <Link
+            href="/sign-in/forgot-supabase"
+            className="font-medium text-blue-600 hover:underline"
+          >
             forgot password
           </Link>{" "}
           the first time.
@@ -141,7 +150,10 @@ export function CustomSupabaseSignInForm({
 
       <p className="mt-6 text-center text-sm text-slate-600">
         No account?{" "}
-        <Link href="/sign-up" className="font-medium text-blue-600 hover:underline">
+        <Link
+          href="/sign-up"
+          className="font-medium text-blue-600 hover:underline"
+        >
           Create one
         </Link>
       </p>

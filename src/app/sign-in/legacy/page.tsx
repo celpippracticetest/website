@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { resolvePostAuthRedirect } from "@/lib/auth/post-auth-redirect";
 import { hasAnyWebSession } from "@/lib/auth/web-session-server";
 
 const PASSTHROUGH_KEYS = [
@@ -19,9 +20,11 @@ export default async function LegacySignInRedirectPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  if (await hasAnyWebSession()) redirect("/practice-overview");
-
   const sp = await searchParams;
+  if (await hasAnyWebSession()) {
+    redirect(resolvePostAuthRedirect(sp.redirect_url));
+  }
+
   const qs = new URLSearchParams();
   for (const key of PASSTHROUGH_KEYS) {
     const v = sp[key];

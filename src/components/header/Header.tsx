@@ -1,12 +1,5 @@
 "use client";
-import {
-  Headphones,
-  BookOpen,
-  Pen,
-  Mic,
-  BookOpenCheck,
-  Library,
-} from "lucide-react";
+import { Headphones, BookOpenCheck, GraduationCap, BookA } from "lucide-react";
 import DesktopHeader from "./desktopHeader";
 import MobileHeader from "./mobileHeader";
 import { useState } from "react";
@@ -38,7 +31,7 @@ const Header = ({
     },
     {
       name: "Mock Exams",
-      mobileName: "Exams",
+      mobileName: "Mock Exams",
       path: "/exams",
       icon: <BookOpenCheck className="w-5 h-5 text-orange-500" />,
       onClick: () => {
@@ -48,12 +41,21 @@ const Header = ({
       },
     },
     {
-      name: "CELPIP Wiki",
-      mobileName: "Wiki",
-      path: "/wiki",
-      icon: <Library className="w-5 h-5 text-yellow-500" />,
+      name: "Learning",
+      mobileName: "Learning",
+      path: "/learning",
+      icon: <GraduationCap className="w-5 h-5 text-yellow-500" />,
       onClick: () => {
-        router.push("/wiki");
+        router.push("/learning");
+      },
+    },
+    {
+      name: "Words",
+      mobileName: "Words",
+      path: "/words",
+      icon: <BookA className="w-5 h-5 text-green-500" />,
+      onClick: () => {
+        router.push("/words");
       },
     },
   ];

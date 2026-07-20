@@ -2,10 +2,11 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { AuthLoadingCard } from "@/components/auth/AuthPageChrome";
 import SignSupabasePageClient from "./SignSupabasePageClient";
+import { resolvePostAuthRedirect } from "@/lib/auth/post-auth-redirect";
 import { hasSupabaseWebSession } from "@/lib/auth/web-session-server";
 
 function readForceAuthScreen(
-  sp: Record<string, string | string[] | undefined>
+  sp: Record<string, string | string[] | undefined>,
 ): boolean {
   const v = sp.force;
   if (v === "1") return true;
@@ -24,7 +25,7 @@ export default async function SignInPage({
 }) {
   const sp = await searchParams;
   if (!readForceAuthScreen(sp) && (await hasSupabaseWebSession())) {
-    redirect("/practice-overview");
+    redirect(resolvePostAuthRedirect(sp.redirect_url));
   }
 
   return (

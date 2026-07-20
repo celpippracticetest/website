@@ -10,6 +10,7 @@ import { AuthLiveJoinedBanner } from "@/components/auth/AuthPageChrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DEFAULT_POST_AUTH_PATH } from "@/lib/auth/post-auth-redirect";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { cn } from "@/lib/utils";
 
@@ -91,7 +92,7 @@ export function SupabaseAuthForm({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const dest = redirectAfterAuth ?? "/practice-overview";
+  const dest = redirectAfterAuth ?? DEFAULT_POST_AUTH_PATH;
 
   const resetState = (nextMode?: AuthMode) => {
     setError(null);
@@ -104,7 +105,10 @@ export function SupabaseAuthForm({
   const handleGoogleSignIn = useCallback(async () => {
     setError(null);
     const supabase = createBrowserSupabaseClient();
-    if (!supabase) { setError("Auth is not configured."); return; }
+    if (!supabase) {
+      setError("Auth is not configured.");
+      return;
+    }
     const { error: oauthErr } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -121,8 +125,14 @@ export function SupabaseAuthForm({
       setError(null);
       setNotice(null);
       const supabase = createBrowserSupabaseClient();
-      if (!supabase) { setError("Auth is not configured."); return; }
-      if (!email.trim()) { setError("Enter your email address."); return; }
+      if (!supabase) {
+        setError("Auth is not configured.");
+        return;
+      }
+      if (!email.trim()) {
+        setError("Enter your email address.");
+        return;
+      }
       setSubmitting(true);
       try {
         const { error: otpErr } = await supabase.auth.signInWithOtp({
@@ -132,17 +142,20 @@ export function SupabaseAuthForm({
             shouldCreateUser: mode === "sign-up",
           },
         });
-        if (otpErr) { setError(otpErr.message); return; }
+        if (otpErr) {
+          setError(otpErr.message);
+          return;
+        }
         setNotice(
           mode === "sign-up"
             ? "Check your inbox — we sent a sign-up link. Click it to confirm and log in."
-            : "Check your inbox — we sent a magic link. Click it to sign in."
+            : "Check your inbox — we sent a magic link. Click it to sign in.",
         );
       } finally {
         setSubmitting(false);
       }
     },
-    [email, mode, dest]
+    [email, mode, dest],
   );
 
   const handlePasswordAuth = useCallback(
@@ -151,11 +164,20 @@ export function SupabaseAuthForm({
       setError(null);
       setNotice(null);
       const supabase = createBrowserSupabaseClient();
-      if (!supabase) { setError("Auth is not configured."); return; }
+      if (!supabase) {
+        setError("Auth is not configured.");
+        return;
+      }
 
       if (mode === "sign-up") {
-        if (password !== confirm) { setError("Passwords do not match."); return; }
-        if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
+        if (password !== confirm) {
+          setError("Passwords do not match.");
+          return;
+        }
+        if (password.length < 8) {
+          setError("Password must be at least 8 characters.");
+          return;
+        }
         setSubmitting(true);
         try {
           const { data, error: signErr } = await supabase.auth.signUp({
@@ -165,13 +187,21 @@ export function SupabaseAuthForm({
               emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(dest)}`,
             },
           });
-          if (signErr) { setError(signErr.message); return; }
-          if (data.session) {
-            if (dest.startsWith("/api/")) window.location.assign(dest);
-            else { router.push(dest); router.refresh(); }
+          if (signErr) {
+            setError(signErr.message);
             return;
           }
-          setNotice("Almost there! Check your inbox and click the confirmation link, then sign in.");
+          if (data.session) {
+            if (dest.startsWith("/api/")) window.location.assign(dest);
+            else {
+              router.push(dest);
+              router.refresh();
+            }
+            return;
+          }
+          setNotice(
+            "Almost there! Check your inbox and click the confirmation link, then sign in.",
+          );
         } finally {
           setSubmitting(false);
         }
@@ -184,31 +214,46 @@ export function SupabaseAuthForm({
           email: email.trim(),
           password,
         });
-        if (signErr) { setError(signErr.message); return; }
+        if (signErr) {
+          setError(signErr.message);
+          return;
+        }
         if (dest.startsWith("/api/")) window.location.assign(dest);
-        else { router.push(dest); router.refresh(); }
+        else {
+          router.push(dest);
+          router.refresh();
+        }
       } finally {
         setSubmitting(false);
       }
     },
-    [email, password, confirm, mode, dest, router]
+    [email, password, confirm, mode, dest, router],
   );
 
   const handleForgotPassword = useCallback(async () => {
     setError(null);
     setNotice(null);
     const supabase = createBrowserSupabaseClient();
-    if (!supabase) { setError("Auth is not configured."); return; }
+    if (!supabase) {
+      setError("Auth is not configured.");
+      return;
+    }
     if (!email.trim()) {
       setError("Enter your email first, then click Forgot password.");
       return;
     }
     setSubmitting(true);
     try {
-      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/auth/update-password`,
-      });
-      if (resetErr) { setError(resetErr.message); return; }
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(
+        email.trim(),
+        {
+          redirectTo: `${window.location.origin}/auth/update-password`,
+        },
+      );
+      if (resetErr) {
+        setError(resetErr.message);
+        return;
+      }
       setNotice("Reset link sent — check your inbox (and spam folder).");
     } finally {
       setSubmitting(false);
@@ -219,7 +264,7 @@ export function SupabaseAuthForm({
     <div
       className={cn(
         "overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-lg",
-        className
+        className,
       )}
     >
       <div className="border-b border-slate-100 px-6 pb-5 pt-6 text-center sm:px-8">
@@ -268,7 +313,7 @@ export function SupabaseAuthForm({
                 "flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all",
                 mode === m
                   ? "bg-white text-[#1B2B5A] shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
+                  : "text-slate-500 hover:text-slate-700",
               )}
             >
               {m === "sign-in" ? "Sign in" : "Sign up"}
@@ -320,12 +365,16 @@ export function SupabaseAuthForm({
               <button
                 key={m}
                 type="button"
-                onClick={() => { setEmailMethod(m); setError(null); setNotice(null); }}
+                onClick={() => {
+                  setEmailMethod(m);
+                  setError(null);
+                  setNotice(null);
+                }}
                 className={cn(
                   "flex-1 rounded-lg py-2 text-xs font-semibold transition-all",
                   emailMethod === m
                     ? "bg-white text-[#1B2B5A] shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
+                    : "text-slate-500 hover:text-slate-700",
                 )}
               >
                 {m === "password" ? "Password" : "Magic link"}
@@ -363,7 +412,8 @@ export function SupabaseAuthForm({
         ) : null}
 
         {/* Password form (sign-in password OR sign-up) */}
-        {(mode === "sign-in" && emailMethod === "password") || mode === "sign-up" ? (
+        {(mode === "sign-in" && emailMethod === "password") ||
+        mode === "sign-up" ? (
           <form onSubmit={handlePasswordAuth} className="space-y-3">
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
@@ -382,7 +432,9 @@ export function SupabaseAuthForm({
               <Input
                 id="auth-password"
                 type="password"
-                autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
+                autoComplete={
+                  mode === "sign-in" ? "current-password" : "new-password"
+                }
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -413,8 +465,8 @@ export function SupabaseAuthForm({
               {submitting
                 ? "Please wait…"
                 : mode === "sign-in"
-                ? "Sign in"
-                : "Create account"}
+                  ? "Sign in"
+                  : "Create account"}
             </Button>
 
             {mode === "sign-up" && (
