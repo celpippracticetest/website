@@ -1,7 +1,7 @@
 import type { SkillPageContent } from "@/data/skill-pages-content";
+import { EXAM_OVERVIEW_FAQS } from "@/data/exam-overview-faqs";
 import { HOMEPAGE_TESTIMONIALS } from "@/data/homepage-testimonials";
 import type { TExamSchemaDto } from "@/models/exam.model";
-import { FAQ_DATA } from "@/components/dashboard-app/ExamFAQ";
 
 export const SITE_NAME = "CELPIP Guide";
 
@@ -193,7 +193,7 @@ export function buildExamOverviewStructuredData(
     "@graph": [
       {
         "@type": "FAQPage",
-        mainEntity: FAQ_DATA.map((faq) => ({
+        mainEntity: EXAM_OVERVIEW_FAQS.map((faq) => ({
           "@type": "Question",
           name: faq.question,
           acceptedAnswer: {
