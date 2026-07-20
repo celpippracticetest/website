@@ -2,7 +2,7 @@
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
-import { ArrowLeft, CircleAlert, LoaderCircle } from "lucide-react";
+import { ArrowLeft, CircleAlert, LoaderCircle, X } from "lucide-react";
 import { TPracticeDto } from "@/models/practice.model";
 import useStore from "@/store";
 
@@ -48,10 +48,11 @@ const SpeakingExamView = ({
   const [sendingResult] = useState(false);
   const [passageIndex, setPassageIndex] = useState(0);
 
-  const [time, setTime] = useState(partId == 17 || partId == 18 ? 60 : 30);
-  const [recordingTime, setRecordingTime] = useState(
-    partId == 18 || partId == 19 ? 90 : 60,
-  );
+  const preparationSeconds = partId == 17 || partId == 18 ? 60 : 30;
+  const recordingSeconds =
+    partId === 13 || partId === 18 || partId === 19 ? 90 : 60;
+  const [time, setTime] = useState(preparationSeconds);
+  const [recordingTime, setRecordingTime] = useState(recordingSeconds);
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
@@ -231,6 +232,11 @@ const SpeakingExamView = ({
     audioChunks.current = [];
     setAudioURL(null);
     setIsRecording(false);
+    setIsSubmit(false);
+    setProgressBar(0);
+    hasStartedRecordingRef.current = false;
+    setTime(preparationSeconds);
+    setRecordingTime(recordingSeconds);
   };
 
   // Preparation timer and trigger recording
@@ -279,7 +285,7 @@ const SpeakingExamView = ({
       cancelRecording();
     }
     setTime(partId === 17 || partId === 18 ? 60 : 30);
-    setRecordingTime(partId === 13 || partId === 18 || partId === 19 ? 90 : 60);
+    setRecordingTime(recordingSeconds);
     hasStartedRecordingRef.current = false;
 
     // Log mock exam started when component mounts
@@ -395,6 +401,19 @@ const SpeakingExamView = ({
             </div>
             {
               <div className="flex items-center gap-2 justify-end pb-[10px] ">
+                {page === "question" && (
+                  <div className="flex justify-center items-center lg:flex-row flex-col">
+                    <div className="text-[14px] font-bold gap-2 text-center text-[#EE4266] flex items-center">
+                      <p>
+                        {time > 0
+                          ? `${Math.floor(time / 60)}:${
+                              time % 60 < 10 ? `0${time % 60}` : time % 60
+                            }`
+                          : "Time's Up!"}
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <button
                   onClick={() => {
                     const query = section ? `?section=${section}` : "";
@@ -605,7 +624,7 @@ const SpeakingExamView = ({
                       <p className="text-[14px] mt-[8px] text-slate-500">
                         Recording time:{" "}
                         <b className="text-[#F27059] text-[16px]">
-                          {partId == 18 || partId == 19 ? 90 : 60}s
+                          {recordingSeconds}s
                         </b>
                       </p>
 
@@ -631,10 +650,22 @@ const SpeakingExamView = ({
                     </div>
                   </div>
 
-                  <div className="p-4 overflow-y-auto flex flex-col justify-center items-center grow  bg-slate-50  [&::-webkit-scrollbar]:w-2  [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full  [&::-webkit-scrollbar-track]:bg-slate-100">
-                    <div className="flex flex-col items-center space">
-                      <div className="w-full flex flex-col items-center "></div>
+                  <div className="p-4 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-slate-100">
+                    <div className="flex flex-col items-center space mb-4">
                       <div className="w-full flex flex-col items-center">
+                        <h3 className="text-[16px] font-bold text-center w-full">
+                          {isRecording
+                            ? "Recording Time"
+                            : time > 0 && !isSubmit && progressBar == 0
+                              ? "Preparation Time"
+                              : ""}
+                        </h3>
+                      </div>
+                      <div
+                        className={`${
+                          errorAccessingMicrophone ? "mt-0" : "mt-[24px]"
+                        } w-full flex flex-col items-center`}
+                      >
                         <div className="flex flex-col items-center w-full justify-center">
                           {errorAccessingMicrophone ? (
                             <div
@@ -669,17 +700,14 @@ const SpeakingExamView = ({
                               </div>
                             </div>
                           ) : isRecording ? (
-                            <div className="flex flex-col items-center relative justify-center w-full gap-4">
-                              <p className="text-center font-medium text-[14px]">
+                            <div className="flex flex-col items-center relative justify-center w-full">
+                              <div className="text-[16px] text-[#EE4266] font-semibold text-center w-full">
+                                {recordingTime} s
+                              </div>
+                              <div className="text-[#212E42] mt-[24px]">
                                 Recording...
-                                <br />
-                                <span className="font-bold text-3xl">
-                                  {recordingTime}s
-                                </span>
-                              </p>
-                              <div className="relative w-16 h-16">
-                                <div className="absolute top-0 left-0 right-0 bottom-0 rounded-full animate-ping opacity-75 pointer-events-none"></div>
-                                <div className="absolute top-0 left-0 right-0 bottom-0 rounded-full pointer-events-none"></div>
+                              </div>
+                              <div className="relative flex flex-col items-center mt-[24px]">
                                 <button
                                   className="cursor-pointer"
                                   onClick={() => {
@@ -688,14 +716,26 @@ const SpeakingExamView = ({
                                 >
                                   <SvgRecording />
                                 </button>
+                                <button
+                                  className="whitespace-nowrap text-[14px] font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-primary-foreground px-4 py-2 w-12 h-12 mt-4 shadow-sm border border-gray-300 rounded-full flex items-center justify-center bg-white hover:bg-gray-300"
+                                  onClick={() => {
+                                    cancelRecording();
+                                  }}
+                                >
+                                  <X
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="lucide lucide-x w-8 h-8 text-gray-600"
+                                  />
+                                </button>
                               </div>
                             </div>
                           ) : time > 0 && !isSubmit && progressBar == 0 ? (
-                            <div className="flex flex-col items-center gap-4">
-                              <span className="text-[#212E42] text-[16px] font-bold">
-                                Preparation Time
-                              </span>
-                              <div className="mt-[24px]">
+                            <div className="flex flex-col items-center relative justify-center w-full">
+                              <div className="relative w-16 h-16">
                                 <svg width="64" height="64" viewBox="0 0 64 64">
                                   <g transform="rotate(-90 32 32)">
                                     <circle
@@ -715,7 +755,11 @@ const SpeakingExamView = ({
                                       fill="none"
                                       strokeDasharray={2 * Math.PI * 30}
                                       strokeDashoffset={
-                                        ((30 - time) / 30) * 2 * Math.PI * 30
+                                        ((preparationSeconds - time) /
+                                          preparationSeconds) *
+                                        2 *
+                                        Math.PI *
+                                        30
                                       }
                                       style={{
                                         transition:
