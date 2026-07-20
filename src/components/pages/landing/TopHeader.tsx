@@ -22,7 +22,13 @@ const SvgHamburger = dynamic(() => import("../../icons/Hamburger"), {
 });
 const TopHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const hrefs = ["/exam-overview", "/practice-overview", "/learning", "/words", "/earn100"];
+  const hrefs = [
+    "/exam-overview",
+    "/practice-overview",
+    "/learning",
+    "/words",
+    "/earn100",
+  ];
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const sidebarMenuRef = useRef<HTMLDivElement>(null);
 
@@ -61,7 +67,10 @@ const TopHeader = () => {
   }, []);
 
   const icons = [
-    <div key="mock-exam-icon" className="relative  flex items-center justify-center">
+    <div
+      key="mock-exam-icon"
+      className="relative  flex items-center justify-center"
+    >
       <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
         <SvgMockTest className="  text-[#76808F]  duration-200 " />
       </div>
@@ -69,7 +78,10 @@ const TopHeader = () => {
         <SvgMockTestTopNavigationHover className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
       </div>
     </div>,
-    <div key="practice-icon" className="relative w-[24px] h-[24px] flex items-center justify-center">
+    <div
+      key="practice-icon"
+      className="relative w-[24px] h-[24px] flex items-center justify-center"
+    >
       <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
         <SvgPractice
           fill="transparent"
@@ -81,7 +93,10 @@ const TopHeader = () => {
         <SvgPracticeBlueHover className="text-[#316BFF]   duration-200 group-hover:opacity-100" />
       </div>
     </div>,
-    <div key="learn-icon" className="relative  flex items-center justify-center">
+    <div
+      key="learn-icon"
+      className="relative  flex items-center justify-center"
+    >
       <div className="flex group-hover:hidden w-[24px] h-[24px]  items-center justify-center">
         <SvgLearning
           stroke="#76808F"
@@ -91,14 +106,13 @@ const TopHeader = () => {
       </div>
 
       <div className="hidden group-hover:flex w-[24px] h-[24px]  items-center justify-center">
-        <SvgWord
-          stroke="#76808F"
-          fill="#76808F"
-          className="text-[#316BFF]"
-        />
+        <SvgWord stroke="#76808F" fill="#76808F" className="text-[#316BFF]" />
       </div>
     </div>,
-    <div key="mock-exam-icon" className="relative  flex items-center justify-center">
+    <div
+      key="mock-exam-icon"
+      className="relative  flex items-center justify-center"
+    >
       <div className=" w-[24px] h-[24px] flex items-center justify-center group-hover:hidden">
         <SvgMockTest className="  text-[#76808F]  duration-200 " />
       </div>
@@ -113,7 +127,7 @@ const TopHeader = () => {
       <div className="hidden w-[24px] h-[24px]  items-center justify-center group-hover:flex ">
         <SvgReferral className="   text-[#316BFF]   duration-200 group-hover:opacity-100" />
       </div>
-    </div>
+    </div>,
   ];
 
   return (
@@ -123,7 +137,8 @@ const TopHeader = () => {
         style={{
           background:
             "linear-gradient(90deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.2) 100%)",
-        }}>
+        }}
+      >
         <div className="flex items-center gap-[12px] screen744:!gap-[24px]">
           <span
             className="screen1280:!hidden flex"
@@ -160,7 +175,7 @@ const TopHeader = () => {
           </Link>
         </div>
         <nav className="gap-[24px] hidden screen1280:!flex">
-          {["Mock Exams", "Practice Overview", "Learning", "Words"].map(
+          {["Mock Exams", "Practice", "Learning", "Words"].map(
             (label, index) => (
               <React.Fragment key={label}>
                 <Link
@@ -173,7 +188,7 @@ const TopHeader = () => {
                   <div className="bg-outline w-[1px] h-[35px] rounded-[15px]"></div>
                 )}
               </React.Fragment>
-            )
+            ),
           )}
         </nav>
         <TopHeaderRightSide />
@@ -210,7 +225,7 @@ const TopHeader = () => {
           </span>
         </div>
         <div className=" mt-[32px] gap-[16px]">
-          {["Mock Exams", "Practice Overview", "Learning", "Words"].map(
+          {["Mock Exams", "Practice", "Learning", "Words"].map(
             (label, index) => (
               <React.Fragment key={label}>
                 <Link
@@ -223,7 +238,7 @@ const TopHeader = () => {
                   <span className=" text-[16px] font-normal">{label}</span>
                 </Link>
               </React.Fragment>
-            )
+            ),
           )}
         </div>
       </motion.div>

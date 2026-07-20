@@ -32,13 +32,13 @@ const SvgWriting = dynamic(() => import("../../icons/Writing"), { ssr: false });
 const SvgReading = dynamic(() => import("../../icons/Reading"), { ssr: false });
 const SvgMockExamsColorful = dynamic(
   () => import("../../icons/MockExamsColorful"),
-  { ssr: false }
+  { ssr: false },
 );
 
 const Hero = () => {
   const { ref } = useInView();
   const { setVisible, isVisible, isInFooter } = useButtonVisibleStore(
-    (state) => state
+    (state) => state,
   );
 
   useEffect(() => {
@@ -57,7 +57,7 @@ const Hero = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, [isInFooter]);
 
-  useEffect(() => { }, [isInFooter]);
+  useEffect(() => {}, [isInFooter]);
 
   useEffect(() => {
     if (window.location.hash === "#plans") {
@@ -78,15 +78,20 @@ const Hero = () => {
     flex bg-[linear-gradient(180deg,_rgba(255,_255,_255,_0.4)_0%,_rgba(255,_255,_255,_0.8)_100%)] 
     backdrop-blur-[1px] 
     shadow-[0_0_100px_0px_rgba(255,255,255,0.8)] 
-    ${isVisible
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-[12px] pointer-events-none"
-          } 
+    ${
+      isVisible
+        ? "opacity-100 translate-y-0"
+        : "opacity-0 translate-y-[12px] pointer-events-none"
+    } 
     flex justify-center fixed z-[10] h-[128px] items-center 
     left-1/2 -translate-x-1/2 transition-all duration-500 
     ease-in-out transform bottom-0`}
       >
-        <Button size="lg" href="/practice-overview" aria-label="Start your free CELPIP practice">
+        <Button
+          size="lg"
+          href="/practice-overview"
+          aria-label="Start your free CELPIP practice"
+        >
           <SvgPlus />
           <span className="hidden sm:!flex">Start Your Free Practice</span>
           <span className="flex sm:!hidden">Free Practice</span>
@@ -110,13 +115,18 @@ const Hero = () => {
                 <SvgMedalLg className="hidden screen1280:!flex" />
                 <SvgMedalMd className="flex screen1280:!hidden" />
                 <span className="text-text2 font-normal screen1280:!text-[20px] text-[14px]">
-                  <span className="text-primary2 font-extrabold">#1 Top rated</span> CELPIP Resource 2025{" "}
+                  <span className="text-primary2 font-extrabold">
+                    #1 Top rated
+                  </span>{" "}
+                  CELPIP Resource 2026{" "}
                 </span>
               </div>
               <div className="mt-[21px] flex flex-row justify-between w-full screen1280:!mt-[38px] w-full h-[95px] screen744:!h-[135px] screen1280:!h-[245px] screen744:!justify-between justify-center">
                 <h1 className="font-bold text-[32px] screen1280:!text-[65px] leading-[40px] screen1280:!leading-[70px] text-text1 screen744:!text-left text-center">
-                  Reach Your Target<br />
-                  <span className="text-primary2">CELPIP</span> Score.{" "}<br className="screen744:!block hidden" />
+                  Reach Your Target
+                  <br />
+                  <span className="text-primary2">CELPIP</span> Score.{" "}
+                  <br className="screen744:!block hidden" />
                   <span className="text-secondary2 italic">Faster.</span>
                 </h1>
                 <div className="flex">
@@ -127,7 +137,11 @@ const Hero = () => {
                         title2: "mock exams",
                         icon: <SvgMockExamLight />,
                       },
-                      { title1: "", title2: "Guide & Tips", icon: <SvgGuide /> },
+                      {
+                        title1: "",
+                        title2: "Guide & Tips",
+                        icon: <SvgGuide />,
+                      },
                       {
                         title1: "3,000+",
                         title2: "sample tests",
@@ -159,9 +173,9 @@ const Hero = () => {
                     ))}
                   </div>
                   <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1, duration: 0.1 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.1, duration: 0.15 }}
                   >
                     <Image
                       src="/images/hero.png"
@@ -171,16 +185,23 @@ const Hero = () => {
                       height={491}
                       priority={true}
                       sizes="(max-width: 1280px) 0px, 327px"
-                      quality={85}
+                      quality={100}
+                      unoptimized
                       loading="eager"
                       fetchPriority="high"
                     />
                   </motion.div>
                 </div>
               </div>
-              <div className="font-inter font-semibold text-xs leading-5 tracking-normal text-center screen744:!hidden flex justify-center">60 mock exams · 3,000+ questions · Instant AI scoring</div>
+              <div className="font-inter font-semibold text-xs leading-5 tracking-normal text-center screen744:!hidden flex justify-center">
+                60 mock exams · 3,000+ questions · Instant AI scoring
+              </div>
               <div className="flex screen744:!justify-start justify-center">
-                <Button href="/practice-overview" size="lg" className="mt-[24px]">
+                <Button
+                  href="/practice-overview"
+                  size="lg"
+                  className="mt-[24px]"
+                >
                   <SvgPlus />
                   <span>Start Your Free Practice</span>
                 </Button>
@@ -206,13 +227,48 @@ const Hero = () => {
         <div className="flex flex-col w-full overflow-hidden">
           <div className="flex flex-row flex-wrap screen744:flex-nowrap px-[16px] screen744:!px-[42px] pt-[22px] pb-[60px] screen744:!pb-[40px] screen1280:!mt-[52px] gap-[12px] screen744:!gap-[16px] screen1280:gap-[24px] w-full max-w-[1440px] mx-auto screen1024:justify-center">
             {[
-              { title: "Listening", icon: <SvgListening className="text-[#1D4ED8]" />, bgColor: "bg-primary5", link: "/listening" },
-              { title: "Speaking", icon: <SvgSpeaking className="text-[#BE123C]" />, bgColor: "bg-secondary5", link: "/speaking" },
-              { title: "Writing", icon: <SvgWriting className="text-[#0D9488]" />, bgColor: "bg-success5", link: "/writing" },
-              { title: "Reading", icon: <SvgReading className="text-[#B91C1C]" />, bgColor: "bg-error5", link: "/reading" },
-              { title: "Mock Exams", icon: <SvgMockExamsColorful />, bgColor: "bg-purple5", link: "/exam-overview" },
-              { title: "Learning", icon: <SvgLearning className="text-[#854D0E]" />, bgColor: "bg-[#FEF9C3]", link: "/learning" },
-              { title: "Words", icon: <SvgWord className="text-[#0D8A72] w-[24px]" />, bgColor: "bg-[#CCFBF1]", link: "/words" },
+              {
+                title: "Listening",
+                icon: <SvgListening className="text-[#1D4ED8]" />,
+                bgColor: "bg-primary5",
+                link: "/listening",
+              },
+              {
+                title: "Speaking",
+                icon: <SvgSpeaking className="text-[#BE123C]" />,
+                bgColor: "bg-secondary5",
+                link: "/speaking",
+              },
+              {
+                title: "Writing",
+                icon: <SvgWriting className="text-[#0D9488]" />,
+                bgColor: "bg-success5",
+                link: "/writing",
+              },
+              {
+                title: "Reading",
+                icon: <SvgReading className="text-[#B91C1C]" />,
+                bgColor: "bg-error5",
+                link: "/reading",
+              },
+              {
+                title: "Mock Exams",
+                icon: <SvgMockExamsColorful />,
+                bgColor: "bg-purple5",
+                link: "/exam-overview",
+              },
+              {
+                title: "Learning",
+                icon: <SvgLearning className="text-[#854D0E]" />,
+                bgColor: "bg-[#FEF9C3]",
+                link: "/learning",
+              },
+              {
+                title: "Words",
+                icon: <SvgWord className="text-[#0D8A72] w-[24px]" />,
+                bgColor: "bg-[#CCFBF1]",
+                link: "/words",
+              },
             ].map((exam, index, array) => {
               const isLast = index === array.length - 1;
               return (
@@ -223,7 +279,10 @@ const Hero = () => {
                   bgColor={exam.bgColor}
                   isLast={isLast}
                   link={exam.link}
-                  className={cn("screen744:!w-auto", {"!w-[calc(50%-6px)]": !isLast, 'w-full': isLast})}
+                  className={cn("screen744:!w-auto", {
+                    "!w-[calc(50%-6px)]": !isLast,
+                    "w-full": isLast,
+                  })}
                 />
               );
             })}

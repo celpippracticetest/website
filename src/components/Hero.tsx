@@ -101,7 +101,7 @@ const Hero = () => {
               <div className="flex items-center gap-3 flex-wrap">
                 <img
                   src="/lovable-uploads/d2759636-afe6-4e6d-b91c-f17ca332d698.png"
-                  alt="Top-Rated CELPIP Resource 2025"
+                  alt="Top-Rated CELPIP Resource 2026"
                   className="h-10 object-contain"
                 />
                 <img

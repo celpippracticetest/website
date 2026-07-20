@@ -35,6 +35,9 @@ const Practice = () => {
             alt="Bear student mascot holding a CELPIP study guide"
             width={325}
             height={488}
+            sizes="(max-width: 1280px) 0px, 325px"
+            quality={100}
+            unoptimized
           />
           <Image
             className="absolute left-auto right-auto screen744:!right-[21px] -top-[126px] flex screen1280:!hidden"
@@ -42,6 +45,9 @@ const Practice = () => {
             alt="Bear student mascot using a tablet for CELPIP preparation"
             width={242}
             height={297}
+            sizes="(min-width: 1280px) 0px, 242px"
+            quality={100}
+            unoptimized
           />
         </div>
       </div>
