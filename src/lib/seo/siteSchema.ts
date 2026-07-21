@@ -83,9 +83,9 @@ export function buildRootLayoutJsonLd(baseUrlRaw?: string) {
 
 export function buildHomepageProductJsonLd(baseUrlRaw?: string) {
   const baseUrl = normalizeBaseUrl(baseUrlRaw);
+  const reviewCount = HOMEPAGE_TESTIMONIALS.length;
 
-  // 5-star individual reviews only — no AggregateRating/reviewCount so SERP
-  // can show stars without a review-count number.
+  // Google requires aggregateRating when multiple Review objects are present.
   return {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -104,6 +104,13 @@ export function buildHomepageProductJsonLd(baseUrlRaw?: string) {
       price: "0",
       priceCurrency: "CAD",
       availability: "https://schema.org/InStock",
+    },
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: "5",
+      bestRating: "5",
+      worstRating: "1",
+      reviewCount: String(reviewCount),
     },
     review: HOMEPAGE_TESTIMONIALS.map((testimonial) => ({
       "@type": "Review",
