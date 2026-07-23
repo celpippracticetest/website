@@ -10,6 +10,17 @@ import {
   Clock,
   RotateCw,
 } from "lucide-react";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+
+function formatPlanLabel(plan?: string, planType?: string) {
+  if (!hasPaidPracticeAccess(plan)) return "Free";
+  const label =
+    (plan || "").trim().toLowerCase() === "plus"
+      ? "Plus"
+      : (plan || "").trim().charAt(0).toUpperCase() +
+        (plan || "").trim().slice(1).toLowerCase();
+  return planType ? `${label} (${planType})` : label;
+}
 
 interface User {
   userId: string;
@@ -201,7 +212,6 @@ export default function UsersPage() {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b">
                   <tr>
-
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Email
                     </th>
@@ -238,8 +248,6 @@ export default function UsersPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {users.map((user) => (
                     <tr key={user.userId} className="hover:bg-gray-50">
-
-
                       {/* Email */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {user.email ?? "-"}
@@ -249,7 +257,7 @@ export default function UsersPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRiskColor(
-                            user.riskScore
+                            user.riskScore,
                           )}`}
                         >
                           {getRiskIcon(user.riskScore)}
@@ -257,19 +265,16 @@ export default function UsersPage() {
                         </span>
                       </td>
 
-
-
                       {/* Plan Type */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.plan === "premium" || user.plan === "pro"
-                            ? "bg-purple-100 text-purple-800"
-                            : "bg-gray-100 text-gray-800"
-                            }`}
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            hasPaidPracticeAccess(user.plan)
+                              ? "bg-purple-100 text-purple-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
                         >
-                          {user.plan === "premium" || user.plan === "pro"
-                            ? `Premium ${user.planType ? `(${user.planType})` : ""}`
-                            : "Free"}
+                          {formatPlanLabel(user.plan, user.planType)}
                         </span>
                       </td>
 
@@ -286,10 +291,10 @@ export default function UsersPage() {
                         <div className="text-xs text-gray-500">
                           {user.practiceAttempts > 0
                             ? Math.round(
-                              (user.practiceCompletions /
-                                user.practiceAttempts) *
-                              100
-                            )
+                                (user.practiceCompletions /
+                                  user.practiceAttempts) *
+                                  100,
+                              )
                             : 0}
                           % completion
                         </div>
@@ -303,8 +308,9 @@ export default function UsersPage() {
                         <div className="text-xs text-gray-500">
                           {user.mockAttempts > 0
                             ? Math.round(
-                              (user.mockCompletions / user.mockAttempts) * 100
-                            )
+                                (user.mockCompletions / user.mockAttempts) *
+                                  100,
+                              )
                             : 0}
                           % completion
                         </div>
@@ -335,7 +341,7 @@ export default function UsersPage() {
                             onClick={() =>
                               window.open(
                                 `/cms/dashboard/users/${user.userId}`,
-                                "_blank"
+                                "_blank",
                               )
                             }
                             className="text-blue-600 cursor-pointer hover:text-blue-900"

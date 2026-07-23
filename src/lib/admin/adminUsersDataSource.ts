@@ -2,6 +2,18 @@ import "server-only";
 
 import type { Sql } from "postgres";
 import { resolveAppDocumentsPartitionKey } from "@/lib/pg/pgCollection";
+import {
+  hasPaidPracticeAccess,
+  normalizePlan,
+} from "@/lib/subscriptionAccess";
+
+/** Keep paid plan tokens as stored; everything else → free for admin list. */
+function normalizeAdminListPlan(planRaw: unknown): string {
+  const plan = normalizePlan(typeof planRaw === "string" ? planRaw : null);
+  if (!plan) return "free";
+  if (hasPaidPracticeAccess(plan)) return plan;
+  return "free";
+}
 
 const ADMIN_USERS_PAGE_SIZE_MAX = 100;
 
@@ -90,12 +102,12 @@ export async function listAdminUsersFromUserProfiles(
 
   let subFilter = sql``;
   if (subscriptionStatus === "active") {
-    subFilter = sql`AND lower(trim(coalesce(p.plan, ''))) = 'plus'`;
+    subFilter = sql`AND lower(trim(coalesce(p.plan, ''))) IN ('plus', 'premium', 'pro', 'enterprise')`;
   } else if (subscriptionStatus === "never") {
-    subFilter = sql`AND lower(trim(coalesce(p.plan, ''))) IS DISTINCT FROM 'plus'
+    subFilter = sql`AND lower(trim(coalesce(p.plan, ''))) NOT IN ('plus', 'premium', 'pro', 'enterprise')
       AND (p.public_metadata->>'purchaseDate') IS NULL`;
   } else if (subscriptionStatus === "unsubscribed") {
-    subFilter = sql`AND lower(trim(coalesce(p.plan, ''))) IS DISTINCT FROM 'plus'
+    subFilter = sql`AND lower(trim(coalesce(p.plan, ''))) NOT IN ('plus', 'premium', 'pro', 'enterprise')
       AND (p.public_metadata->>'purchaseDate') IS NOT NULL`;
   }
 
@@ -147,8 +159,7 @@ export async function listAdminUsersFromUserProfiles(
 
   const rows = dataRows.map((r) => {
     const meta = asRecord(r.public_metadata);
-    const planRaw = (r.plan ?? meta.plan ?? "free") as string;
-    const plan = String(planRaw).toLowerCase() === "plus" ? "plus" : "free";
+    const plan = normalizeAdminListPlan(r.plan ?? meta.plan ?? "free");
     return {
       _id: r.stable_id,
       email: r.email ?? null,
@@ -231,12 +242,12 @@ export async function listAdminUsersFromUsersDocuments(
 
   let subFilter = sql``;
   if (subscriptionStatus === "active") {
-    subFilter = sql`AND lower(trim(coalesce(d.body->>'plan', ''))) = 'plus'`;
+    subFilter = sql`AND lower(trim(coalesce(d.body->>'plan', ''))) IN ('plus', 'premium', 'pro', 'enterprise')`;
   } else if (subscriptionStatus === "never") {
-    subFilter = sql`AND lower(trim(coalesce(d.body->>'plan', ''))) IS DISTINCT FROM 'plus'
+    subFilter = sql`AND lower(trim(coalesce(d.body->>'plan', ''))) NOT IN ('plus', 'premium', 'pro', 'enterprise')
       AND (d.body#>>'{publicMetadata,purchaseDate}') IS NULL`;
   } else if (subscriptionStatus === "unsubscribed") {
-    subFilter = sql`AND lower(trim(coalesce(d.body->>'plan', ''))) IS DISTINCT FROM 'plus'
+    subFilter = sql`AND lower(trim(coalesce(d.body->>'plan', ''))) NOT IN ('plus', 'premium', 'pro', 'enterprise')
       AND (d.body#>>'{publicMetadata,purchaseDate}') IS NOT NULL`;
   }
 
@@ -282,8 +293,7 @@ export async function listAdminUsersFromUsersDocuments(
       (typeof b.sub === "string" && b.sub.trim()) ||
       (typeof b.clerkUserId === "string" && b.clerkUserId.trim()) ||
       r.mongo_id;
-    const planRaw = (b.plan ?? meta.plan ?? "free") as string;
-    const plan = String(planRaw).toLowerCase() === "plus" ? "plus" : "free";
+    const plan = normalizeAdminListPlan(b.plan ?? meta.plan ?? "free");
     const created =
       b.createdAt != null
         ? new Date(String(b.createdAt))

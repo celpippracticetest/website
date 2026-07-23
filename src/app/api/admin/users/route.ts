@@ -106,19 +106,19 @@ export async function GET(request: NextRequest) {
     const subscriptionFilter = [];
     if (subscriptionStatus === "active") {
       subscriptionFilter.push({
-        $match: { plan: "plus" },
+        $match: { plan: { $in: ["plus", "premium", "pro", "enterprise"] } },
       });
     } else if (subscriptionStatus === "unsubscribed") {
       subscriptionFilter.push({
         $match: {
-          plan: { $ne: "plus" },
+          plan: { $nin: ["plus", "premium", "pro", "enterprise"] },
           subscriptionHistory: { $elemMatch: { type: "subscription_created" } },
         },
       });
     } else if (subscriptionStatus === "never") {
       subscriptionFilter.push({
         $match: {
-          plan: { $ne: "plus" },
+          plan: { $nin: ["plus", "premium", "pro", "enterprise"] },
           subscriptionHistory: {
             $not: { $elemMatch: { type: "subscription_created" } },
           },
@@ -480,7 +480,12 @@ function formatAdminUserResponse(user: Record<string, any>) {
   let subscriptionStartDate: Date | null = null;
   let subscriptionEndDate: Date | null = null;
 
-  const isPremium = user.plan === "plus";
+  const planNormalized = String(user.plan || "").trim().toLowerCase();
+  const isPremium =
+    planNormalized === "plus" ||
+    planNormalized === "premium" ||
+    planNormalized === "pro" ||
+    planNormalized === "enterprise";
   const planCancelled = Boolean(user.planCancelled);
 
   const persistedStartDate = toDate(user.subscriptionStartDate);
