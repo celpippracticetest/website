@@ -126,6 +126,24 @@ async function loadActivityMetricsByUserId(
   if (ids.length === 0) return byUserId;
 
   const activitiesKey = await resolveAppDocumentsPartitionKey(sql, "useractivities");
+
+  // timestampUtc may be an ISO string or Mongo extended JSON: {"$date":"..."}.
+  // Casting the raw text form fails and previously zeroed the whole admin list path.
+  const activityTimestampSql = sql.unsafe(`
+    COALESCE(
+      CASE
+        WHEN jsonb_typeof(body->'timestampUtc') = 'string'
+          AND NULLIF(TRIM(body->>'timestampUtc'), '') ~ '^[0-9]{4}-'
+          THEN (body->>'timestampUtc')::timestamptz
+        WHEN jsonb_typeof(body->'timestampUtc') = 'object'
+          AND NULLIF(TRIM(body#>>'{timestampUtc,$date}'), '') ~ '^[0-9]{4}-'
+          THEN (body#>>'{timestampUtc,$date}')::timestamptz
+        ELSE NULL
+      END,
+      updated_at
+    )
+  `);
+
   const rows = await sql<{
     user_id: string;
     total_activities: number;
@@ -178,18 +196,8 @@ async function loadActivityMetricsByUserId(
         ARRAY_AGG(DISTINCT NULLIF(TRIM(body->>'userAgent'), ''))
         FILTER (WHERE NULLIF(TRIM(body->>'userAgent'), '') IS NOT NULL)
       )[1:3] AS user_agents,
-      MAX(
-        COALESCE(
-          NULLIF(TRIM(body->>'timestampUtc'), '')::timestamptz,
-          updated_at
-        )
-      ) AS last_activity,
-      MIN(
-        COALESCE(
-          NULLIF(TRIM(body->>'timestampUtc'), '')::timestamptz,
-          updated_at
-        )
-      ) AS first_activity
+      MAX(${activityTimestampSql}) AS last_activity,
+      MIN(${activityTimestampSql}) AS first_activity
     FROM app_documents
     WHERE collection = ${activitiesKey}
       AND body->>'userId' = ANY(${ids})
@@ -368,10 +376,18 @@ export async function listAdminUsersFromUserProfiles(
     r.supabase_auth_user_id,
     r.legacy_clerk_user_id,
   ]);
-  const activityByUserId = await loadActivityMetricsByUserId(
-    sql,
-    activityIdCandidates
-  );
+  let activityByUserId = new Map<string, ActivityMetrics>();
+  try {
+    activityByUserId = await loadActivityMetricsByUserId(
+      sql,
+      activityIdCandidates
+    );
+  } catch (e) {
+    console.warn(
+      "[admin/users] activity metrics join failed; returning profiles with zeroed activity:",
+      e instanceof Error ? e.message : e
+    );
+  }
 
   const rows = dataRows.map((r) => {
     const meta = asRecord(r.public_metadata);
@@ -547,10 +563,18 @@ export async function listAdminUsersFromUsersDocuments(
     };
   });
 
-  const activityByUserId = await loadActivityMetricsByUserId(
-    sql,
-    mapped.flatMap((r) => r.activityIds)
-  );
+  let activityByUserId = new Map<string, ActivityMetrics>();
+  try {
+    activityByUserId = await loadActivityMetricsByUserId(
+      sql,
+      mapped.flatMap((r) => r.activityIds)
+    );
+  } catch (e) {
+    console.warn(
+      "[admin/users] activity metrics join failed (users docs path); returning zeroed activity:",
+      e instanceof Error ? e.message : e
+    );
+  }
 
   const rows = mapped.map(({ activityIds, ...r }) => {
     const activity = mergeActivityMetrics(activityIds, activityByUserId);
