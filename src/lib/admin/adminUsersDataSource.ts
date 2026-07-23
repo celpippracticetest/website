@@ -51,6 +51,8 @@ export type AdminUsersListParams = {
 
 type ProfileListRow = {
   stable_id: string;
+  supabase_auth_user_id: string | null;
+  legacy_clerk_user_id: string | null;
   email: string | null;
   first_name: string | null;
   last_name: string | null;
@@ -61,8 +63,210 @@ type ProfileListRow = {
   updated_at: Date;
 };
 
+type ActivityMetrics = {
+  totalActivities: number;
+  uniqueIpAddressesCount: number;
+  uniqueUserAgentsCount: number;
+  totalTokens: number;
+  practiceAttempts: number;
+  practiceCompletions: number;
+  mockAttempts: number;
+  mockCompletions: number;
+  paymentEvents: number;
+  disputeEvents: number;
+  ipAddresses: string[];
+  userAgents: string[];
+  lastActivity: Date | null;
+  firstActivity: Date | null;
+};
+
+const EMPTY_ACTIVITY_METRICS: ActivityMetrics = {
+  totalActivities: 0,
+  uniqueIpAddressesCount: 0,
+  uniqueUserAgentsCount: 0,
+  totalTokens: 0,
+  practiceAttempts: 0,
+  practiceCompletions: 0,
+  mockAttempts: 0,
+  mockCompletions: 0,
+  paymentEvents: 0,
+  disputeEvents: 0,
+  ipAddresses: [],
+  userAgents: [],
+  lastActivity: null,
+  firstActivity: null,
+};
+
 function asRecord(v: unknown): Record<string, unknown> {
   return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+}
+
+function uniqueNonEmpty(ids: Array<string | null | undefined>): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of ids) {
+    const id = (raw || "").trim();
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
+}
+
+/**
+ * Page-scoped activity rollups from `useractivities` app_documents.
+ * Avoids full-table aggregation used by the Mongo fallback path.
+ */
+async function loadActivityMetricsByUserId(
+  sql: Sql,
+  userIds: string[]
+): Promise<Map<string, ActivityMetrics>> {
+  const ids = uniqueNonEmpty(userIds);
+  const byUserId = new Map<string, ActivityMetrics>();
+  if (ids.length === 0) return byUserId;
+
+  const activitiesKey = await resolveAppDocumentsPartitionKey(sql, "useractivities");
+  const rows = await sql<{
+    user_id: string;
+    total_activities: number;
+    unique_ips: number;
+    unique_uas: number;
+    total_tokens: string | number;
+    practice_attempts: number;
+    practice_completions: number;
+    mock_attempts: number;
+    mock_completions: number;
+    payment_events: number;
+    dispute_events: number;
+    ip_addresses: string[] | null;
+    user_agents: string[] | null;
+    last_activity: Date | null;
+    first_activity: Date | null;
+  }[]>`
+    SELECT
+      body->>'userId' AS user_id,
+      COUNT(*)::int AS total_activities,
+      COUNT(DISTINCT NULLIF(TRIM(body->>'ipAddress'), ''))::int AS unique_ips,
+      COUNT(DISTINCT NULLIF(TRIM(body->>'userAgent'), ''))::int AS unique_uas,
+      COALESCE(
+        SUM(
+          COALESCE(NULLIF(TRIM(body->>'llmTokensPrompt'), '')::int, 0)
+          + COALESCE(NULLIF(TRIM(body->>'llmTokensCompletion'), '')::int, 0)
+        ),
+        0
+      ) AS total_tokens,
+      COUNT(*) FILTER (WHERE body->>'eventType' = 'practice_attempt_started')::int AS practice_attempts,
+      COUNT(*) FILTER (WHERE body->>'eventType' = 'practice_attempt_completed')::int AS practice_completions,
+      COUNT(*) FILTER (WHERE body->>'eventType' = 'mock_attempt_started')::int AS mock_attempts,
+      COUNT(*) FILTER (WHERE body->>'eventType' = 'mock_attempt_completed')::int AS mock_completions,
+      COUNT(*) FILTER (
+        WHERE body->>'eventType' IN (
+          'payment_successful',
+          'payment_failed',
+          'subscription_created',
+          'subscription_cancelled'
+        )
+      )::int AS payment_events,
+      COUNT(*) FILTER (
+        WHERE body->>'eventType' IN ('dispute_created', 'dispute_resolved')
+      )::int AS dispute_events,
+      (
+        ARRAY_AGG(DISTINCT NULLIF(TRIM(body->>'ipAddress'), ''))
+        FILTER (WHERE NULLIF(TRIM(body->>'ipAddress'), '') IS NOT NULL)
+      )[1:5] AS ip_addresses,
+      (
+        ARRAY_AGG(DISTINCT NULLIF(TRIM(body->>'userAgent'), ''))
+        FILTER (WHERE NULLIF(TRIM(body->>'userAgent'), '') IS NOT NULL)
+      )[1:3] AS user_agents,
+      MAX(
+        COALESCE(
+          NULLIF(TRIM(body->>'timestampUtc'), '')::timestamptz,
+          updated_at
+        )
+      ) AS last_activity,
+      MIN(
+        COALESCE(
+          NULLIF(TRIM(body->>'timestampUtc'), '')::timestamptz,
+          updated_at
+        )
+      ) AS first_activity
+    FROM app_documents
+    WHERE collection = ${activitiesKey}
+      AND body->>'userId' = ANY(${ids})
+    GROUP BY body->>'userId'
+  `;
+
+  for (const r of rows) {
+    if (!r.user_id) continue;
+    byUserId.set(r.user_id, {
+      totalActivities: r.total_activities || 0,
+      uniqueIpAddressesCount: r.unique_ips || 0,
+      uniqueUserAgentsCount: r.unique_uas || 0,
+      totalTokens: Number(r.total_tokens || 0) || 0,
+      practiceAttempts: r.practice_attempts || 0,
+      practiceCompletions: r.practice_completions || 0,
+      mockAttempts: r.mock_attempts || 0,
+      mockCompletions: r.mock_completions || 0,
+      paymentEvents: r.payment_events || 0,
+      disputeEvents: r.dispute_events || 0,
+      ipAddresses: (r.ip_addresses || []).filter(Boolean),
+      userAgents: (r.user_agents || []).filter(Boolean),
+      lastActivity: r.last_activity,
+      firstActivity: r.first_activity,
+    });
+  }
+
+  return byUserId;
+}
+
+function mergeActivityMetrics(
+  candidates: string[],
+  byUserId: Map<string, ActivityMetrics>
+): ActivityMetrics {
+  const matched = uniqueNonEmpty(candidates)
+    .map((id) => byUserId.get(id))
+    .filter((m): m is ActivityMetrics => Boolean(m));
+  if (matched.length === 0) return { ...EMPTY_ACTIVITY_METRICS };
+  if (matched.length === 1) return matched[0]!;
+
+  const ipSet = new Set<string>();
+  const uaSet = new Set<string>();
+  let lastActivity: Date | null = null;
+  let firstActivity: Date | null = null;
+  const merged = { ...EMPTY_ACTIVITY_METRICS };
+
+  for (const m of matched) {
+    merged.totalActivities += m.totalActivities;
+    merged.totalTokens += m.totalTokens;
+    merged.practiceAttempts += m.practiceAttempts;
+    merged.practiceCompletions += m.practiceCompletions;
+    merged.mockAttempts += m.mockAttempts;
+    merged.mockCompletions += m.mockCompletions;
+    merged.paymentEvents += m.paymentEvents;
+    merged.disputeEvents += m.disputeEvents;
+    for (const ip of m.ipAddresses) ipSet.add(ip);
+    for (const ua of m.userAgents) uaSet.add(ua);
+    if (
+      m.lastActivity &&
+      (!lastActivity || m.lastActivity.getTime() > lastActivity.getTime())
+    ) {
+      lastActivity = m.lastActivity;
+    }
+    if (
+      m.firstActivity &&
+      (!firstActivity || m.firstActivity.getTime() < firstActivity.getTime())
+    ) {
+      firstActivity = m.firstActivity;
+    }
+  }
+
+  merged.ipAddresses = [...ipSet].slice(0, 5);
+  merged.userAgents = [...uaSet].slice(0, 3);
+  merged.uniqueIpAddressesCount = ipSet.size;
+  merged.uniqueUserAgentsCount = uaSet.size;
+  merged.lastActivity = lastActivity;
+  merged.firstActivity = firstActivity;
+  return merged;
 }
 
 function orderBySql(sortBy: string, sortOrder: "asc" | "desc"): string {
@@ -89,7 +293,7 @@ function orderBySql(sortBy: string, sortOrder: "asc" | "desc"): string {
 /**
  * Paginated admin user list from Supabase Postgres `public.user_profiles`
  * (`LIMIT` / `OFFSET` — never loads the full table into the app server).
- * Activity / IP metrics are not joined here (zeros in the mapped row).
+ * Activity / IP / token metrics are joined for the current page only.
  */
 export async function listAdminUsersFromUserProfiles(
   sql: Sql,
@@ -140,6 +344,8 @@ export async function listAdminUsersFromUserProfiles(
         NULLIF(TRIM(p.supabase_auth_user_id::text), ''),
         p.id::text
       ) AS stable_id,
+      p.supabase_auth_user_id::text AS supabase_auth_user_id,
+      p.legacy_clerk_user_id,
       p.email,
       p.first_name,
       p.last_name,
@@ -157,29 +363,43 @@ export async function listAdminUsersFromUserProfiles(
     OFFSET ${offset}
   `;
 
+  const activityIdCandidates = dataRows.flatMap((r) => [
+    r.stable_id,
+    r.supabase_auth_user_id,
+    r.legacy_clerk_user_id,
+  ]);
+  const activityByUserId = await loadActivityMetricsByUserId(
+    sql,
+    activityIdCandidates
+  );
+
   const rows = dataRows.map((r) => {
     const meta = asRecord(r.public_metadata);
     const plan = normalizeAdminListPlan(r.plan ?? meta.plan ?? "free");
+    const activity = mergeActivityMetrics(
+      [r.stable_id, r.supabase_auth_user_id, r.legacy_clerk_user_id],
+      activityByUserId
+    );
     return {
       _id: r.stable_id,
       email: r.email ?? null,
       firstName: r.first_name,
       lastName: r.last_name,
-      lastActivity: r.updated_at,
-      firstActivity: r.created_at,
+      lastActivity: activity.lastActivity ?? r.updated_at,
+      firstActivity: activity.firstActivity ?? r.created_at,
       createdAt: r.created_at,
-      totalActivities: 0,
-      uniqueIpAddressesCount: 0,
-      uniqueUserAgentsCount: 0,
-      totalTokens: 0,
-      practiceAttempts: 0,
-      practiceCompletions: 0,
-      mockAttempts: 0,
-      mockCompletions: 0,
-      paymentEvents: 0,
-      disputeEvents: 0,
-      ipAddresses: [] as string[],
-      userAgents: [] as string[],
+      totalActivities: activity.totalActivities,
+      uniqueIpAddressesCount: activity.uniqueIpAddressesCount,
+      uniqueUserAgentsCount: activity.uniqueUserAgentsCount,
+      totalTokens: activity.totalTokens,
+      practiceAttempts: activity.practiceAttempts,
+      practiceCompletions: activity.practiceCompletions,
+      mockAttempts: activity.mockAttempts,
+      mockCompletions: activity.mockCompletions,
+      paymentEvents: activity.paymentEvents,
+      disputeEvents: activity.disputeEvents,
+      ipAddresses: activity.ipAddresses,
+      userAgents: activity.userAgents,
       plan,
       planType: r.plan_type ?? (meta.planType as string | undefined) ?? null,
       purchaseAmount: Number(meta.purchaseAmount ?? 0) || 0,
@@ -228,7 +448,7 @@ function orderByUsersDocSql(sortBy: string, sortOrder: "asc" | "desc"): string {
 }
 
 /**
- * Fallback: paginate `users` app_documents only (activity metrics zeroed).
+ * Fallback: paginate `users` app_documents, then attach page-scoped activity metrics.
  */
 export async function listAdminUsersFromUsersDocuments(
   sql: Sql,
@@ -285,14 +505,16 @@ export async function listAdminUsersFromUsersDocuments(
     OFFSET ${offset}
   `;
 
-  const rows = dataRows.map((r) => {
+  const mapped = dataRows.map((r) => {
     const b = asRecord(r.body);
     const meta = asRecord(b.publicMetadata);
+    const supabaseUserId =
+      typeof b.supabaseUserId === "string" ? b.supabaseUserId.trim() : "";
+    const sub = typeof b.sub === "string" ? b.sub.trim() : "";
+    const clerkUserId =
+      typeof b.clerkUserId === "string" ? b.clerkUserId.trim() : "";
     const stable =
-      (typeof b.supabaseUserId === "string" && b.supabaseUserId.trim()) ||
-      (typeof b.sub === "string" && b.sub.trim()) ||
-      (typeof b.clerkUserId === "string" && b.clerkUserId.trim()) ||
-      r.mongo_id;
+      supabaseUserId || sub || clerkUserId || r.mongo_id;
     const plan = normalizeAdminListPlan(b.plan ?? meta.plan ?? "free");
     const created =
       b.createdAt != null
@@ -300,24 +522,13 @@ export async function listAdminUsersFromUsersDocuments(
         : r.updated_at;
     return {
       _id: stable,
+      activityIds: uniqueNonEmpty([stable, supabaseUserId, sub, clerkUserId]),
       email: (b.email as string | undefined) ?? null,
       firstName: b.firstName,
       lastName: b.lastName,
       lastActivity: r.updated_at,
       firstActivity: created,
       createdAt: created,
-      totalActivities: 0,
-      uniqueIpAddressesCount: 0,
-      uniqueUserAgentsCount: 0,
-      totalTokens: 0,
-      practiceAttempts: 0,
-      practiceCompletions: 0,
-      mockAttempts: 0,
-      mockCompletions: 0,
-      paymentEvents: 0,
-      disputeEvents: 0,
-      ipAddresses: [] as string[],
-      userAgents: [] as string[],
       plan,
       planType: (b.planType as string | undefined) ?? (meta.planType as string | undefined) ?? null,
       purchaseAmount: Number(meta.purchaseAmount ?? b.purchaseAmount ?? 0) || 0,
@@ -333,6 +544,32 @@ export async function listAdminUsersFromUsersDocuments(
       subscriptionEndDate: b.subscriptionEndDate ?? null,
       subscriptionDurationDays: b.subscriptionDurationDays ?? null,
       subscriptionHistory: [] as { type: string; date: unknown }[],
+    };
+  });
+
+  const activityByUserId = await loadActivityMetricsByUserId(
+    sql,
+    mapped.flatMap((r) => r.activityIds)
+  );
+
+  const rows = mapped.map(({ activityIds, ...r }) => {
+    const activity = mergeActivityMetrics(activityIds, activityByUserId);
+    return {
+      ...r,
+      lastActivity: activity.lastActivity ?? r.lastActivity,
+      firstActivity: activity.firstActivity ?? r.firstActivity,
+      totalActivities: activity.totalActivities,
+      uniqueIpAddressesCount: activity.uniqueIpAddressesCount,
+      uniqueUserAgentsCount: activity.uniqueUserAgentsCount,
+      totalTokens: activity.totalTokens,
+      practiceAttempts: activity.practiceAttempts,
+      practiceCompletions: activity.practiceCompletions,
+      mockAttempts: activity.mockAttempts,
+      mockCompletions: activity.mockCompletions,
+      paymentEvents: activity.paymentEvents,
+      disputeEvents: activity.disputeEvents,
+      ipAddresses: activity.ipAddresses,
+      userAgents: activity.userAgents,
     };
   });
 

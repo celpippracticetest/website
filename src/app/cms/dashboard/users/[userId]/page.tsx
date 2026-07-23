@@ -18,6 +18,7 @@ import {
   Globe,
   Smartphone,
 } from "lucide-react";
+import { formatPlanLabel, hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 
 interface ActivitySummary {
   practiceAttempted: number;
@@ -61,10 +62,32 @@ interface UserActivitiesResponse {
   };
 }
 
+interface UserProfile {
+  userId: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  plan: string;
+  planType: string | null;
+  planCancelled: boolean;
+  planRenewsAt: string | null;
+  planExpiresAt: string | null;
+  purchaseDate: string | null;
+  purchaseAmount: number;
+  purchaseCurrency: string;
+  totalSpend: number;
+  stripeCustomerId: string | null;
+  subscriptionStatus: "active" | "unsubscribed" | "never";
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function UserDetailPage() {
   const params = useParams();
   const userId = params.userId as string;
 
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [summary, setSummary] = useState<ActivitySummary>({
     practiceAttempted: 0,
@@ -94,6 +117,39 @@ export default function UserDetailPage() {
   const [status, setStatus] = useState("");
   const [hasScore, setHasScore] = useState("");
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setProfileError(null);
+      try {
+        const response = await fetch(
+          `/api/admin/users/${encodeURIComponent(userId)}`
+        );
+        if (!response.ok) {
+          if (!cancelled) {
+            setProfile(null);
+            setProfileError(
+              response.status === 404
+                ? "User profile not found in database"
+                : "Failed to load user profile"
+            );
+          }
+          return;
+        }
+        const data: UserProfile = await response.json();
+        if (!cancelled) setProfile(data);
+      } catch {
+        if (!cancelled) {
+          setProfile(null);
+          setProfileError("Failed to load user profile");
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   const fetchActivities = async () => {
     setLoading(true);
@@ -281,13 +337,18 @@ export default function UserDetailPage() {
     }
   };
 
+  const displayName =
+    [profile?.firstName, profile?.lastName].filter(Boolean).join(" ") ||
+    profile?.email ||
+    `${userId.slice(0, 8)}...`;
+
   return (
     <div className="p-6">
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              User Activity: {userId.slice(0, 8)}...
+              User Activity: {displayName}
             </h1>
             <p className="text-gray-600">Detailed activity log and analytics</p>
           </div>
@@ -299,6 +360,74 @@ export default function UserDetailPage() {
             Export Excel
           </button>
         </div>
+      </div>
+
+      {/* Profile from user_profiles (DB source of truth) */}
+      <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+        {profileError ? (
+          <p className="text-sm text-red-600">{profileError}</p>
+        ) : !profile ? (
+          <p className="text-sm text-gray-500">Loading profile...</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase">Email</p>
+              <p className="text-sm text-gray-900 mt-1">{profile.email || "-"}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase">Plan</p>
+              <span
+                className={`inline-flex items-center mt-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  hasPaidPracticeAccess(profile.plan)
+                    ? "bg-purple-100 text-purple-800"
+                    : "bg-gray-100 text-gray-800"
+                }`}
+              >
+                {formatPlanLabel(profile.plan, profile.planType)}
+              </span>
+              {profile.planCancelled ? (
+                <p className="text-xs text-amber-600 mt-1">Cancelled</p>
+              ) : null}
+            </div>
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase">
+                Subscription
+              </p>
+              <p className="text-sm text-gray-900 mt-1 capitalize">
+                {profile.subscriptionStatus}
+              </p>
+              {profile.planRenewsAt ? (
+                <p className="text-xs text-gray-500 mt-1">
+                  Renews {formatDate(profile.planRenewsAt)}
+                </p>
+              ) : null}
+              {profile.planExpiresAt ? (
+                <p className="text-xs text-gray-500 mt-1">
+                  Expires {formatDate(profile.planExpiresAt)}
+                </p>
+              ) : null}
+            </div>
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase">Spend</p>
+              <p className="text-sm text-gray-900 mt-1">
+                {profile.totalSpend > 0
+                  ? `${profile.totalSpend.toFixed(2)} ${profile.purchaseCurrency}`
+                  : "-"}
+              </p>
+              {profile.purchaseDate ? (
+                <p className="text-xs text-gray-500 mt-1">
+                  Purchased {formatDate(profile.purchaseDate)}
+                </p>
+              ) : null}
+            </div>
+            <div className="md:col-span-2 lg:col-span-4">
+              <p className="text-xs font-medium text-gray-500 uppercase">User ID</p>
+              <p className="text-sm text-gray-700 mt-1 font-mono break-all">
+                {profile.userId}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Summary Cards */}

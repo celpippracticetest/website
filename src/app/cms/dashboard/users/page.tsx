@@ -10,17 +10,7 @@ import {
   Clock,
   RotateCw,
 } from "lucide-react";
-import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
-
-function formatPlanLabel(plan?: string, planType?: string) {
-  if (!hasPaidPracticeAccess(plan)) return "Free";
-  const label =
-    (plan || "").trim().toLowerCase() === "plus"
-      ? "Plus"
-      : (plan || "").trim().charAt(0).toUpperCase() +
-        (plan || "").trim().slice(1).toLowerCase();
-  return planType ? `${label} (${planType})` : label;
-}
+import { hasPaidPracticeAccess, formatPlanLabel } from "@/lib/subscriptionAccess";
 
 interface User {
   userId: string;

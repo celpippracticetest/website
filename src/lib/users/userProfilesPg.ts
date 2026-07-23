@@ -80,3 +80,49 @@ export async function findUserProfileByWebUserId(
     legacy_body: asRecord(row.legacy_body),
   };
 }
+
+/**
+ * Admin CMS lookup: web user id, profile UUID, or email.
+ */
+export async function findUserProfileForAdminLookup(
+  identifier: string,
+): Promise<UserProfileRow | null> {
+  const id = identifier.trim();
+  if (!id) return null;
+
+  const byWebId = await findUserProfileByWebUserId(id);
+  if (byWebId) return byWebId;
+
+  const sql = getSql();
+  const rows = await sql<UserProfileRow[]>`
+    SELECT
+      id,
+      supabase_auth_user_id,
+      legacy_clerk_user_id,
+      email,
+      first_name,
+      last_name,
+      image_url,
+      plan,
+      plan_type,
+      stripe_customer_id,
+      public_metadata,
+      legacy_body,
+      app_document_mongo_id,
+      created_at,
+      updated_at
+    FROM public.user_profiles
+    WHERE id::text = ${id}
+       OR lower(email) = lower(${id})
+    ORDER BY updated_at DESC
+    LIMIT 1
+  `;
+
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    ...row,
+    public_metadata: asRecord(row.public_metadata),
+    legacy_body: asRecord(row.legacy_body),
+  };
+}

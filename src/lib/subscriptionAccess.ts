@@ -26,6 +26,21 @@ export function hasPaidPracticeAccess(
   );
 }
 
+/** CMS admin display label aligned with DB plan tokens (`plus`, legacy `premium`/`pro`, etc.). */
+export function formatPlanLabel(
+  plan?: string | null,
+  planType?: string | null
+) {
+  if (!hasPaidPracticeAccess(plan)) return "Free";
+  const normalized = normalizePlan(plan);
+  const label =
+    normalized === "plus"
+      ? "Plus"
+      : normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  const type = (planType || "").trim();
+  return type ? `${label} (${type})` : label;
+}
+
 /** Same as {@link hasPaidPracticeAccess} — kept for call sites that distinguish “full library” gating. */
 export function hasPremiumPlusAccess(
   plan: string | null | undefined,
