@@ -9,8 +9,13 @@ import {
   Shield,
   Clock,
   RotateCw,
+  CreditCard,
 } from "lucide-react";
-import { hasPaidPracticeAccess, formatPlanLabel } from "@/lib/subscriptionAccess";
+import {
+  hasPaidPracticeAccess,
+  formatPlanLabel,
+} from "@/lib/subscriptionAccess";
+import ChangeUserPlanModal from "@/components/cms/ChangeUserPlanModal";
 
 interface User {
   userId: string;
@@ -57,6 +62,10 @@ export default function UsersPage() {
     totalCount: 0,
     totalPages: 0,
   });
+  const [planModalUser, setPlanModalUser] = useState<{
+    userId: string;
+    label: string;
+  } | null>(null);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -340,6 +349,20 @@ export default function UsersPage() {
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
+                            onClick={() =>
+                              setPlanModalUser({
+                                userId: user.userId,
+                                label:
+                                  user.email ||
+                                  formatPlanLabel(user.plan, user.planType),
+                              })
+                            }
+                            className="text-purple-600 cursor-pointer hover:text-purple-900"
+                            title="Change Plan"
+                          >
+                            <CreditCard className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => exportUserData(user.userId)}
                             className="text-green-600 cursor-pointer hover:text-green-900"
                             title="Export Data"
@@ -411,6 +434,16 @@ export default function UsersPage() {
           </>
         )}
       </div>
+
+      {planModalUser ? (
+        <ChangeUserPlanModal
+          open
+          userId={planModalUser.userId}
+          userLabel={planModalUser.label}
+          onClose={() => setPlanModalUser(null)}
+          onSuccess={() => fetchUsers()}
+        />
+      ) : null}
     </div>
   );
 }

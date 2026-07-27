@@ -37,49 +37,54 @@ export default function BlogIndexContent({ items }: BlogIndexContentProps) {
       {/* Hero */}
       <section>
         <div className="mx-auto max-w-[1280px] px-4 py-12 text-center screen744:px-11 screen744:py-[72px] screen744:pb-16">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-brand-blue-tint px-3.5 py-1.5 text-[13px] font-bold text-brand-blue-dark screen744:mb-[22px]">
-            <span className="inline-block h-[7px] w-[7px] rounded-full bg-brand-blue" aria-hidden />
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-primary5 px-3.5 py-1.5 text-[13px] font-bold text-primary1 screen744:mb-[22px]">
+            <span
+              className="inline-block h-[7px] w-[7px] rounded-full bg-primary1"
+              aria-hidden
+            />
             Exam preparation resources
           </div>
 
-          <h1 className="font-display text-balance text-[2rem] font-extrabold leading-[1.07] tracking-[-0.02em] text-brand-navy screen744:text-[2.75rem] screen1280:text-[3.125rem]">
-            CELPIP <span className="text-brand-blue">Blog & Insights</span>
+          <h1 className="text-balance text-[2rem] font-extrabold leading-[1.07] tracking-[-0.02em] text-text1 screen744:text-[2.75rem] screen1280:text-[3.125rem]">
+            CELPIP <span className="text-primary1">Blog & Insights</span>
           </h1>
 
           <p className="mx-auto mt-5 max-w-2xl text-[17px] leading-[1.55] text-text2 screen744:text-[19px]">
-            Expert strategies, score improvement guides, and practical tips to help you master
-            the CELPIP exam.
+            Expert strategies, score improvement guides, and practical tips to
+            help you master the CELPIP exam.
           </p>
         </div>
       </section>
 
       {/* Articles */}
-      <section className="border-y border-brand-surface-divider bg-brand-surface px-4 py-12 screen744:px-11 screen744:py-14">
+      <section className="border-y border-outline/60 bg-primary6/60 px-4 py-12 screen744:px-11 screen744:py-14">
         <div className="mx-auto max-w-[1280px]">
           {items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-[14px] border border-dashed border-brand-surface-border bg-white p-12 text-center">
-              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand-surface-muted">
-                <CalendarToday className="h-7 w-7 text-brand-muted" aria-hidden />
+            <div className="flex flex-col items-center justify-center rounded-[14px] border border-dashed border-outline bg-white p-12 text-center">
+              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary6">
+                <CalendarToday className="h-7 w-7 text-text3" aria-hidden />
               </div>
-              <h2 className="font-display text-lg font-bold text-text1">No posts yet</h2>
-              <p className="mt-2 text-sm text-text2">Check back soon for new articles.</p>
+              <h2 className="text-lg font-bold text-text1">No posts yet</h2>
+              <p className="mt-2 text-sm text-text2">
+                Check back soon for new articles.
+              </p>
             </div>
           ) : (
             <div className="flex flex-col gap-12 screen744:gap-14">
               {featuredPost ? (
                 <div>
                   <div className="mb-6 text-center screen744:mb-8 screen744:text-left">
-                    <h2 className="font-display text-[1.75rem] font-extrabold tracking-[-0.01em] text-brand-navy screen744:text-[2.125rem]">
+                    <h2 className="text-[1.75rem] font-extrabold tracking-[-0.01em] text-text1 screen744:text-[2.125rem]">
                       Featured article
                     </h2>
                   </div>
 
                   <Link
                     href={`/blog/${featuredPost.slug}`}
-                    className="group block overflow-hidden rounded-[14px] border border-brand-surface-border bg-white transition-all hover:border-primary1/30 hover:shadow-[0_10px_26px_rgba(51,88,207,0.08)]"
+                    className="group block overflow-hidden rounded-[14px] border border-outline/80 bg-white transition-all hover:border-primary1/30 hover:shadow-[0_10px_26px_rgba(51,88,207,0.08)]"
                   >
                     <div className="flex flex-col screen1024:flex-row">
-                      <div className="relative flex min-h-[220px] items-end bg-brand-surface-muted p-6 screen1024:min-h-[280px] screen1024:w-2/5 screen1024:shrink-0">
+                      <div className="relative flex min-h-[220px] items-end bg-primary6 p-6 screen1024:min-h-[280px] screen1024:w-2/5 screen1024:shrink-0">
                         {featuredPost.categories.slice(0, 2).map((cat) => (
                           <ContentCategoryTag
                             key={cat}
@@ -88,7 +93,7 @@ export default function BlogIndexContent({ items }: BlogIndexContentProps) {
                             className="absolute left-4 top-4"
                           />
                         ))}
-                        <p className="line-clamp-3 font-display text-lg font-bold leading-snug text-brand-navy">
+                        <p className="line-clamp-3 text-lg font-bold leading-snug text-text1">
                           {featuredPost.title}
                         </p>
                       </div>
@@ -105,7 +110,7 @@ export default function BlogIndexContent({ items }: BlogIndexContentProps) {
                           </span>
                         </div>
 
-                        <h3 className="font-display text-2xl font-extrabold leading-tight text-text1 transition-colors group-hover:text-brand-blue screen744:text-[1.75rem]">
+                        <h3 className="text-2xl font-extrabold leading-tight text-text1 transition-colors group-hover:text-primary1 screen744:text-[1.75rem]">
                           {featuredPost.title}
                         </h3>
 
@@ -114,16 +119,22 @@ export default function BlogIndexContent({ items }: BlogIndexContentProps) {
                             "Read our comprehensive guide to improve your CELPIP score with proven strategies and expert advice."}
                         </p>
 
-                        <div className="mt-6 flex items-center justify-between gap-4 border-t border-brand-surface-divider pt-5">
+                        <div className="mt-6 flex items-center justify-between gap-4 border-t border-outline/60 pt-5">
                           <span className="flex items-center gap-2 text-sm font-medium text-text2">
-                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-surface-muted">
-                              <Person className="h-4 w-4 text-text3" aria-hidden />
+                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary6">
+                              <Person
+                                className="h-4 w-4 text-text3"
+                                aria-hidden
+                              />
                             </span>
                             {featuredPost.authorName}
                           </span>
-                          <span className="flex items-center gap-1 font-display text-sm font-bold text-brand-blue">
+                          <span className="flex items-center gap-1 text-sm font-bold text-primary1">
                             Read article
-                            <ArrowForward className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+                            <ArrowForward
+                              className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                              aria-hidden
+                            />
                           </span>
                         </div>
                       </div>
@@ -135,7 +146,7 @@ export default function BlogIndexContent({ items }: BlogIndexContentProps) {
               {recentPosts.length > 0 ? (
                 <div>
                   <div className="mb-8 text-center screen744:mb-10">
-                    <h2 className="font-display text-[1.75rem] font-extrabold tracking-[-0.01em] text-brand-navy screen744:text-[2.125rem]">
+                    <h2 className="text-[1.75rem] font-extrabold tracking-[-0.01em] text-text1 screen744:text-[2.125rem]">
                       Latest articles
                     </h2>
                     <p className="mt-3 text-[17px] text-text2">
@@ -148,21 +159,22 @@ export default function BlogIndexContent({ items }: BlogIndexContentProps) {
                       <Link
                         key={post.id}
                         href={`/blog/${post.slug}`}
-                        className="group flex h-full flex-col rounded-[14px] border border-brand-surface-border bg-white p-6 transition-all hover:border-primary1/30 hover:shadow-[0_10px_26px_rgba(51,88,207,0.08)]"
+                        className="group flex h-full flex-col rounded-[14px] border border-outline/80 bg-white p-6 transition-all hover:border-primary1/30 hover:shadow-[0_10px_26px_rgba(51,88,207,0.08)]"
                       >
                         {post.categories.length > 0 ? (
                           <ContentCategoryTag category={post.categories[0]} />
                         ) : null}
 
-                        <h3 className="mt-3 font-display text-[17px] font-bold leading-snug text-text1 group-hover:text-brand-blue">
+                        <h3 className="mt-3 text-[17px] font-bold leading-snug text-text1 group-hover:text-primary1">
                           {post.title}
                         </h3>
 
-                        <p className="mt-2 flex-1 text-[15px] leading-normal text-[#5a6874] line-clamp-3">
-                          {post.excerpt || "Click to read more about this topic."}
+                        <p className="mt-2 flex-1 text-[15px] leading-normal text-text2 line-clamp-3">
+                          {post.excerpt ||
+                            "Click to read more about this topic."}
                         </p>
 
-                        <div className="mt-4 flex items-center justify-between gap-3 border-t border-brand-surface-divider pt-4 text-xs text-text3">
+                        <div className="mt-4 flex items-center justify-between gap-3 border-t border-outline/60 pt-4 text-xs text-text3">
                           <span className="flex items-center gap-1">
                             <CalendarToday className="h-3 w-3" aria-hidden />
                             {formatDate(post.publishedAt)}
@@ -173,7 +185,7 @@ export default function BlogIndexContent({ items }: BlogIndexContentProps) {
                           </span>
                         </div>
 
-                        <span className="mt-3 font-display text-sm font-bold text-brand-blue opacity-0 transition-opacity group-hover:opacity-100">
+                        <span className="mt-3 text-sm font-bold text-primary1 opacity-0 transition-opacity group-hover:opacity-100">
                           Read article →
                         </span>
                       </Link>

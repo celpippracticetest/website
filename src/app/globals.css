@@ -159,9 +159,9 @@ svg {
     @apply bg-background text-foreground;
   }
 
-  /* Add prose styles for the wiki content */
+  /* Prose styles for wiki / article content */
   .prose {
-    @apply text-foreground;
+    @apply text-text2;
   }
 
   .prose h1,
@@ -170,7 +170,7 @@ svg {
   .prose h4,
   .prose h5,
   .prose h6 {
-    @apply text-foreground font-bold mb-4 mt-8;
+    @apply font-extrabold text-text1 mb-4 mt-8 tracking-[-0.01em];
   }
 
   .prose h1 {
@@ -178,7 +178,7 @@ svg {
   }
 
   .prose h2 {
-    @apply text-2xl border-b pb-2 border-gray-200 dark:border-gray-700;
+    @apply text-2xl border-b border-outline/70 pb-2;
   }
 
   .prose h3 {
@@ -207,19 +207,35 @@ svg {
   }
 
   .prose table {
-    @apply w-full my-6 border-collapse;
+    @apply w-full my-6 border-collapse overflow-hidden rounded-xl;
   }
 
-  .dark .prose table thead {
-    @apply bg-gray-800;
+  .prose thead {
+    @apply bg-primary6;
+  }
+
+  .prose th {
+    @apply border border-outline/70 px-3 py-2 text-left text-text1;
+  }
+
+  .prose td {
+    @apply border border-outline/70 px-3 py-2;
   }
 
   .prose blockquote {
-    @apply border-l-4 border-gray-300 dark:border-gray-600 pl-4 py-2 my-4 italic;
+    @apply my-4 border-l-4 border-primary1/40 bg-primary6/50 py-3 pl-4 italic text-text2;
   }
 
   .prose a {
-    @apply text-blue-600 dark:text-blue-400 hover:underline;
+    @apply font-semibold text-primary1 hover:underline;
+  }
+
+  .prose strong {
+    @apply font-bold text-text1;
+  }
+
+  .prose code {
+    @apply rounded-md bg-primary6 px-1.5 py-0.5 text-[0.9em] text-primary1;
   }
 
   /* Utility for schema markup */

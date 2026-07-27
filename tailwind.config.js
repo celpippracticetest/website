@@ -155,33 +155,27 @@ module.exports = {
         DEFAULT: {
           css: {
             maxWidth: "100%",
-            color: theme("colors.gray.700"),
+            color: theme("colors.text2"),
             "h1, h2, h3, h4": {
-              color: theme("colors.gray.900"),
-              fontWeight: "700",
+              color: theme("colors.text1"),
+              fontWeight: "800",
             },
             a: {
-              color: theme("colors.blue.500"),
+              color: theme("colors.primary1"),
+              fontWeight: "600",
               "&:hover": {
-                color: theme("colors.blue.600"),
+                color: theme("colors.primary2"),
               },
+            },
+            strong: {
+              color: theme("colors.text1"),
+            },
+            blockquote: {
+              borderLeftColor: theme("colors.primary1"),
+              color: theme("colors.text2"),
             },
             table: {
               fontSize: theme("fontSize.sm")[0],
-            },
-          },
-        },
-        dark: {
-          css: {
-            color: theme("colors.gray.300"),
-            "h1, h2, h3, h4": {
-              color: theme("colors.gray.100"),
-            },
-            a: {
-              color: theme("colors.blue.400"),
-              "&:hover": {
-                color: theme("colors.blue.300"),
-              },
             },
           },
         },

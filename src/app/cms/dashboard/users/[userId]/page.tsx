@@ -18,7 +18,11 @@ import {
   Globe,
   Smartphone,
 } from "lucide-react";
-import { formatPlanLabel, hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import {
+  formatPlanLabel,
+  hasPaidPracticeAccess,
+} from "@/lib/subscriptionAccess";
+import ChangeUserPlanModal from "@/components/cms/ChangeUserPlanModal";
 
 interface ActivitySummary {
   practiceAttempted: number;
@@ -117,6 +121,7 @@ export default function UserDetailPage() {
   const [status, setStatus] = useState("");
   const [hasScore, setHasScore] = useState("");
   const [search, setSearch] = useState("");
+  const [planModalOpen, setPlanModalOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -124,7 +129,7 @@ export default function UserDetailPage() {
       setProfileError(null);
       try {
         const response = await fetch(
-          `/api/admin/users/${encodeURIComponent(userId)}`
+          `/api/admin/users/${encodeURIComponent(userId)}`,
         );
         if (!response.ok) {
           if (!cancelled) {
@@ -132,7 +137,7 @@ export default function UserDetailPage() {
             setProfileError(
               response.status === 404
                 ? "User profile not found in database"
-                : "Failed to load user profile"
+                : "Failed to load user profile",
             );
           }
           return;
@@ -272,7 +277,7 @@ export default function UserDetailPage() {
       if (search) params.append("search", search);
 
       const response = await fetch(
-        `/api/admin/users/${userId}/export?${params}`
+        `/api/admin/users/${userId}/export?${params}`,
       );
       if (response.ok) {
         const blob = await response.blob();
@@ -371,11 +376,17 @@ export default function UserDetailPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <p className="text-xs font-medium text-gray-500 uppercase">Email</p>
-              <p className="text-sm text-gray-900 mt-1">{profile.email || "-"}</p>
+              <p className="text-xs font-medium text-gray-500 uppercase">
+                Email
+              </p>
+              <p className="text-sm text-gray-900 mt-1">
+                {profile.email || "-"}
+              </p>
             </div>
             <div>
-              <p className="text-xs font-medium text-gray-500 uppercase">Plan</p>
+              <p className="text-xs font-medium text-gray-500 uppercase">
+                Plan
+              </p>
               <span
                 className={`inline-flex items-center mt-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${
                   hasPaidPracticeAccess(profile.plan)
@@ -388,6 +399,13 @@ export default function UserDetailPage() {
               {profile.planCancelled ? (
                 <p className="text-xs text-amber-600 mt-1">Cancelled</p>
               ) : null}
+              <button
+                type="button"
+                onClick={() => setPlanModalOpen(true)}
+                className="mt-2 text-xs font-medium text-blue-600 hover:text-blue-800"
+              >
+                Change plan…
+              </button>
             </div>
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase">
@@ -408,7 +426,9 @@ export default function UserDetailPage() {
               ) : null}
             </div>
             <div>
-              <p className="text-xs font-medium text-gray-500 uppercase">Spend</p>
+              <p className="text-xs font-medium text-gray-500 uppercase">
+                Spend
+              </p>
               <p className="text-sm text-gray-900 mt-1">
                 {profile.totalSpend > 0
                   ? `${profile.totalSpend.toFixed(2)} ${profile.purchaseCurrency}`
@@ -421,7 +441,9 @@ export default function UserDetailPage() {
               ) : null}
             </div>
             <div className="md:col-span-2 lg:col-span-4">
-              <p className="text-xs font-medium text-gray-500 uppercase">User ID</p>
+              <p className="text-xs font-medium text-gray-500 uppercase">
+                User ID
+              </p>
               <p className="text-sm text-gray-700 mt-1 font-mono break-all">
                 {profile.userId}
               </p>
@@ -429,6 +451,28 @@ export default function UserDetailPage() {
           </div>
         )}
       </div>
+
+      <ChangeUserPlanModal
+        open={planModalOpen}
+        userId={userId}
+        userLabel={displayName}
+        onClose={() => setPlanModalOpen(false)}
+        onSuccess={() => {
+          void (async () => {
+            try {
+              const response = await fetch(
+                `/api/admin/users/${encodeURIComponent(userId)}`,
+              );
+              if (response.ok) {
+                const data: UserProfile = await response.json();
+                setProfile(data);
+              }
+            } catch {
+              // ignore refresh errors
+            }
+          })();
+        }}
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
@@ -445,9 +489,9 @@ export default function UserDetailPage() {
               <p className="text-xs text-gray-500">
                 {summary.practiceAttempted > 0
                   ? Math.round(
-                    (summary.practiceCompleted / summary.practiceAttempted) *
-                    100
-                  )
+                      (summary.practiceCompleted / summary.practiceAttempted) *
+                        100,
+                    )
                   : 0}
                 % completion
               </p>
@@ -468,8 +512,8 @@ export default function UserDetailPage() {
               <p className="text-xs text-gray-500">
                 {summary.mockAttempted > 0
                   ? Math.round(
-                    (summary.mockCompleted / summary.mockAttempted) * 100
-                  )
+                      (summary.mockCompleted / summary.mockAttempted) * 100,
+                    )
                   : 0}
                 % completion
               </p>
@@ -794,7 +838,7 @@ export default function UserDetailPage() {
                     <span className="font-medium">
                       {Math.min(
                         pagination.page * pagination.limit,
-                        pagination.totalCount
+                        pagination.totalCount,
                       )}
                     </span>{" "}
                     of{" "}

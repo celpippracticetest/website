@@ -2,10 +2,11 @@ import { appUserAdmin } from "@/lib/auth/server-auth";
 import documentsClient from "@/lib/appDocumentsClient";
 
 export type PlanPublicMetadataPatch = {
-  plan: string;
+  plan?: string;
   planType?: string;
   planCancelled?: boolean;
   planExpiresAt?: string | null;
+  planRenewsAt?: string | null;
 };
 
 /**

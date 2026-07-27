@@ -1532,6 +1532,33 @@ export async function POST(req: Request) {
     if (event.type === "charge.refunded") {
       const chargeObj = event.data.object as any;
       const refundId = chargeObj.id as string;
+
+      // Admin CSM plan-change refunds tag metadata so we keep the subscription /
+      // period-end cancel behavior instead of force-downgrading here.
+      let skipSubscriptionCancel = false;
+      try {
+        const refundList = await stripe.refunds.list({
+          charge: chargeObj.id as string,
+          limit: 10,
+        });
+        skipSubscriptionCancel = refundList.data.some(
+          (r) => r.metadata?.admin_skip_subscription_cancel === "true"
+        );
+      } catch (refundMetaErr) {
+        console.warn(
+          "charge.refunded: could not list refunds for admin skip check",
+          refundMetaErr
+        );
+      }
+      if (skipSubscriptionCancel) {
+        logger.info("Skipping subscription cancel for admin plan-change refund", {
+          component: "stripe_webhook",
+          action: "charge_refunded_admin_skip",
+          metadata: { chargeId: chargeObj.id, refundId },
+        });
+        return NextResponse.json({ received: true });
+      }
+
       let sessionId: string | null = null;
 
       const paymentIntentId = chargeObj.payment_intent as string | undefined;

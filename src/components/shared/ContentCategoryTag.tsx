@@ -1,12 +1,13 @@
 import { cn } from "@/lib/utils";
 
-type SkillKey = "listening" | "reading" | "writing" | "speaking";
+type SkillKey = "listening" | "reading" | "writing" | "speaking" | "general";
 
 const SKILL_DOT_COLOR: Record<SkillKey, string> = {
-  listening: "bg-brand-blue",
-  reading: "bg-brand-blue",
-  writing: "bg-brand-red",
-  speaking: "bg-brand-red",
+  listening: "bg-primary1",
+  reading: "bg-error1",
+  writing: "bg-success",
+  speaking: "bg-secondary2",
+  general: "bg-primary2",
 };
 
 function skillFromCategory(category: string): SkillKey | null {
@@ -15,7 +16,8 @@ function skillFromCategory(category: string): SkillKey | null {
     key === "listening" ||
     key === "reading" ||
     key === "writing" ||
-    key === "speaking"
+    key === "speaking" ||
+    key === "general"
   ) {
     return key;
   }
@@ -39,14 +41,14 @@ export function ContentCategoryTag({
     <span
       className={cn(
         "inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.06em] text-text3",
-        variant === "surface" ? "bg-white" : "bg-brand-surface-muted",
+        variant === "surface" ? "bg-white" : "bg-primary6",
         className,
       )}
     >
       <span
         className={cn(
           "inline-block h-1.5 w-1.5 shrink-0 rounded-full",
-          skill ? SKILL_DOT_COLOR[skill] : "bg-brand-muted",
+          skill ? SKILL_DOT_COLOR[skill] : "bg-text3",
         )}
         aria-hidden
       />
