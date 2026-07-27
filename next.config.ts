@@ -174,6 +174,7 @@ const nextConfig: NextConfig = {
       ["/celpip-writing-mistakes", "/blog/7-key-strategies-to-excel-in-celpip-writing-test"],
       ["/how-to-book-celpip", "/blog/complete-guide-celpip-test-booking-results-clb"],
       ["/how-to-book-celpip-bc", "/blog/complete-guide-celpip-test-booking-results-clb"],
+      ["/score-calculator", "/blog/complete-guide-celpip-test-booking-results-clb"],
     ].map(([source, destination]) => ({ source, destination, permanent: true }));
     return fixes;
   },

@@ -7,7 +7,6 @@ import { test, expect } from "@playwright/test";
 const publicPaths = [
   "/",
   "/pricing",
-  "/score-calculator",
   "/blog",
   "/wiki",
   "/contact-us",

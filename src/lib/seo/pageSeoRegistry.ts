@@ -86,13 +86,6 @@ export const PAGE_SEO_REGISTRY: Record<string, PageSeoItem> = {
       "Browse CELPIP wiki articles: exam format, scoring, task types, and study resources in one searchable knowledge base.",
     keywords: ["celpip wiki", "celpip guide", "celpip glossary"],
   },
-  "/score-calculator": {
-    path: "/score-calculator",
-    title: "CELPIP Score Calculator | CRS Estimate & CLB Levels",
-    description:
-      "Enter CELPIP Listening, Reading, Writing, and Speaking scores to see CLB-style levels and an educational CRS estimate for Express Entry.",
-    keywords: ["celpip score calculator", "celpip crs calculator", "celpip clb"],
-  },
   "/landing/express-entry": {
     path: "/landing/express-entry",
     title: "CELPIP for Express Entry | CLB Prep & CRS Boost",
