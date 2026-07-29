@@ -6,6 +6,7 @@ import {
   hasPaidPracticeAccess,
   normalizePlan,
 } from "@/lib/subscriptionAccess";
+import { loadUserActivityMetricsByUserId } from "@/lib/userActivity/userActivitiesPg";
 
 /** Keep paid plan tokens as stored; everything else → free for admin list. */
 function normalizeAdminListPlan(planRaw: unknown): string {
@@ -114,117 +115,13 @@ function uniqueNonEmpty(ids: Array<string | null | undefined>): string[] {
 }
 
 /**
- * Page-scoped activity rollups from `useractivities` app_documents.
- * Avoids full-table aggregation used by the Mongo fallback path.
+ * Page-scoped activity rollups from `public.user_activities`.
  */
 async function loadActivityMetricsByUserId(
   sql: Sql,
   userIds: string[]
 ): Promise<Map<string, ActivityMetrics>> {
-  const ids = uniqueNonEmpty(userIds);
-  const byUserId = new Map<string, ActivityMetrics>();
-  if (ids.length === 0) return byUserId;
-
-  const activitiesKey = await resolveAppDocumentsPartitionKey(sql, "useractivities");
-
-  // timestampUtc may be an ISO string or Mongo extended JSON: {"$date":"..."}.
-  // Casting the raw text form fails and previously zeroed the whole admin list path.
-  const activityTimestampSql = sql.unsafe(`
-    COALESCE(
-      CASE
-        WHEN jsonb_typeof(body->'timestampUtc') = 'string'
-          AND NULLIF(TRIM(body->>'timestampUtc'), '') ~ '^[0-9]{4}-'
-          THEN (body->>'timestampUtc')::timestamptz
-        WHEN jsonb_typeof(body->'timestampUtc') = 'object'
-          AND NULLIF(TRIM(body#>>'{timestampUtc,$date}'), '') ~ '^[0-9]{4}-'
-          THEN (body#>>'{timestampUtc,$date}')::timestamptz
-        ELSE NULL
-      END,
-      updated_at
-    )
-  `);
-
-  const rows = await sql<{
-    user_id: string;
-    total_activities: number;
-    unique_ips: number;
-    unique_uas: number;
-    total_tokens: string | number;
-    practice_attempts: number;
-    practice_completions: number;
-    mock_attempts: number;
-    mock_completions: number;
-    payment_events: number;
-    dispute_events: number;
-    ip_addresses: string[] | null;
-    user_agents: string[] | null;
-    last_activity: Date | null;
-    first_activity: Date | null;
-  }[]>`
-    SELECT
-      body->>'userId' AS user_id,
-      COUNT(*)::int AS total_activities,
-      COUNT(DISTINCT NULLIF(TRIM(body->>'ipAddress'), ''))::int AS unique_ips,
-      COUNT(DISTINCT NULLIF(TRIM(body->>'userAgent'), ''))::int AS unique_uas,
-      COALESCE(
-        SUM(
-          COALESCE(NULLIF(TRIM(body->>'llmTokensPrompt'), '')::int, 0)
-          + COALESCE(NULLIF(TRIM(body->>'llmTokensCompletion'), '')::int, 0)
-        ),
-        0
-      ) AS total_tokens,
-      COUNT(*) FILTER (WHERE body->>'eventType' = 'practice_attempt_started')::int AS practice_attempts,
-      COUNT(*) FILTER (WHERE body->>'eventType' = 'practice_attempt_completed')::int AS practice_completions,
-      COUNT(*) FILTER (WHERE body->>'eventType' = 'mock_attempt_started')::int AS mock_attempts,
-      COUNT(*) FILTER (WHERE body->>'eventType' = 'mock_attempt_completed')::int AS mock_completions,
-      COUNT(*) FILTER (
-        WHERE body->>'eventType' IN (
-          'payment_successful',
-          'payment_failed',
-          'subscription_created',
-          'subscription_cancelled'
-        )
-      )::int AS payment_events,
-      COUNT(*) FILTER (
-        WHERE body->>'eventType' IN ('dispute_created', 'dispute_resolved')
-      )::int AS dispute_events,
-      (
-        ARRAY_AGG(DISTINCT NULLIF(TRIM(body->>'ipAddress'), ''))
-        FILTER (WHERE NULLIF(TRIM(body->>'ipAddress'), '') IS NOT NULL)
-      )[1:5] AS ip_addresses,
-      (
-        ARRAY_AGG(DISTINCT NULLIF(TRIM(body->>'userAgent'), ''))
-        FILTER (WHERE NULLIF(TRIM(body->>'userAgent'), '') IS NOT NULL)
-      )[1:3] AS user_agents,
-      MAX(${activityTimestampSql}) AS last_activity,
-      MIN(${activityTimestampSql}) AS first_activity
-    FROM app_documents
-    WHERE collection = ${activitiesKey}
-      AND body->>'userId' = ANY(${ids})
-    GROUP BY body->>'userId'
-  `;
-
-  for (const r of rows) {
-    if (!r.user_id) continue;
-    byUserId.set(r.user_id, {
-      totalActivities: r.total_activities || 0,
-      uniqueIpAddressesCount: r.unique_ips || 0,
-      uniqueUserAgentsCount: r.unique_uas || 0,
-      totalTokens: Number(r.total_tokens || 0) || 0,
-      practiceAttempts: r.practice_attempts || 0,
-      practiceCompletions: r.practice_completions || 0,
-      mockAttempts: r.mock_attempts || 0,
-      mockCompletions: r.mock_completions || 0,
-      paymentEvents: r.payment_events || 0,
-      disputeEvents: r.dispute_events || 0,
-      ipAddresses: (r.ip_addresses || []).filter(Boolean),
-      userAgents: (r.user_agents || []).filter(Boolean),
-      lastActivity: r.last_activity,
-      firstActivity: r.first_activity,
-    });
-  }
-
-  return byUserId;
+  return loadUserActivityMetricsByUserId(userIds, sql);
 }
 
 function mergeActivityMetrics(

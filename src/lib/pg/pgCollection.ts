@@ -3,10 +3,54 @@ import { EJSON } from "bson";
 import { Query, aggregate as mingoAggregate, update as mingoUpdate } from "mingo";
 import type { Sql } from "postgres";
 import { serializeDocument } from "./ejson";
-import { documentFilterToSql } from "./whereBuilder";
+import { adaptFilterSqlForDedicatedTable, documentFilterToSql } from "./whereBuilder";
 import { prepareInsertDocument, rowToDocument, documentRowKey, type AppDoc } from "./document";
+import {
+  resolveDedicatedDocumentTable,
+} from "./dedicatedDocumentTables";
 
 export type { AppDoc } from "./document";
+
+function assertSafeDedicatedTable(table: string): string {
+  if (!/^doc_[a-z0-9_]+$/.test(table)) {
+    throw new Error(`Unsafe dedicated document table: ${table}`);
+  }
+  return table;
+}
+
+type StorageTarget =
+  | { kind: "app_documents"; key: string }
+  | { kind: "dedicated"; table: string; key: string };
+
+const dedicatedNonEmptyCache = new Map<string, { at: number; nonEmpty: boolean }>();
+
+async function dedicatedTableIsLive(sql: Sql, table: string): Promise<boolean> {
+  if (process.env.APP_DOCUMENTS_DEDICATED === "1") return true;
+  const cached = dedicatedNonEmptyCache.get(table);
+  if (cached && Date.now() - cached.at < 30_000) return cached.nonEmpty;
+  const rows = await sql.unsafe(
+    `SELECT EXISTS(SELECT 1 FROM public.${assertSafeDedicatedTable(table)} LIMIT 1) AS e`
+  );
+  const nonEmpty = Boolean(rows[0]?.e);
+  dedicatedNonEmptyCache.set(table, { at: Date.now(), nonEmpty });
+  return nonEmpty;
+}
+
+function storageTargetForWrite(phys: string): StorageTarget {
+  const table = resolveDedicatedDocumentTable(phys);
+  if (table) {
+    return { kind: "dedicated", table: assertSafeDedicatedTable(table), key: phys };
+  }
+  return { kind: "app_documents", key: phys };
+}
+
+async function storageTargetForRead(sql: Sql, phys: string): Promise<StorageTarget> {
+  const table = resolveDedicatedDocumentTable(phys);
+  if (table && (await dedicatedTableIsLive(sql, table))) {
+    return { kind: "dedicated", table: assertSafeDedicatedTable(table), key: phys };
+  }
+  return { kind: "app_documents", key: phys };
+}
 
 function cloneDoc(doc: AppDoc): AppDoc {
   return EJSON.deserialize(EJSON.serialize(doc)) as AppDoc;
@@ -129,14 +173,23 @@ async function loadPartitionBodies(
     }
   }
 
-  // ORDER BY mongo_id steers the planner to app_documents_pkey; bare
-  // `WHERE collection = $1` can pick a partial index (e.g. useractivities_user) and scan far slower.
-  const rows = await sql`
-    SELECT mongo_id, body
-    FROM app_documents
-    WHERE collection = ${collectionKey}
-    ORDER BY mongo_id
-  `;
+  const dedicated = resolveDedicatedDocumentTable(collectionKey);
+  let rows: unknown[];
+  if (dedicated && (await dedicatedTableIsLive(sql, dedicated))) {
+    const table = assertSafeDedicatedTable(dedicated);
+    rows = await sql.unsafe(
+      `SELECT mongo_id, body FROM public.${table} ORDER BY mongo_id`
+    );
+  } else {
+    // ORDER BY mongo_id steers the planner to app_documents_pkey; bare
+    // `WHERE collection = $1` can pick a partial index (e.g. useractivities_user) and scan far slower.
+    rows = await sql`
+      SELECT mongo_id, body
+      FROM app_documents
+      WHERE collection = ${collectionKey}
+      ORDER BY mongo_id
+    `;
+  }
   const mapped = mapSqlRowsToPartitionBodies(rows);
   if (ttl > 0) {
     cache.set(collectionKey, { expiresAt: Date.now() + ttl, rows: mapped });
@@ -145,6 +198,14 @@ async function loadPartitionBodies(
 }
 
 async function countAppDocumentsByCollection(sql: Sql, collectionKey: string): Promise<number> {
+  const dedicated = resolveDedicatedDocumentTable(collectionKey);
+  if (dedicated && (await dedicatedTableIsLive(sql, dedicated))) {
+    const table = assertSafeDedicatedTable(dedicated);
+    const rows = await sql.unsafe(
+      `SELECT COUNT(*)::int AS c FROM public.${table}`
+    );
+    return rows[0]?.c ?? 0;
+  }
   const rows = await sql`
     SELECT COUNT(*)::int AS c FROM app_documents WHERE collection = ${collectionKey}
   `;
@@ -327,22 +388,26 @@ export class PgCollection<T extends AppDoc = AppDoc> {
   /** Fast path for `PgFindCursor` when the filter is empty. */
   async scanRawDocuments(rowLimit: number): Promise<{ mongo_id: string; body: unknown }[]> {
     const key = await this.resolvePhysicalCollectionKey();
-    const rows = await this.sql`
-      SELECT mongo_id, body
-      FROM app_documents
-      WHERE collection = ${key}
-      ORDER BY mongo_id
-      LIMIT ${rowLimit}
-    `;
+    const target = await storageTargetForRead(this.sql, key);
+    const rows =
+      target.kind === "dedicated"
+        ? await this.sql.unsafe(
+            `SELECT mongo_id, body FROM public.${target.table} ORDER BY mongo_id LIMIT $1`,
+            [rowLimit]
+          )
+        : await this.sql`
+            SELECT mongo_id, body
+            FROM app_documents
+            WHERE collection = ${key}
+            ORDER BY mongo_id
+            LIMIT ${rowLimit}
+          `;
     return mapSqlRowsToPartitionBodies(rows);
   }
 
   private async countAll(): Promise<number> {
     const key = await this.resolvePhysicalCollectionKey();
-    const rows = await this.sql`
-      SELECT COUNT(*)::int AS c FROM app_documents WHERE collection = ${key}
-    `;
-    return rows[0]?.c ?? 0;
+    return countAppDocumentsByCollection(this.sql, key);
   }
 
   private async countDocumentsForCollectionKey(collectionKey: string): Promise<number> {
@@ -363,6 +428,7 @@ export class PgCollection<T extends AppDoc = AppDoc> {
 
   async findDocuments(filter: Record<string, unknown>): Promise<T[]> {
     const phys = await this.resolvePhysicalCollectionKey();
+    const target = await storageTargetForRead(this.sql, phys);
     const sqlParts = documentFilterToSql(phys, filter);
     // `countAll()` hits the whole partition — avoid it when the filter already narrows in SQL
     // (e.g. answers by practiceId + userId). Unscoped `collection = $1` still needs the guard.
@@ -379,6 +445,14 @@ export class PgCollection<T extends AppDoc = AppDoc> {
     }
 
     if (sqlParts) {
+      if (target.kind === "dedicated") {
+        const adapted = adaptFilterSqlForDedicatedTable(sqlParts);
+        const rows = await this.sql.unsafe(
+          `SELECT mongo_id, body FROM public.${target.table} WHERE ${adapted.clause}`,
+          adapted.params as never[]
+        );
+        return mapRowsToAppDocs<T>(rows);
+      }
       const rows = await this.sql.unsafe(
         `SELECT mongo_id, body FROM app_documents WHERE ${sqlParts.clause}`,
         sqlParts.params as never[]
@@ -416,16 +490,25 @@ export class PgCollection<T extends AppDoc = AppDoc> {
   }> {
     const { mongoId, bodySerialized } = prepareInsertDocument(doc);
     const phys = await this.resolvePhysicalCollectionKey();
+    const target = storageTargetForWrite(phys);
     try {
-      await this.sql`
-        INSERT INTO app_documents (collection, mongo_id, body, updated_at)
-        VALUES (
-          ${phys},
-          ${mongoId},
-          ${bodySerialized as object},
-          now()
-        )
-      `;
+      if (target.kind === "dedicated") {
+        await this.sql.unsafe(
+          `INSERT INTO public.${target.table} (mongo_id, body, updated_at) VALUES ($1, $2::jsonb, now())`,
+          [mongoId, bodySerialized]
+        );
+        dedicatedNonEmptyCache.set(target.table, { at: Date.now(), nonEmpty: true });
+      } else {
+        await this.sql`
+          INSERT INTO app_documents (collection, mongo_id, body, updated_at)
+          VALUES (
+            ${phys},
+            ${mongoId},
+            ${bodySerialized as object},
+            now()
+          )
+        `;
+      }
       invalidatePartitionBodyCache(phys);
     } catch (e: unknown) {
       if (isPgUniqueViolation(e)) {
@@ -480,11 +563,20 @@ export class PgCollection<T extends AppDoc = AppDoc> {
       _id: found._id,
     });
     const phys = await this.resolvePhysicalCollectionKey();
-    await this.sql`
-      UPDATE app_documents
-      SET body = ${bodySerialized as object}, updated_at = now()
-      WHERE collection = ${phys} AND mongo_id = ${id}
-    `;
+    const target = storageTargetForWrite(phys);
+    if (target.kind === "dedicated") {
+      await this.sql.unsafe(
+        `UPDATE public.${target.table} SET body = $1::jsonb, updated_at = now() WHERE mongo_id = $2`,
+        [bodySerialized, id]
+      );
+      dedicatedNonEmptyCache.set(target.table, { at: Date.now(), nonEmpty: true });
+    } else {
+      await this.sql`
+        UPDATE app_documents
+        SET body = ${bodySerialized as object}, updated_at = now()
+        WHERE collection = ${phys} AND mongo_id = ${id}
+      `;
+    }
     invalidatePartitionBodyCache(phys);
     return { acknowledged: true, matchedCount: 1, modifiedCount: 1 };
   }
@@ -529,19 +621,30 @@ export class PgCollection<T extends AppDoc = AppDoc> {
     const targets = many ? matches : [matches[0]];
     let modified = 0;
     const phys = await this.resolvePhysicalCollectionKey();
+    const target = storageTargetForWrite(phys);
     for (const doc of targets) {
       const id = documentRowKey(doc);
       const next = cloneDoc(doc);
       runMingoUpdate(next, update);
       const bodySerialized = serializeDocument(next);
-      await this.sql`
-        UPDATE app_documents
-        SET body = ${bodySerialized as object}, updated_at = now()
-        WHERE collection = ${phys} AND mongo_id = ${id}
-      `;
+      if (target.kind === "dedicated") {
+        await this.sql.unsafe(
+          `UPDATE public.${target.table} SET body = $1::jsonb, updated_at = now() WHERE mongo_id = $2`,
+          [bodySerialized, id]
+        );
+      } else {
+        await this.sql`
+          UPDATE app_documents
+          SET body = ${bodySerialized as object}, updated_at = now()
+          WHERE collection = ${phys} AND mongo_id = ${id}
+        `;
+      }
       modified++;
     }
     if (modified > 0) {
+      if (target.kind === "dedicated") {
+        dedicatedNonEmptyCache.set(target.table, { at: Date.now(), nonEmpty: true });
+      }
       invalidatePartitionBodyCache(phys);
     }
     return {
@@ -557,9 +660,17 @@ export class PgCollection<T extends AppDoc = AppDoc> {
     if (!found) return { acknowledged: true, deletedCount: 0 };
     const id = documentRowKey(found);
     const phys = await this.resolvePhysicalCollectionKey();
-    await this.sql`
-      DELETE FROM app_documents WHERE collection = ${phys} AND mongo_id = ${id}
-    `;
+    const target = storageTargetForWrite(phys);
+    if (target.kind === "dedicated") {
+      await this.sql.unsafe(
+        `DELETE FROM public.${target.table} WHERE mongo_id = $1`,
+        [id]
+      );
+    } else {
+      await this.sql`
+        DELETE FROM app_documents WHERE collection = ${phys} AND mongo_id = ${id}
+      `;
+    }
     invalidatePartitionBodyCache(phys);
     return { acknowledged: true, deletedCount: 1 };
   }
@@ -567,12 +678,20 @@ export class PgCollection<T extends AppDoc = AppDoc> {
   async deleteMany(filter: Record<string, unknown>): Promise<{ acknowledged: boolean; deletedCount: number }> {
     const matches = await this.findDocuments(filter);
     const phys = await this.resolvePhysicalCollectionKey();
+    const target = storageTargetForWrite(phys);
     let n = 0;
     for (const doc of matches) {
       const id = documentRowKey(doc);
-      await this.sql`
-        DELETE FROM app_documents WHERE collection = ${phys} AND mongo_id = ${id}
-      `;
+      if (target.kind === "dedicated") {
+        await this.sql.unsafe(
+          `DELETE FROM public.${target.table} WHERE mongo_id = $1`,
+          [id]
+        );
+      } else {
+        await this.sql`
+          DELETE FROM app_documents WHERE collection = ${phys} AND mongo_id = ${id}
+        `;
+      }
       n++;
     }
     if (n > 0) {
@@ -583,8 +702,17 @@ export class PgCollection<T extends AppDoc = AppDoc> {
 
   async countDocuments(filter: Record<string, unknown> = {}): Promise<number> {
     const phys = await this.resolvePhysicalCollectionKey();
+    const target = await storageTargetForRead(this.sql, phys);
     const sqlParts = documentFilterToSql(phys, filter);
     if (sqlParts) {
+      if (target.kind === "dedicated") {
+        const adapted = adaptFilterSqlForDedicatedTable(sqlParts);
+        const rows = await this.sql.unsafe(
+          `SELECT COUNT(*)::int AS c FROM public.${target.table} WHERE ${adapted.clause}`,
+          adapted.params as never[]
+        );
+        return rows[0]?.c ?? 0;
+      }
       const rows = await this.sql.unsafe(
         `SELECT COUNT(*)::int AS c FROM app_documents WHERE ${sqlParts.clause}`,
         sqlParts.params as never[]

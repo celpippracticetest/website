@@ -126,3 +126,76 @@ export async function findUserProfileForAdminLookup(
     legacy_body: asRecord(row.legacy_body),
   };
 }
+
+/**
+ * Write plan / publicMetadata onto `user_profiles` so profiles become write-authoritative
+ * for entitlements (users docs remain a dual-write mirror during cutover).
+ */
+export async function upsertUserProfilePlanFields(
+  webUserId: string,
+  fields: {
+    plan?: string;
+    planType?: string;
+    publicMetadata?: Record<string, unknown>;
+    email?: string | null;
+  }
+): Promise<void> {
+  const id = webUserId.trim();
+  if (!id) return;
+
+  const sql = getSql();
+  const existing = await findUserProfileByWebUserId(id);
+  const nextMeta = {
+    ...(existing?.public_metadata || {}),
+    ...(fields.publicMetadata || {}),
+  };
+  if (fields.plan !== undefined) nextMeta.plan = fields.plan;
+  if (fields.planType !== undefined) nextMeta.planType = fields.planType;
+
+  const plan = fields.plan ?? existing?.plan ?? null;
+  const planType = fields.planType ?? existing?.plan_type ?? null;
+  const email = fields.email ?? existing?.email ?? null;
+
+  if (existing) {
+    await sql`
+      UPDATE public.user_profiles
+      SET
+        plan = ${plan},
+        plan_type = ${planType},
+        public_metadata = ${JSON.stringify(nextMeta)}::jsonb,
+        email = COALESCE(${email}, email),
+        updated_at = now()
+      WHERE id = ${existing.id}::uuid
+    `;
+    return;
+  }
+
+  const isSupabase = isLikelySupabaseAuthUserId(id);
+  await sql`
+    INSERT INTO public.user_profiles (
+      id,
+      supabase_auth_user_id,
+      legacy_clerk_user_id,
+      email,
+      plan,
+      plan_type,
+      public_metadata,
+      legacy_body,
+      app_document_mongo_id,
+      created_at,
+      updated_at
+    ) VALUES (
+      gen_random_uuid(),
+      ${isSupabase ? id : null}::uuid,
+      ${isSupabase ? null : id},
+      ${email},
+      ${plan},
+      ${planType},
+      ${JSON.stringify(nextMeta)}::jsonb,
+      ${JSON.stringify({ sub: id })}::jsonb,
+      ${`profile-${id}`},
+      now(),
+      now()
+    )
+  `;
+}

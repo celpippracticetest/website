@@ -6,8 +6,12 @@ import {
   matchUsersCollectionByWebUserIds,
   supabaseAuthUserIdFieldsOnUserDoc,
 } from "@/lib/users/userDocumentIdentity";
-
-const REMINDER_STATE_COLLECTION = "useractivityreminders";
+import {
+  insertUserActivity,
+  insertUserActivities,
+  insertUserLearningEvent,
+  upsertUserActivityReminderEngaged,
+} from "@/lib/userActivity/userActivitiesPg";
 
 function extractEmailFromClerkUser(user: any): string | null {
   const byId = user?.emailAddresses?.find?.(
@@ -76,12 +80,9 @@ export async function POST(request: NextRequest) {
     const clientUserAgent =
       userAgent || request.headers.get("user-agent") || "unknown";
 
-    const db = await getDb();
-    const userActivityCollection = db.collection("useractivities");
-
     const activityLog = {
       userId: user.id,
-      email, 
+      email,
       eventType,
       context,
       skill: skill || null,
@@ -104,7 +105,9 @@ export async function POST(request: NextRequest) {
     };
 
     console.log("Inserting activity log:", activityLog);
-    await userActivityCollection.insertOne(activityLog);
+    await insertUserActivity(activityLog);
+
+    const db = await getDb();
     const usersCollection = db.collection("users");
 
     // Keep engagement snapshot updated for retention/churn prevention automation
@@ -174,7 +177,7 @@ export async function POST(request: NextRequest) {
         { upsert: true }
       );
 
-      await db.collection("user_learning_events").insertOne({
+      await insertUserLearningEvent({
         userId: user.id,
         eventType,
         context,
@@ -184,28 +187,7 @@ export async function POST(request: NextRequest) {
         metadata: metadata || {},
       });
     }
-    await db.collection(REMINDER_STATE_COLLECTION).updateOne(
-      { userId: user.id },
-      {
-        $set: {
-          userId: user.id,
-          lastEngagedAt: new Date(),
-          updatedAt: new Date(),
-        },
-        $unset: {
-          reminderFlow: "",
-          reminderStage: "",
-          reminderStageIndex: "",
-          reminderVariant: "",
-          reminderWindowStartedAt: "",
-          remindersInWindow: "",
-        },
-        $setOnInsert: {
-          createdAt: new Date(),
-        },
-      },
-      { upsert: true }
-    );
+    await upsertUserActivityReminderEngaged(user.id, new Date());
     console.log("Activity logged successfully");
 
     return NextResponse.json({
@@ -242,9 +224,6 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const db = await getDb();
-    const userActivityCollection = db.collection("useractivities");
-
     const clientIp =
       request.headers.get("x-forwarded-for")?.split(",")[0] ||
       request.headers.get("x-real-ip") ||
@@ -275,7 +254,9 @@ export async function PUT(request: NextRequest) {
       timestampUtc: new Date(),
     }));
 
-    await userActivityCollection.insertMany(activityLogs);
+    await insertUserActivities(activityLogs);
+
+    const db = await getDb();
     const usersCollection = db.collection("users");
     const completedCount = activityLogs.filter(
       (log) =>
@@ -312,29 +293,7 @@ export async function PUT(request: NextRequest) {
         { upsert: true }
       );
     }
-    const now = new Date();
-    await db.collection(REMINDER_STATE_COLLECTION).updateOne(
-      { userId: user.id },
-      {
-        $set: {
-          userId: user.id,
-          lastEngagedAt: now,
-          updatedAt: now,
-        },
-        $unset: {
-          reminderFlow: "",
-          reminderStage: "",
-          reminderStageIndex: "",
-          reminderVariant: "",
-          reminderWindowStartedAt: "",
-          remindersInWindow: "",
-        },
-        $setOnInsert: {
-          createdAt: now,
-        },
-      },
-      { upsert: true }
-    );
+    await upsertUserActivityReminderEngaged(user.id, new Date());
 
     return NextResponse.json({
       success: true,

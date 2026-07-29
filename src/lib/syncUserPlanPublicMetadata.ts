@@ -1,5 +1,6 @@
 import { appUserAdmin } from "@/lib/auth/server-auth";
 import documentsClient from "@/lib/appDocumentsClient";
+import { upsertUserProfilePlanFields } from "@/lib/users/userProfilesPg";
 
 export type PlanPublicMetadataPatch = {
   plan?: string;
@@ -10,8 +11,8 @@ export type PlanPublicMetadataPatch = {
 };
 
 /**
- * Merges into `publicMetadata` (Supabase Auth / app bridge) and mirrors plan fields to the `users`
- * collection (same pattern as Stripe webhook `updateUserPublicMetadata`).
+ * Merges into `publicMetadata` (Supabase Auth / app bridge) and mirrors plan fields to
+ * `user_profiles` (write-authoritative) plus the legacy `users` collection.
  */
 export async function syncUserPlanPublicMetadata(
   userId: string,
@@ -25,6 +26,16 @@ export async function syncUserPlanPublicMetadata(
   await client.users.updateUserMetadata(userId, {
     publicMetadata,
   });
+
+  try {
+    await upsertUserProfilePlanFields(userId, {
+      plan: patch.plan,
+      planType: patch.planType,
+      publicMetadata,
+    });
+  } catch (err) {
+    console.error("[syncUserPlanPublicMetadata] user_profiles sync failed", err);
+  }
 
   try {
     const db = await documentsClient.db();

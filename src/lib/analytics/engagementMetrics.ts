@@ -1,4 +1,4 @@
-import clientPromise from "@/lib/appDocumentsClient";
+import { getSql } from "@/lib/pg/pool";
 
 export interface EngagementMetrics {
   practiceAttempts: number;
@@ -14,50 +14,48 @@ export async function getEngagementMetrics(
   endDate: Date,
 ): Promise<EngagementMetrics> {
   try {
-    const client = await clientPromise;
-    const db = client.db("prod");
+    const sql = getSql();
+    const rows = await sql<{
+      practice_attempts: number;
+      practice_completions: number;
+      exam_attempts: number;
+      exam_completions: number;
+    }[]>`
+      SELECT
+        COUNT(*) FILTER (WHERE event_type = 'practice_attempt_started')::int AS practice_attempts,
+        COUNT(*) FILTER (WHERE event_type = 'practice_attempt_completed')::int AS practice_completions,
+        COUNT(*) FILTER (WHERE event_type = 'mock_attempt_started')::int AS exam_attempts,
+        COUNT(*) FILTER (WHERE event_type = 'mock_attempt_completed')::int AS exam_completions
+      FROM public.user_activities
+      WHERE timestamp_utc >= ${startDate}
+        AND timestamp_utc <= ${endDate}
+    `;
 
-    // Practice metrics
-    const practiceAttempts = await db
-      .collection("useractivities")
-      .countDocuments({
-        eventType: "practice_attempt_started",
-        timestampUtc: { $gte: startDate, $lte: endDate },
-      });
+    const row = rows[0] || {
+      practice_attempts: 0,
+      practice_completions: 0,
+      exam_attempts: 0,
+      exam_completions: 0,
+    };
 
-    const practiceCompletions = await db
-      .collection("useractivities")
-      .countDocuments({
-        eventType: "practice_attempt_completed",
-        timestampUtc: { $gte: startDate, $lte: endDate },
-      });
-
-    const practiceCompletionRate =
-      practiceAttempts > 0 ? (practiceCompletions / practiceAttempts) * 100 : 0;
-
-    // Exam/Mock metrics
-    const examAttempts = await db.collection("useractivities").countDocuments({
-      eventType: "mock_attempt_started",
-      timestampUtc: { $gte: startDate, $lte: endDate },
-    });
-
-    const examCompletions = await db
-      .collection("useractivities")
-      .countDocuments({
-        eventType: "mock_attempt_completed",
-        timestampUtc: { $gte: startDate, $lte: endDate },
-      });
-
-    const examCompletionRate =
-      examAttempts > 0 ? (examCompletions / examAttempts) * 100 : 0;
+    const practiceAttempts = row.practice_attempts || 0;
+    const practiceCompletions = row.practice_completions || 0;
+    const examAttempts = row.exam_attempts || 0;
+    const examCompletions = row.exam_completions || 0;
 
     return {
       practiceAttempts,
       practiceCompletions,
-      practiceCompletionRate: parseFloat(practiceCompletionRate.toFixed(2)),
+      practiceCompletionRate:
+        practiceAttempts > 0
+          ? parseFloat(((practiceCompletions / practiceAttempts) * 100).toFixed(2))
+          : 0,
       examAttempts,
       examCompletions,
-      examCompletionRate: parseFloat(examCompletionRate.toFixed(2)),
+      examCompletionRate:
+        examAttempts > 0
+          ? parseFloat(((examCompletions / examAttempts) * 100).toFixed(2))
+          : 0,
     };
   } catch (error) {
     console.error("Error fetching engagement metrics:", error);

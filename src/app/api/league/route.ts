@@ -381,26 +381,15 @@ export async function GET(request: NextRequest) {
           ? new Date(currentSeason.startDate)
           : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-        // Primitive equality only → `documentFilterToSql` uses indexed-friendly SQL
-        // (`collection` + body fields). `$gte` / `$ne` would force a full-partition scan.
-        const activities = (await db
-          .collection("useractivities")
-          .find({
-            userId,
-            eventType: "practice_attempt_completed",
-            status: "completed",
-          })
-          .toArray()) as Record<string, unknown>[];
-
-        const skills = new Set<string>();
-        for (const row of activities) {
-          const ts = activityTimestampUtc(row);
-          if (!ts || ts < currentSeasonStart) continue;
-          userActivitiesCompletedSinceSeason += 1;
-          const sk = row.skill;
-          if (sk != null && sk !== "") skills.add(String(sk));
-        }
-        skillsTried = [...skills];
+        const { listCompletedPracticeSkillsSince } = await import(
+          "@/lib/userActivity/userActivitiesPg"
+        );
+        const seasonSkills = await listCompletedPracticeSkillsSince(
+          userId,
+          currentSeasonStart
+        );
+        skillsTried = seasonSkills.skills;
+        userActivitiesCompletedSinceSeason = seasonSkills.completedCount;
         console.log("Skills tried extracted (current season - optimized):", skillsTried);
       } catch (error) {
         console.error("Error fetching skills tried:", error);

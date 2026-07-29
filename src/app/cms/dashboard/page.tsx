@@ -44,7 +44,7 @@ async function fetchOnboardingData(page: number = 1, limit: number = 100) {
       headers: {
         "Content-Type": "application/json",
       },
-    }
+    },
   );
 
   if (!res.ok) {
@@ -81,7 +81,7 @@ async function fetchOnboardingNewData(page: number = 1, limit: number = 100) {
       headers: {
         "Content-Type": "application/json",
       },
-    }
+    },
   );
 
   if (!res.ok) {
@@ -272,7 +272,13 @@ export default async function CMSDashboard({
       )}
 
       {tab === "reports" && (
-        <div className="text-sm text-gray-700">Reports module goes here.</div>
+        <div className="text-sm text-gray-700">
+          Activity reports moved to{" "}
+          <a className="underline" href="/cms/dashboard/reports">
+            /cms/dashboard/reports
+          </a>
+          .
+        </div>
       )}
 
       {tab === "settings" && (

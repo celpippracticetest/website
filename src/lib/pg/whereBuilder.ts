@@ -1,5 +1,27 @@
 export type SqlParts = { clause: string; params: unknown[] };
 
+/**
+ * Convert an app_documents filter clause (`collection = $1 AND …`) into a
+ * dedicated-table clause (no collection discriminator; params shifted down by 1).
+ */
+export function adaptFilterSqlForDedicatedTable(parts: SqlParts): SqlParts {
+  let clause = parts.clause
+    .replace(/collection\s*=\s*\$1\s+AND\s+/gi, "")
+    .replace(/collection\s*=\s*\$1/gi, "TRUE");
+
+  // Shift $2+ down by one (collection key was $1).
+  clause = clause.replace(/\$(\d+)/g, (_m, nRaw: string) => {
+    const n = Number(nRaw);
+    if (!Number.isFinite(n) || n < 2) return `$${nRaw}`;
+    return `$${n - 1}`;
+  });
+
+  return {
+    clause,
+    params: parts.params.slice(1),
+  };
+}
+
 const SAFE_KEY = /^[a-zA-Z0-9_.]+$/;
 const HEX24 = /^[a-f0-9]{24}$/i;
 

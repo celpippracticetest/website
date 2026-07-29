@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
-import client from "@/lib/appDocumentsClient";
+import { getSql } from "@/lib/pg/pool";
+import {
+  userActivityRowToDocument,
+  type UserActivityRow,
+} from "@/lib/userActivity/userActivitiesPg";
+import documentsClient from "@/lib/appDocumentsClient";
 import { matchUsersCollectionByWebUserIds } from "@/lib/users/userDocumentIdentity";
 
 export async function GET(
@@ -14,11 +19,8 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is admin (you can implement your own admin check)
     const authenticate = await auth();
-
-    const isAdmin =
-      sessionClaimsHasAdminRole(authenticate.sessionClaims);
+    const isAdmin = sessionClaimsHasAdminRole(authenticate.sessionClaims);
     if (!isAdmin && currentUserData.id !== resolvedParams.userId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -30,207 +32,104 @@ export async function GET(
     const context = searchParams.get("context");
     const skill = searchParams.get("skill");
     const status = searchParams.get("status");
-    const hasScore = searchParams.get("hasScore");
-    const minTokens = searchParams.get("minTokens");
-    const maxTokens = searchParams.get("maxTokens");
-    const search = searchParams.get("search");
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "50");
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50", 10) || 50));
+    const offset = (page - 1) * limit;
+    const userId = resolvedParams.userId;
 
-    const db = client.db();
-    const userActivityCollection = db.collection("useractivities");
-    const usersCollection = db.collection("users");
+    const sql = getSql();
+    const eventTypes = eventType ? eventType.split(",").map((s) => s.trim()).filter(Boolean) : null;
+    const contexts = context ? context.split(",").map((s) => s.trim()).filter(Boolean) : null;
+    const skills = skill ? skill.split(",").map((s) => s.trim()).filter(Boolean) : null;
+    const statuses = status ? status.split(",").map((s) => s.trim()).filter(Boolean) : null;
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
 
-    // Build filter
-    const filter: any = { userId: resolvedParams?.userId };
+    const [{ c: totalCount }] = await sql<{ c: number }[]>`
+      SELECT COUNT(*)::int AS c
+      FROM public.user_activities
+      WHERE user_id = ${userId}
+        AND (${start}::timestamptz IS NULL OR timestamp_utc >= ${start})
+        AND (${end}::timestamptz IS NULL OR timestamp_utc <= ${end})
+        AND (${eventTypes}::text[] IS NULL OR event_type = ANY(${eventTypes}))
+        AND (${contexts}::text[] IS NULL OR context = ANY(${contexts}))
+        AND (${skills}::text[] IS NULL OR skill = ANY(${skills}))
+        AND (${statuses}::text[] IS NULL OR status = ANY(${statuses}))
+    `;
 
-    // Date range filter
-    if (startDate || endDate) {
-      filter.timestampUtc = {};
-      if (startDate) {
-        filter.timestampUtc.$gte = new Date(startDate);
-      }
-      if (endDate) {
-        filter.timestampUtc.$lte = new Date(endDate);
-      }
-    }
+    const rows = await sql<UserActivityRow[]>`
+      SELECT *
+      FROM public.user_activities
+      WHERE user_id = ${userId}
+        AND (${start}::timestamptz IS NULL OR timestamp_utc >= ${start})
+        AND (${end}::timestamptz IS NULL OR timestamp_utc <= ${end})
+        AND (${eventTypes}::text[] IS NULL OR event_type = ANY(${eventTypes}))
+        AND (${contexts}::text[] IS NULL OR context = ANY(${contexts}))
+        AND (${skills}::text[] IS NULL OR skill = ANY(${skills}))
+        AND (${statuses}::text[] IS NULL OR status = ANY(${statuses}))
+      ORDER BY timestamp_utc DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
 
-    // Event type filter
-    if (eventType) {
-      filter.eventType = { $in: eventType.split(",") };
-    }
+    const [summary] = await sql<{
+      practice_attempted: number;
+      practice_completed: number;
+      mock_attempted: number;
+      mock_completed: number;
+      practice_tokens: number;
+      mock_tokens: number;
+      learning_tokens: number;
+      last_active: Date | null;
+    }[]>`
+      SELECT
+        COUNT(*) FILTER (WHERE event_type = 'practice_attempt_started')::int AS practice_attempted,
+        COUNT(*) FILTER (WHERE event_type = 'practice_attempt_completed')::int AS practice_completed,
+        COUNT(*) FILTER (WHERE event_type = 'mock_attempt_started')::int AS mock_attempted,
+        COUNT(*) FILTER (WHERE event_type = 'mock_attempt_completed')::int AS mock_completed,
+        COALESCE(SUM(CASE WHEN context = 'practice' THEN COALESCE(llm_tokens_prompt,0)+COALESCE(llm_tokens_completion,0) ELSE 0 END),0)::int AS practice_tokens,
+        COALESCE(SUM(CASE WHEN context = 'mock' THEN COALESCE(llm_tokens_prompt,0)+COALESCE(llm_tokens_completion,0) ELSE 0 END),0)::int AS mock_tokens,
+        COALESCE(SUM(CASE WHEN context = 'learning' THEN COALESCE(llm_tokens_prompt,0)+COALESCE(llm_tokens_completion,0) ELSE 0 END),0)::int AS learning_tokens,
+        MAX(timestamp_utc) AS last_active
+      FROM public.user_activities
+      WHERE user_id = ${userId}
+        AND (${start}::timestamptz IS NULL OR timestamp_utc >= ${start})
+        AND (${end}::timestamptz IS NULL OR timestamp_utc <= ${end})
+    `;
 
-    // Context filter
-    if (context) {
-      filter.context = { $in: context.split(",") };
-    }
-
-    // Skill filter
-    if (skill) {
-      filter.skill = { $in: skill.split(",") };
-    }
-
-    // Status filter
-    if (status) {
-      filter.status = { $in: status.split(",") };
-    }
-
-    // Has score filter
-    if (hasScore === "yes") {
-      filter.scoreOverall = { $exists: true, $ne: null };
-    } else if (hasScore === "no") {
-      filter.scoreOverall = { $exists: false };
-    }
-
-    // Token range filter
-    if (minTokens || maxTokens) {
-      filter.$expr = {};
-      const tokenSum = {
-        $add: [
-          { $ifNull: ["$llmTokensPrompt", 0] },
-          { $ifNull: ["$llmTokensCompletion", 0] },
-        ],
-      };
-
-      if (minTokens && maxTokens) {
-        filter.$expr.$and = [
-          { $gte: [tokenSum, parseInt(minTokens)] },
-          { $lte: [tokenSum, parseInt(maxTokens)] },
-        ];
-      } else if (minTokens) {
-        filter.$expr.$gte = [tokenSum, parseInt(minTokens)];
-      } else if (maxTokens) {
-        filter.$expr.$lte = [tokenSum, parseInt(maxTokens)];
-      }
-    }
-
-    // Search filter
-    if (search) {
-      filter.$or = [
-        { attemptId: { $regex: search, $options: "i" } },
-        { contentId: { $regex: search, $options: "i" } },
-        { notes: { $regex: search, $options: "i" } },
-      ];
-    }
-
-    // Get total count
-    const totalCount = await userActivityCollection.countDocuments(filter);
-
-    // Get paginated results
-    const skip = (page - 1) * limit;
-    const activities = await userActivityCollection
-      .find(filter)
-      .sort({ timestampUtc: -1 })
-      .skip(skip)
-      .limit(limit)
-      .toArray();
-
-    // Calculate summary statistics
-    const summaryPipeline = [
-      { $match: filter },
-      {
-        $group: {
-          _id: null,
-          practiceAttempted: {
-            $sum: {
-              $cond: [
-                { $eq: ["$eventType", "practice_attempt_started"] },
-                1,
-                0,
-              ],
-            },
-          },
-          practiceCompleted: {
-            $sum: {
-              $cond: [
-                { $eq: ["$eventType", "practice_attempt_completed"] },
-                1,
-                0,
-              ],
-            },
-          },
-          mockAttempted: {
-            $sum: {
-              $cond: [{ $eq: ["$eventType", "mock_attempt_started"] }, 1, 0],
-            },
-          },
-          mockCompleted: {
-            $sum: {
-              $cond: [{ $eq: ["$eventType", "mock_attempt_completed"] }, 1, 0],
-            },
-          },
-          practiceTokens: {
-            $sum: {
-              $cond: [
-                { $eq: ["$context", "practice"] },
-                { $add: ["$llmTokensPrompt", "$llmTokensCompletion"] },
-                0,
-              ],
-            },
-          },
-          mockTokens: {
-            $sum: {
-              $cond: [
-                { $eq: ["$context", "mock"] },
-                { $add: ["$llmTokensPrompt", "$llmTokensCompletion"] },
-                0,
-              ],
-            },
-          },
-          learningTokens: {
-            $sum: {
-              $cond: [
-                { $eq: ["$context", "learning"] },
-                { $add: ["$llmTokensPrompt", "$llmTokensCompletion"] },
-                0,
-              ],
-            },
-          },
-          lastActive: { $max: "$timestampUtc" },
-        },
-      },
-    ];
-
-    const summaryResult = await userActivityCollection
-      .aggregate(summaryPipeline)
-      .toArray();
-    const summary = summaryResult[0] || {
-      practiceAttempted: 0,
-      practiceCompleted: 0,
-      mockAttempted: 0,
-      mockCompleted: 0,
-      practiceTokens: 0,
-      mockTokens: 0,
-      learningTokens: 0,
-      lastActive: null,
-    };
-
-    let challengeProfile: unknown = null;
+    let userDoc: Record<string, unknown> | null = null;
     try {
-      const userRow = await usersCollection.findOne(
-        matchUsersCollectionByWebUserIds(resolvedParams.userId),
-        { projection: { challenge: 1 } }
-      );
-      challengeProfile = userRow?.challenge ?? null;
+      const db = documentsClient.db();
+      userDoc = (await db
+        .collection("users")
+        .findOne(matchUsersCollectionByWebUserIds(userId))) as Record<string, unknown> | null;
     } catch {
-      challengeProfile = null;
+      userDoc = null;
     }
 
     return NextResponse.json({
-      activities,
-      summary,
-      challengeProfile,
+      activities: rows.map(userActivityRowToDocument),
       pagination: {
         page,
         limit,
-        totalCount,
-        totalPages: Math.ceil(totalCount / limit),
+        totalCount: totalCount || 0,
+        totalPages: Math.ceil((totalCount || 0) / limit),
       },
+      summary: {
+        practiceAttempted: summary?.practice_attempted || 0,
+        practiceCompleted: summary?.practice_completed || 0,
+        mockAttempted: summary?.mock_attempted || 0,
+        mockCompleted: summary?.mock_completed || 0,
+        practiceTokens: summary?.practice_tokens || 0,
+        mockTokens: summary?.mock_tokens || 0,
+        learningTokens: summary?.learning_tokens || 0,
+        lastActive: summary?.last_active || null,
+      },
+      user: userDoc,
     });
   } catch (error) {
-    console.error("Error fetching user activities:", error);
+    console.error("Error fetching user activity:", error);
     return NextResponse.json(
-      { error: "Failed to fetch user activities" },
+      { error: "Failed to fetch user activity" },
       { status: 500 }
     );
   }

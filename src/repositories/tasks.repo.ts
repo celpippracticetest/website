@@ -1,6 +1,7 @@
 import { TaskSchema, TaskSchemaDto, TTaskSchema, TTaskSchemaDto } from "@/models/tasks.model";
 import { ObjectId } from "bson";
 import type { AppDocumentsClient, AppDocumentsDb as Db } from "@/lib/pg/types";
+import { getSql } from "@/lib/pg/pool";
 
 export class TaskRepository {
   private readonly db: Db;
@@ -13,7 +14,7 @@ export class TaskRepository {
     return this.db.collection<TTaskSchema>("tasks");
   }
 
-  private convertFromEntity(taskEntity: TTaskSchema) {
+  private convertFromEntity(taskEntity: TTaskSchema & { practiceCount?: number }) {
     const task: TTaskSchemaDto = {
       id: taskEntity._id.toHexString(),
       ...taskEntity,
@@ -40,95 +41,57 @@ export class TaskRepository {
     limit: number = 10
   ): Promise<{ items: TTaskSchemaDto[]; hasNextPage: boolean; page: number; totalPages: number; totalItems: number }> {
     const skip = page * limit;
-    const aggregateFilter = [
-      {
-        $match: {
-          ...filter,
-        },
-      },
-      {
-        $lookup: {
-          from: "practices", // The practices collection
-          localField: "_id", // The task ID in the tasks collection
-          foreignField: "taskId", // The task ID in the practices collection
-          as: "practices", // The resulting array of practices
-        },
-      },
-      {
-        $addFields: {
-          practiceCount: { $size: "$practices" }, // Count the number of practices for each task
-        },
-      },
-      {
-        $sort: {
-          createdAt: -1,
-        },
-      },
-      {
-        $facet: {
-          total: [
-            {
-              $count: "count",
-            },
-          ],
-          data: [
-            {
-              $addFields: {
-                _id: "$_id",
-              },
-            },
-          ],
-        },
-      },
-      {
-        $unwind: "$total",
-      },
-      {
-        $project: {
-          items: {
-            $slice: [
-              "$data",
-              skip,
-              {
-                $ifNull: [limit, "$total.count"],
-              },
-            ],
-          },
-          page: {
-            $literal: skip / limit + 1,
-          },
-          hasNextPage: {
-            $lt: [{ $multiply: [limit, Number(page)] }, "$total.count"],
-          },
-          totalPages: {
-            $ceil: {
-              $divide: ["$total.count", limit],
-            },
-          },
-          totalItems: "$total.count",
-        },
-      },
-    ];
+    const matchFilter = { ...filter } as Record<string, unknown>;
+    delete matchFilter.id;
 
-    const results = await this.getTaskCollection().aggregate(aggregateFilter).toArray();
+    const totalItems = await this.getTaskCollection().countDocuments(matchFilter);
+    const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 0;
+    const entities = (await this.getTaskCollection()
+      .find(matchFilter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray()) as TTaskSchema[];
 
-    if (results.length == 0) {
-      return {
-        items: [],
-        page: 0,
-        totalItems: 0,
-        totalPages: 0,
-        hasNextPage: false,
-      };
+    const taskIds = entities
+      .map((t) => (t._id instanceof ObjectId ? t._id.toHexString() : String(t._id)))
+      .map((id) => id.toLowerCase());
+
+    const counts = new Map<string, number>();
+    if (taskIds.length > 0) {
+      try {
+        const sql = getSql();
+        const rows = await sql<{ task_mongo_id: string; c: number }[]>`
+          SELECT lower(task_mongo_id) AS task_mongo_id, COUNT(*)::int AS c
+          FROM public.practices
+          WHERE lower(task_mongo_id) = ANY(${taskIds})
+          GROUP BY lower(task_mongo_id)
+        `;
+        for (const r of rows) {
+          counts.set(r.task_mongo_id, r.c);
+        }
+      } catch (e) {
+        console.warn("[tasks.repo] practice count from public.practices failed", e);
+      }
     }
-    const practices = results[0]?.items || [];
+
+    const items = entities.map((entity) => {
+      const id =
+        entity._id instanceof ObjectId
+          ? entity._id.toHexString().toLowerCase()
+          : String(entity._id).toLowerCase();
+      return this.convertFromEntity({
+        ...entity,
+        practiceCount: counts.get(id) ?? 0,
+      });
+    });
 
     return {
-      items: practices.map((practice: TTaskSchema) => this.convertFromEntity(practice)),
+      items,
       page,
-      totalItems: results[0].totalItems,
-      totalPages: results[0].totalPages,
-      hasNextPage: results[0].hasNextPage,
+      totalItems,
+      totalPages,
+      hasNextPage: (page + 1) * limit < totalItems,
     };
   }
 

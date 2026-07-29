@@ -3,11 +3,14 @@ import "server-only";
 import { isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 
 /**
- * When the service-role Supabase client is configured, practice and mock-exam
- * answers are persisted in Postgres `public.answers` instead of `app_documents`.
+ * Practice and mock-exam answers persist in Postgres `public.answers`.
+ * Always on when Supabase admin (service role) is configured; otherwise still
+ * prefer answers table whenever DATABASE_URL is present so we do not fall back
+ * to app_documents.
  */
 export function shouldPersistAnswersInSupabase(): boolean {
-  return isSupabaseAdminConfigured();
+  if (isSupabaseAdminConfigured()) return true;
+  return Boolean(process.env.DATABASE_URL?.trim());
 }
 
 /**
