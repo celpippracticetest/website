@@ -28,6 +28,15 @@ import {
   matchUsersCollectionByWebUserIds,
   supabaseAuthUserIdFieldsOnUserDoc,
 } from "@/lib/users/userDocumentIdentity";
+import {
+  META_EVENT,
+  metaEventIdInitiateCheckout,
+} from "@/lib/meta-constants";
+import {
+  clientIpFromRequestHeaders,
+  readMetaBrowserCookies,
+  sendMetaCapiEvents,
+} from "@/lib/metaConversionsApi";
 
 function recordToStripeMetadata(record: Record<string, unknown>): Stripe.MetadataParam {
   const out: Stripe.MetadataParam = {};
@@ -690,6 +699,16 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       ...(ga4SessionId ? { ga4_session_id: ga4SessionId } : {}),
     };
 
+    const cookieMeta = readMetaBrowserCookies(req.headers.get("cookie"));
+    const fbp =
+      readRequestAttribution("fbp") || cookieMeta.fbp || null;
+    const fbc =
+      readRequestAttribution("fbc") || cookieMeta.fbc || null;
+    const metaCheckoutMeta: Record<string, string> = {
+      ...(fbp ? { fbp } : {}),
+      ...(fbc ? { fbc } : {}),
+    };
+
     logger.info("Creating checkout session", {
       component: "checkout_session_api",
       action: "create_checkout_session",
@@ -763,6 +782,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
         }),
         ...(campaignPromoKey && { campaign_promo: campaignPromoKey }),
         ...ga4CheckoutMeta,
+        ...metaCheckoutMeta,
       }),
       ...(mode === "subscription" && {
         subscription_data: {
@@ -779,6 +799,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
             challenge_tier_key: challengeTierKey ?? "",
             challenge_deadline_at: challengeDeadlineIso,
             ...ga4CheckoutMeta,
+            ...metaCheckoutMeta,
             ...attributionMetadata,
             ...attributionSnapshot,
             ...pricingAbMeta,
@@ -811,6 +832,52 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       },
     });
 
+    const metaCheckoutEventId = metaEventIdInitiateCheckout(session.id);
+    const checkoutValue =
+      typeof priceObject.unit_amount === "number"
+        ? priceObject.unit_amount / 100
+        : undefined;
+    const checkoutCurrency = priceObject.currency?.toUpperCase() || undefined;
+
+    // Persist stable event id on the session for purchase continuity / debugging.
+    try {
+      await stripe.checkout.sessions.update(session.id, {
+        metadata: {
+          ...(session.metadata || {}),
+          meta_event_id_checkout: metaCheckoutEventId,
+        },
+      });
+    } catch {
+      // Non-fatal — CAPI still fires with the derived id.
+    }
+
+    void sendMetaCapiEvents({
+      events: [
+        {
+          eventName: META_EVENT.INITIATE_CHECKOUT,
+          eventId: metaCheckoutEventId,
+          eventSourceUrl: purchasePage
+            ? `${origin}${purchasePage.startsWith("/") ? purchasePage : `/${purchasePage}`}`
+            : `${origin}/pricing`,
+          userData: {
+            email,
+            externalId: user.id,
+            fbp,
+            fbc,
+            fbclid: attributionMetadata.fbclid,
+            clientIpAddress: clientIpFromRequestHeaders(req.headers),
+            clientUserAgent: req.headers.get("user-agent"),
+          },
+          customData: {
+            value: checkoutValue,
+            currency: checkoutCurrency,
+            contentIds: priceId ? [priceId] : undefined,
+            contentType: "product",
+          },
+        },
+      ],
+    });
+
     trackAPICall("POST", "/api/checkout_session", 200, {
       sessionId: session.id,
       hasDiscount: !!promotionCode,
@@ -839,6 +906,9 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
               userMetadata?.referralDiscount || "referral",
           }),
           ...(campaignPromoKey && { campaign_promo: campaignPromoKey }),
+          ...ga4CheckoutMeta,
+          ...metaCheckoutMeta,
+          meta_event_id_checkout: metaCheckoutEventId,
         }),
       });
     }

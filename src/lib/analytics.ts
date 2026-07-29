@@ -4,6 +4,16 @@ import { getAnalyticsStyleContext } from "@/lib/analyticsStyleContext";
 import { getAnalyticsPricingModelContext } from "@/lib/analyticsPricingModelContext";
 import { sendGa4Event, updateGa4Consent } from "@/lib/ga4Browser";
 import type { GaConsentState } from "@/lib/consent";
+import {
+  metaEventIdCompleteRegistration,
+  metaEventIdPageView,
+  metaEventIdPurchase,
+} from "@/lib/meta-constants";
+import {
+  newMetaClientEventId,
+  sendMetaCompleteRegistrationBeacon,
+  sendMetaPageViewBeacon,
+} from "@/lib/metaCapiBeacon";
 import type {
   AnalyticsEvent,
   UserContext,
@@ -422,12 +432,14 @@ export function trackPageView(
   userId?: string,
   userPlan?: string
 ): void {
+  const eventId = metaEventIdPageView(newMetaClientEventId());
   const payload: Record<string, unknown> = {
     event: "page_view",
     page_path: path,
     page_title: title || (isBrowser ? document.title : undefined),
     user_id: userId,
     user_plan: userPlan,
+    event_id: eventId,
   };
   if (path === "/blog") {
     payload.page_type = "blog_list";
@@ -436,6 +448,7 @@ export function trackPageView(
     payload.blog_slug = path.replace(/^\/blog\//, "").split("?")[0];
   }
   trackEvent(payload as AnalyticsEvent, true);
+  sendMetaPageViewBeacon(eventId, userId);
 }
 
 /**
@@ -509,22 +522,30 @@ export const trackAuth = {
   signUpCompleted: (
     userId: string,
     method?: string,
-    _userData?: UserData,
+    userData?: UserData,
     attributionData?: Record<string, unknown>
   ) => {
     const dedupeKey = `sign_up_${userId}`;
     if (markDeduplicatedOnce(dedupeKey)) return;
 
-    // Server-side GA4 MP from `/api/users/webhook` is optional backup when configured.
+    const eventId = metaEventIdCompleteRegistration(userId);
+
+    // Server backup: `/api/users/webhook` + Meta CAPI CompleteRegistration.
     trackEvent({
       event: "sign_up",
       user_id: userId,
       method,
       ...attributionData,
+      event_id: eventId,
       value: 1,
       currency: "CAD",
     });
     trackRedditEvent("SignUp");
+    sendMetaCompleteRegistrationBeacon({
+      eventId,
+      userId,
+      email: typeof userData?.email === "string" ? userData.email : undefined,
+    });
   },
 
   loginInitiated: (method?: string) => {
@@ -799,11 +820,13 @@ export const trackEcommerce = {
         : purchaseType;
     const { purchase_type: _ignoredPurchaseType, ...attributionWithoutPurchaseType } =
       attributionPayload;
+    const eventId = metaEventIdPurchase(transactionId);
     trackEvent({
       event: "purchase",
       value,
       currency,
       transaction_id: transactionId,
+      event_id: eventId,
       ecommerce: {
         transaction_id: transactionId,
         currency,

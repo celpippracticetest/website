@@ -25,6 +25,11 @@ import {
   sendGa4Events,
   type Ga4ItemParam,
 } from "@/lib/ga4MeasurementProtocol";
+import {
+  META_EVENT,
+  metaEventIdPurchase,
+} from "@/lib/meta-constants";
+import { sendMetaCapiEvents } from "@/lib/metaConversionsApi";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -177,6 +182,48 @@ function buildStripeRenewalPurchaseItems(
       item_category: "Subscription",
     },
   ];
+}
+
+/** Meta CAPI Purchase — mirrors GA4 MP purchase sends from this webhook. */
+function sendMetaPurchaseEvent(args: {
+  transactionId: string;
+  value: number;
+  currency: string;
+  userId?: string | null;
+  email?: string | null;
+  metadata?: Record<string, string | undefined> | null;
+  contentIds?: string[] | null;
+  eventSourceUrl?: string | null;
+}): void {
+  const transactionId = args.transactionId?.trim();
+  if (!transactionId) return;
+
+  const metadata = args.metadata ?? undefined;
+  void sendMetaCapiEvents({
+    events: [
+      {
+        eventName: META_EVENT.PURCHASE,
+        eventId: metaEventIdPurchase(transactionId),
+        eventSourceUrl: args.eventSourceUrl || undefined,
+        userData: {
+          email: args.email,
+          externalId: args.userId,
+          fbp: readMetadataValue(metadata, "fbp"),
+          fbc: readMetadataValue(metadata, "fbc"),
+          fbclid:
+            readMetadataValue(metadata, "fbclid") ||
+            readMetadataValue(metadata, "attribution_fbclid"),
+        },
+        customData: {
+          value: args.value,
+          currency: args.currency,
+          orderId: transactionId,
+          contentIds: args.contentIds?.length ? args.contentIds : undefined,
+          contentType: "product",
+        },
+      },
+    ],
+  });
 }
 
 function buildStripeGaAttributionParams(
@@ -866,6 +913,19 @@ export async function POST(req: Request) {
           },
         ],
       });
+      sendMetaPurchaseEvent({
+        transactionId: session.id,
+        value: (session.amount_total || 0) / 100,
+        currency: (session.currency || "usd").toUpperCase(),
+        userId: metadata?.user_id || null,
+        email:
+          session.customer_details?.email ||
+          (typeof session.customer_email === "string"
+            ? session.customer_email
+            : null),
+        metadata,
+        contentIds: checkoutPlanName ? [checkoutPlanName] : null,
+      });
 
       const pricingAbRaw = metadata?.pricing_ab_layout;
       if (
@@ -1218,6 +1278,15 @@ export async function POST(req: Request) {
                       },
                     ],
                   });
+                  sendMetaPurchaseEvent({
+                    transactionId: String(invoiceId || lastCheckout.checkoutId),
+                    value: (invoice?.amount_paid || 0) / 100,
+                    currency: (invoice?.currency || "usd").toUpperCase(),
+                    userId: user.id,
+                    email: invoice?.customer_email || null,
+                    metadata: subscriptionMetadata,
+                    contentIds: renewalPlanName ? [renewalPlanName] : null,
+                  });
                 }
 
                 return NextResponse.json({ received: true });
@@ -1263,6 +1332,16 @@ export async function POST(req: Request) {
               },
             ],
           });
+          if (invoiceId) {
+            sendMetaPurchaseEvent({
+              transactionId: invoiceId,
+              value: (invoice?.amount_paid || 0) / 100,
+              currency: (invoice?.currency || "usd").toUpperCase(),
+              email: invoice?.customer_email || null,
+              metadata: subscriptionMetadata,
+              contentIds: renewalPlanName ? [renewalPlanName] : null,
+            });
+          }
         }
         return NextResponse.json({ received: true });
       }
@@ -1319,6 +1398,15 @@ export async function POST(req: Request) {
                   },
                 },
               ],
+            });
+            sendMetaPurchaseEvent({
+              transactionId: String(invoiceId || session.id),
+              value: (invoice?.amount_paid || 0) / 100,
+              currency: (invoice?.currency || "usd").toUpperCase(),
+              userId: metadata?.user_id || null,
+              email: invoice?.customer_email || null,
+              metadata,
+              contentIds: renewalPlanName ? [renewalPlanName] : null,
             });
           }
         }

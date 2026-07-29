@@ -7,10 +7,12 @@ import { Analytics } from "@vercel/analytics/react";
 import { SupabaseAuthHashRecoveryRedirect } from "@/components/auth/SupabaseAuthHashRecoveryRedirect";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
+import { Suspense } from "react";
 import ReactQueryProvider from "@/components/ReactQueryProvider";
 import { LazyIntercom } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import CriticalCSS from "@/components/CriticalCSS";
+import MetaPageViewTracker from "@/components/analytics/MetaPageViewTracker";
 import type { Metadata } from "next";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -237,6 +239,9 @@ export default async function RootLayout({
         <ReactQueryProvider>
           <ErrorBoundary>
             <SupabaseAuthHashRecoveryRedirect />
+            <Suspense fallback={null}>
+              <MetaPageViewTracker />
+            </Suspense>
             {children}
           </ErrorBoundary>
         </ReactQueryProvider>

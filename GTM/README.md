@@ -72,12 +72,40 @@ Use **Consent Mode** so these tags respect `ad_storage` / `ad_user_data` after y
 ### Meta (Facebook / Instagram) Pixel
 
 1. **Meta Pixel** base (Meta tag template or Custom HTML) — **one** Pixel ID per container; load early enough to catch conversions, still after consent if required.
-2. **Standard events** (typical mapping to this site’s dataLayer):
+2. **Standard events** (typical mapping to this site’s dataLayer / gtag):
    - **`PageView`** — either Meta’s default on load **or** fire on `page_view` (avoid **double** PageView if both fire).
    - **`Purchase`** — trigger on `purchase`; pass `value`, `currency`, `content_ids` / `contents` from `ecommerce.items` if you map them in GTM variables.
    - **`CompleteRegistration`** — trigger on **`sign_up`**.
    - **`InitiateCheckout`** (optional) — trigger on `begin_checkout`.
-3. **Enhanced matching / Conversions API** — optional; browser pixel alone is what most teams start with. If you use **`ads_enhanced_conversion`**, you can add a **parallel Meta tag** on that same event for hashed user data (policy + implementation heavy).
+3. **First-party Conversions API (server)** — the Next.js app sends the same four events via Meta Graph CAPI ([`src/lib/metaConversionsApi.ts`](../src/lib/metaConversionsApi.ts)):
+   - `PageView` / `CompleteRegistration` from browser beacon `POST /api/meta/capi`
+   - `InitiateCheckout` from `/api/checkout_session`
+   - `Purchase` from `/api/stripe/webhook`
+   - `CompleteRegistration` backup from `/api/users/webhook` (Supabase user created)
+4. **Event ID dedupe (required for hybrid Pixel + CAPI)** — the app pushes `event_id` on `page_view`, `sign_up`, and `purchase` (stable ids like `purchase:{transactionId}`, `complete_registration:{userId}`, `page_view:{uuid}`).
+
+   Update the Meta **Event ID** variable in GTM (currently auto-generated `a9f3aa21-…_{{gtm.start}}.{{uniqueEventId}}`) to **prefer the app value**:
+   - Create a Data Layer / Event Model variable for `event_id` (e.g. `DL - event_id` → `event_id` or `eventModel.event_id`).
+   - Change **FB_CONVERSIONS_API-…-Web-Variable-Event_ID_Constant** (or the Pixel tag’s Event ID field) to:
+     - Lookup / Custom JS: return `{{DL - event_id}}` when present, otherwise fall back to the existing auto id.
+   - Without this, browser Pixel + server CAPI may **double-count**.
+
+5. **Env vars (Vercel / server)**
+
+   | Var                       | Purpose                                                                           |
+   | ------------------------- | --------------------------------------------------------------------------------- |
+   | `META_ACCESS_TOKEN`       | **Required** — same Meta token for ads spend + CAPI (pixel must allow this token) |
+   | `META_CAPI_ACCESS_TOKEN`  | Optional override if you want a CAPI-only token                                   |
+   | `META_PIXEL_ID`           | Optional override (default `1255930053419869`)                                    |
+   | `META_GRAPH_VERSION`      | Optional (default `v21.0`)                                                        |
+   | `META_TEST_EVENT_CODE`    | Optional — Events Manager test code                                               |
+   | `SUPABASE_WEBHOOK_SECRET` | Protects `/api/users/webhook` (`Authorization: Bearer …` or `x-webhook-secret`)   |
+
+6. **Supabase webhook (signup CAPI)** — already provisioned on project `birfgggolfqanmsfciqi`:
+   - Trigger `on_auth_user_created_meta_capi` on `auth.users` INSERT
+   - POSTs to `https://celpippracticetest.com/api/users/webhook` with `Authorization: Bearer <SUPABASE_WEBHOOK_SECRET>`
+   - Re-run / update secret: `npm run db:setup:meta-signup-webhook` (reads `.env`)
+   - **Also set `SUPABASE_WEBHOOK_SECRET` in Vercel** (same value as local `.env`) so the Next.js route accepts the call.
 
 ### Reddit Ads
 
@@ -92,7 +120,7 @@ UTMs affect **GA4 / ad platform reporting** when users land with `utm_*` / `gcli
 ### Order of operations (consent + dedupe)
 
 1. **Consent defaults** → **Consent update** (CMP) → **Conversion Linker** → **Pixels / conversions** → **GA4** (whatever order your lawyer/agency approves; ads tags must not fire before consent if you’re in a regulated setup).
-2. **Dedupe**: use **`transaction_id`** on `purchase` in each platform; align with what [`trackEcommerce.purchase`](../src/lib/gtm.ts) pushes.
+2. **Dedupe**: use **`transaction_id`** on `purchase` in each platform; for Meta also align **`event_id`** between Pixel and CAPI (see Meta section above).
 
 ## Import format note (trigger `type`)
 

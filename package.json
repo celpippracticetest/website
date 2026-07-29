@@ -33,6 +33,7 @@
     "db:migrate:blogs": "npx --yes tsx ./tooling/apply-blogs-migration.ts",
     "db:migrate:blog-cms-posts": "npx --yes tsx ./tooling/apply-blog-cms-posts-migration.ts",
     "db:migrate:user-activities": "npx --yes tsx ./tooling/apply-user-activities-migration.ts",
+    "db:setup:meta-signup-webhook": "npx --yes tsx ./tooling/setup-supabase-user-created-webhook.ts",
     "migrate:useractivities:to-table": "npx --yes tsx ./tooling/migrate-useractivities-app-documents-to-pg.ts",
     "db:migrate:app-doc-tables": "npx --yes tsx ./tooling/apply-app-document-tables-migration.ts",
     "migrate:app-documents:to-tables": "npx --yes tsx ./tooling/migrate-app-documents-to-dedicated-tables.ts"

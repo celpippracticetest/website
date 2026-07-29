@@ -9,6 +9,7 @@ import {
   resolveGa4BrowserIds,
 } from "@/lib/ga4BrowserIds";
 import { GA4_MEASUREMENT_ID } from "@/lib/ga4-constants";
+import { readMetaPixelCookies } from "@/lib/metaCapiBeacon";
 
 const MEASUREMENT_ID = GA4_MEASUREMENT_ID;
 
@@ -37,7 +38,10 @@ const CHECKOUT_ATTRIBUTION_FIELDS = Object.keys(STORAGE_KEY_BY_FIELD) as Array<
 
 type CheckoutAttributionState = Partial<
   Record<keyof typeof STORAGE_KEY_BY_FIELD, string>
->;
+> & {
+  fbp?: string;
+  fbc?: string;
+};
 
 function readValue(value: string | null): string | null {
   if (!value) return null;
@@ -69,6 +73,10 @@ export function useCheckoutAttributionPayload(): Record<string, string> {
         nextFields[field] = value;
       }
     }
+
+    const { fbp, fbc } = readMetaPixelCookies();
+    if (fbp) nextFields.fbp = fbp;
+    if (fbc) nextFields.fbc = fbc;
 
     setFields(nextFields);
 
@@ -106,6 +114,10 @@ export function useCheckoutAttributionPayload(): Record<string, string> {
   if (homeAbVariant) {
     payload.home_ab_variant = homeAbVariant;
   }
+
+  const { fbp, fbc } = readMetaPixelCookies();
+  if (fbp || fields.fbp) payload.fbp = fbp || fields.fbp || "";
+  if (fbc || fields.fbc) payload.fbc = fbc || fields.fbc || "";
 
   if (typeof window !== "undefined") {
     const { clientId, sessionId } = loadPendingGa4IdsFromStorage();

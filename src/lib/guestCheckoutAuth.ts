@@ -1,6 +1,7 @@
 import { logger } from "@/lib/sentry-logger";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { mobileUserBridgeFromSupabaseUser } from "@/lib/auth/supabase-mobile-user-bridge";
+import { sendSignupConversionEvents } from "@/lib/signupConversions";
 
 async function findAuthUserByEmail(email: string) {
   const admin = getSupabaseAdmin();
@@ -48,7 +49,13 @@ export async function findOrCreateWebUserByEmail(rawEmail: string): Promise<stri
       component: "guest_checkout_auth",
       userId: data.user.id,
     });
-    return mobileUserBridgeFromSupabaseUser(data.user).id;
+    const userId = mobileUserBridgeFromSupabaseUser(data.user).id;
+    void sendSignupConversionEvents({
+      userId,
+      email: normalized,
+      method: "guest_checkout",
+    });
+    return userId;
   } catch (err: unknown) {
     const msg = err && typeof err === "object" && "message" in err ? String((err as Error).message) : "";
     if (/already been registered|already exists|duplicate/i.test(msg)) {

@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DEFAULT_POST_AUTH_PATH } from "@/lib/auth/post-auth-redirect";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
+import { trackAuth } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
 const primaryCtaClass =
@@ -192,6 +193,12 @@ export function SupabaseAuthForm({
             return;
           }
           if (data.session) {
+            const uid = data.user?.id || data.session.user.id;
+            if (uid) {
+              trackAuth.signUpCompleted(uid, "email", {
+                email: email.trim(),
+              });
+            }
             if (dest.startsWith("/api/")) window.location.assign(dest);
             else {
               router.push(dest);
