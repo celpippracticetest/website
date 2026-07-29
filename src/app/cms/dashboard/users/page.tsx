@@ -93,6 +93,7 @@ export default function UsersPage() {
 
   useEffect(() => {
     fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional refetch on list controls
   }, [page, search, sortBy, sortOrder]);
 
   const getRiskColor = (riskScore: number) => {
@@ -160,7 +161,10 @@ export default function UsersPage() {
                 type="text"
                 placeholder="Search by User ID, Email, IP, or User Agent..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -168,7 +172,10 @@ export default function UsersPage() {
           <div className="flex gap-2">
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+              onChange={(e) => {
+                setSortBy(e.target.value);
+                setPage(1);
+              }}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
               <option value="createdAt">First Activity</option>
@@ -179,7 +186,10 @@ export default function UsersPage() {
             </select>
             <select
               value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value)}
+              onChange={(e) => {
+                setSortOrder(e.target.value);
+                setPage(1);
+              }}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
               <option value="desc">Descending</option>

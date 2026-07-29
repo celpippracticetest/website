@@ -277,30 +277,93 @@ function mergeActivityMetrics(
   return merged;
 }
 
-function orderBySql(sortBy: string, sortOrder: "asc" | "desc"): string {
+function orderByCombinedSql(sortBy: string, sortOrder: "asc" | "desc"): string {
   const dir = sortOrder === "asc" ? "ASC" : "DESC";
   switch (sortBy) {
     case "createdAt":
-      return `p.created_at ${dir} NULLS LAST, p.id`;
+      return `created_at ${dir} NULLS LAST, stable_id`;
     case "plan":
-      return `lower(trim(coalesce(p.plan, ''))) ${dir} NULLS LAST, p.id`;
+      return `lower(trim(coalesce(plan, ''))) ${dir} NULLS LAST, stable_id`;
     case "totalSpend": {
       const spendExpr =
-        "NULLIF(TRIM(COALESCE(p.public_metadata->>'totalSpend', '')), '')::numeric";
-      return `${spendExpr} ${dir} NULLS LAST, p.id`;
+        "NULLIF(TRIM(COALESCE(public_metadata->>'totalSpend', '')), '')::numeric";
+      return `${spendExpr} ${dir} NULLS LAST, stable_id`;
     }
     case "totalActivities":
     case "riskScore":
-      return `p.updated_at ${dir} NULLS LAST, p.id`;
+      return `updated_at ${dir} NULLS LAST, stable_id`;
     case "lastActivity":
     default:
-      return `p.updated_at ${dir} NULLS LAST, p.id`;
+      return `updated_at ${dir} NULLS LAST, stable_id`;
   }
 }
 
+/** Profiles + auth.users that never got a user_profiles row. */
+const COMBINED_ADMIN_USERS_SQL = `
+  SELECT
+    COALESCE(
+      NULLIF(TRIM(p.legacy_clerk_user_id), ''),
+      NULLIF(TRIM(p.supabase_auth_user_id::text), ''),
+      p.id::text
+    ) AS stable_id,
+    p.supabase_auth_user_id::text AS supabase_auth_user_id,
+    p.legacy_clerk_user_id,
+    COALESCE(NULLIF(TRIM(p.email), ''), au.email) AS email,
+    p.first_name,
+    p.last_name,
+    p.plan,
+    p.plan_type,
+    COALESCE(p.public_metadata, '{}'::jsonb) AS public_metadata,
+    COALESCE(p.created_at, au.created_at) AS created_at,
+    COALESCE(p.updated_at, au.last_sign_in_at, au.created_at) AS updated_at
+  FROM public.user_profiles p
+  LEFT JOIN auth.users au ON au.id = p.supabase_auth_user_id
+
+  UNION ALL
+
+  SELECT
+    au.id::text AS stable_id,
+    au.id::text AS supabase_auth_user_id,
+    NULL::text AS legacy_clerk_user_id,
+    au.email,
+    NULLIF(
+      TRIM(
+        COALESCE(
+          au.raw_user_meta_data->>'given_name',
+          au.raw_user_meta_data->>'first_name',
+          split_part(COALESCE(au.raw_user_meta_data->>'full_name', au.raw_user_meta_data->>'name', ''), ' ', 1)
+        )
+      ),
+      ''
+    ) AS first_name,
+    NULLIF(
+      TRIM(
+        COALESCE(
+          au.raw_user_meta_data->>'family_name',
+          au.raw_user_meta_data->>'last_name'
+        )
+      ),
+      ''
+    ) AS last_name,
+    NULL::text AS plan,
+    NULL::text AS plan_type,
+    '{}'::jsonb AS public_metadata,
+    au.created_at,
+    COALESCE(au.last_sign_in_at, au.created_at) AS updated_at
+  FROM auth.users au
+  WHERE NOT EXISTS (
+    SELECT 1
+    FROM public.user_profiles p
+    WHERE p.supabase_auth_user_id = au.id
+  )
+`;
+
 /**
- * Paginated admin user list from Supabase Postgres `public.user_profiles`
- * (`LIMIT` / `OFFSET` — never loads the full table into the app server).
+ * Paginated admin user list from:
+ * - `public.user_profiles` (legacy + enriched rows), plus
+ * - `auth.users` with no matching profile (mobile / Google sign-ups that never got a profile row)
+ *
+ * Uses `LIMIT` / `OFFSET` — never loads the full table into the app server.
  * Activity / IP / token metrics are joined for the current page only.
  */
 export async function listAdminUsersFromUserProfiles(
@@ -310,35 +373,38 @@ export async function listAdminUsersFromUserProfiles(
   const { search, page, limit, sortBy, sortOrder, subscriptionStatus } = params;
   const offset = (page - 1) * limit;
   const q = search.trim();
-  const order = orderBySql(sortBy, sortOrder);
+  const order = orderByCombinedSql(sortBy, sortOrder);
 
   let subFilter = sql``;
   if (subscriptionStatus === "active") {
-    subFilter = sql`AND lower(trim(coalesce(p.plan, ''))) IN ('plus', 'premium', 'pro', 'enterprise')`;
+    subFilter = sql`AND lower(trim(coalesce(c.plan, ''))) IN ('plus', 'premium', 'pro', 'enterprise')`;
   } else if (subscriptionStatus === "never") {
-    subFilter = sql`AND lower(trim(coalesce(p.plan, ''))) NOT IN ('plus', 'premium', 'pro', 'enterprise')
-      AND (p.public_metadata->>'purchaseDate') IS NULL`;
+    subFilter = sql`AND lower(trim(coalesce(c.plan, ''))) NOT IN ('plus', 'premium', 'pro', 'enterprise')
+      AND (c.public_metadata->>'purchaseDate') IS NULL`;
   } else if (subscriptionStatus === "unsubscribed") {
-    subFilter = sql`AND lower(trim(coalesce(p.plan, ''))) NOT IN ('plus', 'premium', 'pro', 'enterprise')
-      AND (p.public_metadata->>'purchaseDate') IS NOT NULL`;
+    subFilter = sql`AND lower(trim(coalesce(c.plan, ''))) NOT IN ('plus', 'premium', 'pro', 'enterprise')
+      AND (c.public_metadata->>'purchaseDate') IS NOT NULL`;
   }
 
   let searchFilter = sql``;
   if (q.length > 0) {
     const like = `%${q.replace(/%/g, "\\%").replace(/_/g, "\\_")}%`;
     searchFilter = sql`AND (
-      p.email ILIKE ${like}
-      OR p.id::text ILIKE ${like}
-      OR COALESCE(p.legacy_clerk_user_id, '') ILIKE ${like}
-      OR COALESCE(p.supabase_auth_user_id::text, '') ILIKE ${like}
-      OR COALESCE(p.first_name, '') ILIKE ${like}
-      OR COALESCE(p.last_name, '') ILIKE ${like}
+      c.email ILIKE ${like}
+      OR c.stable_id ILIKE ${like}
+      OR COALESCE(c.legacy_clerk_user_id, '') ILIKE ${like}
+      OR COALESCE(c.supabase_auth_user_id, '') ILIKE ${like}
+      OR COALESCE(c.first_name, '') ILIKE ${like}
+      OR COALESCE(c.last_name, '') ILIKE ${like}
     )`;
   }
 
   const countRows = await sql<{ c: number }[]>`
+    WITH combined AS (
+      ${sql.unsafe(COMBINED_ADMIN_USERS_SQL)}
+    )
     SELECT COUNT(*)::int AS c
-    FROM public.user_profiles p
+    FROM combined c
     WHERE 1 = 1
     ${subFilter}
     ${searchFilter}
@@ -346,23 +412,22 @@ export async function listAdminUsersFromUserProfiles(
   const totalCount = countRows[0]?.c ?? 0;
 
   const dataRows = await sql<ProfileListRow[]>`
+    WITH combined AS (
+      ${sql.unsafe(COMBINED_ADMIN_USERS_SQL)}
+    )
     SELECT
-      COALESCE(
-        NULLIF(TRIM(p.legacy_clerk_user_id), ''),
-        NULLIF(TRIM(p.supabase_auth_user_id::text), ''),
-        p.id::text
-      ) AS stable_id,
-      p.supabase_auth_user_id::text AS supabase_auth_user_id,
-      p.legacy_clerk_user_id,
-      p.email,
-      p.first_name,
-      p.last_name,
-      p.plan,
-      p.plan_type,
-      p.public_metadata,
-      p.created_at,
-      p.updated_at
-    FROM public.user_profiles p
+      c.stable_id,
+      c.supabase_auth_user_id,
+      c.legacy_clerk_user_id,
+      c.email,
+      c.first_name,
+      c.last_name,
+      c.plan,
+      c.plan_type,
+      c.public_metadata,
+      c.created_at,
+      c.updated_at
+    FROM combined c
     WHERE 1 = 1
     ${subFilter}
     ${searchFilter}

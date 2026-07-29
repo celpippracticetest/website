@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
           totalCount,
           totalPages: Math.ceil(totalCount / limit),
         },
-        listMode: hasProfiles ? "profiles_sql" : "users_documents_sql",
+        listMode: hasProfiles ? "auth_and_profiles_sql" : "users_documents_sql",
       });
     } catch (e) {
       console.warn(
