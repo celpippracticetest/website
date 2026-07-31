@@ -15,6 +15,7 @@ import SvgArticle from "../icons/animated/article/Article";
 import SvgCheck from "../icons/animated/check/Check";
 import SvgWord from "../icons/Word";
 import SvgReferral from "../icons/Referral";
+import { npsAwareNavigate } from "@/components/modal/NpsLeaveGuard";
 
 const BottomNavigation = () => {
   const pathname = usePathname();
@@ -119,7 +120,9 @@ const BottomNavigation = () => {
         {/* Exams */}
         <div
           className="relative w-full h-full flex items-center justify-center cursor-pointer"
-          onClick={() => router.push("/exam-overview")}
+          onClick={() =>
+            npsAwareNavigate("/exam-overview", (href) => router.push(href))
+          }
         >
           {mockTest && (
             <motion.div

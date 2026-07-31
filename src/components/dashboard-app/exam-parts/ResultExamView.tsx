@@ -18,6 +18,7 @@ import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 import { ActivityLogger } from "@/lib/userActivity";
 import { useEffect, useState, useMemo } from "react";
 import IncompletePartsModal from "@/components/modal/IncompletePartsModal";
+import { useNpsStore } from "@/store/useNps.store";
 import { useSearchParams } from "next/navigation";
 import {
   Select,
@@ -113,6 +114,15 @@ const ResultExamView = ({
       ActivityLogger.scoreReportViewed(exams.id, "mock");
     }
   }, [user, exams]);
+
+  // Arm NPS leave-guard while viewing mock results
+  useEffect(() => {
+    const label = exams?.name ? `${exams.name} complete` : "Mock exam complete";
+    useNpsStore.getState().armMockLeave(label);
+    return () => {
+      useNpsStore.getState().disarmMockLeave();
+    };
+  }, [exams?.name]);
 
   // Detect incomplete sections
   const getIncompleteSections = () => {

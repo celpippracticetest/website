@@ -142,6 +142,18 @@ export const ActivityLogger = {
     // Track in GTM
     trackPractice.completed(contentId, skill, scoreOverall, durationSeconds);
 
+    // NPS: every 5 practice completions (client-only; no-op on server)
+    if (typeof window !== "undefined") {
+      try {
+        const { useNpsStore } = await import("@/store/useNps.store");
+        useNpsStore
+          .getState()
+          .onPracticeCompleted(`Practice complete · ${skill}`);
+      } catch {
+        // ignore — NPS must never block practice logging
+      }
+    }
+
     // Persist user activity to the document store
     return logUserActivity({
       eventType: "practice_attempt_completed",

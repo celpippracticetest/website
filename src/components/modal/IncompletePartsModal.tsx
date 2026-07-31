@@ -8,6 +8,7 @@ import SvgReading from "../icons/Reading";
 import SvgWriting from "../icons/Writing";
 import SvgSpeaking from "../icons/Speaking";
 import { mockExamPartHref } from "@/lib/mockExamAttemptId";
+import { npsAwareNavigate } from "@/components/modal/NpsLeaveGuard";
 
 interface IncompletePart {
   name: string;
@@ -43,7 +44,7 @@ const IncompletePartsModal: React.FC<IncompletePartsModalProps> = ({
   };
 
   const handleBackToExams = () => {
-    router.push("/exam-overview");
+    npsAwareNavigate("/exam-overview", (href) => router.push(href));
   };
 
   const getSectionIcon = (sectionName: string) => {

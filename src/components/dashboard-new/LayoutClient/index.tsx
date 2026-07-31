@@ -40,6 +40,11 @@ import AskBeavoModal from "@/components/AskBeavo/AskBeavoModal";
 import { GlobalInteractiveProvider } from "@/components/dashboard-app/practice/GlobalInteractiveProvider";
 import { cn } from "@/lib/utils";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import NpsModal from "@/components/modal/NpsModal";
+import NpsLeaveGuard, {
+  npsAwareNavigate,
+} from "@/components/modal/NpsLeaveGuard";
+import { useNpsStore } from "@/store/useNps.store";
 
 const NavItem = ({
   icon,
@@ -81,7 +86,7 @@ const NavItem = ({
       setOpen(!open);
     } else {
       setActive(primary);
-      router.push(link);
+      npsAwareNavigate(link, (href) => router.push(href));
     }
   };
 
@@ -238,6 +243,10 @@ const LayoutClient = ({
   useEffect(() => {
     setSurveyVisible(showSurvey);
   }, [showSurvey]);
+
+  useEffect(() => {
+    useNpsStore.getState().setUserId(user?.id ?? null);
+  }, [user?.id]);
 
   useEffect(() => {
     const handleSize = () => {
@@ -821,7 +830,9 @@ const LayoutClient = ({
             >
               <div className="flex gap-[12px] screen744:!gap-[24px] screen1280:!gap-[64px] items-center w-full">
                 <Image
-                  onClick={() => router.push("/")}
+                  onClick={() =>
+                    npsAwareNavigate("/", (href) => router.push(href))
+                  }
                   alt="full logo"
                   width={133}
                   height={40}
@@ -832,7 +843,9 @@ const LayoutClient = ({
                 />
 
                 <Image
-                  onClick={() => router.push("/")}
+                  onClick={() =>
+                    npsAwareNavigate("/", (href) => router.push(href))
+                  }
                   alt="full logo"
                   width={35}
                   height={35}
@@ -872,6 +885,8 @@ const LayoutClient = ({
         <BottomNavigation />
       </div>
       <AskBeavoModal />
+      <NpsLeaveGuard />
+      <NpsModal />
       <GlobalInteractiveProvider />
     </>
   );
