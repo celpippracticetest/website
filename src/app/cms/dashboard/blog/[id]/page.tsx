@@ -9,7 +9,9 @@ import Autorenew from "@mui/icons-material/Autorenew";
 import { Box } from "@/components/ui/Box";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
-import BlogPostForm, { BlogPostSubmitPayload } from "@/components/dashboard-app/cms/BlogPostForm";
+import BlogPostForm, {
+  BlogPostSubmitPayload,
+} from "@/components/dashboard-app/cms/BlogPostForm";
 import { TBlogSchemaDto } from "@/models/blog.model";
 
 export default function EditBlogPage() {
@@ -30,7 +32,8 @@ export default function EditBlogPage() {
         const data = await response.json();
         setBlog(data);
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Could not load blog post.";
+        const message =
+          error instanceof Error ? error.message : "Could not load blog post.";
         toast({
           title: "Error",
           description: message,
@@ -56,8 +59,14 @@ export default function EditBlogPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update blog post.");
+        const errorData = await response.json().catch(() => null);
+        const message =
+          typeof errorData?.message === "string"
+            ? errorData.message
+            : errorData?.message
+              ? JSON.stringify(errorData.message)
+              : "Failed to update blog post.";
+        throw new Error(message);
       }
 
       toast({
@@ -67,7 +76,8 @@ export default function EditBlogPage() {
       router.push("/cms/dashboard/blog");
       router.refresh();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to save changes.";
+      const message =
+        error instanceof Error ? error.message : "Failed to save changes.";
       toast({
         title: "Error",
         description: message,
@@ -89,7 +99,9 @@ export default function EditBlogPage() {
   if (!blog) {
     return (
       <Box className="mx-auto max-w-3xl p-6 text-center">
-        <h1 className="text-2xl font-bold text-slate-900">Blog post not found</h1>
+        <h1 className="text-2xl font-bold text-slate-900">
+          Blog post not found
+        </h1>
         <p className="mt-2 text-sm text-slate-500">
           The post may have been deleted or the link may be invalid.
         </p>
@@ -112,10 +124,16 @@ export default function EditBlogPage() {
         </Link>
         <Box>
           <h1 className="text-2xl font-bold text-slate-900">Edit Blog Post</h1>
-          <p className="text-sm text-slate-500">Update content, status, and SEO fields.</p>
+          <p className="text-sm text-slate-500">
+            Update content, status, and SEO fields.
+          </p>
         </Box>
       </Box>
-      <BlogPostForm initialData={blog} isLoading={isSaving} onSubmit={onSubmit} />
+      <BlogPostForm
+        initialData={blog}
+        isLoading={isSaving}
+        onSubmit={onSubmit}
+      />
     </Box>
   );
 }

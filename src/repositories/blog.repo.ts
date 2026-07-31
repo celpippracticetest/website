@@ -43,10 +43,11 @@ function relatedScopeSql(
   }
   const ors: ReturnType<typeof sql>[] = [];
   if (categories.length > 0) {
-    ors.push(sql`categories && ${sql.array(categories, "text")}`);
+    // postgres.js `sql.array(x, type)` expects a type OID, not the string "text".
+    ors.push(sql`categories && ${sql.array(categories)}`);
   }
   if (tags.length > 0) {
-    ors.push(sql`tags && ${sql.array(tags, "text")}`);
+    ors.push(sql`tags && ${sql.array(tags)}`);
   }
   if (ors.length === 1) return ors[0]!;
   return sql`(${ors.reduce((a, b) => sql`${a} OR ${b}`)})`;
@@ -267,8 +268,8 @@ export class BlogRepository {
         ${blog.contentJson != null ? sql.json(blog.contentJson as postgres.JSONValue) : null},
         ${blog.status},
         ${blog.authorName},
-        ${sql.array(blog.categories, "text")},
-        ${sql.array(blog.tags, "text")},
+        ${sql.array(blog.categories)},
+        ${sql.array(blog.tags)},
         ${blog.featuredImage != null ? sql.json(blog.featuredImage as postgres.JSONValue) : null},
         ${sql.json(blog.faq as postgres.JSONValue)},
         ${sql.json(blog.aiSnippet as postgres.JSONValue)},
@@ -506,8 +507,8 @@ export class BlogRepository {
         content_json = ${contentJson != null ? sql.json(contentJson as postgres.JSONValue) : null},
         status = ${nextStatus},
         author_name = ${authorName},
-        categories = ${sql.array(categories, "text")},
-        tags = ${sql.array(tags, "text")},
+        categories = ${sql.array(categories)},
+        tags = ${sql.array(tags)},
         featured_image = ${featuredImage != null ? sql.json(featuredImage as postgres.JSONValue) : null},
         faq = ${sql.json(faq as postgres.JSONValue)},
         ai_snippet = ${sql.json(aiSnippet as postgres.JSONValue)},
