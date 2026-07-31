@@ -1,8 +1,11 @@
 import "server-only";
 
 import documentsClient from "@/lib/appDocumentsClient";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
+import {
+  getCachedResolvedAuthUserId,
+  setCachedResolvedAuthUserId,
+} from "@/lib/auth/auth-admin-user-cache";
 import {
   findUserProfileByWebUserId,
   supabaseAuthIdFromProfileRow,
@@ -10,28 +13,31 @@ import {
 
 /**
  * Resolves the Supabase Auth UUID for a stable app user id (legacy Clerk id or Auth UUID).
+ *
+ * Does not call Auth Admin APIs — identity is resolved from UUID shape, `user_profiles`,
+ * or the local users document. Callers that need a full Auth user should fetch once via
+ * the cached admin helper.
  */
 export async function resolveSupabaseAuthUserId(
   stableOrAuthId: string,
 ): Promise<string | null> {
-  const admin = getSupabaseAdmin();
-  if (!admin) return null;
-
   const id = stableOrAuthId.trim();
   if (!id) return null;
 
+  const cached = getCachedResolvedAuthUserId(id);
+  if (cached !== undefined) return cached;
+
   if (isLikelySupabaseAuthUserId(id)) {
-    const { data, error } = await admin.auth.admin.getUserById(id);
-    if (error || !data.user) return null;
-    return data.user.id;
+    setCachedResolvedAuthUserId(id, id);
+    return id;
   }
 
   const profile = await findUserProfileByWebUserId(id);
   if (profile) {
     const resolvedFromProfile = supabaseAuthIdFromProfileRow(profile);
     if (resolvedFromProfile) {
-      const { data, error } = await admin.auth.admin.getUserById(resolvedFromProfile);
-      if (!error && data.user) return data.user.id;
+      setCachedResolvedAuthUserId(id, resolvedFromProfile);
+      return resolvedFromProfile;
     }
   }
 
@@ -43,9 +49,11 @@ export async function resolveSupabaseAuthUserId(
       { projection: { supabaseUserId: 1 } },
     );
   const sid = row?.supabaseUserId as string | undefined;
-  if (!sid) return null;
+  if (!sid) {
+    setCachedResolvedAuthUserId(id, null);
+    return null;
+  }
 
-  const { data, error } = await admin.auth.admin.getUserById(sid);
-  if (error || !data.user) return null;
-  return data.user.id;
+  setCachedResolvedAuthUserId(id, sid);
+  return sid;
 }

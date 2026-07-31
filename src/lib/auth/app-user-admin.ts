@@ -5,6 +5,12 @@ import {
   supabaseUserToAppShape,
   type AppShapeUser,
 } from "@/lib/auth/supabase-user-app-shape";
+import {
+  getAuthAdminUserById,
+  invalidateAuthAdminUserCache,
+  setAuthAdminUserCache,
+  setCachedResolvedAuthUserId,
+} from "@/lib/auth/auth-admin-user-cache";
 import { resolveSupabaseAuthUserId } from "@/lib/auth/resolve-supabase-auth-user-id";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
@@ -69,13 +75,13 @@ function mergePrivateIntoUserMetadata(
 }
 
 async function loadSupabaseUserByExternalId(externalId: string): Promise<SupabaseAuthUser | null> {
-  const admin = getSupabaseAdmin();
-  if (!admin) return null;
   const uid = await resolveSupabaseAuthUserId(externalId);
   if (!uid) return null;
-  const { data, error } = await admin.auth.admin.getUserById(uid);
-  if (error || !data.user) return null;
-  return data.user;
+  const user = await getAuthAdminUserById(uid);
+  if (!user) return null;
+  // Alias the caller's id so repeat lookups skip resolve + Auth.
+  setCachedResolvedAuthUserId(externalId, user.id);
+  return user;
 }
 
 async function persistSupabaseUser(
@@ -90,7 +96,11 @@ async function persistSupabaseUser(
   const admin = getSupabaseAdmin();
   if (!admin) return null;
   const { data, error } = await admin.auth.admin.updateUserById(uid, patch);
-  if (error || !data.user) return null;
+  if (error || !data.user) {
+    invalidateAuthAdminUserCache(uid);
+    return null;
+  }
+  setAuthAdminUserCache(data.user);
   return data.user;
 }
 
@@ -197,6 +207,8 @@ export async function appUserAdmin() {
         const admin = getSupabaseAdmin();
         if (!admin) throw new Error("Supabase admin not configured");
         const { error } = await admin.auth.admin.deleteUser(uid);
+        invalidateAuthAdminUserCache(uid);
+        invalidateAuthAdminUserCache(userId);
         if (error) throw error;
       },
 
@@ -218,6 +230,8 @@ export async function appUserAdmin() {
         if (error || !data.user) {
           throw error ?? new Error("createUser failed");
         }
+        setAuthAdminUserCache(data.user);
+        setCachedResolvedAuthUserId(data.user.id, data.user.id);
         return supabaseUserToAppShape(data.user);
       },
 

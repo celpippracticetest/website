@@ -117,9 +117,11 @@ export async function GET(request: NextRequest) {
           groups: [] as any[],
         };
 
-        /** Supabase-backed admin bridge; `getUser` accepts legacy Clerk id or Supabase UUID. */
+        const { findLocalUserDisplays, formatLocalUserDisplayName } = await import(
+          "@/lib/users/localUserDisplay"
+        );
         const { appUserAdmin } = await import("@/lib/auth/app-user-admin");
-        const authAdmin = await appUserAdmin();
+        let authAdmin: Awaited<ReturnType<typeof appUserAdmin>> | null = null;
 
         for (const league of seasonLeagues) {
           const groupIds = Array.isArray(league.groups) ? league.groups : [];
@@ -134,9 +136,22 @@ export async function GET(request: NextRequest) {
                 ? group.users
                 : [];
 
+              const localMap = await findLocalUserDisplays(
+                groupUsers.map((u) => u.userId),
+              );
+
               const usersWithNames = await Promise.all(
                 groupUsers.map(async (user) => {
+                  const local = localMap.get(user.userId);
+                  if (local) {
+                    return {
+                      ...user,
+                      name: formatLocalUserDisplayName(local),
+                      email: local.email,
+                    };
+                  }
                   try {
+                    if (!authAdmin) authAdmin = await appUserAdmin();
                     const appUser = await authAdmin.users.getUser(user.userId);
                     return {
                       ...user,

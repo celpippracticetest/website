@@ -205,14 +205,24 @@ export async function GET() {
         return res;
       };
 
-      // Batch fetch auth users by IDs to avoid N calls
-      const idChunks = chunk(userIds, 50); // safe batch size
+      // Prefer local profiles/docs; Auth Admin only for remaining misses (cached).
+      const idChunks = chunk(userIds, 50);
       const userEmailMap = new Map<string, string | undefined>();
+      const { findLocalUserDisplays } = await import("@/lib/users/localUserDisplay");
 
       for (const ids of idChunks) {
         try {
+          const localMap = await findLocalUserDisplays(ids);
+          const missing: string[] = [];
+          for (const id of ids) {
+            const email = localMap.get(id)?.email?.trim();
+            if (email) userEmailMap.set(id, email);
+            else missing.push(id);
+          }
+          if (missing.length === 0) continue;
+
           const users = await Promise.all(
-            ids.map(async (id) => {
+            missing.map(async (id) => {
               try {
                 return await authAdmin.users.getUser(id);
               } catch {
@@ -227,6 +237,15 @@ export async function GET() {
               u.primaryEmailAddress?.emailAddress ||
               u.emailAddresses?.[0]?.emailAddress;
             if (uid) userEmailMap.set(uid, email);
+            // Also map by requested id when it differs from Auth UUID.
+          }
+          for (let i = 0; i < missing.length; i++) {
+            const u = users[i];
+            if (!u) continue;
+            const email =
+              u.primaryEmailAddress?.emailAddress ||
+              u.emailAddresses?.[0]?.emailAddress;
+            if (email) userEmailMap.set(missing[i], email);
           }
         } catch (_) {}
       }

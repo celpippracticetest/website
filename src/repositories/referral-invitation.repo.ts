@@ -197,18 +197,29 @@ export class ReferralInvitationRepository {
 
     const emails: string[] = [];
     try {
-      const { appUserAdmin } = await import("@/lib/auth/app-user-admin");
-      const authAdmin = await appUserAdmin();
-      const results = await Promise.all(
-        inviteeIds.map((id) =>
-          authAdmin.users
-            .getUser(id)
-            .then((u) => u?.emailAddresses?.[0]?.emailAddress)
-            .catch(() => undefined)
-        )
-      );
-      for (const e of results) {
-        if (typeof e === "string" && e.trim().length > 0) emails.push(e.trim());
+      const { findLocalUserDisplays } = await import("@/lib/users/localUserDisplay");
+      const localMap = await findLocalUserDisplays(inviteeIds);
+      const missing: string[] = [];
+      for (const id of inviteeIds) {
+        const email = localMap.get(id)?.email?.trim();
+        if (email) emails.push(email);
+        else missing.push(id);
+      }
+
+      if (missing.length > 0) {
+        const { appUserAdmin } = await import("@/lib/auth/app-user-admin");
+        const authAdmin = await appUserAdmin();
+        const results = await Promise.all(
+          missing.map((id) =>
+            authAdmin.users
+              .getUser(id)
+              .then((u) => u?.emailAddresses?.[0]?.emailAddress)
+              .catch(() => undefined)
+          )
+        );
+        for (const e of results) {
+          if (typeof e === "string" && e.trim().length > 0) emails.push(e.trim());
+        }
       }
     } catch {
       return [];

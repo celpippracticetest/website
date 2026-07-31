@@ -389,20 +389,11 @@ export class LeagueRepository {
     // Update user points from UserLeaguePoints collection and fetch user names
     const updatedUsers = [];
 
-    // OPTIMIZATION: Batch fetch user details from local DB to avoid N+1 Clerk calls
-    const userDetailsMap = new Map();
-    try {
-      const usersCollection = this.db.collection("users");
-      const localUsers = (
-        await Promise.all(userIds.map((uid) => usersCollection.findOne({ clerkUserId: uid })))
-      ).filter((u): u is NonNullable<typeof u> => u != null);
-
-      localUsers.forEach((u: any) => {
-        userDetailsMap.set(u.clerkUserId, u);
-      });
-    } catch (error) {
-      console.error("Error fetching local user details:", error);
-    }
+    // Batch display fields from profiles / local users — avoid Auth Admin N+1.
+    const { findLocalUserDisplays, formatLocalUserDisplayName } = await import(
+      "@/lib/users/localUserDisplay"
+    );
+    const userDetailsMap = await findLocalUserDisplays(userIds);
 
     for (const user of group.users) {
       const userPoints = userPointsMap.get(user.userId);
@@ -416,17 +407,14 @@ export class LeagueRepository {
         user.points = user.points || 0;
       }
 
-      // Fetch user name from local DB first, fallback to Clerk if missing
       const localUser = userDetailsMap.get(user.userId);
 
       if (localUser) {
-        user.name = localUser.firstName && localUser.lastName
-          ? `${localUser.firstName} ${localUser.lastName}`.trim()
-          : localUser.firstName || localUser.email?.split('@')[0] || 'User';
+        user.name = formatLocalUserDisplayName(localUser);
         user.email = localUser.email;
         user.avatar = localUser.imageUrl;
       } else {
-        // Fallback to Clerk only if not found locally (should be rare)
+        // Rare Auth Admin fallback (cached) when profile/docs are missing.
         try {
           const { appUserAdmin } = await import("@/lib/auth/app-user-admin");
           const client = await appUserAdmin();
@@ -437,15 +425,14 @@ export class LeagueRepository {
           user.email = clerkUser.emailAddresses[0]?.emailAddress;
           user.avatar = clerkUser.imageUrl;
         } catch (error: any) {
-          // Check for 404 status or specific error codes indicating resource not found
-          const isNotFound = 
-            error.status === 404 || 
+          const isNotFound =
+            error.status === 404 ||
             (error.errors && Array.isArray(error.errors) && error.errors.some((e: any) => e.code === 'resource_not_found'));
 
           if (!isNotFound) {
             console.error(`Error fetching user name for ${user.userId}:`, error.message || error);
           }
-          user.name = user.userId.slice(-8); // Fallback to last 8 chars of userId
+          user.name = user.userId.slice(-8);
           user.email = null;
           user.avatar = null;
         }
@@ -2024,7 +2011,13 @@ export class LeagueRepository {
         // Get user details from database
         const userDetails = await this.db
           .collection("users")
-          .findOne({ clerkUserId: sortedUsers[i].userId });
+          .findOne({
+            $or: [
+              { clerkUserId: sortedUsers[i].userId },
+              { supabaseUserId: sortedUsers[i].userId },
+              { sub: sortedUsers[i].userId },
+            ],
+          });
 
         eligibleWinners.push({
           userId: sortedUsers[i].userId,
@@ -2233,10 +2226,17 @@ export class LeagueRepository {
         }
       }
 
-      // Enrich with user details (name, avatar) for real users only
+      // Enrich from profiles / local docs first; Auth Admin only for misses (cached).
       const enrichedUsers = [];
-      const { appUserAdmin } = await import("@/lib/auth/app-user-admin");
-      const client = await appUserAdmin();
+      const realIds = topUsers
+        .filter((u: any) => !u.isFake)
+        .map((u: any) => u.userId as string);
+      const { findLocalUserDisplays, formatLocalUserDisplayName } = await import(
+        "@/lib/users/localUserDisplay"
+      );
+      const localMap = await findLocalUserDisplays(realIds);
+      let authAdmin: Awaited<ReturnType<typeof import("@/lib/auth/app-user-admin").appUserAdmin>> | null =
+        null;
 
       for (const u of topUsers) {
         if ((u as any).isFake) {
@@ -2244,9 +2244,23 @@ export class LeagueRepository {
           continue;
         }
 
+        const local = localMap.get(u.userId);
+        if (local) {
+          enrichedUsers.push({
+            ...u,
+            name: formatLocalUserDisplayName(local),
+            avatar: local.imageUrl || null,
+            email: null,
+          });
+          continue;
+        }
+
         try {
-          const clerkUser = await client.users.getUser(u.userId);
-          // Use full name (firstName + lastName), fallback to firstName, then "User"
+          if (!authAdmin) {
+            const { appUserAdmin } = await import("@/lib/auth/app-user-admin");
+            authAdmin = await appUserAdmin();
+          }
+          const clerkUser = await authAdmin.users.getUser(u.userId);
           let displayName = "User";
           if (clerkUser.firstName && clerkUser.lastName) {
             displayName = `${clerkUser.firstName} ${clerkUser.lastName}`;
@@ -2258,14 +2272,14 @@ export class LeagueRepository {
             ...u,
             name: displayName,
             avatar: clerkUser.imageUrl || null,
-            email: null // Never expose email
+            email: null,
           });
-        } catch (e) {
+        } catch {
           enrichedUsers.push({
             ...u,
             name: "User",
             avatar: null,
-            email: null
+            email: null,
           });
         }
       }

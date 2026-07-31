@@ -130,21 +130,29 @@ export async function applyVerifiedMobileSubscriptionPlan(args: {
       throw new Error("Supabase admin client is not configured.");
     }
 
-    const { data: existing, error: getErr } = await admin.auth.admin.getUserById(
-      supabaseAdminTarget
-    );
-    if (getErr || !existing.user) {
-      throw new Error(getErr?.message || "Supabase user not found.");
+    const { getAuthAdminUserById, setAuthAdminUserCache, invalidateAuthAdminUserCache } =
+      await import("@/lib/auth/auth-admin-user-cache");
+    const existingUser = await getAuthAdminUserById(supabaseAdminTarget);
+    if (!existingUser) {
+      throw new Error("Supabase user not found.");
     }
 
-    const currentApp = (existing.user.app_metadata ?? {}) as Record<string, unknown>;
-    await admin.auth.admin.updateUserById(supabaseAdminTarget, {
-      app_metadata: {
-        ...currentApp,
-        plan,
-        planSource: args.platform,
+    const currentApp = (existingUser.app_metadata ?? {}) as Record<string, unknown>;
+    const { data: updated, error: upErr } = await admin.auth.admin.updateUserById(
+      supabaseAdminTarget,
+      {
+        app_metadata: {
+          ...currentApp,
+          plan,
+          planSource: args.platform,
+        },
       },
-    });
+    );
+    if (upErr || !updated.user) {
+      invalidateAuthAdminUserCache(supabaseAdminTarget);
+      throw new Error(upErr?.message || "Failed to update Supabase user plan.");
+    }
+    setAuthAdminUserCache(updated.user);
 
     if (
       args.platform === "google_play" &&
