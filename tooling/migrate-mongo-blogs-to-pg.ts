@@ -62,7 +62,22 @@ function parseDate(v: unknown): Date | null {
 function mongoIdHex(doc: Document): string | null {
   const id = doc._id;
   if (id instanceof ObjectId) return id.toHexString();
+  // After bson@7 conversion, `_id` may not pass `instanceof` against mongodb's ObjectId.
+  if (
+    id &&
+    typeof id === "object" &&
+    typeof (id as { toHexString?: unknown }).toHexString === "function"
+  ) {
+    try {
+      const hex = (id as { toHexString: () => string }).toHexString();
+      if (/^[a-f0-9]{24}$/i.test(hex)) return hex.toLowerCase();
+    } catch {
+      // fall through
+    }
+  }
   if (typeof id === "string" && /^[a-f0-9]{24}$/i.test(id)) return id.toLowerCase();
+  const asString = id != null ? String(id) : "";
+  if (/^[a-f0-9]{24}$/i.test(asString)) return asString.toLowerCase();
   return null;
 }
 
@@ -159,8 +174,8 @@ async function upsertBlogRow(
       content_json = ${p.contentJson != null ? sql.json(p.contentJson as postgres.JSONValue) : null},
       status = ${p.status},
       author_name = ${p.authorName},
-      categories = ${sql.array(p.categories, "text")},
-      tags = ${sql.array(p.tags, "text")},
+      categories = ${p.categories}::text[],
+      tags = ${p.tags}::text[],
       featured_image = ${p.featuredImage != null ? sql.json(p.featuredImage as postgres.JSONValue) : null},
       faq = ${sql.json(p.faq as postgres.JSONValue)},
       ai_snippet = ${p.aiSnippet != null ? sql.json(p.aiSnippet as postgres.JSONValue) : null},
@@ -199,8 +214,8 @@ async function upsertBlogRow(
       ${p.contentJson != null ? sql.json(p.contentJson as postgres.JSONValue) : null},
       ${p.status},
       ${p.authorName},
-      ${sql.array(p.categories, "text")},
-      ${sql.array(p.tags, "text")},
+      ${p.categories}::text[],
+      ${p.tags}::text[],
       ${p.featuredImage != null ? sql.json(p.featuredImage as postgres.JSONValue) : null},
       ${sql.json(p.faq as postgres.JSONValue)},
       ${p.aiSnippet != null ? sql.json(p.aiSnippet as postgres.JSONValue) : null},

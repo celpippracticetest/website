@@ -31,17 +31,35 @@ export class NpsRepository {
     return this.getCollection().find({ userId }).sort({ createdAt: -1 }).toArray();
   }
 
-  async getAllPaginated(page: number, limit: number): Promise<TNpsResponse[]> {
+  async getAllPaginated(
+    page: number,
+    limit: number,
+    filter: { trigger?: TNpsResponse["trigger"] } = {},
+  ): Promise<(TNpsResponse & { _id?: unknown })[]> {
     const skip = (page - 1) * limit;
+    const query: Record<string, unknown> = {};
+    if (filter.trigger) query.trigger = filter.trigger;
     return this.getCollection()
-      .find({})
+      .find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .toArray();
   }
 
-  async count(): Promise<number> {
-    return this.getCollection().countDocuments();
+  async getAll(
+    filter: { trigger?: TNpsResponse["trigger"] } = {},
+  ): Promise<TNpsResponse[]> {
+    const query: Record<string, unknown> = {};
+    if (filter.trigger) query.trigger = filter.trigger;
+    return this.getCollection().find(query).sort({ createdAt: -1 }).toArray();
+  }
+
+  async count(
+    filter: { trigger?: TNpsResponse["trigger"] } = {},
+  ): Promise<number> {
+    const query: Record<string, unknown> = {};
+    if (filter.trigger) query.trigger = filter.trigger;
+    return this.getCollection().countDocuments(query);
   }
 }
