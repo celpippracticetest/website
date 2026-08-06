@@ -371,15 +371,30 @@ export async function listAdminUsersFromUserProfiles(
     )`;
   }
 
+  // Multiple user_profiles can share the same legacy_clerk_user_id (or otherwise
+  // collapse to one stable_id). Dedupe before count/pagination so React keys stay unique.
   const countRows = await sql<{ c: number }[]>`
     WITH combined AS (
       ${sql.unsafe(COMBINED_ADMIN_USERS_SQL)}
+    ),
+    filtered AS (
+      SELECT c.*
+      FROM combined c
+      WHERE 1 = 1
+      ${subFilter}
+      ${searchFilter}
+    ),
+    deduped AS (
+      SELECT DISTINCT ON (stable_id)
+        stable_id
+      FROM filtered
+      ORDER BY
+        stable_id,
+        (supabase_auth_user_id IS NOT NULL) DESC,
+        updated_at DESC NULLS LAST
     )
     SELECT COUNT(*)::int AS c
-    FROM combined c
-    WHERE 1 = 1
-    ${subFilter}
-    ${searchFilter}
+    FROM deduped
   `;
   const totalCount = countRows[0]?.c ?? 0;
 
@@ -407,6 +422,26 @@ export async function listAdminUsersFromUserProfiles(
           ${subFilter}
           ${searchFilter}
         ),
+        deduped AS (
+          SELECT DISTINCT ON (stable_id)
+            stable_id,
+            supabase_auth_user_id,
+            legacy_clerk_user_id,
+            email,
+            first_name,
+            last_name,
+            plan,
+            plan_type,
+            public_metadata,
+            stripe_customer_id,
+            created_at,
+            updated_at
+          FROM filtered
+          ORDER BY
+            stable_id,
+            (supabase_auth_user_id IS NOT NULL) DESC,
+            updated_at DESC NULLS LAST
+        ),
         activity_by_id AS (
           SELECT
             ua.user_id,
@@ -419,12 +454,12 @@ export async function listAdminUsersFromUserProfiles(
             MAX(ua.timestamp_utc) AS last_activity
           FROM public.user_activities ua
           WHERE ua.user_id IN (
-            SELECT f.stable_id FROM filtered f
+            SELECT f.stable_id FROM deduped f
             UNION
-            SELECT f.supabase_auth_user_id FROM filtered f
+            SELECT f.supabase_auth_user_id FROM deduped f
             WHERE f.supabase_auth_user_id IS NOT NULL
             UNION
-            SELECT f.legacy_clerk_user_id FROM filtered f
+            SELECT f.legacy_clerk_user_id FROM deduped f
             WHERE NULLIF(TRIM(f.legacy_clerk_user_id), '') IS NOT NULL
           )
           GROUP BY ua.user_id
@@ -474,7 +509,7 @@ export async function listAdminUsersFromUserProfiles(
             ),
             f.updated_at
           ) AS sort_last_activity
-        FROM filtered f
+        FROM deduped f
         ORDER BY ${sql.unsafe(order)}
         LIMIT ${limit}
         OFFSET ${offset}
@@ -482,29 +517,64 @@ export async function listAdminUsersFromUserProfiles(
     : await sql<ProfileListRow[]>`
         WITH combined AS (
           ${sql.unsafe(COMBINED_ADMIN_USERS_SQL)}
+        ),
+        filtered AS (
+          SELECT
+            c.stable_id,
+            c.supabase_auth_user_id,
+            c.legacy_clerk_user_id,
+            c.email,
+            c.first_name,
+            c.last_name,
+            c.plan,
+            c.plan_type,
+            c.public_metadata,
+            c.stripe_customer_id,
+            c.created_at,
+            c.updated_at
+          FROM combined c
+          WHERE 1 = 1
+          ${subFilter}
+          ${searchFilter}
+        ),
+        deduped AS (
+          SELECT DISTINCT ON (stable_id)
+            stable_id,
+            supabase_auth_user_id,
+            legacy_clerk_user_id,
+            email,
+            first_name,
+            last_name,
+            plan,
+            plan_type,
+            public_metadata,
+            stripe_customer_id,
+            created_at,
+            updated_at
+          FROM filtered
+          ORDER BY
+            stable_id,
+            (supabase_auth_user_id IS NOT NULL) DESC,
+            updated_at DESC NULLS LAST
         )
         SELECT
-          c.stable_id,
-          c.supabase_auth_user_id,
-          c.legacy_clerk_user_id,
-          c.email,
-          c.first_name,
-          c.last_name,
-          c.plan,
-          c.plan_type,
-          c.public_metadata,
-          c.stripe_customer_id,
-          c.created_at,
-          c.updated_at
-        FROM combined c
-        WHERE 1 = 1
-        ${subFilter}
-        ${searchFilter}
+          f.stable_id,
+          f.supabase_auth_user_id,
+          f.legacy_clerk_user_id,
+          f.email,
+          f.first_name,
+          f.last_name,
+          f.plan,
+          f.plan_type,
+          f.public_metadata,
+          f.stripe_customer_id,
+          f.created_at,
+          f.updated_at
+        FROM deduped f
         ORDER BY ${sql.unsafe(order)}
         LIMIT ${limit}
         OFFSET ${offset}
       `;
-
   const activityIdCandidates = dataRows.flatMap((r) => [
     r.stable_id,
     r.supabase_auth_user_id,
@@ -745,11 +815,37 @@ export async function listAdminUsersFromUsersDocuments(
     };
   });
 
+  // Collapse docs that resolve to the same canonical user id (e.g. clerk + supabase copies).
+  const dedupedMapped = (() => {
+    const byId = new Map<string, (typeof mapped)[number]>();
+    for (const row of mapped) {
+      const prev = byId.get(row._id);
+      if (!prev) {
+        byId.set(row._id, row);
+        continue;
+      }
+      const prevTs = prev.lastActivity?.getTime?.() ?? 0;
+      const nextTs = row.lastActivity?.getTime?.() ?? 0;
+      if (nextTs >= prevTs) {
+        byId.set(row._id, {
+          ...row,
+          activityIds: uniqueNonEmpty([...prev.activityIds, ...row.activityIds]),
+        });
+      } else {
+        byId.set(row._id, {
+          ...prev,
+          activityIds: uniqueNonEmpty([...prev.activityIds, ...row.activityIds]),
+        });
+      }
+    }
+    return [...byId.values()];
+  })();
+
   let activityByUserId = new Map<string, ActivityMetrics>();
   try {
     activityByUserId = await loadActivityMetricsByUserId(
       sql,
-      mapped.flatMap((r) => r.activityIds)
+      dedupedMapped.flatMap((r) => r.activityIds)
     );
   } catch (e) {
     console.warn(
@@ -758,7 +854,7 @@ export async function listAdminUsersFromUsersDocuments(
     );
   }
 
-  const rows = mapped.map(({ activityIds, ...r }) => {
+  const rows = dedupedMapped.map(({ activityIds, ...r }) => {
     const activity = mergeActivityMetrics(activityIds, activityByUserId);
     return {
       ...r,

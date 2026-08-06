@@ -168,7 +168,14 @@ export default function UsersPage() {
       if (response.ok) {
         const data: UsersResponse = await response.json();
 
-        setUsers(data.users);
+        // Guard against duplicate userIds (duplicate profile rows) breaking React keys.
+        const seen = new Set<string>();
+        const uniqueUsers = data.users.filter((u) => {
+          if (!u.userId || seen.has(u.userId)) return false;
+          seen.add(u.userId);
+          return true;
+        });
+        setUsers(uniqueUsers);
         setPagination(data.pagination);
       }
     } catch (error) {
