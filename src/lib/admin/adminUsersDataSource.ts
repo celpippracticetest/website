@@ -7,6 +7,7 @@ import {
   normalizePlan,
 } from "@/lib/subscriptionAccess";
 import { loadUserActivityMetricsByUserId } from "@/lib/userActivity/userActivitiesPg";
+import { getLiveStripeActiveSubscriberKeys } from "@/lib/admin/liveStripeActiveSubscribers";
 
 /** Keep paid plan tokens as stored; everything else → free for admin list. */
 function normalizeAdminListPlan(planRaw: unknown): string {
@@ -16,7 +17,7 @@ function normalizeAdminListPlan(planRaw: unknown): string {
   return "free";
 }
 
-const ADMIN_USERS_PAGE_SIZE_MAX = 100;
+const ADMIN_USERS_PAGE_SIZE_MAX = 50;
 
 /** Default page size for admin user list (Supabase / SQL paginated paths). */
 export function defaultAdminUsersPageLimit(): number {
@@ -25,7 +26,7 @@ export function defaultAdminUsersPageLimit(): number {
     const n = Number(raw);
     if (Number.isFinite(n) && n >= 1) return Math.min(ADMIN_USERS_PAGE_SIZE_MAX, Math.floor(n));
   }
-  return 50;
+  return 20;
 }
 
 export function normalizeAdminUsersPageLimit(raw: string | null): number {
@@ -60,6 +61,7 @@ type ProfileListRow = {
   plan: string | null;
   plan_type: string | null;
   public_metadata: Record<string, unknown> | null;
+  stripe_customer_id: string | null;
   created_at: Date;
   updated_at: Date;
 };
@@ -174,8 +176,33 @@ function mergeActivityMetrics(
   return merged;
 }
 
-function orderByCombinedSql(sortBy: string, sortOrder: "asc" | "desc"): string {
+function orderByCombinedSql(
+  sortBy: string,
+  sortOrder: "asc" | "desc",
+  withActivityMetrics: boolean
+): string {
   const dir = sortOrder === "asc" ? "ASC" : "DESC";
+  if (withActivityMetrics) {
+    switch (sortBy) {
+      case "createdAt":
+        return `created_at ${dir} NULLS LAST, stable_id`;
+      case "totalTokens":
+        return `sort_total_tokens ${dir} NULLS LAST, stable_id`;
+      case "plan":
+        return `lower(trim(coalesce(plan, ''))) ${dir} NULLS LAST, stable_id`;
+      case "totalSpend": {
+        const spendExpr =
+          "NULLIF(TRIM(COALESCE(public_metadata->>'totalSpend', '')), '')::numeric";
+        return `${spendExpr} ${dir} NULLS LAST, stable_id`;
+      }
+      case "totalActivities":
+      case "riskScore":
+      case "lastActivity":
+      default:
+        return `sort_last_activity ${dir} NULLS LAST, stable_id`;
+    }
+  }
+
   switch (sortBy) {
     case "createdAt":
       return `created_at ${dir} NULLS LAST, stable_id`;
@@ -186,13 +213,19 @@ function orderByCombinedSql(sortBy: string, sortOrder: "asc" | "desc"): string {
         "NULLIF(TRIM(COALESCE(public_metadata->>'totalSpend', '')), '')::numeric";
       return `${spendExpr} ${dir} NULLS LAST, stable_id`;
     }
+    case "totalTokens":
     case "totalActivities":
     case "riskScore":
-      return `updated_at ${dir} NULLS LAST, stable_id`;
     case "lastActivity":
     default:
       return `updated_at ${dir} NULLS LAST, stable_id`;
   }
+}
+
+function needsActivitySortMetrics(sortBy: string): boolean {
+  // Only token sort needs a full-table activity rollup before LIMIT.
+  // lastActivity uses profile updated_at for ORDER BY, then page-scoped metrics.
+  return sortBy === "totalTokens";
 }
 
 /** Profiles + auth.users that never got a user_profiles row. */
@@ -211,7 +244,8 @@ const COMBINED_ADMIN_USERS_SQL = `
     p.plan,
     p.plan_type,
     COALESCE(p.public_metadata, '{}'::jsonb) AS public_metadata,
-    COALESCE(p.created_at, au.created_at) AS created_at,
+    NULLIF(TRIM(p.stripe_customer_id), '') AS stripe_customer_id,
+    COALESCE(au.created_at, p.created_at) AS created_at,
     COALESCE(p.updated_at, au.last_sign_in_at, au.created_at) AS updated_at
   FROM public.user_profiles p
   LEFT JOIN auth.users au ON au.id = p.supabase_auth_user_id
@@ -242,9 +276,10 @@ const COMBINED_ADMIN_USERS_SQL = `
       ),
       ''
     ) AS last_name,
-    NULL::text AS plan,
-    NULL::text AS plan_type,
-    '{}'::jsonb AS public_metadata,
+    COALESCE(NULLIF(TRIM(au.raw_app_meta_data->>'plan'), ''), 'free') AS plan,
+    NULLIF(TRIM(au.raw_app_meta_data->>'planType'), '') AS plan_type,
+    COALESCE(au.raw_app_meta_data, '{}'::jsonb) AS public_metadata,
+    NULLIF(TRIM(au.raw_app_meta_data->>'stripeCustomerId'), '') AS stripe_customer_id,
     au.created_at,
     COALESCE(au.last_sign_in_at, au.created_at) AS updated_at
   FROM auth.users au
@@ -270,17 +305,57 @@ export async function listAdminUsersFromUserProfiles(
   const { search, page, limit, sortBy, sortOrder, subscriptionStatus } = params;
   const offset = (page - 1) * limit;
   const q = search.trim();
-  const order = orderByCombinedSql(sortBy, sortOrder);
+  const withActivityMetrics = needsActivitySortMetrics(sortBy);
+  const order = orderByCombinedSql(sortBy, sortOrder, withActivityMetrics);
 
   let subFilter = sql``;
-  if (subscriptionStatus === "active") {
-    subFilter = sql`AND lower(trim(coalesce(c.plan, ''))) IN ('plus', 'premium', 'pro', 'enterprise')`;
-  } else if (subscriptionStatus === "never") {
+  if (
+    subscriptionStatus === "active" ||
+    subscriptionStatus === "stripe_active" ||
+    subscriptionStatus === "plans"
+  ) {
+    // Live Stripe active/trialing — matches Dashboard subscriber count.
+    const keys = await getLiveStripeActiveSubscriberKeys();
+    const customerIds = keys.customerIds;
+    const userIds = keys.userIds;
+    if (customerIds.length === 0 && userIds.length === 0) {
+      subFilter = sql`AND FALSE`;
+    } else {
+      subFilter = sql`AND (
+        (c.stripe_customer_id IS NOT NULL AND c.stripe_customer_id = ANY(${customerIds}))
+        OR (c.supabase_auth_user_id IS NOT NULL AND c.supabase_auth_user_id = ANY(${userIds}))
+        OR (NULLIF(TRIM(c.legacy_clerk_user_id), '') IS NOT NULL AND c.legacy_clerk_user_id = ANY(${userIds}))
+        OR c.stable_id = ANY(${userIds})
+      )`;
+    }
+  } else if (subscriptionStatus === "app_paid") {
+    // App entitlement paid (comps, PayPal, stale plus, etc.) — not Stripe Dashboard.
+    subFilter = sql`AND lower(trim(coalesce(c.plan, ''))) IN ('plus', 'premium', 'pro', 'enterprise')
+      AND coalesce(c.public_metadata->>'planCancelled', 'false') <> 'true'`;
+  } else if (subscriptionStatus === "never" || subscriptionStatus === "free") {
     subFilter = sql`AND lower(trim(coalesce(c.plan, ''))) NOT IN ('plus', 'premium', 'pro', 'enterprise')
-      AND (c.public_metadata->>'purchaseDate') IS NULL`;
-  } else if (subscriptionStatus === "unsubscribed") {
-    subFilter = sql`AND lower(trim(coalesce(c.plan, ''))) NOT IN ('plus', 'premium', 'pro', 'enterprise')
-      AND (c.public_metadata->>'purchaseDate') IS NOT NULL`;
+      AND (c.public_metadata->>'purchaseDate') IS NULL
+      AND coalesce(c.public_metadata->>'planCancelled', 'false') <> 'true'`;
+  } else if (
+    subscriptionStatus === "canceled" ||
+    subscriptionStatus === "cancelled" ||
+    subscriptionStatus === "unsubscribed"
+  ) {
+    // Canceling (paid + planCancelled) or fully unsubscribed
+    subFilter = sql`AND (
+      (
+        lower(trim(coalesce(c.plan, ''))) IN ('plus', 'premium', 'pro', 'enterprise')
+        AND coalesce(c.public_metadata->>'planCancelled', 'false') = 'true'
+      )
+      OR (
+        lower(trim(coalesce(c.plan, ''))) NOT IN ('plus', 'premium', 'pro', 'enterprise')
+        AND (
+          (c.public_metadata->>'purchaseDate') IS NOT NULL
+          OR coalesce(c.public_metadata->>'planCancelled', 'false') = 'true'
+          OR NULLIF(TRIM(COALESCE(c.public_metadata->>'totalSpend', '')), '') IS NOT NULL
+        )
+      )
+    )`;
   }
 
   let searchFilter = sql``;
@@ -308,30 +383,127 @@ export async function listAdminUsersFromUserProfiles(
   `;
   const totalCount = countRows[0]?.c ?? 0;
 
-  const dataRows = await sql<ProfileListRow[]>`
-    WITH combined AS (
-      ${sql.unsafe(COMBINED_ADMIN_USERS_SQL)}
-    )
-    SELECT
-      c.stable_id,
-      c.supabase_auth_user_id,
-      c.legacy_clerk_user_id,
-      c.email,
-      c.first_name,
-      c.last_name,
-      c.plan,
-      c.plan_type,
-      c.public_metadata,
-      c.created_at,
-      c.updated_at
-    FROM combined c
-    WHERE 1 = 1
-    ${subFilter}
-    ${searchFilter}
-    ORDER BY ${sql.unsafe(order)}
-    LIMIT ${limit}
-    OFFSET ${offset}
-  `;
+  const dataRows = withActivityMetrics
+    ? await sql<ProfileListRow[]>`
+        WITH combined AS (
+          ${sql.unsafe(COMBINED_ADMIN_USERS_SQL)}
+        ),
+        filtered AS (
+          SELECT
+            c.stable_id,
+            c.supabase_auth_user_id,
+            c.legacy_clerk_user_id,
+            c.email,
+            c.first_name,
+            c.last_name,
+            c.plan,
+            c.plan_type,
+            c.public_metadata,
+            c.stripe_customer_id,
+            c.created_at,
+            c.updated_at
+          FROM combined c
+          WHERE 1 = 1
+          ${subFilter}
+          ${searchFilter}
+        ),
+        activity_by_id AS (
+          SELECT
+            ua.user_id,
+            COALESCE(
+              SUM(
+                COALESCE(ua.llm_tokens_prompt, 0) + COALESCE(ua.llm_tokens_completion, 0)
+              ),
+              0
+            )::bigint AS total_tokens,
+            MAX(ua.timestamp_utc) AS last_activity
+          FROM public.user_activities ua
+          WHERE ua.user_id IN (
+            SELECT f.stable_id FROM filtered f
+            UNION
+            SELECT f.supabase_auth_user_id FROM filtered f
+            WHERE f.supabase_auth_user_id IS NOT NULL
+            UNION
+            SELECT f.legacy_clerk_user_id FROM filtered f
+            WHERE NULLIF(TRIM(f.legacy_clerk_user_id), '') IS NOT NULL
+          )
+          GROUP BY ua.user_id
+        )
+        SELECT
+          f.stable_id,
+          f.supabase_auth_user_id,
+          f.legacy_clerk_user_id,
+          f.email,
+          f.first_name,
+          f.last_name,
+          f.plan,
+          f.plan_type,
+          f.public_metadata,
+          f.stripe_customer_id,
+          f.created_at,
+          f.updated_at,
+          COALESCE(
+            (
+              SELECT SUM(a.total_tokens)
+              FROM activity_by_id a
+              WHERE a.user_id = f.stable_id
+                 OR (
+                   f.supabase_auth_user_id IS NOT NULL
+                   AND a.user_id = f.supabase_auth_user_id
+                 )
+                 OR (
+                   NULLIF(TRIM(f.legacy_clerk_user_id), '') IS NOT NULL
+                   AND a.user_id = f.legacy_clerk_user_id
+                 )
+            ),
+            0
+          ) AS sort_total_tokens,
+          COALESCE(
+            (
+              SELECT MAX(a.last_activity)
+              FROM activity_by_id a
+              WHERE a.user_id = f.stable_id
+                 OR (
+                   f.supabase_auth_user_id IS NOT NULL
+                   AND a.user_id = f.supabase_auth_user_id
+                 )
+                 OR (
+                   NULLIF(TRIM(f.legacy_clerk_user_id), '') IS NOT NULL
+                   AND a.user_id = f.legacy_clerk_user_id
+                 )
+            ),
+            f.updated_at
+          ) AS sort_last_activity
+        FROM filtered f
+        ORDER BY ${sql.unsafe(order)}
+        LIMIT ${limit}
+        OFFSET ${offset}
+      `
+    : await sql<ProfileListRow[]>`
+        WITH combined AS (
+          ${sql.unsafe(COMBINED_ADMIN_USERS_SQL)}
+        )
+        SELECT
+          c.stable_id,
+          c.supabase_auth_user_id,
+          c.legacy_clerk_user_id,
+          c.email,
+          c.first_name,
+          c.last_name,
+          c.plan,
+          c.plan_type,
+          c.public_metadata,
+          c.stripe_customer_id,
+          c.created_at,
+          c.updated_at
+        FROM combined c
+        WHERE 1 = 1
+        ${subFilter}
+        ${searchFilter}
+        ORDER BY ${sql.unsafe(order)}
+        LIMIT ${limit}
+        OFFSET ${offset}
+      `;
 
   const activityIdCandidates = dataRows.flatMap((r) => [
     r.stable_id,
@@ -358,6 +530,10 @@ export async function listAdminUsersFromUserProfiles(
       [r.stable_id, r.supabase_auth_user_id, r.legacy_clerk_user_id],
       activityByUserId
     );
+    const stripeActiveFilter =
+      subscriptionStatus === "active" ||
+      subscriptionStatus === "stripe_active" ||
+      subscriptionStatus === "plans";
     return {
       _id: r.stable_id,
       email: r.email ?? null,
@@ -388,7 +564,11 @@ export async function listAdminUsersFromUserProfiles(
       utm_campaign: (meta.utm_campaign as string | undefined) ?? null,
       gclid: (meta.gclid as string | undefined) ?? null,
       planCancelled: Boolean(meta.planCancelled),
+      planExpiresAt: meta.planExpiresAt ?? null,
+      publicMetadataPlanExpiresAt: meta.planExpiresAt ?? null,
       publicMetadataPurchaseDate: meta.purchaseDate ?? null,
+      stripeCustomerId: r.stripe_customer_id ?? null,
+      stripeSubscriptionActive: stripeActiveFilter,
       subscriptionStartDate: null,
       subscriptionEndDate: null,
       subscriptionDurationDays: null,
@@ -417,6 +597,7 @@ function orderByUsersDocSql(sortBy: string, sortOrder: "asc" | "desc"): string {
         "NULLIF(TRIM(COALESCE(d.body#>>'{publicMetadata,totalSpend}', '')), '')::numeric";
       return `${spend} ${dir} NULLS LAST, d.mongo_id`;
     }
+    case "totalTokens":
     case "totalActivities":
     case "riskScore":
     case "lastActivity":
@@ -439,14 +620,51 @@ export async function listAdminUsersFromUsersDocuments(
   const order = orderByUsersDocSql(sortBy, sortOrder);
 
   let subFilter = sql``;
-  if (subscriptionStatus === "active") {
-    subFilter = sql`AND lower(trim(coalesce(d.body->>'plan', ''))) IN ('plus', 'premium', 'pro', 'enterprise')`;
-  } else if (subscriptionStatus === "never") {
+  if (
+    subscriptionStatus === "active" ||
+    subscriptionStatus === "stripe_active" ||
+    subscriptionStatus === "plans"
+  ) {
+    const keys = await getLiveStripeActiveSubscriberKeys();
+    const customerIds = keys.customerIds;
+    const userIds = keys.userIds;
+    if (customerIds.length === 0 && userIds.length === 0) {
+      subFilter = sql`AND FALSE`;
+    } else {
+      subFilter = sql`AND (
+        NULLIF(TRIM(COALESCE(d.body->>'stripeCustomerId', d.body#>>'{privateMetadata,stripeCustomerId}', '')), '') = ANY(${customerIds})
+        OR d.mongo_id = ANY(${userIds})
+        OR NULLIF(TRIM(COALESCE(d.body->>'supabaseUserId', '')), '') = ANY(${userIds})
+        OR NULLIF(TRIM(COALESCE(d.body->>'clerkUserId', '')), '') = ANY(${userIds})
+        OR NULLIF(TRIM(COALESCE(d.body->>'sub', '')), '') = ANY(${userIds})
+      )`;
+    }
+  } else if (subscriptionStatus === "app_paid") {
+    subFilter = sql`AND lower(trim(coalesce(d.body->>'plan', ''))) IN ('plus', 'premium', 'pro', 'enterprise')
+      AND coalesce(d.body#>>'{publicMetadata,planCancelled}', 'false') <> 'true'`;
+  } else if (subscriptionStatus === "never" || subscriptionStatus === "free") {
     subFilter = sql`AND lower(trim(coalesce(d.body->>'plan', ''))) NOT IN ('plus', 'premium', 'pro', 'enterprise')
-      AND (d.body#>>'{publicMetadata,purchaseDate}') IS NULL`;
-  } else if (subscriptionStatus === "unsubscribed") {
-    subFilter = sql`AND lower(trim(coalesce(d.body->>'plan', ''))) NOT IN ('plus', 'premium', 'pro', 'enterprise')
-      AND (d.body#>>'{publicMetadata,purchaseDate}') IS NOT NULL`;
+      AND (d.body#>>'{publicMetadata,purchaseDate}') IS NULL
+      AND coalesce(d.body#>>'{publicMetadata,planCancelled}', 'false') <> 'true'`;
+  } else if (
+    subscriptionStatus === "canceled" ||
+    subscriptionStatus === "cancelled" ||
+    subscriptionStatus === "unsubscribed"
+  ) {
+    subFilter = sql`AND (
+      (
+        lower(trim(coalesce(d.body->>'plan', ''))) IN ('plus', 'premium', 'pro', 'enterprise')
+        AND coalesce(d.body#>>'{publicMetadata,planCancelled}', 'false') = 'true'
+      )
+      OR (
+        lower(trim(coalesce(d.body->>'plan', ''))) NOT IN ('plus', 'premium', 'pro', 'enterprise')
+        AND (
+          (d.body#>>'{publicMetadata,purchaseDate}') IS NOT NULL
+          OR coalesce(d.body#>>'{publicMetadata,planCancelled}', 'false') = 'true'
+          OR NULLIF(TRIM(COALESCE(d.body#>>'{publicMetadata,totalSpend}', '')), '') IS NOT NULL
+        )
+      )
+    )`;
   }
 
   let searchFilter = sql``;
@@ -517,6 +735,8 @@ export async function listAdminUsersFromUsersDocuments(
       utm_campaign: (meta.utm_campaign as string | undefined) ?? null,
       gclid: (meta.gclid as string | undefined) ?? null,
       planCancelled: Boolean(meta.planCancelled),
+      planExpiresAt: meta.planExpiresAt ?? null,
+      publicMetadataPlanExpiresAt: meta.planExpiresAt ?? null,
       publicMetadataPurchaseDate: meta.purchaseDate ?? null,
       subscriptionStartDate: b.subscriptionStartDate ?? null,
       subscriptionEndDate: b.subscriptionEndDate ?? null,

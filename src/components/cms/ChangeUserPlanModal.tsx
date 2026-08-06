@@ -30,6 +30,8 @@ type PlanContext = {
   plans: PlanOption[];
 };
 
+type ChangeMode = "stripe" | "entitlements_only";
+
 type Props = {
   userId: string;
   userLabel?: string;
@@ -53,6 +55,7 @@ export default function ChangeUserPlanModal({
   const [target, setTarget] = useState("free");
   const [timing, setTiming] = useState<"immediate" | "period_end">("immediate");
   const [refundLatestPayment, setRefundLatestPayment] = useState(false);
+  const [mode, setMode] = useState<ChangeMode>("entitlements_only");
 
   useEffect(() => {
     if (!open) return;
@@ -64,6 +67,7 @@ export default function ChangeUserPlanModal({
       setRefundLatestPayment(false);
       setTiming("immediate");
       setTarget("free");
+      setMode("entitlements_only");
       try {
         const res = await fetch(
           `/api/admin/users/${encodeURIComponent(userId)}/plan`,
@@ -74,12 +78,6 @@ export default function ChangeUserPlanModal({
         }
         if (!cancelled) {
           setContext(data as PlanContext);
-          const firstPaid = (data.plans as PlanOption[]).find(
-            (p) => p.isActive && p.stripePriceId,
-          );
-          if (firstPaid) {
-            // keep default free — CSM often downgrades
-          }
         }
       } catch (err) {
         if (!cancelled) {
@@ -121,8 +119,10 @@ export default function ChangeUserPlanModal({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             target,
-            timing,
-            refundLatestPayment,
+            timing: mode === "entitlements_only" ? "immediate" : timing,
+            refundLatestPayment:
+              mode === "entitlements_only" ? false : refundLatestPayment,
+            mode,
           }),
         },
       );
@@ -142,8 +142,10 @@ export default function ChangeUserPlanModal({
     }
   };
 
-  const paidPlans =
-    context?.plans.filter((p) => p.isActive && p.stripePriceId) || [];
+  const entitlementsOnly = mode === "entitlements_only";
+  const paidPlans = entitlementsOnly
+    ? context?.plans.filter((p) => p.isActive) || []
+    : context?.plans.filter((p) => p.isActive && p.stripePriceId) || [];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -188,6 +190,49 @@ export default function ChangeUserPlanModal({
 
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Apply to
+                </label>
+                <div className="space-y-2">
+                  <label className="flex cursor-pointer items-start gap-2 text-sm text-gray-800">
+                    <input
+                      type="radio"
+                      name="mode"
+                      checked={entitlementsOnly}
+                      onChange={() => {
+                        setMode("entitlements_only");
+                        setTiming("immediate");
+                        setRefundLatestPayment(false);
+                      }}
+                      className="mt-1"
+                    />
+                    <span>
+                      <span className="font-medium">App access only</span>
+                      <span className="block text-xs text-gray-500">
+                        Update plan in the app. Does not change Stripe billing.
+                      </span>
+                    </span>
+                  </label>
+                  <label className="flex cursor-pointer items-start gap-2 text-sm text-gray-800">
+                    <input
+                      type="radio"
+                      name="mode"
+                      checked={!entitlementsOnly}
+                      onChange={() => setMode("stripe")}
+                      className="mt-1"
+                    />
+                    <span>
+                      <span className="font-medium">Stripe billing</span>
+                      <span className="block text-xs text-gray-500">
+                        Cancel or swap the Stripe subscription, then sync app
+                        access.
+                      </span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
                   New plan
                 </label>
                 <select
@@ -205,71 +250,80 @@ export default function ChangeUserPlanModal({
                 </select>
               </div>
 
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  When
-                </label>
-                <div className="space-y-2">
-                  <label className="flex cursor-pointer items-start gap-2 text-sm text-gray-800">
-                    <input
-                      type="radio"
-                      name="timing"
-                      checked={timing === "immediate"}
-                      onChange={() => setTiming("immediate")}
-                      className="mt-1"
-                    />
-                    <span>
-                      <span className="font-medium">Immediately</span>
-                      <span className="block text-xs text-gray-500">
-                        Apply in Stripe now (cancel or swap price, no proration
-                        invoice).
-                      </span>
-                    </span>
+              {!entitlementsOnly ? (
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                    When
                   </label>
+                  <div className="space-y-2">
+                    <label className="flex cursor-pointer items-start gap-2 text-sm text-gray-800">
+                      <input
+                        type="radio"
+                        name="timing"
+                        checked={timing === "immediate"}
+                        onChange={() => setTiming("immediate")}
+                        className="mt-1"
+                      />
+                      <span>
+                        <span className="font-medium">Immediately</span>
+                        <span className="block text-xs text-gray-500">
+                          Apply in Stripe now (cancel or swap price, no
+                          proration invoice).
+                        </span>
+                      </span>
+                    </label>
+                    <label className="flex cursor-pointer items-start gap-2 text-sm text-gray-800">
+                      <input
+                        type="radio"
+                        name="timing"
+                        checked={timing === "period_end"}
+                        onChange={() => setTiming("period_end")}
+                        className="mt-1"
+                        disabled={!context.hasActiveSubscription}
+                      />
+                      <span>
+                        <span className="font-medium">
+                          End of subscription period
+                        </span>
+                        <span className="block text-xs text-gray-500">
+                          Keep current access until{" "}
+                          {formatDate(context.currentPeriodEnd)}, then apply.
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              ) : null}
+
+              {!entitlementsOnly ? (
+                <div className="rounded-lg border px-3 py-3">
                   <label className="flex cursor-pointer items-start gap-2 text-sm text-gray-800">
                     <input
-                      type="radio"
-                      name="timing"
-                      checked={timing === "period_end"}
-                      onChange={() => setTiming("period_end")}
+                      type="checkbox"
+                      checked={refundLatestPayment}
+                      onChange={(e) => setRefundLatestPayment(e.target.checked)}
+                      disabled={!context.lastPayment.available}
                       className="mt-1"
-                      disabled={!context.hasActiveSubscription}
                     />
                     <span>
-                      <span className="font-medium">
-                        End of subscription period
+                      <span className="inline-flex items-center gap-1 font-medium">
+                        <CreditCard className="h-3.5 w-3.5" />
+                        Refund latest payment
                       </span>
                       <span className="block text-xs text-gray-500">
-                        Keep current access until{" "}
-                        {formatDate(context.currentPeriodEnd)}, then apply.
+                        {context.lastPayment.available
+                          ? `${context.lastPayment.amountDisplay} · paid ${formatDate(context.lastPayment.paidAtIso)}`
+                          : context.lastPayment.message}
                       </span>
                     </span>
                   </label>
                 </div>
-              </div>
-
-              <div className="rounded-lg border px-3 py-3">
-                <label className="flex cursor-pointer items-start gap-2 text-sm text-gray-800">
-                  <input
-                    type="checkbox"
-                    checked={refundLatestPayment}
-                    onChange={(e) => setRefundLatestPayment(e.target.checked)}
-                    disabled={!context.lastPayment.available}
-                    className="mt-1"
-                  />
-                  <span>
-                    <span className="inline-flex items-center gap-1 font-medium">
-                      <CreditCard className="h-3.5 w-3.5" />
-                      Refund latest payment
-                    </span>
-                    <span className="block text-xs text-gray-500">
-                      {context.lastPayment.available
-                        ? `${context.lastPayment.amountDisplay} · paid ${formatDate(context.lastPayment.paidAtIso)}`
-                        : context.lastPayment.message}
-                    </span>
-                  </span>
-                </label>
-              </div>
+              ) : (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  Stripe subscription and payments are left unchanged. App
+                  access is updated immediately.
+                </p>
+              )}
 
               {error ? <p className="text-sm text-red-600">{error}</p> : null}
               {success ? (
@@ -290,7 +344,11 @@ export default function ChangeUserPlanModal({
                   disabled={submitting || Boolean(success)}
                   className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {submitting ? "Applying…" : "Apply in Stripe"}
+                  {submitting
+                    ? "Applying…"
+                    : entitlementsOnly
+                      ? "Update app access"
+                      : "Apply in Stripe"}
                 </button>
               </div>
             </form>

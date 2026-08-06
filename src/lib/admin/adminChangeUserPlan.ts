@@ -17,6 +17,8 @@ import type { Plan } from "@/models/plans.model";
 
 export type AdminPlanChangeTiming = "immediate" | "period_end";
 
+export type AdminPlanChangeMode = "stripe" | "entitlements_only";
+
 export type AdminPlanChangeTarget =
   | { kind: "free" }
   | { kind: "plan"; planId: string };
@@ -26,6 +28,8 @@ export type AdminPlanChangeInput = {
   target: AdminPlanChangeTarget;
   timing: AdminPlanChangeTiming;
   refundLatestPayment: boolean;
+  /** Default `stripe`. `entitlements_only` updates app access without Stripe API calls. */
+  mode?: AdminPlanChangeMode;
   adminUserId?: string | null;
 };
 
@@ -204,7 +208,10 @@ async function resolveAuthUserId(identifier: string): Promise<{
   };
 }
 
-async function loadTargetPlan(planId: string): Promise<Plan> {
+async function loadTargetPlan(
+  planId: string,
+  options?: { requireStripePrice?: boolean }
+): Promise<Plan> {
   const db = await getDb();
   if (!ObjectId.isValid(planId)) {
     throw Object.assign(new Error("Invalid plan id"), { status: 400 });
@@ -216,7 +223,7 @@ async function loadTargetPlan(planId: string): Promise<Plan> {
     throw Object.assign(new Error("Plan not found"), { status: 404 });
   }
   const plan = doc as unknown as Plan;
-  if (!plan.stripePriceId?.trim()) {
+  if (options?.requireStripePrice !== false && !plan.stripePriceId?.trim()) {
     throw Object.assign(
       new Error("Selected plan has no Stripe price linked"),
       { status: 422 }
@@ -296,12 +303,97 @@ async function schedulePaidPlanAtPeriodEnd(
   });
 }
 
+const clearAdminPlanOverride = {
+  planOverrideSource: null,
+  planOverrideAt: null,
+} as const;
+
 /**
- * CSM admin: change a user's plan in Stripe (and sync app entitlements).
+ * CSM admin: grant/revoke app plan entitlements without calling Stripe.
+ */
+async function changeEntitlementsOnly(
+  input: AdminPlanChangeInput
+): Promise<AdminPlanChangeResult> {
+  const { authUserId } = await resolveAuthUserId(input.userId);
+  const nowIso = new Date().toISOString();
+  const overridePatch = {
+    planOverrideSource: "admin" as const,
+    planOverrideAt: nowIso,
+  };
+
+  if (input.target.kind === "free") {
+    await syncUserPlanPublicMetadata(authUserId, {
+      plan: "free",
+      planType: "",
+      planCancelled: false,
+      planExpiresAt: null,
+      planRenewsAt: null,
+      ...overridePatch,
+    });
+    return {
+      success: true,
+      message: "App access set to free (Stripe unchanged).",
+      timing: "immediate",
+      targetPlan: "free",
+      targetPlanType: null,
+      stripeSubscriptionId: null,
+      refund: null,
+      effectiveAt: nowIso,
+    };
+  }
+
+  const targetPlan = await loadTargetPlan(input.target.planId, {
+    requireStripePrice: false,
+  });
+  const entitlement = entitlementFromPlan(targetPlan);
+
+  await syncUserPlanPublicMetadata(authUserId, {
+    plan: entitlement.plan,
+    planType: entitlement.planType,
+    planCancelled: false,
+    planExpiresAt: null,
+    planRenewsAt: null,
+    ...overridePatch,
+  });
+
+  return {
+    success: true,
+    message: `App access set to ${entitlement.planType} (Stripe unchanged).`,
+    timing: "immediate",
+    targetPlan: entitlement.plan,
+    targetPlanType: entitlement.planType,
+    stripeSubscriptionId: null,
+    refund: null,
+    effectiveAt: nowIso,
+  };
+}
+
+/**
+ * CSM admin: change a user's plan in Stripe (and sync app entitlements),
+ * or entitlements-only without touching Stripe.
  */
 export async function adminChangeUserPlan(
   input: AdminPlanChangeInput
 ): Promise<AdminPlanChangeResult> {
+  const mode: AdminPlanChangeMode = input.mode || "stripe";
+  if (mode === "entitlements_only") {
+    if (input.refundLatestPayment) {
+      throw Object.assign(
+        new Error("Refunds require Stripe mode"),
+        { status: 400 }
+      );
+    }
+    if (input.timing === "period_end") {
+      throw Object.assign(
+        new Error(
+          "Period-end timing requires Stripe mode. Entitlements-only is immediate."
+        ),
+        { status: 400 }
+      );
+    }
+    return changeEntitlementsOnly(input);
+  }
+
   const { authUserId, email, stripeCustomerIdFromProfile } =
     await resolveAuthUserId(input.userId);
 
@@ -397,6 +489,7 @@ export async function adminChangeUserPlan(
         const end = subscriptionCurrentPeriodEndUnix(subscription);
         return end ? new Date(end * 1000).toISOString() : null;
       })(),
+      ...clearAdminPlanOverride,
     });
     return {
       success: true,
@@ -435,6 +528,7 @@ export async function adminChangeUserPlan(
       planRenewsAt: periodEnd
         ? new Date(periodEnd * 1000).toISOString()
         : null,
+      ...clearAdminPlanOverride,
     });
 
     return {
@@ -459,6 +553,7 @@ export async function adminChangeUserPlan(
     planCancelled: false,
     planExpiresAt: null,
     planRenewsAt: effectiveAt,
+    ...clearAdminPlanOverride,
   });
 
   return {
@@ -496,6 +591,7 @@ async function changeToFree(params: {
       planCancelled: false,
       planExpiresAt: null,
       planRenewsAt: null,
+      ...clearAdminPlanOverride,
     });
     return {
       success: true,
@@ -524,6 +620,7 @@ async function changeToFree(params: {
       planCancelled: false,
       planExpiresAt: null,
       planRenewsAt: null,
+      ...clearAdminPlanOverride,
     });
     return {
       success: true,
@@ -570,6 +667,7 @@ async function changeToFree(params: {
       planCancelled: false,
       planExpiresAt: null,
       planRenewsAt: null,
+      ...clearAdminPlanOverride,
     });
     return {
       success: true,
@@ -587,6 +685,7 @@ async function changeToFree(params: {
     planCancelled: true,
     planExpiresAt: periodEndIso,
     planRenewsAt: null,
+    ...clearAdminPlanOverride,
   });
 
   return {

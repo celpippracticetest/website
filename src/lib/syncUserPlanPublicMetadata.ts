@@ -8,6 +8,9 @@ export type PlanPublicMetadataPatch = {
   planCancelled?: boolean;
   planExpiresAt?: string | null;
   planRenewsAt?: string | null;
+  /** When set to "admin", Stripe webhooks should not overwrite plan entitlements. */
+  planOverrideSource?: "admin" | null;
+  planOverrideAt?: string | null;
 };
 
 /**

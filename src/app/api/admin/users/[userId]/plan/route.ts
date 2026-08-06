@@ -7,6 +7,7 @@ import {
 import {
   adminChangeUserPlan,
   getAdminPlanChangeContext,
+  type AdminPlanChangeMode,
   type AdminPlanChangeTiming,
 } from "@/lib/admin/adminChangeUserPlan";
 
@@ -63,7 +64,11 @@ export async function POST(
     const timingRaw = String(body?.timing || "");
     const timing: AdminPlanChangeTiming =
       timingRaw === "period_end" ? "period_end" : "immediate";
-    const refundLatestPayment = Boolean(body?.refundLatestPayment);
+    const modeRaw = String(body?.mode || "stripe").trim();
+    const mode: AdminPlanChangeMode =
+      modeRaw === "entitlements_only" ? "entitlements_only" : "stripe";
+    const refundLatestPayment =
+      mode === "entitlements_only" ? false : Boolean(body?.refundLatestPayment);
     const targetRaw = String(body?.target || body?.plan || "").trim();
 
     if (!targetRaw) {
@@ -81,8 +86,9 @@ export async function POST(
     const result = await adminChangeUserPlan({
       userId,
       target,
-      timing,
+      timing: mode === "entitlements_only" ? "immediate" : timing,
       refundLatestPayment,
+      mode,
       adminUserId: authenticate.userId || currentUserData.id,
     });
 

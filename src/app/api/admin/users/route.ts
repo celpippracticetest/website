@@ -14,6 +14,7 @@ export const maxDuration = 120;
 const ADMIN_USERS_SORT_FIELDS = new Set([
   "lastActivity",
   "createdAt",
+  "totalTokens",
   "totalActivities",
   "riskScore",
   "plan",
@@ -104,24 +105,64 @@ export async function GET(request: NextRequest) {
 
     // Build Subscription Filter
     const subscriptionFilter = [];
-    if (subscriptionStatus === "active") {
-      subscriptionFilter.push({
-        $match: { plan: { $in: ["plus", "premium", "pro", "enterprise"] } },
-      });
-    } else if (subscriptionStatus === "unsubscribed") {
+    if (
+      subscriptionStatus === "active" ||
+      subscriptionStatus === "stripe_active" ||
+      subscriptionStatus === "plans"
+    ) {
+      // Live Stripe matching is handled on the SQL path; Mongo fallback keeps
+      // app-paid entitlement filter as a best-effort approximation.
       subscriptionFilter.push({
         $match: {
-          plan: { $nin: ["plus", "premium", "pro", "enterprise"] },
-          subscriptionHistory: { $elemMatch: { type: "subscription_created" } },
+          plan: { $in: ["plus", "premium", "pro", "enterprise"] },
+          planCancelled: { $ne: true },
         },
       });
-    } else if (subscriptionStatus === "never") {
+    } else if (subscriptionStatus === "app_paid") {
+      subscriptionFilter.push({
+        $match: {
+          plan: { $in: ["plus", "premium", "pro", "enterprise"] },
+          planCancelled: { $ne: true },
+        },
+      });
+    } else if (
+      subscriptionStatus === "never" ||
+      subscriptionStatus === "free"
+    ) {
       subscriptionFilter.push({
         $match: {
           plan: { $nin: ["plus", "premium", "pro", "enterprise"] },
+          planCancelled: { $ne: true },
           subscriptionHistory: {
             $not: { $elemMatch: { type: "subscription_created" } },
           },
+        },
+      });
+    } else if (
+      subscriptionStatus === "canceled" ||
+      subscriptionStatus === "cancelled" ||
+      subscriptionStatus === "unsubscribed"
+    ) {
+      subscriptionFilter.push({
+        $match: {
+          $or: [
+            {
+              plan: { $in: ["plus", "premium", "pro", "enterprise"] },
+              planCancelled: true,
+            },
+            {
+              plan: { $nin: ["plus", "premium", "pro", "enterprise"] },
+              $or: [
+                {
+                  subscriptionHistory: {
+                    $elemMatch: { type: "subscription_created" },
+                  },
+                },
+                { planCancelled: true },
+                { totalSpend: { $gt: 0 } },
+              ],
+            },
+          ],
         },
       });
     }
@@ -508,8 +549,18 @@ function formatAdminUserResponse(user: Record<string, any>) {
       )
     : null;
 
-  if (isPremium) {
-    subscriptionStatusOut = "active";
+  if (user.stripeSubscriptionActive) {
+    subscriptionStatusOut = planCancelled && isPremium ? "canceling" : "active";
+    if (latestStartDate) {
+      subscriptionStartDate = latestStartDate;
+      subscriptionDurationDays = diffDays(latestStartDate, new Date());
+    }
+    if (planCancelled && !subscriptionEndDate) {
+      subscriptionEndDate =
+        toDate(user.planExpiresAt) || toDate(user.publicMetadataPlanExpiresAt);
+    }
+  } else if (isPremium) {
+    subscriptionStatusOut = planCancelled ? "canceling" : "active";
     if (latestStartDate) {
       subscriptionStartDate = latestStartDate;
       if (planCancelled && persistedDurationDays > 0) {
@@ -519,22 +570,29 @@ function formatAdminUserResponse(user: Record<string, any>) {
         subscriptionDurationDays = diffDays(latestStartDate, new Date());
       }
     }
+    if (planCancelled && !subscriptionEndDate) {
+      subscriptionEndDate =
+        toDate(user.planExpiresAt) || toDate(user.publicMetadataPlanExpiresAt);
+    }
   } else {
-    if (latestStartDate) {
+    if (latestStartDate || purchaseDate || Number(user.totalSpend || 0) > 0) {
       subscriptionStatusOut = "unsubscribed";
-      subscriptionStartDate = latestStartDate;
+      subscriptionStartDate = latestStartDate || purchaseDate;
 
       if (persistedDurationDays > 0 && persistedEndDate) {
         subscriptionDurationDays = persistedDurationDays;
         subscriptionEndDate = persistedEndDate;
       } else if (firstCancellationAfterLatestStart) {
         const cancellationDate = toDate(firstCancellationAfterLatestStart.date);
-        if (cancellationDate) {
+        if (cancellationDate && subscriptionStartDate) {
           subscriptionEndDate = cancellationDate;
-          subscriptionDurationDays = diffDays(latestStartDate, cancellationDate);
+          subscriptionDurationDays = diffDays(
+            subscriptionStartDate,
+            cancellationDate
+          );
         }
-      } else {
-        subscriptionDurationDays = diffDays(latestStartDate, new Date());
+      } else if (subscriptionStartDate) {
+        subscriptionDurationDays = diffDays(subscriptionStartDate, new Date());
       }
     }
   }
@@ -544,6 +602,7 @@ function formatAdminUserResponse(user: Record<string, any>) {
     email: user.email ?? null,
     lastActivity: user.lastActivity || null,
     firstActivity: user.firstActivity || user.createdAt || null,
+    createdAt: user.createdAt || user.firstActivity || null,
     totalActivities: user.totalActivities || 0,
     uniqueIpAddresses: user.uniqueIpAddressesCount || 0,
     uniqueUserAgents: user.uniqueUserAgentsCount || 0,
@@ -559,6 +618,12 @@ function formatAdminUserResponse(user: Record<string, any>) {
     userAgents: (user.userAgents || []).slice(0, 3),
     plan: user.plan,
     planType: user.planType || null,
+    planCancelled,
+    planExpiresAt: subscriptionEndDate
+      ? subscriptionEndDate.toISOString()
+      : toDate(user.planExpiresAt)?.toISOString() ||
+        toDate(user.publicMetadataPlanExpiresAt)?.toISOString() ||
+        null,
     purchaseAmount: user.purchaseAmount || 0,
     purchaseCurrency: user.purchaseCurrency || "CAD",
     totalSpend: user.totalSpend || 0,
@@ -567,10 +632,12 @@ function formatAdminUserResponse(user: Record<string, any>) {
     utm_campaign: user.utm_campaign || null,
     gclid: user.gclid || null,
     subscriptionStatus: subscriptionStatusOut,
+    stripeSubscriptionActive: Boolean(user.stripeSubscriptionActive),
     subscriptionDurationDays,
     subscriptionStartDate: subscriptionStartDate
       ? subscriptionStartDate.toISOString()
       : null,
+    purchaseDate: purchaseDate ? purchaseDate.toISOString() : null,
     subscriptionEndDate: subscriptionEndDate ? subscriptionEndDate.toISOString() : null,
   };
 }

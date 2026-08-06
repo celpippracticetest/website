@@ -1,16 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import {
-  Search,
-  Download,
-  Eye,
-  AlertTriangle,
-  Shield,
-  Clock,
-  RotateCw,
-  CreditCard,
-} from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Search, Download, Eye, RotateCw, CreditCard } from "lucide-react";
 import {
   hasPaidPracticeAccess,
   formatPlanLabel,
@@ -22,6 +13,9 @@ interface User {
   email?: string;
   lastActivity: string;
   firstActivity: string;
+  createdAt?: string;
+  subscriptionStartDate?: string | null;
+  purchaseDate?: string | null;
   totalActivities: number;
   uniqueIpAddresses: number;
   uniqueUserAgents: number;
@@ -37,6 +31,18 @@ interface User {
   userAgents: string[];
   plan?: string;
   planType?: string;
+  planCancelled?: boolean;
+  planExpiresAt?: string | null;
+  subscriptionStatus?: "active" | "canceling" | "unsubscribed" | "never";
+  stripeSubscriptionActive?: boolean;
+}
+
+interface PlanOption {
+  id: string;
+  title: string;
+  planTitle: string;
+  price: string;
+  isActive: boolean;
 }
 
 interface UsersResponse {
@@ -49,13 +55,58 @@ interface UsersResponse {
   };
 }
 
+const CURRENT_PAID_VALUE = "__current_paid__";
+
+function planIdOf(raw: unknown): string {
+  if (raw == null) return "";
+  if (typeof raw === "string") return raw;
+  if (typeof raw === "object" && "$oid" in (raw as object)) {
+    return String((raw as { $oid: string }).$oid);
+  }
+  return String(raw);
+}
+
+function resolvePlanSelectValue(user: User, plans: PlanOption[]): string {
+  if (!hasPaidPracticeAccess(user.plan) && !user.stripeSubscriptionActive) {
+    return "free";
+  }
+
+  const type = (user.planType || "").trim().toLowerCase();
+  if (type) {
+    const exact = plans.find(
+      (p) =>
+        p.title.trim().toLowerCase() === type ||
+        p.planTitle.trim().toLowerCase() === type,
+    );
+    if (exact) return exact.id;
+
+    const loose = plans.find((p) => {
+      const title = p.title.trim().toLowerCase();
+      const planTitle = p.planTitle.trim().toLowerCase();
+      return (
+        (title && type.includes(title)) ||
+        (planTitle && type.includes(planTitle)) ||
+        (title && title.includes(type)) ||
+        (planTitle && planTitle.includes(type))
+      );
+    });
+    if (loose) return loose.id;
+  }
+
+  // Paid access / live Stripe with no matching catalog row — keep a distinct
+  // value so the select does not fall back to visually showing "Free".
+  return CURRENT_PAID_VALUE;
+}
+
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState("lastActivity");
   const [sortOrder, setSortOrder] = useState("desc");
+  const [pageSize] = useState(20);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
@@ -66,15 +117,51 @@ export default function UsersPage() {
     userId: string;
     label: string;
   } | null>(null);
+  const [planOptions, setPlanOptions] = useState<PlanOption[]>([]);
+  const [subscriptionStatus, setSubscriptionStatus] = useState("all");
+  const [updatingPlanUserId, setUpdatingPlanUserId] = useState<string | null>(
+    null,
+  );
+  const [planUpdateError, setPlanUpdateError] = useState<string | null>(null);
+
+  const fetchPlans = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/plans");
+      if (!response.ok) return;
+      const data = await response.json();
+      const plans = (data.plans || []) as Array<{
+        _id?: unknown;
+        title?: string;
+        planTitle?: string;
+        price?: string;
+        isActive?: boolean;
+      }>;
+      setPlanOptions(
+        plans
+          .map((p) => ({
+            id: planIdOf(p._id),
+            title: p.title || "",
+            planTitle: p.planTitle || "",
+            price: String(p.price ?? ""),
+            isActive: Boolean(p.isActive),
+          }))
+          .filter((p) => p.id && p.isActive),
+      );
+    } catch (error) {
+      console.error("Error fetching plans:", error);
+    }
+  }, []);
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
         page: page.toString(),
-        search,
+        limit: pageSize.toString(),
+        search: debouncedSearch,
         sortBy,
         sortOrder,
+        subscriptionStatus,
       });
 
       const response = await fetch(`/api/admin/users?${params}`);
@@ -92,20 +179,120 @@ export default function UsersPage() {
   };
 
   useEffect(() => {
+    fetchPlans();
+  }, [fetchPlans]);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, 300);
+    return () => window.clearTimeout(t);
+  }, [search]);
+
+  const skipSearchPageReset = useRef(true);
+  useEffect(() => {
+    if (skipSearchPageReset.current) {
+      skipSearchPageReset.current = false;
+      return;
+    }
+    setPage(1);
+  }, [debouncedSearch]);
+
+  useEffect(() => {
     fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional refetch on list controls
-  }, [page, search, sortBy, sortOrder]);
+  }, [page, debouncedSearch, sortBy, sortOrder, subscriptionStatus, pageSize]);
 
-  const getRiskColor = (riskScore: number) => {
-    if (riskScore >= 70) return "text-red-600 bg-red-50";
-    if (riskScore >= 40) return "text-yellow-600 bg-yellow-50";
-    return "text-green-600 bg-green-50";
-  };
+  const handleInlinePlanChange = async (user: User, target: string) => {
+    if (target === CURRENT_PAID_VALUE) return;
+    const current = resolvePlanSelectValue(user, planOptions);
+    if (target === current) return;
 
-  const getRiskIcon = (riskScore: number) => {
-    if (riskScore >= 70) return <AlertTriangle className="w-4 h-4" />;
-    if (riskScore >= 40) return <Shield className="w-4 h-4" />;
-    return <Clock className="w-4 h-4" />;
+    setPlanUpdateError(null);
+    setUpdatingPlanUserId(user.userId);
+
+    const selectedPlan =
+      target === "free"
+        ? null
+        : planOptions.find((p) => p.id === target) || null;
+    const previous = {
+      plan: user.plan,
+      planType: user.planType,
+      planCancelled: user.planCancelled,
+      subscriptionStatus: user.subscriptionStatus,
+    };
+    const nextStatus =
+      target === "free"
+        ? user.subscriptionStatus === "never"
+          ? ("never" as const)
+          : ("unsubscribed" as const)
+        : ("active" as const);
+
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.userId === user.userId
+          ? {
+              ...u,
+              plan: target === "free" ? "free" : "plus",
+              planType: selectedPlan?.title || "",
+              planCancelled: false,
+              subscriptionStatus: nextStatus,
+            }
+          : u,
+      ),
+    );
+
+    try {
+      const response = await fetch(
+        `/api/admin/users/${encodeURIComponent(user.userId)}/plan`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            target,
+            timing: "immediate",
+            mode: "entitlements_only",
+            refundLatestPayment: false,
+          }),
+        },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update plan");
+      }
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.userId === user.userId
+            ? {
+                ...u,
+                plan: data.targetPlan || (target === "free" ? "free" : "plus"),
+                planType: data.targetPlanType || selectedPlan?.title || "",
+                planCancelled: false,
+                subscriptionStatus: nextStatus,
+              }
+            : u,
+        ),
+      );
+    } catch (error) {
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.userId === user.userId
+            ? {
+                ...u,
+                plan: previous.plan,
+                planType: previous.planType,
+                planCancelled: previous.planCancelled,
+                subscriptionStatus: previous.subscriptionStatus,
+              }
+            : u,
+        ),
+      );
+      setPlanUpdateError(
+        error instanceof Error ? error.message : "Failed to update plan",
+      );
+    } finally {
+      setUpdatingPlanUserId(null);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -116,6 +303,22 @@ export default function UsersPage() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  const getRowSubscriptionClass = (user: User) => {
+    // Color from actual plan access / live Stripe so it can't disagree with billing.
+    if (hasPaidPracticeAccess(user.plan) || user.stripeSubscriptionActive) {
+      return user.planCancelled
+        ? "bg-yellow-50 hover:bg-yellow-100/80"
+        : "bg-green-50 hover:bg-green-100/80";
+    }
+    if (
+      user.subscriptionStatus === "unsubscribed" ||
+      user.subscriptionStatus === "canceling"
+    ) {
+      return "bg-red-50 hover:bg-red-100/80";
+    }
+    return "hover:bg-gray-50";
   };
 
   const exportUserData = async (identifier: string) => {
@@ -149,6 +352,24 @@ export default function UsersPage() {
         <p className="text-gray-600">
           Monitor user activity and prevent fraud/disputes
         </p>
+        <div className="mt-3 flex flex-wrap gap-3 text-xs text-gray-600">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm bg-green-400" />
+            Active subscription
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm bg-yellow-400" />
+            Canceled, access until period end
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm bg-red-400" />
+            Canceled subscription
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm border border-gray-300 bg-white" />
+            Free
+          </span>
+        </div>
       </div>
 
       {/* Search and Filters */}
@@ -163,13 +384,27 @@ export default function UsersPage() {
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
-                  setPage(1);
                 }}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <select
+              value={subscriptionStatus}
+              onChange={(e) => {
+                setSubscriptionStatus(e.target.value);
+                setPage(1);
+              }}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              title="Filter by subscription status"
+            >
+              <option value="all">All statuses</option>
+              <option value="never">Free</option>
+              <option value="active">Stripe active</option>
+              <option value="app_paid">App paid access</option>
+              <option value="canceled">Canceled</option>
+            </select>
             <select
               value={sortBy}
               onChange={(e) => {
@@ -178,11 +413,9 @@ export default function UsersPage() {
               }}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
-              <option value="createdAt">First Activity</option>
+              <option value="createdAt">Register Date</option>
               <option value="lastActivity">Last Activity</option>
-              <option value="totalActivities">Total Activities</option>
-              <option value="riskScore">Risk Score</option>
-              <option value="plan">Plan (Premium)</option>
+              <option value="totalTokens">Tokens</option>
             </select>
             <select
               value={sortOrder}
@@ -210,6 +443,18 @@ export default function UsersPage() {
 
       {/* Users Table */}
       <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+        {planUpdateError ? (
+          <div className="border-b border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+            {planUpdateError}
+            <button
+              type="button"
+              className="ml-2 underline"
+              onClick={() => setPlanUpdateError(null)}
+            >
+              Dismiss
+            </button>
+          </div>
+        ) : null}
         {loading ? (
           <div className="p-8 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -225,26 +470,13 @@ export default function UsersPage() {
                       Email
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Risk Score
-                    </th>
-
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Plan
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Activities
+                      Practice / Exams
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Practice
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Exams
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tokens
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      IPs/Devices
+                      Tokens / Devices
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Last Active
@@ -256,85 +488,106 @@ export default function UsersPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {users.map((user) => (
-                    <tr key={user.userId} className="hover:bg-gray-50">
+                    <tr
+                      key={user.userId}
+                      className={getRowSubscriptionClass(user)}
+                    >
                       {/* Email */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {user.email ?? "-"}
-                      </td>
-
-                      {/* Risk Score */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRiskColor(
-                            user.riskScore,
-                          )}`}
-                        >
-                          {getRiskIcon(user.riskScore)}
-                          <span className="ml-1">{user.riskScore}%</span>
-                        </span>
+                        <div>{user.email ?? "-"}</div>
+                        <div className="text-xs text-gray-500">
+                          {user.createdAt || user.firstActivity
+                            ? `Registered ${formatDate(user.createdAt || user.firstActivity)}`
+                            : "Registered —"}
+                        </div>
+                        {user.subscriptionStartDate || user.purchaseDate ? (
+                          <div className="text-xs text-gray-500">
+                            Subscribed{" "}
+                            {formatDate(
+                              user.subscriptionStartDate ||
+                                user.purchaseDate ||
+                                "",
+                            )}
+                          </div>
+                        ) : null}
                       </td>
 
                       {/* Plan Type */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            hasPaidPracticeAccess(user.plan)
-                              ? "bg-purple-100 text-purple-800"
-                              : "bg-gray-100 text-gray-800"
+                        <select
+                          value={resolvePlanSelectValue(user, planOptions)}
+                          disabled={
+                            updatingPlanUserId === user.userId ||
+                            planOptions.length === 0
+                          }
+                          onChange={(e) =>
+                            handleInlinePlanChange(user, e.target.value)
+                          }
+                          title="Change app access (does not affect Stripe)"
+                          className={`max-w-[11rem] rounded-md border px-2 py-1.5 text-xs font-medium focus:ring-2 focus:ring-blue-500 disabled:opacity-60 ${
+                            hasPaidPracticeAccess(user.plan) ||
+                            user.stripeSubscriptionActive
+                              ? "border-purple-200 bg-purple-50 text-purple-800"
+                              : "border-gray-200 bg-gray-50 text-gray-800"
                           }`}
                         >
-                          {formatPlanLabel(user.plan, user.planType)}
-                        </span>
+                          <option value="free">Free</option>
+                          {resolvePlanSelectValue(user, planOptions) ===
+                          CURRENT_PAID_VALUE ? (
+                            <option value={CURRENT_PAID_VALUE}>
+                              {user.stripeSubscriptionActive &&
+                              !hasPaidPracticeAccess(user.plan)
+                                ? "Stripe active (app plan free)"
+                                : formatPlanLabel(user.plan, user.planType)}
+                            </option>
+                          ) : null}
+                          {planOptions.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.title}
+                              {p.planTitle ? ` (${p.planTitle})` : ""}
+                            </option>
+                          ))}
+                        </select>
                       </td>
 
-                      {/* Activities */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {user.totalActivities.toLocaleString()}
-                      </td>
-
-                      {/* Practice */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <div>
-                          {user.practiceAttempts} / {user.practiceCompletions}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {user.practiceAttempts > 0
-                            ? Math.round(
-                                (user.practiceCompletions /
-                                  user.practiceAttempts) *
-                                  100,
-                              )
-                            : 0}
-                          % completion
-                        </div>
-                      </td>
-
-                      {/* Mock Exams */}
+                      {/* Practice / Exams */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div>
-                          {user.mockAttempts} / {user.mockCompletions}
+                          Practice: {user.practiceAttempts} /{" "}
+                          {user.practiceCompletions}
+                          <span className="ml-1 text-xs text-gray-500">
+                            (
+                            {user.practiceAttempts > 0
+                              ? Math.round(
+                                  (user.practiceCompletions /
+                                    user.practiceAttempts) *
+                                    100,
+                                )
+                              : 0}
+                            %)
+                          </span>
                         </div>
                         <div className="text-xs text-gray-500">
-                          {user.mockAttempts > 0
-                            ? Math.round(
-                                (user.mockCompletions / user.mockAttempts) *
-                                  100,
-                              )
-                            : 0}
-                          % completion
+                          Exams: {user.mockAttempts} / {user.mockCompletions}
+                          <span className="ml-1">
+                            (
+                            {user.mockAttempts > 0
+                              ? Math.round(
+                                  (user.mockCompletions / user.mockAttempts) *
+                                    100,
+                                )
+                              : 0}
+                            %)
+                          </span>
                         </div>
                       </td>
 
-                      {/* Tokens */}
+                      {/* Tokens / Devices */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {user.totalTokens.toLocaleString()}
-                      </td>
-
-                      {/* IPs/Devices */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <div>{user.uniqueIpAddresses} IPs</div>
+                        <div>{user.totalTokens.toLocaleString()} tokens</div>
                         <div className="text-xs text-gray-500">
-                          {user.uniqueUserAgents} devices
+                          {user.uniqueIpAddresses} IPs · {user.uniqueUserAgents}{" "}
+                          devices
                         </div>
                       </td>
 

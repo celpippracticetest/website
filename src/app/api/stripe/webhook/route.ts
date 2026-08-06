@@ -17,6 +17,7 @@ import { findOrCreateWebUserByEmail } from "@/lib/guestCheckoutAuth";
 import { persistStripeCustomerIdForUser } from "@/lib/resolveStripeCustomerId";
 import { recordPartnerCommissionForSubscriber } from "@/lib/partner/recordPartnerCommissionForSubscriber";
 import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
+import { upsertUserProfilePlanFields } from "@/lib/users/userProfilesPg";
 import {
   matchUsersCollectionByWebUserIds,
   supabaseAuthUserIdFieldsOnUserDoc,
@@ -273,6 +274,22 @@ function buildStripeGaAttributionParams(
   };
 }
 
+function hasAdminPlanOverride(metadata: Record<string, unknown> | null | undefined): boolean {
+  return metadata?.planOverrideSource === "admin";
+}
+
+async function userHasAdminPlanOverride(userId: string): Promise<boolean> {
+  try {
+    const authAdmin = await appUserAdmin();
+    const user = await authAdmin.users.getUser(userId);
+    return hasAdminPlanOverride(
+      (user.publicMetadata || {}) as Record<string, unknown>
+    );
+  } catch {
+    return false;
+  }
+}
+
 async function updateUserPublicMetadata(
   userId: string,
   newFields: Record<string, any>
@@ -292,6 +309,32 @@ async function updateUserPublicMetadata(
       userId,
       metadata: { fields: Object.keys(newFields) },
     });
+
+    // Keep `user_profiles` in sync (CMS + write-authoritative entitlements).
+    try {
+      await upsertUserProfilePlanFields(userId, {
+        plan:
+          typeof newFields.plan === "string"
+            ? newFields.plan
+            : typeof updatedMetadata.plan === "string"
+              ? updatedMetadata.plan
+              : undefined,
+        planType:
+          typeof newFields.planType === "string"
+            ? newFields.planType
+            : typeof updatedMetadata.planType === "string"
+              ? updatedMetadata.planType
+              : undefined,
+        publicMetadata: updatedMetadata as Record<string, unknown>,
+      });
+    } catch (profileErr) {
+      logger.error("Failed to sync metadata to user_profiles", {
+        component: "stripe_webhook",
+        action: "sync_user_profiles_failed",
+        userId,
+        metadata: { error: profileErr },
+      });
+    }
 
     // Sync to `users` collection
     try {
@@ -760,6 +803,8 @@ export async function POST(req: Request) {
             purchaseDate: new Date().toISOString(),
             plan: "plus",
             planType: metadata.plan_name,
+            planOverrideSource: null,
+            planOverrideAt: null,
             purchaseAmount: (session.amount_total || 0) / 100,
             purchaseCurrency: (session.currency || "cad").toUpperCase(),
             totalSpend: ((userMetadata.totalSpend as number) || 0) + ((session.amount_total || 0) / 100)
@@ -793,6 +838,8 @@ export async function POST(req: Request) {
             purchaseDate: new Date().toISOString(),
             plan: "plus",
             planType: metadata.plan_name,
+            planOverrideSource: null,
+            planOverrideAt: null,
             purchaseAmount: (session.amount_total || 0) / 100,
             purchaseCurrency: (session.currency || "cad").toUpperCase(),
             totalSpend: ((userMetadata.totalSpend as number) || 0) + ((session.amount_total || 0) / 100)
@@ -1031,6 +1078,17 @@ export async function POST(req: Request) {
       const metadata = subscription.metadata;
       if (subscription.cancel_at_period_end) {
         if (metadata?.user_id) {
+          if (await userHasAdminPlanOverride(metadata.user_id)) {
+            logger.info(
+              "Skipping plan cancel metadata — admin entitlement override active",
+              {
+                component: "stripe_webhook",
+                action: "skip_admin_plan_override",
+                userId: metadata.user_id,
+              }
+            );
+            return NextResponse.json({ received: true });
+          }
           const periodEnd = subscriptionCurrentPeriodEndUnix(subscription);
           await updateUserPublicMetadata(metadata.user_id, {
             planCancelled: true,
@@ -1047,6 +1105,18 @@ export async function POST(req: Request) {
           subscription.status === "trialing")
       ) {
         try {
+          if (await userHasAdminPlanOverride(metadata.user_id)) {
+            logger.info(
+              "Skipping plan sync — admin entitlement override active",
+              {
+                component: "stripe_webhook",
+                action: "skip_admin_plan_override",
+                userId: metadata.user_id,
+              }
+            );
+            return NextResponse.json({ received: true });
+          }
+
           const item = subscription.items.data[0];
           const priceRaw = item?.price;
           const priceId =
@@ -1499,10 +1569,22 @@ export async function POST(req: Request) {
       }
 
       // Cancel and downgrade
-      await Promise.all([
-        checkoutRepo.updateStatus(checkout_id, "cancelled"),
-        updateUserPublicMetadata(user_id, { plan: "free" }),
-      ]);
+      if (await userHasAdminPlanOverride(user_id)) {
+        logger.info(
+          "Skipping free downgrade — admin entitlement override active",
+          {
+            component: "stripe_webhook",
+            action: "skip_admin_plan_override",
+            userId: user_id,
+          }
+        );
+        await checkoutRepo.updateStatus(checkout_id, "cancelled");
+      } else {
+        await Promise.all([
+          checkoutRepo.updateStatus(checkout_id, "cancelled"),
+          updateUserPublicMetadata(user_id, { plan: "free" }),
+        ]);
+      }
 
       // Log subscription cancelled
       try {
